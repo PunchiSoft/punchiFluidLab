@@ -10,8 +10,8 @@ import PunchiFluid
 
 Window {
     id: window
-    width: 1200
-    height: 780
+    width: 1280
+    height: 800
     minimumWidth: 900
     minimumHeight: 560
     visible: true
@@ -22,10 +22,19 @@ Window {
         id: session
     }
 
-    // The normal path needs no modal; the valve is one key away.
+
+    // The normal path needs no modal, and no command is mouse-only.
     Shortcut {
         sequence: "Space"
         onActivated: session.toggleValve()
+    }
+    Shortcut {
+        sequence: "F5"
+        onActivated: session.toggleRunning()
+    }
+    Shortcut {
+        sequence: "Ctrl+R"
+        onActivated: session.restart()
     }
 
     // 60 Hz of simulated time in a timer rather than in the paint loop, so a slow frame
@@ -33,18 +42,19 @@ Window {
     // so an idle window neither redraws nor keeps the compositor awake.
     Timer {
         interval: 16
-        running: !session.settled
+        running: session.running && !session.settled
         repeat: true
-        onTriggered: session.advance(0.016)
+        onTriggered: session.advance(0.016 * session.speed)
     }
 
     Column {
         anchors.fill: parent
 
-        Ribbon {
+        RibbonBar {
             id: ribbon
+            objectName: "ribbon"
             width: parent.width
-            height: 104
+            height: ribbon.implicitHeight
             session: session
         }
 
@@ -89,7 +99,7 @@ Window {
             hint: sidebar.selectedName.length > 0
                   ? qsTr("Elegido en el catálogo: %1 — colocarlo en el lienzo llega en M3")
                         .arg(sidebar.selectedName)
-                  : qsTr("Espacio acciona la válvula; un clic sobre ella la acciona igual")
+                  : qsTr("Espacio acciona la válvula · F5 reproduce o pausa · Ctrl+R reinicia")
         }
     }
 }

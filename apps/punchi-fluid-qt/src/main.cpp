@@ -13,6 +13,7 @@
 //! ```
 
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <QTimer>
@@ -20,6 +21,7 @@
 #include <cstdio>
 
 #include "canvasitem.h"
+#include "icons.h"
 #include "punchi_fluid.h"
 #include "session.h"
 #include "theme.h"
@@ -71,6 +73,28 @@ int main(int argc, char *argv[])
         return 2;
     }
 
+    if (arguments.contains(QStringLiteral("--check-icons"))) {
+        // Proves the icon provider independently of QML: Qt strips console.log in release
+        // builds, so a QML-only failure here would be invisible.
+        ThemeIconProvider provider;
+        const QStringList names {
+            QStringLiteral("media-playback-start"),
+            QStringLiteral("view-refresh"),
+            QStringLiteral("open-menu-symbolic"),
+        };
+        ensureIconTheme();
+        std::fprintf(stderr, "theme=%s paths=%s\n", qUtf8Printable(QIcon::themeName()),
+                     qUtf8Printable(QIcon::themeSearchPaths().join(QLatin1Char(':'))));
+        for (const QString &name : names) {
+            QSize size;
+            const QPixmap pixmap =
+                provider.requestPixmap(name + QStringLiteral("?tone=foreground"), &size, QSize(24, 24));
+            std::fprintf(stderr, "  %-24s %dx%d %s\n", qUtf8Printable(name), pixmap.width(),
+                         pixmap.height(), pixmap.isNull() ? "null" : "ok");
+        }
+        return 0;
+    }
+
     if (arguments.contains(QStringLiteral("--check-theme"))) {
         const ThemeTokens tokens = tokensFrom(QGuiApplication::palette());
         const Contrast contrast = measure(tokens);
@@ -87,11 +111,58 @@ int main(int argc, char *argv[])
                  abi.frame_size);
 
     const QString reportPaints = value(QStringLiteral("--report-paints"));
+    const QString size = value(QStringLiteral("--size"));
 
     QQmlApplicationEngine engine;
+    // The desktop's own icons, resolved through QIcon::fromTheme and tinted with the ink
+    // the theme layer picked. A name the theme lacks draws nothing at all.
+    engine.addImageProvider(QStringLiteral("theme"), new ThemeIconProvider);
     engine.loadFromModule("PunchiFluid", "Main");
     if (engine.rootObjects().isEmpty()) {
         return 1;
+    }
+
+    if (!size.isEmpty()) {
+        const QStringList parts = size.split(QLatin1Char('x'));
+        bool widthOk = false;
+        bool heightOk = false;
+        const int width = parts.value(0).toInt(&widthOk);
+        const int height = parts.value(1).toInt(&heightOk);
+        if (!widthOk || !heightOk || width < 640 || height < 480) {
+            std::fprintf(stderr, "--size takes WxH, at least 640x480, not \"%s\"\n",
+                         qUtf8Printable(size));
+            return 2;
+        }
+        for (QObject *root : engine.rootObjects()) {
+            auto *window = qobject_cast<QQuickWindow *>(root);
+            if (window != nullptr) {
+                window->resize(width, height);
+            }
+        }
+    }
+
+    if (arguments.contains(QStringLiteral("--tab")) || arguments.contains(QStringLiteral("--menu"))) {
+        const QString tab = value(QStringLiteral("--tab"));
+        QObject *ribbon = nullptr;
+        for (QObject *root : engine.rootObjects()) {
+            ribbon = root->findChild<QObject *>(QStringLiteral("ribbon"));
+        }
+        if (ribbon == nullptr) {
+            std::fprintf(stderr, "no ribbon in the scene\n");
+            return 1;
+        }
+        if (!tab.isEmpty()) {
+            bool ok = false;
+            const int index = tab.toInt(&ok);
+            if (!ok || index < 0) {
+                std::fprintf(stderr, "--tab takes a non-negative index\n");
+                return 2;
+            }
+            ribbon->setProperty("current", index);
+        }
+        if (arguments.contains(QStringLiteral("--menu"))) {
+            ribbon->setProperty("menuOpen", true);
+        }
     }
 
     if (arguments.contains(QStringLiteral("--toggle"))) {

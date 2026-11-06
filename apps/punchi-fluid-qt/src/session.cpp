@@ -5,6 +5,7 @@
 
 #include <QEvent>
 
+#include <algorithm>
 #include <cmath>
 #include <QGuiApplication>
 #include <QVariantMap>
@@ -45,6 +46,38 @@ bool FluidSession::event(QEvent *event)
         loadTheme();
     }
     return QObject::event(event);
+}
+
+void FluidSession::setRunning(bool running)
+{
+    if (m_running == running) {
+        return;
+    }
+    m_running = running;
+    // Leaving the settled state is what restarts the loop: a pause and a resume both have
+    // to clear the counter, or the window would come back still.
+    m_steadyFrames = 0;
+    if (m_settled) {
+        m_settled = false;
+        emit settledChanged();
+    }
+    emit runningChanged();
+    emit changed();
+}
+
+void FluidSession::toggleRunning()
+{
+    setRunning(!m_running);
+}
+
+void FluidSession::setSpeed(double speed)
+{
+    const double clamped = std::clamp(speed, 0.05, 8.0);
+    if (qFuzzyCompare(m_speed, clamped)) {
+        return;
+    }
+    m_speed = clamped;
+    emit speedChanged();
 }
 
 void FluidSession::advance(double dt)

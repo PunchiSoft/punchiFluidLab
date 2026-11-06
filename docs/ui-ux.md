@@ -58,13 +58,22 @@ The icons are the **desktop's own**: each action names a freedesktop icon
 user's theme and rasterises it; a machine with no such icon gets the label alone, as a
 native application does. See [ADR 0004](adr/0004-icons-from-the-desktop.md).
 
-The toolbar is the native shape, as Kate draws it: one row of flat buttons that measure
-their own content — never a fixed width per label, which is what lets the text run over
-the next button — the icon and the label for the frequent commands (`New`, `Open`, `Save`, `Save as`), the icon
-alone with a tooltip for the rest, a thin rule between groups. It is a **selection**:
-the menus keep every command, so the toolbar never has to grow into a ribbon. The list
-lives in one table in `ribbon.rs` and a test walks it. Every action also has a keyboard
-shortcut and a menu entry, so nothing is mouse-only.
+The toolbar is a **ribbon**: a tab row, then the commands of the open tab in labelled
+groups with a hair line between them, and the transport pinned to the right of the tabs
+so running the model never needs a tab switch.
+
+- A **large** command draws an icon over its label, the way a native ribbon draws the
+  primary actions; a **small** command draws the icon beside the label. Group names sit
+  underneath, which is what makes the row readable instead of a guessing game.
+- A command that does not exist yet is **not on screen**. A tab whose work has not landed
+  says so in one line. A grey button that teaches nothing is worse than a missing one.
+- Every command has a shortcut and a hint that names it; the hint appears on hover after a
+  pause and on keyboard focus, and the same string is the accessible description.
+- Below 1100 px the body folds away: the tabs and the transport stay, and one **Menú**
+  button opens the commands of the open tab. A ribbon without width is a maze.
+
+The list of commands lives in one table in `RibbonBar.qml`; the expanded groups and the
+collapsed menu are generated from it, so they cannot drift apart.
 
 | Tab | Contents |
 |---|---|

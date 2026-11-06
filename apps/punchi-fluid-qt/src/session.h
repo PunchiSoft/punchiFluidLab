@@ -31,8 +31,12 @@ class FluidSession : public QObject
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
 
+    Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
+    Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
+
     Q_PROPERTY(QVariantList catalog READ catalog NOTIFY catalogChanged)
     Q_PROPERTY(QString contrastSummary READ contrastSummary NOTIFY changed)
+    Q_PROPERTY(bool themePasses READ themePasses NOTIFY changed)
     Q_PROPERTY(bool settled READ settled NOTIFY settledChanged)
 
     Q_PROPERTY(QColor background READ background NOTIFY changed)
@@ -56,6 +60,16 @@ public:
     bool hasModel() const { return m_telemetry.has_model == 1; }
     QString lastError() const { return m_error; }
 
+    /// `true` while the transport is playing. Pausing stops the sheet loop without
+    /// touching the model, so resuming continues from the same instant.
+    bool running() const { return m_running; }
+    void setRunning(bool running);
+    Q_INVOKABLE void toggleRunning();
+
+    /// Simulated seconds per real second. Clamped to `0.05 ..= 8`.
+    double speed() const { return m_speed; }
+    void setSpeed(double speed);
+
     /// `true` when the last frames left the state unchanged: the sheet loop can stop.
     ///
     /// Without this the window repaints a CPU-rasterised item sixty times a second
@@ -66,7 +80,7 @@ public:
     QVariantList catalog() const { return m_catalog; }
     QString contrastSummary() const { return describe(m_contrast); }
     /// `true` when every pairing meets the criterion of `docs/ui-ux.md`.
-    bool themePasses() const { return m_contrast.passes(); }
+    [[nodiscard]] bool themePasses() const { return m_contrast.passes(); }
 
     QColor background() const { return m_tokens.background; }
     QColor panel() const { return m_tokens.panel; }
@@ -92,6 +106,8 @@ signals:
     void changed();
     void catalogChanged();
     void settledChanged();
+    void runningChanged();
+    void speedChanged();
 
 private:
     void refresh();
@@ -104,5 +120,7 @@ private:
     ThemeTokens m_tokens;
     Contrast m_contrast;
     bool m_settled = false;
+    bool m_running = true;
+    double m_speed = 1.0;
     int m_steadyFrames = 0;
 };

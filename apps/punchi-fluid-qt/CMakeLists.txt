@@ -41,6 +41,8 @@ qt_add_executable(punchi-fluid
     src/previewitem.h
     src/replay.cpp
     src/replay.h
+    src/icons.cpp
+    src/icons.h
     src/theme.cpp
     src/theme.h
 )
@@ -52,7 +54,9 @@ qt_add_qml_module(punchi-fluid
     VERSION 1.0
     QML_FILES
         Main.qml
-        Ribbon.qml
+        RibbonBar.qml
+        RibbonButton.qml
+        RibbonGroup.qml
         Sidebar.qml
         StatusBar.qml
 )

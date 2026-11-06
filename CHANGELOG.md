@@ -6,6 +6,51 @@ publicación.
 
 ## Unreleased
 
+### Cinta con grupos, iconos del escritorio y transporte — 2026-11-06
+
+La cinta pasa de ser una fila de botones a la forma de un ribbon de escritorio: pestañas
+**Archivo · Editar · Ver · Simular**, grupos con su nombre debajo, botones grandes con el
+icono encima y pequeños con el icono al lado, y el transporte (reproducir/pausa y
+reiniciar) fijo a la derecha de las pestañas, así que ejecutar el modelo nunca exige
+cambiar de pestaña.
+
+- **Los iconos son los del escritorio.** `QIcon::fromTheme` los busca en Breeze —el mismo
+  tema que usa el resto de la sesión— y solo tiñe los simbólicos, que son monocromos:
+  teñir un icono a color lo convertía en una silueta negra. Un nombre que el tema no
+  tiene deja el botón con su etiqueta sola, como hace una aplicación nativa.
+- **`QIcon::themeSearchPaths()` está vacío fuera de una sesión de escritorio** (solo
+  contenía `:/icons`), así que ninguna búsqueda funcionaba. Se añaden los directorios XDG
+  que el tema de plataforma habría puesto; una sesión que ya los tiene no se toca.
+- **Una pestaña sin comandos lo dice en una línea** en vez de mostrar botones grises.
+  Archivo y Editar esperan al editor; Ver muestra el contraste medido del tema.
+- **Por debajo de 1100 px la cinta se pliega**: quedan las pestañas y el transporte, y un
+  botón **Menú** abre los comandos de la pestaña. La lista de comandos es una sola tabla y
+  tanto los grupos como el menú se generan de ella.
+- **Transporte y velocidad**: `FluidSession` gana `running` y `speed`; pausar detiene el
+  bucle de la hoja sin tocar el modelo. Atajos: `Espacio` acciona la válvula, `F5`
+  reproduce o pausa, `Ctrl+R` reinicia. Todos los botones son alcanzables con el teclado y
+  exponen rol, nombre y descripción a la accesibilidad.
+- **Tres banderas nuevas de diagnóstico**: `--check-icons` prueba el proveedor de iconos
+  fuera de QML, `--size WxH` abre a un tamaño concreto y `--tab`/`--menu` dejan una
+  pestaña o el menú plegado listos para una captura, sin puntero.
+
+#### Verificación
+
+- Capturas fuera de pantalla en claro y oscuro, con la cinta desplegada, la pestaña Ver y
+  el menú plegado a 1000×700.
+- `--check-icons`: los tres nombres resuelven a 24×24; `--check-theme`: 15,55:1 / 3,03:1 /
+  4,84:1, sale 0.
+- `--report-paints 4`: **1 repintado** con la ventana en reposo, así que la cinta nueva no
+  reactivó el bucle.
+- `./scripts-dev/test.sh --no-build`: 134 pruebas en verde.
+
+#### Limitaciones conocidas
+
+- El clic sobre los botones no está probado con un evento sintético; cada uno llama al
+  mismo método del `FluidSession` que ya se prueba por el ABI.
+- Archivo y Editar están vacías a propósito: guardar, abrir y exportar son M3 y M6.
+
+
 ### Armazón Qt Quick, perfil de memoria y una fuga de dibujo — 2026-11-06
 
 [ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md) pasa a **aceptado**: el modelo, el
