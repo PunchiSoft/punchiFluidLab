@@ -17,10 +17,11 @@ use std::ffi::CStr;
 use std::ptr;
 
 use punchi_fluid::{
-    PF_ABI_VERSION, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfFrame, PfInk, PfPoint, PfSession,
-    PfTelemetry, pf_abi, pf_session_advance, pf_session_build_frame, pf_session_free,
-    pf_session_hit_valve, pf_session_last_error, pf_session_new, pf_session_telemetry,
-    pf_session_toggle_valve,
+    PF_ABI_VERSION, PF_ERR_MODEL, PF_HAS_STROKE, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog,
+    PfFrame, PfInk, PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_advance,
+    pf_session_build_frame, pf_session_catalog, pf_session_free, pf_session_hit_valve,
+    pf_session_last_error, pf_session_new, pf_session_preview, pf_session_restart,
+    pf_session_telemetry, pf_session_toggle_valve,
 };
 
 fn session() -> *mut PfSession {
@@ -168,4 +169,114 @@ fn a_null_session_is_refused_instead_of_crashing() {
     );
     // SAFETY: freeing null is documented as a no-op.
     unsafe { pf_session_free(ptr::null_mut()) };
+}
+
+#[test]
+fn the_catalog_lists_every_component_in_a_stable_order() {
+    let session = session();
+    let mut catalog = PfCatalog::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_catalog(session, &raw mut catalog) },
+        PF_OK
+    );
+    assert!(
+        catalog.items_len >= 5,
+        "the built-in catalog has five definitions"
+    );
+
+    // SAFETY: both slices were produced by the call above and the session is alive.
+    let (items, text) = unsafe {
+        (
+            std::slice::from_raw_parts(catalog.items, catalog.items_len as usize),
+            std::slice::from_raw_parts(catalog.text, catalog.text_len as usize),
+        )
+    };
+    let field = |at: u32, len: u32| -> String {
+        let start = at as usize;
+        let end = start + len as usize;
+        text.get(start..end).map_or_else(String::new, |bytes| {
+            String::from_utf8_lossy(bytes).into_owned()
+        })
+    };
+
+    let mut previous: Option<(u32, String)> = None;
+    let mut found_valve = false;
+    for item in items {
+        let id = field(item.id_at, item.id_len);
+        assert!(!id.is_empty(), "a catalog entry without an id");
+        assert!(!field(item.name_at, item.name_len).is_empty());
+        if id == "valve.3_2.spring_return" {
+            found_valve = true;
+        }
+        if let Some((category, previous_id)) = previous {
+            assert!(
+                (item.category, id.as_str()) >= (category, previous_id.as_str()),
+                "the sidebar order must be stable: {id} came after {previous_id}"
+            );
+        }
+        previous = Some((item.category, id));
+    }
+    assert!(found_valve, "the 3/2 valve must reach the sidebar");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_sidebar_entry_is_drawn_with_its_own_symbol() {
+    let session = session();
+    let mut frame = PfFrame::default();
+    // SAFETY: live session, writable output.
+    let code = unsafe { pf_session_preview(session, 0, 40.0, 40.0, 3.0, &raw mut frame) };
+    assert_eq!(code, PF_OK);
+    assert!(frame.calls_len > 2, "a symbol is more than one primitive");
+    // SAFETY: the pointers come from the call above.
+    let calls = unsafe { std::slice::from_raw_parts(frame.calls, frame.calls_len as usize) };
+    assert!(
+        calls.iter().any(|call| (call.flags & PF_HAS_STROKE) != 0),
+        "a symbol has at least one stroked primitive"
+    );
+    // An index that does not exist is refused, not indexed.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_preview(session, 99, 40.0, 40.0, 3.0, &raw mut frame) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn restart_returns_the_model_to_zero() {
+    let session = session();
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_valve(session) }, PF_OK);
+    for _ in 0..100 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.002) }, PF_OK);
+    }
+    let mut moved = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut moved) },
+        PF_OK
+    );
+    assert!(moved.time_s > 0.0);
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_restart(session) }, PF_OK);
+    let mut fresh = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut fresh) },
+        PF_OK
+    );
+    assert!(fresh.time_s.abs() < 1.0e-12, "time must be back at zero");
+    assert!(
+        fresh.position_m.abs() < 1.0e-12,
+        "the piston must be back home"
+    );
+    assert_eq!(fresh.valve_position, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
 }

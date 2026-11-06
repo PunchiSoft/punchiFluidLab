@@ -23,8 +23,8 @@ pub use error::CatalogError;
 pub use lint::LintError;
 pub use schema::{
     Actuation, ActuatorKind, ActuatorPart, Behaviour, Category, ComponentDefinition, Connection,
-    Kinematics, LineClass, Origin, Port, PortRole, Primitive, PrimitiveKind, ReturnKind, ReturnPart,
-    SCHEMA_MIN, SCHEMA_VERSION, Side, SpringPart, ValvePosition,
+    Kinematics, LineClass, Origin, Port, PortRole, Primitive, PrimitiveKind, ReturnKind,
+    ReturnPart, SCHEMA_MIN, SCHEMA_VERSION, Side, SpringPart, ValvePosition,
 };
 
 /// Environment variable that points the application at another catalog folder.

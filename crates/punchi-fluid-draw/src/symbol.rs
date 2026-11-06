@@ -422,7 +422,6 @@ pub fn draw_actuator(
     let (edge, out) = axis(body, side);
     let along = (-out.y, out.x);
     let step = body.height().min(body.width()) * 0.1;
-    let stroke = Stroke::new(width, colour);
     let reach = step * 2.0;
 
     let p = |a: f32, b: f32| {
@@ -431,71 +430,18 @@ pub fn draw_actuator(
             edge.y + out.y * a + along.1 * b,
         )
     };
-    let heavy = Stroke::new(width * 2.2, colour);
 
     match kind {
-        ActuatorKind::Lever => {
-            let (grip_a, grip_b) = (reach * 1.6, -step * 1.6);
-            surface.line(&[edge, p(reach, 0.0), p(grip_a, grip_b)], stroke);
-            surface.line(&[p(grip_a, grip_b - step * 0.6), p(grip_a, grip_b + step * 1.0)], heavy);
-        }
+        ActuatorKind::Lever => draw_lever(surface, edge, &p, reach, step, colour, width, false),
         ActuatorKind::LeverDetent => {
-            // The same lever, with the catch that keeps it where it is put: a bar across
-            // the stem and a hook that only lets it move one way.
-            let (grip_a, grip_b) = (reach * 1.6, -step * 1.6);
-            surface.line(&[edge, p(reach, 0.0), p(grip_a, grip_b)], stroke);
-            surface.line(&[p(grip_a, grip_b - step * 0.6), p(grip_a, grip_b + step * 1.0)], heavy);
-            surface.line(
-                &[p(step * 0.7, -step * 0.9), p(step * 0.7, step * 0.9)],
-                Stroke::new(width * 1.4, colour),
-            );
-            surface.line(&[p(step * 0.7, step * 0.9), p(step * 0.2, step * 1.3)], stroke);
+            draw_lever(surface, edge, &p, reach, step, colour, width, true);
         }
-        ActuatorKind::PushButton => {
-            surface.line(&[edge, p(reach, 0.0)], stroke);
-            surface.line(
-                &[p(reach, -step * 1.6), p(reach, step * 1.6)],
-                Stroke::new(width * 2.4, colour),
-            );
-        }
+        ActuatorKind::PushButton => draw_push_button(surface, edge, &p, reach, step, colour, width),
         ActuatorKind::MushroomButton => {
-            // A stem with a dome on it: the head a palm presses, not a finger.
-            surface.line(&[edge, p(reach, 0.0)], stroke);
-            let half = step * 1.3;
-            let mut dome = Vec::with_capacity(9);
-            for index in 0..=8 {
-                #[allow(clippy::cast_precision_loss)]
-                let fraction = index as f32 / 8.0;
-                let bulge = (std::f32::consts::PI * fraction).sin() * step * 0.9;
-                dome.push(p(reach + bulge, -half + 2.0 * half * fraction));
-            }
-            surface.line(&dome, stroke);
-            surface.line(&[p(reach, -half), p(reach, half)], Stroke::new(width * 1.4, colour));
+            draw_mushroom(surface, edge, &p, reach, step, colour, width);
         }
-        ActuatorKind::Pedal => {
-            // A plate on an arm: the foot presses along the arm, not across it.
-            surface.line(&[edge, p(reach, 0.0)], stroke);
-            surface.line(
-                &[p(reach, -step * 1.2), p(reach * 1.5, step * 1.2)],
-                Stroke::new(width * 2.0, colour),
-            );
-        }
-        ActuatorKind::Plunger => {
-            // A tappet: the stem ends in a small square head, straight, with nothing to
-            // grip and nothing to press by hand.
-            surface.line(&[edge, p(reach, 0.0)], stroke);
-            let head = step * 0.5;
-            surface.polygon(
-                &[
-                    p(reach - head, -head),
-                    p(reach - head, head),
-                    p(reach + head, head),
-                    p(reach + head, -head),
-                ],
-                None,
-                Some(stroke),
-            );
-        }
+        ActuatorKind::Pedal => draw_pedal(surface, edge, &p, reach, step, colour, width),
+        ActuatorKind::Plunger => draw_plunger(surface, edge, &p, reach, step, colour, width),
         ActuatorKind::Roller => draw_roller(surface, &p, reach, step, colour, width, false),
         ActuatorKind::RollerOneWay => draw_roller(surface, &p, reach, step, colour, width, true),
         ActuatorKind::Pilot => draw_pressure_line(surface, &p, reach, step, colour, width, false),
@@ -508,28 +454,180 @@ pub fn draw_actuator(
             // The winding box with the small pilot valve it drives: the actuation is
             // electrical, and the arrow shows that air does the pushing.
             let box_near = step * 2.4;
-            draw_winding_box(surface, &p, box_near, box_near + step * 2.2, step * 1.2, colour, width);
+            draw_winding_box(
+                surface,
+                &p,
+                box_near,
+                box_near + step * 2.2,
+                step * 1.2,
+                colour,
+                width,
+            );
             draw_pressure_line(surface, &p, step * 1.6, step * 0.8, colour, width, false);
         }
         ActuatorKind::Motor => {
-            let radius = step * 1.1;
-            let centre = p(step * 0.4 + radius, 0.0);
-            surface.line(&[edge, p(step * 0.4, 0.0)], stroke);
-            surface.circle(centre, radius, None, Some(stroke));
-            // An `M` inside the circle: the standard's mark for a motor, drawn as a line
-            // so it scales with the symbol instead of with a font.
-            let arm = radius * 0.55;
-            let m = [
-                Pt::new(centre.x + out.x * arm - along.0 * arm, centre.y + out.y * arm - along.1 * arm),
-                Pt::new(centre.x + out.x * arm, centre.y + out.y * arm),
-                Pt::new(centre.x + out.x * arm * 0.1, centre.y + out.y * arm * 0.1),
-                Pt::new(centre.x - out.x * arm, centre.y - out.y * arm),
-                Pt::new(centre.x - out.x * arm + along.0 * arm, centre.y - out.y * arm + along.1 * arm),
-            ];
-            surface.line(&m, Stroke::new(width * 0.9, colour));
+            draw_motor(surface, edge, &p, reach, step, colour, width, out, along);
         }
     }
-    let _ = stroke;
+}
+
+/// A lever at the end of the stem, with the catch that holds it where it is put.
+#[allow(clippy::too_many_arguments)]
+fn draw_lever(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+    detent: bool,
+) {
+    let stroke = Stroke::new(width, colour);
+    let (grip_a, grip_b) = (reach * 1.6, -step * 1.6);
+    surface.line(&[edge, p(reach, 0.0), p(grip_a, grip_b)], stroke);
+    surface.line(
+        &[
+            p(grip_a, grip_b - step * 0.6),
+            p(grip_a, grip_b + step * 1.0),
+        ],
+        Stroke::new(width * 2.2, colour),
+    );
+    if detent {
+        // The catch keeps the spool where it is left: a bar across the stem and a hook
+        // that only lets it move one way.
+        surface.line(
+            &[p(step * 0.7, -step * 0.9), p(step * 0.7, step * 0.9)],
+            Stroke::new(width * 1.4, colour),
+        );
+        surface.line(
+            &[p(step * 0.7, step * 0.9), p(step * 0.2, step * 1.3)],
+            stroke,
+        );
+    }
+}
+
+/// A stem ending in a bar the finger presses.
+fn draw_push_button(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    surface.line(&[edge, p(reach, 0.0)], Stroke::new(width, colour));
+    surface.line(
+        &[p(reach, -step * 1.6), p(reach, step * 1.6)],
+        Stroke::new(width * 2.4, colour),
+    );
+}
+
+/// A stem with a dome on it: the head a palm presses, not a finger.
+fn draw_mushroom(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    let stroke = Stroke::new(width, colour);
+    surface.line(&[edge, p(reach, 0.0)], stroke);
+    let half = step * 1.3;
+    let mut dome = Vec::with_capacity(9);
+    for index in 0..=8 {
+        #[allow(clippy::cast_precision_loss)]
+        let fraction = index as f32 / 8.0;
+        let bulge = (std::f32::consts::PI * fraction).sin() * step * 0.9;
+        dome.push(p(reach + bulge, -half + 2.0 * half * fraction));
+    }
+    surface.line(&dome, stroke);
+    surface.line(
+        &[p(reach, -half), p(reach, half)],
+        Stroke::new(width * 1.4, colour),
+    );
+}
+
+/// A plate on an arm: the foot presses along the arm, not across it.
+fn draw_pedal(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    surface.line(&[edge, p(reach, 0.0)], Stroke::new(width, colour));
+    surface.line(
+        &[p(reach, -step * 1.2), p(reach * 1.5, step * 1.2)],
+        Stroke::new(width * 2.0, colour),
+    );
+}
+
+/// A tappet: a small square head, with nothing to grip and nothing to press by hand.
+fn draw_plunger(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    let stroke = Stroke::new(width, colour);
+    surface.line(&[edge, p(reach, 0.0)], stroke);
+    let head = step * 0.5;
+    surface.polygon(
+        &[
+            p(reach - head, -head),
+            p(reach - head, head),
+            p(reach + head, head),
+            p(reach + head, -head),
+        ],
+        None,
+        Some(stroke),
+    );
+}
+
+/// A circle with an `M` in it: the standard's mark for a motor.
+#[allow(clippy::too_many_arguments)]
+fn draw_motor(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    _reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+    out: Pt,
+    along: (f32, f32),
+) {
+    let stroke = Stroke::new(width, colour);
+    let radius = step * 1.1;
+    let centre = p(step * 0.4 + radius, 0.0);
+    surface.line(&[edge, p(step * 0.4, 0.0)], stroke);
+    surface.circle(centre, radius, None, Some(stroke));
+    // The `M` is drawn as lines rather than as text, so it scales with the symbol instead
+    // of with a font.
+    let arm = radius * 0.55;
+    let m = [
+        Pt::new(
+            centre.x + out.x * arm - along.0 * arm,
+            centre.y + out.y * arm - along.1 * arm,
+        ),
+        Pt::new(centre.x + out.x * arm, centre.y + out.y * arm),
+        Pt::new(centre.x + out.x * arm * 0.1, centre.y + out.y * arm * 0.1),
+        Pt::new(centre.x - out.x * arm, centre.y - out.y * arm),
+        Pt::new(
+            centre.x - out.x * arm + along.0 * arm,
+            centre.y - out.y * arm + along.1 * arm,
+        ),
+    ];
+    surface.line(&m, Stroke::new(width * 0.9, colour));
 }
 
 /// Roller on the valve, optionally the kind that acts in one direction only.
@@ -661,9 +759,16 @@ pub fn draw_return(
             // the notch is the catch, so it can never be read as a push button.
             let stroke = Stroke::new(width, colour);
             let bar = step * 1.2;
-            surface.line(&[p(bar, -step * 1.1), p(bar, step * 1.1)], Stroke::new(width * 1.6, colour));
             surface.line(
-                &[p(bar, -step * 0.4), p(bar - step * 0.7, 0.0), p(bar, step * 0.4)],
+                &[p(bar, -step * 1.1), p(bar, step * 1.1)],
+                Stroke::new(width * 1.6, colour),
+            );
+            surface.line(
+                &[
+                    p(bar, -step * 0.4),
+                    p(bar - step * 0.7, 0.0),
+                    p(bar, step * 0.4),
+                ],
                 stroke,
             );
         }
@@ -983,7 +1088,10 @@ pub fn draw_cylinder(
         Stroke::new(LINE * 1.4, ink.line),
     );
 
-    if definition.resolved_return().is_some_and(|part| part.kind == ReturnKind::Spring) {
+    if definition
+        .resolved_return()
+        .is_some_and(|part| part.kind == ReturnKind::Spring)
+    {
         draw_cylinder_spring(
             surface,
             piston_x,
@@ -1470,11 +1578,8 @@ mod tests {
             match call {
                 crate::surface::Call::Line { points: line, .. }
                 | crate::surface::Call::Polygon { points: line, .. } => points.extend(line),
-                crate::surface::Call::Circle { centre, radius, .. } => {
-                    points.push(Pt::new(centre.x - radius, centre.y - radius));
-                    points.push(Pt::new(centre.x + radius, centre.y + radius));
-                }
-                crate::surface::Call::Arc { centre, radius, .. } => {
+                crate::surface::Call::Circle { centre, radius, .. }
+                | crate::surface::Call::Arc { centre, radius, .. } => {
                     points.push(Pt::new(centre.x - radius, centre.y - radius));
                     points.push(Pt::new(centre.x + radius, centre.y + radius));
                 }
@@ -1495,11 +1600,7 @@ mod tests {
         for kind in ActuatorKind::ALL {
             let mut recording = Recording::default();
             draw_actuator(&mut recording, body, *kind, Side::Left, Colour::BLACK, LINE);
-            assert!(
-                !recording.is_empty(),
-                "{} draws nothing",
-                kind.name_es()
-            );
+            assert!(!recording.is_empty(), "{} draws nothing", kind.name_es());
             // A glyph belongs outside the body: the body is the renderer's own box and a
             // part drawn across its edge would collide with a square.
             for point in touched(recording.calls()) {
@@ -1555,7 +1656,14 @@ mod tests {
         let mut shapes: Vec<(ReturnKind, Vec<crate::surface::Call>)> = Vec::new();
         for kind in ReturnKind::ALL {
             let mut recording = Recording::default();
-            draw_return(&mut recording, body, *kind, Side::Right, Colour::BLACK, LINE);
+            draw_return(
+                &mut recording,
+                body,
+                *kind,
+                Side::Right,
+                Colour::BLACK,
+                LINE,
+            );
             assert!(!recording.is_empty(), "{} draws nothing", kind.name_es());
             for point in touched(recording.calls()) {
                 assert!(

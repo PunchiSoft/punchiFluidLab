@@ -272,7 +272,8 @@ impl ReturnKind {
     }
 
     /// Every kind, in the order the reference sheet shows them.
-    pub const ALL: &'static [Self] = &[Self::Spring, Self::Pneumatic, Self::Hydraulic, Self::Detent];
+    pub const ALL: &'static [Self] =
+        &[Self::Spring, Self::Pneumatic, Self::Hydraulic, Self::Detent];
 
     /// `true` when the part pushes the spool back on its own.
     #[must_use]
