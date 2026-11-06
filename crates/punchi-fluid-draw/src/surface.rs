@@ -429,6 +429,14 @@ impl Surface for Recording {
     }
 }
 
+/// Shortest step the dash walk takes, in millimetres.
+///
+/// Neither `dash + gap` nor the phases it produces are representable in binary, so a step
+/// can round to zero. Without a floor the walk never advances: it keeps appending the same
+/// point until the process runs out of memory. A step this short is invisible at any scale,
+/// so nudging the phase past the boundary is lossless.
+const DASH_STEP_FLOOR: f32 = 1.0e-4;
+
 /// Splits a polyline into the solid segments of a dashed pattern.
 ///
 /// Dashing is done once here, in drawing millimetres, so the screen and the paper
@@ -455,7 +463,15 @@ pub fn dashes(points: &[Pt], pattern: Option<(f32, f32)>) -> Vec<Vec<Pt>> {
         }
         let (ux, uy) = (dx / length, dy / length);
         let mut travelled = 0.0_f32;
+        // The most boundaries a segment of this length can hold, with slack. The bound
+        // turns any future defect of the same kind into a slightly wrong drawing instead
+        // of an allocation that takes the machine with it.
+        let mut budget = (length / period).ceil() * 4.0 + 16.0;
         while travelled < length {
+            if budget <= 0.0 {
+                break;
+            }
+            budget -= 1.0;
             let phase = position % period;
             let in_dash = phase < dash;
             let remaining = if in_dash {
@@ -464,6 +480,10 @@ pub fn dashes(points: &[Pt], pattern: Option<(f32, f32)>) -> Vec<Vec<Pt>> {
                 period - phase
             };
             let step = remaining.min(length - travelled);
+            if step <= DASH_STEP_FLOOR {
+                position += DASH_STEP_FLOOR;
+                continue;
+            }
             let from = Pt::new(pair[0].x + ux * travelled, pair[0].y + uy * travelled);
             let to = Pt::new(
                 pair[0].x + ux * (travelled + step),
