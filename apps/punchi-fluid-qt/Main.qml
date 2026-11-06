@@ -33,6 +33,10 @@ Window {
         onActivated: session.toggleRunning()
     }
     Shortcut {
+        sequence: "F10"
+        onActivated: session.stepForward()
+    }
+    Shortcut {
         sequence: "Ctrl+R"
         onActivated: session.restart()
     }
@@ -44,7 +48,7 @@ Window {
         interval: 16
         running: session.running && !session.settled
         repeat: true
-        onTriggered: session.advance(0.016 * session.speed)
+        onTriggered: session.advance(session.frameSeconds * session.speed)
     }
 
     Column {
@@ -99,7 +103,7 @@ Window {
             hint: sidebar.selectedName.length > 0
                   ? qsTr("Elegido en el catálogo: %1 — colocarlo en el lienzo llega en M3")
                         .arg(sidebar.selectedName)
-                  : qsTr("Espacio acciona la válvula · F5 reproduce o pausa · Ctrl+R reinicia")
+                  : qsTr("Espacio acciona la válvula · F5 reproduce o pausa · F10 un paso · Ctrl+R reinicia")
         }
     }
 }

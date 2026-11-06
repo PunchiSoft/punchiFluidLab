@@ -70,6 +70,19 @@ public:
     double speed() const { return m_speed; }
     void setSpeed(double speed);
 
+    /// Simulated seconds one frame advances, before the speed is applied.
+    ///
+    /// A step-by-step advance uses this same number, so a step is exactly what playing
+    /// would have done in one frame — the two modes cannot diverge.
+    static constexpr double kFrameSeconds = 0.016;
+    Q_PROPERTY(double frameSeconds READ frameSeconds CONSTANT)
+    /// One frame of simulated time at the current speed.
+    double frameSeconds() const { return kFrameSeconds; }
+
+    /// Advances exactly one frame and leaves the transport paused, the way a simulator's
+    /// step button behaves.
+    Q_INVOKABLE void stepForward();
+
     /// `true` when the last frames left the state unchanged: the sheet loop can stop.
     ///
     /// Without this the window repaints a CPU-rasterised item sixty times a second
@@ -110,7 +123,10 @@ signals:
     void speedChanged();
 
 private:
-    void refresh();
+    /// Republishes the telemetry. `forced` repaints even when nothing moved, which is
+    /// what a single step must do.
+    void refresh(bool forced = false);
+    void advanceInternal(double dt, bool forced);
     void readCatalog();
 
     PfSession *m_session = nullptr;

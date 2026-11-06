@@ -6,6 +6,37 @@ publicación.
 
 ## Unreleased
 
+### Transporte de simulación: iniciar, pausar, paso a paso y reiniciar — 2026-11-06
+
+El botón de reproducir ya no era un conmutador suelto: el transporte tiene ahora los cuatro
+comandos de la aplicación de referencia, siempre visibles a la derecha de las pestañas.
+
+- **`▶ Reproducir` · `⏸ Pausa` · `⏭ Paso` · `↺ Reiniciar`**. Iniciar y pausar solo están
+  disponibles en el estado en que significan algo, y la pista dice por qué cuando no
+  ("ya está en marcha", "ya está en pausa"): un botón gris tiene que explicarse.
+- **Un paso es exactamente un cuadro**: `FluidSession::stepForward()` avanza
+  `frameSeconds × velocidad`, el mismo número que usa el bucle de animación, así que el
+  modo paso a paso y la reproducción continua no pueden divergir. `frameSeconds` es una
+  constante de la sesión y el temporizador de QML la lee, en vez de repetir `0,016`.
+- **Un paso siempre deja el transporte en pausa**, como el botón de paso de un simulador;
+  un paso dado mientras corre haría competir los dos modos. Además fuerza el repintado
+  aunque el modelo estuviera en reposo, porque el usuario lo ha pedido.
+- **El estado deja de ser solo color**: el transporte escribe `en marcha · t 0,19 s`, y la
+  barra de estado mantiene las lecturas.
+- **`F10` da un paso**; `F5` reproduce o pausa; `Ctrl+R` reinicia; `Espacio` acciona la
+  válvula. La pista de cada botón nombra su atajo.
+- En la pestaña Simular, el grupo **Paso a paso** ofrece `Paso` y `Animar` en tamaño
+  grande, y el icono de la válvula pasa a ser el de invertir, que es lo que hace.
+
+#### Verificación
+
+- Capturas fuera de pantalla: en pausa con `t 0,16 s` tras diez pasos sin accionar, y
+  accionada con `t 0,19 s` tras doce pasos, con el cilindro al 100 % y 2,6 bar — el modelo
+  avanza de verdad, un cuadro por pulsación.
+- `--report-paints 4` en reposo: **1 repintado**; el paso no reactiva el bucle.
+- `./scripts-dev/test.sh --no-build`: 134 pruebas en verde.
+
+
 ### Cinta con grupos, iconos del escritorio y transporte — 2026-11-06
 
 La cinta pasa de ser una fila de botones a la forma de un ribbon de escritorio: pestañas

@@ -80,7 +80,23 @@ void FluidSession::setSpeed(double speed)
     emit speedChanged();
 }
 
+void FluidSession::stepForward()
+{
+    if (!m_session) {
+        return;
+    }
+    // A step is taken from a pause, so the display does not lurch on while the user is
+    // pressing it, and it always repaints even if the model had settled.
+    setRunning(false);
+    advanceInternal(kFrameSeconds * m_speed, true);
+}
+
 void FluidSession::advance(double dt)
+{
+    advanceInternal(dt, false);
+}
+
+void FluidSession::advanceInternal(double dt, bool forced)
 {
     if (!m_session || pf_session_advance(m_session, dt) != PF_OK) {
         const char *message = m_session ? pf_session_last_error(m_session) : nullptr;
@@ -89,7 +105,7 @@ void FluidSession::advance(double dt)
         }
         return;
     }
-    refresh();
+    refresh(forced);
 }
 
 void FluidSession::toggleValve()
@@ -124,7 +140,7 @@ void FluidSession::restart()
     refresh();
 }
 
-void FluidSession::refresh()
+void FluidSession::refresh(bool forced)
 {
     if (!m_session) {
         return;
@@ -140,7 +156,7 @@ void FluidSession::refresh()
                        && std::abs(telemetry.velocity_m_s - m_telemetry.velocity_m_s) < 1.0e-6
                        && std::abs(telemetry.pressure_pa - m_telemetry.pressure_pa) < 1.0
                        && telemetry.valve_position == m_telemetry.valve_position;
-    if (still) {
+    if (still && !forced) {
         // Nothing visible moved: no repaint, and after half a second of stillness the
         // caller stops stepping altogether.
         if (++m_steadyFrames > 30 && !m_settled) {

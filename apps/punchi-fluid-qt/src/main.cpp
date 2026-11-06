@@ -165,11 +165,36 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (arguments.contains(QStringLiteral("--toggle"))) {
+    const auto sessions = [&engine]() {
+        QList<FluidSession *> found;
         for (QObject *root : engine.rootObjects()) {
-            const auto sessions = root->findChildren<FluidSession *>();
-            for (FluidSession *session : sessions) {
-                session->toggleValve();
+            found += root->findChildren<FluidSession *>();
+        }
+        return found;
+    };
+
+    if (arguments.contains(QStringLiteral("--toggle"))) {
+        for (FluidSession *session : sessions()) {
+            session->toggleValve();
+        }
+    }
+    if (arguments.contains(QStringLiteral("--pause"))) {
+        for (FluidSession *session : sessions()) {
+            session->setRunning(false);
+        }
+    }
+    const QString steps = value(QStringLiteral("--step"));
+    if (!steps.isEmpty()) {
+        bool ok = false;
+        const int count = steps.toInt(&ok);
+        if (!ok || count < 0) {
+            std::fprintf(stderr, "--step takes a non-negative count, not \"%s\"\n",
+                         qUtf8Printable(steps));
+            return 2;
+        }
+        for (FluidSession *session : sessions()) {
+            for (int i = 0; i < count; ++i) {
+                session->stepForward();
             }
         }
     }

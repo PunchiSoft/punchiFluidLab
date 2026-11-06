@@ -82,8 +82,17 @@ collapsed menu are generated from it, so they cannot drift apart.
 | **Ver** | Rejilla, Imán a rejilla, Imán a puertos, Zoom (−, %, +), Ajustar a ventana, Tema (sistema/claro/oscuro), Panel lateral, Barra de estado |
 | **Simular** | Reproducir, Pausa, Paso, Reiniciar, Velocidad (0,05×–1×), Modo edición/simulación |
 
-The transport (`▶ ⏸ ⟲`) is always visible to the right of the tabs: running the model
-is the most frequent action and must never need a tab switch.
+The transport (`▶ ⏸ ⏭ ⟲` — start, pause, step, reset) is always visible to the right of
+the tabs: running the model is the most frequent action and must never need a tab switch.
+
+- **A step is one frame**: the same number of simulated seconds that playing would have
+  advanced, so step-by-step and continuous play cannot diverge.
+- **A step pauses the transport**, as a simulator's step button does. Stepping while
+  running would make the two modes race each other.
+- Start and pause are each available only in the state where they mean something, and the
+  hint says why when they are not ("ya está en marcha", "ya está en pausa"). The transport
+  also shows the state and the simulated time, so the answer to "is it running" is never
+  colour alone.
 
 Rules:
 

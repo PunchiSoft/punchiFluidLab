@@ -55,8 +55,14 @@ Rectangle {
                 {
                     title: qsTr("Válvula"),
                     items: [
-                        { id: "valve", label: qsTr("Accionar"), icon: "media-playback-start", hint: qsTr("Espacio"), big: true },
-                        { id: "restart", label: qsTr("Reiniciar"), icon: "view-refresh", hint: qsTr("vuelve a t = 0"), big: true }
+                        { id: "valve", label: qsTr("Accionar"), icon: "object-flip-horizontal", hint: qsTr("Espacio · cambia de posición"), big: true }
+                    ]
+                },
+                {
+                    title: qsTr("Paso a paso"),
+                    items: [
+                        { id: "step", label: qsTr("Paso"), icon: "media-seek-forward", hint: qsTr("F10 · un cuadro y se queda en pausa"), big: true },
+                        { id: "run", label: qsTr("Animar"), icon: "media-playback-start", hint: qsTr("F5 · reproduce o pausa"), big: true }
                     ]
                 },
                 {
@@ -78,6 +84,10 @@ Rectangle {
             session.toggleValve();
         } else if (id === "restart") {
             session.restart();
+        } else if (id === "step") {
+            session.stepForward();
+        } else if (id === "run") {
+            session.toggleRunning();
         } else if (id === "speed025") {
             session.speed = 0.25;
         } else if (id === "speed1") {
@@ -179,6 +189,10 @@ Rectangle {
         }
 
         // ---- transport, always visible ---------------------------------------
+        // Start, pause, step, reset: the four commands of a simulation transport. Start and
+        // pause are each available only in the state where they mean something, and the
+        // hint says why when they are not — a grey button is only acceptable when it
+        // explains itself.
         Row {
             anchors.right: parent.right
             anchors.rightMargin: 8
@@ -187,18 +201,41 @@ Rectangle {
 
             RibbonButton {
                 session: ribbon.session
-                label: session.running ? qsTr("Pausa") : qsTr("Reproducir")
-                iconName: session.running ? "media-playback-pause" : "media-playback-start"
-                hint: qsTr("F5")
+                label: qsTr("Reproducir")
+                iconName: "media-playback-start"
+                hint: session.running ? qsTr("ya está en marcha") : qsTr("F5 · animar el modelo")
                 large: false
-                onTriggered: session.toggleRunning()
+                tone: session.running ? "muted" : "accent"
+                available: !session.running
+                onTriggered: session.setRunning(true)
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Pausa")
+                iconName: "media-playback-pause"
+                hint: session.running ? qsTr("F5 · detener el modelo donde está")
+                                         : qsTr("ya está en pausa")
+                large: false
+                available: session.running
+                onTriggered: session.setRunning(false)
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Paso")
+                iconName: "media-seek-forward"
+                hint: qsTr("F10 · un cuadro de %1 s y se queda en pausa")
+                          .arg((session.frameSeconds * session.speed).toFixed(3))
+                large: false
+                onTriggered: session.stepForward()
             }
 
             RibbonButton {
                 session: ribbon.session
                 label: qsTr("Reiniciar")
                 iconName: "view-refresh"
-                hint: qsTr("Ctrl+R")
+                hint: qsTr("Ctrl+R · vuelve a t = 0")
                 large: false
                 onTriggered: session.restart()
             }
@@ -213,7 +250,8 @@ Rectangle {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 4
-                text: session.running ? qsTr("en marcha") : qsTr("en pausa")
+                text: (session.running ? qsTr("en marcha") : qsTr("en pausa"))
+                      + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2))
                 color: session.muted
                 font.pixelSize: 11
             }
