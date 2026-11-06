@@ -30,6 +30,7 @@ FluidSession::FluidSession(QObject *parent)
         m_error = QStringLiteral("the core refused to create a session");
         return;
     }
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
     readCatalog();
     loadTheme();
     refresh();
@@ -108,7 +109,50 @@ void FluidSession::advanceInternal(double dt, bool forced)
     refresh(forced);
 }
 
-void FluidSession::toggleValve()
+void FluidSession::setEditing(bool editing)
+{
+    if (m_editing == editing) {
+        return;
+    }
+    m_editing = editing;
+    if (editing) {
+        // Entering the editor stops the animation: a model that keeps running while the
+        // user edits is a model that moves under their hands.
+        setRunning(false);
+        m_steadyFrames = 0;
+        if (m_settled) {
+            m_settled = false;
+            emit settledChanged();
+        }
+    }
+    emit modeChanged();
+    emit changed();
+}
+
+void FluidSession::inspectValve()
+{
+    if (!m_session) {
+        return;
+    }
+    char buffer[1024] = {};
+    if (pf_session_describe_valve(m_session, buffer, sizeof(buffer)) < 0) {
+        return;
+    }
+    m_inspectorText = QString::fromUtf8(buffer);
+    m_inspectorOpen = true;
+    emit inspectorChanged();
+}
+
+void FluidSession::closeInspector()
+{
+    if (!m_inspectorOpen) {
+        return;
+    }
+    m_inspectorOpen = false;
+    emit inspectorChanged();
+}
+
+void FluidSession::pressValve()
 {
     if (!m_session) {
         return;
@@ -118,7 +162,21 @@ void FluidSession::toggleValve()
         m_settled = false;
         emit settledChanged();
     }
-    const int32_t code = pf_session_toggle_valve(m_session);
+    // A spring-return valve is only actuated while the gesture lasts; a latched one has no
+    // release to come back from, so the same gesture toggles it.
+    const int32_t code = m_valveSpringReturn ? pf_session_press_valve(m_session)
+                                             : pf_session_toggle_valve(m_session);
+    const char *message = pf_session_last_error(m_session);
+    m_error = (code == PF_OK || !message) ? QString() : QString::fromUtf8(message);
+    refresh();
+}
+
+void FluidSession::releaseValve()
+{
+    if (!m_session || !m_valveSpringReturn) {
+        return;
+    }
+    const int32_t code = pf_session_release_valve(m_session);
     const char *message = pf_session_last_error(m_session);
     m_error = (code == PF_OK || !message) ? QString() : QString::fromUtf8(message);
     refresh();

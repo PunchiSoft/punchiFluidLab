@@ -21,6 +21,9 @@ Item {
     property bool available: true
     /// Menu rows read left to right; a button in a group is centred on its own width.
     property bool leftAligned: false
+    /// The option this button represents is the one in force. The name still carries the
+    /// meaning; this only makes it visible at a glance.
+    property bool selected: false
 
     signal triggered()
 
@@ -42,7 +45,9 @@ Item {
         anchors.fill: parent
         anchors.margins: 1
         radius: 4
-        color: button.hovered || button.activeFocus ? session.panel : "transparent"
+        opacity: button.available ? 1 : 1
+        color: button.selected || button.hovered || button.activeFocus ? session.panel
+                                                                      : "transparent"
         border.width: button.activeFocus ? 1 : 0
         border.color: session.accent
     }

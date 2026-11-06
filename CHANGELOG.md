@@ -6,6 +6,38 @@ publicación.
 
 ## Unreleased
 
+### Modo edición y modo simulación, con el clic sobre la válvula — 2026-11-06
+
+El botón **Accionar** no existía en la aplicación de referencia y no tenía sentido: allí se
+interactúa con el símbolo. Se retira, y en su lugar entra lo que de verdad distingue a un
+simulador de esquemas: dos modos, y el mismo clic significando cosas distintas en cada uno.
+
+- **Modo Editar**: el clic sobre la válvula **abre sus propiedades**; el modelo queda
+  congelado y el transporte no está disponible, con la pista explicando por qué. El panel
+  muestra lo que dice el archivo —nombre, `id`, resumen, categoría, puertos, posiciones y
+  tipo de retorno— leído por `pf_session_describe_valve`, no un formulario inventado por la
+  interfaz.
+- **Modo Simular**: el clic **acciona** la válvula. La válvula del catálogo es de muelle, así
+  que se **mantiene pulsada**: el gesto se compone de `pf_session_press_valve` al bajar y
+  `pf_session_release_valve` al soltar, y el muelle devuelve la corredera. Una válvula sin
+  muelle se enclava; la interfaz pregunta `pf_session_valve_spring_return` en vez de
+  suponerlo.
+- **La válvula se anuncia**: el puntero cambia sobre ella y un anillo discontinuo, en el
+  color de acento, marca el área de impacto. El anillo se dibuja con `pf_session_valve_rect`,
+  el rectángulo real del núcleo, no con coordenadas adivinadas en C++.
+- El grupo **Modo** del ribbon muestra cuál está en vigor, y el estado del transporte dice
+  `edición` en lugar de `en pausa`.
+- `Espacio` mantiene la válvula igual que el puntero, y solo está armado en modo simulación.
+
+#### Verificación
+
+- Once pruebas del ABI: la nueva comprueba el gesto completo —con la válvula en posición 0,
+  pulsar la lleva a la 1 y soltar la devuelve a la 0— sobre el modelo real.
+- Capturas fuera de pantalla: modo edición con el panel de propiedades abierto, y válvula
+  mantenida con `t 0,19 s` y el cilindro al 100 % y 2,6 bar.
+- `./scripts-dev/test.sh`: 135 pruebas en verde, `clippy -D warnings` y `fmt --check` limpios.
+
+
 ### Transporte de simulación: iniciar, pausar, paso a paso y reiniciar — 2026-11-06
 
 El botón de reproducir ya no era un conmutador suelto: el transporte tiene ahora los cuatro

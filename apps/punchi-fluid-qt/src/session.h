@@ -28,6 +28,13 @@ class FluidSession : public QObject
     Q_PROPERTY(double velocityMmS READ velocityMmS NOTIFY changed)
     Q_PROPERTY(double timeS READ timeS NOTIFY changed)
     Q_PROPERTY(int valvePosition READ valvePosition NOTIFY changed)
+    Q_PROPERTY(bool valveSpringReturn READ valveSpringReturn NOTIFY changed)
+
+    /// `true` in edit mode: the animation does not run and a click opens properties
+    /// instead of actuating, which is the split a schematic editor has.
+    Q_PROPERTY(bool editing READ editing WRITE setEditing NOTIFY modeChanged)
+    Q_PROPERTY(bool inspectorOpen READ inspectorOpen NOTIFY inspectorChanged)
+    Q_PROPERTY(QString inspectorText READ inspectorText NOTIFY inspectorChanged)
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
 
@@ -103,8 +110,23 @@ public:
 
     /// Advances the model and republishes the telemetry.
     Q_INVOKABLE void advance(double dt);
-    /// Moves the valve to its other position.
-    Q_INVOKABLE void toggleValve();
+    /// The gesture that actuates the valve, as the schematic expects it: held while the
+    /// pointer or the key is down for a spring-return valve, latched for the others.
+    Q_INVOKABLE void pressValve();
+    Q_INVOKABLE void releaseValve();
+
+    /// `true` when the valve returns to rest on release, so the front end holds it.
+    bool valveSpringReturn() const { return m_valveSpringReturn; }
+
+    bool editing() const { return m_editing; }
+    void setEditing(bool editing);
+
+    bool inspectorOpen() const { return m_inspectorOpen; }
+    QString inspectorText() const { return m_inspectorText; }
+    /// Opens the properties of the valve: what the definition file says, not a form the
+    /// front end made up.
+    Q_INVOKABLE void inspectValve();
+    Q_INVOKABLE void closeInspector();
     /// Back to t = 0.
     Q_INVOKABLE void restart();
     /// Reads the desktop palette into the core. Called on start and on theme change.
@@ -117,6 +139,8 @@ public:
 
 signals:
     void changed();
+    void modeChanged();
+    void inspectorChanged();
     void catalogChanged();
     void settledChanged();
     void runningChanged();
@@ -132,6 +156,10 @@ private:
     PfSession *m_session = nullptr;
     PfTelemetry m_telemetry {};
     QString m_error;
+    bool m_valveSpringReturn = true;
+    bool m_editing = false;
+    bool m_inspectorOpen = false;
+    QString m_inspectorText;
     QVariantList m_catalog;
     ThemeTokens m_tokens;
     Contrast m_contrast;

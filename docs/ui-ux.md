@@ -124,6 +124,23 @@ their behaviour is a `behaviour` variant, not a special case in the sidebar.
 
 ### 3. The sheet
 
+**Two modes, and the click means something different in each.** This is the split a
+schematic simulator lives by, and the one the reference tool uses:
+
+| Mode | A click on the valve | The model |
+|---|---|---|
+| **Editar** | opens the properties of the component | frozen; the transport is unavailable and says why |
+| **Simular** | actuates the valve, and holds it while the button is down | runs when the transport runs |
+
+- A spring-return valve is **held**: press actuates it, release lets the spring return the
+  spool. A valve without a spring **latches** on press. The front end asks the model which
+  it is instead of guessing, because guessing makes a lever valve stay actuated after a
+  click.
+- The pointer changes over the valve and a dashed ring marks the hit area, in the accent
+  colour. An affordance nobody can see is not an affordance.
+- The properties panel shows **what the definition file says** — name, id, summary,
+  category, ports, positions and how the return works. Editing those values is M3.
+
 - Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
   The grid is a *guide*, not a background pattern to be proud of.
 - Two modes, visibly different:

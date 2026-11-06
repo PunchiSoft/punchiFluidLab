@@ -53,9 +53,10 @@ Rectangle {
             name: qsTr("Simular"),
             groups: [
                 {
-                    title: qsTr("Válvula"),
+                    title: qsTr("Modo"),
                     items: [
-                        { id: "valve", label: qsTr("Accionar"), icon: "object-flip-horizontal", hint: qsTr("Espacio · cambia de posición"), big: true }
+                        { id: "edit", label: qsTr("Editar"), icon: "document-properties", hint: qsTr("un clic sobre la válvula abre sus propiedades"), big: true, current: session.editing },
+                        { id: "simulate", label: qsTr("Simular"), icon: "media-playback-start", hint: qsTr("un clic sobre la válvula la acciona"), big: true, current: !session.editing }
                     ]
                 },
                 {
@@ -84,6 +85,11 @@ Rectangle {
             session.toggleValve();
         } else if (id === "restart") {
             session.restart();
+        } else if (id === "edit") {
+            session.editing = true;
+        } else if (id === "simulate") {
+            session.editing = false;
+            session.setRunning(true);
         } else if (id === "step") {
             session.stepForward();
         } else if (id === "run") {
@@ -203,10 +209,11 @@ Rectangle {
                 session: ribbon.session
                 label: qsTr("Reproducir")
                 iconName: "media-playback-start"
-                hint: session.running ? qsTr("ya está en marcha") : qsTr("F5 · animar el modelo")
+                hint: session.editing ? qsTr("entra en modo Simular")
+                                      : (session.running ? qsTr("ya está en marcha") : qsTr("F5 · animar el modelo"))
                 large: false
                 tone: session.running ? "muted" : "accent"
-                available: !session.running
+                available: !session.editing && !session.running
                 onTriggered: session.setRunning(true)
             }
 
@@ -214,10 +221,10 @@ Rectangle {
                 session: ribbon.session
                 label: qsTr("Pausa")
                 iconName: "media-playback-pause"
-                hint: session.running ? qsTr("F5 · detener el modelo donde está")
-                                         : qsTr("ya está en pausa")
+                hint: session.editing ? qsTr("entra en modo Simular")
+                                      : (session.running ? qsTr("F5 · detener el modelo donde está") : qsTr("ya está en pausa"))
                 large: false
-                available: session.running
+                available: !session.editing && session.running
                 onTriggered: session.setRunning(false)
             }
 
@@ -225,9 +232,11 @@ Rectangle {
                 session: ribbon.session
                 label: qsTr("Paso")
                 iconName: "media-seek-forward"
-                hint: qsTr("F10 · un cuadro de %1 s y se queda en pausa")
-                          .arg((session.frameSeconds * session.speed).toFixed(3))
+                hint: session.editing ? qsTr("entra en modo Simular")
+                                      : qsTr("F10 · un cuadro de %1 s y se queda en pausa")
+                                            .arg((session.frameSeconds * session.speed).toFixed(3))
                 large: false
+                available: !session.editing
                 onTriggered: session.stepForward()
             }
 
@@ -250,8 +259,10 @@ Rectangle {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 4
-                text: (session.running ? qsTr("en marcha") : qsTr("en pausa"))
-                      + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2))
+                text: session.editing
+                      ? qsTr("edición")
+                      : (session.running ? qsTr("en marcha") : qsTr("en pausa"))
+                        + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2))
                 color: session.muted
                 font.pixelSize: 11
             }
@@ -291,6 +302,7 @@ Rectangle {
                             iconName: modelData.icon || ""
                             hint: modelData.hint || ""
                             large: modelData.big === true
+                            selected: modelData.current === true
                             tone: "foreground"
                             onTriggered: ribbon.invoke(modelData.id)
                         }

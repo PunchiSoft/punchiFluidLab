@@ -20,8 +20,9 @@ use punchi_fluid::{
     PF_ABI_VERSION, PF_ERR_MODEL, PF_HAS_STROKE, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog,
     PfFrame, PfInk, PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_advance,
     pf_session_build_frame, pf_session_catalog, pf_session_free, pf_session_hit_valve,
-    pf_session_last_error, pf_session_new, pf_session_preview, pf_session_restart,
-    pf_session_telemetry, pf_session_toggle_valve,
+    pf_session_last_error, pf_session_new, pf_session_press_valve, pf_session_preview,
+    pf_session_release_valve, pf_session_restart, pf_session_telemetry, pf_session_toggle_valve,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -277,6 +278,45 @@ fn restart_returns_the_model_to_zero() {
         "the piston must be back home"
     );
     assert_eq!(fresh.valve_position, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_spring_valve_is_only_actuated_while_it_is_held() {
+    let session = session();
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_valve_spring_return(session) },
+        1,
+        "the built-in valve has a spring"
+    );
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    let mut held = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut held) },
+        PF_OK
+    );
+    assert_eq!(
+        held.valve_position, 1,
+        "holding the lever selects the other position"
+    );
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_release_valve(session) }, PF_OK);
+    let mut released = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut released) },
+        PF_OK
+    );
+    assert_eq!(
+        released.valve_position, 0,
+        "the spring returns the spool on release"
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

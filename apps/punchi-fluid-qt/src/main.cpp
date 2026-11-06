@@ -175,7 +175,17 @@ int main(int argc, char *argv[])
 
     if (arguments.contains(QStringLiteral("--toggle"))) {
         for (FluidSession *session : sessions()) {
-            session->toggleValve();
+            session->pressValve();
+        }
+    }
+    if (arguments.contains(QStringLiteral("--edit"))) {
+        for (FluidSession *session : sessions()) {
+            session->setEditing(true);
+        }
+    }
+    if (arguments.contains(QStringLiteral("--inspect"))) {
+        for (FluidSession *session : sessions()) {
+            session->inspectValve();
         }
     }
     if (arguments.contains(QStringLiteral("--pause"))) {

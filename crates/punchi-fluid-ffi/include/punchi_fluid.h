@@ -135,6 +135,11 @@ int32_t pf_session_set_ink(PfSession *session, const PfInk *ink);
 int32_t pf_session_advance(PfSession *session, double dt);
 int32_t pf_session_set_valve(PfSession *session, uint32_t position);
 int32_t pf_session_toggle_valve(PfSession *session);
+/* The press and release halves of holding the valve actuated. */
+int32_t pf_session_press_valve(PfSession *session);
+int32_t pf_session_release_valve(PfSession *session);
+/* `1` when the valve returns to rest on release, which decides the gesture. */
+int32_t pf_session_valve_spring_return(const PfSession *session);
 /* Back to t = 0, keeping the catalog and the ink. */
 int32_t pf_session_restart(PfSession *session);
 
@@ -149,8 +154,17 @@ int32_t pf_session_build_frame(PfSession *session, float width_mm, float height_
 /* `1` when the point falls on the valve of the last built frame. */
 int32_t pf_session_hit_valve(const PfSession *session, float x_mm, float y_mm);
 
+/* The valve's box of the last built frame, as x0 y0 x1 y1 in millimetres. */
+int32_t pf_session_valve_rect(const PfSession *session, float *out);
+
 /* `1` when the last built frame has a layout at all. */
 int32_t pf_session_has_layout(const PfSession *session);
+
+/*
+ * The valve's definition as NUL-terminated UTF-8 in `out`. Returns the bytes written, or a
+ * negative code when there is no model or the buffer is too small.
+ */
+int32_t pf_session_describe_valve(const PfSession *session, char *out, uint32_t capacity);
 
 /* The catalog in display order. The pointers borrow the session. */
 int32_t pf_session_catalog(const PfSession *session, PfCatalog *out);

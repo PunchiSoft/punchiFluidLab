@@ -33,6 +33,7 @@
 )]
 
 use std::ffi::{CStr, CString, c_char};
+use std::fmt::Write as _;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
@@ -644,6 +645,43 @@ impl PfSession {
         }
     }
 
+    /// The valve's definition as text, for the edit panel.
+    ///
+    /// The front end shows what the file says instead of a form it invented: name, id,
+    /// ports, positions and how the return works all come from the catalog.
+    fn describe_valve(&self) -> Option<String> {
+        let system = self.system.as_ref()?;
+        let definition = self.catalog.get(&system.valve().definition_id)?;
+        let mut out = String::new();
+        out.push_str(&definition.name);
+        out.push('\n');
+        out.push_str(&definition.id);
+        out.push('\n');
+        if let Some(summary) = definition.summary.as_deref() {
+            out.push_str(summary);
+            out.push('\n');
+        }
+        out.push('\n');
+        let _ = writeln!(out, "Categoría: {}", definition.category.as_str());
+        let ports: Vec<&str> = definition
+            .port
+            .iter()
+            .map(|port| port.id.as_str())
+            .collect();
+        let _ = writeln!(out, "Puertos: {}", ports.join(", "));
+        let _ = writeln!(
+            out,
+            "Posiciones: {}",
+            system.valve().position_names.join(", ")
+        );
+        out.push_str(if system.valve().spring_return {
+            "Retorno: muelle — solo queda accionada mientras se mantiene\n"
+        } else {
+            "Retorno: sin muelle — queda donde se deja\n"
+        });
+        Some(out)
+    }
+
     /// Back to `t = 0`, with the same catalog. The ink survives, because it is the
     /// desktop's and not the model's.
     fn restart(&mut self) -> i32 {
@@ -913,6 +951,120 @@ pub unsafe extern "C" fn pf_session_toggle_valve(session: *mut PfSession) -> i32
     })
 }
 
+/// Holds the valve actuated, the press half of a lever held down.
+///
+/// A spring-return valve is only actuated while the gesture lasts, so the front end holds
+/// this until the pointer or key is released and then calls
+/// [`pf_session_release_valve`].
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_press_valve(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.system.is_none() {
+            return session.fail("no model is loaded");
+        }
+        let Some(system) = session.system.as_mut() else {
+            return PF_ERR_MODEL;
+        };
+        system.press_valve();
+        PF_OK
+    })
+}
+
+/// The release half: the spring returns the spool, a latched valve stays where it is.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_release_valve(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.system.is_none() {
+            return session.fail("no model is loaded");
+        }
+        let Some(system) = session.system.as_mut() else {
+            return PF_ERR_MODEL;
+        };
+        system.release_valve();
+        PF_OK
+    })
+}
+
+/// `1` when the valve is held actuated by the gesture and returns on release.
+///
+/// The front end needs this to choose between press-and-hold and click-to-latch; guessing
+/// would make a lever valve stay actuated after a click, which it does not.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_valve_spring_return(session: *const PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return 0;
+        };
+        let Some(system) = session.system.as_ref() else {
+            return 0;
+        };
+        i32::from(system.valve().spring_return)
+    })
+}
+
+/// Writes the valve's definition into `out` as NUL-terminated UTF-8.
+///
+/// Returns the bytes written without the terminator, or a negative code when there is no
+/// model or the buffer is too small. Nothing is truncated silently: a short buffer is an
+/// error the caller can see.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_describe_valve(
+    session: *const PfSession,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(text) = session.describe_valve() else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = text.as_bytes();
+        let capacity = capacity as usize;
+        // A description longer than `i32::MAX` is not a description; the bound also makes
+        // the return value provably non-negative.
+        if capacity == 0 || bytes.len() + 1 > capacity || bytes.len() > i32::MAX as usize {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
 /// Rebuilds the frame for an area of `width_mm` × `height_mm`, at `pixels_per_mm`.
 ///
 /// The pointers in `out` borrow the session: they stay valid until the next call to this
@@ -967,6 +1119,38 @@ pub unsafe extern "C" fn pf_session_hit_valve(
             return 0;
         };
         i32::from(session.hit_valve(x_mm, y_mm))
+    })
+}
+
+/// The valve's box in millimetres of the last built frame, as `x0 y0 x1 y1`.
+///
+/// The front end draws its hover ring around this, so the affordance marks the real hit
+/// area instead of a rectangle the C++ side guessed.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// four writable floats.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_valve_rect(session: *const PfSession, out: *mut f32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(layout) = session.layout else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised four writable floats.
+        let target = unsafe { std::slice::from_raw_parts_mut(out, 4) };
+        target[0] = layout.valve.min.x;
+        target[1] = layout.valve.min.y;
+        target[2] = layout.valve.max.x;
+        target[3] = layout.valve.max.y;
+        PF_OK
     })
 }
 
