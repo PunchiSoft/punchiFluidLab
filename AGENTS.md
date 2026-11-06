@@ -165,8 +165,15 @@ tooling, never a runtime dependency).
 ./scripts-dev/check.sh
 ```
 
+Builds run with two cargo jobs and every test binary under a memory ceiling derived from
+this machine, because a single runaway allocation has taken the whole session down before.
+The profile is [.cargo/config.toml](.cargo/config.toml) and
+[scripts-dev/limits.sh](scripts-dev/limits.sh); the procedure for diagnosing a kill is
+[.agents/skills/machine-resource-budget](.agents/skills/machine-resource-budget/SKILL.md).
+
 It runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
-`cargo test --workspace` and a CLI smoke test over a temporary circuit file.
+`scripts-dev/test.sh` (which covers the workspace) and a CLI smoke test over a temporary
+circuit file.
 
 During a session, `./scripts-dev/test.sh` runs the same tests and
 `./scripts-dev/run.sh` opens the window; both compile only when a source changed and

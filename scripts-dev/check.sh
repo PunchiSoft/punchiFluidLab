@@ -8,10 +8,14 @@ set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
+# shellcheck source=limits.sh
+source "$ROOT_DIR/scripts-dev/limits.sh"
 
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+# The tests run through test.sh rather than `cargo test` so each binary is capped: a
+# runaway allocation in one test must not take the editor with it.
+./scripts-dev/test.sh
 
 # A circuit file that exercises the format, the domain and the solver without a UI.
 example=$(mktemp --suffix=.pfluid)

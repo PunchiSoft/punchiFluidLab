@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A build profile for a 15 GiB laptop, not for a workstation.
+#
+# Measured on 2026-11-06: 8 threads, 15 GiB of RAM, 8 GiB of zram. With the default
+# eight parallel rustc jobs plus a link step, a single runaway test — one that allocated
+# in a loop — took the whole session down before the kernel could tell anyone. The
+# settings below keep the compiler and the linker inside a budget the machine survives,
+# and `scripts-dev/limits.sh` caps the test binaries as well.
+#
+# Override per invocation: `CARGO_BUILD_JOBS=8 cargo build`.
+
+[build]
+# Two jobs: the heavy crates here are generic-heavy (tiny-skia, ab_glyph, serde) and each
+# rustc peak is roughly 1 GiB. Two leaves the linker room and keeps the desktop usable.
+jobs = 2
+
+[profile.dev]
+# Line tables only, for our own crates too. Full debug info is what made one desktop
+# binary weigh over 300 MB and what the linker spent its memory on; a backtrace with
+# `file:line` is all these tests need.
+debug = 1

@@ -14,10 +14,16 @@
 #   ./scripts-dev/test.sh -p punchi-fluid-solver
 #   ./scripts-dev/test.sh --release
 #   ./scripts-dev/test.sh --no-build ribbon   # zero compilation
+#
+# Every binary runs under a virtual-memory ceiling (a quarter of RAM, see limits.sh), so
+# a test that allocates without a bound is stopped with a backtrace instead of taking the
+# whole session with it.
 set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
+# shellcheck source=limits.sh
+source "$ROOT_DIR/scripts-dev/limits.sh"
 
 profile=debug
 profile_flag=()
@@ -81,7 +87,7 @@ while IFS= read -r binary; do
         continue
     }
     printf '\n==> %s\n' "${binary#"$ROOT_DIR"/}"
-    "$binary" "${test_args[@]}" || status=1
+    run_capped "$binary" "${test_args[@]}" || status=1
 done <"$manifest"
 
 exit "$status"
