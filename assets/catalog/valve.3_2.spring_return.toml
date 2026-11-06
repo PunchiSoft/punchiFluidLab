@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 3/2 directional valve, spring return, normally closed.
+#
+# Rest position vents the working line, actuated position connects it to the
+# supply. Both paths share the same conductance, which is what a datasheet gives
+# as sonic conductance C. Every number here can be edited without touching the
+# Rust code, and a copy of this file in the user catalog directory replaces this
+# definition.
+#
+# Nothing in this file draws the valve: `body` is split into one equal square per
+# position, the spring and the lever are declared parts, the stubs and numerals
+# come from the port table, and the arrow inside each position is the connection
+# it opens. Position 0 is the leftmost square, the one next to the spring.
+
+schema = 3
+id = "valve.3_2.spring_return"
+name = "3/2 valve, spring return"
+name_es = "Válvula 3/2, retorno por muelle"
+category = "valve"
+summary = "Pressurises the working line while actuated, vents it at rest."
+
+# Two squares of 0.44 side by side.
+body = [0.06, 0.28, 0.88, 0.44]
+
+# The spring holds the rest position and is drawn at one end of the body; the actuator
+# that overcomes it sits at the opposite end, as in every valve symbol.
+[spring]
+side = "right"
+
+[actuator]
+kind = "lever"
+side = "left"
+
+# The three ports are drawn at the square of the rest position, which is how a
+# 3/2 valve is read: one set of numerals, and each square shows its own connections
+# at the same offsets inside itself. 1 and 3 below, 2 above.
+[[port]]
+id = "1"
+role = "supply"
+position = [0.597, 1.0]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.72, 0.0]
+
+[[port]]
+id = "3"
+role = "exhaust"
+position = [0.843, 1.0]
+
+[behaviour]
+type = "valve"
+# A spring returns the spool: the actuator only holds the other position while it is
+# applied. Declaring `toggle` here would promise a valve that stays actuated with no
+# spring pushing it back, and the lint rejects that pair.
+actuation = "momentary"
+spring_return = true
+default_position = 0
+
+# Position 0, rest: working line vented, supply shut.
+[[behaviour.positions]]
+name = "rest"
+blocked = ["1"]
+
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9
+
+# Position 1, actuated: supply to working, exhaust shut.
+[[behaviour.positions]]
+name = "actuated"
+blocked = ["3"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "2"
+conductance = 1.0e-9

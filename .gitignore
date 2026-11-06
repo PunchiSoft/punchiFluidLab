@@ -1,0 +1,13 @@
+# Rust build output
+/target/
+
+# Packaging and local artifacts
+/dist/
+*.AppImage
+*.flatpak
+*.tar.gz
+
+# Editor and tool caches
+*.swp
+.idea/
+.vscode/

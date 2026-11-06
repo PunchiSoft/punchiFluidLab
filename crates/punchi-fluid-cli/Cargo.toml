@@ -1,0 +1,21 @@
+[package]
+name = "punchi-fluid-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Headless circuit validation and simulation"
+
+[[bin]]
+name = "punchi-fluid"
+path = "src/main.rs"
+
+[dependencies]
+punchi-fluid-core = { workspace = true }
+punchi-fluid-file = { workspace = true }
+punchi-fluid-solver = { workspace = true }
+
+[lints]
+workspace = true

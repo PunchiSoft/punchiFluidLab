@@ -1,0 +1,104 @@
+name: Release
+
+# Run from a signed tag: the workflow refuses to publish from a branch.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and attach nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: punchi-fluid-lab
+
+jobs:
+  build:
+    name: build and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install the Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Long-running GUI dependencies (wayland, x11) are needed to link the window.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwayland-dev libxkbcommon-dev libgl1-mesa-dev
+
+      - name: Cache the build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run the gate before building anything
+        run: ./scripts-dev/check.sh
+
+      - name: Build the release binaries
+        env:
+          SOURCE_DATE_EPOCH: 1600000000
+        run: cargo build --release --locked --bin punchi-fluid-lab --bin punchi-fluid
+
+      - name: Pack the binaries
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          tar --sort=name --mtime="@${SOURCE_DATE_EPOCH}" --owner=0 --group=0 --numeric-owner \
+            -cJf "dist/punchi-fluid-lab-${version}-linux-x86_64.tar.xz" \
+            -C target/release punchi-fluid-lab punchi-fluid
+          ( cd dist && sha256sum ./*.tar.xz > SHA256SUMS )
+
+      # The AppImage and Flatpak artefacts arrive with milestone M6; until then the
+      # tarball is the honest deliverable and the release notes say so.
+      - name: Keep the artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: draft the release
+    needs: build
+    if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --draft \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file CHANGELOG.md \
+            --verify-tag

@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Fixed restrictor, useful to slow a cylinder down.
+#
+# The two short lines are the working line on each side, the filled wedge is the
+# restriction itself.
+
+schema = 3
+id = "throttle.fixed"
+name = "Fixed restrictor"
+name_es = "Restrictor fijo"
+category = "throttle"
+summary = "Fixed restriction between two ports."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [1.0, 0.5]
+
+[behaviour]
+type = "throttle"
+conductance = 5.0e-10
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.30, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.70, 0.5, 1.0, 0.5]
+line_class = "working"
+
+# Two wedges facing each other: the gap between their tips is the restriction.
+[[symbol]]
+kind = "polygon"
+points = [0.30, 0.26, 0.30, 0.74, 0.46, 0.50]
+filled = true
+
+[[symbol]]
+kind = "polygon"
+points = [0.70, 0.26, 0.70, 0.74, 0.54, 0.50]
+filled = true

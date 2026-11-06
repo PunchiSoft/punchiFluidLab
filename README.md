@@ -1,0 +1,213 @@
+# Punchi Fluid Lab
+
+**English** | [Español](README.es.md)
+
+A desktop simulator for pneumatic and hydraulic circuits, written in Rust.
+**Status: `0.1.0`, unreleased.** A vertical slice runs: supply, 3/2 valve and
+single-acting cylinder with real physics. The application shell is in place — ribbon,
+catalog sidebar, status bar and the desktop's own light or dark palette. The editor is
+not started.
+
+Inspired by the workflow of Festo FluidSIM — draw the schematic, connect the ports,
+run the model, watch the actuators move — with no asset or code taken from it.
+
+> **Continuing this project?** [docs/retomar.md](docs/retomar.md) (Spanish) is the
+> continuity note: current state, what was built step by step, how to verify it, the
+> decisions taken and the exact prompt to resume in a new session.
+
+## What exists today
+
+| Crate | What it does now |
+|---|---|
+| `punchi-fluid-core` | Components, ports, connections and typed units (bar, litre, kelvin) |
+| `punchi-fluid-catalog` | Component definitions read from TOML files: schema, validation, override rules |
+| `punchi-fluid-file` | Versioned JSON document, round-trip and version rejection |
+| `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
+| `punchi-fluid-theme` | Colour, size and font tokens from `kdeglobals` and the colour-scheme portal |
+| `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
+| `punchi-fluid-export` | Standard sheets, title block, legend and a deterministic PDF writer |
+| `punchi-fluid-ui` | Ribbon, catalog sidebar, sheet, status bar, shortcuts, symbols and clicks |
+| `punchi-fluid-desktop` | Window, wiring, live theme changes and `accesskit` |
+| `punchi-fluid-cli` | `punchi-fluid validate|simulate <file>` for headless checks |
+
+## Build and run
+
+```bash
+./scripts-dev/run.sh                                    # window; builds only if stale
+./scripts-dev/run.sh --demo                             # starts actuated and playing
+./scripts-dev/run.sh --no-build --dark                  # already-built binary, no compile
+./scripts-dev/run.sh --light                            # pin the palette for a screenshot
+cargo run --bin punchi-fluid -- validate circuit.pfluid # headless check
+```
+
+`run.sh` compiles only when a source changed and then executes the binary directly;
+`--no-build` never invokes Cargo. `PUNCHI_FLUID_THEME=light|dark` pins the palette,
+otherwise the window follows the desktop.
+
+In the window: **Play** runs the simulation, **Slower**/**Faster** change the speed (a
+20 mm cylinder with this valve finishes its stroke in about 0.13 s of simulated time),
+**Actuate valve** or a click on the valve symbol changes its position, and **Reset**
+starts again. `F1` lists every shortcut; `Ctrl+F` focuses the catalog search.
+
+**Export PDF** (`Ctrl+Shift+E`) or **Export PNG** (`Ctrl+Shift+P`) opens the export panel:
+format, resolution for PNG (72–600 dpi), paper from A5 to A2 plus Letter and Legal,
+orientation, margins, the identification block and the destination. The page carries the
+frame, the title block, a legend of line classes and port numerals, and — while any symbol
+review is open — the note that the symbols are not yet verified against ISO 1219-1. Two
+exports of the same circuit produce the same bytes.
+
+Requirements: Rust stable (pinned in `rust-toolchain.toml`). On Wayland or X11 the
+window uses `glow`; egui also makes a WebAssembly build possible later.
+
+## Components are files, not code
+
+Every valve, cylinder or supply is a TOML definition in
+[assets/catalog/](assets/catalog/). The application compiles those in, and loads
+`~/.local/share/punchi-fluid-lab/catalog/` on top, where a file with the same `id`
+replaces the built-in one:
+
+```toml
+id = "valve.3_2.spring_return"
+category = "valve"
+
+[behaviour]
+type = "valve"
+actuation = "toggle"
+spring_return = true
+
+[[behaviour.positions]]
+name = "rest"
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9
+```
+
+A position lists the paths it opens, classified by the **role** of the ports
+(`supply`, `working`, `exhaust`), so a 5/2 valve is a new file and not a new match
+arm. The symbol is a list of primitives in the same file. A file with a mistake is
+skipped, reported in the Catalog panel, and the rest keeps working. The full field
+reference is in [assets/catalog/README.md](assets/catalog/README.md).
+
+## The interface
+
+Three regions and nothing else: a **ribbon** for what applies to the whole document,
+a **sidebar that is the catalog** (grouped by category, with each component drawn by
+its own symbol, drag to the sheet), and the **sheet** where the circuit lives and
+reacts. Status bar at the bottom. Edit and simulation are visibly different modes, so
+a stray click during a demonstration never destroys work.
+
+The application takes its colours, accent and font size from the desktop: it reads
+`kdeglobals` and follows the `org.freedesktop.appearance color-scheme` portal, so it
+looks like the rest of Plasma and follows a live scheme change without restarting.
+A semantic token layer is the only place a colour exists — a `Color32::` anywhere else
+fails a test. Components use their own symbol, never a separate icon set.
+
+**Honest status:** the regions, the tokens, the keyboard map and the help panel are
+implemented. Breeze symbolic icons are not loaded yet (action buttons are text), the
+desktop font *family* is read but not loaded (size is), and the UI strings are still
+literals until the Fluent pass in M6.
+
+The full specification — regions, keyboard map, contrast requirements, what the design
+refuses — is in [docs/ui-ux.md](docs/ui-ux.md). The milestones with their acceptance
+criteria are in [docs/plan.md](docs/plan.md).
+
+## Symbols follow ISO 1219
+
+A schematic that is *almost* conformant is worse than an obvious sketch: it gets read
+as if it were correct. Diagram symbols follow **ISO 1219-1:2012**, in the conventions
+of ISO 1219-2:2012 and ISO 1219-3:2016; port numerals follow the fluid-power
+port-identification convention.
+
+What that means in practice, and the review that enforces it, is in
+[docs/symbology.md](docs/symbology.md): equal squares per valve position, flow arrows
+in the direction of flow, blocking marks on closed ports, port numerals drawn from the
+definition, spring and actuator at their ends, line classes for working, pilot and
+drain lines, junction dots only where three lines meet.
+
+**Honest status:** the structural half is enforced, not hoped for. A valve declares its
+body and the renderer splits it into equal squares; the flow path and its arrow come
+from the connection, the blocking mark from the position, the numerals from the port
+table, and the spring and actuator from declared parts. Eight lint rules run when the
+catalog loads, one test each.
+
+The visual half is reviewed per symbol in
+[assets/symbols/review/](assets/symbols/review/) at palette and canvas size. The 300 dpi
+check needs the export pipeline, so every review says `status: pending-300dpi` and the
+export keeps labelling the document as unverified until they do not. One symbol admits a
+weaker shape in its own review: the fixed restrictor was drawn without the standard at
+hand.
+
+## Why Rust, and why these crates
+
+The product is three different problems: the physics, the file format and the
+schematic editor. Keeping them in separate crates means the solver can be tested
+without a window, the format can migrate documents while the editor changes, and
+the toolkit — egui today, QML through `cxx-qt` if the app must look native on
+Plasma — is a decision confined to one crate.
+
+The full reasoning, including what it costs, is in
+[docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md).
+
+## The physical model, in one paragraph
+
+Pneumatics is not computational fluid dynamics. A circuit is a network of volumes
+joined by restrictions: the ideal gas law for each volume, ISO 6358 for the flow
+through a restriction (with the choked branch above the critical pressure ratio),
+and a stiff integrator because pressure changes in milliseconds. Getting the model
+right matters more than any UI decision.
+
+## Validation
+
+```bash
+./scripts-dev/check.sh
+```
+
+Format, lints with `-D warnings`, all tests and a CLI smoke test over a temporary
+circuit file. A green run proves the crates and the format; the window and the
+physics still need eyes and a reference curve.
+
+## Roadmap
+
+Milestones, acceptance criteria and the evidence each one needs live in
+[docs/plan.md](docs/plan.md). In short:
+
+- **v0.1** — workspace, domain, format, canvas, CLI, catalog of definition files.
+- **v0.2** — vertical slice: supply, 3/2 valve and single-acting cylinder with gas
+  mass integration, piston dynamics and a clickable valve. *Done, in review.*
+- **M1** — shell: ribbon, sidebar, status bar, theme from the desktop, accessibility. *Done.*
+- **M1.5** — symbol conformance against ISO 1219, with a lint and a review per symbol.
+- **M2** — one drawing, two exports: PDF and PNG from the same calls, standard paper,
+  margins, title block and legend. *Done.*
+- **v0.3** — document model with undo, palette built from the catalog, place and
+  connect components, orthogonal pipes, save and load. A placed component will
+  reference a catalog `id`, which retires the `ComponentKind` enum from the document
+  layer (today it still enumerates the kinds of the first format).
+- **v0.4** — network solver driven by the circuit graph instead of one fixed layout;
+  5/2 valves, flow controls, gauges.
+- **v1.0** — hydraulic model, AppImage and Flatpak, translation pipeline.
+
+## Project documentation
+
+| Document | Purpose |
+|---|---|
+| [AGENTS.md](AGENTS.md) | canonical rules for people and agents |
+| [CHANGELOG.md](CHANGELOG.md) | changes by date, under `Unreleased` |
+| [docs/retomar.md](docs/retomar.md) | continuity note: everything needed to resume with no context (Spanish) |
+| [docs/next-steps.md](docs/next-steps.md) | where the project stands and the work order for what comes next |
+| [docs/ui-ux.md](docs/ui-ux.md) | the interface: regions, theming, accessibility |
+| [docs/symbology.md](docs/symbology.md) | ISO 1219 conformance and the review checklist |
+| [docs/plan.md](docs/plan.md) | milestones with acceptance criteria |
+| [docs/engineering.md](docs/engineering.md) | modularisation, memory budget, security, GitHub practices |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | how to set up, test and send a change |
+| [SECURITY.md](SECURITY.md) | how to report a vulnerability privately |
+| [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) | the stack and the crate split |
+| [docs/adr/0002-components-are-files.md](docs/adr/0002-components-are-files.md) | why components are definition files |
+| [assets/catalog/README.md](assets/catalog/README.md) | how to add, change or delete a component |
+| [packaging/README.md](packaging/README.md) | how a release will be packaged |
+| [i18n/README.md](i18n/README.md) | translation plan |
+| [assets/symbols/README.md](assets/symbols/README.md) | symbol set and its licence |
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).

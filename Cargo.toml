@@ -1,0 +1,72 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/punchi-fluid-core",
+    "crates/punchi-fluid-theme",
+    "crates/punchi-fluid-draw",
+    "crates/punchi-fluid-export",
+    "crates/punchi-fluid-file",
+    "crates/punchi-fluid-catalog",
+    "crates/punchi-fluid-solver",
+    "crates/punchi-fluid-icons",
+    "crates/punchi-fluid-ui",
+    "crates/punchi-fluid-desktop",
+    "crates/punchi-fluid-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/PunchiSoft/punchi-fluid-lab"
+authors = ["PunchiSoft"]
+description = "Pneumatic and hydraulic circuit simulator for the desktop"
+
+[workspace.dependencies]
+punchi-fluid-core = { path = "crates/punchi-fluid-core" }
+punchi-fluid-file = { path = "crates/punchi-fluid-file" }
+punchi-fluid-catalog = { path = "crates/punchi-fluid-catalog" }
+punchi-fluid-solver = { path = "crates/punchi-fluid-solver" }
+punchi-fluid-theme = { path = "crates/punchi-fluid-theme" }
+punchi-fluid-draw = { path = "crates/punchi-fluid-draw" }
+punchi-fluid-export = { path = "crates/punchi-fluid-export" }
+punchi-fluid-icons = { path = "crates/punchi-fluid-icons" }
+punchi-fluid-ui = { path = "crates/punchi-fluid-ui" }
+
+egui = "0.37"
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "glow", "wayland", "x11", "default_fonts"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+tempfile = "3"
+thiserror = "2"
+zbus = { version = "5.13", default-features = false, features = ["async-io", "blocking-api"] }
+tiny-skia = { version = "0.11", default-features = false, features = ["png-format", "std"] }
+ab_glyph = "0.2"
+fontdb = { version = "0.24", default-features = false, features = ["memmap", "std"] }
+# Rasterises the desktop icon theme. Text and raster images are off: a Breeze action
+# icon is paths, and the smaller graph is the point.
+resvg = { version = "0.45", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+# Development builds: full debug information for our own crates, and only line tables for
+# the dependencies.
+#
+# egui, wgpu, tiny-skia, printpdf and resvg are where the hundreds of megabytes and the
+# linker's peak memory come from, and nobody steps into them with a debugger. With the
+# default profile — full debug info everywhere — one debug binary of the desktop crate
+# weighs over 300 MB, and linking two of them at once has run this machine out of memory.
+# Line tables keep a backtrace readable (`file:line`) at a fraction of the size.
+[profile.dev.package."*"]
+debug = "line-tables-only"

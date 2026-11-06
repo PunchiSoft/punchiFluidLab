@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Double-acting cylinder, 32 mm bore and 200 mm stroke.
+#
+# Two working ports, one at each end, and no return spring: that is the whole
+# difference in the symbol, and the renderer draws it from this file. The piston, the
+# rod and the ports are all the renderer's job, so the animation follows the same
+# geometry as this declaration.
+#
+# Driving it needs two working lines, which is the network solver of M4: today the
+# fixed circuit still has one single-acting cylinder. The definition is here so the
+# catalog and the symbol are already right, and so a circuit that uses it is a file.
+
+schema = 3
+id = "cylinder.double_acting_32_200"
+name = "Double-acting cylinder, 32/200"
+name_es = "Cilindro de doble efecto, 32/200"
+category = "actuator"
+summary = "32 mm bore, 200 mm stroke, two working ports."
+kinematics = "linear_actuator"
+
+# Port 1 extends, port 2 retracts, one at each end. The cap end has no rod, so its port
+# sits on the centreline at the cap. The rod end has the rod on the centreline, so its
+# port is drawn above the barrel, just inside the rod-side wall.
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.48, 0.0]
+
+[behaviour]
+type = "cylinder"
+bore_mm = 32.0
+stroke_mm = 200.0
+dead_length_mm = 8.0
+moving_mass_kg = 1.2
+spring_rate = 0.0
+spring_preload = 0.0
+damping = 4.0
+friction = 2.5
+
+# Barrel, shared with the single-acting cylinder. The chamber inside it is the stroke
+# plus the dead length, so the piston crosses all of it; the rest of the box is the rod.
+[[symbol]]
+kind = "rect"
+points = [0.08, 0.28, 0.42, 0.44]
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.08, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.48, 0.0, 0.48, 0.28]
+line_class = "working"

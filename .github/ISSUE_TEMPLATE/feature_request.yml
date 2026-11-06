@@ -1,0 +1,44 @@
+name: Feature or symbol request
+description: A component, an interaction or a behaviour you miss
+labels: ["feature"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Catalog (component or symbol)
+        - Solver / physics
+        - Drawing / canvas
+        - Export (PNG, PDF)
+        - Theme / accessibility
+        - Editor / interaction
+        - Packaging / release
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve
+      description: Describe the situation, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: For a symbol, name the function and the clause of ISO 1219-1 that defines it.
+  - type: input
+    id: standard
+    attributes:
+      label: Normative reference
+      description: Required for symbols. Which standard and which function, so the conformance review has something to check against.
+  - type: checkboxes
+    id: fits
+    attributes:
+      label: Fit
+      options:
+        - label: This can be a catalog file without changing Rust code
+        - label: This needs a new dependency
+        - label: This changes an established decision (needs an ADR)

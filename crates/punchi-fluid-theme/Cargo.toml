@@ -1,0 +1,17 @@
+[package]
+name = "punchi-fluid-theme"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Desktop-derived colour, size and font tokens for the interface"
+
+[dependencies]
+egui = { workspace = true }
+thiserror = { workspace = true }
+zbus = { workspace = true }
+
+[lints]
+workspace = true

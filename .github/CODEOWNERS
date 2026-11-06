@@ -1,0 +1,12 @@
+# Every change needs the maintainer; the areas below say who understands them.
+
+*                                   @PunchiSoft
+
+/crates/punchi-fluid-solver/        @PunchiSoft
+/crates/punchi-fluid-catalog/       @PunchiSoft
+/assets/catalog/                    @PunchiSoft
+/assets/symbols/                    @PunchiSoft
+/docs/symbology.md                  @PunchiSoft
+/docs/adr/                          @PunchiSoft
+/.github/                           @PunchiSoft
+/SECURITY.md                        @PunchiSoft

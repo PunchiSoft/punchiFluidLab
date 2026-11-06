@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/PunchiSoft/punchi-fluid-lab/security/advisories/new
+    about: Report privately. Never open a public issue for a security problem.
+  - name: Question or idea
+    url: https://github.com/PunchiSoft/punchi-fluid-lab/discussions
+    about: Ask, propose, or show a circuit you built.
+  - name: Interface and engineering standards
+    url: https://github.com/PunchiSoft/punchi-fluid-lab/blob/main/docs
+    about: Read the interface spec, the plan, the symbology contract and the engineering standards before proposing a change.

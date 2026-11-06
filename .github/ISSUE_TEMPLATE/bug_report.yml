@@ -1,0 +1,49 @@
+name: Bug report
+description: Something behaves differently from what the documentation says
+labels: ["bug", "needs-reproduction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems go to SECURITY.md, never to a public issue.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: output of `git rev-parse --short HEAD`, or the release tag
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: Plasma 6.7.5, Wayland, Fedora 44, Rust 1.98.1
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Drop this file in ~/.local/share/punchi-fluid-lab/catalog/
+        2. Press Reload
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and observed
+    validations:
+      required: true
+  - type: textarea
+    id: minimal
+    attributes:
+      label: Minimal file or circuit
+      description: A definition or document that reproduces it. Remove anything private.
+      render: text
+  - type: input
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link to a screenshot, a log line, or the test you ran.

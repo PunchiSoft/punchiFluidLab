@@ -1,0 +1,21 @@
+[package]
+name = "punchi-fluid-export"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Standard sheets, title block and the PDF writer"
+
+[dependencies]
+punchi-fluid-catalog = { workspace = true }
+punchi-fluid-draw = { workspace = true }
+punchi-fluid-solver = { workspace = true }
+thiserror = { workspace = true }
+tiny-skia = { workspace = true }
+ab_glyph = { workspace = true }
+fontdb = { workspace = true }
+
+[lints]
+workspace = true

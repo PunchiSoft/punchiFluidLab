@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Compressed air source of the workshop line.
+#
+# The circle, the **outline** triangle and the outlet line are the source symbol of
+# ISO 1219-1 for a gas. A filled triangle is the hydraulic source: the fill is the
+# difference between the two fluids on a diagram, so it is not a style choice. The port
+# numeral is drawn by the renderer from the port table, so it cannot disagree with the
+# connection.
+
+schema = 3
+id = "supply.workshop"
+name = "Compressed air supply, 6 bar"
+name_es = "Aire comprimido, 6 bar"
+category = "supply"
+summary = "Constant line that feeds the circuit."
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.5, 1.0]
+
+[behaviour]
+type = "supply"
+pressure_bar = 6.0
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.40, 0.30]
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.22, 0.66, 0.58, 0.34, 0.58]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.70, 0.5, 1.0]
+line_class = "working"

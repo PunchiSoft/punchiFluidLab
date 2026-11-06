@@ -1,0 +1,17 @@
+[package]
+name = "punchi-fluid-solver"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Lumped-parameter pneumatic solver"
+
+[dependencies]
+punchi-fluid-core = { workspace = true }
+punchi-fluid-catalog = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
