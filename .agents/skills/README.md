@@ -21,6 +21,7 @@ skill is the bug.
 | [github-actions-security](github-actions-security/SKILL.md) | workflow threat model and hardening | writing or reviewing `.github/workflows`; permissions, secrets, caches |
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
+| [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
 
 ## The order to read them
 
@@ -32,6 +33,8 @@ skill is the bug.
 4. [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) — what it costs.
 5. [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) —
    what it brings in.
+6. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
+   survive, and how to find the process when it cannot.
 
 For a symbol change, read [fluid-power-symbology](fluid-power-symbology/SKILL.md) before
 touching the file, and [solver-validation](solver-validation/SKILL.md) if the change also
