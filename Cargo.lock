@@ -2367,6 +2367,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "punchi-fluid-ffi"
+version = "0.1.0"
+dependencies = [
+ "punchi-fluid-catalog",
+ "punchi-fluid-draw",
+ "punchi-fluid-solver",
+]
+
+[[package]]
 name = "punchi-fluid-file"
 version = "0.1.0"
 dependencies = [

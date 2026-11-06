@@ -11,6 +11,7 @@ members = [
     "crates/punchi-fluid-icons",
     "crates/punchi-fluid-ui",
     "crates/punchi-fluid-desktop",
+    "crates/punchi-fluid-ffi",
     "crates/punchi-fluid-cli",
 ]
 
@@ -33,6 +34,7 @@ punchi-fluid-draw = { path = "crates/punchi-fluid-draw" }
 punchi-fluid-export = { path = "crates/punchi-fluid-export" }
 punchi-fluid-icons = { path = "crates/punchi-fluid-icons" }
 punchi-fluid-ui = { path = "crates/punchi-fluid-ui" }
+punchi-fluid-ffi = { path = "crates/punchi-fluid-ffi" }
 
 egui = "0.37"
 eframe = { version = "0.37", default-features = false, features = ["accesskit", "glow", "wayland", "x11", "default_fonts"] }
