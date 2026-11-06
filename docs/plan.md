@@ -23,6 +23,10 @@ user catalog file overriding a built-in one in the real session.
 
 ## M1 — Application shell
 
+**Status:** done, in Qt Quick. [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) retired the
+egui crates this section was written for; the goals below still describe the product, and
+the code is `apps/punchi-fluid-qt` over `punchi-fluid-ffi`.
+
 Ribbon, sidebar, sheet frame, status bar, theme layer.
 
 - `punchi-fluid-theme` crate: reads `kdeglobals`, the colour-scheme portal and the

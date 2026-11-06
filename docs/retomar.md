@@ -115,6 +115,7 @@ punchi-fluid-lab/
 │   ├── catalog/               4 definiciones de fábrica + README de autoría (211 líneas)
 │   └── symbols/               material de REVISIÓN de símbolos (no los símbolos)
 ├── crates/                    ver tabla siguiente
+├── apps/punchi-fluid-qt/      LA VENTANA: Qt Quick + CMake, fuera del espacio de Cargo
 ├── docs/                      este archivo y las especificaciones
 ├── i18n/, packaging/          planificación (vacías de contenido real)
 └── scripts-dev/               check.sh (la puerta), run.sh y test.sh (con --no-build)
@@ -126,9 +127,16 @@ punchi-fluid-lab/
 | `punchi-fluid-catalog` | esquema, validación y carga de las definiciones | `schema.rs` 302, `catalog.rs` 609, `builtin.rs` 27 |
 | `punchi-fluid-file` | documento JSON versionado y migraciones | `lib.rs` 285 |
 | `punchi-fluid-solver` | ISO 6358 + red de volúmenes + cilindro | `orifice.rs` 114, `pneumatic.rs` 778, `lib.rs` 199 (fachada) |
-| `punchi-fluid-ui` | símbolos, lienzo, clic | `symbol.rs` 221, `canvas.rs` 361, `tests/click.rs` 73 |
-| `punchi-fluid-desktop` | ventana, barra, panel de catálogo | `app.rs` 287, `main.rs` 22 |
+| `punchi-fluid-draw` | símbolos ISO 1219 en mm, hoja, `Surface` | `symbol.rs` 1650, `schematic.rs` 424, `surface.rs` 570 |
+| `punchi-fluid-export` | hoja normalizada, PNG y PDF | `page.rs`, `png.rs`, `pdf.rs`, `sheet.rs` |
+| `punchi-fluid-ffi` | ABI C: sesión, cuadro de dibujo, telemetría, impacto | `lib.rs` 900, `include/punchi_fluid.h` |
 | `punchi-fluid-cli` | `validate` / `simulate` sin ventana | `main.rs` 68 |
+
+La ventana vive fuera de `crates/`:
+
+| Aplicación | Qué posee | Ficheros clave |
+|---|---|---|
+| `apps/punchi-fluid-qt` | ribbon, barra lateral, hoja, barra de estado, tema | `Main.qml`, `Ribbon.qml`, `Sidebar.qml`, `src/{session,replay,theme,canvasitem,previewitem}.*` |
 
 Documentación, para no duplicar nada:
 

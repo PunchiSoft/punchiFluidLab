@@ -16,15 +16,20 @@ that nobody can check is a wish, not a standard.
 | `punchi-fluid-file` | versioned document format, migrations | physics | M0 |
 | `punchi-fluid-draw` | geometry in mm, `Surface` trait, symbol and sheet drawing | windows, I/O | M2 |
 | `punchi-fluid-export` | page geometry, PNG and PDF backends | interaction | M2 |
-| `punchi-fluid-theme` | semantic tokens, `kdeglobals`, colour-scheme portal | widgets | M1 |
+| `punchi-fluid-ffi` | the C ABI: one session, one frame of drawing, telemetry, hit test | logic of its own | M5 |
 | `punchi-fluid-doc` | document, commands, undo, autosave | drawing, physics | M3 |
-| `punchi-fluid-ui` | widgets, ribbon, sidebar, canvas | file I/O, physics | M0 |
-| `punchi-fluid-desktop` | window, wiring, menus, accessibility | primitives | M0 |
 | `punchi-fluid-cli` | headless validate and simulate | UI | M0 |
 
+The window is **`apps/punchi-fluid-qt`**, a Qt Quick application outside the Cargo
+workspace. It owns the ribbon, the sidebar, the sheet, the status bar and the theme
+adapter, and it reads the model only through `punchi-fluid-ffi`. ADR 0005 retired
+`punchi-fluid-theme`, `punchi-fluid-ui`, `punchi-fluid-desktop` and
+`punchi-fluid-icons`; the rows above are what exists now.
+
 Dependency direction is acyclic and enforced by review plus `cargo tree`: `core` ←
-`catalog`/`file` ← `solver`/`doc` ← `draw` ← `ui` ← `desktop`. `export` depends on
-`draw` and nothing above it. A new edge needs an ADR.
+`catalog`/`file` ← `solver`/`doc` ← `draw` ← `ffi`. `export` depends on `draw` and
+nothing above it, and `cli` depends on `file` and `solver`. Nothing in Rust depends on
+the Qt application. A new edge needs an ADR.
 
 ### Extension points
 
