@@ -8,8 +8,10 @@
 #include <QPalette>
 #include <QQmlEngine>
 #include <QString>
+#include <QVariantList>
 
 #include "punchi_fluid.h"
+#include "theme.h"
 
 /// One simulation, owned by the Rust core and seen from QML.
 ///
@@ -29,8 +31,14 @@ class FluidSession : public QObject
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
 
+    Q_PROPERTY(QVariantList catalog READ catalog NOTIFY catalogChanged)
+    Q_PROPERTY(QString contrastSummary READ contrastSummary NOTIFY changed)
+    Q_PROPERTY(bool settled READ settled NOTIFY settledChanged)
+
     Q_PROPERTY(QColor background READ background NOTIFY changed)
+    Q_PROPERTY(QColor panel READ panel NOTIFY changed)
     Q_PROPERTY(QColor foreground READ foreground NOTIFY changed)
+    Q_PROPERTY(QColor muted READ muted NOTIFY changed)
     Q_PROPERTY(QColor accent READ accent NOTIFY changed)
 
 public:
@@ -38,6 +46,7 @@ public:
     ~FluidSession() override;
 
     PfSession *handle() const { return m_session; }
+    const ThemeTokens &tokens() const { return m_tokens; }
 
     double pressureBar() const { return m_telemetry.pressure_pa / 1.0e5; }
     double positionMm() const { return m_telemetry.position_m * 1.0e3; }
@@ -47,27 +56,53 @@ public:
     bool hasModel() const { return m_telemetry.has_model == 1; }
     QString lastError() const { return m_error; }
 
-    QColor background() const { return m_background; }
-    QColor foreground() const { return m_foreground; }
-    QColor accent() const { return m_accent; }
+    /// `true` when the last frames left the state unchanged: the sheet loop can stop.
+    ///
+    /// Without this the window repaints a CPU-rasterised item sixty times a second
+    /// for ever, and on a 144 Hz panel the compositor then recomposites every frame —
+    /// which is how an idle simulator ends up looking like a busy GPU.
+    bool settled() const { return m_settled; }
+
+    QVariantList catalog() const { return m_catalog; }
+    QString contrastSummary() const { return describe(m_contrast); }
+    /// `true` when every pairing meets the criterion of `docs/ui-ux.md`.
+    bool themePasses() const { return m_contrast.passes(); }
+
+    QColor background() const { return m_tokens.background; }
+    QColor panel() const { return m_tokens.panel; }
+    QColor foreground() const { return m_tokens.ink; }
+    QColor muted() const { return m_tokens.inkMuted; }
+    QColor accent() const { return m_tokens.accent; }
 
     /// Advances the model and republishes the telemetry.
     Q_INVOKABLE void advance(double dt);
     /// Moves the valve to its other position.
     Q_INVOKABLE void toggleValve();
+    /// Back to t = 0.
+    Q_INVOKABLE void restart();
     /// Reads the desktop palette into the core. Called on start and on theme change.
     Q_INVOKABLE void loadTheme();
+    /// Uses `palette` instead of the application palette, for a forced light or dark run.
+    void applyPalette(const QPalette &palette);
+
+    /// Re-reads the palette when the desktop changes it, never per frame.
+    bool event(QEvent *event) override;
 
 signals:
     void changed();
+    void catalogChanged();
+    void settledChanged();
 
 private:
     void refresh();
+    void readCatalog();
 
     PfSession *m_session = nullptr;
     PfTelemetry m_telemetry {};
     QString m_error;
-    QColor m_background;
-    QColor m_foreground;
-    QColor m_accent;
+    QVariantList m_catalog;
+    ThemeTokens m_tokens;
+    Contrast m_contrast;
+    bool m_settled = false;
+    int m_steadyFrames = 0;
 };

@@ -64,6 +64,19 @@ pub const PF_KIND_ARC: u32 = 4;
 /// Text run.
 pub const PF_KIND_TEXT: u32 = 5;
 
+/// Catalog categories, in the order the sidebar groups them.
+pub const PF_CATEGORY_SUPPLY: u32 = 0;
+/// Directional or flow control valve.
+pub const PF_CATEGORY_VALVE: u32 = 1;
+/// Cylinder, motor or other actuator.
+pub const PF_CATEGORY_ACTUATOR: u32 = 2;
+/// Restriction without a spool.
+pub const PF_CATEGORY_THROTTLE: u32 = 3;
+/// Silencer, filter, manifold.
+pub const PF_CATEGORY_ACCESSORY: u32 = 4;
+/// Pressure switch, gauge.
+pub const PF_CATEGORY_SENSOR: u32 = 5;
+
 /// [`PfCall::flags`] bit: the call carries a fill colour.
 pub const PF_HAS_FILL: u32 = 1;
 /// [`PfCall::flags`] bit: the call carries a stroke.
@@ -234,6 +247,36 @@ pub struct PfFrame {
     pub height_mm: f32,
 }
 
+/// One catalog entry: a component the sidebar shows, by its own symbol.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PfCatalogItem {
+    /// Byte offset of the id in the catalog's text arena.
+    pub id_at: u32,
+    /// Length of the id.
+    pub id_len: u32,
+    /// Byte offset of the name.
+    pub name_at: u32,
+    /// Length of the name.
+    pub name_len: u32,
+    /// One of the `PF_CATEGORY_*` values.
+    pub category: u32,
+}
+
+/// The catalog in display order, borrowed from the session.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PfCatalog {
+    /// Entries, grouped by category and then by id.
+    pub items: *const PfCatalogItem,
+    /// Number of entries.
+    pub items_len: u32,
+    /// UTF-8 arena holding the ids and names.
+    pub text: *const u8,
+    /// Bytes of text.
+    pub text_len: u32,
+}
+
 /// Sizes of the structures below, so the C side can prove it agrees with Rust.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -265,6 +308,18 @@ fn class_code(class: LineClass) -> u32 {
         LineClass::Pilot => 1,
         LineClass::Drain => 2,
         LineClass::Electrical => 3,
+    }
+}
+
+fn category_code(category: punchi_fluid_catalog::Category) -> u32 {
+    use punchi_fluid_catalog::Category;
+    match category {
+        Category::Supply => PF_CATEGORY_SUPPLY,
+        Category::Valve => PF_CATEGORY_VALVE,
+        Category::Actuator => PF_CATEGORY_ACTUATOR,
+        Category::Throttle => PF_CATEGORY_THROTTLE,
+        Category::Accessory => PF_CATEGORY_ACCESSORY,
+        Category::Sensor => PF_CATEGORY_SENSOR,
     }
 }
 
@@ -424,6 +479,13 @@ pub struct PfSession {
     width_mm: f32,
     height_mm: f32,
     scale: f32,
+    /// Ids in display order, parallel to `catalog_items`.
+    catalog_order: Vec<String>,
+    catalog_items: Vec<PfCatalogItem>,
+    catalog_text: Vec<u8>,
+    preview_calls: Vec<PfCall>,
+    preview_points: Vec<PfPoint>,
+    preview_text: Vec<u8>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -446,7 +508,7 @@ impl PfSession {
             Ok(system) => (Some(system), CString::default()),
             Err(cause) => (None, cstring(&cause.to_string())),
         };
-        Self {
+        let mut session = Self {
             catalog,
             system,
             ink: Ink::print(),
@@ -458,7 +520,88 @@ impl PfSession {
             width_mm: 200.0,
             height_mm: 130.0,
             scale: 1.0,
+            catalog_order: Vec::new(),
+            catalog_items: Vec::new(),
+            catalog_text: Vec::new(),
+            preview_calls: Vec::new(),
+            preview_points: Vec::new(),
+            preview_text: Vec::new(),
+        };
+        session.build_catalog();
+        session
+    }
+
+    /// The sidebar mirrors the catalog, so the list it shows comes from here.
+    ///
+    /// `Catalog::iter` walks a map, so the entries are sorted: a sidebar that reorders
+    /// itself between launches is a bug the user sees.
+    fn build_catalog(&mut self) {
+        let mut entries: Vec<(u32, String, String)> = self
+            .catalog
+            .iter()
+            .filter(|definition| !definition.disabled)
+            .map(|definition| {
+                (
+                    category_code(definition.category),
+                    definition.id.clone(),
+                    definition.name.clone(),
+                )
+            })
+            .collect();
+        entries.sort();
+        self.catalog_order = entries.iter().map(|(_, id, _)| id.clone()).collect();
+        self.catalog_items.clear();
+        self.catalog_text.clear();
+        for (category, id, name) in entries {
+            let id_at = self.catalog_text.len() as u32;
+            self.catalog_text.extend_from_slice(id.as_bytes());
+            let name_at = self.catalog_text.len() as u32;
+            self.catalog_text.extend_from_slice(name.as_bytes());
+            self.catalog_items.push(PfCatalogItem {
+                id_at,
+                id_len: id.len() as u32,
+                name_at,
+                name_len: name.len() as u32,
+                category,
+            });
         }
+    }
+
+    /// Draws one catalog entry alone, for the sidebar thumbnail.
+    ///
+    /// The symbol is the definition's own, drawn by the same code as the sheet: a
+    /// separate icon set would be a second drawing that drifts.
+    fn build_preview(&mut self, index: u32, width_mm: f32, height_mm: f32, scale: f32) -> i32 {
+        let Some(id) = self.catalog_order.get(index as usize).cloned() else {
+            return self.fail("that catalog entry does not exist");
+        };
+        if self.catalog.get(&id).is_none() {
+            return self.fail("the catalog entry disappeared");
+        }
+        self.preview_calls.clear();
+        self.preview_points.clear();
+        self.preview_text.clear();
+        let side = width_mm.min(height_mm) * 0.82;
+        let rect = Rect::from_center_size(Pt::new(width_mm * 0.5, height_mm * 0.5), side, side);
+        let Self {
+            catalog,
+            preview_calls,
+            preview_points,
+            preview_text,
+            ink,
+            ..
+        } = self;
+        let Some(definition) = catalog.get(&id) else {
+            return PF_ERR_MODEL;
+        };
+        let mut buffer = FrameBuffer {
+            calls: preview_calls,
+            points: preview_points,
+            text: preview_text,
+            scale: scale.max(0.01),
+        };
+        punchi_fluid_draw::draw_component(&mut buffer, rect, definition, 0, 0.0, ink);
+        PF_OK
     }
 
     fn fail(&mut self, message: &str) -> i32 {
@@ -497,6 +640,19 @@ impl PfSession {
         };
         match system.advance(dt) {
             Ok(_) => PF_OK,
+            Err(cause) => self.fail(&cause.to_string()),
+        }
+    }
+
+    /// Back to `t = 0`, with the same catalog. The ink survives, because it is the
+    /// desktop's and not the model's.
+    fn restart(&mut self) -> i32 {
+        match PneumaticSystem::from_catalog(&self.catalog) {
+            Ok(system) => {
+                self.system = Some(system);
+                self.error = CString::default();
+                PF_OK
+            }
             Err(cause) => self.fail(&cause.to_string()),
         }
     }
@@ -827,5 +983,84 @@ pub unsafe extern "C" fn pf_session_has_layout(session: *const PfSession) -> i32
             return 0;
         };
         i32::from(session.layout.is_some())
+    })
+}
+
+/// The catalog, in display order. The pointers borrow the session.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_catalog(session: *const PfSession, out: *mut PfCatalog) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let (Some(session), Some(out)) =
+            (unsafe { borrow_shared(session) }, unsafe { out.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        *out = PfCatalog {
+            items: session.catalog_items.as_ptr(),
+            items_len: session.catalog_items.len() as u32,
+            text: session.catalog_text.as_ptr(),
+            text_len: session.catalog_text.len() as u32,
+        };
+        PF_OK
+    })
+}
+
+/// Draws one catalog entry alone into `out`, for a sidebar thumbnail.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_preview(
+    session: *mut PfSession,
+    index: u32,
+    width_mm: f32,
+    height_mm: f32,
+    pixels_per_mm: f32,
+    out: *mut PfFrame,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let (Some(session), Some(out)) = (unsafe { borrow(session) }, unsafe { out.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        let code =
+            session.build_preview(index, width_mm.max(1.0), height_mm.max(1.0), pixels_per_mm);
+        if code != PF_OK {
+            return code;
+        }
+        *out = PfFrame {
+            calls: session.preview_calls.as_ptr(),
+            calls_len: session.preview_calls.len() as u32,
+            points: session.preview_points.as_ptr(),
+            points_len: session.preview_points.len() as u32,
+            text: session.preview_text.as_ptr(),
+            text_len: session.preview_text.len() as u32,
+            width_mm,
+            height_mm,
+        };
+        PF_OK
+    })
+}
+
+/// Returns the model to `t = 0` without touching the catalog or the ink.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_restart(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.restart()
     })
 }

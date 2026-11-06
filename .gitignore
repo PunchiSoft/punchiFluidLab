@@ -12,5 +12,5 @@
 .idea/
 .vscode/
 
-# Spike build output
-spike/qt-qml/build/
+# Qt application build output
+apps/punchi-fluid-qt/build/

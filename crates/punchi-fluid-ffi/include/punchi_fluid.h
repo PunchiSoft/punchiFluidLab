@@ -79,6 +79,28 @@ typedef struct PfCall {
     PfRgb fill;
 } PfCall;
 
+#define PF_CATEGORY_SUPPLY 0u
+#define PF_CATEGORY_VALVE 1u
+#define PF_CATEGORY_ACTUATOR 2u
+#define PF_CATEGORY_THROTTLE 3u
+#define PF_CATEGORY_ACCESSORY 4u
+#define PF_CATEGORY_SENSOR 5u
+
+typedef struct PfCatalogItem {
+    uint32_t id_at;
+    uint32_t id_len;
+    uint32_t name_at;
+    uint32_t name_len;
+    uint32_t category;
+} PfCatalogItem;
+
+typedef struct PfCatalog {
+    const PfCatalogItem *items;
+    uint32_t items_len;
+    const uint8_t *text;
+    uint32_t text_len;
+} PfCatalog;
+
 typedef struct PfFrame {
     const PfCall *calls;
     uint32_t calls_len;
@@ -113,6 +135,8 @@ int32_t pf_session_set_ink(PfSession *session, const PfInk *ink);
 int32_t pf_session_advance(PfSession *session, double dt);
 int32_t pf_session_set_valve(PfSession *session, uint32_t position);
 int32_t pf_session_toggle_valve(PfSession *session);
+/* Back to t = 0, keeping the catalog and the ink. */
+int32_t pf_session_restart(PfSession *session);
 
 /*
  * Rebuilds the frame for an area in millimetres. The pointers in `out` borrow the
@@ -127,6 +151,13 @@ int32_t pf_session_hit_valve(const PfSession *session, float x_mm, float y_mm);
 
 /* `1` when the last built frame has a layout at all. */
 int32_t pf_session_has_layout(const PfSession *session);
+
+/* The catalog in display order. The pointers borrow the session. */
+int32_t pf_session_catalog(const PfSession *session, PfCatalog *out);
+
+/* Draws one catalog entry alone, for a sidebar thumbnail. */
+int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, float height_mm,
+                           float pixels_per_mm, PfFrame *out);
 
 #ifdef __cplusplus
 }
