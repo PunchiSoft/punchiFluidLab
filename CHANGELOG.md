@@ -6,6 +6,57 @@ publicación.
 
 ## Unreleased
 
+### Puente hacia una interfaz Qt Quick — 2026-11-06
+
+La costura que ADR 0003 dejó abierta se recorrió hasta el final en una rama: el modelo,
+el catálogo y el dibujo siguen en Rust, y una ventana Qt Quick los maneja por un ABI C.
+Es una prueba, no una sustitución: `main` conserva la interfaz `egui` y la decisión
+—[ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md), en estado *propuesto*— la toma el
+propietario.
+
+- **Crate nuevo `punchi-fluid-ffi`**: una sesión opaca, telemetría en SI, `PfInk` para el
+  color, y el dibujo cruzando como **búfer de comandos** —un `PfCall` por primitiva— en
+  vez de como devoluciones de llamada, para que la ventana, el PNG y el PDF consuman la
+  misma lista que ya compara `Recording`. Los patrones de trazo se expanden en Rust con
+  la misma función que usan los dos backends, así que no hay tres implementaciones de
+  guion.
+- **`unsafe` está permitido en ese crate y en ningún otro.** El espacio de trabajo lo
+  prohíbe con `forbid`, que un crate no puede relajar; `punchi-fluid-ffi` no hereda esos
+  lints, los repite con `deny` y añade `undocumented_unsafe_blocks` para que cada puntero
+  tenga su justificación escrita.
+- **Prueba de la costura**: siete pruebas nuevas que crean una sesión desde el catálogo
+  incorporado, la avanzan 400 pasos hasta mover el pistón y presurizar el cilindro,
+  comprueban que `pf_abi()` coincide con los tipos de Rust, pasean cada primitiva del
+  cuadro para verificar que ninguna se sale del área y comprueban que un puntero nulo se
+  rechaza en vez de reventar.
+- **Prueba de la ventana**: `spike/qt-qml/` compila con CMake y Qt 6.11, enlaza el núcleo
+  como biblioteca estática (7 MB, sin ruta de búsqueda) y `--grab` renderiza una captura
+  fuera de pantalla para revisarla sin sesión gráfica.
+- **El color sigue viniendo de fuera**: la ventana lee `QPalette` —que el plugin de
+  plataforma ya rellenó desde `kdeglobals` y el portal— y la pasa como `PfInk`; en Rust
+  no hay un solo literal de color.
+
+#### Verificación
+
+- `cargo test -p punchi-fluid-ffi`: 7 pruebas en verde; `cargo clippy --all-targets -D
+  warnings` y `cargo fmt --check` limpios.
+- `QT_QPA_PLATFORM=offscreen ... --grab`: 1100×720 escritos, en reposo y accionada. La
+  válvula cambia de cuadro activo, la lectura pasa de 1,01 a 5,79 bar y la carrera de 0 a
+  100 mm.
+- **No se ejecutó `./scripts-dev/check.sh`**: el enlace de los binarios de prueba en
+  perfil de desarrollo agota la memoria de esta máquina.
+
+#### Limitaciones conocidas
+
+- El clic real, extremo a extremo, no está probado: la prueba de impacto es unitaria en
+  Rust y ambas partes usan la misma función de encuadre. La captura accionada se produce
+  por el mismo camino que el clic, no por un evento sintético.
+- `QQuickPaintedItem` rasteriza el cuadro completo en CPU. Con 200 componentes y 4 ms de
+  presupuesto (M4) habrá que medirlo; si no llega, el paso siguiente es `QSGGeometry` y
+  solo cambia la implementación de `Surface`.
+- El cajón de utilidades de Qt Quick Controls aún no se ha usado: la barra de la prueba
+  son primitivas de Qt Quick.
+
 ### Recorrido del vástago del cilindro — 2026-11-06
 
 El pistón recorre ahora la longitud interna que declara el archivo, no una fracción

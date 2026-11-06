@@ -11,3 +11,6 @@
 *.swp
 .idea/
 .vscode/
+
+# Spike build output
+spike/qt-qml/build/
