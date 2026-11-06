@@ -6,6 +6,57 @@ publicación.
 
 ## Unreleased
 
+### Armazón Qt Quick, perfil de memoria y una fuga de dibujo — 2026-11-06
+
+[ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md) pasa a **aceptado**: el modelo, el
+catálogo, el formato y el dibujo siguen en Rust; la ventana es Qt Quick y habla con el
+núcleo por un ABI C. `punchi-fluid-ui`, `punchi-fluid-desktop`, la mitad egui de
+`punchi-fluid-theme` y `punchi-fluid-icons` se retiran del espacio de trabajo.
+
+- **`apps/punchi-fluid-qt`**: ribbon de tres pestañas, barra lateral que refleja el
+  catálogo con el símbolo propio de cada definición, hoja y barra de estado. Un binario
+  de 7 MB con el núcleo enlazado estáticamente.
+- **El catálogo cruza la frontera**: `pf_session_catalog` lista las definiciones en orden
+  estable y `pf_session_preview` dibuja una sola, con el mismo código de dibujo que la
+  hoja, para que la miniatura no pueda diferir del símbolo.
+- **El tema se mide, no se supone**: `--check-theme` imprime los tres contrastes y falla
+  si uno no llega (texto 4,5:1; secundario y acento 3:1). Un color del escritorio que no
+  alcanza su criterio se desplaza lo justo para alcanzarlo, así que un acento invisible
+  sobre el fondo deja de ser posible.
+- **Se corrigió una fuga de memoria del dibujo.** `dashes()` podía girar para siempre: la
+  fase del guion caía sobre un límite, el paso se redondeaba a cero en `f32` y el bucle
+  añadía un punto por vuelta hasta que el núcleo mataba el proceso a **13,2 GB
+  residentes**. Ahora el avance tiene un suelo y el bucle un presupuesto derivado de la
+  longitud, de modo que un defecto futuro cuesta un dibujo malo y no la sesión.
+- **La ventana deja de repintar cuando no hay nada que ver.** `FluidSession::settled`
+  detiene el bucle tras medio segundo de quietud: una ventana en reposo pasa de **238
+  repintados en cuatro segundos a 1**, y deja de mantener despierto al compositor de un
+  panel de 144 Hz.
+- **Perfil de compilación para la máquina real**: `.cargo/config.toml` con dos trabajos de
+  `cargo` y solo tablas de líneas en `dev`; `scripts-dev/limits.sh` deriva de la memoria
+  del equipo un tope por binario de prueba y `check.sh` ejecuta las pruebas por
+  `test.sh`, con el tope aplicado.
+- **Habilidad nueva** `machine-resource-budget`: la máquina medida, el presupuesto, cómo
+  leer una muerte por OOM en `journalctl` y cómo acotar el culpable hasta una prueba.
+
+#### Verificación
+
+- `./scripts-dev/test.sh`: **134 pruebas en verde**, cada binario bajo un tope de 3,8 GB;
+  ninguna muerte por memoria.
+- `cargo clippy --workspace --all-targets -- -D warnings` y `cargo fmt --check` limpios.
+- `--report-paints 4` en reposo: **1 repintado**; accionada: 29 y se detiene.
+- `--check-theme` en ambos esquemas: texto 11,54:1 / 15,55:1, secundario 3,52:1 / 3,03:1,
+  acento 3,05:1 / 4,84:1. Ambos devuelven 0.
+- Capturas fuera de pantalla en claro y oscuro, en reposo y accionada.
+
+#### Limitaciones conocidas
+
+- El clic real, extremo a extremo, sigue sin prueba automática: la de impacto es unitaria
+  en Rust y ambas partes usan la misma función de encuadre.
+- `QQuickPaintedItem` rasteriza el cuadro completo en CPU; con 200 componentes habrá que
+  medirlo contra el presupuesto de 4 ms.
+- La hoja dibuja un circuito fijo: colocar componentes desde la barra lateral es M3.
+
 ### Puente hacia una interfaz Qt Quick — 2026-11-06
 
 La costura que ADR 0003 dejó abierta se recorrió hasta el final en una rama: el modelo,

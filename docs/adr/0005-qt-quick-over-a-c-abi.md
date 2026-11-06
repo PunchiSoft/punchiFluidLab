@@ -1,7 +1,6 @@
 # ADR 0005 — The sheet is Qt Quick over a C ABI, the model stays Rust
 
-- **Status:** proposed — the spike below exists and is green; accepting it is the
-  owner's call
+- **Status:** accepted — 2026-11-06, on the evidence in the spike below
 - **Date:** 2026-11-06
 - **Supersedes:** [0001](0001-language-and-layout.md)
 - **Context crates:** `punchi-fluid-ffi`, `punchi-fluid-ui`, `punchi-fluid-desktop`,

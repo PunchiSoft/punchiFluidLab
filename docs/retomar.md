@@ -14,7 +14,8 @@
 ```bash
 cd /home/cristian/Desarrollo/punchi-fluid-lab
 ./scripts-dev/check.sh                 # tiene que salir 0. Son 37 pruebas.
-cargo run -p punchi-fluid-desktop      # la ventana que existe hoy
+cmake --build apps/punchi-fluid-qt/build   # la ventana que existe hoy
+apps/punchi-fluid-qt/build/punchi-fluid   # (Qt 6.5+, CMake y Ninja)
 ```
 
 Después, en este orden:
@@ -56,17 +57,28 @@ Dos ideas lo definen y explican casi todas las decisiones:
 | Catálogo de componentes (TOML, reemplazo, `disabled`) | **hecho** | 7 pruebas; probado en la sesión real con un override y un archivo roto |
 | Física de gas, válvula por posiciones, cilindro con muelle y rozamiento | **hecho** | 18 pruebas: ISO 6358 contra cálculo a mano, balance de masa 1e-9, carrera acotada, 10⁵ pasos sin NaN |
 | Lienzo: símbolos del catálogo, clic en la válvula, lecturas en vivo | **hecho** | 2 pruebas de clic headless + capturas de pantalla |
-| Armazón (cinta, barra lateral, barra de estado) y tema KDE | **hecho** | 17 pruebas de tema + 4 de contraste + prueba que prohíbe `Color32::` fuera del tema; capturas claro/oscuro |
+| Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme` mide los tres contrastes y falla si no llegan; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
 | Exportación PNG/PDF con hojas normalizadas | **hecho** | 31 pruebas de export (PDF y ráster), inspección con `pdftoppm` y del PNG a 300 dpi |
 | Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 4 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Editor: documento, deshacer, tuberías, red | **solo especificado** | [plan.md](plan.md) M3–M4 |
 
-**Total de pruebas: 148** — `core` 7, `catalog` 26, `review` 3, `file` 3, `solver` 18,
-`theme` 17, `contrast` 4, `no_colour_literals` 1, `draw` 16, `export` 31, `ui` 17, `click` 2.
-`check.sh` en verde, 0 warnings de clippy.
+**Total de pruebas: 134** — `core` 7, `catalog` 31, `file` 3, `solver` 21, `draw` 25,
+`export` 34 (PDF 8, PNG 5, hoja y generador 21), `ffi` 10, `review` 3.
+`./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
+warnings` limpio y `cargo fmt --check` limpio.
 
-**No es un repositorio git.** No hay commits: todo vive en el disco. `git init` es una
-decisión pendiente del propietario (pregunta 1 de §13).
+**El repositorio ya existe.** `git init -b main` y el primer commit (la rebanada
+vertical tal cual estaba) se hicieron el 2026-11-06. Encima entraron dos commits: el ABI C
+(`punchi-fluid-ffi`) y la ventana Qt Quick. [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md)
+está aceptado y jubila `punchi-fluid-ui`, `desktop`, `theme` e `icons`. No hay remoto
+todavía: eso sigue siendo decisión del propietario.
+
+Los dos números que hay que recordar de la máquina: **dos trabajos de `cargo`** y **cada
+binario de prueba bajo un tope de memoria**. `./scripts-dev/test.sh` lo aplica solo; el
+porqué y el diagnóstico de una muerte por OOM están en
+[.agents/skills/machine-resource-budget](../.agents/skills/machine-resource-budget/SKILL.md).
+Y si la GPU aparece al 100 % con **7 W**, es el compositor presentando cuadros en un panel
+de 144 Hz, no el simulador calculando.
 
 ---
 
@@ -218,10 +230,10 @@ done
 # esperado: core 7, catalog 7, file 3, solver 18, ui 2
 
 # 3. La ventana
-cargo run -p punchi-fluid-desktop          # Play, velocidad 0.25x, Actuate valve
+apps/punchi-fluid-qt/build/punchi-fluid     # el botón del ribbon acciona la válvula
 
 # 4. Modo demostración (arranca accionada y en marcha)
-PUNCHI_FLUID_DEMO=1 cargo run -p punchi-fluid-desktop
+apps/punchi-fluid-qt/build/punchi-fluid --toggle   # arranca accionada
 
 # 5. Captura para revisar el dibujo
 spectacle -b -n -f -o /tmp/lab.png
@@ -388,7 +400,7 @@ Para no volver a discutirlas sin motivo:
 
 | # | Pregunta | Hito | Si no hay respuesta |
 |---|---|---|---|
-| 1 | ¿`git init` y primer commit en esta carpeta? | antes de M1 | se sigue sin git |
+| 1 | ¿`git remote add origin` y publicar en GitHub? | cuando el propietario elija el remoto | el historial vive solo en el disco |
 | 2 | ¿Edición vigente del estándar de identificación de puertos? | M1.5 | 1/2/4/3/5/12/14 y se dice en la revisión |
 | 3 | ¿Cinta colapsa a 1100 o a 1280 px? | M1 | 1100 |
 | 4 | ¿Exportación por defecto A4 vertical, 300 dpi, bloque con título/proyecto/revisión/fecha? | M2 | sí a todo |

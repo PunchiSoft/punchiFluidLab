@@ -2,7 +2,8 @@
 
 **English** | [Español](README.es.md)
 
-A desktop simulator for pneumatic and hydraulic circuits, written in Rust.
+A desktop simulator for pneumatic and hydraulic circuits. The model, the format and the
+drawing are Rust; the window is Qt Quick.
 **Status: `0.1.0`, unreleased.** A vertical slice runs: supply, 3/2 valve and
 single-acting cylinder with real physics. The application shell is in place — ribbon,
 catalog sidebar, status bar and the desktop's own light or dark palette. The editor is
@@ -56,8 +57,18 @@ frame, the title block, a legend of line classes and port numerals, and — whil
 review is open — the note that the symbols are not yet verified against ISO 1219-1. Two
 exports of the same circuit produce the same bytes.
 
-Requirements: Rust stable (pinned in `rust-toolchain.toml`). On Wayland or X11 the
-window uses `glow`; egui also makes a WebAssembly build possible later.
+Requirements: Rust stable (pinned in `rust-toolchain.toml`), Qt 6.5 or newer with Qt Quick,
+CMake and Ninja. The Rust core builds with `cargo build --release -p punchi-fluid-ffi`; the
+window with
+
+```bash
+cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja
+cmake --build apps/punchi-fluid-qt/build
+apps/punchi-fluid-qt/build/punchi-fluid
+```
+
+The core is linked as a static library, so the result is one binary with no runtime search
+path. Keeping it in Rust is what also makes a WebAssembly build possible later.
 
 ## Components are files, not code
 
@@ -143,11 +154,12 @@ hand.
 The product is three different problems: the physics, the file format and the
 schematic editor. Keeping them in separate crates means the solver can be tested
 without a window, the format can migrate documents while the editor changes, and
-the toolkit — egui today, QML through `cxx-qt` if the app must look native on
-Plasma — is a decision confined to one crate.
+the toolkit is a decision confined to one crate. Today the drawing crosses to the window
+as a command buffer over a C ABI (`punchi-fluid-ffi`), and Qt Quick replays it with
+`QPainter`.
 
 The full reasoning, including what it costs, is in
-[docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md).
+[docs/adr/0005-qt-quick-over-a-c-abi.md](docs/adr/0005-qt-quick-over-a-c-abi.md).
 
 ## The physical model, in one paragraph
 

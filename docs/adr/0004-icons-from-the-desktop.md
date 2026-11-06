@@ -1,6 +1,8 @@
 # ADR 0004 — Icons come from the desktop, never from the repository
 
-- **Status:** accepted
+- **Status:** superseded by [0005](0005-qt-quick-over-a-c-abi.md) — Qt resolves the
+  desktop icons itself through `QIcon::fromTheme`, so `punchi-fluid-icons` retires; the
+  rule that components are shown by their own symbol still holds.
 - **Date:** 2026-11-06
 - **Context crates:** `punchi-fluid-icons`, `punchi-fluid-ui`, `punchi-fluid-desktop`
 

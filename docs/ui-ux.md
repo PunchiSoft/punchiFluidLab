@@ -54,7 +54,7 @@ single menu button plus the simulation transport (a ribbon needs width to work).
 ### 1. Ribbon (top)
 
 The icons are the **desktop's own**: each action names a freedesktop icon
-(`document-new`, `edit-undo`, `media-playback-start`), `punchi-fluid-icons` finds it in the
+(`document-new`, `edit-undo`, `media-playback-start`), `QIcon::fromTheme` finds it in the
 user's theme and rasterises it; a machine with no such icon gets the label alone, as a
 native application does. See [ADR 0004](adr/0004-icons-from-the-desktop.md).
 
@@ -143,33 +143,41 @@ last message. It is the place for "saved", "3 files skipped", "export written to
 | spacing | `grid_unit` (18 px in Breeze) and its multiples |
 | typography | `[General] font` family and point size; one scale ×1, ×1.15, ×1.3 |
 
-A single semantic layer converts these tokens into `egui::Visuals` + `Style` once per
-theme change. Widgets ask for `colour(Token::Accent)`, never for a literal. The rule
-is in `AGENTS.md`: a hardcoded colour or pixel size in a widget is a bug.
+A single semantic layer, `apps/punchi-fluid-qt/src/theme.cpp`, converts the palette into
+`ThemeTokens` once per theme change and pushes them into the drawing as `PfInk`. Widgets
+ask the session for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`:
+a hardcoded colour or pixel size in a widget is a bug, and the only literals in the
+application are the two forced palettes used to test light and dark.
+
+A colour that does not reach its criterion against the surface is shifted just enough to
+reach it (`ensureContrast`), because a desktop may hand the application an accent that
+disappears on its own window colour.
 
 ### Following the desktop
 
-1. Colour scheme: `org.freedesktop.portal.Settings` →
-   `org.freedesktop.appearance color-scheme` (`0` no preference, `1` dark, `2` light),
-   then `SettingChanged` for live switching. Verified available on this machine.
-2. Palette: `$XDG_CONFIG_HOME/kdeglobals` (`[Colors:*]`), respecting
-   `LookAndFeelPackage`. Read on start and on theme change, never per frame.
-3. Accent: `[Colors:Selection] BackgroundNormal`, falling back to the scheme default.
-4. Font: `[General] font=<family>,<point size>,…`; fall back to the default font when
-   the family is missing.
-5. Icons: prefer `-symbolic` SVGs from `breeze` (found under
-   `/usr/share/icons/breeze/actions/22/`), tinted with `text` and cached per
-   (name, size, tint). Rasterised through `egui_extras` with the `svg` feature. Icons
-   are only for actions; components use their own symbol.
-6. HiDPI: `pixels_per_point` from the window; sizes are expressed in points, so a
-   scale change needs no layout change.
-7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): portal first, then
-   `Visuals::dark()`/`light()`. The application must look deliberate, not broken.
+1. Colour scheme and palette: the Qt platform plugin has already merged
+   `$XDG_CONFIG_HOME/kdeglobals` and the `org.freedesktop.appearance color-scheme`
+   portal into `QApplication::palette()`. The front end reads that, on start and on
+   `ApplicationPaletteChange`, never per frame.
+2. Accent: `QPalette::Highlight`, shifted by `ensureContrast` when the desktop picks one
+   that cannot be seen on its own window colour.
+3. Secondary greys: `QPalette::WindowText` blended towards `QPalette::Window` by 30 %
+   and 55 %, then measured; the palette names neither.
+4. Font: `[General] font` reaches Qt through the platform plugin; the drawing asks only
+   for a cap height, so a font change needs no layout change.
+5. Icons: `QIcon::fromTheme`, which reads the same Breeze theme. Icons are only for
+   actions; components are shown by their own symbol, drawn by `punchi-fluid-draw`.
+6. HiDPI: Qt scales logical pixels; the drawing is in millimetres and the replay applies
+   one scale, so a scale change needs no layout change.
+7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): the platform plugin supplies
+   its own palette and the same code path applies. The application must look deliberate,
+   not broken.
 
 ### Accessibility
 
-- `accesskit` is a feature of `eframe` 0.37; enable it in `punchi-fluid-desktop` so
-  the ribbon, sidebar and status bar expose roles and names.
+- Qt exposes roles and names through `QAccessible`/AT-SPI; a `QML_ELEMENT` with a
+  `Q_PROPERTY` is reachable, and a custom item needs `accessibleRole` and
+  `accessibleName` set explicitly.
 - Contrast: text ≥ 4.5:1, lines and icons ≥ 3:1 against their surface, measured in a
   test, not by eye.
 - Keyboard: every action reachable without a pointer; `Tab` cycles regions, arrows

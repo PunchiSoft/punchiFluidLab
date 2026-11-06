@@ -20,17 +20,21 @@ file is the execution order.
 | ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | 8 lint rules with a test each, 4 review files with light/dark screenshots, review-folder test; 300 dpi pending M2 |
 | Editor: document, undo, pipes | **specified only** — [plan.md](plan.md) M3/M4 | none |
 
-Nothing is committed: the directory is not a git repository yet. **First action of the
-next session is the same as before: `git init` is a decision for the owner**, and until
-it happens every change lives only on this disk.
+The repository is initialised and the baseline is committed; the working tree is on
+`main` with the Qt front end merged in.
 
 ## Before the first line of code
 
 ```bash
 ./scripts-dev/check.sh                 # must be green before you touch anything
-cargo run -p punchi-fluid-desktop      # the current window
-PUNCHI_FLUID_DEMO=1 cargo run -p punchi-fluid-desktop   # starts actuated and playing
+cmake --build apps/punchi-fluid-qt/build   # the window (see apps/punchi-fluid-qt/CMakeLists.txt)
+apps/punchi-fluid-qt/build/punchi-fluid --toggle   # starts actuated
 ```
+
+The first commit is `5d47854`, `chore: import the vertical slice as the baseline`; the
+toolkit decision is [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md), accepted on 2026-11-06.
+Builds run with two cargo jobs and each test binary under a memory ceiling — see
+[.agents/skills/machine-resource-budget](../.agents/skills/machine-resource-budget/SKILL.md).
 
 Environment verified on 2026-11-06: Fedora 44, Plasma 6.7.5, Wayland, KDE, Rust 1.98.1,
 `~/.config/kdeglobals` present with `[Colors:Window] BackgroundNormal=36,36,36` and
@@ -61,19 +65,29 @@ after M2's first step, before the export backends; nothing else changes.
 
 ---
 
+> **Toolkit note (2026-11-06).** [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) is accepted:
+> the window is Qt Quick over the C ABI in `punchi-fluid-ffi`, and `punchi-fluid-theme`,
+> `punchi-fluid-ui`, `punchi-fluid-desktop` and `punchi-fluid-icons` have been retired.
+> The milestone *goals* below still describe the product correctly; the file paths and the
+> `egui` types in them no longer exist. Where this document says `crates/punchi-fluid-ui`,
+> read `apps/punchi-fluid-qt`. The theme work of M1 is done, in
+> `apps/punchi-fluid-qt/src/theme.cpp` — measured by `--check-theme`, not by eye.
+
 ## M1 — Application shell
 
 Goal: the window looks and behaves like the design, using the desktop's own colours.
 
-### 1.1 `punchi-fluid-theme` (new crate)
+### 1.1 the theme adapter — **done, in the Qt front end**
+
+`QApplication::palette()` already carries `kdeglobals` and the colour-scheme portal, so
+the adapter reads it and derives `ThemeTokens`; `ensureContrast` shifts any colour that
+cannot reach its criterion. The historical plan this section replaced is below, kept only
+so the reasoning is not lost.
 
 ```
-crates/punchi-fluid-theme/
-  Cargo.toml            # no egui features, no I/O at runtime beyond reading kdeglobals
-  src/lib.rs            # Theme, Token, apply()
+crates/punchi-fluid-theme/          # retired by ADR 0005
   src/kdeglobals.rs     # INI parsing, [Colors:*], [General] font, LookAndFeelPackage
   src/portal.rs         # org.freedesktop.appearance color-scheme, + SettingChanged
-  src/tokens.rs         # semantic tokens -> egui::Visuals + Style
   tests/contrast.rs     # text >= 4.5:1, lines >= 3:1, both schemes
 ```
 
@@ -170,11 +184,11 @@ Conformance work that belongs here, not later: port numerals from the `port` tab
 `LineClass` on every polyline, blocking mark at closed ports, and a filled dot at
 three-way junctions.
 
-### 2.2 `punchi-fluid-ui` implements `Surface`
+### 2.2 the window implements `Surface`
 
-A thin adapter over `egui::Painter`; `canvas.rs` keeps only hit-testing, cursor and the
-click outcome. Existing click tests must keep passing unchanged — that is the
-regression proof for this step.
+Done: `apps/punchi-fluid-qt/src/replay.cpp` replays the command buffer with `QPainter`,
+and `canvasitem.cpp` keeps only hit-testing and the click outcome. The equivalent on the
+egui side was `punchi-fluid-ui::surface::EguiSurface`, retired by ADR 0005.
 
 ### 2.3 Page geometry (`punchi-fluid-export`)
 

@@ -1,6 +1,7 @@
 # 0001 — Rust and a crate-per-layer workspace
 
-- **Status:** accepted
+- **Status:** superseded by [0005](0005-qt-quick-over-a-c-abi.md) — Rust keeps the
+  model, the format and the drawing; the window is Qt Quick.
 - **Date:** 2026-11-06
 
 ## Context

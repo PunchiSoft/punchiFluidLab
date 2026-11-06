@@ -2,7 +2,8 @@
 
 [English](README.md) | **Español**
 
-Simulador de escritorio de circuitos neumáticos e hidráulicos, escrito en Rust.
+Simulador de escritorio de circuitos neumáticos e hidráulicos. El modelo, el formato y el
+dibujo son Rust; la ventana es Qt Quick.
 **Estado: `0.1.0`, sin publicar.** Ya corre una rebanada vertical: suministro,
 válvula 3/2 y cilindro de simple efecto con física real. El armazón está hecho —cinta,
 barra lateral de catálogo, barra de estado y la paleta clara u oscura del escritorio—.
@@ -59,8 +60,19 @@ alguna revisión de símbolo siga abierta— la nota de que los símbolos aún n
 verificados contra ISO 1219-1. Dos exportaciones del mismo circuito producen los mismos
 bytes.
 
-Requisitos: Rust estable (fijado en `rust-toolchain.toml`). En Wayland o X11 la
-ventana usa `glow`; egui permite además una compilación a WebAssembly más adelante.
+Requisitos: Rust estable (fijado en `rust-toolchain.toml`), Qt 6.5 o superior con Qt Quick,
+CMake y Ninja. El núcleo en Rust se compila con `cargo build --release -p punchi-fluid-ffi`;
+la ventana con
+
+```bash
+cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja
+cmake --build apps/punchi-fluid-qt/build
+apps/punchi-fluid-qt/build/punchi-fluid
+```
+
+El núcleo se enlaza como biblioteca estática, así que el resultado es un solo binario sin
+ruta de búsqueda. Mantenerlo en Rust es lo que además permite una compilación a
+WebAssembly más adelante.
 
 ## Los componentes son archivos, no código
 
@@ -149,7 +161,7 @@ forma más débil: el restrictor fijo se dibujó sin la norma a mano.
 
 El producto son tres problemas distintos: la física, el formato de archivo y el
 editor de esquemas. Separarlos en crates permite probar el solver sin ventana, migrar
-documentos mientras el editor cambia, y confinar la decisión de toolkit —egui hoy,
+documentos mientras el editor cambia, y confinar la decisión de toolkit —Qt Quick hoy,
 QML con `cxx-qt` si la app debe verse nativa en Plasma— a un solo crate.
 
 El razonamiento completo, incluido lo que cuesta, está en
