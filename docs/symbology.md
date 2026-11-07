@@ -13,6 +13,21 @@ schematic that is almost right is worse than one that is obviously a sketch.
 | ISO 1219-3 | 2016 | Symbol modules and connected symbols in circuit diagrams |
 | ISO 6358 | — | Flow through a pneumatic restriction: sonic conductance and critical ratio |
 
+### National adoptions
+
+A norm is what a country applies, not what an international committee published. Where the
+standard has been adopted nationally, the adoption is the text a reader here is expected to
+follow, and it is the one to cite in a review:
+
+| Country | Adoption | Status in this repository |
+|---|---|---|
+| Chile | **NCh-ISO 1219**, the INN adoption of ISO 1219 (symbols, circuit diagrams and symbol modules) | **not verified from this machine**: neither the number nor the in-force year has been confirmed against the INN catalogue, so it is named here as the adoption to check, not quoted as fact |
+
+A symbol is **not conformant** until the adoption that applies to its reader has been
+confirmed and written in its review file. Until then the review says `pending`, and the
+export labels the document as unverified — which is what
+[assets/symbols/README.md](../assets/symbols/README.md) already promises.
+
 Confirmed against the ISO catalogue on 2026-11-06: 1219-1:2012, 1219-2:2012 and
 1219-3:2016 are the current editions. Port numerals follow the fluid-power
 port-identification convention used with those symbols (1 pressure, 2 and 4 working,
