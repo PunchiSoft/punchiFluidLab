@@ -17,21 +17,26 @@ use crate::symbol::{self, Ink};
 pub const SUPPLY_ID: &str = punchi_fluid_solver::pneumatic::DEFAULT_SUPPLY;
 /// Identifier of the valve of the fixed circuit.
 pub const VALVE_ID: &str = punchi_fluid_solver::pneumatic::DEFAULT_VALVE;
+/// Identifier of the service unit of the worked example.
+pub const PREPARATION_ID: &str = "preparation.service_unit";
+
 /// Identifier of the cylinder of the fixed circuit.
 pub const CYLINDER_ID: &str = punchi_fluid_solver::pneumatic::DEFAULT_CYLINDER;
 
-/// Where the three components sit, in millimetres of the drawing.
+/// Where the four components of the worked example sit, in millimetres of the drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Layout {
-    /// Supply symbol box.
+    /// Air source: the compressor. A source is a machine, not the air itself.
     pub supply: Rect,
+    /// Service unit that makes the compressor's air usable, between it and the valve.
+    pub preparation: Rect,
     /// Valve symbol box.
     pub valve: Rect,
     /// Cylinder symbol box.
     pub cylinder: Rect,
 }
 
-/// Fixed placement of the three components inside `area`.
+/// Fixed placement of the four components inside `area`.
 ///
 /// Returns `None` when the area is too small to draw something readable, so a tiny
 /// canvas or a thumbnail does not produce a smudge.
@@ -41,11 +46,18 @@ pub fn layout(area: Rect) -> Option<Layout> {
     if square < 8.0 {
         return None;
     }
-    let supply = Rect::from_center_size(area.point_at(0.17, 0.30), square, square);
-    let valve = Rect::from_center_size(area.point_at(0.47, 0.72), square, square);
-    let cylinder = Rect::from_center_size(area.point_at(0.72, 0.26), square * 2.2, square);
+    let supply = Rect::from_center_size(area.point_at(0.14, 0.24), square, square);
+    // The service unit sits between the source and the first valve, in series and in that
+    // order: what comes out of it is the line pressure the rest of the circuit is designed
+    // around, so it cannot be drawn after the valve.
+    // Square, like every other accessory: the symbol is drawn in a square box, so a box of
+    // another shape would stretch its diamonds and its dial.
+    let preparation = Rect::from_center_size(area.point_at(0.40, 0.24), square, square);
+    let valve = Rect::from_center_size(area.point_at(0.50, 0.74), square, square);
+    let cylinder = Rect::from_center_size(area.point_at(0.80, 0.28), square * 2.2, square);
     Some(Layout {
         supply,
+        preparation,
         valve,
         cylinder,
     })
@@ -150,14 +162,24 @@ fn draw_hoses(
     catalog: &Catalog,
     ink: &Ink,
 ) {
-    let (Some(supply), Some(valve), Some(cylinder)) = (
+    let (Some(supply), Some(preparation), Some(valve), Some(cylinder)) = (
         catalog.get(SUPPLY_ID),
+        catalog.get(PREPARATION_ID),
         catalog.get(VALVE_ID),
         catalog.get(CYLINDER_ID),
     ) else {
         return;
     };
-    draw_pipes(surface, placed, system, supply, valve, cylinder, ink);
+    draw_pipes(
+        surface,
+        placed,
+        system,
+        supply,
+        preparation,
+        valve,
+        cylinder,
+        ink,
+    );
 }
 
 /// Smallest box containing both.
@@ -174,11 +196,13 @@ fn port(definition: &ComponentDefinition, rect: Rect, role: PortRole) -> Option<
         .map(|port| symbol::at(rect, port.position[0], port.position[1]))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_pipes(
     surface: &mut dyn Surface,
     placed: &Layout,
     system: &Network,
     supply: &ComponentDefinition,
+    preparation: &ComponentDefinition,
     valve: &ComponentDefinition,
     cylinder: &ComponentDefinition,
     ink: &Ink,
@@ -186,26 +210,39 @@ fn draw_pipes(
     let working = pressure_colour(system, ink);
     let width = symbol::LINE * 1.2;
 
-    let (Some(supply_out), Some(valve_in), Some(valve_out), Some(cylinder_in)) = (
+    let (
+        Some(supply_out),
+        Some(unit_in),
+        Some(unit_out),
+        Some(valve_in),
+        Some(valve_out),
+        Some(cylinder_in),
+    ) = (
         port(supply, placed.supply, PortRole::Supply),
+        port(preparation, placed.preparation, PortRole::Supply),
+        port(preparation, placed.preparation, PortRole::Working),
         port(valve, placed.valve, PortRole::Supply),
         port(valve, placed.valve, PortRole::Working),
         port(cylinder, placed.cylinder, PortRole::Working),
-    ) else {
+    )
+    else {
         return;
     };
 
-    // Offsets are fractions of the symbol size, never millimetres of paper: the
-    // composition must be the same on a window and on an A2 sheet.
-    let below = supply_out.y.max(valve_in.y) + placed.supply.height() * 0.45;
-    let supply_line = [
-        supply_out,
-        Pt::new(supply_out.x, below),
+    // Source first, then the unit that makes its air usable, then the valve. Offsets are
+    // fractions of the symbol size, never millimetres of paper: the composition must be the
+    // same on a window and on an A2 sheet.
+    let supply_line = [supply_out, unit_in];
+    let below = valve_in.y + placed.valve.height() * 0.45;
+    let unit_line = [
+        unit_out,
+        Pt::new(unit_out.x, below),
         Pt::new(valve_in.x, below),
         valve_in,
     ];
     let working_line = [valve_out, Pt::new(valve_out.x, cylinder_in.y), cylinder_in];
     surface.line(&supply_line, Stroke::new(width, ink.supply));
+    surface.line(&unit_line, Stroke::new(width, ink.supply));
     surface.line(&working_line, Stroke::new(width, working));
 
     // A line that carries air says which way it goes, as the reference does: a solid
@@ -213,13 +250,7 @@ fn draw_pipes(
     // reverses it. A line with no flow carries none, so the arrow is the flow and not a
     // decoration.
     let size = placed.valve.height() * 0.06;
-    draw_flow_arrows(
-        surface,
-        &supply_line,
-        system.supply_flow(),
-        size,
-        ink.supply,
-    );
+    draw_flow_arrows(surface, &unit_line, system.supply_flow(), size, ink.supply);
     draw_flow_arrows(surface, &working_line, system.working_flow(), size, working);
 }
 

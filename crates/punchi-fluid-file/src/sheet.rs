@@ -413,7 +413,7 @@ mod tests {
             placement: vec![
                 StoredPlacement {
                     id: 1,
-                    catalog: String::from("supply.workshop"),
+                    catalog: String::from("supply.compressor"),
                     x: 10.0,
                     y: 20.0,
                     width: 26.0,
@@ -550,7 +550,7 @@ mod tests {
           "format": 1,
           "title": "Viejo",
           "placement": [
-            {"id": 1, "catalog": "supply.workshop", "x": 10.0, "y": 20.0,
+            {"id": 1, "catalog": "supply.compressor", "x": 10.0, "y": 20.0,
              "width": 26.0, "height": 26.0}
           ],
           "pipe": []

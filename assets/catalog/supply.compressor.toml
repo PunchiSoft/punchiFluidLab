@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Compressor: the machine that makes the compressed air, not the air itself.
+#
+# The circle with the **outline** triangle inside it is the source symbol of ISO 1219-1 for a
+# gas; a filled triangle is the hydraulic source, so the fill is a medium and not a style
+# choice. The triangle stands on its base line inside the circle, and the delivery leaves the
+# bottom through a short stem that ends in the small open circle of a connection point.
+#
+# A compressor alone is not a usable air line: the air it delivers is wet and its pressure
+# wanders. The service unit (`preparation.service_unit`) is what makes it usable.
+
+schema = 3
+id = "supply.compressor"
+name = "Compressor, 6 bar"
+name_es = "Compresor, 6 bar"
+category = "supply"
+summary = "Makes the compressed air that feeds the circuit."
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.5, 0.93]
+
+[behaviour]
+type = "supply"
+pressure_bar = 6.0
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.40, 0.30]
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.22, 0.6819, 0.55, 0.3181, 0.55]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.70, 0.5, 0.86]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.87, 0.05]

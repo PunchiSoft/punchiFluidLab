@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Filter with a manual drain: filters the air and lets the condensate out by hand.
+#
+# Same square-turned-45° diamond as the plain filter, with two additions that carry the
+# meaning: the **dashed line along the vertical diagonal** is the filter element, and the
+# **stem leaving the bottom vertex** is the drain. Without the stem the symbol is a filter and
+# not a separator with a drain, so one is never drawn as the other.
+
+schema = 3
+id = "filter.air_manual_drain"
+name = "Air filter with manual drain"
+name_es = "Filtro de aire con purgado manual"
+category = "accessory"
+summary = "Filters the air and lets the condensate out by hand."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+[behaviour]
+type = "throttle"
+conductance = 2.0e-9
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.26, 0.70, 0.46, 0.5, 0.66, 0.30, 0.46]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.26, 0.5, 0.66]
+line_class = "drain"
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.46, 0.30, 0.46]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.70, 0.46, 0.94, 0.46]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.06, 0.46, 0.045]
+
+[[symbol]]
+kind = "circle"
+points = [0.94, 0.46, 0.045]
+
+# The drain, from the bottom vertex.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.66, 0.5, 0.88]
+line_class = "working"

@@ -73,10 +73,23 @@ fn write_review_images(catalog: &Catalog) {
                 Colour::new(30, 30, 30),
             ),
         ] {
+            // The thumbnail's box has the aspect the application gives the symbol, so the
+            // review image cannot hide a deformation: a thin barrel is drawn in a wide box
+            // and everything else in a square one, exactly as the sheet does it.
+            let wide = definition.kinematics == punchi_fluid_catalog::Kinematics::LinearActuator;
+            let (inner_width, inner_height) = if wide {
+                (48.0, 48.0 / 2.2)
+            } else {
+                (30.0, 30.0)
+            };
             let page = Rect::from_min_size(Pt::new(0.0, 0.0), 60.0, 45.0);
             let mut surface = PngSurface::new(page, 200.0).expect("the thumbnail page");
             surface.rect(page, 0.0, Some(background), None);
-            let inner = Rect::from_min_size(Pt::new(6.0, 8.0), 48.0, 26.0);
+            let inner = Rect::from_min_size(
+                Pt::new((60.0 - inner_width) * 0.5, (45.0 - inner_height) * 0.5),
+                inner_width,
+                inner_height,
+            );
             punchi_fluid_draw::draw_component(&mut surface, inner, definition, 0, 0.5, &ink);
             let bytes = surface.encode().expect("encodes");
             let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

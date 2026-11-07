@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Compressed-air source: the connection to the workshop network.
+#
+# The bare **outline triangle** is how a diagram says "the air arrives from the network",
+# without drawing the machine that makes it. It is the symbol a schematic uses when the
+# compressor is elsewhere in the plant, which is the usual case.
+#
+# It is drawn as an equilateral triangle standing on a short stem: the stem is the connection,
+# and its length is what keeps the triangle clear of whatever the symbol is wired to.
+
+schema = 3
+id = "supply.network"
+name = "Compressed air network, 6 bar"
+name_es = "Red de aire comprimido, 6 bar"
+category = "supply"
+summary = "The compressed-air network arrives here."
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.5, 0.92]
+
+[behaviour]
+type = "supply"
+pressure_bar = 6.0
+
+# An equilateral triangle: half the base is tan(30°) of the height, so the proportions are
+# the triangle's and not a shape that happens to look like one.
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.16, 0.7887, 0.66, 0.2113, 0.66]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.66, 0.5, 0.92]
+line_class = "working"

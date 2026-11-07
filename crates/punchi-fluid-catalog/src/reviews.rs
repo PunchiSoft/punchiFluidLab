@@ -19,8 +19,32 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/cylinder.double_acting_32_200.md"),
     ),
     (
-        "supply.workshop",
-        include_str!("../../../assets/symbols/review/supply.workshop.md"),
+        "supply.compressor",
+        include_str!("../../../assets/symbols/review/supply.compressor.md"),
+    ),
+    (
+        "supply.network",
+        include_str!("../../../assets/symbols/review/supply.network.md"),
+    ),
+    (
+        "preparation.service_unit",
+        include_str!("../../../assets/symbols/review/preparation.service_unit.md"),
+    ),
+    (
+        "preparation.service_unit_simple",
+        include_str!("../../../assets/symbols/review/preparation.service_unit_simple.md"),
+    ),
+    (
+        "filter.air",
+        include_str!("../../../assets/symbols/review/filter.air.md"),
+    ),
+    (
+        "filter.air_manual_drain",
+        include_str!("../../../assets/symbols/review/filter.air_manual_drain.md"),
+    ),
+    (
+        "lubricator.oil",
+        include_str!("../../../assets/symbols/review/lubricator.oil.md"),
     ),
     (
         "throttle.fixed",

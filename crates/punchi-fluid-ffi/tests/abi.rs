@@ -388,7 +388,7 @@ fn a_component_dropped_on_the_sheet_can_be_moved_and_undone() {
     );
     // SAFETY: live session.
     let seeded = unsafe { pf_session_component_count(session) };
-    assert_eq!(seeded, 3, "the sheet starts with the simulated circuit");
+    assert_eq!(seeded, 4, "the sheet starts with the simulated circuit");
 
     // The fifth catalog entry is a component the user can drop; the index is the one the
     // sidebar shows, so this is the same call the drop handler makes.
@@ -472,14 +472,14 @@ fn a_component_dropped_on_the_sheet_can_be_moved_and_undone() {
 #[test]
 fn two_ports_can_be_joined_and_the_join_is_refused_when_it_makes_no_sense() {
     let session = session();
-    // The starting circuit is seeded at creation — three components and the two hoses that
-    // join them — so it exists before any frame is drawn, which is what lets a front end
-    // connect before it paints.
+    // The starting circuit is seeded at creation — compressor, service unit, valve and
+    // cylinder, and the three hoses that join them — so it exists before any frame is drawn,
+    // which is what lets a front end connect before it paints.
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // SAFETY: live session.
     let seeded = unsafe { pf_session_connection_count(session) };
-    assert_eq!(seeded, 2, "the starting circuit is drawn with its hoses");
+    assert_eq!(seeded, 3, "the starting circuit is drawn with its hoses");
 
     // A pair the starting circuit does not already use, so this joins rather than repeats.
     let from = CString::new("3").unwrap_or_default();
@@ -957,7 +957,7 @@ fn a_sheet_saves_and_opens_with_its_edits_and_routes() {
     assert_eq!(telemetry.has_model, 1);
     assert!((telemetry.stroke_m - 0.050).abs() < 1e-9);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_connection_count(session) }, 2);
+    assert_eq!(unsafe { pf_session_connection_count(session) }, 3);
     let mut offset = 0.0_f32;
     // SAFETY: live session and a writable float.
     assert_eq!(
@@ -979,7 +979,7 @@ fn a_sheet_saves_and_opens_with_its_edits_and_routes() {
         PF_ERR_MODEL
     );
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -1262,8 +1262,9 @@ fn releasing_the_valve_vents_the_chamber_and_the_spring_brings_the_rod_back() {
 #[test]
 fn a_turned_component_puts_its_ports_where_the_symbol_is_drawn() {
     let session = session();
-    // SAFETY: live session; the starting circuit has supply, valve and cylinder.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    // SAFETY: live session; the starting circuit has a compressor, a service unit, a valve
+    // and a cylinder.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // The valve waits for a port to be dragged to: it is the one a turn is visible on.
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_select(session, 1) }, PF_OK);
@@ -1352,15 +1353,15 @@ fn a_turned_component_puts_its_ports_where_the_symbol_is_drawn() {
 #[test]
 fn a_selection_of_several_components_moves_copies_and_goes_away_as_one_change() {
     let session = session();
-    // SAFETY: live session; the starting circuit has three components.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    // SAFETY: live session; the starting circuit has four components.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // Ctrl+E marks everything, and the last one marked is the primary the forms open on.
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_select_all(session) }, 3);
+    assert_eq!(unsafe { pf_session_select_all(session) }, 4);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_selection_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 4);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_selected(session) }, 2);
+    assert_eq!(unsafe { pf_session_selected(session) }, 3);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_selection_at(session, 0) }, 0);
 
@@ -1398,16 +1399,16 @@ fn a_selection_of_several_components_moves_copies_and_goes_away_as_one_change() 
     // SAFETY: live session.
     assert_eq!(
         unsafe { pf_session_duplicate_selection(session, 20.0, 20.0) },
-        3
+        4
     );
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 6);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 8);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_selection_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 4);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
 
     // A rubber band marks what it covers; one that covers nothing marks nothing.
     let band = rect_of(session, 2);
@@ -1439,11 +1440,11 @@ fn a_selection_of_several_components_moves_copies_and_goes_away_as_one_change() 
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_remove_selection(session) }, 1);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 2);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -1455,10 +1456,10 @@ fn lining_up_the_selection_moves_it_onto_the_component_furthest_out() {
     // SAFETY: live session.
     assert_eq!(
         unsafe { pf_session_place_component(session, 1, 40.0, 100.0) },
-        3
+        4
     );
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_select_all(session) }, 4);
+    assert_eq!(unsafe { pf_session_select_all(session) }, 5);
     let lefts = |session: *mut PfSession| {
         let mut out = Vec::new();
         for index in 0..4_u32 {
@@ -1588,7 +1589,7 @@ fn unsaved_work_is_known_and_survives_a_crash_in_a_safety_copy() {
         PF_ERR_MODEL
     );
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 4);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

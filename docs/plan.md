@@ -62,7 +62,7 @@ contract is [symbology.md](symbology.md); this milestone is what executes it.
 - `symbol lint` inside the catalog validation, with the structural checks listed in
   [symbology.md](symbology.md).
 - Built-in definitions redrawn to conform: `valve.3_2.spring_return`,
-  `supply.workshop`, `cylinder.single_acting_20_100`, `throttle.fixed`.
+  `supply.compressor`, `cylinder.single_acting_20_100`, `throttle.fixed`.
 - One review file per symbol under `assets/symbols/review/`, with light and dark
   screenshots at palette size and at 300 dpi.
 - While the review is missing, the export carries the note "symbols not yet verified

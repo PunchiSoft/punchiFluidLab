@@ -333,8 +333,17 @@ impl Network {
     ///
     /// Returns the errors of [`Self::build`] and [`NetworkPart::from_definition`].
     pub fn demo(catalog: &punchi_fluid_catalog::Catalog) -> Result<Self, SolverError> {
-        use crate::pneumatic::{DEFAULT_CYLINDER, DEFAULT_SUPPLY, DEFAULT_VALVE};
-        let ids = [DEFAULT_SUPPLY, DEFAULT_VALVE, DEFAULT_CYLINDER];
+        use crate::pneumatic::{
+            DEFAULT_CYLINDER, DEFAULT_PREPARATION, DEFAULT_SUPPLY, DEFAULT_VALVE,
+        };
+        // The air reaches the circuit through the service unit: source, unit, valve, cylinder,
+        // which is the order the diagram reads in and the order the air travels in.
+        let ids = [
+            DEFAULT_SUPPLY,
+            DEFAULT_PREPARATION,
+            DEFAULT_VALVE,
+            DEFAULT_CYLINDER,
+        ];
         let mut parts = Vec::with_capacity(ids.len());
         for id in ids {
             let definition = catalog
@@ -345,6 +354,7 @@ impl Network {
         let pipes = [
             (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(2, "2"), PortAddress::new(3, "1")),
         ];
         Self::build(&parts, &pipes)
     }
@@ -368,6 +378,7 @@ impl Network {
         let (mut nodes, port_node) = port_nodes(parts, atmosphere_pa, temperature_kelvin);
         let supply_pa = attach_supplies(parts, &mut nodes, &port_node);
         let (mut edges, valves, valve_parts) = valve_edges(parts, &port_node)?;
+        throttle_edges(parts, &port_node, &mut edges);
         append_pipes(&mut edges, pipes, &port_node);
         close_open_exhausts(parts, &mut nodes, &port_node, &edges, atmosphere_pa);
         let (pistons, piston_parts) = chambers(
@@ -931,6 +942,38 @@ fn valve_edges(
 }
 
 /// A hose conducts between two ports; it is a restriction, not a volume.
+/// A fixed restriction is an edge between its own two ports.
+///
+/// A restrictor is part of the circuit and not a dead end: without this edge the air stops at
+/// it instead of being slowed by it, and a service unit in series cuts the line in two. The
+/// conductance comes from the definition, so a slower restrictor is a different file and not
+/// a different code path.
+fn throttle_edges(
+    parts: &[NetworkPart],
+    port_node: &[HashMap<&str, usize>],
+    edges: &mut Vec<Edge>,
+) {
+    for (index, part) in parts.iter().enumerate() {
+        let PartBehaviour::Throttle { conductance } = part.behaviour else {
+            continue;
+        };
+        let mut nodes = part
+            .ports
+            .iter()
+            .filter_map(|port| port_node[index].get(port.id.as_str()).copied());
+        let (Some(a), Some(b)) = (nodes.next(), nodes.next()) else {
+            continue;
+        };
+        edges.push(Edge {
+            a,
+            b,
+            conductance,
+            valve: None,
+            mask: u64::MAX,
+        });
+    }
+}
+
 fn append_pipes(
     edges: &mut Vec<Edge>,
     pipes: &[(PortAddress, PortAddress)],
@@ -1099,7 +1142,7 @@ mod tests {
     fn chain() -> Network {
         let catalog = Catalog::builtin();
         let parts = [
-            part(&catalog, "supply.workshop"),
+            part(&catalog, "supply.compressor"),
             part(&catalog, "valve.3_2.spring_return"),
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
@@ -1219,7 +1262,7 @@ mod tests {
     fn a_junction_joins_its_three_ports_into_one_volume() {
         let catalog = Catalog::builtin();
         let parts = [
-            part(&catalog, "supply.workshop"),
+            part(&catalog, "supply.compressor"),
             part(&catalog, "valve.3_2.spring_return"),
             part(&catalog, "cylinder.single_acting_20_100"),
             part(&catalog, "junction.tee"),
@@ -1243,7 +1286,7 @@ mod tests {
     fn a_gauge_reads_its_port_and_adds_nothing_to_the_physics() {
         let catalog = Catalog::builtin();
         let parts = [
-            part(&catalog, "supply.workshop"),
+            part(&catalog, "supply.compressor"),
             part(&catalog, "valve.3_2.spring_return"),
             part(&catalog, "cylinder.single_acting_20_100"),
             part(&catalog, "gauge.pressure"),
@@ -1284,7 +1327,7 @@ mod tests {
         // files, wired the way a schematic is wired, with no branch in the solver.
         let catalog = Catalog::builtin();
         let parts = [
-            part(&catalog, "supply.workshop"),
+            part(&catalog, "supply.compressor"),
             part(&catalog, "valve.5_2.spring_return"),
             part(&catalog, "cylinder.double_acting_32_200"),
         ];
@@ -1333,7 +1376,7 @@ mod tests {
     fn a_throttle_between_the_valve_and_the_cylinder_slows_the_fill() {
         let catalog = Catalog::builtin();
         let mut with = vec![
-            part(&catalog, "supply.workshop"),
+            part(&catalog, "supply.compressor"),
             part(&catalog, "valve.3_2.spring_return"),
             part(&catalog, "cylinder.single_acting_20_100"),
             part(&catalog, "throttle.fixed"),
@@ -1357,6 +1400,14 @@ mod tests {
         for _ in 0..10 {
             direct.advance(0.016).expect("accepted");
         }
+        // A restriction slows the fill, it does not stop it: without its own edge the air
+        // would stop at the restrictor, the piston would never move, and the comparison above
+        // would hold for the wrong reason.
+        assert!(
+            throttled.position() > 0.0,
+            "a restrictor conducts: the piston must still move, got {} mm",
+            throttled.position() * 1000.0
+        );
         assert!(
             throttled.position() < direct.position(),
             "throttled {} mm should lag direct {} mm",
@@ -1382,7 +1433,7 @@ mod tests {
     #[test]
     fn a_pipe_to_a_missing_port_is_ignored_not_fatal() {
         let catalog = Catalog::builtin();
-        let parts = [part(&catalog, "supply.workshop")];
+        let parts = [part(&catalog, "supply.compressor")];
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(7, "1"))];
         let network = Network::build(&parts, &pipes).expect("still builds");
         assert!(network.cylinder().is_none());

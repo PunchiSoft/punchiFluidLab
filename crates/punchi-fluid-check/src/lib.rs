@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn two_cylinders_with_one_designation_are_reported_at_the_second_one() {
         let mut document = Document::new();
-        let supply = place(&mut document, "supply.workshop", 40.0, 40.0);
+        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
         let valve = place(&mut document, "valve.5_2.spring_return", 100.0, 90.0);
         let first = place(&mut document, "cylinder.double_acting_32_200", 160.0, 40.0);
         let second = place(&mut document, "cylinder.double_acting_32_200", 160.0, 100.0);
@@ -527,7 +527,7 @@ mod tests {
     #[test]
     fn a_clean_circuit_has_no_findings() {
         let mut document = Document::new();
-        let supply = place(&mut document, "supply.workshop", 40.0, 40.0);
+        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
         let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
         let cylinder = place(&mut document, "cylinder.single_acting_20_100", 160.0, 40.0);
         join(&mut document, (supply, "1"), (valve, "1"));
@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn a_component_outside_the_sheet_is_reported() {
         let mut document = Document::new();
-        place(&mut document, "supply.workshop", 195.0, 60.0);
+        place(&mut document, "supply.compressor", 195.0, 60.0);
         let findings = check(&document, &catalog(), sheet());
         let outside: Vec<&Finding> = findings
             .iter()
@@ -553,7 +553,7 @@ mod tests {
     #[test]
     fn a_port_with_no_pipe_is_reported_but_an_exhaust_is_not() {
         let mut document = Document::new();
-        let supply = place(&mut document, "supply.workshop", 40.0, 40.0);
+        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
         let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
         let findings = check(&document, &catalog(), sheet());
 
@@ -605,7 +605,7 @@ mod tests {
     #[test]
     fn two_components_on_top_of_each_other_are_reported() {
         let mut document = Document::new();
-        place(&mut document, "supply.workshop", 60.0, 60.0);
+        place(&mut document, "supply.compressor", 60.0, 60.0);
         place(&mut document, "throttle.fixed", 62.0, 60.0);
         let findings = check(&document, &catalog(), sheet());
         assert!(
@@ -619,7 +619,7 @@ mod tests {
     #[test]
     fn components_side_by_side_do_not_overlap() {
         let mut document = Document::new();
-        place(&mut document, "supply.workshop", 40.0, 60.0);
+        place(&mut document, "supply.compressor", 40.0, 60.0);
         place(&mut document, "throttle.fixed", 71.0, 60.0);
         let findings = check(&document, &catalog(), sheet());
         assert!(
@@ -633,7 +633,7 @@ mod tests {
     #[test]
     fn a_pipe_through_a_third_component_is_reported() {
         let mut document = Document::new();
-        let supply = place(&mut document, "supply.workshop", 30.0, 60.0);
+        let supply = place(&mut document, "supply.compressor", 30.0, 60.0);
         let valve = place(&mut document, "valve.3_2.spring_return", 150.0, 60.0);
         // The throttle sits between them, right on the run.
         place(&mut document, "throttle.fixed", 90.0, 60.0);
@@ -675,7 +675,7 @@ mod tests {
     #[test]
     fn the_same_document_always_reports_the_same_list() {
         let mut document = Document::new();
-        place(&mut document, "supply.workshop", 195.0, 60.0);
+        place(&mut document, "supply.compressor", 195.0, 60.0);
         place(&mut document, "throttle.fixed", 60.0, 60.0);
         place(&mut document, "throttle.fixed", 61.0, 60.0);
         let first = check(&document, &catalog(), sheet());

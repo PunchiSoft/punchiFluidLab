@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Filter: takes the solid particles out of the air.
+#
+# The diamond is the filter, and it is drawn as a **square turned 45°**, so its four sides are
+# equal and its diagonals meet at the centre. The flow crosses it from vertex to vertex, which
+# is why the working line stops at each vertex instead of being drawn through the inside.
+#
+# Connection points are the small open circles the reference set uses, so a reader can see
+# where a hose is meant to arrive.
+
+schema = 3
+id = "filter.air"
+name = "Air filter"
+name_es = "Filtro de aire"
+category = "accessory"
+summary = "Filters the solid particles out of the air."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+# A filter is a small pressure drop, not a restriction anyone designed: the conductance is
+# high on purpose.
+[behaviour]
+type = "throttle"
+conductance = 2.0e-9
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.5, 0.28, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.5, 0.94, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.06, 0.5, 0.045]
+
+[[symbol]]
+kind = "circle"
+points = [0.94, 0.5, 0.045]

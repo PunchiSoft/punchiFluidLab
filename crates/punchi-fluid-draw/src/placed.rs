@@ -12,7 +12,7 @@ use punchi_fluid_catalog::{Catalog, ComponentDefinition};
 use punchi_fluid_solver::network::Network;
 
 use crate::orient::{Orientation, Turned};
-use crate::schematic::{self, CYLINDER_ID, Layout, SUPPLY_ID, VALVE_ID};
+use crate::schematic::{self, CYLINDER_ID, Layout, PREPARATION_ID, SUPPLY_ID, VALVE_ID};
 use crate::surface::{Colour, Pt, Rect, Stroke, Surface};
 
 /// One end of a pipe: a component of the sheet and one of its ports.
@@ -96,6 +96,7 @@ pub fn draw_placed(
             system,
             Layout {
                 supply: boxes(SUPPLY_ID)?,
+                preparation: boxes(PREPARATION_ID)?,
                 valve: boxes(VALVE_ID)?,
                 cylinder: boxes(CYLINDER_ID)?,
             },

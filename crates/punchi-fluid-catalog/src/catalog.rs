@@ -481,7 +481,7 @@ blocked = ["1"]
             catalog.problems()
         );
         assert!(catalog.get("valve.3_2.spring_return").is_some());
-        assert!(catalog.get("supply.workshop").is_some());
+        assert!(catalog.get("supply.compressor").is_some());
         assert!(catalog.get("cylinder.single_acting_20_100").is_some());
         assert!(catalog.len() >= 4);
     }
@@ -495,7 +495,7 @@ blocked = ["1"]
             "supply.toml",
             r#"
 schema = 2
-id = "supply.workshop"
+id = "supply.compressor"
 name = "Taller 8 bar"
 category = "supply"
 [[port]]
@@ -511,7 +511,7 @@ pressure_bar = 8.0
         let catalog = Catalog::builtin().with_user_dir(dir.path());
         assert!(catalog.problems().is_empty(), "{:?}", catalog.problems());
         assert!(catalog.get("valve.5_2.test").is_some());
-        let supply = catalog.get("supply.workshop").expect("overridden");
+        let supply = catalog.get("supply.compressor").expect("overridden");
         assert_eq!(supply.name, "Taller 8 bar");
         assert_eq!(supply.origin, Origin::User);
     }

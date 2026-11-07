@@ -6,26 +6,39 @@ publicación.
 
 ## Unreleased
 
-### Solo el propietario autoriza y combina — 2026-11-07
+### El juego de símbolos neumáticos, dibujado como la norma lo dibuja — 2026-11-07
 
-El permiso de la sesión no era una autorización: un testigo con ámbito de `merge` o un rol de
-propietario dejaba al agente a un `gh pr merge` de distancia, y la regla vivía sólo en la
-costumbre.
+La fuente era un círculo con un triángulo y nada más, y no había ni filtro, ni lubricador, ni
+unidad de mantenimiento. Ahora el juego entero está en el catálogo, con las proporciones de la
+forma y no las que salen de una casilla cualquiera.
 
-- **La regla queda escrita donde se lee antes de actuar**: `AGENTS.md`, `CONTRIBUTING.md`,
-  [docs/engineering.md](docs/engineering.md) y las destrezas
-  [pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md) y
-  [github-collaboration](.agents/skills/github-collaboration/SKILL.md) dicen que **el dueño
-  del proyecto es el único que autoriza y combina un pull request a `main`**. El agente abre
-  el pull request, responde la revisión y se detiene.
-- **No es una cuestión de permisos**: un testigo con capacidad de combinar, un rol de
-  administrador o una identidad de bot le permiten al agente ejecutar la orden; no convierten
-  el merge en suyo. La destreza nombra las órdenes que nunca se ejecutan ni se sugieren:
-  `gh pr merge`, `gh pr merge --auto`, `gh pr merge --admin`, `gh pr review --approve` y el
-  push directo a `main`.
-- **Una instrucción de combinar se responde con la URL**, para que el dueño lo haga. La
-  protección de rama deja de ser la única defensa: la regla vale también cuando la protección
-  falta o está mal configurada.
+- **Fuente de aire comprimido** (`supply.network`): el triángulo hueco sobre un vástago, que es
+  la conexión a la red cuando el compresor está dibujado en otra parte.
+- **Compresor** (`supply.compressor`): el mismo triángulo dentro del círculo, con la entrega
+  saliendo por abajo y terminando en el círculo de conexión.
+- **Filtro** (`filter.air`), **filtro con purgado manual** (`filter.air_manual_drain`) y
+  **unidad de lubricación** (`lubricator.oil`): el cuadrado girado 45°, con el elemento en línea
+  de trazos y el purgador en el filtro con drenaje; el lubricador **no** lleva trazos, porque no
+  filtra: esa ausencia es la diferencia.
+- **Unidad de mantenimiento** (`preparation.service_unit`) y su **forma simplificada**
+  (`preparation.service_unit_simple`): marco de trazos alrededor de las tres funciones en el
+  orden en que el aire las encuentra; el regulador como cuadrado con las dos flechas enfrentadas,
+  su muelle encima y la **flecha diagonal** que dice que el ajuste es regulable; el dial como el
+  manómetro que es, sobre un vástago que toma la línea después del regulador. La simplificada es
+  el cuerpo con el elemento de trazos, el dial dentro y el drenaje saliendo por abajo.
+- **Ninguna figura se deforma**: todas se dibujan en una casilla cuadrada —la única excepción es
+  el cilindro, cuyo barril es un rectángulo y sigue siendo un rectángulo— y cada cuadrado se
+  declara con lados iguales. La casilla de la unidad de mantenimiento pasa a ser cuadrada, y las
+  miniaturas de revisión usan la misma proporción que la hoja, así que una deformación ya no
+  puede esconderse en la evidencia.
+- **Un restrictor declarado en un archivo ahora conduce**: el modelo crea la arista entre sus
+  dos puertos con la conductancia que el archivo declara. Antes, poner una unidad en serie
+  cortaba la línea: el cilindro no recibía aire y la prueba que comparaba «con restrictor»
+  contra «sin él» pasaba por el motivo equivocado.
+- Las reglas de forma, proporción y punto de conexión quedan en
+  [docs/symbology.md](docs/symbology.md), con la razón de cada trazo.
+
+
 ### Los puertos del cilindro, en su tapa — 2026-11-07
 
 Tres formas que estaban dibujadas de memoria y no como la norma las dibuja, y una evidencia
@@ -1828,7 +1841,7 @@ física, símbolos dibujados y clic en la válvula.
   `(puerto, puerto, conductancia)`; el solver los clasifica por rol, no por número.
 - Un archivo inválido se omite y se reporta; nunca impide arrancar. Un archivo con
   `disabled = true` retira una definición de fábrica.
-- `assets/catalog/`: `supply.workshop`, `valve.3_2.spring_return`,
+- `assets/catalog/`: `supply.compressor`, `valve.3_2.spring_return`,
   `cylinder.single_acting_20_100` y `throttle.fixed`, compilados con `include_str!` y
   documentados en `assets/catalog/README.md`.
 - `PUNCHI_FLUID_CATALOG_DIR` permite apuntar a otra carpeta mientras se edita.
