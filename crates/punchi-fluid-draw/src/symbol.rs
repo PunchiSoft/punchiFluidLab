@@ -381,8 +381,11 @@ pub fn draw_flow_arrow(
 pub fn draw_spring(surface: &mut dyn Surface, body: Rect, side: Side, colour: Colour, width: f32) {
     let (edge, out) = axis(body, side);
     let along = (-out.y, out.x);
-    let step = body.height().min(body.width()) * 0.09;
-    let half = body.height().min(body.width()) * 0.16;
+    // The coil has to be read at palette size, so it is drawn at a size proportional to the
+    // body and not to the line: one step away from the body, three steps of travel, and an
+    // amplitude wide enough that its turns are not a smudge.
+    let step = body.height().min(body.width()) * 0.13;
+    let half = body.height().min(body.width()) * 0.20;
     let stroke = Stroke::new(width * 0.9, colour);
 
     let start = Pt::new(edge.x + out.x * step, edge.y + out.y * step);
@@ -421,7 +424,9 @@ pub fn draw_actuator(
 ) {
     let (edge, out) = axis(body, side);
     let along = (-out.y, out.x);
-    let step = body.height().min(body.width()) * 0.1;
+    // An actuator drawn on top of the box belongs to no position: it starts clear of the
+    // edge and reaches out far enough to read at palette size.
+    let step = body.height().min(body.width()) * 0.13;
     let reach = step * 2.0;
 
     let p = |a: f32, b: f32| {
@@ -1134,26 +1139,24 @@ fn draw_cylinder_spring(
     if gap <= LINE {
         return;
     }
-    // A fraction of what is left between piston and wall, never the whole of it: the gap
-    // the coil does not fill is what lets the reader see the barrel, the piston and the rod
-    // as three things instead of one barrel full of wire. Being a fraction of the gap, it
-    // also shortens with every millimetre the piston comes out, which is what a spring does.
-    let span = (gap * 0.45).max(LINE * 4.0);
-    let start_x = wall_x - span;
-    if start_x <= piston_x {
-        return;
-    }
+    // The coil spans the whole chamber between the piston and the wall, which is how this
+    // symbol is read: the spring is the return element and it belongs to the chamber it
+    // fills, not to a corner of it. It is drawn thin and behind the piston and the rod, so
+    // the three parts stay distinguishable without shortening the spring.
+    let span = gap;
     let nominal_pitch = barrel.width() * 0.055;
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let fitted = (span / nominal_pitch).round().clamp(2.0, 5.0) as u16;
     // A coil spring keeps its wire and loses its pitch: the amplitude grows a little as
     // the coils bunch up, which is what makes the animation read as compression.
-    let amplitude = barrel.height() * (0.09 + 0.05 * extension.clamp(0.0, 1.0));
+    // Amplitude close to the barrel's own height, as the symbol is drawn by hand: a small
+    // zigzag on the axis reads as a wire, not as a spring.
+    let amplitude = barrel.height() * (0.26 + 0.04 * extension.clamp(0.0, 1.0));
     let steps = fitted * 2;
-    let mut points = vec![Pt::new(start_x, axis_y)];
+    let mut points = vec![Pt::new(piston_x, axis_y)];
     for step in 0..steps {
         let fraction = (f32::from(step) + 0.5) / f32::from(steps);
-        let x = start_x + span * fraction;
+        let x = piston_x + span * fraction;
         let y = axis_y + if step % 2 == 0 { -amplitude } else { amplitude };
         points.push(Pt::new(x, y));
     }
