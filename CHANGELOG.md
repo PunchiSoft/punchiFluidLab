@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### El papel del plano y la norma chilena, dichos — 2026-11-07
+
+Dos cosas que el proyecto daba por sabidas y no estaban escritas. Un plano se imprime en una
+hoja concreta, y esa hoja no es una sola; y la simbología tiene una adopción nacional que un
+lector en Chile aplica.
+
+- **El papel es una decisión** ([ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md)):
+  ISO A4–A0 con marco y márgenes de ISO 5457, Letter y Legal, y **Oficio/Folio 216 × 330 mm**,
+  que no es ninguna de las dos y es el papel que hay en la impresora. El dibujo se escala para
+  entrar, nunca se recorta, y el tamaño elegido queda escrito en el archivo.
+- **Se acabó la promesa falsa**: los dos README decían «papel de A5 a A2 más Letter y Legal»
+  cuando el crate conoce A4 y A3 y la ventana no tiene mando de exportación. Ahora dicen lo que
+  hay y lo que falta.
+- **La adopción chilena aparece**: **NCh-ISO 1219** en la sección de simbología de los dos
+  README, y la regla de que un símbolo no se declara conforme hasta que la adopción que le toca
+  esté confirmada en su revisión.
+
+
 ### Comprobar un circuito sin abrir la ventana — 2026-11-07
 
 La comprobación existía en la ventana y sólo en la ventana: corregir cuarenta prácticas era

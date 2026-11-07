@@ -109,12 +109,19 @@ posición, y **Reset** vuelve a empezar. `F1` lista todos los atajos; `Ctrl+F` e
 la búsqueda del catálogo.
 
 **Export PDF** (`Ctrl+Shift+E`) o **Export PNG** (`Ctrl+Shift+P`) abre el panel de
-exportación: formato, resolución para PNG (72–600 dpi), papel de A5 a A2 más Letter y
-Legal, orientación, márgenes, bloque de identificación y destino. La página lleva marco,
-bloque de identificación, leyenda de clases de línea y números de puerto y —mientras
-alguna revisión de símbolo siga abierta— la nota de que los símbolos aún no están
-verificados contra ISO 1219-1. Dos exportaciones del mismo circuito producen los mismos
-bytes.
+exportación: formato, resolución para PNG (72–600 dpi), papel, orientación, márgenes,
+bloque de identificación y destino. La página lleva marco, bloque de identificación, leyenda
+de clases de línea y números de puerto y —mientras alguna revisión de símbolo siga
+abierta— la nota de que los símbolos aún no están verificados contra ISO 1219-1. Dos
+exportaciones del mismo circuito producen los mismos bytes.
+
+**El papel es una decisión, no un valor por defecto.** Un plano se imprime en la hoja que usa
+la oficina técnica, y no es una sola: ISO 216/5457 A4, A3, A2, A1 y A0 para el mundo ISO;
+Letter y Legal para el norteamericano; y **Oficio/Folio (216 × 330 mm)**, que no es ninguna de
+las dos y es el papel que todavía se encuentra en la mayoría de las oficinas chilenas. El plan
+está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md). El crate de exportación
+hoy conoce A4 y A3; el resto, y el mando de la ventana que lo alcanza, son la parte abierta de
+F5 — el mando de exportación todavía no está en la ventana.
 
 Requisitos: Rust estable (fijado en `rust-toolchain.toml`), Qt 6.5 o superior con Qt Quick,
 CMake y Ninja. El núcleo en Rust se compila con `cargo build --release -p punchi-fluid-ffi`;
@@ -192,6 +199,11 @@ Un esquema *casi* conforme es peor que un boceto evidente: se lee como si fuera
 correcto. Los símbolos siguen **ISO 1219-1:2012**, con las convenciones de
 ISO 1219-2:2012 e ISO 1219-3:2016, y la numeración de puertos sigue la convención de
 identificación de puertos de oleohidráulica y neumática.
+
+Se respeta además la adopción nacional: **NCh-ISO 1219**, la adopción chilena de ISO 1219, es
+el texto que aplica un lector en Chile, y aquí un símbolo no se declara conforme hasta que la
+adopción que le toca esté confirmada en su revisión. Qué adopciones se siguen y qué queda sin
+verificar está en la tabla *National adoptions* de [docs/symbology.md](docs/symbology.md).
 
 Lo que eso significa en la práctica, y la revisión que lo exige, está en
 [docs/symbology.md](docs/symbology.md): cuadrados iguales por posición de válvula,
