@@ -18,6 +18,7 @@ punchi-fluid-catalog = { workspace = true }
 punchi-fluid-check = { workspace = true }
 punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
+punchi-fluid-export = { workspace = true }
 punchi-fluid-file = { workspace = true }
 punchi-fluid-solver = { workspace = true }
 

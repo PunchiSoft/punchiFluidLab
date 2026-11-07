@@ -874,60 +874,7 @@ impl PfSession {
             ..
         } = self;
 
-        let placed: Vec<Placed<'_>> = document
-            .placements()
-            .iter()
-            .enumerate()
-            .map(|(index, placement)| Placed {
-                catalog_id: placement.catalog_id.as_str(),
-                rect: placement.rect(),
-                extension: placement_part
-                    .get(index)
-                    .copied()
-                    .flatten()
-                    .zip(system.as_ref())
-                    .and_then(|(part, network)| network.extension_of(part))
-                    .map_or(0.0, |extension| extension as f32),
-                valve_position: placement_part
-                    .get(index)
-                    .copied()
-                    .flatten()
-                    .zip(system.as_ref())
-                    .and_then(|(part, network)| network.valve_position_at(part))
-                    .unwrap_or(0),
-                reading: gauge_reading(
-                    catalog.get(placement.catalog_id.as_str()),
-                    placement_part.get(index).copied().flatten(),
-                    system.as_ref(),
-                ),
-                orientation: placement.orientation,
-                designation: placement.designation.as_deref(),
-            })
-            .collect();
-        let pipes: Vec<Pipe<'_>> = document
-            .connections()
-            .iter()
-            .filter_map(|connection| {
-                let from_index = document.index_of(connection.from.placement)?;
-                let to_index = document.index_of(connection.to.placement)?;
-                Some(Pipe {
-                    from: PipeEnd {
-                        placement: from_index,
-                        port: connection.from.port.as_str(),
-                    },
-                    to: PipeEnd {
-                        placement: to_index,
-                        port: connection.to.port.as_str(),
-                    },
-                    offset_mm: connection.offset_mm(),
-                    pressure_ratio: hose_pressure(
-                        system.as_ref(),
-                        placement_part.get(from_index).copied().flatten(),
-                        &connection.from.port,
-                    ),
-                })
-            })
-            .collect();
+        let (placed, pipes) = scene(document, catalog, system.as_ref(), placement_part);
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
         *layout = layout_of(&placed);
@@ -2244,6 +2191,177 @@ pub unsafe extern "C" fn pf_session_save(session: *mut PfSession, path: *const c
     })
 }
 
+/// What the export writes: a raster or a vector page.
+pub const PF_EXPORT_PNG: u32 = 0;
+/// A PDF page.
+pub const PF_EXPORT_PDF: u32 = 1;
+
+/// How many papers the export offers, so a front end can build its list from here.
+#[unsafe(no_mangle)]
+pub const extern "C" fn pf_export_paper_count() -> u32 {
+    punchi_fluid_export::PaperSize::ALL.len() as u32
+}
+
+/// Name of the paper at `index`, written into `out` as a NUL-terminated string.
+///
+/// # Safety
+///
+/// `out` must point to `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_export_paper_name(index: u32, out: *mut c_char, capacity: u32) -> i32 {
+    guard(|| {
+        if out.is_null() || capacity == 0 {
+            return PF_ERR_NULL;
+        }
+        let Some(paper) = punchi_fluid_export::PaperSize::ALL.get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = paper.label().as_bytes();
+        if bytes.len() + 1 > capacity as usize {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let buffer = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity as usize) };
+        buffer[..bytes.len()].copy_from_slice(bytes);
+        buffer[bytes.len()] = 0;
+        PF_OK
+    })
+}
+
+/// Writes the sheet, as it is drawn, to `path`.
+///
+/// The page is composed by the export crate and drawn by the session, so what is printed is
+/// what is on the sheet: the same placements, the same routes, the same designations.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_export(
+    session: *mut PfSession,
+    path: *const c_char,
+    kind: u32,
+    paper: u32,
+    landscape: u32,
+    dpi: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(target) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if target.is_empty() || target.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        let Some(paper) = punchi_fluid_export::PaperSize::ALL.get(paper as usize) else {
+            return session.fail("no such paper");
+        };
+        if !paper.is_valid() {
+            return session.fail("the paper is outside the bounds the export accepts");
+        }
+        // A printed page has to be identifiable after the fact, and the sheet has no name of
+        // its own: the block takes the name of the file being written, which is what the user
+        // called the drawing.
+        let title = std::path::Path::new(target).file_stem().map_or_else(
+            || String::from("Circuito"),
+            |stem| stem.to_string_lossy().into_owned(),
+        );
+        let block = punchi_fluid_export::TitleBlock::new(title, String::from("2026-11-07"));
+        let page = punchi_fluid_export::Page {
+            paper: *paper,
+            orientation: if landscape == 0 {
+                punchi_fluid_export::Orientation::Portrait
+            } else {
+                punchi_fluid_export::Orientation::Landscape
+            },
+            ..punchi_fluid_export::Page::a4(block.clone())
+        };
+        session.ensure_seeded();
+        let (placed, pipes) = scene(
+            &session.document,
+            &session.catalog,
+            session.system.as_ref(),
+            &session.placement_part,
+        );
+        // The page hands the drawing the area the frame leaves free, and the placements carry
+        // millimetres of their own sheet. Shifting them onto that area is what puts the circuit
+        // inside the frame instead of over it; the hoses follow their ports, so only the
+        // placements move.
+        let bounds = placed
+            .iter()
+            .fold(None::<punchi_fluid_draw::Rect>, |acc, item| {
+                Some(acc.map_or(item.rect, |rect| union_rect(rect, item.rect)))
+            });
+        let draw = |surface: &mut dyn punchi_fluid_draw::Surface, area: punchi_fluid_draw::Rect| {
+            // Centred in the area the frame leaves free: a sheet with the circuit pinned to one
+            // corner is a sheet with three quarters of the paper doing nothing.
+            let (dx, dy) = bounds.map_or((0.0, 0.0), |rect| {
+                (
+                    area.center().x - rect.center().x,
+                    area.center().y - rect.center().y,
+                )
+            });
+            let shifted: Vec<Placed<'_>> = placed
+                .iter()
+                .map(|item| Placed {
+                    rect: punchi_fluid_draw::Rect::from_min_size(
+                        punchi_fluid_draw::Pt::new(item.rect.min.x + dx, item.rect.min.y + dy),
+                        item.rect.width(),
+                        item.rect.height(),
+                    ),
+                    ..*item
+                })
+                .collect();
+            punchi_fluid_draw::draw_placed(
+                surface,
+                &shifted,
+                &pipes,
+                session.system.as_ref(),
+                &session.catalog,
+                &punchi_fluid_export::print_ink(),
+                &[],
+            );
+        };
+        let path = std::path::Path::new(target);
+        let written = match kind {
+            PF_EXPORT_PDF => punchi_fluid_export::render_pdf_with(&page, &block, draw)
+                .and_then(|bytes| write_atomically(path, "pdf", &bytes)),
+            _ => punchi_fluid_export::render_png_with(&page, &block, dpi.max(72.0), draw)
+                .and_then(|bytes| write_atomically(path, "png", &bytes)),
+        };
+        match written {
+            Ok(()) => PF_OK,
+            Err(cause) => session.fail(&cause.to_string()),
+        }
+    })
+}
+
+/// Writes `bytes` to `path` through a temporary file, so a crash leaves no half page.
+fn write_atomically(
+    path: &std::path::Path,
+    extension: &str,
+    bytes: &[u8],
+) -> Result<(), punchi_fluid_export::ExportError> {
+    let temporary = path.with_extension(format!("{extension}.part"));
+    std::fs::write(&temporary, bytes).map_err(|source| {
+        punchi_fluid_export::ExportError::Write {
+            path: temporary.display().to_string(),
+            source,
+        }
+    })?;
+    std::fs::rename(&temporary, path).map_err(|source| punchi_fluid_export::ExportError::Write {
+        path: path.display().to_string(),
+        source,
+    })
+}
+
 /// Tells the core where to keep the list of remembered documents.
 ///
 /// Called once, at start, with a path the front end derived from the desktop's data
@@ -3478,6 +3596,82 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         }
         Behaviour::Gauge { .. } | Behaviour::Junction => {}
     }
+}
+
+/// Smallest rectangle containing both.
+fn union_rect(a: punchi_fluid_draw::Rect, b: punchi_fluid_draw::Rect) -> punchi_fluid_draw::Rect {
+    punchi_fluid_draw::Rect::from_corners(
+        punchi_fluid_draw::Pt::new(a.min.x.min(b.min.x), a.min.y.min(b.min.y)),
+        punchi_fluid_draw::Pt::new(a.max.x.max(b.max.x), a.max.y.max(b.max.y)),
+    )
+}
+
+/// What the sheet holds, ready to be drawn: the placements with the state the model reports for
+/// each, and the hoses with their route offsets.
+///
+/// The screen and the exported page both call this, so what is printed is what is on the sheet
+/// and not a second construction that could drift from it.
+fn scene<'a>(
+    document: &'a Document,
+    catalog: &'a Catalog,
+    system: Option<&'a Network>,
+    placement_part: &[Option<usize>],
+) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
+    let placed: Vec<Placed<'a>> = document
+        .placements()
+        .iter()
+        .enumerate()
+        .map(|(index, placement)| Placed {
+            catalog_id: placement.catalog_id.as_str(),
+            rect: placement.rect(),
+            extension: placement_part
+                .get(index)
+                .copied()
+                .flatten()
+                .zip(system)
+                .and_then(|(part, network)| network.extension_of(part))
+                .map_or(0.0, |extension| extension as f32),
+            valve_position: placement_part
+                .get(index)
+                .copied()
+                .flatten()
+                .zip(system)
+                .and_then(|(part, network)| network.valve_position_at(part))
+                .unwrap_or(0),
+            reading: gauge_reading(
+                catalog.get(placement.catalog_id.as_str()),
+                placement_part.get(index).copied().flatten(),
+                system,
+            ),
+            orientation: placement.orientation,
+            designation: placement.designation.as_deref(),
+        })
+        .collect();
+    let pipes: Vec<Pipe<'a>> = document
+        .connections()
+        .iter()
+        .filter_map(|connection| {
+            let from_index = document.index_of(connection.from.placement)?;
+            let to_index = document.index_of(connection.to.placement)?;
+            Some(Pipe {
+                from: PipeEnd {
+                    placement: from_index,
+                    port: connection.from.port.as_str(),
+                },
+                to: PipeEnd {
+                    placement: to_index,
+                    port: connection.to.port.as_str(),
+                },
+                offset_mm: connection.offset_mm(),
+                pressure_ratio: hose_pressure(
+                    system,
+                    placement_part.get(from_index).copied().flatten(),
+                    &connection.from.port,
+                ),
+            })
+        })
+        .collect();
+    (placed, pipes)
 }
 
 /// The fixed-composition boxes, when the document still holds those four components.

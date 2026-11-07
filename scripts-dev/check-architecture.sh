@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # The workspace contract that `cargo` cannot enforce: it prevents cycles, not layering.
-# `ffi` depending on `export` compiles; it is still wrong. So the graph is written down
+# A `solver` depending on `draw` compiles; it is still wrong. So the graph is written down
 # here, `unsafe` has one home, and a file that grows past the budget has to be justified
 # in this file rather than discovered in review.
 set -euo pipefail
@@ -31,6 +31,7 @@ ALLOWED_EDGES=(
     "punchi-fluid-ffi punchi-fluid-check"
     "punchi-fluid-ffi punchi-fluid-doc"
     "punchi-fluid-ffi punchi-fluid-draw"
+    "punchi-fluid-ffi punchi-fluid-export"
     "punchi-fluid-ffi punchi-fluid-file"
     "punchi-fluid-ffi punchi-fluid-solver"
     "punchi-fluid-cli punchi-fluid-catalog"

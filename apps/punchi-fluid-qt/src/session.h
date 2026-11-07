@@ -125,6 +125,16 @@ public:
     Q_INVOKABLE bool openFrom(const QString &path);
     /// Saves to the current file. `false` when there is none yet.
     Q_INVOKABLE bool saveCurrent();
+    /// Writes the sheet, as it is drawn, to `path`.
+    ///
+    /// `pdf` is `true` for a vector page and `false` for a raster at `dpi`. `paper` is an index
+    /// into the list the export offers, which `paperNames` mirrors for the panel.
+    Q_INVOKABLE bool exportTo(const QString &path, bool pdf, int paper, bool landscape,
+                              qreal dpi);
+    /// The papers the export offers, in the order the panel lists them.
+    Q_INVOKABLE QStringList paperNames();
+    /// The index of the paper to offer first: A4, or Oficio where the system says so.
+    Q_INVOKABLE int defaultPaper();
     /// The documents opened or saved recently, newest first: `path` and `name`.
     QVariantList recent() const { return m_recent; }
     /// Opens one of them by its place in the list.

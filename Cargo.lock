@@ -317,6 +317,7 @@ dependencies = [
  "punchi-fluid-check",
  "punchi-fluid-doc",
  "punchi-fluid-draw",
+ "punchi-fluid-export",
  "punchi-fluid-file",
  "punchi-fluid-solver",
  "tempfile",

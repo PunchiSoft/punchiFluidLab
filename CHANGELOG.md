@@ -6,6 +6,52 @@ publicación.
 
 ## Unreleased
 
+### Exportar el plano, desde la ventana — 2026-11-07
+
+La exportación existía como crate y no como función: el marco, el block de título y los dos
+escritores estaban hechos, y la ventana no tenía con qué pedirlos. La promesa de F5 llevaba
+tres documentos diciendo que faltaba el mando.
+
+- **El ABI gana la exportación**: `pf_session_export(sesion, ruta, tipo, papel, apaisado, dpi)`,
+  más `pf_export_paper_count` y `pf_export_paper_name` para que el panel construya su lista desde
+  la misma tabla que el escritor. Un papel fuera de límites o un índice que no existe se
+  rechazan con el mensaje en el canal de error, no con una hoja a medias.
+- **Lo que se imprime es lo que está en la hoja**: la exportación compone el papel y **la sesión
+  dibuja su documento** —las mismas colocaciones, los mismos recorridos, las mismas
+  designaciones—. La función que arma la escena es una sola y la usan la pantalla y el papel, así
+  que no pueden separarse.
+- **La cinta gana «Exportar»** en *Documento* y un grupo *Hoja* con los nueve papeles y la hoja
+  apaisada; el papel en uso va marcado. La exportación arranca en el papel que esta máquina
+  imprime —Oficio donde el sistema dice Chile, A4 en cualquier otra parte—, que es un punto de
+  partida y no una decisión.
+- **`--export <ruta> [--paper N] [--landscape] [--dpi N]`** permite probarlo sin ventana, y el
+  gate lo usa: escribe un PDF y un PNG en Oficio apaisado y comprueba las cabeceras y el
+  `/MediaBox`.
+
+Con esto quedan dos huecos declarados: el tamaño personalizado no tiene panel, y la resolución
+del PNG se queda en 300 dpi sin mando propio.
+
+
+### La exportación dibuja lo que le den — 2026-11-07
+
+El crate de exportación sabía componer una hoja pero sólo sabía dibujar en ella **el circuito
+fijo**: la ventana no podía imprimir el plano que el usuario tiene delante, y por eso la
+exportación seguía siendo una promesa.
+
+- **`render_pdf_with` y `render_png_with`**: el marco, los márgenes, el block de título y los
+  dos escritores siguen siendo del crate; **el dibujo lo pone quien llama**, con una función que
+  recibe la superficie y el área útil. Así la sesión puede estampar su documento sin que
+  exportación tenga que aprender qué es un documento ni ganar una arista de dependencia nueva.
+- **`print_ink()` pasa a ser público**: quien dibuja su propia hoja necesita la misma tinta de
+  papel —negro sobre blanco— que el circuito fijo.
+- Tres pruebas: la hoja del llamador es un PDF de verdad, conserva el papel que se le dio
+  (Oficio, medido en el `/MediaBox`), y dos veces el mismo dibujo da el mismo archivo.
+
+Con esto, la pieza que falta para «Exportar» es el mando: la llamada del ABI y el botón de la
+cinta. El trabajo pesado —componer la hoja y dibujar el documento dentro— ya no tiene dueño
+ambiguo.
+
+
 ### El juego de papeles, en el código y no solo en el ADR — 2026-11-07
 
 El ADR 0012 prometía ISO A4–A0, Letter, Legal y Oficio, y el código conocía A5, A4, A3, A2,

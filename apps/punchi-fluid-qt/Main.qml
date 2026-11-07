@@ -70,9 +70,20 @@ Window {
         id: session
     }
 
+    // The export starts on the paper this machine actually prints on: Oficio where the system
+    // says Chile, A4 anywhere else. It is a starting point, not a decision — the panel lists the
+    // whole set.
+    Component.onCompleted: window.exportPaper = session.defaultPaper()
+
     /// Which catalog entry is being dragged out of the palette, and where the pointer is.
     /// A plain property rather than a Qt drag-and-drop session: one code path for the
     /// pointer and for anything that drives the window.
+    /// The paper the export panel offers, and how the sheet is turned.
+    property int exportPaper: 1
+    property bool exportLandscape: false
+    /// The raster resolution. 300 dpi is what a printed sheet needs; the vector page has none.
+    property int exportDpi: 300
+
     property int dragCatalog: -1
     property point dragPoint: Qt.point(0, 0)
 
@@ -94,6 +105,22 @@ Window {
             } else {
                 session.openFrom(file);
             }
+        }
+    }
+
+    // The sheet goes out as a vector page or as a raster, on the paper the panel offers. The
+    // export draws the document, not the example: what leaves is what is on screen.
+    FileDialog {
+        id: exportDialog
+        title: qsTr("Exportar el plano")
+        nameFilters: [qsTr("Documento PDF (*.pdf)"), qsTr("Imagen PNG (*.png)")]
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "pdf"
+        onAccepted: function (file) {
+            const name = file.toString().toLowerCase();
+            const pdf = !name.endsWith(".png");
+            session.exportTo(file, pdf, window.exportPaper, window.exportLandscape,
+                             window.exportDpi);
         }
     }
 
@@ -316,6 +343,8 @@ Window {
                     openDialog.open();
                 } else if (command === "save-as") {
                     saveDialog.open();
+                } else if (command === "export") {
+                    exportDialog.open();
                 } else {
                     saveCommand();
                 }

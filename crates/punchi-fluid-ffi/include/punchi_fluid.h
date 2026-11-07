@@ -325,6 +325,20 @@ int32_t pf_session_catalog(const PfSession *session, PfCatalog *out);
 int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, float height_mm,
                            float pixels_per_mm, PfFrame *out);
 
+/* What `pf_session_export` writes. */
+#define PF_EXPORT_PNG 0U
+#define PF_EXPORT_PDF 1U
+
+/* Writes the sheet, as it is drawn, to `path`: a PDF when `kind` is PF_EXPORT_PDF, a raster at
+ * `dpi` when it is PF_EXPORT_PNG. `paper` indexes the list `pf_export_paper_count` reports and
+ * `pf_export_paper_name` names; `landscape` is 0 or 1. */
+int32_t pf_session_export(PfSession *session, const char *path, uint32_t kind, uint32_t paper,
+                          uint32_t landscape, float dpi);
+/* How many papers the export offers. */
+uint32_t pf_export_paper_count(void);
+/* Name of the paper at `index`, NUL-terminated UTF-8 in `out`. */
+int32_t pf_export_paper_name(uint32_t index, char *out, uint32_t capacity);
+
 #ifdef __cplusplus
 }
 #endif
