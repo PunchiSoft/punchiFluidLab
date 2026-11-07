@@ -6,6 +6,32 @@ publicación.
 
 ## Unreleased
 
+### El pistón, el puerto del vástago y la palanca — 2026-11-07
+
+Tres formas que estaban dibujadas de memoria y no como la norma las dibuja. Las tres se ven en
+las imágenes de revisión de `assets/symbols/review/`, que ahora corresponden al código.
+
+- **El pistón cruza el diámetro completo**, en los dos cilindros: iba retranqueado un 10 % arriba
+  y abajo y se leía como una barra flotando dentro del barril. El pistón es el sello entre las
+  dos cámaras y toca las dos paredes en cualquier punto de la carrera.
+- **El muelle del cilindro de simple efecto va en tinta llena**, con el mismo grosor que las
+  demás líneas funcionales. Una línea gris no es una clase de línea en ISO 1219, y es lo primero
+  que desaparece en una fotocopia.
+- **El puerto del lado del vástago sale por la tapa del vástago, por encima del vástago**: antes
+  bajaba por el borde superior del barril pegado a la esquina, donde se leía como parte del
+  contorno y no como una conexión. El numeral de un puerto lateral se ancla ahora en el extremo
+  exterior de su rabo, no en el borde del cuerpo, donde caía encima del vástago.
+- **La palanca es un brazo con empuñadura**: el brazo sale de la cara del cuerpo en ángulo y
+  termina en una barra **cruzada** a ese brazo. Antes era un vástago que giraba en gancho con un
+  borrón en la punta, indistinguible de un fiador o de un pedal.
+- **El comentario del muelle dice lo que el código hace**: durante la corrección anterior quedó
+  un párrafo que describía el muelle corto que se había descartado, y un lector nuevo lo habría
+  tomado por la regla.
+
+Queda abierto el **numeral del puerto 3**, que hoy se aparta en diagonal hacia la esquina del
+cuerpo: colocarlo al pie de su rabo lo acercaría a las tuberías que salen del mismo punto, así
+que es una decisión de disposición y no una línea de código.
+
 ### El papel del plano y la norma chilena, dichos — 2026-11-07
 
 Dos cosas que el proyecto daba por sabidas y no estaban escritas. Un plano se imprime en una

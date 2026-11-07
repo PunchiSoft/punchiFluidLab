@@ -279,9 +279,15 @@ pub fn draw_numeral(
     if rect.height() * surface.device_scale() < NUMERAL_FLOOR {
         return;
     }
+    let point = at(rect, port[0], port[1]);
     let anchor = match body {
+        // A side port joins the body through a horizontal stub, and its numeral belongs
+        // beyond the outer end of that stub. Anchoring it at the body edge — where a top or
+        // a bottom port is read — puts a side port's numeral inside the symbol, on top of
+        // the rod.
+        Some(body) if is_side_port(body, point) => point,
         Some(body) => stub_end(rect, body, port),
-        None => at(rect, port[0], port[1]),
+        None => point,
     };
     let centre = rect.center();
     let (dx, dy) = centre.to(anchor);
@@ -300,6 +306,16 @@ pub fn draw_numeral(
         ink.line,
         ink.background,
     );
+}
+
+/// Whether a port sits to the left or the right of the body, level with it.
+///
+/// Those are the ports that join a horizontal stub; the top and the bottom ones join a
+/// vertical stub and are read next to the body's edge.
+fn is_side_port(body: Rect, point: Pt) -> bool {
+    let level = (body.min.y..=body.max.y).contains(&point.y);
+    let outside = point.x < body.min.x || point.x > body.max.x;
+    level && outside
 }
 
 fn axis(body: Rect, side: Side) -> (Pt, Pt) {
@@ -489,12 +505,23 @@ fn draw_lever(
     detent: bool,
 ) {
     let stroke = Stroke::new(width, colour);
-    let (grip_a, grip_b) = (reach * 1.6, -step * 1.6);
-    surface.line(&[edge, p(reach, 0.0), p(grip_a, grip_b)], stroke);
+    // The arm leaves the end face at an angle and ends in a grip across it. A stem that
+    // turns into a hook with a blob on the end is a stray line: the lever is recognised by
+    // the bar a hand pushes, and that bar sits across the arm, at the far end of it.
+    let (bend_a, tip_a, tip_b) = (reach * 0.55, reach * 1.7, -step * 1.5);
+    surface.line(&[edge, p(bend_a, 0.0), p(tip_a, tip_b)], stroke);
+    let (arm_a, arm_b) = (tip_a - bend_a, tip_b);
+    let length = arm_a.hypot(arm_b);
+    let (grip_a, grip_b) = if length > f32::EPSILON {
+        (-arm_b / length, arm_a / length)
+    } else {
+        (0.0, 1.0)
+    };
+    let half = step * 0.85;
     surface.line(
         &[
-            p(grip_a, grip_b - step * 0.6),
-            p(grip_a, grip_b + step * 1.0),
+            p(tip_a - grip_a * half, tip_b - grip_b * half),
+            p(tip_a + grip_a * half, tip_b + grip_b * half),
         ],
         Stroke::new(width * 2.2, colour),
     );
@@ -1079,8 +1106,11 @@ pub fn draw_cylinder(
     let chamber = (inner_right - inner_left).max(0.0);
     let travel = chamber * stroke_share(definition);
     let piston_x = inner_left + travel * extension.clamp(0.0, 1.0);
-    let top = barrel.min.y + barrel.height() * 0.10;
-    let bottom = barrel.max.y - barrel.height() * 0.10;
+    // The piston crosses the bore from wall to wall. A line that stops short of the walls
+    // reads as a bar floating inside the barrel, and ISO 1219 draws the piston as the
+    // seal between the two chambers: it has to meet both.
+    let top = barrel.min.y;
+    let bottom = barrel.max.y;
     let axis_y = barrel.center().y;
 
     surface.line(
@@ -1116,11 +1146,10 @@ pub fn draw_cylinder(
 
 /// Return spring between the piston and the rod-side wall, compressed by the stroke.
 ///
-/// The spring is drawn as a **short coil against the rod-side wall**, not as a coil that
-/// fills the chamber: a spring that spans the whole barrel reads as a barrel full of wire
-/// and hides the piston and the rod behind it, which is the opposite of what the symbol is
-/// for. Its length is a fraction of the chamber, so the barrel, the piston, the rod and
-/// the coil are each visible at rest and the coil bunches as the piston comes out.
+/// The spring is drawn **across the chamber between the piston and the rod-side wall**, and
+/// it spans all of it: the spring is the return element and it belongs to the chamber it
+/// fills, not to a corner of it. It is drawn thin, so the barrel, the piston, the rod and
+/// the coil stay distinguishable without shortening the spring.
 ///
 /// The wire is constant and the pitch shrinks: a turned coil that no longer fits at the
 /// nominal pitch is drawn with fewer turns instead of more lines in the same millimetre,
@@ -1161,7 +1190,10 @@ fn draw_cylinder_spring(
         points.push(Pt::new(x, y));
     }
     points.push(Pt::new(wall_x, axis_y));
-    surface.line(&points, Stroke::new(LINE * 0.9, ink.dim));
+    // The coil is part of the symbol, not an annotation: same ink and same weight as the
+    // other functional lines. A faded line is not a line class in ISO 1219, and it is the
+    // first thing to vanish in a photocopy.
+    surface.line(&points, Stroke::new(LINE, ink.line));
 }
 
 /// Barrel of a cylinder: the widest rectangle its definition declares.
@@ -1417,6 +1449,68 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn the_piston_meets_both_walls_of_the_bore() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        for id in [
+            "cylinder.single_acting_20_100",
+            "cylinder.double_acting_32_200",
+        ] {
+            let definition = catalog
+                .get(id)
+                .expect("the built-in cylinder exists")
+                .clone();
+            let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 100.0, 50.0);
+            let barrel = barrel_of(&definition, rect).expect("a barrel");
+            for extension in [0.0, 0.5, 1.0] {
+                let mut recording = Recording::default();
+                draw_cylinder(&mut recording, rect, &definition, extension, &Ink::print());
+                let crate::surface::Call::Line { points, .. } = &recording.calls()[0] else {
+                    unreachable!("the piston is a line")
+                };
+                let [top, bottom] = points.as_slice() else {
+                    unreachable!("a piston is a segment")
+                };
+                // A piston that stops short of the walls reads as a bar floating inside the
+                // barrel. ISO 1219 draws it as the seal between the two chambers, so it has
+                // to reach both walls at every position of the stroke.
+                assert!(
+                    (top.y - barrel.min.y).abs() < 1.0e-4
+                        && (bottom.y - barrel.max.y).abs() < 1.0e-4,
+                    "{id} at {extension}: the piston spans {}..{}, the bore is {}..{}",
+                    top.y,
+                    bottom.y,
+                    barrel.min.y,
+                    barrel.max.y
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_two_ports_of_a_double_acting_cylinder_sit_at_opposite_ends() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog
+            .get("cylinder.double_acting_32_200")
+            .expect("the built-in cylinder exists")
+            .clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 100.0, 50.0);
+        let barrel = barrel_of(&definition, rect).expect("a barrel");
+        let mut left = false;
+        let mut right = false;
+        for port in &definition.port {
+            let point = at(rect, port.position[0], port.position[1]);
+            left |= point.x < barrel.min.x;
+            right |= point.x > barrel.max.x;
+        }
+        // One port in each end cap: a double-acting cylinder is driven from both ends, and
+        // the rod end takes its port above the rod because the rod is on the centreline.
+        assert!(
+            left && right,
+            "one port must join each end cap, got left={left} right={right}"
+        );
     }
 
     #[test]

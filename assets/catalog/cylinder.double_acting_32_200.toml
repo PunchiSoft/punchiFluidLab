@@ -22,7 +22,9 @@ kinematics = "linear_actuator"
 
 # Port 1 extends, port 2 retracts, one at each end. The cap end has no rod, so its port
 # sits on the centreline at the cap. The rod end has the rod on the centreline, so its
-# port is drawn above the barrel, just inside the rod-side wall.
+# port takes the rod-end wall above the rod: a hole in the cap, which is what the port
+# is. Drawing it on the barrel's top edge squeezed it against the corner of the body,
+# where it read as part of the outline instead of as a connection.
 [[port]]
 id = "1"
 role = "working"
@@ -31,7 +33,7 @@ position = [0.0, 0.5]
 [[port]]
 id = "2"
 role = "working"
-position = [0.48, 0.0]
+position = [0.58, 0.36]
 
 [behaviour]
 type = "cylinder"
@@ -58,5 +60,5 @@ line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.48, 0.0, 0.48, 0.28]
+points = [0.5, 0.36, 0.58, 0.36]
 line_class = "working"

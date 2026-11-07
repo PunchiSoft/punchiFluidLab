@@ -53,6 +53,10 @@ itself is the responsibility of whoever adds or reviews a symbol.
   spring symbol is a defect, and so is a spring drawn at the actuator end. Both are drawn
   **at a size proportional to the body** (a tenth of the body side was the defect that made
   them unreadable at palette size), and both start clear of the body edge.
+- **A lever is an arm and a grip**, not a stem with a blob: the arm leaves the end face at
+  an angle and ends in a bar **across** that arm, which is the part a hand pushes. A stem
+  that turns into a hook reads as a stray line and leaves the reader unable to tell a
+  manual lever from a detent or a pedal.
 - **The ports are drawn once**, at the square of the rest position: one set of
   numerals, stubs attached to the body at fixed x. Port positions are read inside the
   symbol box and then brought to the body edge, so a stub is straight and vertical (or
@@ -77,22 +81,30 @@ itself is the responsibility of whoever adds or reviews a symbol.
 ### Actuators and the rest
 
 - A single-acting cylinder shows the barrel, the piston, the rod **and its return
-  spring** at the rod side, between the piston and the rod-side wall. The spring is a
-  **short coil against that wall**, never a coil that fills the chamber: a spring drawn
-  across the whole barrel reads as a barrel full of wire and hides the piston and the rod
-  behind it. The spring is drawn around the rod and **compresses with the stroke**: same
-  wire, fewer pitch, slightly larger amplitude as the coils bunch. A coil that no longer fits at its nominal pitch is
+  spring** at the rod side, between the piston and the rod-side wall. The spring **spans
+  the chamber it fills**, from the piston to that wall: it is the return element of that
+  chamber and not a decoration in one corner of it. It is drawn thin around the rod and
+  **compresses with the stroke**: same wire, fewer pitch, slightly larger amplitude as the
+  coils bunch. A coil that no longer fits at its nominal pitch is
   drawn with **fewer turns** rather than with more lines stacked on the same millimetre,
   because a band of turns drawn over each other is a filled rectangle and not a spring;
-  the floor is two turns, below which the shape stops reading as a coil.
+  the floor is two turns, below which the shape stops reading as a coil. The coil is drawn
+  in the **same ink and weight as the other functional lines**: ISO 1219 has line classes,
+  not faded lines, and a grey part is the first one to disappear in a photocopy.
 - The piston **crosses the internal length the definition declares**: the chamber is the
   stroke plus the dead length, so at full extension the piston stops with only the dead
   length left against the rod-side wall. That residual space is where the return spring
   is compressed, and it is not a fraction chosen by the renderer: a cylinder that only
   used part of its chamber would read as a cylinder that had not finished its stroke.
+- The piston **meets both walls of the bore** at every position of the stroke. A line that
+  stops short of the walls reads as a bar floating inside the barrel; the piston is the
+  seal between the two chambers and is drawn as such.
 - A double-acting cylinder shows the same barrel, piston and rod and **no spring**, with
   **two ports, one at each end**: the cap-side port on the centreline at the cap, and the
-  rod-side port above the barrel, because the rod occupies the centreline at that end.
+  rod-side port **in the rod-end wall, above the rod**, because the rod occupies the
+  centreline at that end. A port tucked into the corner where the rod-end wall meets the
+  barrel's top edge reads as part of the outline and not as a connection, so it is not
+  used.
 - The moving parts come from the definition, not from a hardcoded layout: the barrel is
   the widest rectangle the file declares, so a longer cylinder is a different file. The
   piston never leaves the barrel at either end of the stroke, and the rod is the only
