@@ -114,6 +114,14 @@ attaches commits that are not yours, and the mistake stays invisible until revie
 ## Gotchas
 
 - **A clean `git status` says nothing about the base.** Only step 2 does.
+- **The checkout can move under you.** Two sessions — or a session and a hand — in the
+  same working copy share one `HEAD`: a `git switch` in one of them silently changes the
+  branch the other is committing to, and the commit lands on `main` with a green gate and
+  no warning. Read `git branch --show-current` immediately before committing, and
+  `git log --oneline -1 origin/main..HEAD` as the proof the commit is on the branch. A
+  commit that landed on `main` by mistake is moved, not reverted: `git branch
+  salvage-<name> <sha>` keeps it reachable, `git reset --hard origin/main` puts `main`
+  back, the branch is reset onto the salvage and a `--force-with-lease` push publishes it.
 - **The window is part of the gate.** A Rust-green branch whose ribbon overflows or
   whose `--selftest` fails is red: `check.sh` builds and drives the window when it is
   configured.
