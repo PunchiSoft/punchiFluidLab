@@ -21,19 +21,20 @@ use punchi_fluid::{
     PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk, PfPoint, PfSession,
     PfTelemetry, pf_abi, pf_session_advance, pf_session_build_frame, pf_session_can_undo,
     pf_session_catalog, pf_session_check, pf_session_component_count, pf_session_component_edits,
-    pf_session_component_id, pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_copy_selected, pf_session_duplicate_component, pf_session_finding_at,
-    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_last_error,
-    pf_session_move_component, pf_session_new, pf_session_open, pf_session_paste,
-    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
-    pf_session_place_component, pf_session_press_component_valve, pf_session_press_valve,
-    pf_session_preview, pf_session_redo, pf_session_release_component_valve,
-    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
-    pf_session_restart, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_pipe, pf_session_selected, pf_session_selected_pipe,
-    pf_session_set_component_edits, pf_session_telemetry, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_spring_return,
+    pf_session_component_id, pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
+    pf_session_duplicate_component, pf_session_finding_at, pf_session_free,
+    pf_session_hit_component, pf_session_hit_valve, pf_session_last_error,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_new, pf_session_open,
+    pf_session_paste, pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
+    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_redo,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
+    pf_session_remove_selected_pipe, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_pipe,
+    pf_session_selected, pf_session_selected_pipe, pf_session_set_component_edits,
+    pf_session_telemetry, pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -1240,6 +1241,96 @@ fn releasing_the_valve_vents_the_chamber_and_the_spring_brings_the_rod_back() {
         retracted.position_m * 1000.0,
         retracted.stroke_m * 1000.0
     );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_turned_component_puts_its_ports_where_the_symbol_is_drawn() {
+    let session = session();
+    // SAFETY: live session; the starting circuit has supply, valve and cylinder.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    // The valve waits for a port to be dragged to: it is the one a turn is visible on.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_select(session, 1) }, PF_OK);
+    let point = |session: *mut PfSession| {
+        let mut out = [0.0_f32; 2];
+        // SAFETY: live session, a NUL-terminated port id and two writable floats.
+        let status = unsafe { pf_session_port_point(session, 1, c"2".as_ptr(), out.as_mut_ptr()) };
+        assert_eq!(status, PF_OK, "the valve has port 2");
+        (out[0], out[1])
+    };
+    let before = point(session);
+    let mut boxed = [0.0_f32; 4];
+    // SAFETY: live session and four writable floats.
+    assert_eq!(
+        unsafe { pf_session_component_rect(session, 1, boxed.as_mut_ptr()) },
+        PF_OK
+    );
+    let centre = (
+        f32::midpoint(boxed[0], boxed[2]),
+        f32::midpoint(boxed[1], boxed[3]),
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_rotate_selected(session, 0) }, PF_OK);
+    let mut orientation = [0_u32; 2];
+    // SAFETY: live session and two writable integers.
+    assert_eq!(
+        unsafe { pf_session_component_orientation(session, 1, orientation.as_mut_ptr()) },
+        PF_OK
+    );
+    assert_eq!(orientation, [1, 0], "one clockwise quarter, not mirrored");
+    let after = point(session);
+    assert!(
+        (before.0 - after.0).abs() > 0.5 || (before.1 - after.1).abs() > 0.5,
+        "a quarter turn moves the port: {before:?} -> {after:?}"
+    );
+    // The symbol turns about its own centre, so the box keeps the same middle.
+    let mut turned_box = [0.0_f32; 4];
+    // SAFETY: live session and four writable floats.
+    assert_eq!(
+        unsafe { pf_session_component_rect(session, 1, turned_box.as_mut_ptr()) },
+        PF_OK
+    );
+    let turned_centre = (
+        f32::midpoint(turned_box[0], turned_box[2]),
+        f32::midpoint(turned_box[1], turned_box[3]),
+    );
+    assert!(
+        (turned_centre.0 - centre.0).abs() < 1e-3 && (turned_centre.1 - centre.1).abs() < 1e-3,
+        "{turned_centre:?} is not {centre:?}"
+    );
+
+    // One undo puts the port back where it was drawn.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let undone = point(session);
+    assert!(
+        (undone.0 - before.0).abs() < 1e-3 && (undone.1 - before.1).abs() < 1e-3,
+        "{undone:?} is not {before:?}"
+    );
+
+    // A mirror is the other command, and it survives a save and an open.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_mirror_selected(session) }, PF_OK);
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("girado.pfluid");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(session, encoded.as_ptr()) }, PF_OK);
+    let mut reopened = [0_u32; 2];
+    // SAFETY: live session and two writable integers.
+    assert_eq!(
+        unsafe { pf_session_component_orientation(session, 1, reopened.as_mut_ptr()) },
+        PF_OK
+    );
+    assert_eq!(reopened, [0, 1], "the mirror is part of the sheet");
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

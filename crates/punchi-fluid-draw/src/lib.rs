@@ -10,12 +10,14 @@
 //! This crate knows nothing about windows, files or fonts: no toolkit here, no I/O
 //! here, and no colour that does not come in through [`symbol::Ink`].
 
+pub mod orient;
 pub mod placed;
 pub mod schematic;
 pub mod surface;
 pub mod symbol;
 
-pub use placed::{draw_placed, port_point, route, route_offset, selection_ring};
+pub use orient::{Orientation, Turned};
+pub use placed::{Placed, draw_placed, port_point, route, route_offset, selection_ring};
 pub use schematic::{Layout, draw, draw_readouts, draw_with_layout, layout};
 pub use surface::{Anchor, Call, Colour, LineClass, Pt, Recording, Rect, Stroke, Surface, dashes};
 pub use symbol::{Ink, LINE, NUMERAL, draw_component, draw_valve};

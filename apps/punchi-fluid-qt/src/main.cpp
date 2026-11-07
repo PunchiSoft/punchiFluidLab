@@ -818,6 +818,59 @@ int main(int argc, char *argv[])
             state->session->stopSimulation();
         });
 
+        // Ctrl and a double click turns the component under the pointer, which is the
+        // reference's gesture. The port travels with the symbol and one undo puts both
+        // back, because a turn is one change to the document.
+        steps->push_back([state, check, sendWith, toScene, componentRect] {
+            // The turn is an editing gesture: the sheet has to be out of simulation first.
+            state->session->stopSimulation();
+            const uint32_t index = static_cast<uint32_t>(state->valveIndex);
+            state->routeScene = toScene(componentRect(state->valveIndex).center());
+            float before[2] = {0.0F, 0.0F};
+            pf_session_port_point(state->session->handle(), index, "2", before);
+            // Two clicks in place, which is the gesture: the item turns the component on
+            // the second one, exactly as a hand doing Ctrl and a double click does.
+            sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
+                     Qt::ControlModifier);
+            sendWith(QEvent::MouseButtonRelease, state->routeScene, Qt::LeftButton, Qt::NoButton,
+                     Qt::ControlModifier);
+            sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
+                     Qt::ControlModifier);
+            sendWith(QEvent::MouseButtonRelease, state->routeScene, Qt::LeftButton, Qt::NoButton,
+                     Qt::ControlModifier);
+            uint32_t orientation[2] = {0, 0};
+            pf_session_component_orientation(state->session->handle(), index, orientation);
+            check(orientation[0] == 3,
+                  QStringLiteral("edición: Ctrl y doble clic gira al revés"));
+            float after[2] = {0.0F, 0.0F};
+            pf_session_port_point(state->session->handle(), index, "2", after);
+            check(std::abs(before[0] - after[0]) > 0.5 || std::abs(before[1] - after[1]) > 0.5,
+                  QStringLiteral("edición: el puerto gira con el símbolo"));
+            state->session->undo();
+            orientation[0] = 9;
+            pf_session_component_orientation(state->session->handle(), index, orientation);
+            check(orientation[0] == 0,
+                  QStringLiteral("edición: un deshacer devuelve el símbolo a su sitio"));
+        });
+        // Alt+M reflects it, and reflecting twice is the symbol as it was drawn.
+        steps->push_back([state, check] {
+            const int index = state->valveIndex;
+            state->session->select(index);
+            state->session->mirrorSelected();
+            uint32_t orientation[2] = {9, 9};
+            pf_session_component_orientation(state->session->handle(),
+                                             static_cast<uint32_t>(index), orientation);
+            check(orientation[0] == 0 && orientation[1] == 1,
+                  QStringLiteral("edición: reflejar no gira, invierte"));
+            state->session->mirrorSelected();
+            pf_session_component_orientation(state->session->handle(),
+                                             static_cast<uint32_t>(index), orientation);
+            check(orientation[1] == 0,
+                  QStringLiteral("edición: reflejar dos veces deja el símbolo igual"));
+            state->session->undo();
+            state->session->undo();
+        });
+
         // Run until a state change: the transport stops on the frame the piston reaches
         // the stop, which is what the reference's own run mode does.
         steps->push_back([state, check] {

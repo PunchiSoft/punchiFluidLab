@@ -206,6 +206,12 @@ int32_t pf_session_paste(PfSession *session, float x_mm, float y_mm);
 int32_t pf_session_paste_offset(PfSession *session, float dx_mm, float dy_mm);
 int32_t pf_session_duplicate_component(PfSession *session, uint32_t index, float dx_mm,
                                        float dy_mm);
+/* Turns the selection a quarter clockwise, or the other way with `anticlockwise` set. */
+int32_t pf_session_rotate_selected(PfSession *session, int32_t anticlockwise);
+/* Reflects the selection on its own vertical axis. */
+int32_t pf_session_mirror_selected(PfSession *session);
+/* How a placement is turned: `out[0]` quarter turns clockwise, `out[1]` the mirror. */
+int32_t pf_session_component_orientation(const PfSession *session, uint32_t index, uint32_t *out);
 /* Starts a new document and seeds the worked example. */
 int32_t pf_session_new_document(PfSession *session);
 /* Saves the sheet atomically, and opens one, replacing the document. */

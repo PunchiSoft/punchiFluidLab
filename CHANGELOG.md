@@ -6,6 +6,35 @@ publicación.
 
 ## Unreleased
 
+### Girar y reflejar un componente — 2026-11-12
+
+El manual lo documenta en dos renglones de `Edición`: *los componentes seleccionados pueden
+girarse 90°, 180° o 270°* y *los objetos marcados se reflejan en su propio eje*. Sin eso,
+un circuito que baja en vertical o una válvula montada al revés no se pueden dibujar, y la
+mitad de los esquemas de la referencia son imposibles de reproducir.
+
+- **El giro es del símbolo, no del código**: `punchi-fluid-draw::orient` envuelve la
+  superficie de dibujo en una transformación que mueve cada llamada alrededor del centro de
+  la caja. Un cuarto de vuelta o un espejo no añaden geometría ni una rama nueva al
+  dibujante; el mismo archivo de catálogo vale en las ocho orientaciones.
+- **El texto no gira**: los números de puerto se colocan donde el giro los lleva y se
+  dibujan derechos, porque un número tumbado no se lee. Un arco sí gira —sus extremos y su
+  sentido— y el espejo invierte el recorrido.
+- **Los tubos acompañan**: las puntas de un conducto salen de la misma transformación, así
+  que al girar un componente sus tubos se reenganchan a los puertos nuevos; la caja de
+  selección y la prueba de impacto usan la caja girada, que cambia de ancho y alto.
+- **Los gestos de la referencia más uno**: `Alt+R` gira un cuarto (botón **Girar**), `Alt+M`
+  refleja (botón **Reflejar**) y `Ctrl` con doble clic gira al revés, con `Shift` para el
+  sentido horario. La referencia no tiene teclado para esto; aquí sí, porque ningún mando
+  puede depender del ratón.
+- **El giro se guarda y se deshace**: el documento guarda los cuartos de vuelta y el espejo
+  de cada colocación, y un giro es **una** entrada del historial. El formato de hoja sube a
+  **v2**; un archivo v1 se lee tal cual y se guarda como v2, con una prueba de migración.
+- **Probado en cuatro niveles**: nueve pruebas de la transformación (incluida la
+  grabación de llamadas, para que pantalla y papel giren igual), tres del documento, una
+  del ABI que gira, deshace y reabre el archivo, y cinco pasos del `--selftest` con eventos
+  reales, entre ellos el doble clic con `Ctrl`.
+
 ### Editar el recorrido de un tubo — 2026-11-06
 
 El manual lo pide en la misma página en que explica la T: *arrastrar los segmentos del

@@ -50,7 +50,7 @@ use punchi_fluid_doc::{Document, Endpoint, Placement, PlacementEdits};
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
-use punchi_fluid_draw::{Layout, dashes};
+use punchi_fluid_draw::{Layout, Orientation, dashes};
 use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
 use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
 use punchi_fluid_solver::pneumatic::Telemetry;
@@ -865,6 +865,7 @@ impl PfSession {
                     placement_part.get(index).copied().flatten(),
                     system.as_ref(),
                 ),
+                orientation: placement.orientation,
             })
             .collect();
         let pipes: Vec<Pipe<'_>> = document
@@ -946,6 +947,8 @@ impl PfSession {
                     width: round(placement.width),
                     height: round(placement.height),
                     edit,
+                    quarter_turns: placement.orientation.quarter_turns(),
+                    mirrored: placement.orientation.mirrored(),
                 }
             })
             .collect();
@@ -992,6 +995,7 @@ impl PfSession {
                         moving_mass_kg: edit.moving_mass_kg,
                     };
                 }
+                placement.orientation = Orientation::new(stored.quarter_turns, stored.mirrored);
                 placement
             })
             .collect();
@@ -1082,7 +1086,12 @@ impl PfSession {
                 continue;
             };
             for port in &definition.port {
-                let Some(at) = port_point(placement.rect(), definition, &port.id) else {
+                let Some(at) = port_point(
+                    placement.rect(),
+                    placement.orientation,
+                    definition,
+                    &port.id,
+                ) else {
                     continue;
                 };
                 let distance = Pt::new(point.x - at.x, point.y - at.y).length();
@@ -2238,7 +2247,7 @@ pub unsafe extern "C" fn pf_session_component_rect(
         let Some(placement) = session.document.placements().get(index as usize) else {
             return PF_ERR_MODEL;
         };
-        let rect = placement.rect();
+        let rect = placement.box_rect();
         // SAFETY: the caller promised four writable floats.
         let target = unsafe { std::slice::from_raw_parts_mut(out, 4) };
         target[0] = rect.min.x;
@@ -2517,6 +2526,90 @@ pub unsafe extern "C" fn pf_session_move_component(
     })
 }
 
+/// Turns the selected placement a quarter, clockwise or the other way.
+///
+/// `anticlockwise` is what `Ctrl` and a double click does in the reference; the menu
+/// command and the ribbon button are the clockwise turn.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_rotate_selected(
+    session: *mut PfSession,
+    anticlockwise: i32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(index) = session.selected else {
+            return session.fail("select a component to turn it");
+        };
+        let turned = if anticlockwise == 0 {
+            session.document.turn_clockwise(index)
+        } else {
+            session.document.turn_anticlockwise(index)
+        };
+        if turned { PF_OK } else { PF_ERR_MODEL }
+    })
+}
+
+/// Reflects the selected placement on its own vertical axis.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_mirror_selected(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(index) = session.selected else {
+            return session.fail("select a component to reflect it");
+        };
+        if session.document.reflect(index) {
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// How a placement is turned: quarter turns clockwise and whether it is mirrored.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// two writable integers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_orientation(
+    session: *const PfSession,
+    index: u32,
+    out: *mut u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(orientation) = session.document.orientation_of(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised two writable integers.
+        let target = unsafe { std::slice::from_raw_parts_mut(out, 2) };
+        target[0] = u32::from(orientation.quarter_turns());
+        target[1] = u32::from(orientation.mirrored());
+        PF_OK
+    })
+}
+
 /// Removes a placement. The selection is cleared when it was the one removed.
 ///
 /// # Safety
@@ -2772,10 +2865,16 @@ fn pipe_points(document: &Document, catalog: &Catalog, index: usize) -> Option<(
         .get(document.index_of(connection.to.placement)?)?;
     let start = port_point(
         from.rect(),
+        from.orientation,
         catalog.get(&from.catalog_id)?,
         &connection.from.port,
     )?;
-    let end = port_point(to.rect(), catalog.get(&to.catalog_id)?, &connection.to.port)?;
+    let end = port_point(
+        to.rect(),
+        to.orientation,
+        catalog.get(&to.catalog_id)?,
+        &connection.to.port,
+    )?;
     Some((start, end))
 }
 
@@ -3054,7 +3153,8 @@ pub unsafe extern "C" fn pf_session_port_point(
         let Some(definition) = session.catalog.get(&placement.catalog_id) else {
             return PF_ERR_MODEL;
         };
-        let Some(point) = port_point(placement.rect(), definition, port) else {
+        let Some(point) = port_point(placement.rect(), placement.orientation, definition, port)
+        else {
             return PF_ERR_MODEL;
         };
         // SAFETY: the caller promised two writable floats.

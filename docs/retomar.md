@@ -30,7 +30,7 @@ Después, en este orden:
 | replicar una capacidad de la referencia | [reference-parity.md](reference-parity.md) y la skill [reference-parity](../.agents/skills/reference-parity/SKILL.md): ninguna empieza sin su observación escrita |
 | las reglas que no se rompen | §14 y [AGENTS.md](../AGENTS.md) |
 
-### 0.1 Estado al 2026-11-06 (lo último, y lo que manda)
+### 0.1 Estado al 2026-11-12 (lo último, y lo que manda)
 
 Desde que se escribió el resto de este archivo cambió la mitad del programa. Lo
 autoritativo es [reference-parity.md](reference-parity.md) (capacidades, estado y
@@ -38,24 +38,25 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 
 | Área | Estado real |
 |---|---|
-| Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo |
+| Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic) |
 | Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago y masa; Aplicar es un solo deshacer. Faltan nombre, accionamiento y los demás campos del diálogo de la referencia |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana |
 | Exportación | PNG y PDF con hoja normalizada |
 | Comprobación | 5 de las 9 faltas, cada una señalada en el dibujo; las otras 4 necesitan designaciones/circuitos (F4) o la biblioteca eléctrica (F6) |
+| Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
 | Símbolos | lint de 8 reglas; revisión visual con capturas claro/oscuro; 300 dpi pendiente |
 
 **Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
-(la hoja se dibuja, se conecta, se simula y se guarda), pero del manual completo falta
-bastante: las funciones de edición suplementarias (girar/reflejar, copiar/pegar,
-selección múltiple, alinear/distribuir), los instrumentos y las carreras hasta cambio de
-estado (F3), los proyectos y el autoguardado (F4), las listas de piezas (F5), y las
-bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy: **~35–40 % del
-manual**, con F1 casi cerrada y F2 cerrada. El siguiente paso, por valor, es
-**F3 (instrumentos y «hasta cambio de estado»)**, seguido de las funciones de edición que
-el manual agrupa en §4.2.
+(la hoja se dibuja, se conecta, se gira, se simula y se guarda), pero del manual completo
+falta bastante: la selección múltiple con alinear/distribuir, las clases de conducto y los
+silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (F3), los
+proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de piezas
+(F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
+**~40–45 % del manual**, con F1 al ~80 % y F2 cerrada. El siguiente paso, por valor, es la
+**selección múltiple** (desbloquea alinear/distribuir, borrar y girar en bloque y el
+copiar de varios), seguido del resto de F3.
 
 Cómo comprobarlo sin ventana:
 

@@ -82,7 +82,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar PNG…, Exportar PDF…, Salir |
-| **Editar** | Deshacer, Rehacer, Cortar/Copiar/Pegar, Duplicar, Borrar, Seleccionar todo, Girar 90° |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Girar (`Alt+R`), Reflejar (`Alt+M`) |
 | **Ver** | Rejilla, Imán a rejilla, Imán a puertos, Zoom (−, %, +), Ajustar a ventana, Tema (sistema/claro/oscuro), Panel lateral, Barra de estado |
 
 

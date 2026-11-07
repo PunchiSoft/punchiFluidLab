@@ -95,4 +95,8 @@ private:
     /// The pipe whose middle segment is being dragged. `-1` when no pipe is being
     /// re-routed; a click that lands on a pipe starts here and a move makes it an edit.
     int m_routing = -1;
+    /// When and where the last press landed, so a second press in place counts as the
+    /// double click the reference turns a component with.
+    qint64 m_lastPressMs = 0;
+    QPointF m_lastPressSheet;
 };

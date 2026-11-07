@@ -25,9 +25,10 @@ file is the execution order.
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | 17 theme tests, 4 contrast tests, colour-literal scan, 10 UI tests, light/dark screenshots |
 | Export PNG/PDF | **implemented** — [plan.md](plan.md) M2 | 8 PDF acceptance tests + 5 raster tests: pixel sizes from the IHDR, empty margin band, determinism, refusal before allocating |
 | ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | 8 lint rules with a test each, 4 review files with light/dark screenshots, review-folder test; 300 dpi pending M2 |
-| Editor: document, undo, pipes, T, re-route, per-instance properties | **implemented** — [reference-parity.md](reference-parity.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
+| Editor: document, undo, pipes, T, re-route, per-instance properties, copy, turn, reflect | **implemented** — [reference-parity.md](reference-parity.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
 | The sheet is the network the solver runs | **implemented** — [reference-parity.md](reference-parity.md) F2 | network tests, the 5/2 + double-acting ABI circuit, pipe colour |
 | Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | six format tests, ABI round trip, `--selftest` |
+| Pressure gauge, turn and reflect | **implemented** — [reference-parity.md](reference-parity.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v2 with a migration test |
 
 The repository is initialised and the baseline is committed; the working tree is on
 `main` with the Qt front end merged in.
@@ -41,9 +42,9 @@ order that follows from it:
 1. **F3 — instruments and runs**: a manometer, a flow meter, a force meter and a strip
    chart as catalog entries with readings, plus *run until state change* (manual §3.2:
    piston at an end, valve actuated, relay, switch).
-2. **F1 — the editing functions of §4.2** that are still missing: rotate/flip,
-   copy/paste/duplicate, multi-selection with align and distribute, pipe classes, blind
-   plugs and silencers.
+2. **F1 — the editing functions of §4.2** that are still missing: multi-selection with
+   align and distribute, pipe classes, blind plugs and silencers. Copy, paste, duplicate,
+   turn and reflect are done.
 3. **F4 — documents**: autosave, recent documents, a warning when closing an unsaved
    circuit, a project as a folder, and the designations that unlock three of the four
    remaining check faults.

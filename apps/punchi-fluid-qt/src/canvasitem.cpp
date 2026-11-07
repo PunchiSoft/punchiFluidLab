@@ -6,6 +6,9 @@
 #include "replay.h"
 
 #include <QCursor>
+#include <QDateTime>
+#include <QGuiApplication>
+#include <QStyleHints>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QKeyEvent>
@@ -216,6 +219,29 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
     // simulation the same click actuates it, held for as long as the button is down —
     // the split every schematic simulator has.
     if (m_session->editing()) {
+        // Ctrl and a double click turns the component under the pointer, anticlockwise;
+        // Shift with it turns clockwise. It is the reference's gesture, so it is here
+        // before the drag that the same press would start. The window system turns the
+        // second click of a hand into a double click; a replayed press sequence carries no
+        // such mark, so the item counts two presses in place itself.
+        const Qt::KeyboardModifiers modifiers = event->modifiers();
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        const bool repeated =
+            m_lastPressMs > 0 && now - m_lastPressMs <= QGuiApplication::styleHints()->mouseDoubleClickInterval()
+            && (sheet - m_lastPressSheet).manhattanLength() <= 6.0;
+        m_lastPressMs = now;
+        m_lastPressSheet = sheet;
+        const bool turned = event->type() == QEvent::MouseButtonDblClick
+            || (event->type() == QEvent::MouseButtonPress && repeated);
+        if (turned && (modifiers & Qt::ControlModifier) != 0) {
+            const int target = m_session->componentAt(sheet.x(), sheet.y());
+            if (target >= 0) {
+                m_session->select(target);
+                m_session->rotateSelected((modifiers & Qt::ShiftModifier) == 0);
+                event->accept();
+                return;
+            }
+        }
         // A port under the pointer is the start of a pipe, exactly as the reference does
         // it: press on one connection, drag, release on another.
         int portIndex = -1;

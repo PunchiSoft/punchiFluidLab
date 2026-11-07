@@ -195,6 +195,11 @@ public:
     Q_INVOKABLE void duplicateSelected();
     /// Copies a placement displaced by a delta; the Shift+drag gesture.
     Q_INVOKABLE int duplicateComponent(int index, double dxMm, double dyMm);
+    /// Turns the selected component a quarter; `anticlockwise` is the Ctrl and double
+    /// click gesture of the reference, the plain command is the clockwise turn.
+    Q_INVOKABLE void rotateSelected(bool anticlockwise);
+    /// Reflects the selected component on its own vertical axis.
+    Q_INVOKABLE void mirrorSelected();
     Q_INVOKABLE void selectPipe(int index);
     Q_INVOKABLE int pipeAt(double xMm, double yMm, double toleranceMm);
     /// Drags the middle segment of a pipe so it passes through a point.

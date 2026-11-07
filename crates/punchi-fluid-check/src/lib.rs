@@ -191,7 +191,12 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding
             if joined {
                 continue;
             }
-            let Some(at) = port_point(placement.rect(), definition, &port.id) else {
+            let Some(at) = port_point(
+                placement.rect(),
+                placement.orientation,
+                definition,
+                &port.id,
+            ) else {
                 continue;
             };
             findings.push(Finding {
@@ -241,8 +246,18 @@ pub fn pipe_path(document: &Document, catalog: &Catalog, index: usize) -> Option
     let to = document.placements().get(to_index)?;
     let from_definition = catalog.get(&from.catalog_id)?;
     let to_definition = catalog.get(&to.catalog_id)?;
-    let start = port_point(from.rect(), from_definition, &connection.from.port)?;
-    let end = port_point(to.rect(), to_definition, &connection.to.port)?;
+    let start = port_point(
+        from.rect(),
+        from.orientation,
+        from_definition,
+        &connection.from.port,
+    )?;
+    let end = port_point(
+        to.rect(),
+        to.orientation,
+        to_definition,
+        &connection.to.port,
+    )?;
     Some(route(start, end))
 }
 
@@ -374,6 +389,7 @@ fn ordered(a: f32, b: f32) -> (f32, f32) {
 mod tests {
     use super::*;
     use punchi_fluid_doc::{Endpoint, Placement};
+    use punchi_fluid_draw::Orientation;
 
     fn catalog() -> Catalog {
         Catalog::builtin()
@@ -451,8 +467,8 @@ mod tests {
             .expect("the valve is built in")
             .clone();
         let rect = document.placements()[1].rect();
-        let working = port_point(rect, &valve, "2").expect("the valve has port 2");
-        let exhaust = port_point(rect, &valve, "3").expect("the valve has port 3");
+        let working = port_point(rect, Orientation::NONE, &valve, "2").expect("port 2");
+        let exhaust = port_point(rect, Orientation::NONE, &valve, "3").expect("port 3");
         let remaining = after
             .iter()
             .find(|finding| finding.kind == FindingKind::OpenConnection)

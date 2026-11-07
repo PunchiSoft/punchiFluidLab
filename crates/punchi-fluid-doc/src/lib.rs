@@ -13,6 +13,7 @@
 //! name. When it overflows the oldest entry is dropped, so the oldest states cannot be
 //! reached again — the behaviour every editor has.
 
+use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{Pt, Rect};
 
 /// Most entries the undo history keeps.
@@ -61,6 +62,8 @@ pub struct Placement {
     pub height: f32,
     /// Per-instance values that override the definition file.
     pub edits: PlacementEdits,
+    /// How the symbol is turned on the sheet.
+    pub orientation: Orientation,
 }
 
 impl Placement {
@@ -74,6 +77,7 @@ impl Placement {
             width,
             height,
             edits: PlacementEdits::default(),
+            orientation: Orientation::NONE,
         }
     }
 
@@ -96,6 +100,7 @@ impl Placement {
             width,
             height,
             edits: PlacementEdits::default(),
+            orientation: Orientation::NONE,
         }
     }
 
@@ -114,10 +119,19 @@ impl Placement {
         Rect::from_center_size(self.centre, self.width, self.height)
     }
 
+    /// The box this placement occupies once it is turned.
+    ///
+    /// A symbol standing on its side swaps its width and height, and that is the box a
+    /// click has to fall in and the ring has to surround.
+    #[must_use]
+    pub fn box_rect(&self) -> Rect {
+        self.orientation.box_of(self.rect())
+    }
+
     /// `true` when the point, in millimetres, falls inside the box grown by `slack`.
     #[must_use]
     pub fn contains(&self, point: Pt, slack: f32) -> bool {
-        self.rect().expand(slack).contains(point)
+        self.box_rect().expand(slack).contains(point)
     }
 }
 
@@ -218,6 +232,12 @@ enum Change {
         index: usize,
         from: PlacementEdits,
         to: PlacementEdits,
+    },
+    /// A placement was turned or reflected.
+    Turned {
+        index: usize,
+        from: Orientation,
+        to: Orientation,
     },
     /// Several changes that are one edit to the user.
     ///
@@ -516,6 +536,40 @@ impl Document {
         true
     }
 
+    /// Turns a placement a quarter clockwise: `Edición ▸ Girar`.
+    pub fn turn_clockwise(&mut self, index: usize) -> bool {
+        self.turn(index, Orientation::turned_clockwise)
+    }
+
+    /// Turns a placement a quarter anticlockwise: `Ctrl` and a double click.
+    pub fn turn_anticlockwise(&mut self, index: usize) -> bool {
+        self.turn(index, Orientation::turned_anticlockwise)
+    }
+
+    /// Reflects a placement about its own vertical axis: `Edición ▸ Reflejar`.
+    pub fn reflect(&mut self, index: usize) -> bool {
+        self.turn(index, Orientation::reflected)
+    }
+
+    /// How a placement is turned, or `None` when there is no such placement.
+    #[must_use]
+    pub fn orientation_of(&self, index: usize) -> Option<Orientation> {
+        self.placements
+            .get(index)
+            .map(|placement| placement.orientation)
+    }
+
+    fn turn(&mut self, index: usize, turn: fn(Orientation) -> Orientation) -> bool {
+        let Some(placement) = self.placements.get_mut(index) else {
+            return false;
+        };
+        let from = placement.orientation;
+        let to = turn(from);
+        placement.orientation = to;
+        self.record(Change::Turned { index, from, to });
+        true
+    }
+
     /// Removes a placement, and with it every pipe it carried.
     pub fn remove(&mut self, index: usize) -> Option<Placement> {
         if index >= self.placements.len() {
@@ -666,6 +720,11 @@ impl Document {
                     placement.edits = to.clone();
                 }
             }
+            Change::Turned { index, to, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.orientation = *to;
+                }
+            }
         }
     }
 
@@ -712,6 +771,11 @@ impl Document {
             Change::Edited { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.edits = from.clone();
+                }
+            }
+            Change::Turned { index, from, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.orientation = *from;
                 }
             }
         }
@@ -1063,6 +1127,63 @@ mod tests {
             taken_back += 1;
         }
         assert_eq!(taken_back, HISTORY_LIMIT);
+    }
+
+    #[test]
+    fn a_turn_is_one_undo_entry_and_four_of_them_are_the_symbol_as_it_was() {
+        let mut document = Document::new();
+        let index = document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(50.0, 50.0),
+            30.0,
+            15.0,
+        ));
+        assert!(document.turn_clockwise(index));
+        assert_eq!(
+            document.orientation_of(index),
+            Some(Orientation::new(1, false))
+        );
+        assert!(document.undo());
+        assert_eq!(document.orientation_of(index), Some(Orientation::NONE));
+        assert!(document.redo());
+        for _ in 0..3 {
+            assert!(document.turn_clockwise(index));
+        }
+        assert_eq!(document.orientation_of(index), Some(Orientation::NONE));
+    }
+
+    #[test]
+    fn a_turned_symbol_occupies_the_box_it_is_drawn_in() {
+        let mut document = Document::new();
+        let index = document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(50.0, 50.0),
+            30.0,
+            15.0,
+        ));
+        // Side on, the box is 15 wide and 30 tall, so a point above the centre is inside
+        // it and the same point to the right is not.
+        assert!(document.turn_clockwise(index));
+        assert!(document.placements()[index].contains(Pt::new(50.0, 62.0), 0.0));
+        assert!(!document.placements()[index].contains(Pt::new(62.0, 50.0), 0.0));
+    }
+
+    #[test]
+    fn a_mirror_twice_leaves_the_symbol_alone_and_the_copy_keeps_it() {
+        let mut document = Document::new();
+        let index = document.place(placement("valve.3_2.spring_return", 10.0, 10.0));
+        assert!(document.reflect(index));
+        assert_eq!(
+            document.orientation_of(index),
+            Some(Orientation::new(0, true))
+        );
+        assert!(document.reflect(index));
+        assert_eq!(document.orientation_of(index), Some(Orientation::NONE));
+        assert!(document.reflect(index));
+        let copy = document
+            .duplicate(index, None)
+            .map(|copy| document.placements()[copy].orientation);
+        assert_eq!(copy, Some(Orientation::new(0, true)));
     }
 
     #[test]

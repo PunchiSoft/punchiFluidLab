@@ -11,6 +11,7 @@
 use punchi_fluid_catalog::{Catalog, ComponentDefinition};
 use punchi_fluid_solver::network::Network;
 
+use crate::orient::{Orientation, Turned};
 use crate::schematic::{self, CYLINDER_ID, Layout, SUPPLY_ID, VALVE_ID};
 use crate::surface::{Colour, Pt, Rect, Stroke, Surface};
 
@@ -53,6 +54,16 @@ pub struct Placed<'a> {
     pub valve_position: usize,
     /// Reading of an instrument, in the unit its definition declares, if it has one.
     pub reading: Option<f32>,
+    /// How the symbol is turned on the sheet.
+    pub orientation: Orientation,
+}
+
+impl Placed<'_> {
+    /// The box the component occupies once it is turned.
+    #[must_use]
+    pub fn box_rect(&self) -> Rect {
+        self.orientation.box_of(self.rect)
+    }
 }
 
 /// Draws the sheet.
@@ -76,7 +87,7 @@ pub fn draw_placed(
         placements
             .iter()
             .find(|placed| placed.catalog_id == id)
-            .map(|placed| placed.rect)
+            .map(Placed::box_rect)
     };
     let circuit = system.and_then(|system| {
         Some((
@@ -104,20 +115,35 @@ pub fn draw_placed(
             );
             continue;
         };
-        symbol::draw_component(
-            surface,
-            placed.rect,
-            definition,
-            placed.valve_position,
-            placed.extension,
-            ink,
-        );
+        // A turned symbol is the same drawing seen through a transform, so a direction is
+        // never a second copy of the geometry.
+        if placed.orientation.is_identity() {
+            symbol::draw_component(
+                surface,
+                placed.rect,
+                definition,
+                placed.valve_position,
+                placed.extension,
+                ink,
+            );
+        } else {
+            let mut turned = Turned::new(surface, placed.orientation, placed.rect.center());
+            symbol::draw_component(
+                &mut turned,
+                placed.rect,
+                definition,
+                placed.valve_position,
+                placed.extension,
+                ink,
+            );
+        }
         // A reading is text, not a primitive of the symbol: the dial is the file's and
         // the number is the model's.
         if let Some(reading) = placed.reading {
+            let box_rect = placed.box_rect();
             let at = Pt::new(
-                placed.rect.center().x,
-                placed.rect.min.y + placed.rect.height() * 0.72,
+                box_rect.center().x,
+                box_rect.min.y + box_rect.height() * 0.72,
             );
             symbol::haloed_text(
                 surface,
@@ -138,19 +164,27 @@ pub fn draw_placed(
 
     if let Some(index) = selected {
         if let Some(placed) = placements.get(index) {
-            selection_ring(surface, placed.rect, ink.accent);
+            selection_ring(surface, placed.box_rect(), ink.accent);
         }
     }
 }
 
-/// Where a port sits, in millimetres.
+/// Where a port sits, in millimetres, once the symbol is turned.
 #[must_use]
-pub fn port_point(rect: Rect, definition: &ComponentDefinition, port: &str) -> Option<Pt> {
+pub fn port_point(
+    rect: Rect,
+    orientation: Orientation,
+    definition: &ComponentDefinition,
+    port: &str,
+) -> Option<Pt> {
     definition
         .port
         .iter()
         .find(|candidate| candidate.id == port)
-        .map(|candidate| symbol::at(rect, candidate.position[0], candidate.position[1]))
+        .map(|candidate| {
+            let local = symbol::at(rect, candidate.position[0], candidate.position[1]);
+            orientation.map(rect.center(), local)
+        })
 }
 
 /// Draws one pipe as an orthogonal run, which is how a schematic is read.
@@ -177,8 +211,8 @@ fn draw_pipe(
         return;
     };
     let (Some(start), Some(end)) = (
-        port_point(from.rect, from_definition, pipe.from.port),
-        port_point(to.rect, to_definition, pipe.to.port),
+        port_point(from.rect, from.orientation, from_definition, pipe.from.port),
+        port_point(to.rect, to.orientation, to_definition, pipe.to.port),
     ) else {
         return;
     };

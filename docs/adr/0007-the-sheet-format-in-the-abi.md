@@ -39,4 +39,6 @@ editor's in-memory model does not drag physics or drawing into the file layer.
 - The ABI gains `pf_session_save`, `pf_session_open` and `pf_session_new_document`, and
   the window gains Archivo ▸ Nuevo/Abrir/Guardar/Guardar como.
 - A future migration of the sheet format is a change in `punchi-fluid-file` plus a
-  migration test, following the standing rule.
+  migration test, following the standing rule. Version 2 added the orientation of a
+  placement, the quarter turns and the mirror, as two fields that an unturned symbol
+  omits; a version 1 file reads with no orientation and is written back as version 2.

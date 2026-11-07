@@ -782,6 +782,36 @@ int FluidSession::duplicateComponent(int index, double dxMm, double dyMm)
     return copy;
 }
 
+void FluidSession::rotateSelected(bool anticlockwise)
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_rotate_selected(m_session, anticlockwise ? 1 : 0) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no hay nada que girar");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
+void FluidSession::mirrorSelected()
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_mirror_selected(m_session) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no hay nada que reflejar");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
 void FluidSession::removeSelected()
 {
     if (!m_session) {

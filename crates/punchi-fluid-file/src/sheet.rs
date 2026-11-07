@@ -15,7 +15,14 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 /// Format version written by this build.
-pub const SHEET_VERSION: u32 = 1;
+///
+/// 2 added the orientation of a placement — the quarter turns and the mirror. A file
+/// that still declares 1 reads, because an unturned symbol is what a version 1 file
+/// described.
+pub const SHEET_VERSION: u32 = 2;
+
+/// Oldest format version this build still reads.
+pub const SHEET_MIN: u32 = 1;
 
 /// Most components a sheet may hold.
 pub const MAX_PLACEMENTS: usize = 2_000;
@@ -51,6 +58,25 @@ pub struct StoredPlacement {
     /// Per-instance values, when they differ from the definition.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub edit: Option<StoredEdits>,
+    /// Clockwise quarter turns, `0..=3`; absent when the symbol is not turned.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub quarter_turns: u8,
+    /// `true` when the symbol is reflected on its own vertical axis.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub mirrored: bool,
+}
+
+/// Skips a field that carries the default, so an unturned sheet looks as it always did.
+// serde hands the field to the predicate by reference, whatever its size.
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_zero(value: &u8) -> bool {
+    *value == 0
+}
+
+/// Skips a field that carries the default.
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 /// The fields of a placement that override its definition.
@@ -159,7 +185,7 @@ impl Sheet {
     /// Returns [`SheetError::UnsupportedVersion`] for a future format and
     /// [`SheetError::Invalid`] for a value outside its range or a duplicate identity.
     pub fn validate(&self) -> Result<(), SheetError> {
-        if self.format != SHEET_VERSION {
+        if self.format < SHEET_MIN || self.format > SHEET_VERSION {
             return Err(SheetError::UnsupportedVersion {
                 found: self.format,
                 supported: SHEET_VERSION,
@@ -189,6 +215,12 @@ impl Sheet {
                 )));
             }
             ids.push(placement.id);
+            if placement.quarter_turns > 3 {
+                return Err(SheetError::Invalid(format!(
+                    "a component is turned {} quarters",
+                    placement.quarter_turns
+                )));
+            }
             if placement.catalog.is_empty()
                 || placement.catalog.len() > MAX_ID
                 || !placement.catalog.is_ascii()
@@ -266,8 +298,12 @@ impl Sheet {
     /// Returns [`SheetError::Parse`] for invalid JSON and the errors of
     /// [`Self::validate`].
     pub fn parse(text: &str) -> Result<Self, SheetError> {
-        let sheet: Self = serde_json::from_str(text)?;
+        let mut sheet: Self = serde_json::from_str(text)?;
         sheet.validate()?;
+        // An older file is upgraded by reading it: every field it does not have is what
+        // the older release meant, so the document in memory is this format and saving it
+        // writes the fields the reader just filled in.
+        sheet.format = SHEET_VERSION;
         Ok(sheet)
     }
 
@@ -353,6 +389,8 @@ mod tests {
                     width: 26.0,
                     height: 26.0,
                     edit: None,
+                    quarter_turns: 0,
+                    mirrored: false,
                 },
                 StoredPlacement {
                     id: 2,
@@ -365,6 +403,8 @@ mod tests {
                         stroke_mm: Some(150.0),
                         ..StoredEdits::default()
                     }),
+                    quarter_turns: 1,
+                    mirrored: true,
                 },
             ],
             pipe: vec![StoredPipe {
@@ -422,6 +462,44 @@ mod tests {
             ..StoredEdits::default()
         });
         assert!(sheet.validate().is_err(), "the rod must fit the bore");
+    }
+
+    #[test]
+    fn an_unturned_symbol_writes_no_orientation_at_all() {
+        let mut sheet = sheet();
+        sheet.placement[1].quarter_turns = 0;
+        sheet.placement[1].mirrored = false;
+        let text = sheet.to_json().expect("valid");
+        assert!(!text.contains("quarter_turns"), "{text}");
+        assert!(!text.contains("mirrored"), "{text}");
+    }
+
+    #[test]
+    fn a_version_one_sheet_still_reads_and_gains_an_unturned_orientation() {
+        // Exactly what the previous release wrote: no orientation field, format 1.
+        let text = r#"{
+          "format": 1,
+          "title": "Viejo",
+          "placement": [
+            {"id": 1, "catalog": "supply.workshop", "x": 10.0, "y": 20.0,
+             "width": 26.0, "height": 26.0}
+          ],
+          "pipe": []
+        }"#;
+        let sheet = Sheet::parse(text).expect("a version 1 sheet reads");
+        assert_eq!(sheet.format, SHEET_VERSION, "reading it upgrades it");
+        assert_eq!(sheet.placement[0].quarter_turns, 0);
+        assert!(!sheet.placement[0].mirrored);
+        // Saving it writes the format this build understands, with the fields it added.
+        let saved = sheet.to_json().expect("valid");
+        assert!(saved.contains(r#""format": 2"#), "{saved}");
+    }
+
+    #[test]
+    fn a_turn_that_is_not_one_of_the_four_is_refused() {
+        let mut sheet = sheet();
+        sheet.placement[0].quarter_turns = 4;
+        assert!(sheet.validate().is_err());
     }
 
     #[test]

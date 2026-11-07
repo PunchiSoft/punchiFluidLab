@@ -130,6 +130,16 @@ Window {
         sequence: "Delete"
         onActivated: session.removeSelected()
     }
+    // The reference turns a component with Ctrl and a double click; a keyboard needs its
+    // own key, and Alt+R is not in the way of typing in the properties form.
+    Shortcut {
+        sequence: "Alt+R"
+        onActivated: session.rotateSelected(false)
+    }
+    Shortcut {
+        sequence: "Alt+M"
+        onActivated: session.mirrorSelected()
+    }
     Shortcut {
         sequence: "Ctrl+M"
         onActivated: window.muted = !window.muted
