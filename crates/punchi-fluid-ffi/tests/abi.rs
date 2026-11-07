@@ -200,7 +200,11 @@ fn an_error_message_survives_until_the_next_call() {
     let message = unsafe { pf_session_last_error(session) };
     assert!(!message.is_null(), "the error slot is never a null pointer");
     // SAFETY: the pointer is a NUL-terminated string owned by the session.
-    assert!(unsafe { CStr::from_ptr(message) }.to_bytes().is_empty());
+    assert_eq!(
+        unsafe { CStr::from_ptr(message) }.to_bytes(),
+        b"",
+        "a fresh session has no error to report"
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -251,7 +255,11 @@ fn the_catalog_lists_every_component_in_a_stable_order() {
     for item in items {
         let id = field(item.id_at, item.id_len);
         assert!(!id.is_empty(), "a catalog entry without an id");
-        assert!(!field(item.name_at, item.name_len).is_empty());
+        assert_ne!(
+            field(item.name_at, item.name_len),
+            "",
+            "a catalog entry without a name"
+        );
         if id == "valve.3_2.spring_return" {
             found_valve = true;
         }
