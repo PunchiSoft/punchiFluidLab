@@ -11,12 +11,19 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+    # `ab_glyph` -> `owned_ttf_parser` -> `ttf-parser`. Unmaintained, not vulnerable: no
+    # fixed release exists, and the proposed alternative (skrifa) replaces the whole font
+    # stack. Revisit when punchi-fluid-export moves off `ab_glyph`.
+    "RUSTSEC-2026-0192",
+]
 
 [licenses]
 version = 2
 confidence-threshold = 0.9
 allow = [
+    # Our own crates.
+    "GPL-3.0-or-later",
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
@@ -35,6 +42,10 @@ exceptions = []
 
 [bans]
 multiple-versions = "warn"
+# Our crates depend on each other through `workspace = true`, which writes a path and no
+# version: cargo-deny reads that as a wildcard. Path dependencies are the point of a
+# workspace, so they are allowed; a wildcard on a registry crate is still a finding.
+allow-wildcard-paths = true
 wildcards = "deny"
 deny = [
     # A GNU toolchain requirement would break the reproducible build.
