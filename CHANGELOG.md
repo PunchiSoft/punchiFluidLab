@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Comprobar un circuito sin abrir la ventana — 2026-11-07
+
+La comprobación existía en la ventana y sólo en la ventana: corregir cuarenta prácticas era
+abrir cuarenta ventanas, y del resultado no salía nada que una máquina pudiera leer. La
+referencia tampoco puede ofrecerlo, porque su formato y su comprobación viven dentro de su
+programa.
+
+- **`punchi-fluid-cli check <archivo> [--json] [--strict]`**: lee el formato de hoja que
+  guarda el editor —lo que el alumno entrega— y devuelve las mismas faltas que la ventana
+  dibuja, en el mismo orden y con las mismas palabras.
+- **Contrato versionado**: con `--json` imprime un solo objeto con `version`, `file`, `count`
+  y un elemento por falta, y con la misma forma cuando el archivo no se puede leer. Lo fija
+  [ADR 0011](docs/adr/0011-the-check-is-a-public-command.md).
+- **Códigos de salida que un trabajo de CI puede usar**: `0` comprobado, `1` ilegible, `2` línea
+  de órdenes incorrecta, `3` hay faltas y se pidió `--strict`. Sin `--strict` la lista es un
+  dato, no un fallo, para que nadie tenga que capturar un error para enseñar avisos.
+- **Probado en dos niveles**: cinco pruebas del contrato (hoja limpia, falta con y sin
+  `--strict`, forma del JSON, archivo roto, orden incorrecta) y el smoke test del gate, que
+  exige que una hoja limpia pase y una con faltas falle con `3`.
+
 ### Por qué existe: el coste de una carrera industrial — 2026-11-07
 
 El README decía para quién es el programa, pero no de dónde viene. Ahora lo dice, y lo dice

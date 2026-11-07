@@ -40,6 +40,42 @@ JSON
 cargo run --quiet --bin punchi-fluid-cli -- validate "$example"
 cargo run --quiet --bin punchi-fluid-cli -- simulate "$example"
 
+# The check reads the sheet the editor saves and speaks a versioned contract (ADR 0011):
+# a clean sheet has to pass in strict mode, and a faulty one has to fail it.
+sheet=$(mktemp --suffix=.pfluid)
+faulty=$(mktemp --suffix=.pfluid)
+trap 'rm -f "$example" "$sheet" "$faulty"' EXIT
+cat >"$sheet" <<'JSON'
+{
+  "format": 3,
+  "title": "Hoja limpia",
+  "placement": [
+    { "id": 1, "catalog": "supply.workshop", "x": 34.0, "y": 39.0, "width": 33.8, "height": 33.8 },
+    { "id": 2, "catalog": "valve.3_2.spring_return", "x": 94.0, "y": 93.6, "width": 33.8, "height": 33.8 },
+    { "id": 3, "catalog": "cylinder.single_acting_20_100", "x": 144.0, "y": 33.8, "width": 74.4, "height": 33.8 }
+  ],
+  "pipe": [
+    { "from": 1, "from_port": "1", "to": 2, "to_port": "1" },
+    { "from": 2, "from_port": "2", "to": 3, "to_port": "1" }
+  ]
+}
+JSON
+cat >"$faulty" <<'JSON'
+{
+  "format": 3,
+  "title": "Fuera de la hoja",
+  "placement": [
+    { "id": 1, "catalog": "cylinder.single_acting_20_100", "x": 250.0, "y": 60.0, "width": 74.4, "height": 33.8 }
+  ],
+  "pipe": []
+}
+JSON
+cargo run --quiet --bin punchi-fluid-cli -- check "$sheet" --strict
+cargo run --quiet --bin punchi-fluid-cli -- check "$faulty" --json --strict && {
+    echo "check: a sheet with faults passed in strict mode" >&2
+    exit 1
+} || test $? -eq 3
+
 # The window is where the drawing and the gestures live, and nothing above touches it: the
 # sheet once answered no click at all with every Rust test green. The app is built and
 # driven headlessly here, and the step is skipped when Qt was never configured so a machine

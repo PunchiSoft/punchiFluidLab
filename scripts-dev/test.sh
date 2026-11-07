@@ -64,14 +64,20 @@ if ((build)); then
     # `--message-format=json` lists one compiler-artifact per test binary; the
     # executable field is empty for targets that are not tests.
     if ((${#cargo_args[@]} > 0)); then
+        # Only test executables: an integration test that spawns a binary makes cargo emit
+        # that binary too, and running it with no arguments is a usage error, not a test.
         cargo test "${profile_flag[@]}" --no-run --message-format=json "${cargo_args[@]}" |
             grep -o '"executable":"[^"]*"' |
             cut -d'"' -f4 |
+            grep '/deps/' |
             sort -u >"$manifest"
     else
+        # Only test executables: an integration test that spawns a binary makes cargo emit
+        # that binary too, and running it with no arguments is a usage error, not a test.
         cargo test "${profile_flag[@]}" --workspace --no-run --message-format=json |
             grep -o '"executable":"[^"]*"' |
             cut -d'"' -f4 |
+            grep '/deps/' |
             sort -u >"$manifest"
     fi
 elif [[ ! -s "$manifest" ]]; then
