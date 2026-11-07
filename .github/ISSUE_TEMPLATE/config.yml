@@ -6,6 +6,9 @@ contact_links:
   - name: Question or idea
     url: https://github.com/PunchiSoft/punchiFluidLab/discussions
     about: Ask, propose, or show a circuit you built.
+  - name: Something is not working
+    url: https://github.com/PunchiSoft/punchiFluidLab/blob/main/SUPPORT.md
+    about: Where to report a bug, what this project promises and what it does not.
   - name: Interface and engineering standards
     url: https://github.com/PunchiSoft/punchiFluidLab/blob/main/docs
     about: Read the interface spec, the plan, the symbology contract and the engineering standards before proposing a change.

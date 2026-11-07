@@ -1,6 +1,6 @@
 name: Feature or symbol request
 description: A component, an interaction or a behaviour you miss
-labels: ["feature"]
+labels: ["enhancement"]
 body:
   - type: dropdown
     id: area

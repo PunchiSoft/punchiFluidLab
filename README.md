@@ -242,6 +242,7 @@ Milestones, acceptance criteria and the evidence each one needs live in
 | [docs/engineering.md](docs/engineering.md) | modularisation, memory budget, security, GitHub practices |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | how to set up, test and send a change |
 | [SECURITY.md](SECURITY.md) | how to report a vulnerability privately |
+| [SUPPORT.md](SUPPORT.md) | where to ask, and what this project does not promise |
 | [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) | the stack and the crate split |
 | [docs/adr/0002-components-are-files.md](docs/adr/0002-components-are-files.md) | why components are definition files |
 | [assets/catalog/README.md](assets/catalog/README.md) | how to add, change or delete a component |
