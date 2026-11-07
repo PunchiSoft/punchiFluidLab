@@ -26,6 +26,42 @@ costumbre.
 - **Una instrucción de combinar se responde con la URL**, para que el dueño lo haga. La
   protección de rama deja de ser la única defensa: la regla vale también cuando la protección
   falta o está mal configurada.
+### Los puertos del cilindro, en su tapa — 2026-11-07
+
+Tres formas que estaban dibujadas de memoria y no como la norma las dibuja, y una evidencia
+que no probaba nada porque era más vieja que el código.
+
+- **Un puerto por tapa, saliendo hacia abajo de su propia tapa.** El cilindro de doble efecto
+  tenía uno en la tapa y el otro en el borde superior del barril, donde se leía como parte del
+  contorno y se cruzaba con el vástago; el de simple efecto tenía el suyo en la cara lateral.
+  Ahora los dos salen hacia abajo y a la misma profundidad, así el par se lee de un golpe como
+  un cilindro mandado por los dos extremos. El de simple efecto conserva su único puerto en la
+  tapa, y el extremo del vástago sigue sin ninguno, que es lo que lo hace de simple efecto.
+- **El numeral de un puerto va por fuera de su propio rabo.** El 1 y el 3 de la válvula se
+  escribían uno al lado del otro entre sus dos rabos y se leían como un puerto con dos nombres.
+- **El pistón cruza el diámetro completo**, en los dos cilindros: iba retranqueado un 10 %
+  arriba y abajo y se leía como una barra flotando dentro del barril. El pistón es el sello
+  entre las dos cámaras y toca las dos paredes en cualquier punto de la carrera.
+- **El muelle del cilindro de simple efecto va en tinta llena**, con el mismo grosor que las
+  demás líneas funcionales: una línea gris no es una clase de línea en ISO 1219, y es lo
+  primero que desaparece en una fotocopia.
+- **La palanca es un brazo con empuñadura cruzada**: el brazo sale de la cara del cuerpo en
+  ángulo y termina en una barra perpendicular, más fina y más larga. Antes era un vástago que
+  giraba en gancho con un borrón en la punta, indistinguible de un fiador o de un pedal.
+- **Los accionamientos se dibujan como la tabla de la norma los dibuja**: la palanca lleva su
+  círculo de pivote; el pulsador termina en barra de extremos redondeados; el botón de seta en
+  cúpula; el pedal en placa inclinada; el accionamiento por pistón es una cúpula apoyada en el
+  cuerpo, sin vástago; el rodillo lleva su eje marcado; y los pilotos neumático e hidráulico van
+  en caja con triángulo, hueco para aire y relleno para aceite. La tabla queda en
+  [docs/symbology.md](docs/symbology.md).
+- **Las imágenes de revisión se regeneran**: las que estaban commiteadas eran más viejas que
+  el código que decían probar (13,9 KB contra 4,2 KB del mismo símbolo).
+- La regla queda en [docs/symbology.md](docs/symbology.md) y tres pruebas la sostienen:
+  `each_port_of_a_cylinder_is_drilled_in_an_end_cap` (un puerto por tapa, ninguno en el
+  extremo del vástago), `the_piston_meets_both_walls_of_the_bore` y
+  `the_return_spring_compresses_with_the_stroke`.
+
+### El papel del plano y la norma chilena, dichos — 2026-11-07
 
 Dos cosas que el proyecto daba por sabidas y no estaban escritas. Un plano se imprime en una
 hoja concreta, y esa hoja no es una sola; y la simbología tiene una adopción nacional que un

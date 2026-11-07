@@ -269,6 +269,7 @@ pub fn haloed_text_anchored(
 pub fn draw_numeral(
     surface: &mut dyn Surface,
     rect: Rect,
+    definition: &ComponentDefinition,
     body: Option<Rect>,
     id: &str,
     port: [f64; 2],
@@ -279,18 +280,93 @@ pub fn draw_numeral(
     if rect.height() * surface.device_scale() < NUMERAL_FLOOR {
         return;
     }
-    let anchor = match body {
-        Some(body) => stub_end(rect, body, port),
-        None => at(rect, port[0], port[1]),
-    };
+    let point = at(rect, port[0], port[1]);
     let centre = rect.center();
-    let (dx, dy) = centre.to(anchor);
-    let length = dx.hypot(dy);
     let reach = rect.height() * 0.14;
-    let offset = if length > f32::EPSILON {
-        Pt::new(dx / length * reach, dy / length * reach)
-    } else {
-        Pt::new(0.0, reach)
+    let anchor = match body {
+        // A side port joins the body through a horizontal stub, and its numeral belongs
+        // beyond the outer end of that stub. Anchoring it at the body edge — where a top or
+        // a bottom port is read — puts a side port's numeral inside the symbol, on top of
+        // the rod.
+        Some(body) if is_side_port(body, point) => point,
+        Some(body) => stub_end(rect, body, port),
+        None => point,
+    };
+    let offset = match body {
+        Some(body) if is_side_port(body, point) => {
+            let (dx, dy) = centre.to(anchor);
+            let length = dx.hypot(dy);
+            if length > f32::EPSILON {
+                Pt::new(dx / length * reach, dy / length * reach)
+            } else {
+                Pt::new(reach, 0.0)
+            }
+        }
+        Some(body) => {
+            // A top or a bottom port: the designation sits level with the body edge, beside
+            // its own stub and **towards the body**, on the side the body still has room for.
+            // Two reasons for each half of that: a numeral pushed past the end of the body
+            // reads as belonging to whatever comes next on the sheet, and one written past
+            // the far end of the stub sits exactly where the pipe arrives, so its halo cuts
+            // the pipe in two.
+            // A numeral belongs on the side of its stub where no other port is written: the
+            // ports of a two-position valve are all drawn on one square, so the body's middle
+            // is not a useful reference for "outward", and two numerals written between their
+            // stubs read as one port with two names.
+            let below = point.y >= centre.y;
+            let mut nearest: Option<(f32, f32)> = None;
+            for other in &definition.port {
+                let other_point = at(rect, other.position[0], other.position[1]);
+                if (other_point.y >= centre.y) != below {
+                    continue;
+                }
+                let gap = (other_point.x - point.x).abs();
+                if gap <= f32::EPSILON {
+                    continue;
+                }
+                if nearest.is_none_or(|(closest, _)| gap < closest) {
+                    nearest = Some((gap, if other_point.x > point.x { -1.0 } else { 1.0 }));
+                }
+            }
+            let side = if let Some((_, away)) = nearest {
+                away
+            } else {
+                let outward = if point.x < body.center().x { -1.0 } else { 1.0 };
+                let room = if outward < 0.0 {
+                    point.x - body.min.x
+                } else {
+                    body.max.x - point.x
+                };
+                if room > reach * 1.1 {
+                    outward
+                } else {
+                    -outward
+                }
+            };
+            // Clear of the body, **lateral to its own stub**: a numeral written past the far end
+            // of the stub sits where the pipe arrives and its halo cuts the pipe in two, and one
+            // written towards the body lands inside it. This is the band between the two.
+            let clear = reach * 1.6;
+            Pt::new(side * clear, if below { reach * 0.9 } else { -reach * 0.9 })
+        }
+        None => {
+            // A flat component declares no body, so there is no edge to sit beside: the numeral
+            // goes **lateral** to the stub instead of past its end. A pipe arrives at the end
+            // of a stub, and a numeral written there has its halo cut through the pipe.
+            let (dx, dy) = centre.to(anchor);
+            let length = dx.hypot(dy);
+            let clear = reach * 1.6;
+            if length <= f32::EPSILON {
+                Pt::new(clear, 0.0)
+            } else {
+                let mut lateral = Pt::new(-dy / length * clear, dx / length * clear);
+                let beside = Pt::new(anchor.x + lateral.x, anchor.y + lateral.y);
+                if beside.x < rect.min.x || beside.x > rect.max.x {
+                    lateral = Pt::new(-lateral.x, -lateral.y);
+                }
+                lateral
+            }
+        }
     };
     haloed_text(
         surface,
@@ -300,6 +376,16 @@ pub fn draw_numeral(
         ink.line,
         ink.background,
     );
+}
+
+/// Whether a port sits to the left or the right of the body, level with it.
+///
+/// Those are the ports that join a horizontal stub; the top and the bottom ones join a
+/// vertical stub and are read next to the body's edge.
+fn is_side_port(body: Rect, point: Pt) -> bool {
+    let level = (body.min.y..=body.max.y).contains(&point.y);
+    let outside = point.x < body.min.x || point.x > body.max.x;
+    level && outside
 }
 
 fn axis(body: Rect, side: Side) -> (Pt, Pt) {
@@ -476,7 +562,29 @@ pub fn draw_actuator(
     }
 }
 
-/// A lever at the end of the stem, with the catch that holds it where it is put.
+/// The bar across an actuator's stem: the part a hand, a cam or a stop meets.
+#[allow(clippy::too_many_arguments)]
+fn stem_bar(
+    surface: &mut dyn Surface,
+    p: &impl Fn(f32, f32) -> Pt,
+    at: f32,
+    half: f32,
+    colour: Colour,
+    width: f32,
+) {
+    surface.line(
+        &[p(at, -half), p(at, half)],
+        Stroke::new(width * 1.8, colour),
+    );
+}
+
+/// A hand lever: a bar against the body that carries the arm, the arm itself, and the
+/// pivot it turns about.
+///
+/// ISO 1219-1 reads a lever by its pivot: the small circle at the far end is what separates
+/// it from the general manual actuation, which is a bar and nothing else. The bar against
+/// the body is the arm's foot, and it is what a reader looks at to see which way the spool
+/// is pushed.
 #[allow(clippy::too_many_arguments)]
 fn draw_lever(
     surface: &mut dyn Surface,
@@ -489,50 +597,46 @@ fn draw_lever(
     detent: bool,
 ) {
     let stroke = Stroke::new(width, colour);
-    let (grip_a, grip_b) = (reach * 1.6, -step * 1.6);
-    surface.line(&[edge, p(reach, 0.0), p(grip_a, grip_b)], stroke);
-    surface.line(
-        &[
-            p(grip_a, grip_b - step * 0.6),
-            p(grip_a, grip_b + step * 1.0),
-        ],
-        Stroke::new(width * 2.2, colour),
+    let foot = step * 0.2;
+    stem_bar(surface, p, foot, step * 0.9, colour, width);
+    let pivot_at = foot + reach * 1.05;
+    surface.line(&[p(foot, 0.0), p(pivot_at, 0.0)], stroke);
+    surface.circle(
+        p(pivot_at + step * 0.34, 0.0),
+        step * 0.34,
+        None,
+        Some(stroke),
     );
+    let _ = edge;
     if detent {
-        // The catch keeps the spool where it is left: a bar across the stem and a hook
-        // that only lets it move one way.
+        // The catch keeps the spool where it is left: a tick across the arm says the lever
+        // stays put instead of springing back.
         surface.line(
-            &[p(step * 0.7, -step * 0.9), p(step * 0.7, step * 0.9)],
+            &[
+                p(foot + step * 0.35, -step * 0.75),
+                p(foot + step * 0.35, step * 0.75),
+            ],
             Stroke::new(width * 1.4, colour),
         );
         surface.line(
-            &[p(step * 0.7, step * 0.9), p(step * 0.2, step * 1.3)],
+            &[
+                p(foot + step * 0.35, step * 0.75),
+                p(foot + step * 1.0, step * 1.15),
+            ],
             stroke,
         );
     }
 }
 
-/// A stem ending in a bar the finger presses.
+/// A push button: a stem ending in the rounded head a finger presses.
+///
+/// The rounding is the difference that carries meaning: a plain bar is the general manual
+/// actuation, and a rounded one is a button. A bar with square ends and a bar with round
+/// ends are the same size in the drawing and different machines in the catalog.
+#[allow(clippy::too_many_arguments)]
 fn draw_push_button(
     surface: &mut dyn Surface,
-    edge: Pt,
-    p: &impl Fn(f32, f32) -> Pt,
-    reach: f32,
-    step: f32,
-    colour: Colour,
-    width: f32,
-) {
-    surface.line(&[edge, p(reach, 0.0)], Stroke::new(width, colour));
-    surface.line(
-        &[p(reach, -step * 1.6), p(reach, step * 1.6)],
-        Stroke::new(width * 2.4, colour),
-    );
-}
-
-/// A stem with a dome on it: the head a palm presses, not a finger.
-fn draw_mushroom(
-    surface: &mut dyn Surface,
-    edge: Pt,
+    _edge: Pt,
     p: &impl Fn(f32, f32) -> Pt,
     reach: f32,
     step: f32,
@@ -540,43 +644,61 @@ fn draw_mushroom(
     width: f32,
 ) {
     let stroke = Stroke::new(width, colour);
-    surface.line(&[edge, p(reach, 0.0)], stroke);
-    let half = step * 1.3;
+    let head = step * 0.2 + reach * 1.0;
+    surface.line(&[p(0.0, 0.0), p(head, 0.0)], stroke);
+    let half = step * 0.95;
+    let radius = step * 0.22;
+    let shaft = half - radius;
+    let mut outline = Vec::with_capacity(20);
+    // A stadium across the stem, drawn as a polygon so it scales with the symbol and not
+    // with a font or a pen cap.
+    for index in 0..=6 {
+        #[allow(clippy::cast_precision_loss)]
+        let turn = std::f32::consts::PI * (index as f32 / 6.0) - std::f32::consts::FRAC_PI_2;
+        outline.push(p(head + turn.cos() * radius, -shaft + turn.sin() * radius));
+    }
+    for index in 0..=6 {
+        #[allow(clippy::cast_precision_loss)]
+        let turn = std::f32::consts::PI * (index as f32 / 6.0) + std::f32::consts::FRAC_PI_2;
+        outline.push(p(head + turn.cos() * radius, shaft + turn.sin() * radius));
+    }
+    surface.polygon(&outline, None, Some(stroke));
+}
+
+/// A mushroom head: a stem with a dome a palm presses, not a finger.
+#[allow(clippy::too_many_arguments)]
+fn draw_mushroom(
+    surface: &mut dyn Surface,
+    _edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    let stroke = Stroke::new(width, colour);
+    let neck = reach * 0.8;
+    surface.line(&[p(0.0, 0.0), p(neck, 0.0)], stroke);
+    let half = step * 1.2;
     let mut dome = Vec::with_capacity(9);
     for index in 0..=8 {
         #[allow(clippy::cast_precision_loss)]
         let fraction = index as f32 / 8.0;
-        let bulge = (std::f32::consts::PI * fraction).sin() * step * 0.9;
-        dome.push(p(reach + bulge, -half + 2.0 * half * fraction));
+        let bulge = (std::f32::consts::PI * fraction).sin() * step * 0.75;
+        dome.push(p(neck + bulge, -half + 2.0 * half * fraction));
     }
     surface.line(&dome, stroke);
     surface.line(
-        &[p(reach, -half), p(reach, half)],
-        Stroke::new(width * 1.4, colour),
+        &[p(neck, -half), p(neck, half)],
+        Stroke::new(width * 1.8, colour),
     );
 }
 
-/// A plate on an arm: the foot presses along the arm, not across it.
+/// A pedal: the same foot as a lever, with the plate the foot stands on at its far end.
+#[allow(clippy::too_many_arguments)]
 fn draw_pedal(
     surface: &mut dyn Surface,
-    edge: Pt,
-    p: &impl Fn(f32, f32) -> Pt,
-    reach: f32,
-    step: f32,
-    colour: Colour,
-    width: f32,
-) {
-    surface.line(&[edge, p(reach, 0.0)], Stroke::new(width, colour));
-    surface.line(
-        &[p(reach, -step * 1.2), p(reach * 1.5, step * 1.2)],
-        Stroke::new(width * 2.0, colour),
-    );
-}
-
-/// A tappet: a small square head, with nothing to grip and nothing to press by hand.
-fn draw_plunger(
-    surface: &mut dyn Surface,
-    edge: Pt,
+    _edge: Pt,
     p: &impl Fn(f32, f32) -> Pt,
     reach: f32,
     step: f32,
@@ -584,18 +706,45 @@ fn draw_plunger(
     width: f32,
 ) {
     let stroke = Stroke::new(width, colour);
-    surface.line(&[edge, p(reach, 0.0)], stroke);
-    let head = step * 0.5;
-    surface.polygon(
+    let foot = step * 0.2;
+    stem_bar(surface, p, foot, step * 0.9, colour, width);
+    let tip = foot + reach * 1.05;
+    surface.line(&[p(foot, 0.0), p(tip, 0.0)], stroke);
+    // The plate is drawn at a slight angle, which is what makes a pedal read as something a
+    // foot rests on instead of a second hand lever.
+    surface.line(
         &[
-            p(reach - head, -head),
-            p(reach - head, head),
-            p(reach + head, head),
-            p(reach + head, -head),
+            p(tip - step * 0.45, -step * 0.75),
+            p(tip + step * 0.45, step * 1.1),
         ],
-        None,
-        Some(stroke),
+        Stroke::new(width * 1.8, colour),
     );
+}
+
+/// Piston actuation: a dome that sits on the body, pressed by the piston of a slave
+/// cylinder. It has no stem and nothing to grip, which is what tells it apart from the
+/// button.
+#[allow(clippy::too_many_arguments)]
+fn draw_plunger(
+    surface: &mut dyn Surface,
+    edge: Pt,
+    p: &impl Fn(f32, f32) -> Pt,
+    _reach: f32,
+    step: f32,
+    colour: Colour,
+    width: f32,
+) {
+    let stroke = Stroke::new(width, colour);
+    let half = step * 1.05;
+    let mut dome = Vec::with_capacity(9);
+    for index in 0..=8 {
+        #[allow(clippy::cast_precision_loss)]
+        let fraction = index as f32 / 8.0;
+        let bulge = (std::f32::consts::PI * fraction).sin() * step * 0.8;
+        dome.push(p(bulge, -half + 2.0 * half * fraction));
+    }
+    surface.line(&dome, stroke);
+    let _ = edge;
 }
 
 /// A circle with an `M` in it: the standard's mark for a motor.
@@ -635,7 +784,8 @@ fn draw_motor(
     surface.line(&m, Stroke::new(width * 0.9, colour));
 }
 
-/// Roller on the valve, optionally the kind that acts in one direction only.
+/// A roller: the cam follower, a circle on a short arm, with its axle marked at the centre.
+#[allow(clippy::too_many_arguments)]
 fn draw_roller(
     surface: &mut dyn Surface,
     p: &impl Fn(f32, f32) -> Pt,
@@ -645,25 +795,29 @@ fn draw_roller(
     width: f32,
     one_way: bool,
 ) {
-    let radius = step * 0.8;
-    surface.line(&[p(0.0, 0.0), p(reach, 0.0)], Stroke::new(width, colour));
-    surface.circle(
-        p(reach + radius, 0.0),
-        radius,
-        None,
-        Some(Stroke::new(width, colour)),
-    );
+    let stroke = Stroke::new(width, colour);
+    let radius = step * 0.7;
+    let axle = reach * 0.5 + radius;
+    surface.line(&[p(0.0, 0.0), p(axle - radius, 0.0)], stroke);
+    surface.circle(p(axle, 0.0), radius, None, Some(stroke));
+    // The axle is a dot, and it is what makes the circle read as a roller rather than as a
+    // pivot: a lever's circle has no axle through it.
+    surface.circle(p(axle, 0.0), radius * 0.22, Some(colour), None);
     if one_way {
-        // The tick across the stem says the roller only picks the cam up one way round.
+        // The tick across the arm says the roller only picks the cam up one way round.
         surface.line(
-            &[p(reach * 0.55, -step * 0.9), p(reach * 0.95, step * 0.6)],
+            &[p(axle * 0.45, -step * 0.8), p(axle * 0.8, step * 0.55)],
             Stroke::new(width * 1.2, colour),
         );
     }
 }
 
-/// Actuation by fluid pressure: a dashed pilot line ending in a triangle whose tip
-/// touches the body, because the triangle says which way the pressure pushes.
+/// Pilot actuation: a box on the end face with a triangle inside it, pointing away from the
+/// body. The triangle is filled for a pneumatic pilot and hollow for a hydraulic one.
+///
+/// The box is not decoration: without it a pilot cannot be told from a plain arrow marking a
+/// flow, and the difference between the two media would be invisible in a photocopy.
+#[allow(clippy::too_many_arguments)]
 fn draw_pressure_line(
     surface: &mut dyn Surface,
     p: &impl Fn(f32, f32) -> Pt,
@@ -674,12 +828,21 @@ fn draw_pressure_line(
     filled: bool,
 ) {
     let stroke = Stroke::new(width, colour);
-    let base = step * 1.2;
-    let mut pattern = dashes(&[p(reach * 1.9, 0.0), p(base, 0.0)], Some((1.2, 0.8)));
-    for segment in pattern.drain(..) {
-        surface.line(&segment, stroke);
-    }
-    let triangle = [p(0.0, 0.0), p(base, -step * 0.85), p(base, step * 0.85)];
+    let half = step * 0.75;
+    let near = reach * 0.55;
+    let far = near + step * 1.5;
+    surface.line(&[p(0.0, 0.0), p(near, 0.0)], stroke);
+    surface.polygon(
+        &[p(near, -half), p(near, half), p(far, half), p(far, -half)],
+        None,
+        Some(stroke),
+    );
+    let inset = step * 0.25;
+    let triangle = [
+        p(far - inset, 0.0),
+        p(near + inset, -half + inset),
+        p(near + inset, half - inset),
+    ];
     if filled {
         surface.polygon(&triangle, Some(colour), None);
     } else {
@@ -869,7 +1032,15 @@ pub fn draw_valve(
         if (from.x - to.x).abs() > f32::EPSILON || (from.y - to.y).abs() > f32::EPSILON {
             surface.line(&[from, to], Stroke::new(LINE, ink.line));
         }
-        draw_numeral(surface, rect, Some(body), &port.id, port.position, ink);
+        draw_numeral(
+            surface,
+            rect,
+            definition,
+            Some(body),
+            &port.id,
+            port.position,
+            ink,
+        );
     }
 
     if let Some(part) = definition.resolved_return() {
@@ -1023,8 +1194,24 @@ pub fn draw_flat(
     if matches!(definition.behaviour, Behaviour::Junction) {
         return;
     }
+    // The barrel is the body of a cylinder, and its ports are read against it: the numeral of
+    // a port under the barrel belongs beside its own stub, on the outer side of the barrel,
+    // not wherever the middle of the symbol box happens to fall.
+    let body = if definition.kinematics == Kinematics::LinearActuator {
+        barrel_of(definition, rect)
+    } else {
+        None
+    };
     for port in &definition.port {
-        draw_numeral(surface, rect, None, &port.id, port.position, ink);
+        draw_numeral(
+            surface,
+            rect,
+            definition,
+            body,
+            &port.id,
+            port.position,
+            ink,
+        );
     }
 }
 
@@ -1079,8 +1266,11 @@ pub fn draw_cylinder(
     let chamber = (inner_right - inner_left).max(0.0);
     let travel = chamber * stroke_share(definition);
     let piston_x = inner_left + travel * extension.clamp(0.0, 1.0);
-    let top = barrel.min.y + barrel.height() * 0.10;
-    let bottom = barrel.max.y - barrel.height() * 0.10;
+    // The piston crosses the bore from wall to wall. A line that stops short of the walls
+    // reads as a bar floating inside the barrel, and ISO 1219 draws the piston as the
+    // seal between the two chambers: it has to meet both.
+    let top = barrel.min.y;
+    let bottom = barrel.max.y;
     let axis_y = barrel.center().y;
 
     surface.line(
@@ -1116,11 +1306,10 @@ pub fn draw_cylinder(
 
 /// Return spring between the piston and the rod-side wall, compressed by the stroke.
 ///
-/// The spring is drawn as a **short coil against the rod-side wall**, not as a coil that
-/// fills the chamber: a spring that spans the whole barrel reads as a barrel full of wire
-/// and hides the piston and the rod behind it, which is the opposite of what the symbol is
-/// for. Its length is a fraction of the chamber, so the barrel, the piston, the rod and
-/// the coil are each visible at rest and the coil bunches as the piston comes out.
+/// The spring is drawn **across the chamber between the piston and the rod-side wall**, and
+/// it spans all of it: the spring is the return element and it belongs to the chamber it
+/// fills, not to a corner of it. It is drawn thin, so the barrel, the piston, the rod and
+/// the coil stay distinguishable without shortening the spring.
 ///
 /// The wire is constant and the pitch shrinks: a turned coil that no longer fits at the
 /// nominal pitch is drawn with fewer turns instead of more lines in the same millimetre,
@@ -1161,7 +1350,10 @@ fn draw_cylinder_spring(
         points.push(Pt::new(x, y));
     }
     points.push(Pt::new(wall_x, axis_y));
-    surface.line(&points, Stroke::new(LINE * 0.9, ink.dim));
+    // The coil is part of the symbol, not an annotation: same ink and same weight as the
+    // other functional lines. A faded line is not a line class in ISO 1219, and it is the
+    // first thing to vanish in a photocopy.
+    surface.line(&points, Stroke::new(LINE, ink.line));
 }
 
 /// Barrel of a cylinder: the widest rectangle its definition declares.
@@ -1417,6 +1609,92 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn the_piston_meets_both_walls_of_the_bore() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        for id in [
+            "cylinder.single_acting_20_100",
+            "cylinder.double_acting_32_200",
+        ] {
+            let definition = catalog
+                .get(id)
+                .expect("the built-in cylinder exists")
+                .clone();
+            let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 100.0, 50.0);
+            let barrel = barrel_of(&definition, rect).expect("a barrel");
+            for extension in [0.0, 0.5, 1.0] {
+                let mut recording = Recording::default();
+                draw_cylinder(&mut recording, rect, &definition, extension, &Ink::print());
+                let crate::surface::Call::Line { points, .. } = &recording.calls()[0] else {
+                    unreachable!("the piston is a line")
+                };
+                let [top, bottom] = points.as_slice() else {
+                    unreachable!("a piston is a segment")
+                };
+                // A piston that stops short of the walls reads as a bar floating inside the
+                // barrel. ISO 1219 draws it as the seal between the two chambers, so it has
+                // to reach both walls at every position of the stroke.
+                assert!(
+                    (top.y - barrel.min.y).abs() < 1.0e-4
+                        && (bottom.y - barrel.max.y).abs() < 1.0e-4,
+                    "{id} at {extension}: the piston spans {}..{}, the bore is {}..{}",
+                    top.y,
+                    bottom.y,
+                    barrel.min.y,
+                    barrel.max.y
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn each_port_of_a_cylinder_is_drilled_in_an_end_cap() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 100.0, 50.0);
+
+        // One working port, in the cap end: that is what makes a cylinder single-acting, so
+        // nothing is drawn on the rod end at all.
+        let single = catalog
+            .get("cylinder.single_acting_20_100")
+            .expect("the built-in cylinder exists")
+            .clone();
+        let barrel = barrel_of(&single, rect).expect("a barrel");
+        let ports: Vec<Pt> = single
+            .port
+            .iter()
+            .map(|port| at(rect, port.position[0], port.position[1]))
+            .collect();
+        assert_eq!(ports.len(), 1, "a single-acting cylinder has one port");
+        assert!(
+            ports[0].x < barrel.center().x,
+            "the only port must be in the cap end, not at {}",
+            ports[0].x
+        );
+
+        // Two ports, one drilled in each cap: a double-acting cylinder is driven from both
+        // ends. Both leave the barrel edge, so neither is laid over the rod.
+        let double = catalog
+            .get("cylinder.double_acting_32_200")
+            .expect("the built-in cylinder exists")
+            .clone();
+        let barrel = barrel_of(&double, rect).expect("a barrel");
+        let ports: Vec<Pt> = double
+            .port
+            .iter()
+            .map(|port| at(rect, port.position[0], port.position[1]))
+            .collect();
+        assert_eq!(ports.len(), 2, "a double-acting cylinder has two ports");
+        assert!(
+            ports.iter().any(|port| port.x < barrel.center().x)
+                && ports.iter().any(|port| port.x > barrel.center().x),
+            "one port must be in each cap, got {ports:?}"
+        );
+        assert!(
+            ports.iter().all(|port| port.y > barrel.max.y),
+            "both ports leave the barrel through its edge, got {ports:?}"
+        );
     }
 
     #[test]

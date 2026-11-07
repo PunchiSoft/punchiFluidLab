@@ -1,7 +1,7 @@
 # valve.3_2.spring_return — conformance review
 
     status: pending-300dpi
-    date: 2026-11-06
+    date: 2026-11-07
     reviewer: automated pass, unreviewed by a second person
     function: 3/2 directional control valve, spring return, normally closed
 
@@ -40,10 +40,11 @@ breaks one fails `cargo test --workspace`.
 | Rest position drawn in the square against the spring | pass | rest is the right square, spring at the right end |
 | Actuator at one end, spring at the other, both outside the body | pass | lever left, spring right |
 | Port stubs straight, attached where the definition puts the port | pass | 1 and 3 below the rest square, 2 above it |
-| Port numerals outside the body, at their stub, identical in both squares | pass | 1 bottom-left, 2 top, 3 bottom-right |
+| Port numerals outside the body, at their stub, identical in both squares | pass | 1 and 3 below the rest square, each on the outer side of its own stub; 2 above it |
 | Blocked port marked inside its own square, not omitted | pass | T over port 1 at rest, T over port 3 when actuated |
 | Flow path a straight arrow inside its own square, pointing along the connection | pass | rest: 2→3 to the exhaust; actuated: 1→2 |
 | Spool position readable without colour | pass | the active square is filled *and* the other position's path is dimmed |
+| Actuation glyphs match the standard's table | pass | lever = bar, arm and pivot circle; the reference table of [docs/symbology.md](../../../docs/symbology.md) lists every glyph |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
 | Legible when printed at 300 dpi | **not checked** | needs M2 |
 
@@ -68,6 +69,15 @@ straight, the flow path is a single straight arrow from port to port inside the 
 and every position draws its own blocking T in the ink of its own square. Two tests hold
 this: one that the bar of each position falls inside the square of that position, and one
 that the position at rest is the square against the spring.
+
+## Correction of 2026-11-07
+
+Two defects of layout, both about reading the symbol at palette size. The lever was a stem
+that turned into a hook with a blob on the tip, which is not how a lever is recognised: a
+lever is the bar of the general manual actuation, the arm, and the **pivot circle** at its
+far end, and that is what is drawn now. And the numerals of two ports on the same edge were
+written side by side between their stubs, so 1 and 3 read as if they shared a port; each
+numeral is now written beside its own stub, on the side where no other port is written.
 
 ## What is still open
 
