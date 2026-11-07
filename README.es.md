@@ -242,6 +242,28 @@ Los hitos, sus criterios de aceptación y la evidencia que exige cada uno están
 | [i18n/README.md](i18n/README.md) | plan de traducciones |
 | [assets/symbols/README.md](assets/symbols/README.md) | set de símbolos y su licencia |
 
+## Desarrollo asistido por IA
+
+Los agentes de IA son una ayuda al desarrollo, no autores. Ayudan a implementar, investigar,
+refactorizar, documentar y probar, y el mantenedor sigue siendo responsable de las
+decisiones técnicas, la revisión, la validación y todo lo que se publica.
+
+Sus instrucciones viven con el proyecto —[AGENTS.md](AGENTS.md) y [`.agents/`](.agents/)—,
+así que un agente que trabaje aquí sigue las mismas reglas que una persona: unidades
+tipadas, ni `unwrap` ni `panic!` fuera de las pruebas, ni `unsafe` fuera del ABI, símbolos
+dibujados a mano contra ISO 1219-1 y **nada tomado de otro programa**. Esas reglas las
+escribió y ajustó PunchiSoft para esta arquitectura y este flujo de trabajo, no vienen de
+una plantilla.
+
+Como el programa existe para enseñar, un agente no tiene licencia para aparentar que está
+terminado: no puede presentar como hecho lo que [docs/capabilities.md](docs/capabilities.md)
+todavía marca `missing` o `partial`, ni inventar un resultado para cerrar una tarea. Cuando
+algo no se puede probar, se dice — la misma regla que cumple una persona.
+
 ## Licencia
 
 GPL-3.0-or-later. Ver [LICENSE](LICENSE).
+
+La licencia vale igual para copias escritas por personas y generadas por máquinas: leer,
+citar, reimplementar o redistribuir este proyecto con un agente no exime de los avisos, del
+código fuente correspondiente ni de la atribución.

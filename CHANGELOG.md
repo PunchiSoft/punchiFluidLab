@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### El agente de IA, y su apoyo, dichos en el README — 2026-11-07
+
+La ayuda de agentes de IA estaba en el flujo de trabajo —`AGENTS.md`, `.agents/`, commits
+cofirmados— pero no en la cara pública del proyecto, que es donde un lector decide si
+confía en él.
+
+- **Sección «AI-assisted development» / «Desarrollo asistido por IA»** en los dos README:
+  los agentes son una ayuda, no autores; el mantenedor responde de las decisiones técnicas,
+  la revisión, la validación y lo publicado.
+- **Las reglas viajan con el proyecto**: un agente que trabaje aquí cumple lo mismo que una
+  persona —unidades tipadas, sin `unwrap` ni `panic!` fuera de pruebas, sin `unsafe` fuera
+  del ABI, símbolos a mano contra ISO 1219-1 y nada tomado de otro programa—, y esas reglas
+  las escribió y ajustó PunchiSoft para esta arquitectura, no vienen de una plantilla.
+- **Coherencia con el estado real**: un agente no puede presentar como hecho lo que el
+  ledger marca `missing` o `partial`, ni inventar un resultado para cerrar una tarea.
+- **La licencia cubre igual las dos manos**: leer, citar, reimplementar o redistribuir con
+  un agente no exime de los avisos, del código fuente correspondiente ni de la atribución.
+
 ### En construcción, y el repositorio lo dice — 2026-11-07
 
 El proyecto no prometía nada sobre su estado ni sobre su ritmo, y las estadísticas de GitHub

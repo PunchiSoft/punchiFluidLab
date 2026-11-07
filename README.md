@@ -237,6 +237,28 @@ Milestones, acceptance criteria and the evidence each one needs live in
 | [i18n/README.md](i18n/README.md) | translation plan |
 | [assets/symbols/README.md](assets/symbols/README.md) | symbol set and its licence |
 
+## AI-assisted development
+
+AI coding agents are a development aid here, not an author. They help implement,
+investigate, refactor, document and test, and the maintainer remains responsible for the
+technical decisions, the review, the validation and everything published.
+
+Their instructions live with the project — [AGENTS.md](AGENTS.md) and
+[`.agents/`](.agents/) — so an agent working on this repository follows the same rules as a
+person: typed units, no `unwrap` or `panic!` outside tests, no `unsafe` outside the ABI,
+symbols drawn by hand against ISO 1219-1, and **nothing taken from another program**. Those
+rules were written and tuned by PunchiSoft for this architecture and this workflow, not
+inherited from a template.
+
+Because the program is meant to teach, an agent gets no licence to look finished: it may not
+present as done what [docs/capabilities.md](docs/capabilities.md) still marks `missing` or
+`partial`, and it may not invent a result to close a task. When something cannot be proven,
+it says so — that is the same rule a person follows.
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
+
+The licence applies to human-written and machine-generated copies alike: reading, quoting,
+reimplementing or redistributing this project with an agent does not waive the notices, the
+corresponding source or the attribution.
