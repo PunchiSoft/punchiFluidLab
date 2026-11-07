@@ -53,7 +53,7 @@ jobs:
       # 1.85 is the floor declared in Cargo.toml. Building with it on every push is
       # the only way to keep that promise honest.
       - name: Install Rust 1.85
-        uses: dtolnay/rust-toolchain@1.85.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Cache the build
         uses: Swatinem/rust-cache@v2
