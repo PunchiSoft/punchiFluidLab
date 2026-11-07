@@ -150,6 +150,26 @@ a claim.
 
 ## GitHub practices
 
+### Where the community files live
+
+Two places, and the rule is what a person reads against what a machine finds.
+
+| Place | What goes there | Why |
+|---|---|---|
+| Repository root | `README.md`, `README.es.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `CHANGELOG.md`, `AGENTS.md` | GitHub links them from the interface and a person looks for them here first. GitHub also accepts `.github/` and `docs/`, so moving them buys nothing: the community health score is the same and every relative link breaks |
+| `.github/` | `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `CODEOWNERS`, `dependabot.yml`, `FUNDING.yml`, `workflows/` | Configuration that GitHub reads from a fixed path and that nobody opens to read |
+
+Three rules follow from that:
+
+- **A new community file is added in three places**: this table, the documentation table of
+  both READMEs, and `scripts-dev/check-docs.sh`.
+- **A link to something the repository does not have is a defect, not an intention.** The
+  issue form once offered a Discussions link on a repository with Discussions disabled;
+  the check now fails on that.
+- **The health score is not the goal.** It has been 100 % while the issue forms pointed at
+  labels that did not exist. The goal is that someone who wants to report, ask or
+  contribute finds the right door.
+
 ### Files that must exist
 
 | File | Purpose |
@@ -157,20 +177,23 @@ a claim.
 | `README.md`, `README.es.md` | what it is, how to run it, where to read more |
 | `CONTRIBUTING.md` | setup, gate, commit and review conventions |
 | `SECURITY.md` | supported versions, private reporting, scope |
-| `CODE_OF_CONDUCT.md` | expected behaviour and how to report |
+| `CODE_OF_CONDUCT.md` | adopted by reference (Contributor Covenant 2.1); scope and reporting here |
+| `SUPPORT.md` | where to ask, and what this project does not promise |
 | `LICENSE` | GPL-3.0-or-later |
 | `CHANGELOG.md` | dated entries under `Unreleased` |
 | `AGENTS.md` | rules for people and agents |
-| `.github/ISSUE_TEMPLATE/*` | bug and feature forms, with a security pointer |
+| `.github/ISSUE_TEMPLATE/*` | bug and feature forms, with a security pointer, using labels that exist |
 | `.github/PULL_REQUEST_TEMPLATE.md` | the checklist a reviewer can hold the author to |
 | `.github/CODEOWNERS` | who must review a change in each area |
+| `.github/labels.txt` | the labels that exist, so a template cannot name one that does not |
+| `.github/FUNDING.yml` | the optional donation link, and nothing that costs the user |
 | `.github/dependabot.yml` | weekly cargo and Actions updates |
 | `.github/workflows/ci.yml` | the gate on every push and pull request |
 | `.github/workflows/audit.yml` | `cargo-deny` and `cargo-audit` on a schedule |
 | `.github/workflows/release.yml` | tag → build, checksums, draft release |
 | `.agents/skills/README.md` | skill catalog: procedures for Rust, GitHub and symbology |
 | `deny.toml` | licence allow-list and advisory policy |
-| `.editorconfig`, `rustfmt.toml`, `clippy.toml` | formatting and lint configuration |
+| `.editorconfig`, `clippy.toml` | formatting and lint configuration |
 
 ### Branching and review
 

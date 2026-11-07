@@ -46,6 +46,10 @@ jobs:
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Run the full gate
+        env:
+          # Lets `check-docs.sh` verify that a contact link points at something the
+          # repository actually has; without it the check only warns.
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts-dev/check.sh
 
   window:

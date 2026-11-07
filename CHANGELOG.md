@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### Los archivos de comunidad, con regla y sin puertas falsas — 2026-11-07
+
+El repositorio tenía la nota de comunidad de GitHub al 100 % y, aun así, tres puertas que no
+llevaban a ninguna parte. La nota mide presencia, no utilidad.
+
+- **La regla de sitio, escrita** en [docs/engineering.md](docs/engineering.md): la raíz
+  guarda lo que una persona lee —README, licencia, conducta, contribución, seguridad,
+  soporte, registro y reglas de los agentes— y `.github/` lo que GitHub lee de una ruta
+  fija. GitHub acepta también `.github/` y `docs/`, así que mover el código de conducta no
+  mejora nada y rompe los enlaces: se queda donde está, y ahora está dicho.
+- **Discussions se activa** y el contacto «Question or idea» deja de dar 404; la wiki vacía
+  se desactiva.
+- **Las etiquetas de las plantillas existen**: se crea `needs-reproduction` y el formulario
+  de propuestas usa `enhancement`. Antes el issue nacía sin etiqueta y el triaje empezaba de
+  cero.
+- **`SUPPORT.md`**: dónde preguntar, qué promete el proyecto —respuesta a todo, gate y
+  prueba como barra— y qué no —plazo de respuesta, fecha de entrega, soporte comercial—.
+  Enlazado desde los dos README, `CONTRIBUTING.md` y el selector de issues.
+- **`.github/FUNDING.yml`** con la donación que ya existe, y la frase que importa: es
+  opcional y nunca necesaria para usar, compilar o redistribuir.
+- **`check-docs.sh` lo vigila**: los archivos de comunidad existen, ninguna plantilla cita
+  una etiqueta fuera de `.github/labels.txt` y un enlace a Discussions falla si el
+  repositorio lo tiene apagado (con `gh` y token; en local avisa).
+
 ### El muelle del cilindro deja ver el cilindro — 2026-11-07
 
 La revisión visual del cilindro de simple efecto encontró el defecto en el dibujo, no en el

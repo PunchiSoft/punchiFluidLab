@@ -94,3 +94,4 @@ conversation can be in Spanish. `CHANGELOG.md` is in Spanish, as a project decis
 - Bug or feature: open an issue with the form.
 - Security: [SECURITY.md](SECURITY.md), never a public issue.
 - Behaviour: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Anything else, and what to expect: [SUPPORT.md](SUPPORT.md).

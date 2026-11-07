@@ -249,6 +249,7 @@ Los hitos, sus criterios de aceptación y la evidencia que exige cada uno están
 | [docs/engineering.md](docs/engineering.md) | modularización, presupuesto de memoria, seguridad y prácticas de GitHub |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | cómo preparar el entorno, probar y enviar cambios |
 | [SECURITY.md](SECURITY.md) | cómo reportar una vulnerabilidad en privado |
+| [SUPPORT.md](SUPPORT.md) | dónde preguntar y qué no promete el proyecto |
 | [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) | el stack y la división en crates |
 | [packaging/README.md](packaging/README.md) | cómo se empaquetará una versión |
 | [i18n/README.md](i18n/README.md) | plan de traducciones |

@@ -56,6 +56,70 @@ for f in docs/capabilities.md .agents/skills/capability-plan/SKILL.md; do
         status=1
     fi
 done
+
+# The community files of docs/engineering.md, "Files that must exist". GitHub reads them
+# from a fixed path, so a rename is a silent breakage: this makes it loud.
+COMMUNITY=(
+    "README.md"
+    "README.es.md"
+    "CONTRIBUTING.md"
+    "SECURITY.md"
+    "CODE_OF_CONDUCT.md"
+    "SUPPORT.md"
+    "LICENSE"
+    "CHANGELOG.md"
+    "AGENTS.md"
+    ".github/PULL_REQUEST_TEMPLATE.md"
+    ".github/CODEOWNERS"
+    ".github/FUNDING.yml"
+    ".github/dependabot.yml"
+    ".github/workflows/ci.yml"
+    ".github/workflows/audit.yml"
+    ".github/workflows/release.yml"
+)
+for f in "${COMMUNITY[@]}"; do
+    if [[ ! -f $f ]]; then
+        echo "check-docs: the community file $f is missing" >&2
+        status=1
+    fi
+done
+
+# A template that names a label the repository does not have creates an unlabelled issue
+# and a silent triage cost. The known labels are listed once, in the label manifest.
+LABELS_FILE=".github/labels.txt"
+if [[ ! -f $LABELS_FILE ]]; then
+    echo "check-docs: $LABELS_FILE is missing" >&2
+    status=1
+else
+    while IFS= read -r label; do
+        [[ -z $label ]] && continue
+        if ! grep -qxF -- "$label" "$LABELS_FILE"; then
+            echo "check-docs: $LABELS_FILE does not declare the label '$label'" >&2
+            status=1
+        fi
+    done < <(sed -n 's/^labels: \[\(.*\)\]$/\1/p' .github/ISSUE_TEMPLATE/*.yml |
+        tr ',' '\n' | tr -d ' "')
+fi
+
+# A contact link to something the repository does not have is a dead end. Discussions is
+# a repository setting, so this needs the network: it runs in CI, and warns locally.
+if grep -q '/discussions' .github/ISSUE_TEMPLATE/config.yml; then
+    if [[ -n ${GH_TOKEN:-}${GITHUB_TOKEN:-} ]] && command -v gh >/dev/null; then
+        enabled=$(gh api "repos/${PUNCHI_REPO:-PunchiSoft/punchiFluidLab}" --jq .has_discussions 2>/dev/null || echo unknown)
+        case $enabled in
+            false)
+                echo "check-docs: config.yml links to Discussions, which this repository has disabled" >&2
+                status=1
+                ;;
+            unknown)
+                echo "check-docs: could not read has_discussions; skipped" >&2
+                ;;
+        esac
+    else
+        echo "check-docs: Discussions link not verified (no GH_TOKEN, or no gh)" >&2
+    fi
+fi
+
 for doc in "${DOCS[@]}"; do
     if [[ ! -f $doc ]]; then
         echo "check-docs: $doc is missing" >&2

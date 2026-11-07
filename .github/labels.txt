@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The labels this repository has, one per line and no comments after the header.
+# `scripts-dev/check-docs.sh` fails when an issue template names a label that is not
+# here; creating a label on GitHub also means adding it to this file.
+
+accessibility
+bug
+dependencies
+documentation
+duplicate
+enhancement
+github_actions
+good first issue
+help wanted
+invalid
+needs-reproduction
+question
+rust
+wontfix
