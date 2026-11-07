@@ -381,8 +381,11 @@ pub fn draw_flow_arrow(
 pub fn draw_spring(surface: &mut dyn Surface, body: Rect, side: Side, colour: Colour, width: f32) {
     let (edge, out) = axis(body, side);
     let along = (-out.y, out.x);
-    let step = body.height().min(body.width()) * 0.09;
-    let half = body.height().min(body.width()) * 0.16;
+    // The coil has to be read at palette size, so it is drawn at a size proportional to the
+    // body and not to the line: one step away from the body, three steps of travel, and an
+    // amplitude wide enough that its turns are not a smudge.
+    let step = body.height().min(body.width()) * 0.13;
+    let half = body.height().min(body.width()) * 0.20;
     let stroke = Stroke::new(width * 0.9, colour);
 
     let start = Pt::new(edge.x + out.x * step, edge.y + out.y * step);
@@ -421,7 +424,9 @@ pub fn draw_actuator(
 ) {
     let (edge, out) = axis(body, side);
     let along = (-out.y, out.x);
-    let step = body.height().min(body.width()) * 0.1;
+    // An actuator drawn on top of the box belongs to no position: it starts clear of the
+    // edge and reaches out far enough to read at palette size.
+    let step = body.height().min(body.width()) * 0.13;
     let reach = step * 2.0;
 
     let p = |a: f32, b: f32| {

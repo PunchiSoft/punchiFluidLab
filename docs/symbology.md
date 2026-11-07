@@ -35,7 +35,9 @@ itself is the responsibility of whoever adds or reviews a symbol.
   is the rest square. Two positions, two squares; three positions, three squares.
 - **The actuator and the spring sit at opposite ends**, actuator at one end and return
   spring at the other, outside the body. A valve with `spring_return = true` and no
-  spring symbol is a defect, and so is a spring drawn at the actuator end.
+  spring symbol is a defect, and so is a spring drawn at the actuator end. Both are drawn
+  **at a size proportional to the body** (a tenth of the body side was the defect that made
+  them unreadable at palette size), and both start clear of the body edge.
 - **The ports are drawn once**, at the square of the rest position: one set of
   numerals, stubs attached to the body at fixed x. Port positions are read inside the
   symbol box and then brought to the body edge, so a stub is straight and vertical (or

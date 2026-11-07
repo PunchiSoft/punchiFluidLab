@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El accionamiento y el muelle de la válvula, a tamaño que se lee — 2026-11-07
+
+La revisión visual marcó los dos extremos de la válvula 3/2. Se dibujaban pegados al borde de
+la casilla y al 9-10 % del lado del cuerpo, así que a tamaño de paleta eran un gancho y una
+raya: ni se distinguía la palanca con su mango ni el muelle con sus espiras.
+
+- **Tamaño proporcional al cuerpo, no a la línea**: el paso y la amplitud del muelle y el
+  alcance del accionamiento suben al 13 % y al 20 % del lado menor del cuerpo, de modo que
+  cada espira y el mango se leen en la barra lateral y en la hoja.
+- **Fuera del cuerpo**: accionamiento en un extremo y muelle en el otro, ambos arrancando
+  claros del borde, que es lo que hace que cada uno pertenezca a su posición.
+- **Las marcas de bloqueo siguen donde estaban**: dentro de su casilla, sobre la línea del
+  puerto que esa posición cierra, para que las dos posiciones se puedan comparar.
+
 ### Los archivos de comunidad, con regla y sin puertas falsas — 2026-11-07
 
 El repositorio tenía la nota de comunidad de GitHub al 100 % y, aun así, tres puertas que no
