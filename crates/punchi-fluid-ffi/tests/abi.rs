@@ -19,18 +19,19 @@ use std::ptr;
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_HAS_STROKE,
     PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk, PfPoint, PfSession,
-    PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection, pf_session_build_frame,
-    pf_session_can_undo, pf_session_catalog, pf_session_check, pf_session_component_count,
-    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
-    pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_copy_selected, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_finding_at, pf_session_free, pf_session_hit_component, pf_session_hit_valve,
+    PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    pf_session_build_frame, pf_session_can_undo, pf_session_catalog, pf_session_check,
+    pf_session_component_count, pf_session_component_edits, pf_session_component_id,
+    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_finding_at,
+    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified,
     pf_session_last_error, pf_session_mirror_selected, pf_session_move_component,
     pf_session_move_selection, pf_session_new, pf_session_open, pf_session_paste,
     pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
     pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_redo,
+    pf_session_press_valve, pf_session_preview, pf_session_recover, pf_session_redo,
     pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
     pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_restart,
     pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
@@ -1491,6 +1492,101 @@ fn lining_up_the_selection_moves_it_onto_the_component_furthest_out() {
         unsafe { pf_session_align_selection(session, 9) },
         PF_ERR_MODEL
     );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn unsaved_work_is_known_and_survives_a_crash_in_a_safety_copy() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).unwrap_or_default();
+    let safety = directory.path().join("autosave.pfluid");
+    let safety_encoded = CString::new(safety.to_string_lossy().as_bytes()).unwrap_or_default();
+
+    let session = session();
+    // The worked example the window opens with is not unsaved work: nothing was typed.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
+    // Marking a component is not an edit either, so the title has nothing to mark.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_select(session, 1) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
+
+    // A real edit is unsaved work, and an undo does not pretend otherwise: the circuit was
+    // changed, even if it was changed back.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_move_component(session, 1, 70.0, 90.0) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 1);
+
+    // Saving clears it: the file is the document now.
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
+
+    // A safety copy is a copy: it exists, it holds the work, and the document is still
+    // unsaved because the user never chose that path.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_move_component(session, 1, 80.0, 90.0) },
+        PF_OK
+    );
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_autosave(session, safety_encoded.as_ptr()) },
+        PF_OK
+    );
+    assert!(safety.exists(), "the copy is on disk");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_is_modified(session) },
+        1,
+        "an autosave is not a save"
+    );
+
+    // Recovering the copy brings the work back and leaves it unsaved, so the next save asks
+    // where it goes instead of overwriting the safety copy.
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_recover(session, safety_encoded.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 1);
+    let mut bounds = [0.0_f32; 4];
+    // SAFETY: live session and four writable floats.
+    assert_eq!(
+        unsafe { pf_session_component_rect(session, 1, bounds.as_mut_ptr()) },
+        PF_OK
+    );
+    assert!(
+        (f32::midpoint(bounds[0], bounds[2]) - 80.0).abs() < 1e-3,
+        "the recovered copy has the moved valve: {bounds:?}"
+    );
+    // A file that is not a sheet is refused and the open document survives.
+    let broken = directory.path().join("roto.pfluid");
+    std::fs::write(&broken, "not a sheet").expect("writes");
+    let broken = CString::new(broken.to_string_lossy().as_bytes()).unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_recover(session, broken.as_ptr()) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

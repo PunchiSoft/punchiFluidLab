@@ -319,6 +319,9 @@ pub struct Document {
     next_id: u64,
     undo: Vec<Change>,
     redo: Vec<Change>,
+    /// Counts every change of state, so a caller can tell whether the document differs
+    /// from the copy it last saved without comparing every field.
+    revision: u64,
 }
 
 impl Document {
@@ -378,6 +381,8 @@ impl Document {
         self.connections.clear();
         self.undo.clear();
         self.redo.clear();
+        // The starting state is the baseline a save is measured against, not a change.
+        self.revision = self.revision.wrapping_add(1);
         for mut placement in placements {
             if placement.id == 0 {
                 placement.id = self.take_id();
@@ -808,6 +813,19 @@ impl Document {
         Some((placement, orphans))
     }
 
+    /// How many times the document has changed since it was created.
+    ///
+    /// It counts the changes the history records and the ones an undo or a redo puts
+    /// back, so a caller that remembers the number at the moment it saved knows whether
+    /// there is work that is not in the file. Two things it does not do: it does not fall
+    /// when an undo returns the document to its saved shape — a document that was changed
+    /// and changed back has still been edited — and it does not survive a round trip
+    /// through a file, because a loaded document is a new document.
+    #[must_use]
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
     /// `true` when there is a change to take back.
     #[must_use]
     pub fn can_undo(&self) -> bool {
@@ -827,6 +845,7 @@ impl Document {
         };
         self.apply_inverse(&change);
         self.redo.push(change);
+        self.revision = self.revision.wrapping_add(1);
         true
     }
 
@@ -837,6 +856,7 @@ impl Document {
         };
         self.apply(&change);
         self.undo.push(change);
+        self.revision = self.revision.wrapping_add(1);
         true
     }
 
@@ -859,6 +879,7 @@ impl Document {
     }
 
     fn record(&mut self, change: Change) {
+        self.revision = self.revision.wrapping_add(1);
         // A drag is one edit, not one per mouse move: consecutive moves of the same
         // component extend the entry already at the top of the history.
         if let (
@@ -1541,6 +1562,25 @@ mod tests {
         assert!(document.undo());
         assert_eq!(document.orientation_of(a), Some(Orientation::NONE));
         assert_eq!(document.orientation_of(b), Some(Orientation::new(0, true)));
+    }
+
+    #[test]
+    fn the_revision_counts_edits_undo_and_redo() {
+        let mut document = Document::new();
+        let start = document.revision();
+        let index = document.place(placement("a", 10.0, 10.0));
+        assert!(document.revision() > start, "a placement is a change");
+        let placed = document.revision();
+        assert!(document.move_to(index, Pt::new(20.0, 10.0)));
+        assert!(document.revision() > placed, "a move is a change");
+        let moved = document.revision();
+        assert!(document.undo());
+        assert_ne!(document.revision(), moved, "an undo is a change too");
+        assert!(document.redo());
+        // Marking is not a change: nothing about the document moves.
+        let before = document.revision();
+        let _ = document.orientation_of(index);
+        assert_eq!(document.revision(), before);
     }
 
     #[test]

@@ -42,7 +42,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago y masa; Aplicar es un solo deshacer. Faltan nombre, accionamiento y los demás campos del diálogo de la referencia |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
-| Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana |
+| Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana; **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
 | Exportación | PNG y PDF con hoja normalizada |
 | Comprobación | 5 de las 9 faltas, cada una señalada en el dibujo; las otras 4 necesitan designaciones/circuitos (F4) o la biblioteca eléctrica (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
@@ -54,9 +54,10 @@ falta bastante: repartir con separación igual, las clases de conducto y los
 silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (F3), los
 proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de piezas
 (F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
-**~45–50 % del manual**, con F1 casi cerrada y F2 cerrada. El siguiente paso, por valor,
-es el **autoguardado con aviso de cambios sin guardar** (F4), seguido del resto de F3
-(caudalímetro, dinamómetro, registrador) y de las clases de conducto.
+**~50 % del manual**, con F1 casi cerrada, F2 cerrada y F4 a medias. El siguiente paso, por
+valor, son los **documentos recientes** y las **designaciones** que desbloquean tres de las
+cuatro faltas de la comprobación, seguidos de los instrumentos que faltan (caudalímetro,
+dinamómetro, registrador).
 
 ### 0.2 Cómo se entrega desde el 2026-11-12
 

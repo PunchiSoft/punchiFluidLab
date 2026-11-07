@@ -54,6 +54,10 @@ class FluidSession : public QObject
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
     Q_PROPERTY(QString currentPath READ currentPath NOTIFY documentChanged)
+    Q_PROPERTY(bool modified READ modified NOTIFY documentChanged)
+    Q_PROPERTY(QString title READ title NOTIFY documentChanged)
+    Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
+    Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
@@ -92,6 +96,28 @@ public:
     QString lastError() const { return m_error; }
     /// File the document was opened from or last saved to; empty until then.
     QString currentPath() const { return m_currentPath; }
+    /// `true` when the sheet holds work that is not in the file it came from.
+    bool modified() const { return m_modified; }
+    /// The window title: the file name, and a mark when there is unsaved work.
+    QString title() const;
+    /// `true` when a safety copy from a previous run is waiting to be recovered.
+    bool recoveryOffered() const { return m_recoveryOffered; }
+    /// `true` once the user said the unsaved work may be lost.
+    bool closeConfirmed() const { return m_closeConfirmed; }
+    /// Loads the safety copy and leaves it unsaved, as the core asks.
+    Q_INVOKABLE bool recoverAutosave();
+    /// Throws the safety copy away.
+    Q_INVOKABLE void discardAutosave();
+    /// Writes the safety copy if there is unsaved work. Called by the window's timer.
+    Q_INVOKABLE void autosave();
+    /// Starts over with the worked example. The caller warns first when `modified`.
+    Q_INVOKABLE void discardAndNewDocument();
+    /// Opens a file, discarding unsaved work. The caller warns first.
+    Q_INVOKABLE bool discardAndOpen(const QString &path);
+    /// `true` when closing right now would lose work.
+    Q_INVOKABLE bool hasUnsavedWork() const { return m_modified; }
+    /// Called by the window once the close was confirmed.
+    Q_INVOKABLE void confirmClose();
     /// Writes the sheet; `path` may be a local path or a `file:` URL.
     Q_INVOKABLE bool saveTo(const QString &path);
     /// Reads a sheet, replacing the document. On failure the document is untouched.
@@ -315,6 +341,10 @@ private:
     void announceImpact(const PfTelemetry &telemetry);
     /// Republishes what the document reports, after any change to it.
     void refreshDocument();
+    /// Where the safety copy lives: one file per user, beside the application data.
+    QString autosavePath() const;
+    /// Writes the safety copy and announces whether one exists.
+    void writeAutosave();
     /// Republishes the selection alone: marking is not a change to the document.
     void refreshSelection();
     void advanceInternal(double dt, bool forced);
@@ -324,6 +354,9 @@ private:
     PfTelemetry m_telemetry {};
     QString m_error;
     QString m_currentPath;
+    bool m_modified = false;
+    bool m_recoveryOffered = false;
+    bool m_closeConfirmed = false;
     bool m_valveSpringReturn = true;
     /// The program starts in edit mode, as the reference does: nothing moves and a click on
     /// a valve selects it. Simulation is entered deliberately, with Iniciar or Pausa.

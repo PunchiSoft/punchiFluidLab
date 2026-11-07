@@ -510,6 +510,13 @@ pub struct PfSession {
     /// `true` once the starting circuit has been placed. A flag, not "is the document
     /// empty": a component dropped before the first frame would otherwise suppress it.
     seeded: bool,
+    /// Document revision at the moment it was last written to or read from a file, or
+    /// `None` when what is on the sheet never came from a file and was never saved.
+    ///
+    /// The difference against `document.revision()` is what "there is work that is not in
+    /// the file" means, and it costs one comparison instead of a comparison of every field
+    /// of every placement.
+    saved_revision: Option<u64>,
     error: CString,
     width_mm: f32,
     height_mm: f32,
@@ -554,6 +561,7 @@ impl PfSession {
             clipboard: Vec::new(),
             selected_pipe: None,
             seeded: false,
+            saved_revision: Some(0),
             error: CString::default(),
             width_mm: 200.0,
             height_mm: 130.0,
@@ -1033,6 +1041,7 @@ impl PfSession {
         }
         self.document = document;
         self.seeded = true;
+        self.saved_revision = Some(self.document.revision());
         self.select_only(None);
         self.clipboard.clear();
         self.rebuild_model();
@@ -1122,6 +1131,11 @@ impl PfSession {
         best.map(|(_, index, port)| (index, port))
     }
 
+    /// `true` when the document holds work that is not in the file it came from.
+    fn is_modified(&self) -> bool {
+        self.saved_revision != Some(self.document.revision())
+    }
+
     /// The component the properties form and the transport talk about: the last touched.
     fn primary(&self) -> Option<usize> {
         self.selected.last().copied()
@@ -1195,6 +1209,9 @@ impl PfSession {
             (punchi_fluid_draw::schematic::VALVE_ID, "2"),
             (punchi_fluid_draw::schematic::CYLINDER_ID, "1"),
         );
+        // The worked example is what the window opens with, not work the user typed: the
+        // title has nothing to mark and closing asks nothing.
+        self.saved_revision = Some(self.document.revision());
     }
 
     /// Joins two seeded ports by definition id, doing nothing when either is absent: the
@@ -2175,10 +2192,104 @@ pub unsafe extern "C" fn pf_session_save(session: *mut PfSession, path: *const c
             return PF_ERR_MODEL;
         }
         match session.to_sheet().write(std::path::Path::new(path)) {
-            Ok(()) => PF_OK,
+            Ok(()) => {
+                session.saved_revision = Some(session.document.revision());
+                PF_OK
+            }
             // A save is not a model error, but the interface reads one channel; the
             // message lands there.
             Err(cause) => session.fail(&cause.to_string()),
+        }
+    })
+}
+
+/// `1` when the sheet holds work that is not in the file it came from, `0` otherwise.
+///
+/// What the title bar marks and what a warning before closing asks about. Marking a
+/// component, selecting, zooming and the check are not changes: the document is the same.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_is_modified(session: *const PfSession) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| i32::from(session.is_modified()))
+}
+
+/// Writes a copy of the sheet for safety, without counting it as the saved document.
+///
+/// The autosave is a copy, not a save: the document is still modified afterwards, the path
+/// the user chose is unchanged, and a crash costs the work since the last copy instead of
+/// all of it.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_autosave(session: *mut PfSession, path: *const c_char) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(path) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if path.is_empty() || path.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        match session.to_sheet().write(std::path::Path::new(path)) {
+            Ok(()) => PF_OK,
+            Err(cause) => session.fail(&cause.to_string()),
+        }
+    })
+}
+
+/// Opens a sheet that came from an autosave copy: the document is modified afterwards.
+///
+/// Recovering is not opening. The file is a copy taken to survive a crash, so the work in
+/// it has not been saved anywhere the user chose, and the next save must go to a path of
+/// their own. The document therefore stays modified, and the front end leaves the current
+/// path empty.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_recover(session: *mut PfSession, path: *const c_char) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(path) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if path.is_empty() || path.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        let sheet = match Sheet::read(std::path::Path::new(path)) {
+            Ok(sheet) => sheet,
+            Err(cause) => return session.fail(&cause.to_string()),
+        };
+        match session.load(&sheet) {
+            Ok(()) => {
+                session.saved_revision = None;
+                session.error = CString::default();
+                PF_OK
+            }
+            Err(cause) => session.fail(&cause),
         }
     })
 }

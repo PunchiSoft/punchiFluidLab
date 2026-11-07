@@ -16,12 +16,55 @@ Window {
     minimumWidth: 900
     minimumHeight: 560
     visible: true
-    title: qsTr("Punchi Fluid Lab")
+    title: session.title
     color: session.background
 
     /// Silence is a property of the window, not of a button: the status bar draws it and
     /// the feedback obeys it.
     property bool muted: false
+
+    /// What the confirmation is about when it opens: `new`, `open` or `close`. A pending
+    /// path is kept so "Guardar y abrir" knows which file it was going to open.
+    property string pendingCommand: ""
+    property string pendingPath: ""
+
+    /// Asks before throwing work away. Only reached when there is work to lose, so the
+    /// normal path still has no modal.
+    function guard(cmd, path) {
+        if (!session.hasUnsavedWork()) {
+            return false;
+        }
+        window.pendingCommand = cmd;
+        window.pendingPath = path || "";
+        return true;
+    }
+
+    function discardAndContinue() {
+        const cmd = window.pendingCommand;
+        window.pendingCommand = "";
+        if (cmd === "close") {
+            session.confirmClose();
+            window.close();
+        } else if (cmd === "open") {
+            const path = window.pendingPath;
+            window.pendingPath = "";
+            session.discardAndOpen(path);
+        } else {
+            session.discardAndNewDocument();
+            window.pendingPath = "";
+        }
+    }
+
+    function saveAndContinue() {
+        if (session.currentPath.length > 0) {
+            if (session.saveCurrent()) {
+                discardAndContinue();
+            }
+        } else {
+            // The dialog remembers what was pending, so the save finishes the command.
+            saveDialog.open();
+        }
+    }
 
     FluidSession {
         id: session
@@ -44,7 +87,14 @@ Window {
         title: qsTr("Abrir circuito")
         nameFilters: [qsTr("Circuitos (*.pfluid)"), qsTr("Todos los archivos (*)")]
         fileMode: FileDialog.OpenFile
-        onAccepted: session.openFrom(selectedFile)
+        onAccepted: function (file) {
+            // Opening replaces the sheet, so unsaved work is asked about first.
+            if (window.guard("open", file.toString())) {
+                window.pendingPath = file.toString();
+            } else {
+                session.openFrom(file);
+            }
+        }
     }
 
     FileDialog {
@@ -53,7 +103,38 @@ Window {
         nameFilters: [qsTr("Circuitos (*.pfluid)")]
         fileMode: FileDialog.SaveFile
         defaultSuffix: "pfluid"
-        onAccepted: session.saveTo(selectedFile)
+        onAccepted: function (file) {
+            if (session.saveTo(file) && window.pendingCommand.length > 0) {
+                window.discardAndContinue();
+            }
+        }
+    }
+
+    onClosing: function (close) {
+        if (!session.closeConfirmed && session.hasUnsavedWork()) {
+            close.accepted = false;
+            window.pendingCommand = "close";
+        }
+    }
+
+    // A copy of the work every thirty seconds while it is unsaved, so a crash costs half a
+    // minute instead of the session. It is a copy: the title keeps saying the circuit is
+    // not saved, and saving still goes where the user chose.
+    Timer {
+        interval: 30000
+        repeat: true
+        running: session.modified
+        onTriggered: session.autosave()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Shift+W"
+        onActivated: {
+            if (!window.guard("close")) {
+                session.confirmClose();
+                window.close();
+            }
+        }
     }
 
     function saveCommand() {
@@ -228,7 +309,9 @@ Window {
             session: session
             onFileCommand: function (command) {
                 if (command === "new") {
-                    session.newDocument();
+                    if (!window.guard("new")) {
+                        session.newDocument();
+                    }
                 } else if (command === "open") {
                     openDialog.open();
                 } else if (command === "save-as") {
@@ -260,6 +343,172 @@ Window {
                     anchors.fill: parent
                     anchors.margins: 12
                     session: session
+                }
+
+                // The safety copy of a previous run. It is offered, never loaded on its
+                // own: the file may be work the user already saved, and deciding for them
+                // is how a recovery becomes a loss.
+                Rectangle {
+                    visible: session.recoveryOffered && window.pendingCommand.length === 0
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    anchors.margins: 24
+                    width: 420
+                    radius: 6
+                    color: session.panel
+                    border.width: 1
+                    border.color: session.accent
+                    height: recoveryColumn.implicitHeight + 28
+                    z: 30
+
+                    Column {
+                        id: recoveryColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 14
+                        spacing: 10
+
+                        Text {
+                            width: parent.width
+                            text: qsTr("Hay una copia de seguridad de una sesión anterior.\n¿La recuperas?")
+                            color: session.foreground
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+                        Row {
+                            spacing: 10
+                            Rectangle {
+                                width: 96
+                                height: 26
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.accent
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Recuperar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: session.recoverAutosave()
+                                }
+                            }
+                            Rectangle {
+                                width: 96
+                                height: 26
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Descartar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: session.discardAutosave()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // The one place the program stops to ask. It appears only when the answer
+                // can lose work, and it names the work: a dialog that says "¿seguro?" and
+                // nothing else teaches the user to click through it.
+                Rectangle {
+                    visible: window.pendingCommand.length > 0
+                    anchors.centerIn: parent
+                    width: 440
+                    radius: 8
+                    color: session.panel
+                    border.width: 1
+                    border.color: session.accent
+                    height: confirmColumn.implicitHeight + 32
+                    z: 40
+
+                    Column {
+                        id: confirmColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        spacing: 12
+
+                        Text {
+                            width: parent.width
+                            text: window.pendingCommand === "close"
+                                  ? qsTr("El circuito tiene cambios sin guardar.\n¿Cierro y los pierdo?")
+                                  : (window.pendingCommand === "open"
+                                     ? qsTr("El circuito tiene cambios sin guardar.\n¿Abro otro archivo y los pierdo?")
+                                     : qsTr("El circuito tiene cambios sin guardar.\n¿Empiezo uno nuevo y los pierdo?"))
+                            color: session.foreground
+                            font.pixelSize: 13
+                            wrapMode: Text.WordWrap
+                        }
+                        Row {
+                            spacing: 10
+                            Rectangle {
+                                width: 120
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.accent
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Guardar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.saveAndContinue()
+                                }
+                            }
+                            Rectangle {
+                                width: 120
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Descartar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.discardAndContinue()
+                                }
+                            }
+                            Rectangle {
+                                width: 120
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Cancelar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.pendingCommand = ""
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // The circuit check, opened from the ribbon. It lists what is wrong and
