@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### El juego de papeles, en el código y no solo en el ADR — 2026-11-07
+
+El ADR 0012 prometía ISO A4–A0, Letter, Legal y Oficio, y el código conocía A5, A4, A3, A2,
+Letter y Legal. Un plano para imprimir en Oficio no se podía declarar.
+
+- **A1 y A0 entran**, con sus medidas: 594 × 841 y 841 × 1189 mm.
+- **Oficio entra**, 216 × 330 mm. No es «un A4 un poco más largo»: es más largo que A4, más
+  corto que Legal y **0,1 mm más ancho** que Legal, tan cerca que se confunde con él. El ADR
+  decía «más estrecho que Legal» y era falso; queda corregido.
+- **Tamaño personalizado**: `PaperSize::custom(ancho, alto)` devuelve `None` fuera de los
+  límites (50–2000 mm por lado) o con una medida que no es un número. El rechazo ocurre donde
+  el llamador aún puede hacer algo con él, antes de reservar el búfer del ráster.
+- **El tamaño elegido sigue escrito en el archivo**: la prueba del `/MediaBox` cubre ahora
+  Oficio y A0 apaisado, no solo A4, A3 y Letter.
+- Cuatro pruebas nuevas: cada tamaño con nombre es el papel que dice ser; el contenido no se
+  sale del papel en ninguno; un tamaño fuera de límites se rechaza antes de dibujar; y Oficio
+  se distingue de Legal por lo que de verdad los distingue.
+
+
 ### El juego de símbolos neumáticos, dibujado como la norma lo dibuja — 2026-11-07
 
 La fuente era un círculo con un triángulo y nada más, y no había ni filtro, ni lubricador, ni
