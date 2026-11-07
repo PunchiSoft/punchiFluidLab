@@ -2,16 +2,24 @@
 
 [English](README.md) | **Español**
 
-Simulador de escritorio de circuitos neumáticos e hidráulicos. El modelo, el formato y el
-dibujo son Rust; la ventana es Qt Quick.
-**Estado: `0.1.0`, sin publicar.** Ya corre una rebanada vertical: suministro,
-válvula 3/2 y cilindro de simple efecto con física real. El armazón está hecho —cinta,
-barra lateral de catálogo, barra de estado y la paleta clara u oscura del escritorio—.
-El editor no está empezado.
+Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
+licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
+ejecutar el modelo y ver moverse los actuadores. El modelo, el formato y el dibujo son Rust;
+la ventana es Qt Quick.
 
-Inspirado en el flujo de trabajo de Festo FluidSIM —dibujar el esquema, conectar los
-puertos, ejecutar el modelo, ver moverse los actuadores— sin tomar ningún recurso ni
-código de él.
+**Estado: `0.1.0`, sin publicar.** Rebanada vertical que funciona: dibujar y editar un
+circuito, conectar puerto a puerto, guardarlo y abrirlo, ejecutar el modelo de gas, leer la
+presión en los tubos y exportar la hoja a PNG o PDF.
+
+Sin cuenta, sin clave, sin red. GPL-3.0-or-later: descárgalo, enseña con él, cámbialo,
+compártelo.
+
+**Para quién es:** estudiantes de FP e ingeniería, docentes que preparan ejercicios y talleres
+que no pueden justificar una licencia comercial. La herramienta con la que se aprende no
+debería ser lo que el estudiante no puede pagar.
+
+**Lo que no es:** un visor, un curso ni un servicio en la nube. Sin telemetría, sin
+suscripción, sin «edición educativa» recortada.
 
 > **¿Retomas el proyecto?** [docs/retomar.md](docs/retomar.md) es la nota de
 > continuidad: estado actual, qué se construyó paso a paso, cómo verificarlo, decisiones

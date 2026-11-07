@@ -2,13 +2,15 @@
 
 - **Status:** superseded by [0005](0005-qt-quick-over-a-c-abi.md) — Rust keeps the
   model, the format and the drawing; the window is Qt Quick.
+- **Naming amended by [0009](0009-identity-and-standards.md)** — the product this ADR
+  compared itself with is no longer named anywhere.
 - **Date:** 2026-11-06
 
 ## Context
 
-The product is a desktop simulator of pneumatic and hydraulic circuits, inspired
-by the workflow of Festo FluidSIM: draw a schematic, connect ports, run the model,
-watch the actuators move. The work splits into three very different problems:
+The product is a desktop simulator of pneumatic and hydraulic circuits: draw a schematic,
+connect ports, run the model, watch the actuators move. The work splits into three very
+different problems:
 
 1. the physical model and its numerics;
 2. the file format that keeps a user's circuit safe across releases;

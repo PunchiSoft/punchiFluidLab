@@ -22,7 +22,7 @@ skill is the bug.
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
-| [reference-parity](reference-parity/SKILL.md) | study the reference, record the observation, replicate, then improve | starting a parity phase; planning a feature; deciding what the product must do next |
+| [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
 
 ## The order to read them
 
@@ -37,9 +37,9 @@ skill is the bug.
 6. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
    survive, and how to find the process when it cannot.
 
-For a capability that replicates the reference — that is most of the product — read
-[reference-parity](reference-parity/SKILL.md) first: it is the gate that turns an
-observation into a requirement, and it names the layer each capability lands in.
+For a capability that does something a student needs — that is most of the product — read
+[capability-plan](capability-plan/SKILL.md) first: it is the gate that turns a need into a
+requirement, and it names the layer each capability lands in.
 
 For a symbol change, read [fluid-power-symbology](fluid-power-symbology/SKILL.md) before
 touching the file, and [solver-validation](solver-validation/SKILL.md) if the change also

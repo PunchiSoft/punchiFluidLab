@@ -27,13 +27,13 @@ Después, en este orden:
 | cambiar una válvula sin programar | §8 |
 | saber qué está mal en los símbolos | §9 |
 | construir la interfaz | §10 y [ui-ux.md](ui-ux.md) |
-| replicar una capacidad de la referencia | [reference-parity.md](reference-parity.md) y la skill [reference-parity](../.agents/skills/reference-parity/SKILL.md): ninguna empieza sin su observación escrita |
+| planificar una capacidad | [capabilities.md](capabilities.md) y la skill [capability-plan](../.agents/skills/capability-plan/SKILL.md): ninguna empieza sin su propósito y su prueba escritos |
 | las reglas que no se rompen | §14 y [AGENTS.md](../AGENTS.md) |
 
 ### 0.1 Estado al 2026-11-12 (lo último, y lo que manda)
 
 Desde que se escribió el resto de este archivo cambió la mitad del programa. Lo
-autoritativo es [reference-parity.md](reference-parity.md) (capacidades, estado y
+autoritativo es [capabilities.md](capabilities.md) (capacidades, estado y
 evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 
 | Área | Estado real |
@@ -73,10 +73,10 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ## 1. Qué es este proyecto
 
-`punchi-fluid-lab`: simulador de escritorio de circuitos neumáticos (y más adelante
-hidráulicos), en Rust, con la idea de uso de Festo FluidSIM —dibujar el esquema,
-conectar puertos, ejecutar el modelo y ver moverse los actuadores— **sin tomar ningún
-recurso, símbolo ni código de ese programa**.
+`punchi-fluid-lab`: simulador libre de circuitos neumáticos (y más adelante hidráulicos), en
+Rust, para que un estudiante sin licencia y sin presupuesto pueda dibujar el esquema,
+conectar puertos, ejecutar el modelo y ver moverse los actuadores. **Ningún recurso, símbolo,
+manual, circuito de ejemplo ni formato de otro programa entra en este repositorio**.
 
 Dos ideas lo definen y explican casi todas las decisiones:
 

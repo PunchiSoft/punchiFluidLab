@@ -12,11 +12,10 @@ and the prompt to continue in a new session.
 state, the next milestone step by step, the files it touches, its acceptance tests and
 the questions that belong to the project owner.
 
-**Before a capability: [docs/reference-parity.md](docs/reference-parity.md)** is the
-reference study, and FluidSIM is **the base product**: replicate its observable behaviour
-first, then improve it with a reason and a test. A capability starts only after its
-observation is recorded there, studied from the local copy and never copied from it; the
-procedure is [.agents/skills/reference-parity](.agents/skills/reference-parity/SKILL.md).
+**Before a capability: [docs/capabilities.md](docs/capabilities.md)** is the plan — what a
+student must be able to do, how it behaves, and the test that proves it. The authority is
+the standard and the teaching goal, never another product; the procedure is
+[.agents/skills/capability-plan](.agents/skills/capability-plan/SKILL.md).
 
 Where the rest lives: [docs/ui-ux.md](docs/ui-ux.md) (interface),
 [docs/symbology.md](docs/symbology.md) (ISO 1219 conformance),
@@ -27,8 +26,9 @@ Where the rest lives: [docs/ui-ux.md](docs/ui-ux.md) (interface),
 ## Scope and product
 
 A desktop simulator of pneumatic and hydraulic circuits: draw a schematic, connect
-ports, run the model, watch the actuators move. Inspired by the workflow of Festo
-FluidSIM; **no asset, symbol set, manual or code from it enters this repository**.
+ports, run the model, watch the actuators move. Free and open, built so that a student with
+no licence and no budget can learn the subject. **No asset, symbol set, manual, example
+circuit or file format from any other program enters this repository.**
 
 Status: `0.1.0`, unreleased. The workspace runs a working vertical slice: supply,
 3/2 valve and single-acting cylinder with real physics, drawn from the catalog and

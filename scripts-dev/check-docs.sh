@@ -29,7 +29,33 @@ if [[ -z $members ]]; then
     exit 1
 fi
 
+# The identity of the project is its mission and the standards (ADR 0009). These terms
+# brought a third-party product, its manual and its file inventory into a public
+# repository once; the check is here so it cannot come back quietly.
+FORBIDDEN=(
+    "FluidSIM"
+    "Festo"
+    "FLUID SIM NEUMATICO"
+    "fl_sim_p.pdf"
+    "PUNCHI_REFERENCE_DIR:-"
+)
+
 status=0
+
+for term in "${FORBIDDEN[@]}"; do
+    if hits=$(git grep -l -i --fixed-strings -- "$term" -- . ':!scripts-dev/check-docs.sh'); then
+        echo "check-docs: '$term' still appears in:" >&2
+        echo "$hits" | sed 's/^/  /' >&2
+        status=1
+    fi
+done
+
+for f in docs/capabilities.md .agents/skills/capability-plan/SKILL.md; do
+    if [[ ! -f $f ]]; then
+        echo "check-docs: $f is missing" >&2
+        status=1
+    fi
+done
 for doc in "${DOCS[@]}"; do
     if [[ ! -f $doc ]]; then
         echo "check-docs: $doc is missing" >&2

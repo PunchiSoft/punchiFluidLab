@@ -1,139 +1,94 @@
-# Reference parity: what to replicate, in what order
+# Capabilities: what the program does, in what order
 
-The reference is FluidSIM 4 / Pneumatics. Its manual and library were read to learn **what
-the program does**; nothing from them enters this repository. Concretely, never copied:
+A free simulator of pneumatic and hydraulic circuits, for a student with no licence, no
+budget and no connection. This document says what the program must be able to do, in what
+order it gets built, how each capability is proven, and what is deliberately left out.
 
-- no symbol, icon, bitmap or sound from `sym/` (210 definition files) or `dida/` (533
-  example circuits);
-- no page, sentence or table from the manual;
-- no file format, no `.ct` parser, no proprietary constant.
+It is a plan written in our own words. It describes behaviour, never content: no symbol,
+icon, sound, example circuit, manual page or file format from another program enters this
+repository, and no such program is named here.
 
-What *is* replicated is capability and behaviour, which is what a user of a program
-experiences and what a free replacement must match. Every phase below is written as
-observable behaviour and ends with evidence, not with a feature list.
+## The gate
 
-Reference inventory measured on 2026-11-06: library `sym/` = 110 pneumatic, 50 electrical,
-28 digital, 10 miscellaneous, 6 DDE, 6 GRAFCET; `dida/` = 533 example circuits; manual
-chapters 1–8 covering editing, simulation, teaching material, layers and graphic objects,
-text and references, images, parts lists, printing, TIFF/DXF, libraries, projects, saved
-configurations and GRAFCET.
+A capability starts only when it is written down in this file: what a student must be able
+to do, what they see, what changes in the document or the model, and the test that will
+prove it. A step without an entry is not ready; an entry without a purpose is a wish.
 
-## Studying the reference (the gate)
+The procedure is [.agents/skills/capability-plan](../.agents/skills/capability-plan/SKILL.md).
 
-The phases below say **what to build**; this section says **how it is learned** and where
-the observation is kept. The procedure is
-[.agents/skills/reference-parity](../.agents/skills/reference-parity/SKILL.md); the rule
-is one line:
+## What settles what
 
-> A capability starts only after its observable behaviour is written in the log below, in
-> our own words, with the evidence that will prove it.
+| Question | Source |
+|---|---|
+| What does this symbol look like? | ISO 1219-1, in the diagram conventions of ISO 1219-2 and ISO 1219-3 |
+| How much gas flows through this restriction? | ISO 6358, including the choked branch |
+| What is this component called? | ISO 5598 vocabulary |
+| Does this belong in the program at all? | the teaching goal: a student must be able to do it, understand it or check it |
+| How good is our answer? | the test named in the entry, at the level the claim needs |
 
-The reference is the local copy at `$PUNCHI_REFERENCE_DIR` (default
-`$HOME/Descargas/FLUID SIM NEUMATICO`), with its manual `doc/fl_sim_p.pdf`. It is read
-only and outside the repository: observe it, never copy from it, and keep extracted text
-and screenshots of it out of the tree. A file name in `sym/` says a function exists; only
-an observation says what it does.
+When those sources leave a question open, the entry says so instead of guessing. The plan
+never depends on material the community cannot open.
 
-### Two arcs: the base, then better than the base
+## Two arcs: cover, then improve
 
-The reference is not a wish list to skim: it is **the base product**, and this project is
-its replacement. So the work has two arcs, in this order and never mixed:
+1. **Cover.** The capability does what a teaching simulator is expected to do, proven by
+   the evidence in its entry. A product that does less than a student needs is not a
+   replacement for anything.
+2. **Improve.** Then it gets one recorded decision: keep it as it is, with the reason, or
+   improve it, naming the rough edge, what we do instead, why it is cheap and honest, and
+   the test that holds it.
 
-1. **Replicate the base.** Everything the reference lets a user do, this program does too,
-   with the same observable behaviour. That is the floor: a replacement that does less is
-   not a replacement, and "we do it differently" is not a reason to skip a function.
-2. **Improve the base.** A base copied faithfully is the start, not the end. Every
-   replicated capability then gets one recorded decision: keep it as the base has it, with
-   the reason, or improve it, with the reason and the test that holds the improvement.
+A difference you cannot explain is a regression wearing a feature's name. Improving is not
+redecorating: if the change cannot be stated as what a student could not do before, it is
+taste, and taste does not justify a divergence.
 
-Parity first is not caution, it is the only way an improvement can be judged: a difference
-you cannot explain against the base is a regression wearing a feature's name.
+The project's own improvements are fixed: a keyboard path for every action, a check that
+points at the fault instead of describing it, undo that never loses a drag, and a theme
+that follows the desktop.
 
-The improvement comes from the four rules at the end of this document — a keyboard path for
-every action, a check that points at the fault, undo that never loses a drag, a theme that
-follows the desktop — and from whatever the base makes painful. It may not be an excuse to
-skip a function, may not break ISO 1219 conformance, and may not be invisible: the ledger
-below says which capability differs and why.
+## Coverage ledger
 
-### Coverage ledger
-
-The whole base, not the part we happen to want: every function named by the inventory is a
-row here, and its state is one of five words, never blank.
+Every capability the program is expected to have is a row here, and its state is one of
+five words, never blank.
 
 | State | Means |
 |---|---|
-| `none` | the base has it and we do not; a gap with no work started |
+| `missing` | expected and absent; a gap with no work started |
 | `partial` | started; the entry says exactly which part is missing |
-| `base` | behaviour matches the base, proven by the evidence in its entry |
-| `better` | matches the base and improves it; the improvement is written and tested |
-| `not adopted` | the base has it and we deliberately do not; the reason is written |
+| `covered` | the behaviour is there, proven by the evidence in its entry |
+| `improved` | covered, plus a named improvement with its test |
+| `not planned` | expected and deliberately out of scope; the reason is about **us** — licence, scope, content we do not own — never contempt for a user's need |
 
-`not adopted` is the only state that needs an argument, and the argument is about **us**,
-never about the base being wrong: a teaching-material library is not adopted because it is
-someone else's content; a format is not adopted because it is proprietary.
+`not planned` is the only state that needs an argument. A function the category expects is
+the default; dropping it is the exception.
 
-| Phase | Base capability | State | Entry or reason |
+| Phase | Expected capability | State | Entry or reason |
 |---|---|---|---|
-| F1 | Draw a circuit: place, move, delete, undo, connect port to port | `base` | proven, per "Where we stand"; the keep-or-improve decision is still owed |
-| F1 | Copy, paste and duplicate a component | `base` | one-slot clipboard, Ctrl+C/V/D and Shift+drag; multi-selection is not there yet, so copy works on the one selected component |
-| F1 | Select, delete and re-route a pipe, T junctions | `base` | select, delete, the T and dragging the middle segment are done; the route is stored with the pipe and one gesture is one undo. Kept as the base: free routing is what a sketch needs |
-| F1 | Editable properties of a placed component | `partial` | stroke, bore, rod, mass, supply pressure and valve/throttle conductance are edited per instance, applied as one undo and used by the model; name, summary, actuation/spring, starting piston position, mounting angle, leakage and damping are missing |
-| F1 | Select several components and edit them together | `base` | a click replaces the selection, `Mayús` and a click adds or removes one, a rubber band marks what it covers, `Ctrl+E` marks everything; moving, copying, turning, reflecting and deleting act on all of them, each as one entry in the history |
-| F1 | Line a selection up on the component furthest out | `base` | `Edición ▸ Alinear` as four buttons in the ribbon: the marked objects move onto the one already at that edge, as one change |
-| F1 | Equal spacing between the marked objects | `none` | the reference aligns; even spacing between more than three objects is not started |
-| F1 | Turn and reflect the selection | `base` | `Edición ▸ Girar` is `Alt+R`, `Edición ▸ Reflejar` is `Alt+M`, and `Ctrl` and a double click turns anticlockwise with `Shift` for clockwise, as the reference documents; the turn is stored per placement, drawn through one transform and undone in one step |
-| F1 | The circuit check, all nine faults | `partial` | 5 of 9, with coordinates; four are blocked on F4 and F6 |
-| F2 | The sheet is the network the solver runs | `base` | built from the document; a 5/2 valve file drives a double-acting cylinder, and the junction and throttle are part of the graph |
-| F2 | Pipes coloured by pressure while running | `base` | each hose takes the pressure of its port; at atmosphere it keeps the neutral ink |
-| F3 | Pressure gauge: a dial that reads the line it is connected to | `base` | one file with `behaviour = "gauge"`, a scale and one working port; the reading is drawn on the dial; two tests and a symbol review |
-| F3 | Manometer, flow meter, force meter, strip chart | `partial` | the pressure gauge reads its port on a declared scale; the flow meter, force meter and strip chart are missing |
-| F3 | Run until state change | `partial` | stops on a piston reaching an end or a valve changing position; relays and switches do not exist yet (F6) |
-| F4 | Document v2, autosave, recent documents | `partial` | a versioned sheet format with atomic write, bounded parsing, Nuevo/Abrir/Guardar/Guardar como and Ctrl+N/O/S/Shift+S; no autosave, no recent list, no warning when closing an unsaved document |
-| F4 | A project as a folder of documents | `none` | F4 |
-| F4 | Layers, graphic objects, text and references, images | `none` | F4 and later |
-| F5 | Parts list, title block legend, printing | `partial` | PNG/PDF export done; list and legend missing |
-| F5 | DXF and TIFF interchange | `none` | F5: SVG first, DXF only if asked |
-| F6 | Electrical, digital and GRAFCET libraries | `none` | each needs a `behaviour` variant and an ADR |
-| F7 | The reference's teaching material | `not adopted` | its circuits are its content; F7 authors our own |
-| F8 | Saved configurations, i18n, packaging | `none` | F8 |
+| F1 | Draw a circuit: place, move, delete, undo, connect port to port | `covered` | proven by the ABI tests and `--selftest`; the keep-or-improve decision is still owed |
+| F1 | Copy, paste and duplicate a component | `covered` | one-slot clipboard, Ctrl+C/V/D and Shift+drag; with one selection it copies one component |
+| F1 | Select, delete and re-route a pipe, T junctions | `covered` | select, delete, the T and dragging the middle segment; the route is stored with the pipe and one gesture is one undo |
+| F1 | Select several components and edit them together | `covered` | band, Shift+click and Ctrl+E; move, copy, turn, reflect and delete are each one change |
+| F1 | Line up and distribute a selection | `partial` | four edges aligned to the furthest object; equal spacing and the other four alignments are `missing` |
+| F1 | Editable properties of a placed component | `partial` | stroke, bore, rod, mass, supply pressure and conductances are edited per instance and applied as one undo; name, summary, actuation, starting position, mounting angle, leakage and damping are missing |
+| F1 | Turn and reflect the selection | `covered` | quarter turns and mirror stored per placement, with `Alt+R` and `Alt+M` |
+| F1 | Check the circuit before running, nine faults | `partial` | 5 of 9, each shown where it happens; four need designations (F4) or the electrical library (F6) |
+| F2 | The sheet is the network the solver runs | `covered` | built from the document; a 5/2 valve file drives a double-acting cylinder; junction and throttle are part of the graph |
+| F2 | Pipes coloured by pressure while running | `covered` | each hose takes the pressure of its port; at atmosphere it keeps the neutral ink |
+| F3 | Pressure gauge: a dial that reads the line it is connected to | `covered` | one file with `behaviour = "gauge"`, a scale and one working port; two tests and a symbol review |
+| F3 | Manometer, flow meter, force meter, strip chart | `partial` | the pressure gauge reads its port on a declared scale; the others are missing |
+| F3 | Run until state change | `partial` | stops when a piston reaches an end or a valve changes position; relays and switches need F6 |
+| F4 | Document v2, autosave, recent documents | `partial` | versioned sheet format with atomic write, bounded parsing and the four file commands; no autosave, no recent list, no warning on close with unsaved work |
+| F4 | A project as a folder of documents | `missing` | F4 |
+| F4 | Layers, graphic objects, text and references, images | `missing` | F4 and later |
+| F5 | Parts list, title-block legend, printing | `partial` | PNG/PDF export done; list and legend missing |
+| F5 | DXF and TIFF interchange | `missing` | F5: SVG first, DXF only if asked |
+| F6 | Electrical, digital and GRAFCET libraries | `missing` | each needs a `behaviour` variant and an ADR |
+| F7 | Third-party teaching material | `not planned` | that content is not ours; F7 authors our own circuits |
+| F8 | Saved configurations, i18n, packaging | `missing` | F8 |
 
-Rows grow as the study log grows: a capability the base has and this table does not name is
-a hole in the inventory, and a hole is found by reading the manual's chapter list, not by
-waiting for someone to miss the function.
-
-The rows marked `base` today come from work done before this ledger existed, and they are
-honest about what that costs: the behaviour is proven, and the keep-or-improve decision each
-one still owes is the first backlog the ledger makes visible.
-
-### Study log
-
-One entry per capability, newest first, with the five fields the skill defines: observed,
-how observed, we have, gap, and the test that proves the gap closed. An entry without an
-observation is a wish, and an empty row is not an entry.
-
-| Phase | Capability | Observed, and from where | We have | Gap | Evidence |
-|---|---|---|---|---|---|
-| F1 | Line a selection up on the component furthest out | §4.2 *Distribución de objetos*, read 2026-11-12: the marked objects are lined up with **Edición ▸ Alinear** or the matching symbol, and *como punto de referencia para la distribución servirá siempre el objeto que se halle en el punto más lejano de la dirección escogida*; aligning several components to the left, for instance, drags them left until they reach the one already at that margin, and the manual warns the result may not match the symbol's own limits because a pneumatic symbol is distributed on the circuit grid. | four buttons — izquierda, derecha, arriba, abajo — that move each marked placement so its box edge meets the furthest one; the whole alignment is one change, so one undo puts the circuit back, and the box used is the turned one, so an alignment is not thrown off by a symbol standing on its side. | the reference draws eight alignment symbols and this build has four edges; even spacing between objects is not started | `aligning_moves_everything_onto_the_object_already_at_that_edge`, the ABI test `lining_up_the_selection_moves_it_onto_the_component_furthest_out`, and `--selftest` steps `alinear: los bordes izquierdos coinciden` and `alinear: un deshacer lo devuelve` |
-| F1 | Select several components and edit them together | §4.2 *Selección múltiple* and *Marcar*, read 2026-11-12: a left click always selects exactly one component; `Mayús` with a click marks the component under the pointer and unmarks it if it was marked — *el estado de la selección es bidireccional*; the *rectángulo elástico* selects everything it covers when the button is released, and the pointer must not be over a component when it starts; **Edición ▸ Seleccionar todo** or `Ctrl+E` selects every component and pipe; and the editing functions — *arrastrar, desplazar, copiar y borrar* — apply to **all** the selected components. | the selection is a set in the session; a click replaces it, `Mayús` and a click toggles one, the band and `Ctrl+E` mark several, and the last one marked is the primary the properties form opens on. Moving a group, copying it, turning or reflecting it and deleting it are each **one** change, so one undo takes the gesture back. `Mayús` + drag still copies, told apart from `Mayús` + click by whether the pointer moved, as the reference does. | the pipe is not part of a multi-selection yet, so `Ctrl+E` marks components only; the reference also copies the selected pipes with the components | `moving_a_selection_is_one_drag_and_one_undo`, `removing_and_copying_a_selection_are_one_change_each`, `turning_a_selection_keeps_the_mirror_of_each_component`, the ABI test `a_selection_of_several_components_moves_copies_and_goes_away_as_one_change`, and `--selftest` steps `selección: el rectángulo marca todo lo que cubre`, `Supr borra lo marcado de una vez`, `un deshacer lo devuelve entero`, `Mayús y clic marca sin abrir la ficha`, `Mayús y clic otra vez lo desmarca`, `Ctrl+E marca todo`, `arrastrar un grupo no lo deshace` and `el grupo se movió entero` |
-| F1 | Turn and reflect the selection | §4.2 *Girar y Reflejar*, read 2026-11-12: the selected components turn 90°, 180° or 270° with **Edición ▸ Girar**; `Ctrl` and a double click turns the component under the pointer a quarter **anticlockwise**, and adding `Shift` turns it clockwise; **Edición ▸ Reflejar** reflects the marked objects on their own axis, and a group on the group's central axis. | a placement stores its quarter turns and its mirror; `Alt+R` and `Alt+M` are the keyboard path the reference lacks, and the ribbon carries both buttons. The symbol is turned by mapping every drawing call about the centre of its box, so a direction is not a second copy of the geometry, and the port numerals stay upright and legible. Pipes follow the ports because their ends come from the same mapping. A turn is one entry in the history. | groups do not exist yet, so a reflection is always about the symbol's own axis; the reference also rotates text, and this project keeps glyphs upright on purpose | `a_quarter_turn_moves_the_right_edge_to_the_bottom`, `four_quarter_turns_are_the_symbol_as_it_was_drawn`, `an_arc_turns_with_the_symbol_and_is_reversed_by_the_mirror`, `a_turned_surface_draws_the_same_calls_where_the_turn_puts_them`, `a_turn_is_one_undo_entry_and_four_of_them_are_the_symbol_as_it_was`, `a_turned_symbol_occupies_the_box_it_is_drawn_in`, the ABI test `a_turned_component_puts_its_ports_where_the_symbol_is_drawn`, and `--selftest` steps `edición: Ctrl y doble clic gira al revés`, `el puerto gira con el símbolo`, `un deshacer devuelve el símbolo a su sitio` and the two reflection steps |
-| F1 | Copy, paste and duplicate a component | §4.2 *Copiar*, read 2026-11-06: the selected components go to the clipboard with **Ctrl+C** and come back with **Ctrl+V**; dragging with **Shift** held copies them, and the pointer changes to the copy symbol. The reference copies the selection as a whole; with one selection ours copies one component. | Ctrl+C copies the selected placement, Ctrl+V pastes it ten millimetres away, Ctrl+D duplicates it, and Shift+drag copies the component under the pointer and drags the copy; the copy keeps the catalog id, the box and the per-instance values, gets a new identity and is one undo | copying several components at once and the pipes between them, aligning and distributing a selection; these need multi-selection | `a_duplicate_keeps_the_values_gets_a_new_identity_and_one_undo_removes_it`, the ABI test `copy_paste_and_duplicate_are_one_change_each`, and the `--selftest` steps for paste, duplicate and Shift+drag |
-| F1 | Editable properties of a placed component | §4.1 *Símbolos configurables* and appendix B *Cilindro de doble efecto*, read 2026-11-06: double-clicking a component (or Edit ▸ Properties) opens a dialog **for that instance**; the cylinder's parameter tab edits maximum stroke, piston position at the start, bore, rod diameter, mounting angle, internal leakage and moving mass, and the calculated areas follow. Appendix B gives the ranges (stroke 1..5000 mm, piston position 0..stroke, bore 1..1000 mm, rod 0..1000 mm). | a panel on the sheet, not a dialog: per-instance overrides of supply pressure, valve/throttle conductance, cylinder stroke, bore, rod and moving mass; Apply is one undo entry, the model is rebuilt from the document and a rod that is not smaller than the bore is refused | name and summary, actuation/spring, starting piston position, mounting angle, internal leakage and damping; the panel edits the numbers the model uses, not a full parameter tab | `editing_a_placement_is_one_undoable_change`, the ABI tests `a_cylinder_edit_changes_the_model_and_is_one_undo` and `a_supply_pressure_edit_reaches_the_gas`, and the `--selftest` step that edits the stroke, sees the model change and undoes it |
-| F3 | Pressure gauge | Appendix B, *Manómetro*, read 2026-11-06: *el manómetro indica la presión en su conexión*; it is a measuring instrument with one connection and a scale. | `gauge.pressure`, a file with `behaviour = "gauge"`, a scale in the file and one working port; the network gives the port a node and adds no physics, the dial is the file's symbol and the reading is drawn from `Network::port_pressure` at the dial | a moving needle; the number is drawn, not the needle angle | `a_gauge_reads_its_port_and_adds_nothing_to_the_physics`, the ABI test `a_pressure_gauge_reads_the_line_it_is_connected_to`, and `assets/symbols/review/gauge.pressure.md` |
-| F3 | Run until state change | §3.2, read 2026-11-06: the reference has a run mode that leaves the pause when one of four things happens — **the cylinder rod reaches an end stop, a valve is actuated or switched, a relay picks up, or a switch is actuated** — and stops again at the next state change. | a **Hasta cambio** command in the transport: it enters simulation, advances until the first piston reaches an end or any valve changes position, leaves the transport paused there, and gives up after four simulated seconds; the selftest reaches the stop and proves the pause | relays and switches (they arrive with F6); the reference animates the run, we compute it and repaint once | `--selftest` steps `transporte: hasta cambio se detiene`, `se detiene en el tope` and `queda en pausa` |
-| F4 | Saving and opening a circuit | Appendix A.1 *Archivo*, read 2026-11-06: the reference has **Nuevo** (Ctrl+N), **Abrir...** (Ctrl+A), **Cerrar** (Ctrl+W, warning when the circuit is unsaved), **Guardar** (Ctrl+G) and **Guardar como...**; the stored circuit is the `.ct` file and the same window keeps the name. | Nuevo, Abrir, Guardar and Guardar como in the Archivo tab and as Ctrl+N/O/S/Shift+S; a JSON sheet with placements by catalog id, pipes by placement id and port, each pipe's route and each instance's values; atomic write (temporary file plus rename), an 8 MiB read ceiling, unknown keys rejected and every number range-checked; a failed open leaves the current document untouched | autosave, a recent-documents list, a warning on closing an unsaved circuit, and a migration from an older sheet version (there is only v1) | `a_sheet_round_trips_byte_identically`, `an_unknown_key_is_rejected_instead_of_ignored`, `a_future_format_is_refused`, `bounds_are_checked_before_the_document_is_trusted`, `a_sheet_is_written_atomically_and_read_back`, the ABI test `a_sheet_saves_and_opens_with_its_edits_and_routes`, and the `--selftest` step that saves, edits, opens and counts |
-| F2 | The sheet is the network the solver runs | Appendix B, *Válvula neumática distribuidora de 5/2 vías* and *Cilindro de doble efecto*, read 2026-11-06: the 5/2 valve conducts 1→4 while its pilot is applied and returns by spring to 1→2; the double-acting cylinder is driven by applying air alternately to the two sides of the piston; its editable parameters are stroke 1..5000 mm (100), piston position, bore 1..1000 mm (20) and rod 0..1000 mm (8). §3.1 adds that the simulation colours cylinders and hoses and that the animation keeps the real time proportion. | a network of lumped volumes and ISO 6358 restrictions built from the document's placements and pipes; a 5/2 valve file with a momentary lever drives a double-acting cylinder with two chambers and the annulus area from the rod; a junction is one node; a throttle is a restriction; port pressure is readable | open working ports are sealed instead of venting; a hose conducts but stores no volume; a valve other than the first is actuated by placement, and telemetry reports the last one touched | `a_five_port_valve_file_drives_a_double_acting_cylinder`, `a_chain_is_the_same_circuit_the_fixed_model_simulates`, `a_junction_joins_its_three_ports_into_one_volume`, `a_throttle_between_the_valve_and_the_cylinder_slows_the_fill`, `the_gas_that_entered_is_the_gas_the_network_holds`, and the ABI test `a_five_port_valve_and_a_double_acting_cylinder_are_a_circuit_of_files` |
-| F2 | Hoses coloured by pressure while running | §3.1, read 2026-11-06: as soon as the results are computed, *los cilindros y los conductos* appear coloured, and the animation is proportional to real time. | every document hose is drawn from the pressure at its port as a fraction of the supply span; the status bar carries the number too, so colour is never the only signal | none for the base gesture | `--selftest` paints a running circuit, and `hose_pressure` is fed from `Network::port_pressure` (unit test `a_port_reports_the_pressure_a_gauge_would_read`) |
-| F1 | Re-route a hose by dragging a segment | §3 of the manual, read 2026-11-06: the same paragraph that documents automatic T junctions tells the reader to *drag the segments of the hose so the circuit reads clearly*, so the route belongs to the document and not to the automatic elbow. | the middle segment of a hose follows the pointer while the button is held; the offset is stored in tenths of a millimetre with the pipe, one gesture is one undo, and the press that selects a pipe also starts the drag | none for the base gesture | `dragging_a_pipe_segment_is_one_undo_entry_and_comes_back`, `a_routed_pipe_survives_the_undo_of_an_unrelated_move`, the ABI test `a_pipe_segment_can_be_dragged_and_undo_puts_it_back`, and the `--selftest` step that drags a hose and proves one undo restores it |
-| F1 | T junctions | §3 of the manual, read 2026-11-06. To join a component to a hose that is already drawn a T is needed, and the reference **inserts it automatically when a hose connection is placed directly on an available hose**: the connection grid changes shape as it hovers, and the T appears **where the mouse is released**. The same paragraph then tells the reader to *drag the segments of the hose so the circuit reads clearly*, which is the entry above. | dropping a hose end on a hose inserts a T there, splits the hose in two and joins the third port; the T is also a palette entry, which the base does not offer | none: the drag is the entry above | `a_junction_splits_a_pipe_and_the_whole_splice_undoes_as_one`, `a_splice_that_cannot_finish_leaves_the_pipe_untouched`, `a_junction_alone_is_not_an_open_connection`, and the `--selftest` step that drags a port onto a hose and proves one undo reverts it |
-| F1 | Completing the circuit check | Chapter 4.10 *Control de gráficos*, read 2026-11-06. The command is **Ejecutar ▸ Comprobación previa** (F6). It lists nine graphic faults, in this order: an object outside the drawing surface; a pipe through a component; overlapping pipes; overlapping components; overlapping and mismatched connections; **open pneumatic connections**; two cylinders with one designation; labels that do not match; and pipes running through circuits they are not connected to. It then shows them **one after another, each in its own dialog**, and, once they are read, **lets the simulation go ahead anyway**. The same section's worked example carries faults 1 to 3. | 5 of 9, each with its coordinates and **marked on the drawing** with a dashed ring and a cross: outside the sheet, pipe through a component, overlapping pipes, overlapping components, open connection. An exhaust port is exempt, because the reference's own example valve breathes through port 3. | the four that need a feature we do not have yet — mismatched connection (needs the electrical library, F6), two cylinders with one designation, a label that does not match, a pipe through an unrelated circuit (all three need designations and circuit grouping, F4). | one unit test per fault in `punchi-fluid-check`, one ABI test proving every fault has a place to point at, and `--check` printing each finding with its coordinates |
-
-The observation also settles a design question before it is asked: the base reports faults
-as a **chain of modal dialogs** and does not stop the run. This project has a standing rule
-against a modal on the normal path and against a check the user has to map back onto the
-drawing, so the keep-or-improve decision here is recorded rather than discovered — the
-fault list is the base's, the presentation is ours, and the rule the improvement rests on is
-"a check that points at the fault". The `base` behaviour of *reporting all nine in that
-order* is still owed; only the dialogs are not.
+Rows grow as the log grows. A capability the category expects and this table does not name
+is a hole, and holes are found by reading the list of teaching topics, not by waiting for
+someone to miss a function.
 
 ## Where we stand
 
@@ -144,11 +99,12 @@ order* is still owed; only the dialogs are not.
 | Window: ribbon, palette, sheet, status, theme, transport | done |
 | Editing: place, move, delete, undo/redo, connect port to port | done |
 | Editing: select/delete and re-route a pipe, T junctions | done |
+| Editing: multi-selection with move, copy, turn, reflect and delete | done |
 | Editing: circuit check (5 of the 9 faults, each with a place to point at) | done |
 | Editing: editable properties of a placed component | partial: the numbers the model uses; the remaining fields are in the ledger |
 | The sheet is the circuit the solver runs | done: network built from the document |
 | Instruments and state-change runs | partial: run until a change and a pressure gauge; flow, force and the strip chart are not started |
-| Saving and opening a circuit | not started (F4) |
+| Saving and opening a circuit | done: versioned sheet format, atomic write, save as, open from the command line |
 | Teaching material, electrical/digital/GRAFCET libraries | not started |
 
 ## Phases
@@ -160,16 +116,15 @@ that proves it. The order is by *what makes the product usable*, not by what is 
 
 A circuit can be drawn without a workaround.
 
-- Select and delete a pipe; re-route one by dragging it.
-- Drop a pipe on another pipe and get a T junction.
 - The properties panel edits what the definition file allows: name, summary, conductance,
   spring/actuation on a valve, stroke and bore on a cylinder — and writes it back.
-- **Check the circuit** before running, with the reference's own list of faults as the
-  requirement: an object outside the sheet, a pipe crossing a component, overlapping pipes,
-  overlapping components, a pipe whose ends do not fit, an open pneumatic connection, two
-  cylinders with one designation, a label that does not match, a pipe through an unrelated
-  circuit. Each fault is a variant of one error enum, has a test, and is shown where it
-  happens — not in a dialog the user has to map back onto the drawing.
+- **Check the circuit** before running, with the nine faults a teaching simulator is
+  expected to find: an object outside the sheet, a pipe crossing a component, overlapping
+  pipes, overlapping components, a pipe whose ends do not fit, an open pneumatic
+  connection, two cylinders with one designation, a label that does not match, a pipe
+  through an unrelated circuit. Each fault is a variant of one error enum, has a test, and
+  is shown where it happens — not in a dialog the user has to map back onto the drawing.
+- Equal spacing between the marked objects, and the four remaining alignments.
 - Evidence: one test per fault, a capture of the drawing with two faults marked, and an
   undo/redo test over a pipe edit.
 
@@ -185,7 +140,7 @@ A circuit can be drawn without a workaround.
 ### F3 — Instruments and runs
 
 - Manometer, flow meter, force meter and a strip chart, as catalog entries with readings.
-- Run until state change, as the reference does, plus the transport already built.
+- Run until state change, with the transport already built.
 - Evidence: a gauge within 0.1 % of the status bar, a 60 s chart that drops old samples
   without growing, and no allocation in the loop.
 
@@ -198,8 +153,7 @@ A circuit can be drawn without a workaround.
 
 ### F5 — Output
 
-- Parts list from the document, printed with the sheet.
-- The title block legend the reference has; export already exists for PNG and PDF.
+- Parts list from the document, printed with the sheet, and the title-block legend.
 - Interchange: SVG first (it is a standard and readable), DXF later and only if asked.
 - Evidence: a parts list whose counts match the document, and a PDF that opens with the
   legend and no host name.
@@ -216,25 +170,47 @@ A circuit can be drawn without a workaround.
 
 - Our own example circuits, authored for this project, with the reasoning written down.
 - A presentation mode: a sequence of steps over one document.
-- Evidence: every example opens, runs and passes the F1 check; no angle, sentence or file
-  derived from the reference's material.
+- Evidence: every example opens, runs and passes the F1 check; nothing in it derived from
+  another program's material.
 
 ### F8 — 1.0
 
 - i18n complete, AppImage and Flatpak, signed release, user guide, and the reproducibility
   the changelog already promises.
 
-## Rules that do not bend while replicating
+## Decision log
 
-1. **The base is the floor, and improving it is the goal.** First the same observable
-   behaviour, then a recorded decision per capability: keep it as the base has it and say
-   why, or do it better and prove it. A replacement that does less is not a replacement; a
-   difference that is only taste is not an improvement.
-2. **Behaviour, never content.** A symbol is drawn by hand against ISO 1219-1 and reviewed;
-   an example circuit is authored here.
+One entry per capability, newest first: why it exists, how it behaves, what we have, the
+gap, and the test that proves the gap closed. The behaviour is written as a sentence a user
+would say, in our own words. The first four fields are the gate to start; the evidence is
+the gate to call it done.
+
+| Phase | Capability | Purpose and behaviour | We have | Gap | Evidence |
+|---|---|---|---|---|---|
+| F1 | Line a selection up on the component furthest out | Aligning several objects drags them until they reach the one already at that margin, so a row of symbols ends up flush without the user measuring anything. | four buttons — left, right, top, bottom — that move each marked placement so its box edge meets the furthest one; the whole alignment is one change, so one undo puts the circuit back; the box used is the turned one, so an alignment is not thrown off by a symbol on its side | eight alignments, and equal spacing between objects | `aligning_moves_everything_onto_the_object_already_at_that_edge`, the ABI test `lining_up_the_selection_moves_it_onto_the_component_furthest_out`, and the `--selftest` steps `alinear: los bordes izquierdos coinciden` and `alinear: un deshacer lo devuelve` |
+| F1 | Select several components and edit them together | A student moves, copies, turns or deletes a block of the schematic as one thing, and one undo takes the gesture back. A click selects one; a band selects what it covers; the editing commands apply to everything marked. | the selection is a set in the session; a click replaces it, Shift+click toggles one, the band and Ctrl+E mark several, and the last one marked is the one the properties form opens on. Move, copy, turn, reflect and delete are each one change. Shift+drag copies, told apart from Shift+click by whether the pointer moved | the pipe is not part of a multi-selection, and a copy does not carry the pipes between components | `moving_a_selection_is_one_drag_and_one_undo`, `removing_and_copying_a_selection_are_one_change_each`, `turning_a_selection_keeps_the_mirror_of_each_component`, the ABI test `a_selection_of_several_components_moves_copies_and_goes_away_as_one_change`, and the `--selftest` selection steps |
+| F1 | Turn and reflect the selection | Symbols are drawn in one orientation and have to be turned or mirrored to read as a real schematic, without redrawing the geometry. | a placement stores its quarter turns and its mirror; `Alt+R` and `Alt+M` are the keyboard path, and the ribbon carries both buttons. The symbol is turned by mapping every drawing call about the centre of its box, so a direction is not a second copy of the geometry, and the port numerals stay upright. Pipes follow the ports. A turn is one entry in the history | groups do not exist yet, so a reflection is about the symbol's own axis; text stays upright on purpose | `a_quarter_turn_moves_the_right_edge_to_the_bottom`, `four_quarter_turns_are_the_symbol_as_it_was_drawn`, `an_arc_turns_with_the_symbol_and_is_reversed_by_the_mirror`, `a_turn_is_one_undo_entry_and_four_of_them_are_the_symbol_as_it_was`, the ABI test `a_turned_component_puts_its_ports_where_the_symbol_is_drawn`, and the `--selftest` turn and reflection steps |
+| F1 | Copy, paste and duplicate a component | Repeating a symbol is the most common edit in a schematic; it must keep the per-instance values and cost one undo. | Ctrl+C copies the selected placement, Ctrl+V pastes it ten millimetres away, Ctrl+D duplicates it, and Shift+drag copies the component under the pointer and drags the copy; the copy keeps the catalog id, the box and the values, gets a new identity and is one undo | copying several components at once with the pipes between them; needs multi-selection on pipes | `a_duplicate_keeps_the_values_gets_a_new_identity_and_one_undo_removes_it`, the ABI test `copy_paste_and_duplicate_are_one_change_each`, and the paste, duplicate and Shift+drag `--selftest` steps |
+| F1 | Editable properties of a placed component | Two cylinders of the same catalog entry are rarely the same cylinder: the student edits the stroke or the bore of one instance and the model follows. | a panel on the sheet, not a dialog: per-instance overrides of supply pressure, valve/throttle conductance, cylinder stroke, bore, rod and moving mass; Apply is one undo entry, the model is rebuilt from the document, and a rod that is not smaller than the bore is refused | name and summary, actuation/spring, starting piston position, mounting angle, internal leakage and damping | `editing_a_placement_is_one_undoable_change`, the ABI tests `a_cylinder_edit_changes_the_model_and_is_one_undo` and `a_supply_pressure_edit_reaches_the_gas`, and the `--selftest` step that edits the stroke, sees the model change and undoes it |
+| F1 | Re-route a hose by dragging a segment | A route that crosses a symbol has to be corrected without deleting the hose and losing the connection. | pressing a hose selects it; dragging a segment moves that segment and its bends, and both ends stay on their ports; the route is stored with the pipe and one drag is one undo | nodes along a diagonal are not constrained to 45° | `re_routing_a_hose_keeps_both_ends_on_their_ports`, and the `--selftest` steps `edición: arrastrar el segmento reencamina el tubo` and `edición: un deshacer devuelve el recorrido` |
+| F1 | T junctions | Two hoses that meet need a junction, and making the user place one by hand is the step that ruins a first schematic. | dropping a hose on another hose splits the second and inserts a junction at the drop point; one undo removes the junction and restores the single hose | a junction has three ports; a four-way node is not offered | `a_hose_dropped_on_another_hose_makes_a_junction`, and the `--selftest` steps `T: hay un conducto donde soltar`, `T: la unión aparece en el sitio del soltado`, `T: el tubo se parte en dos y llega el tercero` and `T: un solo deshacer deshace la unión entera` |
+| F1 | Check the circuit before running | Most faults are visible before anything moves: an object off the sheet, two symbols on top of each other, a hose through a component, an open port. Reporting them where they are saves the student the guess. | 5 of 9 faults, each drawn where it happens rather than listed in a dialog: outside the sheet, overlapping components, a hose crossing a component, overlapping hoses, and a pneumatic port with nothing attached | the four that need designations or the electrical library | `crates/punchi-fluid-check` one test per fault, plus the capture of a sheet with two faults marked |
+| F2 | The sheet is the network the solver runs | The circuit the student draws is the one that is simulated, with no separate model to keep in step. | the solver builds volumes and restrictions from the document; a 5/2 valve that exists only as a file drives a double-acting cylinder; the junction and the throttle are part of the graph | components whose behaviour is still fixed in the demo model | `the_gas_that_entered_is_the_gas_the_network_holds`, `a_five_port_valve_file_drives_a_double_acting_cylinder`, and the ABI circuit test |
+| F2 | Hoses coloured by pressure while running | Pressure has to be readable on the sheet, not only in the status bar. | each hose takes the pressure of its port and is drawn in the matching ink; at atmosphere it keeps the neutral ink | a legend of the ink scale | `hoses_take_the_pressure_of_their_port`, and the capture of a running sheet |
+| F3 | Pressure gauge | A student needs to read a value at a point in the circuit, as they would with a real instrument. | `gauge.pressure`, a file with `behaviour = "gauge"`, a scale in the file and one working port; the network gives the port a node and adds no physics; the dial is the file's symbol and the reading is drawn from the port pressure | a moving needle; the number is drawn, not the needle angle | `a_gauge_reads_its_port_and_adds_nothing_to_the_physics`, the ABI test `a_pressure_gauge_reads_the_line_it_is_connected_to`, and `assets/symbols/review/gauge.pressure.md` |
+| F3 | Run until state change | Watching a stroke finish at 60 fps teaches less than stopping where something changed. | a **Hasta cambio** command: it enters simulation, advances until the first piston reaches an end or any valve changes position, leaves the transport paused there, and gives up after a bounded number of steps | relays and switches, which need F6 | the `--selftest` steps `transporte: hasta cambio se detiene`, `transporte: se detiene en el tope` and `transporte: queda en pausa` |
+| F4 | Save and open a circuit | Work that cannot be saved is a demo, not a tool. | a versioned sheet format with atomic write and bounded parsing; Nuevo, Abrir, Guardar, Guardar como with Ctrl+N/O/S/Shift+S; `--save` and `--open` from the command line | autosave, recent documents, a warning when closing unsaved work | the format tests, the ABI round trip, and the `--selftest` steps `documento: se guarda`, `documento: se abre`, `vuelven los mismos componentes` and `vuelven los mismos tubos` |
+
+## Rules that do not bend
+
+1. **Cover first, improve second, and say which.** A capability is not done at `covered`
+   without its keep-or-improve decision, and an improvement that is only taste is not an
+   improvement.
+2. **Behaviour is ours to describe; content is never taken.** A symbol is drawn by hand
+   against ISO 1219-1 and reviewed; an example circuit is authored here.
 3. **A capability is done when it is proven**, in the sense of
    [.agents/skills/rust-testing-and-verification](../.agents/skills/rust-testing-and-verification/SKILL.md).
-4. **Nothing is faked to look like the reference.** A pipe that does not carry air says so
-   until it does; a panel that cannot edit yet says where it will.
+4. **Nothing is faked to look finished.** A pipe that does not carry air says so until it
+   does; a panel that cannot edit yet says where it will.
 5. **Improve where it is cheap and honest**: a keyboard path for every action, a check that
    points at the fault, undo that never loses a drag, and a theme that follows the desktop.

@@ -2,15 +2,24 @@
 
 **English** | [Español](README.es.md)
 
-A desktop simulator for pneumatic and hydraulic circuits. The model, the format and the
-drawing are Rust; the window is Qt Quick.
-**Status: `0.1.0`, unreleased.** A vertical slice runs: supply, 3/2 valve and
-single-acting cylinder with real physics. The application shell is in place — ribbon,
-catalog sidebar, status bar and the desktop's own light or dark palette. The editor is
-not started.
+A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
+licence, no budget and no connection can draw a schematic, connect the ports, run the model
+and watch the actuators move. The model, the format and the drawing are Rust; the window is
+Qt Quick.
 
-Inspired by the workflow of Festo FluidSIM — draw the schematic, connect the ports,
-run the model, watch the actuators move — with no asset or code taken from it.
+**Status: `0.1.0`, unreleased.** A working vertical slice: draw and edit a circuit, connect
+port to port, save and open it, run the gas model, read the pressure on the hoses, and
+export the sheet to PNG or PDF.
+
+No account, no key, no network. GPL-3.0-or-later: download it, teach with it, change it,
+share it.
+
+**Who it is for:** vocational and engineering students, teachers building exercises, and any
+workshop that cannot justify a commercial licence. The tool that teaches the subject should
+not be the thing a student cannot afford.
+
+**What it is not:** a viewer, a course or a cloud service. No telemetry, no subscription, no
+"education edition" with the useful features removed.
 
 > **Continuing this project?** [docs/retomar.md](docs/retomar.md) (Spanish) is the
 > continuity note: current state, what was built step by step, how to verify it, the

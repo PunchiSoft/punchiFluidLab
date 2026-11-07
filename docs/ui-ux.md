@@ -180,7 +180,7 @@ schematic simulator lives by, and the one the reference tool uses:
   undo entry and the model is rebuilt from the document, so a larger cylinder in one
   circuit leaves the catalog alone. Name, summary, actuation/spring and the remaining
   cylinder parameters are still read-only; the ledger in
-  [reference-parity.md](reference-parity.md) names them.
+  [capabilities.md](capabilities.md) names them.
 
 - Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
   The grid is a *guide*, not a background pattern to be proud of.

@@ -6,6 +6,34 @@ publicación.
 
 ## Unreleased
 
+### Identidad propia y una puerta que prueba la ventana — 2026-11-07
+
+El proyecto se presentaba como reemplazo de otro programa: lo nombraba en `AGENTS.md`, en los
+dos README, en el plan de capacidades y en su skill, y el procedimiento de planificación
+dependía de una copia local de un manual y de una biblioteca ajenos, con su ruta, su
+inventario y frases literales, en un repositorio público.
+
+- **ADR 0009**: la autoridad es la norma —ISO 1219-1/2/3, ISO 6358, ISO 5598— y el objetivo
+  docente. Ningún producto, fabricante, manual, nombre de archivo ni inventario de terceros
+  aparece en un archivo rastreado. La regla de contenido se generaliza: ni símbolos, ni
+  capturas, ni circuitos de ejemplo, ni formato de archivo de otro programa.
+- **`docs/capabilities.md`** sustituye al plan de paridad: fases F1–F8, ledger con cinco
+  estados —`missing`, `partial`, `covered`, `improved`, `not planned`— y un registro de
+  decisiones escrito en nuestras palabras, sin citas ni recuentos ajenos.
+- **La skill `capability-plan`** sustituye a la de paridad: propósito escrito, evidencia y
+  mejora razonada. Ya no enseña a leer material externo; dice que el plan no puede depender
+  de algo que la comunidad no puede abrir.
+- **`check-docs.sh`** pasa a fallar si vuelve un término prohibido, y comprueba que la lista
+  de crates de `Cargo.toml` coincide con lo que declaran `AGENTS.md`, los dos README y la
+  skill de arquitectura.
+- **La cadena de herramientas está fijada** (`rust-toolchain.toml` con una versión, y CI
+  leyéndola): main se puso en rojo porque CI instalaba `stable` y la máquina validaba con
+  otra versión.
+- **La ventana se prueba en CI**: un job instala Qt y el tema de iconos, construye la
+  aplicación y la conduce sin pantalla con `--check-qml`, `--check-theme`, `--check-icons` y
+  `--selftest`. El salto silencioso de `check.sh` es fatal con `PUNCHI_REQUIRE_UI=1`.
+- **tiny-skia 0.12** entra sin cambios de código: la suite de exportación pasa entera.
+
 ### Alinear la selección — 2026-11-12
 
 Con la selección múltiple ya se podía mover un grupo, pero no colocarlo: el manual pide
@@ -363,22 +391,23 @@ Rust seguían en verde.
   llamaba a `selfTest()`, así que el indicador era decorativo. Ahora ejecuta todos los
   comandos de la cinta e informa `qml problems: N` con el código de salida correspondiente.
 
-### La referencia se estudia antes de replicarla — 2026-11-06
+### Una puerta antes de programar — 2026-11-06
 
-Faltaba el paso entre «leer la referencia» y «programar», y ahora es una puerta:
-[.agents/skills/reference-parity](.agents/skills/reference-parity/SKILL.md) fija el
-procedimiento y [docs/reference-parity.md](docs/reference-parity.md) guarda la prueba de
-que se siguió.
+Faltaba el paso entre «decidir qué hace falta» y «programar», y ahora es una puerta: la
+skill de planificación fija el procedimiento y [docs/capabilities.md](docs/capabilities.md)
+guarda la prueba de que se siguió.
 
-- **Ninguna capacidad empieza sin su observación escrita**: qué hace la referencia, visto
-  dónde y cuándo, qué tenemos, qué falta y qué prueba lo cerrará. La lista de fases dice
-  qué construir; el registro de estudio dice qué se observó. Una fila sin observación
-  bloquea la capacidad, y el registro ya tiene la primera.
-- **Qué se lee y qué no**: el manual `doc/fl_sim_p.pdf` para el significado, las 210
-  definiciones de `sym/` para el inventario de funciones y los 533 circuitos de `dida/`
-  para el comportamiento. Nada se copia: ni un `.ct` se parsea, ni una página del manual
-  se pega, ni una captura de la referencia entra en `assets/`; su carpeta es de solo
-  lectura y queda fuera del repositorio.
+> Sustituido el 2026-11-07 por [ADR 0009](docs/adr/0009-identity-and-standards.md): el
+> proyecto se describe por su misión y por las normas, ningún producto de terceros se nombra
+> y ningún material ajeno entra en el repositorio.
+
+- **Ninguna capacidad empieza sin su propósito y su prueba escritos**: qué tiene que poder
+  hacer un estudiante, cómo se comporta, qué tenemos, qué falta y qué test lo cerrará. La
+  lista de fases dice qué construir; el registro dice qué se decidió. Una fila sin propósito
+  bloquea la capacidad.
+- **Qué se lee y qué no**: la norma (ISO 1219, ISO 6358, ISO 5598) y nuestro objetivo
+  docente. Nada de otro programa entra aquí: ni símbolos, ni capturas, ni páginas de manual,
+  ni formato de archivo, ni una copia local descrita en el repositorio.
 - **Dónde aterriza cada cosa**: una tabla capa por capa —definición, documento,
   comprobación, física, dibujo, exportación, interfaz— con la prueba que la demuestra, para
   que «replicar» no acabe en un `match` sobre el id de una válvula.

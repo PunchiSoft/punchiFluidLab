@@ -83,9 +83,10 @@ the sizes `docs/ui-ux.md` asks for, and frame cost with 200 components.
   `QSGGeometry`, and the `Surface` impl is the only thing that changes.
 - **Qt 6 under GPLv3.** The project is GPL-3.0-or-later, so the licence is compatible at
   no cost; a future relicensing to a permissive licence would not be.
-- **The reference is still not a fork.** Qt makes it easier to imitate FluidSIM's look;
-  the symbols stay hand-drawn against ISO 1219-1 and the reference binary stays a
-  source of *behaviour* only.
+- **The drawing is still not a copy.** Qt makes it easier to imitate another program's
+  look; the symbols stay hand-drawn against ISO 1219-1 and no other binary is anything but
+  a description of behaviour, in our own words
+  ([ADR 0009](0009-identity-and-standards.md)).
 
 ## What would reverse this
 
