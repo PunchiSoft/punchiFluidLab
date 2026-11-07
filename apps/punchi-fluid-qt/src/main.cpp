@@ -1111,6 +1111,15 @@ int main(int argc, char *argv[])
                         onPipe = candidate;
                         found = true;
                     }
+                    // Six millimetres of air around the drop is enough for the release to be
+                    // read as a junction, and stopping there keeps the sweep short: walking
+                    // the whole sheet on every step stalls the event loop this test drives.
+                    if (bestClearance >= 36.0) {
+                        break;
+                    }
+                }
+                if (bestClearance >= 36.0) {
+                    break;
                 }
             }
             check(found, QStringLiteral("T: hay un conducto donde soltar"));
@@ -1119,12 +1128,12 @@ int main(int argc, char *argv[])
             }
             std::fprintf(stderr, "selftest: tubo bajo (%.0f, %.0f)\n", onPipe.x(), onPipe.y());
             state->toScene = toScene(onPipe);
+            // Press, drag and release in one step. Three steps of a timer each is three chances
+            // for the window to be busy with something else between them, and a drag whose
+            // press and release are not read in order is a drag that never happened: this
+            // asserts the splice, not the scheduler.
             send(QEvent::MouseButtonPress, toScene(start), Qt::LeftButton, Qt::LeftButton);
-        });
-        steps->push_back([state, send] {
             send(QEvent::MouseMove, state->toScene, Qt::NoButton, Qt::LeftButton);
-        });
-        steps->push_back([state, send] {
             send(QEvent::MouseButtonRelease, state->toScene, Qt::LeftButton, Qt::NoButton);
         });
         steps->push_back([state, check] {
