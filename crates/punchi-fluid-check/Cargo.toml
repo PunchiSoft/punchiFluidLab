@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+publish = false
 description = "Design checks: the faults a circuit can have before it is run"
 
 [dependencies]
