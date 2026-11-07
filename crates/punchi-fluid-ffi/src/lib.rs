@@ -860,6 +860,11 @@ impl PfSession {
                     .zip(system.as_ref())
                     .and_then(|(part, network)| network.valve_position_at(part))
                     .unwrap_or(0),
+                reading: gauge_reading(
+                    catalog.get(placement.catalog_id.as_str()),
+                    placement_part.get(index).copied().flatten(),
+                    system.as_ref(),
+                ),
             })
             .collect();
         let pipes: Vec<Pipe<'_>> = document
@@ -1650,6 +1655,10 @@ pub unsafe extern "C" fn pf_session_describe_component(
                 let _ = writeln!(text, "Vástago: {rod_mm:.1} mm");
                 let _ = writeln!(text, "Masa móvil: {moving_mass_kg:.2} kg");
             }
+            Behaviour::Gauge { min_bar, max_bar } => {
+                let _ = writeln!(text, "Escala: {min_bar:.1} … {max_bar:.1} bar");
+                text.push_str("Lee la presión del puerto al que se conecta\n");
+            }
             Behaviour::Throttle { conductance } => {
                 let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
             }
@@ -2392,7 +2401,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
                 set.stroke_mm = *stroke_mm;
                 set.moving_mass_kg = *moving_mass_kg;
             }
-            Behaviour::Junction => {}
+            Behaviour::Gauge { .. } | Behaviour::Junction => {}
         }
         // SAFETY: the caller promised a writable structure.
         unsafe { out.write(set) };
@@ -2685,7 +2694,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
                 *moving_mass_kg = value;
             }
         }
-        Behaviour::Junction => {}
+        Behaviour::Gauge { .. } | Behaviour::Junction => {}
     }
 }
 
@@ -2709,6 +2718,25 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
         }),
         _ => None,
     }
+}
+
+/// What a gauge at this placement reads, in gauge bar, if it is one.
+fn gauge_reading(
+    definition: Option<&punchi_fluid_catalog::ComponentDefinition>,
+    part: Option<usize>,
+    network: Option<&Network>,
+) -> Option<f32> {
+    let definition = definition?;
+    let punchi_fluid_catalog::Behaviour::Gauge { .. } = definition.behaviour else {
+        return None;
+    };
+    let network = network?;
+    let part = part?;
+    let id = definition.port.first()?;
+    let pressure = network.port_pressure(part, &id.id)?;
+    #[allow(clippy::cast_possible_truncation)]
+    let reading = ((pressure - network.atmosphere_pa()) / 1e5) as f32;
+    Some(reading)
 }
 
 /// Pressure in a hose as a fraction of the supply span, for the drawing.

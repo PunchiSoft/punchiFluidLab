@@ -51,6 +51,8 @@ pub struct Placed<'a> {
     pub extension: f32,
     /// Active position of a valve, `0` for anything that is not one.
     pub valve_position: usize,
+    /// Reading of an instrument, in the unit its definition declares, if it has one.
+    pub reading: Option<f32>,
 }
 
 /// Draws the sheet.
@@ -110,6 +112,22 @@ pub fn draw_placed(
             placed.extension,
             ink,
         );
+        // A reading is text, not a primitive of the symbol: the dial is the file's and
+        // the number is the model's.
+        if let Some(reading) = placed.reading {
+            let at = Pt::new(
+                placed.rect.center().x,
+                placed.rect.min.y + placed.rect.height() * 0.72,
+            );
+            symbol::haloed_text(
+                surface,
+                at,
+                &format!("{reading:.1} bar"),
+                symbol::NUMERAL * 1.1,
+                ink.text,
+                ink.background,
+            );
+        }
     }
 
     if let Some((system, layout)) = circuit {

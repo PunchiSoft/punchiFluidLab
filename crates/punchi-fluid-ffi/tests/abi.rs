@@ -730,6 +730,78 @@ fn a_supply_pressure_edit_reaches_the_gas() {
 }
 
 #[test]
+fn a_pressure_gauge_reads_the_line_it_is_connected_to() {
+    let session = session();
+    let gauge = catalog_index(session, "gauge.pressure");
+    // SAFETY: live session.
+    let gauge_index = unsafe { pf_session_place_component(session, gauge, 160.0, 100.0) };
+    assert!(gauge_index >= 0);
+    let gauge_index = u32::try_from(gauge_index).unwrap_or_default();
+    let working = CString::new("2").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    // The gauge hangs from the valve's working line, beside the cylinder.
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_connect(session, 1, working.as_ptr(), gauge_index, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    for _ in 0..60 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+
+    let mut frame = PfFrame::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        PF_OK
+    );
+    // SAFETY: the slices were produced by the call above and the session is alive.
+    let (calls, text) = unsafe {
+        (
+            std::slice::from_raw_parts(frame.calls, frame.calls_len as usize),
+            std::slice::from_raw_parts(frame.text, frame.text_len as usize),
+        )
+    };
+    let field = |at: u32, len: u32| -> &[u8] {
+        let start = at as usize;
+        let end = start + len as usize;
+        text.get(start..end).unwrap_or_default()
+    };
+    // The gauge is 22 × 22 mm at (160, 100): its reading sits inside that box.
+    let inside = |call: &PfCall| {
+        call.rect[0] > 149.0 && call.rect[0] < 171.0 && call.rect[1] > 89.0 && call.rect[1] < 111.0
+    };
+    let mut reading = String::new();
+    for call in calls
+        .iter()
+        .filter(|call| call.kind == PF_KIND_TEXT && inside(call))
+    {
+        let text = String::from_utf8_lossy(field(call.text_at, call.text_len)).into_owned();
+        if text.ends_with(" bar") {
+            reading = text;
+            break;
+        }
+    }
+    assert!(
+        !reading.is_empty(),
+        "the gauge has no reading among the {} text calls in the frame",
+        calls
+            .iter()
+            .filter(|call| call.kind == PF_KIND_TEXT)
+            .count()
+    );
+    let value: f32 = reading.trim_end_matches(" bar").parse().unwrap_or_default();
+    assert!(
+        (1.0..=10.0).contains(&value),
+        "the gauge reads `{reading}`, not a pressure on its 0..10 bar scale"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
 fn copy_paste_and_duplicate_are_one_change_each() {
     let session = session();
     let before = unsafe { pf_session_component_count(session) };

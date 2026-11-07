@@ -97,6 +97,8 @@ pub enum PartBehaviour {
     },
     /// Single-acting cylinder with a return spring.
     Cylinder(Cylinder),
+    /// Pressure gauge: a passive port that adds nothing to the physics.
+    Gauge,
     /// Fixed restriction between two ports.
     Throttle {
         /// Sonic conductance, `m³ / (s · Pa)`.
@@ -169,6 +171,7 @@ impl NetworkPart {
             Behaviour::Cylinder { .. } => {
                 PartBehaviour::Cylinder(Cylinder::from_definition(definition)?)
             }
+            Behaviour::Gauge { .. } => PartBehaviour::Gauge,
             Behaviour::Throttle { conductance } => PartBehaviour::Throttle {
                 conductance: *conductance,
             },
@@ -1234,6 +1237,45 @@ mod tests {
         }
         let stroke = network.cylinder().expect("a cylinder").stroke;
         assert!(network.position() >= stroke - 1e-6);
+    }
+
+    #[test]
+    fn a_gauge_reads_its_port_and_adds_nothing_to_the_physics() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.workshop"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "gauge.pressure"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes).expect("the gauge builds");
+        network.press_valve();
+        for _ in 0..60 {
+            network.advance(0.016).expect("accepted");
+        }
+        let reading = network
+            .port_pressure(3, "1")
+            .expect("the gauge port is in the model");
+        let line = network
+            .port_pressure(1, "2")
+            .expect("the valve's working port is in the model");
+        assert!(
+            (reading - line).abs() / line < 0.01,
+            "the gauge reads {:.3} bar and the working line {:.3} bar",
+            (reading - network.atmosphere_pa()) / 1e5,
+            (line - network.atmosphere_pa()) / 1e5
+        );
+        let stroke = network.cylinder().expect("a cylinder").stroke;
+        assert!(
+            network.position() > stroke * 0.5,
+            "the gauge changed the circuit: the rod only reached {:.1} mm",
+            network.position() * 1000.0
+        );
     }
 
     #[test]

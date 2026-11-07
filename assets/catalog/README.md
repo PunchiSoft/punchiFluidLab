@@ -149,6 +149,13 @@ conductance = 5.0e-10        # sonic conductance C, m³ / (s · Pa)
 
 ```toml
 [behaviour]
+type = "gauge"
+min_bar = 0.0                # lowest pressure on the dial, gauge bar
+max_bar = 10.0               # highest pressure on the dial, gauge bar
+```
+
+```toml
+[behaviour]
 type = "cylinder"
 bore_mm = 20.0
 rod_mm = 0.0                 # rod diameter; 0 when the return chamber has the full bore

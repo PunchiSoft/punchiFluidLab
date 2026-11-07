@@ -473,6 +473,14 @@ pub enum Behaviour {
         /// Coulomb friction, `N`.
         friction: f64,
     },
+    /// Pressure gauge: a passive port that shows the pressure at that point.
+    Gauge {
+        /// Lowest pressure on the dial, gauge bar.
+        #[serde(default)]
+        min_bar: f64,
+        /// Highest pressure on the dial, gauge bar.
+        max_bar: f64,
+    },
     /// Fixed restriction.
     Throttle {
         /// Sonic conductance, `m³ / (s · Pa)`.
@@ -494,6 +502,7 @@ impl Behaviour {
             Self::Supply { .. } => "supply",
             Self::Valve { .. } => "valve",
             Self::Cylinder { .. } => "cylinder",
+            Self::Gauge { .. } => "gauge",
             Self::Throttle { .. } => "throttle",
             Self::Junction => "junction",
         }

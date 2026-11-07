@@ -151,6 +151,27 @@ marca de copia.
 - **Lo que falta de §4.2** —copiar varias a la vez con sus tubos, alinear y distribuir—
   necesita selección múltiple; está anotado en [docs/reference-parity.md](docs/reference-parity.md).
 
+### Un manómetro que lee su puerto — 2026-11-06
+
+El primer instrumento de F3, y el primero que no es una pieza de circuito sino una
+medida.
+
+- **`gauge.pressure`** es un archivo con `behaviour = "gauge"`, una escala declarada
+  (0–10 bar) y un solo puerto de trabajo. La decisión está en
+  [ADR 0008](docs/adr/0008-a-gauge-is-a-behaviour.md): una variante de comportamiento y no
+  una etiqueta que el dibujo pega al lado de cualquier componente.
+- **No cambia la física**: la red le da al puerto un nodo como a cualquier otro y no
+  añade volumen, restricción ni fuerza; el manómetro lee `port_pressure` y el número se
+  dibuja sobre la esfera. Un circuito con manómetro simula igual que sin él (lo exige la
+  prueba).
+- **La esfera es del archivo y el número del modelo**: la aguja, el cubo y el vástago son
+  primitivas con su clase de línea; la lectura es texto, para que una escala de 0–60 bar
+  sea otro archivo y no otra rama.
+- **Probado** en el solver (lee la misma presión que la línea de trabajo y el vástago
+  sigue moviéndose), en el ABI (se coloca, se conecta, se acciona la válvula y el marco
+  contiene la lectura dentro de la caja del manómetro) y con su revisión de símbolo y
+  capturas claro/oscuro.
+
 ### El lienzo vuelve a responder al ratón — 2026-11-06
 
 El diagnóstico que faltaba era el más simple y lo delataba el propio dibujo: el elemento del

@@ -38,6 +38,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "junction.tee",
         include_str!("../../../assets/symbols/review/junction.tee.md"),
     ),
+    (
+        "gauge.pressure",
+        include_str!("../../../assets/symbols/review/gauge.pressure.md"),
+    ),
 ];
 
 /// Review text of one definition.

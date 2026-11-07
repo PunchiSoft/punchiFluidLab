@@ -29,6 +29,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/cylinder.double_acting_32_200.toml"),
     ),
     (
+        "gauge.pressure.toml",
+        include_str!("../../../assets/catalog/gauge.pressure.toml"),
+    ),
+    (
         "throttle.fixed.toml",
         include_str!("../../../assets/catalog/throttle.fixed.toml"),
     ),

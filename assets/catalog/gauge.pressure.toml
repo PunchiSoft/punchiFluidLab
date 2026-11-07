@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Pressure gauge, 0–10 bar.
+#
+# One working port at the bottom, a dial and a needle. The gauge adds nothing to the
+# physics: it reads the pressure at the port it is connected to, and the number is drawn
+# from the model, never stored in this file.
+#
+# The scale is a file value, so a 0–60 bar gauge is another file and not another branch
+# of code (ADR 0008).
+
+schema = 3
+id = "gauge.pressure"
+name = "Pressure gauge"
+name_es = "Manómetro"
+category = "sensor"
+summary = "Shows the pressure at the port it is connected to."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.5, 1.0]
+
+[behaviour]
+type = "gauge"
+min_bar = 0.0
+max_bar = 10.0
+
+# Dial, needle, hub and stem. The reading is text and comes from the simulation.
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.5, 0.30]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.5, 0.34, 0.30]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.5, 0.035]
+filled = true
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.80, 0.5, 1.0]
+line_class = "working"

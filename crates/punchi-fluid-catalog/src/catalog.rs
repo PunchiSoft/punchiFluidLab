@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 
 use crate::error::CatalogError;
 use crate::schema::{
-    Behaviour, Category, ComponentDefinition, Origin, Primitive, PrimitiveKind, SCHEMA_MIN,
-    SCHEMA_VERSION,
+    Behaviour, Category, ComponentDefinition, Origin, PortRole, Primitive, PrimitiveKind,
+    SCHEMA_MIN, SCHEMA_VERSION,
 };
 
 /// Every definition this build can use, indexed by identifier.
@@ -166,6 +166,16 @@ impl Catalog {
 fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     check_identity(definition, path)?;
     check_ports(definition, path)?;
+    if matches!(definition.behaviour, Behaviour::Gauge { .. }) {
+        let working = definition
+            .port
+            .iter()
+            .filter(|port| port.role == PortRole::Working)
+            .count();
+        if working != 1 {
+            return Err(invalid(path, "a gauge needs exactly one working port"));
+        }
+    }
 
     for primitive in &definition.symbol {
         check_primitive(primitive).map_err(|reason| invalid(path, &reason))?;
@@ -177,6 +187,15 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
         Behaviour::Supply { pressure_bar } => {
             if !pressure_bar.is_finite() || *pressure_bar <= 0.0 {
                 return Err(invalid(path, "supply pressure must be positive"));
+            }
+            Ok(())
+        }
+        Behaviour::Gauge { min_bar, max_bar } => {
+            if !min_bar.is_finite() || !max_bar.is_finite() || *max_bar <= *min_bar {
+                return Err(invalid(
+                    path,
+                    "gauge scale needs finite bounds with max_bar above min_bar",
+                ));
             }
             Ok(())
         }
