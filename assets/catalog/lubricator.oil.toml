@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Oil lubricator: adds an oil mist to the air so the moving parts are lubricated.
+#
+# The diamond with the flow crossing it from vertex to vertex: the same square turned 45° as
+# the filter, because the element sits in the stream the same way. What tells the two apart is
+# the **dashed element** of the filter — the lubricator has none, because nothing is filtered
+# here; oil is added.
+
+schema = 3
+id = "lubricator.oil"
+name = "Oil lubricator"
+name_es = "Unidad de lubricación de aceite"
+category = "accessory"
+summary = "Adds an oil mist to the air to lubricate the moving parts."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+[behaviour]
+type = "throttle"
+conductance = 3.0e-9
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.5, 0.28, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.5, 0.94, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.06, 0.5, 0.045]
+
+[[symbol]]
+kind = "circle"
+points = [0.94, 0.5, 0.045]

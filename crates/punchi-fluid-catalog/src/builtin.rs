@@ -9,8 +9,32 @@
 /// Name and contents of every built-in definition file.
 pub const FILES: &[(&str, &str)] = &[
     (
-        "supply.workshop.toml",
-        include_str!("../../../assets/catalog/supply.workshop.toml"),
+        "supply.compressor.toml",
+        include_str!("../../../assets/catalog/supply.compressor.toml"),
+    ),
+    (
+        "supply.network.toml",
+        include_str!("../../../assets/catalog/supply.network.toml"),
+    ),
+    (
+        "preparation.service_unit.toml",
+        include_str!("../../../assets/catalog/preparation.service_unit.toml"),
+    ),
+    (
+        "preparation.service_unit_simple.toml",
+        include_str!("../../../assets/catalog/preparation.service_unit_simple.toml"),
+    ),
+    (
+        "filter.air.toml",
+        include_str!("../../../assets/catalog/filter.air.toml"),
+    ),
+    (
+        "filter.air_manual_drain.toml",
+        include_str!("../../../assets/catalog/filter.air_manual_drain.toml"),
+    ),
+    (
+        "lubricator.oil.toml",
+        include_str!("../../../assets/catalog/lubricator.oil.toml"),
     ),
     (
         "valve.3_2.spring_return.toml",

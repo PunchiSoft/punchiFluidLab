@@ -1209,10 +1209,17 @@ impl PfSession {
         let Some(layout) = punchi_fluid_draw::layout(area) else {
             return;
         };
+        // The unit is seeded last on purpose: the order of this list is the index the ABI
+        // hands out, and the worked example's first three are the ones the front end has
+        // always addressed. Where a component sits comes from the layout, not from here.
         let seeded: Vec<punchi_fluid_doc::Placement> = [
             (punchi_fluid_draw::schematic::SUPPLY_ID, layout.supply),
             (punchi_fluid_draw::schematic::VALVE_ID, layout.valve),
             (punchi_fluid_draw::schematic::CYLINDER_ID, layout.cylinder),
+            (
+                punchi_fluid_draw::schematic::PREPARATION_ID,
+                layout.preparation,
+            ),
         ]
         .into_iter()
         .map(|(id, rect)| {
@@ -1228,8 +1235,14 @@ impl PfSession {
         // The starting circuit is drawn with its hoses. Three pieces and no pipe does not
         // read as a circuit, and the checker would report two open pneumatic connections on
         // a sheet that is meant to be the worked example.
+        // The compressor feeds the service unit and the unit feeds the valve: an air line
+        // without the unit is wet air at a pressure nobody set.
         self.connect_seeded(
             (punchi_fluid_draw::schematic::SUPPLY_ID, "1"),
+            (punchi_fluid_draw::schematic::PREPARATION_ID, "1"),
+        );
+        self.connect_seeded(
+            (punchi_fluid_draw::schematic::PREPARATION_ID, "2"),
             (punchi_fluid_draw::schematic::VALVE_ID, "1"),
         );
         self.connect_seeded(
@@ -3467,7 +3480,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
     }
 }
 
-/// The fixed-composition boxes, when the document still holds those three components.
+/// The fixed-composition boxes, when the document still holds those four components.
 fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
     let find = |wanted: &str| {
         placed
@@ -3477,11 +3490,13 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
     };
     match (
         find(punchi_fluid_draw::schematic::SUPPLY_ID),
+        find(punchi_fluid_draw::schematic::PREPARATION_ID),
         find(punchi_fluid_draw::schematic::VALVE_ID),
         find(punchi_fluid_draw::schematic::CYLINDER_ID),
     ) {
-        (Some(supply), Some(valve), Some(cylinder)) => Some(Layout {
+        (Some(supply), Some(preparation), Some(valve), Some(cylinder)) => Some(Layout {
             supply,
+            preparation,
             valve,
             cylinder,
         }),

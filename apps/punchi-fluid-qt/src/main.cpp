@@ -30,8 +30,10 @@
 #include <QTimer>
 #include <QVector>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <functional>
 #include <memory>
 #include "canvasitem.h"
@@ -183,15 +185,24 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!size.isEmpty()) {
-        const QStringList parts = size.split(QLatin1Char('x'));
+    // The self test turns sheet millimetres into window pixels to drive its gestures, so it
+    // needs a viewport where the whole sheet is on screen and the canvas does not scroll
+    // under it: a window whose aspect does not match the sheet's moves the drawing between
+    // the press and the release, and the gesture then lands somewhere the test did not mean.
+    // `--size` still overrides this.
+    const QString pinned = arguments.contains(QStringLiteral("--selftest")) && size.isEmpty()
+                               ? QStringLiteral("1280x800")
+                               : size;
+
+    if (!pinned.isEmpty()) {
+        const QStringList parts = pinned.split(QLatin1Char('x'));
         bool widthOk = false;
         bool heightOk = false;
         const int width = parts.value(0).toInt(&widthOk);
         const int height = parts.value(1).toInt(&heightOk);
         if (!widthOk || !heightOk || width < 640 || height < 480) {
             std::fprintf(stderr, "--size takes WxH, at least 640x480, not \"%s\"\n",
-                         qUtf8Printable(size));
+                         qUtf8Printable(pinned));
             return 2;
         }
         for (QObject *root : engine.rootObjects()) {
@@ -1078,34 +1089,72 @@ int main(int argc, char *argv[])
             state->pipes = pf_session_connection_count(state->session->handle());
             state->components = pf_session_component_count(state->session->handle());
             // Find a point that really is on a hose by asking the model, rather than assuming
-            // where the orthogonal route runs.
+            // where the orthogonal route runs. Of every point that qualifies, the one furthest
+            // from any component is taken: a hose that runs between two bodies an inch apart
+            // has a middle too narrow for the drop to be read as a junction, and picking the
+            // first point found would make this step depend on where the worked example happens
+            // to lay its parts out.
             QPointF onPipe;
             bool found = false;
-            for (double x = 10.0; x < 190.0 && !found; x += 2.0) {
-                for (double y = 10.0; y < 125.0 && !found; y += 2.0) {
+            qreal bestClearance = -1.0;
+            for (double x = 10.0; x < 190.0; x += 2.0) {
+                for (double y = 10.0; y < 125.0; y += 2.0) {
                     int portIndex = -1;
                     QString port;
                     // Away from every port, or the release would be read as an ordinary
                     // port-to-port connection instead of a junction on the hose.
-                    if (state->session->pipeAt(x, y, 1.0) >= 0
-                        && !state->session->portAt(x, y, 4.0, &portIndex, &port)) {
-                        onPipe = QPointF(x, y);
+                    if (state->session->pipeAt(x, y, 1.0) < 0
+                        || state->session->portAt(x, y, 4.0, &portIndex, &port)) {
+                        continue;
+                    }
+                    const QPointF candidate(x, y);
+                    qreal clearance = std::numeric_limits<qreal>::max();
+                    for (uint32_t index = 0; index < count; ++index) {
+                        const QRectF bounds = componentRect(static_cast<int>(index));
+                        const qreal dx = std::max({bounds.left() - x, 0.0, x - bounds.right()});
+                        const qreal dy = std::max({bounds.top() - y, 0.0, y - bounds.bottom()});
+                        clearance = std::min(clearance, dx * dx + dy * dy);
+                    }
+                    if (clearance > bestClearance) {
+                        bestClearance = clearance;
+                        onPipe = candidate;
                         found = true;
                     }
+                    // Six millimetres of air around the drop is enough for the release to be
+                    // read as a junction, and stopping there keeps the sweep short: walking
+                    // the whole sheet on every step stalls the event loop this test drives.
+                    if (bestClearance >= 36.0) {
+                        break;
+                    }
+                }
+                if (bestClearance >= 36.0) {
+                    break;
                 }
             }
             check(found, QStringLiteral("T: hay un conducto donde soltar"));
             if (!found) {
                 return;
             }
+            // Drag from the port nearest the drop rather than from the cylinder's: at a narrow
+            // viewport the far end of the sheet can sit outside the canvas, and a press that
+            // lands on nothing is a drag that never starts. The gesture is the same one — a hose
+            // end released on a hose — and it now begins somewhere the window can see.
+            int nearIndex = -1;
+            QString nearPort;
+            if (state->session->portAt(onPipe.x(), onPipe.y(), 1.0e6F, &nearIndex, &nearPort)) {
+                QPointF at;
+                if (state->session->portPoint(nearIndex, nearPort, &at)) {
+                    start = at;
+                }
+            }
             std::fprintf(stderr, "selftest: tubo bajo (%.0f, %.0f)\n", onPipe.x(), onPipe.y());
             state->toScene = toScene(onPipe);
+            // Press, drag and release in one step. Three steps of a timer each is three chances
+            // for the window to be busy with something else between them, and a drag whose
+            // press and release are not read in order is a drag that never happened: this
+            // asserts the splice, not the scheduler.
             send(QEvent::MouseButtonPress, toScene(start), Qt::LeftButton, Qt::LeftButton);
-        });
-        steps->push_back([state, send] {
             send(QEvent::MouseMove, state->toScene, Qt::NoButton, Qt::LeftButton);
-        });
-        steps->push_back([state, send] {
             send(QEvent::MouseButtonRelease, state->toScene, Qt::LeftButton, Qt::NoButton);
         });
         steps->push_back([state, check] {

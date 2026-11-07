@@ -29,7 +29,10 @@ const MAX_INTERNAL_SUBSTEP: f64 = 2e-6;
 const MAX_SUBSTEPS_PER_CALL: u32 = 500_000;
 
 /// Identifier of the supply used by [`PneumaticSystem::from_catalog`].
-pub const DEFAULT_SUPPLY: &str = "supply.workshop";
+pub const DEFAULT_SUPPLY: &str = "supply.compressor";
+
+/// Identifier of the service unit the worked example puts after the compressor.
+pub const DEFAULT_PREPARATION: &str = "preparation.service_unit";
 
 /// Identifier of the valve used by [`PneumaticSystem::from_catalog`].
 pub const DEFAULT_VALVE: &str = "valve.3_2.spring_return";

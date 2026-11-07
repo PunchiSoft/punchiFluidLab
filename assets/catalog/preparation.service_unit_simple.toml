@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Service unit, simplified: the compact form a schematic uses when the unit is not the point.
+#
+# One rounded body with the dashed line that marks the element, the dial of the regulator
+# inside it, and the drain arrow leaving the bottom. The full form
+# (`preparation.service_unit`) is for the sheet that explains the unit; this one is for the
+# circuit that uses it, and the two are the same device drawn at two levels of detail.
+#
+# The dashed line and the dial are not decoration: they are the only two marks that say this
+# body filters and regulates, so a plain rectangle is not this symbol.
+
+schema = 3
+id = "preparation.service_unit_simple"
+name = "Service unit, simplified"
+name_es = "Unidad de mantenimiento simplificada"
+category = "accessory"
+summary = "The compact form of the service unit."
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+[behaviour]
+type = "throttle"
+conductance = 5.0e-9
+
+[[symbol]]
+kind = "rect"
+points = [0.14, 0.34, 0.72, 0.32]
+
+# The element.
+[[symbol]]
+kind = "line"
+points = [0.28, 0.34, 0.28, 0.66]
+line_class = "drain"
+
+# The regulator's dial, inside the body.
+[[symbol]]
+kind = "circle"
+points = [0.60, 0.50, 0.115]
+
+[[symbol]]
+kind = "line"
+points = [0.545, 0.555, 0.660, 0.445]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.5, 0.14, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.86, 0.5, 0.94, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.06, 0.5, 0.045]
+
+[[symbol]]
+kind = "circle"
+points = [0.94, 0.5, 0.045]
+
+# The drain, as an arrow: it is the one part of the unit that goes somewhere else.
+[[symbol]]
+kind = "line"
+points = [0.32, 0.66, 0.32, 0.80]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.32, 0.86, 0.285, 0.79, 0.355, 0.79]
+filled = true

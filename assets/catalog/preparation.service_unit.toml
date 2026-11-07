@@ -1,0 +1,148 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Service unit: filter, regulator and lubricator in one body.
+#
+# The air a compressor delivers is wet and its pressure wanders, so it is not what a
+# cylinder can use. The service unit is the block that makes it usable, and it sits between
+# the compressor and the first valve, never after it: what comes out of the unit is the
+# line pressure the rest of the circuit is designed around.
+#
+# The symbol box is **square** and the drawing is laid out in it as a horizontal band, so the
+# normalised coordinates map to the same number of millimetres on both axes. Every closed
+# shape here is a square turned 45° or an upright square, so the proportions are the shape's
+# and not an accident of the box.
+#
+# The parts, in the order the air meets them:
+#
+# - The **filter**, the diamond the flow crosses from vertex to vertex, with its element as
+#   the dashed line on the vertical diagonal.
+# - The **regulator**, a square because it is a valve, with the two facing arrows inside and
+#   its setting spring on top. The spring carries the **diagonal arrow** that says the setting
+#   is adjustable, which is what tells a regulator from a fixed restrictor.
+# - Its **dial**, a gauge: a circle with the needle across it, on a stem that taps the line
+#   after the regulator. The gauge belongs to the regulator — it is what shows the setting —
+#   and it taps the line rather than sitting inside the body.
+#
+# The functions share one body, so they are grouped by a **dashed frame**: a dashed boundary
+# is the standard's way of saying "these parts are one unit", and it is not a device of its
+# own. Every connection point is the small open circle the reference set uses.
+
+schema = 3
+id = "preparation.service_unit"
+name = "Service unit (FRL)"
+name_es = "Unidad de mantenimiento (FRL)"
+category = "accessory"
+summary = "Filters, regulates and lubricates the air before it enters the circuit."
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+# A service unit drops a little pressure and nothing else: the conductance is high on
+# purpose, so the model does not pretend the unit is a restriction the designer chose.
+[behaviour]
+type = "throttle"
+conductance = 5.0e-9
+
+# The working line, in the pieces between the parts it joins: it stops at the filter's left
+# vertex and resumes at its right one, and it does not cross the regulator's square, because
+# what is drawn inside those shapes is their own symbol and not the line.
+[[symbol]]
+kind = "line"
+points = [0.06, 0.5, 0.12, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.40, 0.5, 0.44, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.68, 0.5, 0.94, 0.5]
+line_class = "working"
+
+# The dashed frame: the functions are one body.
+[[symbol]]
+kind = "polyline"
+points = [0.06, 0.12, 0.94, 0.12, 0.94, 0.88, 0.06, 0.88, 0.06, 0.12]
+line_class = "drain"
+
+# The two connection points.
+[[symbol]]
+kind = "circle"
+points = [0.06, 0.5, 0.045]
+
+[[symbol]]
+kind = "circle"
+points = [0.94, 0.5, 0.045]
+
+# The filter: a square turned 45°, its element dashed on the vertical diagonal.
+[[symbol]]
+kind = "polygon"
+points = [0.26, 0.36, 0.40, 0.50, 0.26, 0.64, 0.12, 0.50]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.26, 0.36, 0.26, 0.64]
+line_class = "drain"
+
+# The regulator: an upright square, with the two facing arrows inside it.
+[[symbol]]
+kind = "rect"
+points = [0.44, 0.38, 0.24, 0.24]
+
+[[symbol]]
+kind = "line"
+points = [0.50, 0.50, 0.62, 0.50]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.47, 0.50, 0.52, 0.472, 0.52, 0.528]
+filled = true
+
+[[symbol]]
+kind = "polygon"
+points = [0.65, 0.50, 0.60, 0.472, 0.60, 0.528]
+filled = true
+
+# Its setting spring, on top of the square.
+[[symbol]]
+kind = "polyline"
+points = [0.56, 0.38, 0.53, 0.35, 0.59, 0.32, 0.53, 0.29, 0.59, 0.26, 0.53, 0.23, 0.56, 0.21]
+line_class = "working"
+
+# The diagonal arrow of an adjustable setting.
+[[symbol]]
+kind = "line"
+points = [0.47, 0.35, 0.68, 0.18]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.700, 0.163, 0.648, 0.175, 0.675, 0.210]
+filled = true
+
+# Its dial: a gauge on a stem from the line, after the regulator.
+[[symbol]]
+kind = "line"
+points = [0.80, 0.50, 0.80, 0.36]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.80, 0.27, 0.09]
+
+[[symbol]]
+kind = "line"
+points = [0.736, 0.334, 0.864, 0.206]
+line_class = "working"

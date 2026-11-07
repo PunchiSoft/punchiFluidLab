@@ -78,6 +78,43 @@ itself is the responsibility of whoever adds or reviews a symbol.
   each class with its own pattern; a definition declares which class a line belongs
   to instead of picking a random dash pattern.
 
+### The air line
+
+The source and the parts that condition the air are a set, and a reader recognises them by
+shape alone. Every one of them is a **square turned 45°** or an upright square, drawn from the
+requirement and never traced, and every connection point is the small open circle of the
+reference set so that a hose is visibly meant to arrive there.
+
+| Symbol | Shape, and what carries the meaning |
+|---|---|
+| Compressed-air **network** | The bare **outline triangle** on a stem: the air arrives from the plant and the machine that makes it is drawn elsewhere |
+| **Compressor** | The same triangle inside a **circle**, its delivery leaving the bottom through a stem that ends in a connection circle |
+| **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
+| **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal** and the **drain stem** leaving the bottom vertex. Without the stem it is a filter, not a separator with a drain |
+| **Oil lubricator** | The same diamond and **no dashed element**: nothing is filtered here, oil is added. The absent element is the difference |
+| **Service unit, full** | A **dashed frame** around the three functions, in the order the air meets them: the filter diamond, the regulator as an **upright square with the two facing arrows** inside and its setting **spring on top**, and the regulator's **dial** as a gauge on a stem that taps the line after it. The spring carries a **diagonal arrow**, which is what says the setting is adjustable |
+| **Service unit, simplified** | One body with the **dashed element line** and the **dial** inside it, and the **drain leaving the bottom** as an arrow. A plain rectangle is not this symbol |
+
+Rules that hold for all of them:
+
+- **The box is square.** The drawing is laid out as a horizontal band inside a square symbol
+  box, so the normalised coordinates map to the same number of millimetres on both axes. A
+  diamond drawn in a box that is wider than it is tall comes out stretched, and a stretched
+  symbol is not the symbol. The cylinder is the one exception, because its barrel is a
+  rectangle and a rectangle stays a rectangle.
+- **A square stays a square.** The regulator's body is drawn as an upright square of equal
+  sides, and the filter and the lubricator as squares turned 45°: four equal sides, diagonals
+  meeting at the centre. The proportions are the shape's, not an accident of the box.
+- **The line stops at the symbol.** A working line is not drawn through the inside of a
+  diamond or a square: what is inside those shapes is their own symbol, and a line across it
+  reads as two overlapping drawings.
+- **The air reaches the circuit through the conditioning parts**, in the order source, unit,
+  valve — never the unit after the valve, because what leaves the unit is the line pressure the
+  rest of the circuit is designed around.
+- **A two-port part conducts.** A filter, a lubricator, a restrictor or a service unit is part
+  of the circuit, so the model has an edge between its ports with the conductance its file
+  declares. A part that is drawn but not modelled is a dead end with a symbol on it.
+
 ### Actuator glyphs
 
 Each actuation is a glyph drawn outside the body at the declared end, at a size
