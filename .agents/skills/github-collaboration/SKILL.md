@@ -13,9 +13,15 @@ actually fail.
 ## The route first
 
 Nothing is committed on `main`: the change travels on a branch created from updated
-`main` and lands as a pull request. The branch, the base check, the gate and the merge
-are [pull-request-workflow](../pull-request-workflow/SKILL.md); this skill is what the
-commit and the pull request must say once they exist.
+`main` and lands as a pull request. The branch, the base check, the gate and the
+hand-over are [pull-request-workflow](../pull-request-workflow/SKILL.md); this skill is
+what the commit and the pull request must say once they exist.
+
+**The merge is the project owner's, not the agent's.** The agent opens the pull request,
+answers the review and leaves it open; it never merges into `main`, never approves its
+own pull request, never enables auto-merge and never uses an admin override — whatever
+token scope or role the session holds. A request to merge is answered with the pull
+request URL so the owner can do it.
 
 ## Commits
 
@@ -53,6 +59,9 @@ git commit -s -m "fix(catalog): reject a port outside the symbol box" -m "The lo
 
 ## Review
 
+- **Review is advisory for the agent.** It reports findings; it does not approve, does
+  not request changes on its own behalf and does not merge. The owner reads the review,
+  authorizes the change and merges it.
 - Block only on correctness, security, a broken contract, or a missing proof; style is
   rustfmt/clippy's job.
 - Ask for the failed test first. A behavioural test may not be deleted or weakened to
@@ -99,7 +108,9 @@ incident:
 
 ## Gotchas
 
-- **Do not merge with admin overrides** to beat a flaky job; fix or re-run the job.
+- **Do not merge, and do not enable auto-merge.** Not with an admin override, not to beat
+  a flaky job, not because the session was told to: the merge is the owner's. Fix or
+  re-run the job and hand the pull request back.
 - **Do not rewrite `main`.** Force-push is for your own branch before review only.
 - **Do not add a commit trailer or a licence header by hand** if a template or tool
   already does it; the diff should show the decision, not boilerplate churn.
@@ -113,7 +124,7 @@ incident:
 ```bash
 ./scripts-dev/check.sh
 gh pr checks
-gh pr view --json title,body,state,reviewDecision
+gh pr view --json title,body,state,reviewDecision   # state: OPEN, the owner merges
 gh release view vX.Y.Z
 ```
 
