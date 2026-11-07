@@ -18,6 +18,7 @@ skill is the bug.
 | [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) | budgets, allocation-free hot paths, bounded caches | solver step, draw loop, cache, profiling, budget changes |
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
+| [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, squash merge | starting any change; creating or switching a branch; committing, pushing, opening or merging a PR |
 | [github-actions-security](github-actions-security/SKILL.md) | workflow threat model and hardening | writing or reviewing `.github/workflows`; permissions, secrets, caches |
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
@@ -37,6 +38,10 @@ skill is the bug.
 6. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
    survive, and how to find the process when it cannot.
 
+Before the first edit of any change, read
+[pull-request-workflow](pull-request-workflow/SKILL.md): no work happens on `main`, and
+the branch, the gate and the pull request are one route.
+
 For a capability that does something a student needs — that is most of the product — read
 [capability-plan](capability-plan/SKILL.md) first: it is the gate that turns a need into a
 requirement, and it names the layer each capability lands in.
@@ -44,8 +49,8 @@ requirement, and it names the layer each capability lands in.
 For a symbol change, read [fluid-power-symbology](fluid-power-symbology/SKILL.md) before
 touching the file, and [solver-validation](solver-validation/SKILL.md) if the change also
 changes physics. Before opening the PR, read
-[github-collaboration](github-collaboration/SKILL.md); for a workflow change, also
-[github-actions-security](github-actions-security/SKILL.md).
+[github-collaboration](github-collaboration/SKILL.md) for what the body must claim; for a
+workflow change, also [github-actions-security](github-actions-security/SKILL.md).
 
 ## Where the guidance comes from
 

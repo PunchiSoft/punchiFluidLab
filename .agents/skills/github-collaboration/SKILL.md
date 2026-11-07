@@ -10,6 +10,13 @@ license: GPL-3.0-or-later
 contract. This skill is the order in which to do it and the places where reviews
 actually fail.
 
+## The route first
+
+Nothing is committed on `main`: the change travels on a branch created from updated
+`main` and lands as a pull request. The branch, the base check, the gate and the merge
+are [pull-request-workflow](../pull-request-workflow/SKILL.md); this skill is what the
+commit and the pull request must say once they exist.
+
 ## Commits
 
 - **Conventional Commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `perf:`,
