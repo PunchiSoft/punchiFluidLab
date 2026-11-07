@@ -108,11 +108,19 @@ In the window: **Play** runs the simulation, **Slower**/**Faster** change the sp
 starts again. `F1` lists every shortcut; `Ctrl+F` focuses the catalog search.
 
 **Export PDF** (`Ctrl+Shift+E`) or **Export PNG** (`Ctrl+Shift+P`) opens the export panel:
-format, resolution for PNG (72–600 dpi), paper from A5 to A2 plus Letter and Legal,
-orientation, margins, the identification block and the destination. The page carries the
-frame, the title block, a legend of line classes and port numerals, and — while any symbol
-review is open — the note that the symbols are not yet verified against ISO 1219-1. Two
-exports of the same circuit produce the same bytes.
+format, resolution for PNG (72–600 dpi), paper, orientation, margins, the identification
+block and the destination. The page carries the frame, the title block, a legend of line
+classes and port numerals, and — while any symbol review is open — the note that the symbols
+are not yet verified against ISO 1219-1. Two exports of the same circuit produce the same
+bytes.
+
+**The paper is a decision, not a default.** A drawing is printed on the sheet the drawing
+office uses, and that is not one size: ISO 216/5457 A4, A3, A2, A1 and A0 for the ISO world;
+US Letter and US Legal for the North American one; and **Oficio/Folio (216 × 330 mm)**, which
+is neither of the two and is the paper most Chilean offices still stock. The plan is
+[ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md). The export crate knows A4 and
+A3 today; the rest, and the window command that reaches it, are the open part of F5 — the
+export command is not in the window yet.
 
 Requirements: Rust stable (pinned in `rust-toolchain.toml`), Qt 6.5 or newer with Qt Quick,
 CMake and Ninja. The Rust core builds with `cargo build --release -p punchi-fluid-ffi`; the
@@ -186,6 +194,12 @@ A schematic that is *almost* conformant is worse than an obvious sketch: it gets
 as if it were correct. Diagram symbols follow **ISO 1219-1:2012**, in the conventions
 of ISO 1219-2:2012 and ISO 1219-3:2016; port numerals follow the fluid-power
 port-identification convention.
+
+The national adoption applies too: **NCh-ISO 1219**, the Chilean adoption of ISO 1219, is the
+text a reader in Chile is expected to follow, and a symbol is not called conformant here until
+the adoption that applies to its reader is confirmed in its review. Which adoptions are
+tracked, and what is still unverified, is the *National adoptions* table in
+[docs/symbology.md](docs/symbology.md).
 
 What that means in practice, and the review that enforces it, is in
 [docs/symbology.md](docs/symbology.md): equal squares per valve position, flow arrows
