@@ -43,6 +43,22 @@ Rectangle {
                         { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
                         { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") }
                     ]
+                },
+                {
+                    // The documents the program already knows, so a circuit reopened a
+                    // hundred times is one click away. The list is the core's; this only
+                    // shows it.
+                    title: qsTr("Recientes"),
+                    items: session.recent.length === 0
+                           ? [{ id: "recent-empty", label: qsTr("Ninguno"), icon: "document-open-recent", hint: qsTr("los archivos abiertos o guardados aparecen aquí"), enabled: false }]
+                           : session.recent.map(function (entry, index) {
+                                 return {
+                                     id: "recent:" + index,
+                                     label: entry.name,
+                                     icon: "document-open-recent",
+                                     hint: entry.path
+                                 };
+                             })
                 }
             ]
         },
@@ -138,6 +154,8 @@ Rectangle {
             session.rotateSelected(false);
         } else if (id === "mirror") {
             session.mirrorSelected();
+        } else if (id.indexOf("recent:") === 0) {
+            session.openRecent(parseInt(id.substring(7), 10));
         } else if (id === "align-left") {
             session.alignSelection(0);
         } else if (id === "align-right") {

@@ -236,6 +236,14 @@ int32_t pf_session_is_modified(const PfSession *session);
 int32_t pf_session_autosave(PfSession *session, const char *path);
 /* Opens an autosave copy; the document stays modified and has no path of its own. */
 int32_t pf_session_recover(PfSession *session, const char *path);
+/* The documents opened or saved recently. The front end names the file, the core keeps
+ * the list; an empty path at start turns the list off. */
+int32_t pf_session_set_recent_file(PfSession *session, const char *path);
+uint32_t pf_session_recent_count(const PfSession *session);
+int32_t pf_session_recent_path(const PfSession *session, uint32_t slot, char *out,
+                               uint32_t capacity);
+int32_t pf_session_open_recent(PfSession *session, uint32_t slot);
+int32_t pf_session_forget_recent(PfSession *session);
 
 /* The effective parameters of one placement; the mask says what it can edit. */
 int32_t pf_session_component_edits(const PfSession *session, uint32_t index, PfEditSet *out);

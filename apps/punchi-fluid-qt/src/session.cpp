@@ -16,6 +16,7 @@
 #include <QVariantMap>
 
 #include <string>
+#include <vector>
 
 namespace {
 /// Zoom limits and the step a button takes. The reference zooms by buttons and by the
@@ -44,8 +45,13 @@ FluidSession::FluidSession(QObject *parent)
         return;
     }
     m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    // The core does not choose a directory: the front end knows where the desktop keeps
+    // application data, and tells it once.
+    const QByteArray recent = recentPath().toUtf8();
+    pf_session_set_recent_file(m_session, recent.constData());
     readCatalog();
     loadTheme();
+    refreshRecent();
     // A safety copy left by a previous run is offered, never loaded on its own: the user
     // decides whether it is the work they lost or something they already saved.
     m_recoveryOffered = QFileInfo::exists(autosavePath());
@@ -604,6 +610,7 @@ bool FluidSession::saveTo(const QString &path)
     }
     m_currentPath = local;
     m_error.clear();
+    refreshRecent();
     refreshDocument();
     emit changed();
     return true;
@@ -625,6 +632,7 @@ bool FluidSession::openFrom(const QString &path)
     }
     m_currentPath = local;
     m_error.clear();
+    refreshRecent();
     m_selected = -1;
     m_editing = true;
     m_running = false;
@@ -649,6 +657,84 @@ QString FluidSession::title() const
     // tint alone would be invisible in a screenshot or to a colour-blind reader.
     return m_modified ? QStringLiteral("• %1 — Punchi Fluid Lab").arg(name)
                       : QStringLiteral("%1 — Punchi Fluid Lab").arg(name);
+}
+
+QString FluidSession::recentPath() const
+{
+    QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (directory.isEmpty()) {
+        directory = QDir::homePath();
+    }
+    return directory + QStringLiteral("/recent.json");
+}
+
+void FluidSession::refreshRecent()
+{
+    m_recent.clear();
+    if (!m_session) {
+        emit recentChanged();
+        return;
+    }
+    const uint32_t count = pf_session_recent_count(m_session);
+    for (uint32_t slot = 0; slot < count; ++slot) {
+        std::vector<char> buffer(4096, '\0');
+        const int32_t written = pf_session_recent_path(m_session, slot, buffer.data(),
+                                                       static_cast<uint32_t>(buffer.size()));
+        if (written <= 0) {
+            continue;
+        }
+        const QString path = QString::fromUtf8(buffer.data(), written);
+        QVariantMap entry;
+        entry.insert(QStringLiteral("path"), path);
+        entry.insert(QStringLiteral("name"), QFileInfo(path).fileName());
+        m_recent.append(entry);
+    }
+    emit recentChanged();
+}
+
+bool FluidSession::openRecent(int slot)
+{
+    if (!m_session || slot < 0) {
+        return false;
+    }
+    if (pf_session_open_recent(m_session, static_cast<uint32_t>(slot)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no se pudo abrir");
+        // A document that vanished is dropped from the list by the core, so the menu is
+        // refreshed even when the open fails.
+        refreshRecent();
+        emit changed();
+        return false;
+    }
+    // The path comes from the list, which is what the core just opened.
+    if (slot < m_recent.size()) {
+        m_currentPath = m_recent.at(slot).toMap().value(QStringLiteral("path")).toString();
+    }
+    m_error.clear();
+    m_selected = -1;
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    readCatalog();
+    refreshRecent();
+    refreshDocument();
+    refresh(true);
+    emit catalogChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return true;
+}
+
+void FluidSession::forgetRecent()
+{
+    if (!m_session) {
+        return;
+    }
+    pf_session_forget_recent(m_session);
+    refreshRecent();
 }
 
 QString FluidSession::autosavePath() const

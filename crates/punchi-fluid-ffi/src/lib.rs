@@ -51,6 +51,7 @@ use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, 
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Layout, Orientation, dashes};
+use punchi_fluid_file::recent::RecentList;
 use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
 use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
 use punchi_fluid_solver::pneumatic::Telemetry;
@@ -517,6 +518,13 @@ pub struct PfSession {
     /// the file" means, and it costs one comparison instead of a comparison of every field
     /// of every placement.
     saved_revision: Option<u64>,
+    /// Where the list of remembered documents lives, when the front end told us.
+    ///
+    /// The core does not choose a directory: a library that writes to a home it guessed is
+    /// a library that surprises the user. Without a path the list simply does not exist.
+    recent_path: Option<std::path::PathBuf>,
+    /// The remembered documents, newest first.
+    recent: RecentList,
     error: CString,
     width_mm: f32,
     height_mm: f32,
@@ -562,6 +570,8 @@ impl PfSession {
             selected_pipe: None,
             seeded: false,
             saved_revision: Some(0),
+            recent_path: None,
+            recent: RecentList::new(),
             error: CString::default(),
             width_mm: 200.0,
             height_mm: 130.0,
@@ -1129,6 +1139,20 @@ impl PfSession {
             }
         }
         best.map(|(_, index, port)| (index, port))
+    }
+
+    /// Adds a document to the list of remembered ones and writes the list.
+    ///
+    /// The write is best effort on purpose: failing to remember a file must not fail the
+    /// save the user asked for.
+    fn remember_recent(&mut self, path: &str) {
+        let Some(list_path) = self.recent_path.clone() else {
+            return;
+        };
+        if !self.recent.remember(path) {
+            return;
+        }
+        let _ = self.recent.write(&list_path);
     }
 
     /// `true` when the document holds work that is not in the file it came from.
@@ -2194,12 +2218,173 @@ pub unsafe extern "C" fn pf_session_save(session: *mut PfSession, path: *const c
         match session.to_sheet().write(std::path::Path::new(path)) {
             Ok(()) => {
                 session.saved_revision = Some(session.document.revision());
+                session.remember_recent(path);
                 PF_OK
             }
             // A save is not a model error, but the interface reads one channel; the
             // message lands there.
             Err(cause) => session.fail(&cause.to_string()),
         }
+    })
+}
+
+/// Tells the core where to keep the list of remembered documents.
+///
+/// Called once, at start, with a path the front end derived from the desktop's data
+/// directory. Passing an empty string turns the list off, which is what a test or a
+/// throwaway session wants: nothing is read and nothing is written.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_recent_file(
+    session: *mut PfSession,
+    path: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(path) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if path.is_empty() {
+            session.recent_path = None;
+            session.recent = RecentList::new();
+            return PF_OK;
+        }
+        if path.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        session.recent_path = Some(std::path::PathBuf::from(path));
+        // A list that cannot be read is an empty list: the menu loses its entries, the
+        // session starts.
+        session.recent = RecentList::read(std::path::Path::new(path)).unwrap_or_default();
+        PF_OK
+    })
+}
+
+/// How many documents the list remembers.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_recent_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| {
+        u32::try_from(session.recent.len()).unwrap_or(0)
+    })
+}
+
+/// The path of one remembered document, as NUL-terminated UTF-8.
+///
+/// Returns the length written, or a negative code. The front end derives the menu label
+/// from the path, so the two can never disagree.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_recent_path(
+    session: *const PfSession,
+    slot: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(entry) = session.recent.entries().get(slot as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = entry.path.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Opens one remembered document by its place in the list.
+///
+/// A document that vanished since the list was written is forgotten and reported, which
+/// also cleans the menu: the entries are the files that can still be opened.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_open_recent(session: *mut PfSession, slot: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(entry) = session.recent.entries().get(slot as usize).cloned() else {
+            return session.fail("that document is not in the list");
+        };
+        let sheet = match Sheet::read(std::path::Path::new(&entry.path)) {
+            Ok(sheet) => sheet,
+            Err(cause) => {
+                if std::path::Path::new(&entry.path).exists() {
+                    return session.fail(&cause.to_string());
+                }
+                session.recent.forget(&entry.path);
+                if let Some(list_path) = session.recent_path.clone() {
+                    let _ = session.recent.write(&list_path);
+                }
+                return session.fail("that document is no longer there");
+            }
+        };
+        match session.load(&sheet) {
+            Ok(()) => {
+                session.remember_recent(&entry.path);
+                session.error = CString::default();
+                PF_OK
+            }
+            Err(cause) => session.fail(&cause),
+        }
+    })
+}
+
+/// Forgets every remembered document.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_forget_recent(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.recent = RecentList::new();
+        if let Some(list_path) = session.recent_path.clone() {
+            if let Err(cause) = session.recent.write(&list_path) {
+                return session.fail(&cause.to_string());
+            }
+        }
+        PF_OK
     })
 }
 
@@ -2324,6 +2509,7 @@ pub unsafe extern "C" fn pf_session_open(session: *mut PfSession, path: *const c
         match session.load(&sheet) {
             Ok(()) => {
                 session.error = CString::default();
+                session.remember_recent(path);
                 PF_OK
             }
             Err(cause) => session.fail(&cause),
