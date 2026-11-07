@@ -41,8 +41,30 @@ Rectangle {
                         { id: "new", label: qsTr("Nuevo"), icon: "document-new", hint: qsTr("Ctrl+N · empieza otro circuito"), big: true },
                         { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un circuito"), big: true },
                         { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
-                        { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") }
+                        { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") },
+                        { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+E · el plano en la hoja que elijas, PDF o PNG"), big: true }
                     ]
+                },
+                {
+                    // The paper the sheet will be printed on. The list is the export's, so the
+                    // panel cannot offer a size the writer does not know; the one in use is
+                    // marked, because a list of nine without a mark is a guess.
+                    title: qsTr("Hoja"),
+                    items: session.paperNames().map(function (name, index) {
+                        return {
+                            id: "paper-" + index,
+                            label: name,
+                            icon: "x-office-document",
+                            hint: qsTr("exportar en %1").arg(name),
+                            current: window.exportPaper === index
+                        };
+                    }).concat([{
+                        id: "paper-landscape",
+                        label: qsTr("Apaisado"),
+                        icon: "object-rotate-right",
+                        hint: qsTr("la hoja girada; el dibujo es el mismo"),
+                        current: window.exportLandscape
+                    }])
                 },
                 {
                     // The documents the program already knows, so a circuit reopened a
@@ -134,9 +156,21 @@ Rectangle {
     implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
 
     function invoke(id) {
+        if (id.indexOf("paper-") === 0) {
+            const index = parseInt(id.slice(6), 10);
+            if (!isNaN(index)) {
+                window.exportPaper = index;
+            }
+            return;
+        }
+        if (id === "paper-landscape") {
+            window.exportLandscape = !window.exportLandscape;
+            return;
+        }
         if (id === "restart") {
             session.restart();
-        } else if (id === "new" || id === "open" || id === "save" || id === "save-as") {
+        } else if (id === "new" || id === "open" || id === "save" || id === "save-as"
+                   || id === "export") {
             ribbon.fileCommand(id);
         } else if (id === "check") {
             session.checkCircuit();

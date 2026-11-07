@@ -88,6 +88,27 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     "$app" --check-theme
     "$app" --check-icons
     "$app" --selftest
+
+    # The export prints the sheet the session holds, so it is proved on a real file: a PDF that
+    # starts with the header and carries the paper it was asked for, and a PNG with its own.
+    export_dir="$(mktemp -d)"
+    if ! "$app" --export "$export_dir/sheet.pdf" >/dev/null 2>&1; then
+        echo "ui gate: the sheet did not export as a PDF" >&2
+        exit 1
+    fi
+    head -c 5 "$export_dir/sheet.pdf" | grep -q '%PDF-' || {
+        echo "ui gate: the exported PDF has no header" >&2
+        exit 1
+    }
+    if ! "$app" --export "$export_dir/sheet-oficio.png" --paper 8 --landscape >/dev/null 2>&1; then
+        echo "ui gate: the sheet did not export as a raster on Oficio" >&2
+        exit 1
+    fi
+    head -c 8 "$export_dir/sheet-oficio.png" | od -An -c | grep -q '211   P   N   G' || {
+        echo "ui gate: the exported PNG has no header" >&2
+        exit 1
+    }
+    rm -rf "$export_dir"
 else
     if [[ ${PUNCHI_REQUIRE_UI:-0} == 1 ]]; then
         echo "ui gate: the window is required but apps/punchi-fluid-qt/build is not configured" >&2

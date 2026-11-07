@@ -61,7 +61,9 @@ Dependency direction: `core` is the base; `catalog` and `file` depend on it and 
 other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
 `core` and `solver`; `doc` on `draw`; `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
-`catalog`, `draw` and `solver`; `ffi` on all of the above; `cli` on `core`, `file` and
+`catalog`, `draw` and `solver`; `ffi` on all of the above, `export` included, because the
+window speaks only the ABI and the ABI is the one place that holds both the document and the
+page it is printed on; `cli` on `core`, `file` and
 `solver`. Nothing in Rust depends on the window, and the window depends only on
 `punchi-fluid-ffi`. A new dependency direction needs an ADR; the `Surface` layer that
 made `draw` and `export` possible is [ADR 0003](docs/adr/0003-one-drawing-two-devices.md),

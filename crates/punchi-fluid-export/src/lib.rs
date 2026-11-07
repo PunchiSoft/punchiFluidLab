@@ -16,7 +16,7 @@ pub mod sheet;
 use std::path::Path;
 
 use punchi_fluid_catalog::Catalog;
-use punchi_fluid_draw::{Ink, Pt, Rect};
+use punchi_fluid_draw::{Ink, Pt, Rect, Surface};
 use punchi_fluid_solver::network::Network;
 use thiserror::Error;
 
@@ -85,6 +85,55 @@ pub fn render_pdf(
     Ok(assemble(&surface))
 }
 
+/// Renders a page whose drawing is supplied by the caller.
+///
+/// The export knows about paper, frames, the block and the two writers; it does not know what
+/// is drawn on the sheet. A caller that has the document — the session, which holds the
+/// placements and the hose routes — passes a closure and gets the same frame and block around
+/// its own drawing, without the export having to learn what a document is and depend on it.
+///
+/// # Errors
+///
+/// Returns [`ExportError::PageTooLarge`] when the sheet exceeds the writer's limit and
+/// [`ExportError::EmptyContent`] when the margins leave no room.
+pub fn render_pdf_with(
+    page: &Page,
+    block: &TitleBlock,
+    draw: impl FnOnce(&mut dyn Surface, Rect),
+) -> Result<Vec<u8>, ExportError> {
+    let (width_mm, height_mm) = page.size_mm();
+    if width_mm * height_mm > pdf::MAX_PAGE_MM2 {
+        return Err(ExportError::PageTooLarge {
+            width_mm,
+            height_mm,
+        });
+    }
+    let inner = drawing_area(page, block)?;
+    let mut surface = PdfSurface::new(page.rect());
+    sheet::draw(&mut surface, page, block);
+    draw(&mut surface, inner);
+    Ok(assemble(&surface))
+}
+
+/// The same page, as a raster at `dpi`.
+///
+/// # Errors
+///
+/// [`ExportError::Refused`] when the resolution or the bitmap size is outside the budget, and
+/// [`ExportError::EmptyContent`] when the margins leave no room.
+pub fn render_png_with(
+    page: &Page,
+    block: &TitleBlock,
+    dpi: f32,
+    draw: impl FnOnce(&mut dyn Surface, Rect),
+) -> Result<Vec<u8>, ExportError> {
+    let inner = drawing_area(page, block)?;
+    let mut surface = png::PngSurface::new(page.rect(), dpi)?;
+    sheet::draw(&mut surface, page, block);
+    draw(&mut surface, inner);
+    surface.encode()
+}
+
 /// Renders the circuit as a PNG at `dpi`.
 ///
 /// # Errors
@@ -119,7 +168,10 @@ fn drawing_area(page: &Page, block: &TitleBlock) -> Result<Rect, ExportError> {
 }
 
 /// Ink for paper: black on white, whatever the screen is wearing.
-fn print_ink() -> Ink {
+///
+/// Public because a caller that draws its own page needs the same ink the fixed circuit uses.
+#[must_use]
+pub fn print_ink() -> Ink {
     let mut ink = Ink::print();
     ink.background = punchi_fluid_draw::Colour::WHITE;
     ink

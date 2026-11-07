@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QLocale>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -634,6 +635,56 @@ void FluidSession::applyPalette(const QPalette &palette)
         pf_session_set_ink(m_session, &ink);
     }
     emit changed();
+}
+
+bool FluidSession::exportTo(const QString &path, bool pdf, int paper, bool landscape,
+                            qreal dpi)
+{
+    if (!m_session || path.isEmpty()) {
+        return false;
+    }
+    const QUrl url(path);
+    const QString local = url.isLocalFile() ? url.toLocalFile() : path;
+    const QByteArray encoded = local.toUtf8();
+    const uint32_t kind = pdf ? PF_EXPORT_PDF : PF_EXPORT_PNG;
+    if (pf_session_export(m_session, encoded.constData(), kind,
+                          static_cast<uint32_t>(qMax(paper, 0)), landscape ? 1U : 0U,
+                          static_cast<float>(dpi))
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo exportar");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    emit changed();
+    return true;
+}
+
+QStringList FluidSession::paperNames()
+{
+    QStringList names;
+    const uint32_t count = pf_export_paper_count();
+    for (uint32_t index = 0; index < count; ++index) {
+        char label[64] = {};
+        if (pf_export_paper_name(index, label, sizeof label) == PF_OK) {
+            names.append(QString::fromUtf8(label));
+        }
+    }
+    return names;
+}
+
+int FluidSession::defaultPaper()
+{
+    // Oficio is the paper a reader in Chile has in the printer, and the one this project is
+    // developed against; elsewhere A4 is the safe answer. The panel lists both, so the default
+    // is a starting point and not a decision.
+    const bool chile = QLocale::system().territory() == QLocale::Chile;
+    const QString wanted = chile ? QStringLiteral("Oficio") : QStringLiteral("A4");
+    const QStringList names = paperNames();
+    const int at = names.indexOf(wanted);
+    return at < 0 ? 0 : at;
 }
 
 bool FluidSession::saveTo(const QString &path)

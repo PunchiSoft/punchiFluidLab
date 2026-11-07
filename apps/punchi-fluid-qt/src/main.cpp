@@ -255,6 +255,32 @@ int main(int argc, char *argv[])
         }
     }
 
+    const QString exportPath = value(QStringLiteral("--export"));
+    if (!exportPath.isEmpty()) {
+        const QString paperArg = value(QStringLiteral("--paper"));
+        const QString dpiArg = value(QStringLiteral("--dpi"));
+        bool exported = true;
+        for (FluidSession *session : sessions()) {
+            int paper = session->defaultPaper();
+            if (!paperArg.isEmpty()) {
+                bool ok = false;
+                paper = paperArg.toInt(&ok);
+                if (!ok || paper < 0 || paper >= session->paperNames().size()) {
+                    std::fprintf(stderr, "--paper takes an index the export offers\n");
+                    return 2;
+                }
+            }
+            const bool pdf = exportPath.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive);
+            const qreal dpi = dpiArg.isEmpty() ? 300.0 : dpiArg.toDouble();
+            exported = session->exportTo(exportPath, pdf, paper,
+                                         arguments.contains(QStringLiteral("--landscape")), dpi)
+                && exported;
+        }
+        std::fprintf(stderr, "%s: %s\n", exported ? "exported" : "export failed",
+                     qUtf8Printable(exportPath));
+        return exported ? 0 : 1;
+    }
+
     const QString savePath = value(QStringLiteral("--save"));
     if (!savePath.isEmpty()) {
         bool saved = true;
