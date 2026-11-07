@@ -17,7 +17,7 @@ use std::path::Path;
 
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_draw::{Ink, Pt, Rect};
-use punchi_fluid_solver::pneumatic::PneumaticSystem;
+use punchi_fluid_solver::network::Network;
 use thiserror::Error;
 
 pub use page::{Margins, Orientation, Page, PaperSize, TitleBlock};
@@ -66,7 +66,7 @@ pub enum ExportError {
 pub fn render_pdf(
     page: &Page,
     block: &TitleBlock,
-    system: &PneumaticSystem,
+    system: &Network,
     catalog: &Catalog,
 ) -> Result<Vec<u8>, ExportError> {
     let (width_mm, height_mm) = page.size_mm();
@@ -94,7 +94,7 @@ pub fn render_pdf(
 pub fn render_png(
     page: &Page,
     block: &TitleBlock,
-    system: &PneumaticSystem,
+    system: &Network,
     catalog: &Catalog,
     dpi: f32,
 ) -> Result<Vec<u8>, ExportError> {
@@ -135,7 +135,7 @@ pub fn write_pdf(
     path: &Path,
     page: &Page,
     block: &TitleBlock,
-    system: &PneumaticSystem,
+    system: &Network,
     catalog: &Catalog,
 ) -> Result<(), ExportError> {
     let bytes = render_pdf(page, block, system, catalog)?;
@@ -160,7 +160,7 @@ pub fn write_png(
     path: &Path,
     page: &Page,
     block: &TitleBlock,
-    system: &PneumaticSystem,
+    system: &Network,
     catalog: &Catalog,
     dpi: f32,
 ) -> Result<(), ExportError> {

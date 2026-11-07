@@ -8,10 +8,13 @@ of the project, what was done step by step, how to verify it, decisions taken, o
 questions and the exact prompt to continue in a new window.
 
 **Writing code? Start with [next-steps.md](next-steps.md):** where the project stands,
-what is built next, which files it touches and which tests prove it.
+what is built next, which files it touches and which tests prove it. Before a feature that
+replicates the reference, read [reference-parity.md](reference-parity.md): a capability
+starts only after its observation is written there.
 
 Reading order for someone new: [next-steps.md](next-steps.md) →
-[ui-ux.md](ui-ux.md) → [symbology.md](symbology.md) → [plan.md](plan.md) →
+[reference-parity.md](reference-parity.md) → [ui-ux.md](ui-ux.md) →
+[symbology.md](symbology.md) → [plan.md](plan.md) →
 [engineering.md](engineering.md), with the ADRs as reference.
 
 | Document | Purpose |
@@ -23,6 +26,7 @@ Reading order for someone new: [next-steps.md](next-steps.md) →
 | [ui-ux.md](ui-ux.md) | The interface: regions, theming, accessibility, what it refuses |
 | [symbology.md](symbology.md) | ISO 1219 conformance: requirements, renderer guarantees, review checklist |
 | [plan.md](plan.md) | Milestones with acceptance criteria and evidence |
+| [reference-parity.md](reference-parity.md) | What to replicate from the reference, in order, the study entry each capability needs, and what is never copied |
 | [engineering.md](engineering.md) | Modularisation, memory budget, security model, GitHub practices |
 | [../assets/catalog/README.md](../assets/catalog/README.md) | How to add, change or delete a component |
 | [../AGENTS.md](../AGENTS.md) | Rules for people and agents working in this repository |

@@ -1,0 +1,17 @@
+[package]
+name = "punchi-fluid-check"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Design checks: the faults a circuit can have before it is run"
+
+[dependencies]
+punchi-fluid-catalog = { workspace = true }
+punchi-fluid-doc = { workspace = true }
+punchi-fluid-draw = { workspace = true }
+
+[lints]
+workspace = true

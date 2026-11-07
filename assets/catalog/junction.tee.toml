@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# T junction: the point where three hoses meet.
+#
+# ISO 1219-1 draws a junction as a filled dot, and that is the whole symbol — no box,
+# no wedge, no lettering. It is a component rather than a document node because a
+# component is a file (ADR 0002), and this file is the cheapest way to keep the
+# document port-to-port (ADR 0006).
+#
+# The three ports sit on the same point on purpose: every hose that arrives here costs
+# the same, because there is nothing between them. The box is small so the dot lands on
+# the middle of the hoses it joins instead of pushing them apart.
+
+schema = 3
+id = "junction.tee"
+name = "T junction"
+name_es = "Unión en T"
+category = "accessory"
+summary = "Three hoses meet at one point."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.5, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.5, 0.5]
+
+[[port]]
+id = "3"
+role = "working"
+position = [0.5, 0.5]
+
+[behaviour]
+type = "junction"
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.5, 0.11]
+filled = true
+line_class = "working"

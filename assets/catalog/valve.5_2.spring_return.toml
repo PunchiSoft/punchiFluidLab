@@ -1,0 +1,99 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 5/2 directional valve, spring return, five ports and two positions.
+#
+# Ports: 1 is the supply, 2 and 4 are the working lines, 3 and 5 are the exhausts.
+# At rest the spring holds the spool so the supply feeds port 4 and port 2 vents; while
+# the lever is held the supply feeds port 2 and port 4 vents. A double-acting cylinder
+# connected 2 -> port 1 and 4 -> port 2 therefore retracts at rest and extends when the
+# lever is pressed.
+#
+# Nothing in this file draws the valve: `body` is split into one equal square per
+# position, the spring and the lever are declared parts, the stubs and numerals come
+# from the port table, and each position's arrow is its declared connection.
+
+schema = 3
+id = "valve.5_2.spring_return"
+name = "5/2 valve, spring return"
+name_es = "Válvula 5/2, retorno por muelle"
+category = "valve"
+summary = "Feeds one working line while the lever is held and vents the other."
+
+# Two squares of 0.44 side by side.
+body = [0.06, 0.28, 0.88, 0.44]
+
+[spring]
+side = "right"
+
+[actuator]
+kind = "lever"
+side = "left"
+
+# Ports are drawn once, at the rest square. Because every square is the same width, a
+# port keeps its offset inside the square it is read with: 4 and 5 on the left, 1 in the
+# middle, 2 and 3 on the right. That is what keeps the two exhaust paths at opposite
+# outer edges instead of stacking two lines on the shared edge between the squares.
+[[port]]
+id = "4"
+role = "working"
+position = [0.59, 0.0]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.85, 0.0]
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.72, 1.0]
+
+[[port]]
+id = "5"
+role = "exhaust"
+position = [0.59, 1.0]
+
+[[port]]
+id = "3"
+role = "exhaust"
+position = [0.85, 1.0]
+
+[behaviour]
+type = "valve"
+actuation = "momentary"
+spring_return = true
+default_position = 0
+
+# Position 0, rest: supply to 2, working 4 vented, exhaust 3 shut. This is the
+# direction the reference states for its 5/2 valve when the pilot signal is gone.
+[[behaviour.positions]]
+name = "rest"
+name_es = "reposo"
+blocked = ["3"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "2"
+conductance = 1.0e-9
+
+[[behaviour.positions.connection]]
+from = "4"
+to = "5"
+conductance = 1.0e-9
+
+# Position 1, actuated: supply to 4, working 2 vented, exhaust 5 shut.
+[[behaviour.positions]]
+name = "actuated"
+name_es = "accionada"
+blocked = ["5"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "4"
+conductance = 1.0e-9
+
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9

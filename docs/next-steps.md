@@ -18,10 +18,30 @@ file is the execution order.
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | 17 theme tests, 4 contrast tests, colour-literal scan, 10 UI tests, light/dark screenshots |
 | Export PNG/PDF | **implemented** — [plan.md](plan.md) M2 | 8 PDF acceptance tests + 5 raster tests: pixel sizes from the IHDR, empty margin band, determinism, refusal before allocating |
 | ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | 8 lint rules with a test each, 4 review files with light/dark screenshots, review-folder test; 300 dpi pending M2 |
-| Editor: document, undo, pipes | **specified only** — [plan.md](plan.md) M3/M4 | none |
+| Editor: document, undo, pipes, T, re-route, per-instance properties | **implemented** — [reference-parity.md](reference-parity.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
+| The sheet is the network the solver runs | **implemented** — [reference-parity.md](reference-parity.md) F2 | network tests, the 5/2 + double-acting ABI circuit, pipe colour |
+| Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | six format tests, ABI round trip, `--selftest` |
 
 The repository is initialised and the baseline is committed; the working tree is on
 `main` with the Qt front end merged in.
+
+## Order after 2026-11-06
+
+The milestone list below was written for the vertical slice; the capabilities are now
+tracked in [reference-parity.md](reference-parity.md), which is the source of truth. The
+order that follows from it:
+
+1. **F3 — instruments and runs**: a manometer, a flow meter, a force meter and a strip
+   chart as catalog entries with readings, plus *run until state change* (manual §3.2:
+   piston at an end, valve actuated, relay, switch).
+2. **F1 — the editing functions of §4.2** that are still missing: rotate/flip,
+   copy/paste/duplicate, multi-selection with align and distribute, pipe classes, blind
+   plugs and silencers.
+3. **F4 — documents**: autosave, recent documents, a warning when closing an unsaved
+   circuit, a project as a folder, and the designations that unlock three of the four
+   remaining check faults.
+4. **F5 — output**: parts list and title-block legend, then SVG.
+5. **F6 — libraries** beyond pneumatics, each with a `behaviour` variant and an ADR.
 
 ## Before the first line of code
 
@@ -50,8 +70,12 @@ cp assets/catalog/valve.3_2.spring_return.toml ~/.local/share/punchi-fluid-lab/c
 # edit the copy: same `id` replaces the built-in one
 ```
 
-The three rules that do not bend: the gate stays green without silencing warnings, a
-claim names its evidence level, and a symbol is not conformant until it is reviewed.
+The four rules that do not bend: the gate stays green without silencing warnings, a claim
+names its evidence level, a symbol is not conformant until it is reviewed, and a capability
+is not started until its observation of the reference is written in
+[reference-parity.md](reference-parity.md) — see the
+[skill](../.agents/skills/reference-parity/SKILL.md). The reference is the base: replicate
+it first, then improve it, and finish each capability with that decision written down.
 
 ## Order of work
 

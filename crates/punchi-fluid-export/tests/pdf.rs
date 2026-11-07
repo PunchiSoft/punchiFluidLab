@@ -10,11 +10,11 @@
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_draw::{Call, Ink, Pt, Recording, Rect};
 use punchi_fluid_export::{ExportError, TitleBlock, page::Page, pdf::PdfSurface, render_pdf};
-use punchi_fluid_solver::pneumatic::PneumaticSystem;
+use punchi_fluid_solver::network::Network;
 
-fn system() -> PneumaticSystem {
+fn system() -> Network {
     let catalog = Catalog::builtin();
-    PneumaticSystem::from_catalog(&catalog).expect("the built-in circuit starts")
+    Network::demo(&catalog).expect("the built-in circuit starts")
 }
 
 fn render(page: &Page, block: &TitleBlock) -> Vec<u8> {

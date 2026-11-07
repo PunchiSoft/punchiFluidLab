@@ -257,6 +257,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "punchi-fluid-check"
+version = "0.1.0"
+dependencies = [
+ "punchi-fluid-catalog",
+ "punchi-fluid-doc",
+ "punchi-fluid-draw",
+]
+
+[[package]]
 name = "punchi-fluid-cli"
 version = "0.1.0"
 dependencies = [
@@ -271,6 +280,13 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "punchi-fluid-doc"
+version = "0.1.0"
+dependencies = [
+ "punchi-fluid-draw",
 ]
 
 [[package]]
@@ -300,8 +316,12 @@ name = "punchi-fluid-ffi"
 version = "0.1.0"
 dependencies = [
  "punchi-fluid-catalog",
+ "punchi-fluid-check",
+ "punchi-fluid-doc",
  "punchi-fluid-draw",
+ "punchi-fluid-file",
  "punchi-fluid-solver",
+ "tempfile",
 ]
 
 [[package]]
@@ -311,6 +331,7 @@ dependencies = [
  "punchi-fluid-core",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
 ]
 

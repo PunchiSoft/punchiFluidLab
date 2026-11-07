@@ -3,6 +3,8 @@ resolver = "3"
 members = [
     "crates/punchi-fluid-core",
     "crates/punchi-fluid-draw",
+    "crates/punchi-fluid-doc",
+    "crates/punchi-fluid-check",
     "crates/punchi-fluid-export",
     "crates/punchi-fluid-file",
     "crates/punchi-fluid-catalog",
@@ -26,6 +28,8 @@ punchi-fluid-file = { path = "crates/punchi-fluid-file" }
 punchi-fluid-catalog = { path = "crates/punchi-fluid-catalog" }
 punchi-fluid-solver = { path = "crates/punchi-fluid-solver" }
 punchi-fluid-draw = { path = "crates/punchi-fluid-draw" }
+punchi-fluid-doc = { path = "crates/punchi-fluid-doc" }
+punchi-fluid-check = { path = "crates/punchi-fluid-check" }
 punchi-fluid-export = { path = "crates/punchi-fluid-export" }
 punchi-fluid-ffi = { path = "crates/punchi-fluid-ffi" }
 

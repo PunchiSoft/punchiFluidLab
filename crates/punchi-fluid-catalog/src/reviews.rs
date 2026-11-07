@@ -30,6 +30,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "valve.3_2.spring_return",
         include_str!("../../../assets/symbols/review/valve.3_2.spring_return.md"),
     ),
+    (
+        "valve.5_2.spring_return",
+        include_str!("../../../assets/symbols/review/valve.5_2.spring_return.md"),
+    ),
+    (
+        "junction.tee",
+        include_str!("../../../assets/symbols/review/junction.tee.md"),
+    ),
 ];
 
 /// Review text of one definition.

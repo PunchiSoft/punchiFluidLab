@@ -15,9 +15,12 @@ Rectangle {
     id: ribbon
     property FluidSession session
 
+    /// The Archivo commands that need a file dialog, which belongs to the window.
+    signal fileCommand(string command)
+
     /// Below this width a ribbon is worse than a menu, so it folds away.
     readonly property bool collapsed: width < 1100
-    property int current: 3
+    property int current: 1
     property bool menuOpen: false
 
     color: session.background
@@ -31,15 +34,63 @@ Rectangle {
     readonly property var tabs: [
         {
             name: qsTr("Archivo"),
-            groups: [{ title: qsTr("Documento"), note: qsTr("Guardar, abrir y exportar llegan en M3") }]
+            groups: [
+                {
+                    title: qsTr("Documento"),
+                    items: [
+                        { id: "new", label: qsTr("Nuevo"), icon: "document-new", hint: qsTr("Ctrl+N · empieza otro circuito"), big: true },
+                        { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un circuito"), big: true },
+                        { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
+                        { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") }
+                    ]
+                }
+            ]
         },
         {
             name: qsTr("Editar"),
-            groups: [{ title: qsTr("Historial"), note: qsTr("Deshacer y rehacer llegan con el editor") }]
+            groups: [
+                {
+                    title: qsTr("Historial"),
+                    items: [
+                        { id: "undo", label: qsTr("Deshacer"), icon: "edit-undo", hint: qsTr("Ctrl+Z"), big: true, enabled: session.canUndo },
+                        { id: "redo", label: qsTr("Rehacer"), icon: "edit-redo", hint: qsTr("Ctrl+Shift+Z"), big: true, enabled: session.canRedo }
+                    ]
+                },
+                {
+                    title: qsTr("Circuito"),
+                    items: [
+                        { id: "check", label: qsTr("Comprobar"), icon: "dialog-ok-apply", hint: qsTr("busca faltas antes de simular"), big: true }
+                    ]
+                },
+                {
+                    title: qsTr("Componente"),
+                    items: [
+                        { id: "copy", label: qsTr("Copiar"), icon: "edit-copy", hint: qsTr("Ctrl+C · copia lo seleccionado"), enabled: session.selected >= 0 },
+                        { id: "paste", label: qsTr("Pegar"), icon: "edit-paste", hint: qsTr("Ctrl+V · pega junto al original") },
+                        { id: "duplicate", label: qsTr("Duplicar"), icon: "edit-duplicate", hint: qsTr("Ctrl+D · copia y desplaza"), enabled: session.selected >= 0 },
+                        { id: "delete", label: qsTr("Borrar"), icon: "edit-delete", hint: qsTr("Supr · borra lo seleccionado"), big: true, enabled: session.selected >= 0 }
+                    ]
+                },
+                {
+                    title: qsTr("Paleta"),
+                    note: session.editing
+                          ? qsTr("Arrastra un componente desde la barra lateral a la hoja")
+                          : qsTr("Detén la simulación para editar el circuito")
+                }
+            ]
         },
         {
             name: qsTr("Ver"),
             groups: [
+                {
+                    title: qsTr("Vista"),
+                    items: [
+                        { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("> · acerca la hoja") },
+                        { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("< · aleja la hoja") },
+                        { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom") },
+                        { id: "grid", label: qsTr("Cuadrícula"), icon: "view-grid", hint: session.grid ? qsTr("Visible · pulsa para ocultar") : qsTr("Oculta · pulsa para mostrar") }
+                    ]
+                },
                 {
                     title: qsTr("Tema"),
                     items: [
@@ -49,59 +100,75 @@ Rectangle {
                 { title: qsTr("Contraste"), note: session.contrastSummary }
             ]
         },
-        {
-            name: qsTr("Simular"),
-            groups: [
-                {
-                    title: qsTr("Modo"),
-                    items: [
-                        { id: "edit", label: qsTr("Editar"), icon: "document-properties", hint: qsTr("un clic sobre la válvula abre sus propiedades"), big: true, current: session.editing },
-                        { id: "simulate", label: qsTr("Simular"), icon: "media-playback-start", hint: qsTr("un clic sobre la válvula la acciona"), big: true, current: !session.editing }
-                    ]
-                },
-                {
-                    title: qsTr("Paso a paso"),
-                    items: [
-                        { id: "step", label: qsTr("Paso"), icon: "media-seek-forward", hint: qsTr("F10 · un cuadro y se queda en pausa"), big: true },
-                        { id: "run", label: qsTr("Animar"), icon: "media-playback-start", hint: qsTr("F5 · reproduce o pausa"), big: true }
-                    ]
-                },
-                {
-                    title: qsTr("Velocidad"),
-                    items: [
-                        { id: "speed025", label: qsTr("0,25×"), hint: qsTr("un cuarto de tiempo real") },
-                        { id: "speed1", label: qsTr("1×"), hint: qsTr("tiempo real") },
-                        { id: "speed2", label: qsTr("2×"), hint: qsTr("el doble de rápido") }
-                    ]
-                }
-            ]
-        }
+
     ]
 
     implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
 
     function invoke(id) {
-        if (id === "valve") {
-            session.toggleValve();
-        } else if (id === "restart") {
+        if (id === "restart") {
             session.restart();
-        } else if (id === "edit") {
-            session.editing = true;
-        } else if (id === "simulate") {
-            session.editing = false;
-            session.setRunning(true);
+        } else if (id === "new" || id === "open" || id === "save" || id === "save-as") {
+            ribbon.fileCommand(id);
+        } else if (id === "check") {
+            session.checkCircuit();
+        } else if (id === "undo") {
+            session.undo();
+        } else if (id === "redo") {
+            session.redo();
+        } else if (id === "copy") {
+            session.copySelected();
+        } else if (id === "paste") {
+            session.pasteOffset();
+        } else if (id === "duplicate") {
+            session.duplicateSelected();
+        } else if (id === "delete") {
+            session.removeSelected();
+        } else if (id === "start") {
+            session.startSimulation();
+        } else if (id === "stop") {
+            session.stopSimulation();
         } else if (id === "step") {
             session.stepForward();
-        } else if (id === "run") {
-            session.toggleRunning();
-        } else if (id === "speed025") {
-            session.speed = 0.25;
-        } else if (id === "speed1") {
-            session.speed = 1.0;
-        } else if (id === "speed2") {
-            session.speed = 2.0;
+        } else if (id === "until-change") {
+            session.runUntilChange();
+        } else if (id === "play") {
+            session.startSimulation();
+        } else if (id === "pause") {
+            session.pauseSimulation();
+        } else if (id === "reset") {
+            session.restart();
         } else if (id === "scheme") {
             session.loadTheme();
+        } else if (id === "zoom-in") {
+            session.zoomIn();
+        } else if (id === "zoom-out") {
+            session.zoomOut();
+        } else if (id === "zoom-reset") {
+            session.zoomReset();
+        } else if (id === "grid") {
+            session.toggleGrid();
+        }
+    }
+
+    /// Runs every command once, so a broken handler fails a test instead of a user.
+    ///
+    /// A `TypeError` in an `onTriggered` handler is invisible until the button is pressed;
+    /// this is the only way to press them all without a pointer.
+    function selfTest() {
+        const transport = ["start", "pause", "step", "until-change", "stop", "reset", "zoom-in", "zoom-out",
+                           "zoom-reset", "grid"];
+        for (let t = 0; t < tabs.length; ++t) {
+            const groups = tabs[t].groups || [];
+            for (let g = 0; g < groups.length; ++g) {
+                const items = groups[g].items || [];
+                for (let i = 0; i < items.length; ++i) {
+                    invoke(items[i].id);
+                }
+            }
+        }
+        for (let i = 0; i < transport.length; ++i) {
+            invoke(transport[i]);
         }
     }
 
@@ -205,48 +272,92 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 2
 
+            // Start, pause, step, stop, reset: the transport of the reference, and the only
+            // thing that changes the mode. There is no "edit" button because leaving the
+            // simulation *is* stopping it.
             RibbonButton {
                 session: ribbon.session
-                label: qsTr("Reproducir")
+                label: qsTr("Iniciar")
                 iconName: "media-playback-start"
-                hint: session.editing ? qsTr("entra en modo Simular")
-                                      : (session.running ? qsTr("ya está en marcha") : qsTr("F5 · animar el modelo"))
+                hint: session.running ? qsTr("ya está en marcha") : qsTr("F9 · anima el modelo")
                 large: false
                 tone: session.running ? "muted" : "accent"
-                available: !session.editing && !session.running
-                onTriggered: session.setRunning(true)
+                available: !session.running
+                onTriggered: ribbon.invoke("start")
             }
 
             RibbonButton {
                 session: ribbon.session
                 label: qsTr("Pausa")
                 iconName: "media-playback-pause"
-                hint: session.editing ? qsTr("entra en modo Simular")
-                                      : (session.running ? qsTr("F5 · detener el modelo donde está") : qsTr("ya está en pausa"))
+                hint: session.editing
+                      ? qsTr("F8 · entra en simulación sin arrancar")
+                      : (session.running ? qsTr("F8 · detiene donde está") : qsTr("ya está en pausa"))
                 large: false
-                available: !session.editing && session.running
-                onTriggered: session.setRunning(false)
+                available: session.running || session.editing
+                onTriggered: ribbon.invoke("pause")
             }
 
             RibbonButton {
                 session: ribbon.session
                 label: qsTr("Paso")
                 iconName: "media-seek-forward"
-                hint: session.editing ? qsTr("entra en modo Simular")
-                                      : qsTr("F10 · un cuadro de %1 s y se queda en pausa")
-                                            .arg((session.frameSeconds * session.speed).toFixed(3))
+                hint: qsTr("F10 · un cuadro de %1 s y se queda en pausa")
+                      .arg((session.frameSeconds * session.speed).toFixed(3))
                 large: false
                 available: !session.editing
-                onTriggered: session.stepForward()
+                onTriggered: ribbon.invoke("step")
             }
 
             RibbonButton {
                 session: ribbon.session
-                label: qsTr("Reiniciar")
+                label: qsTr("Hasta cambio")
+                iconName: "media-skip-forward"
+                hint: qsTr("avanza hasta que el vástago llegue a un tope o una válvula cambie")
+                large: false
+                available: !session.editing
+                onTriggered: ribbon.invoke("until-change")
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Detener")
+                iconName: "media-playback-stop"
+                hint: session.editing ? qsTr("ya está en modo edición") : qsTr("F5 · vuelve al modo edición")
+                large: false
+                available: !session.editing
+                onTriggered: ribbon.invoke("stop")
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Restablecer")
                 iconName: "view-refresh"
                 hint: qsTr("Ctrl+R · vuelve a t = 0")
                 large: false
-                onTriggered: session.restart()
+                available: !session.editing
+                onTriggered: ribbon.invoke("reset")
+            }
+
+            Rectangle {
+                width: 1
+                height: 18
+                anchors.verticalCenter: parent.verticalCenter
+                color: session.panel
+            }
+
+            Repeater {
+                model: [0.25, 1.0, 2.0]
+
+                delegate: RibbonButton {
+                    required property real modelData
+                    session: ribbon.session
+                    label: (modelData === 0.25 ? "0,25" : modelData.toFixed(0)) + "×"
+                    hint: qsTr("velocidad de simulación")
+                    large: false
+                    tone: Math.abs(session.speed - modelData) < 0.001 ? "accent" : "muted"
+                    onTriggered: session.speed = modelData
+                }
             }
 
             Rectangle {
@@ -302,6 +413,7 @@ Rectangle {
                             iconName: modelData.icon || ""
                             hint: modelData.hint || ""
                             large: modelData.big === true
+                            available: modelData.enabled === undefined || modelData.enabled === true
                             selected: modelData.current === true
                             tone: "foreground"
                             onTriggered: ribbon.invoke(modelData.id)
@@ -312,7 +424,10 @@ Rectangle {
                     // showing grey buttons that teach the user nothing.
                     Item {
                         visible: !!modelData.note
-                        width: visible ? Math.min(260, noteText.implicitWidth) : 0
+                        // A fixed width, not one derived from the wrapped text: a text that
+                        // wraps needs the width it is measured with, and asking each for
+                        // the other is a binding loop.
+                        width: visible ? 240 : 0
                         height: 62
 
                         Text {

@@ -12,6 +12,12 @@ and the prompt to continue in a new session.
 state, the next milestone step by step, the files it touches, its acceptance tests and
 the questions that belong to the project owner.
 
+**Before a capability: [docs/reference-parity.md](docs/reference-parity.md)** is the
+reference study, and FluidSIM is **the base product**: replicate its observable behaviour
+first, then improve it with a reason and a test. A capability starts only after its
+observation is recorded there, studied from the local copy and never copied from it; the
+procedure is [.agents/skills/reference-parity](.agents/skills/reference-parity/SKILL.md).
+
 Where the rest lives: [docs/ui-ux.md](docs/ui-ux.md) (interface),
 [docs/symbology.md](docs/symbology.md) (ISO 1219 conformance),
 [docs/plan.md](docs/plan.md) (milestones and acceptance criteria),
@@ -44,10 +50,14 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-file` | versioned document format and migrations | physics |
 | `crates/punchi-fluid-theme` | colour, size and font tokens from `kdeglobals` and the portal | widgets, physics, document I/O |
 | `crates/punchi-fluid-draw` | the single drawing of a circuit, in millimetres, behind a `Surface` trait | windows, files, fonts, solving |
+| `crates/punchi-fluid-doc` | the edited document: placements, connections, bounded undo | physics, drawing, files |
+| `crates/punchi-fluid-check` | design faults a circuit can have before it is run | physics, drawing, UI |
 | `crates/punchi-fluid-export` | standard sheets, title block, the PDF writer | physics, widgets |
 | `crates/punchi-fluid-icons` | icon lookup in the desktop theme and rasterisation | physics, widgets, I/O of our own |
 | `crates/punchi-fluid-ui` | ribbon, sidebar, sheet, status bar, schematic canvas and widgets | file I/O, solving, colour literals |
 | `crates/punchi-fluid-desktop` | window, menus, wiring | physics, primitives |
+| `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
+| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter | physics, the document |
 | `crates/punchi-fluid-cli` | headless validate and simulate | UI |
 
 Dependency direction: `core` is the base; `file` and `catalog` depend on it (and on

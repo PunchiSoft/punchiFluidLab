@@ -8,7 +8,7 @@
 //! in the scale the backend applies.
 
 use punchi_fluid_catalog::{Catalog, ComponentDefinition, PortRole};
-use punchi_fluid_solver::pneumatic::PneumaticSystem;
+use punchi_fluid_solver::network::Network;
 
 use crate::surface::{Anchor, Colour, Pt, Rect, Stroke, Surface};
 use crate::symbol::{self, Ink};
@@ -55,11 +55,44 @@ pub fn layout(area: Rect) -> Option<Layout> {
 pub fn draw(
     surface: &mut dyn Surface,
     area: Rect,
-    system: &PneumaticSystem,
+    system: &Network,
     catalog: &Catalog,
     ink: &Ink,
 ) -> Option<Layout> {
     let placed = layout(area)?;
+    draw_with_layout(surface, &placed, system, catalog, ink);
+    Some(placed)
+}
+
+/// The same drawing, at boxes someone else decided.
+///
+/// The interactive sheet gets its boxes from the document, so a component the user moved
+/// stays where they put it; the exported sheet gets them from [`layout`], so a printed
+/// page has the composition the drawing was designed for.
+pub fn draw_with_layout(
+    surface: &mut dyn Surface,
+    placed: &Layout,
+    system: &Network,
+    catalog: &Catalog,
+    ink: &Ink,
+) {
+    draw_hoses(surface, placed, system, catalog, ink);
+    draw_circuit(surface, placed, system, catalog, ink);
+}
+
+/// The circuit without its hoses: symbols, piston at its extension, and captions.
+///
+/// The interactive sheet owns its pipes — the document holds them, routes them and lets the
+/// user select and delete them — so it asks for this pass and draws them itself. Drawing the
+/// hoses here as well would put a second line on the sheet at a second routing.
+pub fn draw_circuit(
+    surface: &mut dyn Surface,
+    placed: &Layout,
+    system: &Network,
+    catalog: &Catalog,
+    ink: &Ink,
+) {
+    let area = union(placed.supply, placed.cylinder);
     let (Some(supply), Some(valve), Some(cylinder)) = (
         catalog.get(SUPPLY_ID),
         catalog.get(VALVE_ID),
@@ -72,10 +105,9 @@ pub fn draw(
             ink.line,
             Anchor::Middle,
         );
-        return Some(placed);
+        return;
     };
 
-    draw_pipes(surface, &placed, system, supply, valve, cylinder, ink);
     symbol::draw_component(surface, placed.supply, supply, 0, 0.0, ink);
     symbol::draw_valve(surface, placed.valve, valve, system.valve_position(), ink);
     // One call: the cylinder draws its own piston and rod at the state of the model, so
@@ -83,8 +115,57 @@ pub fn draw(
     #[allow(clippy::cast_possible_truncation)]
     let extension = system.extension() as f32;
     symbol::draw_component(surface, placed.cylinder, cylinder, 0, extension, ink);
-    draw_labels(surface, &placed, system, supply, valve, cylinder, ink);
-    Some(placed)
+    draw_labels(surface, placed, system, supply, valve, cylinder, ink);
+}
+
+/// The readouts of the worked circuit, without drawing its symbols or hoses.
+///
+/// The interactive sheet owns every symbol and pipe, so it asks only for the labels the
+/// fixed composition knows how to place.
+pub fn draw_readouts(
+    surface: &mut dyn Surface,
+    placed: &Layout,
+    system: &Network,
+    catalog: &Catalog,
+    ink: &Ink,
+) {
+    let (Some(supply), Some(valve), Some(cylinder)) = (
+        catalog.get(SUPPLY_ID),
+        catalog.get(VALVE_ID),
+        catalog.get(CYLINDER_ID),
+    ) else {
+        return;
+    };
+    draw_labels(surface, placed, system, supply, valve, cylinder, ink);
+}
+
+/// The two working hoses of the built-in circuit, coloured by the pressure in them.
+///
+/// Only the fixed composition uses this: it is the composition that knows which hose is the
+/// supply line and which is the working line.
+fn draw_hoses(
+    surface: &mut dyn Surface,
+    placed: &Layout,
+    system: &Network,
+    catalog: &Catalog,
+    ink: &Ink,
+) {
+    let (Some(supply), Some(valve), Some(cylinder)) = (
+        catalog.get(SUPPLY_ID),
+        catalog.get(VALVE_ID),
+        catalog.get(CYLINDER_ID),
+    ) else {
+        return;
+    };
+    draw_pipes(surface, placed, system, supply, valve, cylinder, ink);
+}
+
+/// Smallest box containing both.
+fn union(a: Rect, b: Rect) -> Rect {
+    Rect::from_corners(
+        Pt::new(a.min.x.min(b.min.x), a.min.y.min(b.min.y)),
+        Pt::new(a.max.x.max(b.max.x), a.max.y.max(b.max.y)),
+    )
 }
 
 fn port(definition: &ComponentDefinition, rect: Rect, role: PortRole) -> Option<Pt> {
@@ -96,7 +177,7 @@ fn port(definition: &ComponentDefinition, rect: Rect, role: PortRole) -> Option<
 fn draw_pipes(
     surface: &mut dyn Surface,
     placed: &Layout,
-    system: &PneumaticSystem,
+    system: &Network,
     supply: &ComponentDefinition,
     valve: &ComponentDefinition,
     cylinder: &ComponentDefinition,
@@ -165,7 +246,7 @@ fn draw_flow_arrows(surface: &mut dyn Surface, line: &[Pt], flow: f64, size: f32
 /// Working line colour: the neutral ink at atmosphere, the working colour at supply
 /// pressure. The status line always carries the number too, so the state is never
 /// told by colour alone.
-fn pressure_colour(system: &PneumaticSystem, ink: &Ink) -> Colour {
+fn pressure_colour(system: &Network, ink: &Ink) -> Colour {
     let span = system.supply_pa() - system.atmosphere_pa();
     if span <= 0.0 {
         return ink.line;
@@ -193,22 +274,37 @@ fn blend(from: Colour, to: Colour, amount: f32) -> Colour {
 fn draw_labels(
     surface: &mut dyn Surface,
     placed: &Layout,
-    system: &PneumaticSystem,
+    system: &Network,
     supply: &ComponentDefinition,
     valve: &ComponentDefinition,
     cylinder: &ComponentDefinition,
     ink: &Ink,
 ) {
-    for (rect, definition) in [(placed.supply, supply), (placed.cylinder, cylinder)] {
-        symbol::haloed_text(
-            surface,
-            Pt::new(rect.center().x, rect.max.y + rect.height() * 0.24),
-            &definition.name,
-            symbol::NUMERAL,
-            ink.muted,
-            ink.background,
-        );
-    }
+    // The supply caption goes above its symbol, not under it: its only port leaves downwards
+    // and the line to the valve's port 1 leaves from there, so a caption below would be
+    // written across the pipe. The cylinder's port is on the left, so it has room under it.
+    symbol::haloed_text(
+        surface,
+        Pt::new(
+            placed.supply.center().x,
+            placed.supply.min.y - placed.supply.height() * 0.24,
+        ),
+        supply.display_name(),
+        symbol::NUMERAL,
+        ink.muted,
+        ink.background,
+    );
+    symbol::haloed_text(
+        surface,
+        Pt::new(
+            placed.cylinder.center().x,
+            placed.cylinder.max.y + placed.cylinder.height() * 0.24,
+        ),
+        cylinder.display_name(),
+        symbol::NUMERAL,
+        ink.muted,
+        ink.background,
+    );
 
     // The valve's caption sits beside the body, not under it: the ports leave downwards,
     // so a caption underneath would be written across the supply line climbing to port 1.
@@ -218,13 +314,16 @@ fn draw_labels(
             placed.valve.max.x + placed.valve.width() * 0.04,
             placed.valve.max.y + placed.valve.height() * 0.18,
         ),
-        &valve.name,
+        valve.display_name(),
         symbol::NUMERAL,
         ink.muted,
         ink.background,
         Anchor::Start,
     );
-    if let Some(name) = system.valve().position_names.get(system.valve_position()) {
+    if let Some(name) = system
+        .valve()
+        .and_then(|valve| valve.position_names.get(system.valve_position()))
+    {
         symbol::haloed_text_anchored(
             surface,
             Pt::new(
@@ -259,9 +358,21 @@ mod tests {
     use super::*;
     use crate::surface::Recording;
 
-    fn system() -> PneumaticSystem {
+    fn system() -> Network {
+        use punchi_fluid_solver::network::{NetworkPart, PortAddress};
         let catalog = Catalog::builtin();
-        PneumaticSystem::from_catalog(&catalog).expect("the built-in circuit starts")
+        let parts: Vec<NetworkPart> = [SUPPLY_ID, VALVE_ID, CYLINDER_ID]
+            .into_iter()
+            .map(|id| {
+                NetworkPart::from_definition(catalog.get(id).expect("the definition exists"))
+                    .expect("the definition is a part")
+            })
+            .collect();
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        Network::build(&parts, &pipes).expect("the built-in circuit starts")
     }
 
     #[test]

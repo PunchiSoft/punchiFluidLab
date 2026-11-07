@@ -12,11 +12,11 @@ use punchi_fluid_draw::Ink;
 use punchi_fluid_export::page::{Page, PaperSize};
 use punchi_fluid_export::png::PngSurface;
 use punchi_fluid_export::{TitleBlock, render_png};
-use punchi_fluid_solver::pneumatic::PneumaticSystem;
+use punchi_fluid_solver::network::Network;
 
-fn system() -> PneumaticSystem {
+fn system() -> Network {
     let catalog = Catalog::builtin();
-    PneumaticSystem::from_catalog(&catalog).expect("the built-in circuit starts")
+    Network::demo(&catalog).expect("the built-in circuit starts")
 }
 
 /// Reads width and height from the PNG header: signature, length, type, IHDR.

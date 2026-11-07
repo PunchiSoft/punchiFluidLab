@@ -36,6 +36,7 @@ position = [0.48, 0.0]
 [behaviour]
 type = "cylinder"
 bore_mm = 32.0
+rod_mm = 20.0
 stroke_mm = 200.0
 dead_length_mm = 8.0
 moving_mass_kg = 1.2

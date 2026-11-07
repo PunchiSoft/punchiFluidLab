@@ -1,0 +1,99 @@
+// SPDX-FileCopyrightText: 2026 PunchiSoft
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// What the model sounds like. The session says when something happened — the spool moved,
+// the piston reached the end of its stroke, the transport started — and this decides
+// whether that makes a noise.
+//
+// The reference keeps four sounds apart: switch.wav for switches and relays, valve.wav for
+// valves, horn.wav for the horn, and cylinder.wav for **the cylinder's end positions**. The
+// last one is the sound a pneumatic circuit actually makes, so it gets the most level here
+// and the valve only a short tick.
+//
+// The samples come from the SoundLibrary type, which is compiled in and can be replaced by
+// a file in $XDG_DATA_HOME/punchi-fluid-lab/sounds/, so trying a recording made in a real
+// workshop needs no rebuild.
+//
+// Nothing here is a substitute for the drawing: sound marks an event and the sheet still
+// shows it. With the window silenced, every command behaves and reads exactly the same.
+
+import QtQuick
+import QtMultimedia
+import PunchiFluid
+
+Item {
+    id: feedback
+
+    property FluidSession session
+    /// Silenced by the user. The state lives in the window, not here, so the button that
+    /// shows it and the thing that obeys it cannot disagree.
+    property bool muted: false
+
+    // Level, not sample loudness: the air is the background of a workshop and must sit
+    // under the actuations instead of competing with them.
+    readonly property real valveLevel: 0.55
+    readonly property real airLevel: 0.30
+    /// The impact is the loudest event: it is the one that says the circuit did something.
+    readonly property real cylinderLevel: 0.85
+
+    SoundLibrary {
+        id: library
+    }
+
+    SoundEffect {
+        id: valve
+        source: library.valve
+        volume: feedback.valveLevel
+    }
+
+    SoundEffect {
+        id: air
+        source: library.air
+        volume: feedback.airLevel
+    }
+
+    SoundEffect {
+        id: cylinder
+        source: library.cylinder
+        volume: feedback.cylinderLevel
+    }
+
+    Connections {
+        target: feedback.session
+
+        function onValveActuated() {
+            if (!feedback.muted)
+                valve.play()
+        }
+        // The piston arriving at an end of its stroke. The session only says so when it
+        // arrives moving, so creeping to the end is silent.
+        function onCylinderReachedEnd() {
+            if (!feedback.muted)
+                cylinder.play()
+        }
+        function onTransportStarted() {
+            if (!feedback.muted)
+                air.play()
+        }
+        // Stopping is not a sound: the air ends where the pause pressed it, which is what
+        // the transport means. A mute mid-air cuts it for the same reason.
+        function onTransportStopped() {
+            air.stop()
+        }
+    }
+
+    onMutedChanged: if (muted)
+                        air.stop()
+
+    // `--check-sounds` proves the packaged samples decode in the shipped binary. It reports
+    // through the exit code because Qt strips console.log from a release build, which is
+    // the same reason `--check-icons` exists in C++.
+    readonly property bool checking: Qt.application.arguments.indexOf("--check-sounds") >= 0
+    Timer {
+        running: feedback.checking
+        interval: 1500
+        onTriggered: Qt.exit(valve.status === SoundEffect.Ready
+                             && air.status === SoundEffect.Ready
+                             && cylinder.status === SoundEffect.Ready ? 0 : 1)
+    }
+}

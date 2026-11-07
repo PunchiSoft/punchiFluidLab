@@ -1013,6 +1013,11 @@ pub fn draw_flat(
     ink: &Ink,
 ) {
     draw_primitives(surface, rect, &definition.symbol, ink.line, LINE);
+    // A junction is a filled dot and nothing else (ISO 1219-1): its ports are one point, so
+    // three numerals would be drawn on top of each other and read as a smudge.
+    if matches!(definition.behaviour, Behaviour::Junction) {
+        return;
+    }
     for port in &definition.port {
         draw_numeral(surface, rect, None, &port.id, port.position, ink);
     }

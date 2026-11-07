@@ -94,10 +94,44 @@ Rectangle {
             }
 
             MouseArea {
+                id: dragArea
                 anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: session.editing ? Qt.OpenHandCursor : Qt.ArrowCursor
+
+                property bool dragging: false
+
                 onClicked: {
                     sidebar.selectedIndex = modelData.index;
                     sidebar.selectedName = modelData.name;
+                }
+
+                // Dragging out of the palette is the editor's gesture. It is done by hand
+                // rather than with Qt's drag and drop so the same code path is used by a
+                // real pointer and by anything that drives the window, and so a drop has a
+                // single, testable entry point.
+                onPressed: if (session.editing) {
+                               dragging = true;
+                               window.dragCatalog = modelData.index;
+                               window.dragPoint = mapToItem(null, mouse.x, mouse.y);
+                           }
+                onPositionChanged: if (dragging) {
+                                       window.dragPoint = mapToItem(null, mouse.x, mouse.y);
+                                   }
+                onReleased: {
+                    if (!dragging) {
+                        return;
+                    }
+                    dragging = false;
+                    const landing = mapToItem(sheet, mouse.x, mouse.y);
+                    if (sheet.contains(landing)) {
+                        sheet.placeCatalogAt(window.dragCatalog, landing);
+                    }
+                    window.dragCatalog = -1;
+                }
+                onCanceled: {
+                    dragging = false;
+                    window.dragCatalog = -1;
                 }
             }
         }

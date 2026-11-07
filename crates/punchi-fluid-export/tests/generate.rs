@@ -12,7 +12,7 @@ use punchi_fluid_draw::{Colour, Ink, Pt, Rect, Surface};
 use punchi_fluid_export::page::Page;
 use punchi_fluid_export::png::PngSurface;
 use punchi_fluid_export::render_pdf;
-use punchi_fluid_solver::pneumatic::PneumaticSystem;
+use punchi_fluid_solver::network::Network;
 
 #[test]
 fn write_a_sample_sheet_on_request() {
@@ -20,7 +20,7 @@ fn write_a_sample_sheet_on_request() {
         return;
     }
     let catalog = Catalog::builtin();
-    let system = PneumaticSystem::from_catalog(&catalog).expect("the circuit starts");
+    let system = Network::demo(&catalog).expect("the circuit starts");
     let block = punchi_fluid_export::block_with_review_state("Pneumatic circuit", "2026-11-06");
     for (paper, name) in [
         (punchi_fluid_export::PaperSize::A4, "a4"),

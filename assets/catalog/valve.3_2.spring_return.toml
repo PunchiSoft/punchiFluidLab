@@ -63,6 +63,7 @@ default_position = 0
 # Position 0, rest: working line vented, supply shut.
 [[behaviour.positions]]
 name = "rest"
+name_es = "reposo"
 blocked = ["1"]
 
 [[behaviour.positions.connection]]
@@ -73,6 +74,7 @@ conductance = 1.0e-9
 # Position 1, actuated: supply to working, exhaust shut.
 [[behaviour.positions]]
 name = "actuated"
+name_es = "accionada"
 blocked = ["3"]
 
 [[behaviour.positions.connection]]

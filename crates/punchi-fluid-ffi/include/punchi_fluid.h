@@ -19,7 +19,9 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 1u
+#define PF_ABI_VERSION 2u
+/* Standard atmosphere, for the gauge pressure the interface shows. */
+#define PF_ATMOSPHERE_PA 101325.0
 
 #define PF_KIND_LINE 0u
 #define PF_KIND_POLYGON 1u
@@ -59,6 +61,7 @@ typedef struct PfTelemetry {
     double mass_out_kg;
     uint32_t valve_position;
     uint32_t has_model;
+    double stroke_m;
 } PfTelemetry;
 
 typedef struct PfCall {
@@ -121,6 +124,28 @@ typedef struct PfAbi {
     uint32_t point_size;
 } PfAbi;
 
+/* Which fields of PfEditSet are meaningful. */
+#define PF_EDIT_PRESSURE 1u
+#define PF_EDIT_CONDUCTANCE 2u
+#define PF_EDIT_STROKE 4u
+#define PF_EDIT_BORE 8u
+#define PF_EDIT_ROD 16u
+#define PF_EDIT_MASS 32u
+
+/*
+ * Editable parameters of one placement, in the units the reference's dialog uses:
+ * gauge bar, millimetres and kilograms. `mask` says which ones the behaviour has.
+ */
+typedef struct PfEditSet {
+    uint32_t mask;
+    double pressure_bar;
+    double conductance;
+    double stroke_mm;
+    double bore_mm;
+    double rod_mm;
+    double moving_mass_kg;
+} PfEditSet;
+
 typedef struct PfSession PfSession;
 
 const char *pf_version(void);
@@ -138,6 +163,12 @@ int32_t pf_session_toggle_valve(PfSession *session);
 /* The press and release halves of holding the valve actuated. */
 int32_t pf_session_press_valve(PfSession *session);
 int32_t pf_session_release_valve(PfSession *session);
+/* The same gesture on the valve of one placement: the one under the pointer. */
+int32_t pf_session_press_component_valve(PfSession *session, uint32_t index);
+int32_t pf_session_release_component_valve(PfSession *session, uint32_t index);
+/* Its position, or -1 when the placement is not a valve; spring return as -1/0/1. */
+int32_t pf_session_component_valve_position(const PfSession *session, uint32_t index);
+int32_t pf_session_component_valve_spring_return(const PfSession *session, uint32_t index);
 /* `1` when the valve returns to rest on release, which decides the gesture. */
 int32_t pf_session_valve_spring_return(const PfSession *session);
 /* Back to t = 0, keeping the catalog and the ink. */
@@ -154,6 +185,85 @@ int32_t pf_session_build_frame(PfSession *session, float width_mm, float height_
 /* `1` when the point falls on the valve of the last built frame. */
 int32_t pf_session_hit_valve(const PfSession *session, float x_mm, float y_mm);
 
+/* ---- the document ---- */
+
+/* Places a catalog entry at a point, snapped to the grid. Returns its index. */
+int32_t pf_session_place_component(PfSession *session, uint32_t catalog_index, float x_mm,
+                                   float y_mm);
+uint32_t pf_session_component_count(const PfSession *session);
+int32_t pf_session_component_rect(const PfSession *session, uint32_t index, float *out);
+int32_t pf_session_component_id(const PfSession *session, uint32_t index, char *out,
+                                uint32_t capacity);
+int32_t pf_session_hit_component(const PfSession *session, float x_mm, float y_mm);
+int32_t pf_session_select(PfSession *session, int32_t index);
+int32_t pf_session_selected(const PfSession *session);
+int32_t pf_session_move_component(PfSession *session, uint32_t index, float x_mm, float y_mm);
+int32_t pf_session_remove_component(PfSession *session, uint32_t index);
+/* One-slot clipboard: copy the selected component, paste it, or copy in place. */
+int32_t pf_session_copy_selected(PfSession *session);
+int32_t pf_session_paste(PfSession *session, float x_mm, float y_mm);
+/* Pastes displaced from where the copy was taken, without a pointer. */
+int32_t pf_session_paste_offset(PfSession *session, float dx_mm, float dy_mm);
+int32_t pf_session_duplicate_component(PfSession *session, uint32_t index, float dx_mm,
+                                       float dy_mm);
+/* Starts a new document and seeds the worked example. */
+int32_t pf_session_new_document(PfSession *session);
+/* Saves the sheet atomically, and opens one, replacing the document. */
+int32_t pf_session_save(PfSession *session, const char *path);
+int32_t pf_session_open(PfSession *session, const char *path);
+
+/* The effective parameters of one placement; the mask says what it can edit. */
+int32_t pf_session_component_edits(const PfSession *session, uint32_t index, PfEditSet *out);
+/* Applies the masked values as one undoable edit, then rebuilds the model. */
+int32_t pf_session_set_component_edits(PfSession *session, uint32_t index, const PfEditSet *set);
+int32_t pf_session_undo(PfSession *session);
+int32_t pf_session_redo(PfSession *session);
+int32_t pf_session_can_undo(const PfSession *session);
+int32_t pf_session_can_redo(const PfSession *session);
+
+/* ---- ports and pipes ---- */
+
+/* The port nearest a point, if one is within tolerance. */
+int32_t pf_session_port_at(const PfSession *session, float x_mm, float y_mm, float tolerance_mm,
+                           uint32_t *index, char *port, uint32_t capacity);
+
+/* Where a port sits, in millimetres of the sheet, as x y. */
+int32_t pf_session_port_point(const PfSession *session, uint32_t index, const char *port,
+                              float *out);
+
+/* Draws a pipe between two ports. */
+int32_t pf_session_connect(PfSession *session, uint32_t from_index, const char *from_port,
+                           uint32_t to_index, const char *to_port);
+uint32_t pf_session_connection_count(const PfSession *session);
+/*
+ * Checks the document: writes the findings, one per line, and returns how many. A clean
+ * circuit writes an empty string and returns 0.
+ */
+int32_t pf_session_check(const PfSession *session, char *out, uint32_t capacity);
+/* A pipe by hit test, and its selection. A pipe and a component are never both selected. */
+/**
+ * Splits a pipe with a T junction at `x_mm, y_mm` and joins `attach_index:attach_port` to
+ * it. One entry in the undo history; nothing changes when it fails.
+ */
+int32_t pf_session_splice_pipe(PfSession *session, uint32_t pipe_index, float x_mm, float y_mm,
+                               uint32_t attach_index, const char *attach_port);
+
+/**
+ * Where the `index`-th fault of the design check is, as `x y` in millimetres.
+ *
+ * Call pf_session_check() first: it returns the count, and this indexes the same list.
+ */
+int32_t pf_session_finding_at(const PfSession *session, uint32_t index, float *out);
+
+int32_t pf_session_pipe_at(const PfSession *session, float x_mm, float y_mm, float tolerance_mm);
+int32_t pf_session_select_pipe(PfSession *session, int32_t index);
+int32_t pf_session_selected_pipe(const PfSession *session);
+int32_t pf_session_remove_selected_pipe(PfSession *session);
+/* Drags the middle segment of a pipe so it passes through a point; one undo per drag. */
+int32_t pf_session_route_pipe(PfSession *session, uint32_t index, float x_mm, float y_mm);
+/* How far that segment sits from the automatic route, in millimetres. */
+int32_t pf_session_pipe_offset(const PfSession *session, uint32_t index, float *out);
+
 /* The valve's box of the last built frame, as x0 y0 x1 y1 in millimetres. */
 int32_t pf_session_valve_rect(const PfSession *session, float *out);
 
@@ -165,6 +275,9 @@ int32_t pf_session_has_layout(const PfSession *session);
  * negative code when there is no model or the buffer is too small.
  */
 int32_t pf_session_describe_valve(const PfSession *session, char *out, uint32_t capacity);
+/* One placement's definition and effective numbers, for the inspector. */
+int32_t pf_session_describe_component(const PfSession *session, uint32_t index, char *out,
+                                      uint32_t capacity);
 
 /* The catalog in display order. The pointers borrow the session. */
 int32_t pf_session_catalog(const PfSession *session, PfCatalog *out);

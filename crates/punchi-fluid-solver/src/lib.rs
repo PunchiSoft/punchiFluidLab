@@ -11,6 +11,7 @@
 //! and from any UI, so it can be validated headlessly and replaced without
 //! touching the rest of the application.
 
+pub mod network;
 pub mod orifice;
 pub mod pneumatic;
 
@@ -82,6 +83,15 @@ pub enum SolverError {
         valve: String,
         /// Port or port pair that could not be classified.
         port: String,
+    },
+
+    /// A valve declares more positions than the network can switch in one mask.
+    #[error("valve `{valve}` has {count} positions; at most 63 can be simulated")]
+    TooManyValvePositions {
+        /// Valve definition being converted.
+        valve: String,
+        /// Positions it declares.
+        count: usize,
     },
 }
 

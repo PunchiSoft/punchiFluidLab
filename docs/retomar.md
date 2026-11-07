@@ -12,8 +12,8 @@
 ## 0. En cinco minutos
 
 ```bash
-cd /home/cristian/Desarrollo/punchi-fluid-lab
-./scripts-dev/check.sh                 # tiene que salir 0. Son 37 pruebas.
+cd "/home/cristian/Desarrollo/punchi-fluid-lab (Rust)"
+./scripts-dev/check.sh                 # tiene que salir 0: formato, clippy, pruebas y ventana
 cmake --build apps/punchi-fluid-qt/build   # la ventana que existe hoy
 apps/punchi-fluid-qt/build/punchi-fluid   # (Qt 6.5+, CMake y Ninja)
 ```
@@ -27,7 +27,46 @@ Después, en este orden:
 | cambiar una válvula sin programar | §8 |
 | saber qué está mal en los símbolos | §9 |
 | construir la interfaz | §10 y [ui-ux.md](ui-ux.md) |
+| replicar una capacidad de la referencia | [reference-parity.md](reference-parity.md) y la skill [reference-parity](../.agents/skills/reference-parity/SKILL.md): ninguna empieza sin su observación escrita |
 | las reglas que no se rompen | §14 y [AGENTS.md](../AGENTS.md) |
+
+### 0.1 Estado al 2026-11-06 (lo último, y lo que manda)
+
+Desde que se escribió el resto de este archivo cambió la mitad del programa. Lo
+autoritativo es [reference-parity.md](reference-parity.md) (capacidades, estado y
+evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
+
+| Área | Estado real |
+|---|---|
+| Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo |
+| Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago y masa; Aplicar es un solo deshacer. Faltan nombre, accionamiento y los demás campos del diálogo de la referencia |
+| Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
+| Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
+| Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana |
+| Exportación | PNG y PDF con hoja normalizada |
+| Comprobación | 5 de las 9 faltas, cada una señalada en el dibujo; las otras 4 necesitan designaciones/circuitos (F4) o la biblioteca eléctrica (F6) |
+| Símbolos | lint de 8 reglas; revisión visual con capturas claro/oscuro; 300 dpi pendiente |
+
+**Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
+(la hoja se dibuja, se conecta, se simula y se guarda), pero del manual completo falta
+bastante: las funciones de edición suplementarias (girar/reflejar, copiar/pegar,
+selección múltiple, alinear/distribuir), los instrumentos y las carreras hasta cambio de
+estado (F3), los proyectos y el autoguardado (F4), las listas de piezas (F5), y las
+bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy: **~35–40 % del
+manual**, con F1 casi cerrada y F2 cerrada. El siguiente paso, por valor, es
+**F3 (instrumentos y «hasta cambio de estado»)**, seguido de las funciones de edición que
+el manual agrupa en §4.2.
+
+Cómo comprobarlo sin ventana:
+
+```bash
+./scripts-dev/check.sh
+apps/punchi-fluid-qt/build/punchi-fluid --probe                 # 0,00 bar y 0,0 mm en reposo
+apps/punchi-fluid-qt/build/punchi-fluid --toggle --step 30 --probe  # 6,00 bar y 100,0 mm
+apps/punchi-fluid-qt/build/punchi-fluid --save /tmp/c.pfluid
+apps/punchi-fluid-qt/build/punchi-fluid --open /tmp/c.pfluid --probe
+QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
+```
 
 ---
 
@@ -463,7 +502,7 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 
 Copia esto tal cual en el chat nuevo:
 
-> Trabajamos en `/home/cristian/Desarrollo/punchi-fluid-lab`. Lee
+> Trabajamos en `/home/cristian/Desarrollo/punchi-fluid-lab (Rust)`. Lee
 > `docs/retomar.md` completo y después `docs/next-steps.md`. Resume en tres líneas el
 > estado y continúa con el hito que te indique, respetando `AGENTS.md`. Si algo de lo
 > que dice la documentación no coincide con el código, para y dime qué encontraste antes

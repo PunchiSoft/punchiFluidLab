@@ -33,3 +33,19 @@ JSON
 
 cargo run --quiet --bin punchi-fluid -- validate "$example"
 cargo run --quiet --bin punchi-fluid -- simulate "$example"
+
+# The window is where the drawing and the gestures live, and nothing above touches it: the
+# sheet once answered no click at all with every Rust test green. The app is built and
+# driven headlessly here, and the step is skipped when Qt was never configured so a machine
+# without it still runs the gate.
+if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
+    cmake --build apps/punchi-fluid-qt/build >/dev/null
+    app=apps/punchi-fluid-qt/build/punchi-fluid
+    export QT_QPA_PLATFORM=offscreen
+    "$app" --check-qml
+    "$app" --check-theme
+    "$app" --check-icons
+    "$app" --selftest
+else
+    echo "ui gate skipped: configure apps/punchi-fluid-qt to run it" >&2
+fi

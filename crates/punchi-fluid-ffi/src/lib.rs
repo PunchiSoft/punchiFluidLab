@@ -37,11 +37,23 @@ use std::fmt::Write as _;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
-use punchi_fluid_catalog::Catalog;
+use punchi_fluid_catalog::{Behaviour, Catalog};
+use punchi_fluid_check::check;
+
+/// The junction the splice inserts, and the box it is placed in.
+///
+/// The box is small because the symbol is a single dot: it exists so the junction can be
+/// hit and selected, not to take up room on the sheet.
+const JUNCTION_ID: &str = "junction.tee";
+const JUNCTION_MM: f32 = 8.0;
+use punchi_fluid_doc::{Document, Endpoint, Placement, PlacementEdits};
+use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Layout, dashes};
-use punchi_fluid_solver::pneumatic::{PneumaticSystem, Telemetry};
+use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
+use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
+use punchi_fluid_solver::pneumatic::Telemetry;
 
 /// The call succeeded.
 pub const PF_OK: i32 = 0;
@@ -175,6 +187,12 @@ pub struct PfTelemetry {
     pub valve_position: u32,
     /// `1` when a model is loaded, `0` when the catalog had no usable definition.
     pub has_model: u32,
+    /// Usable stroke of the cylinder, `m`.
+    ///
+    /// Without it a front end can see the piston move but not tell when it has arrived:
+    /// "fully extended" is a comparison against this number, and a click at the end of the
+    /// stroke is an event worth a sound.
+    pub stroke_m: f64,
 }
 
 /// One primitive of one frame.
@@ -297,7 +315,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 1;
+pub const PF_ABI_VERSION: u32 = 2;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -470,12 +488,27 @@ impl Surface for FrameBuffer<'_> {
 /// One simulation and one drawing, owned by the front end through an opaque pointer.
 pub struct PfSession {
     catalog: Catalog,
-    system: Option<PneumaticSystem>,
+    system: Option<Network>,
     ink: Ink,
     calls: Vec<PfCall>,
     points: Vec<PfPoint>,
     text: Vec<u8>,
     layout: Option<Layout>,
+    document: Document,
+    /// Part of the network each placement became, parallel to the document. `None` for a
+    /// definition the solver cannot model, which the drawing then shows uncoloured.
+    placement_part: Vec<Option<usize>>,
+    /// Valve of the network each placement became, parallel to the document.
+    placement_valve: Vec<Option<usize>>,
+    selected: Option<usize>,
+    /// One placement kept for paste, with its catalog id and per-instance values.
+    clipboard: Option<Placement>,
+    /// The pipe under the last selection, if any. A component and a pipe are never
+    /// selected at the same time: Delete has to know which one it removes.
+    selected_pipe: Option<usize>,
+    /// `true` once the starting circuit has been placed. A flag, not "is the document
+    /// empty": a component dropped before the first frame would otherwise suppress it.
+    seeded: bool,
     error: CString,
     width_mm: f32,
     height_mm: f32,
@@ -505,19 +538,22 @@ impl PfSession {
             Some(dir) => Catalog::builtin().with_user_dir(dir),
             None => Catalog::builtin(),
         };
-        let (system, error) = match PneumaticSystem::from_catalog(&catalog) {
-            Ok(system) => (Some(system), CString::default()),
-            Err(cause) => (None, cstring(&cause.to_string())),
-        };
         let mut session = Self {
             catalog,
-            system,
+            system: None,
             ink: Ink::print(),
             calls: Vec::new(),
             points: Vec::new(),
             text: Vec::new(),
             layout: None,
-            error,
+            document: Document::new(),
+            placement_part: Vec::new(),
+            placement_valve: Vec::new(),
+            selected: None,
+            clipboard: None,
+            selected_pipe: None,
+            seeded: false,
+            error: CString::default(),
             width_mm: 200.0,
             height_mm: 130.0,
             scale: 1.0,
@@ -529,7 +565,23 @@ impl PfSession {
             preview_text: Vec::new(),
         };
         session.build_catalog();
+        // Seeded now, not on the first frame: a front end may place or connect before it
+        // ever paints, and a document that is empty until the paint would refuse it.
+        session.ensure_seeded();
         session
+    }
+
+    /// Places the starting circuit once, at the positions the fixed layout uses.
+    fn ensure_seeded(&mut self) {
+        if self.seeded {
+            return;
+        }
+        self.seeded = true;
+        let area = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
+        self.seed_document(area);
+        // The document is now the circuit: the model is built from it, never from a
+        // hardcoded three-component list.
+        self.rebuild_model();
     }
 
     /// The sidebar mirrors the catalog, so the list it shows comes from here.
@@ -545,7 +597,7 @@ impl PfSession {
                 (
                     category_code(definition.category),
                     definition.id.clone(),
-                    definition.name.clone(),
+                    definition.display_name().to_owned(),
                 )
             })
             .collect();
@@ -614,6 +666,9 @@ impl PfSession {
         let Some(system) = self.system.as_ref() else {
             return PfTelemetry::default();
         };
+        if system.cylinder().is_none() {
+            return PfTelemetry::default();
+        }
         let Telemetry {
             time,
             pressure_pa,
@@ -632,6 +687,7 @@ impl PfSession {
             mass_out_kg: mass_out,
             valve_position: valve_position as u32,
             has_model: 1,
+            stroke_m: system.cylinder().map_or(0.0, |cylinder| cylinder.stroke),
         }
     }
 
@@ -651,7 +707,8 @@ impl PfSession {
     /// ports, positions and how the return works all come from the catalog.
     fn describe_valve(&self) -> Option<String> {
         let system = self.system.as_ref()?;
-        let definition = self.catalog.get(&system.valve().definition_id)?;
+        let valve = system.valve()?;
+        let definition = self.catalog.get(&valve.definition_id)?;
         let mut out = String::new();
         out.push_str(&definition.name);
         out.push('\n');
@@ -669,12 +726,8 @@ impl PfSession {
             .map(|port| port.id.as_str())
             .collect();
         let _ = writeln!(out, "Puertos: {}", ports.join(", "));
-        let _ = writeln!(
-            out,
-            "Posiciones: {}",
-            system.valve().position_names.join(", ")
-        );
-        out.push_str(if system.valve().spring_return {
+        let _ = writeln!(out, "Posiciones: {}", valve.position_names.join(", "));
+        out.push_str(if valve.spring_return {
             "Retorno: muelle — solo queda accionada mientras se mantiene\n"
         } else {
             "Retorno: sin muelle — queda donde se deja\n"
@@ -685,13 +738,80 @@ impl PfSession {
     /// Back to `t = 0`, with the same catalog. The ink survives, because it is the
     /// desktop's and not the model's.
     fn restart(&mut self) -> i32 {
-        match PneumaticSystem::from_catalog(&self.catalog) {
-            Ok(system) => {
-                self.system = Some(system);
-                self.error = CString::default();
-                PF_OK
+        self.rebuild_model();
+        if self.system.is_some() {
+            self.error = CString::default();
+            PF_OK
+        } else {
+            self.fail("no model can be built from this circuit")
+        }
+    }
+
+    /// Places a clipboard copy at a centre and selects it.
+    fn paste_at(&mut self, copy: Placement, centre: Pt) -> i32 {
+        let index = self.document.place_copy(copy, Some(centre));
+        self.selected = Some(index);
+        self.selected_pipe = None;
+        self.rebuild_model();
+        i32::try_from(index).unwrap_or(PF_ERR_MODEL)
+    }
+
+    /// Rebuilds the network from the document, which is the only thing that decides what
+    /// the simulation runs. Called after every edit that changes the graph, never after a
+    /// move: dragging a component leaves a model that is still running.
+    fn rebuild_model(&mut self) {
+        let mut parts: Vec<NetworkPart> = Vec::new();
+        let mut part_of: Vec<Option<usize>> = vec![None; self.document.placements().len()];
+        let mut valve_of: Vec<Option<usize>> = vec![None; self.document.placements().len()];
+        let mut valves = 0;
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            let mut definition = definition.clone();
+            apply_edits(&mut definition, &placement.edits);
+            if let Ok(part) = NetworkPart::from_definition(&definition) {
+                if matches!(part.behaviour, PartBehaviour::Valve { .. }) {
+                    valve_of[index] = Some(valves);
+                    valves += 1;
+                }
+                part_of[index] = Some(parts.len());
+                parts.push(part);
             }
-            Err(cause) => self.fail(&cause.to_string()),
+            // A definition the solver cannot model is left out; the circuit check is what
+            // tells the user about it, not a silent half-model.
+        }
+        let mut pipes = Vec::new();
+        for connection in self.document.connections() {
+            let (Some(from), Some(to)) = (
+                self.document.index_of(connection.from.placement),
+                self.document.index_of(connection.to.placement),
+            ) else {
+                continue;
+            };
+            let (Some(from), Some(to)) = (part_of[from], part_of[to]) else {
+                continue;
+            };
+            pipes.push((
+                PortAddress::new(from, connection.from.port.clone()),
+                PortAddress::new(to, connection.to.port.clone()),
+            ));
+        }
+        self.placement_part = part_of;
+        self.placement_valve = valve_of;
+        match Network::build(&parts, &pipes) {
+            Ok(network) if network.cylinder().is_some() => {
+                self.system = Some(network);
+                self.error = CString::default();
+            }
+            Ok(_) => {
+                self.system = None;
+                self.error = cstring("the circuit has no cylinder to move");
+            }
+            Err(cause) => {
+                self.system = None;
+                self.error = cstring(&cause.to_string());
+            }
         }
     }
 
@@ -702,9 +822,11 @@ impl PfSession {
         self.calls.clear();
         self.points.clear();
         self.text.clear();
-        let area = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
+        self.ensure_seeded();
         let Self {
             catalog,
+            document,
+            placement_part,
             system,
             ink,
             calls,
@@ -712,19 +834,334 @@ impl PfSession {
             text,
             layout,
             scale,
+            selected,
+            selected_pipe,
             ..
         } = self;
-        let Some(system) = system.as_ref() else {
-            *layout = None;
-            return;
-        };
+
+        let placed: Vec<Placed<'_>> = document
+            .placements()
+            .iter()
+            .enumerate()
+            .map(|(index, placement)| Placed {
+                catalog_id: placement.catalog_id.as_str(),
+                rect: placement.rect(),
+                extension: placement_part
+                    .get(index)
+                    .copied()
+                    .flatten()
+                    .zip(system.as_ref())
+                    .and_then(|(part, network)| network.extension_of(part))
+                    .map_or(0.0, |extension| extension as f32),
+                valve_position: placement_part
+                    .get(index)
+                    .copied()
+                    .flatten()
+                    .zip(system.as_ref())
+                    .and_then(|(part, network)| network.valve_position_at(part))
+                    .unwrap_or(0),
+            })
+            .collect();
+        let pipes: Vec<Pipe<'_>> = document
+            .connections()
+            .iter()
+            .filter_map(|connection| {
+                let from_index = document.index_of(connection.from.placement)?;
+                let to_index = document.index_of(connection.to.placement)?;
+                Some(Pipe {
+                    from: PipeEnd {
+                        placement: from_index,
+                        port: connection.from.port.as_str(),
+                    },
+                    to: PipeEnd {
+                        placement: to_index,
+                        port: connection.to.port.as_str(),
+                    },
+                    offset_mm: connection.offset_mm(),
+                    pressure_ratio: hose_pressure(
+                        system.as_ref(),
+                        placement_part.get(from_index).copied().flatten(),
+                        &connection.from.port,
+                    ),
+                })
+            })
+            .collect();
+        // The boxes the hit test and the pipes use are the document's, not a layout the
+        // front end guessed.
+        *layout = layout_of(&placed);
+
         let mut buffer = FrameBuffer {
             calls,
             points,
             text,
             scale: *scale,
         };
-        *layout = punchi_fluid_draw::draw(&mut buffer, area, system, catalog, ink);
+        draw_placed(
+            &mut buffer,
+            &placed,
+            &pipes,
+            system.as_ref(),
+            catalog,
+            ink,
+            *selected,
+        );
+        if let Some(pipe) = *selected_pipe {
+            draw_selected_pipe(&mut buffer, document, catalog, ink, pipe);
+        }
+    }
+
+    /// The document as the sheet format stores it.
+    fn to_sheet(&self) -> Sheet {
+        let placement = self
+            .document
+            .placements()
+            .iter()
+            .map(|placement| {
+                let edits = &placement.edits;
+                let edit = if edits.is_empty() {
+                    None
+                } else {
+                    Some(StoredEdits {
+                        pressure_bar: edits.pressure_bar,
+                        conductance: edits.conductance,
+                        stroke_mm: edits.stroke_mm,
+                        bore_mm: edits.bore_mm,
+                        rod_mm: edits.rod_mm,
+                        moving_mass_kg: edits.moving_mass_kg,
+                    })
+                };
+                // Tenths of a millimetre are the precision the sheet draws at; storing
+                // the raw `f32` only writes the layout's arithmetic noise into the file.
+                let round = |value: f32| (value * 10.0).round() / 10.0;
+                StoredPlacement {
+                    id: placement.id(),
+                    catalog: placement.catalog_id.clone(),
+                    x: round(placement.centre.x),
+                    y: round(placement.centre.y),
+                    width: round(placement.width),
+                    height: round(placement.height),
+                    edit,
+                }
+            })
+            .collect();
+        let pipe = self
+            .document
+            .connections()
+            .iter()
+            .map(|connection| StoredPipe {
+                from: connection.from.placement,
+                from_port: connection.from.port.clone(),
+                to: connection.to.placement,
+                to_port: connection.to.port.clone(),
+                offset_tenths: connection.offset_tenths(),
+            })
+            .collect();
+        Sheet {
+            format: punchi_fluid_file::sheet::SHEET_VERSION,
+            title: String::from("Circuito"),
+            placement,
+            pipe,
+        }
+    }
+
+    /// Replaces the document with a parsed sheet, leaving the old one untouched on error.
+    fn load(&mut self, sheet: &Sheet) -> Result<(), String> {
+        let placements: Vec<Placement> = sheet
+            .placement
+            .iter()
+            .map(|stored| {
+                let mut placement = Placement::with_id(
+                    stored.id,
+                    stored.catalog.clone(),
+                    Pt::new(stored.x, stored.y),
+                    stored.width,
+                    stored.height,
+                );
+                if let Some(edit) = stored.edit {
+                    placement.edits = PlacementEdits {
+                        pressure_bar: edit.pressure_bar,
+                        conductance: edit.conductance,
+                        stroke_mm: edit.stroke_mm,
+                        bore_mm: edit.bore_mm,
+                        rod_mm: edit.rod_mm,
+                        moving_mass_kg: edit.moving_mass_kg,
+                    };
+                }
+                placement
+            })
+            .collect();
+        let mut document = Document::new();
+        document.seed(placements);
+        for pipe in &sheet.pipe {
+            if !document.seed_connect(
+                Endpoint::new(pipe.from, pipe.from_port.clone()),
+                Endpoint::new(pipe.to, pipe.to_port.clone()),
+            ) {
+                return Err(format!(
+                    "the pipe {}:{} -> {}:{} cannot be connected",
+                    pipe.from, pipe.from_port, pipe.to, pipe.to_port
+                ));
+            }
+            let index = document.connections().len() - 1;
+            document.seed_route(index, pipe.offset_tenths);
+        }
+        self.document = document;
+        self.seeded = true;
+        self.selected = None;
+        self.selected_pipe = None;
+        self.clipboard = None;
+        self.rebuild_model();
+        Ok(())
+    }
+
+    /// Every fault the design check reports, against the sheet as it is now.
+    ///
+    /// Recomputed on demand rather than cached: a check is a handful of comparisons, and a
+    /// cached list is a list that goes stale behind an edit.
+    fn findings(&self) -> Vec<punchi_fluid_check::Finding> {
+        let sheet = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
+        check(&self.document, &self.catalog, sheet)
+    }
+
+    /// The pipe nearest to `point`, if one runs close enough.
+    ///
+    /// The distance is measured to the routed polyline, not to the straight line between
+    /// the ports, so what the user sees is what answers.
+    fn pipe_at(&self, point: Pt, tolerance: f32) -> Option<usize> {
+        let mut best: Option<(f32, usize)> = None;
+        for (index, connection) in self.document.connections().iter().enumerate() {
+            let Some((start, end)) = pipe_points(&self.document, &self.catalog, index) else {
+                continue;
+            };
+            let distance =
+                distance_to_path(point, &route_offset(start, end, connection.offset_mm()));
+            if distance <= tolerance && best.is_none_or(|(closest, _)| distance < closest) {
+                best = Some((distance, index));
+            }
+        }
+        best.map(|(_, index)| index)
+    }
+
+    /// Moves the middle segment of a pipe so it passes through `point`.
+    ///
+    /// The gesture is the reference's: drag a hose until it reads clearly. The offset is
+    /// measured from the automatic route along the axis the elbow jogs in, so a drag
+    /// perpendicular to the middle segment does nothing surprising when the components
+    /// later move.
+    fn route_pipe(&mut self, index: usize, point: Pt) -> i32 {
+        let Some((start, end)) = pipe_points(&self.document, &self.catalog, index) else {
+            return self.fail("that pipe does not exist");
+        };
+        let horizontal = (end.x - start.x).abs() >= (end.y - start.y).abs();
+        let offset = if horizontal {
+            point.x - f32::midpoint(start.x, end.x)
+        } else {
+            point.y - f32::midpoint(start.y, end.y)
+        };
+        if self.document.route_to(index, offset) {
+            PF_OK
+        } else {
+            // The point is already where the segment is: not an error, and not an edit.
+            PF_OK
+        }
+    }
+
+    /// The port nearest to `point`, if any is close enough to be meant.
+    ///
+    /// The tolerance is in millimetres of the sheet, so it shrinks with the zoom in
+    /// screen terms and stays a physical distance in the drawing.
+    fn port_at(&self, point: Pt, tolerance: f32) -> Option<(usize, &str)> {
+        let mut best: Option<(f32, usize, &str)> = None;
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            for port in &definition.port {
+                let Some(at) = port_point(placement.rect(), definition, &port.id) else {
+                    continue;
+                };
+                let distance = Pt::new(point.x - at.x, point.y - at.y).length();
+                if distance > tolerance {
+                    continue;
+                }
+                if best.is_none_or(|(closest, _, _)| distance < closest) {
+                    best = Some((distance, index, port.id.as_str()));
+                }
+            }
+        }
+        best.map(|(_, index, port)| (index, port))
+    }
+
+    /// Keeps the selection inside the document after an undo removed its component.
+    fn clamp_selection(&mut self) {
+        if self
+            .selected
+            .is_some_and(|index| index >= self.document.len())
+        {
+            self.selected = None;
+        }
+        if self
+            .selected_pipe
+            .is_some_and(|index| index >= self.document.connections().len())
+        {
+            self.selected_pipe = None;
+        }
+    }
+
+    /// The sheet starts with the circuit the model simulates, at the positions the fixed
+    /// layout uses, so the picture the user already knows is the starting document.
+    fn seed_document(&mut self, area: Rect) {
+        let Some(layout) = punchi_fluid_draw::layout(area) else {
+            return;
+        };
+        let seeded: Vec<punchi_fluid_doc::Placement> = [
+            (punchi_fluid_draw::schematic::SUPPLY_ID, layout.supply),
+            (punchi_fluid_draw::schematic::VALVE_ID, layout.valve),
+            (punchi_fluid_draw::schematic::CYLINDER_ID, layout.cylinder),
+        ]
+        .into_iter()
+        .map(|(id, rect)| {
+            punchi_fluid_doc::Placement::new(id, rect.center(), rect.width(), rect.height())
+        })
+        .collect();
+        // A component dropped before the first frame stays; the starting circuit is added
+        // around it rather than replacing it.
+        let mut all = self.document.placements().to_vec();
+        all.extend(seeded);
+        self.selected = None;
+        self.document.seed(all);
+        // The starting circuit is drawn with its hoses. Three pieces and no pipe does not
+        // read as a circuit, and the checker would report two open pneumatic connections on
+        // a sheet that is meant to be the worked example.
+        self.connect_seeded(
+            (punchi_fluid_draw::schematic::SUPPLY_ID, "1"),
+            (punchi_fluid_draw::schematic::VALVE_ID, "1"),
+        );
+        self.connect_seeded(
+            (punchi_fluid_draw::schematic::VALVE_ID, "2"),
+            (punchi_fluid_draw::schematic::CYLINDER_ID, "1"),
+        );
+    }
+
+    /// Joins two seeded ports by definition id, doing nothing when either is absent: the
+    /// starting circuit must survive a catalog that lost a definition, not abort.
+    fn connect_seeded(&mut self, from: (&str, &str), to: (&str, &str)) {
+        let find = |document: &punchi_fluid_doc::Document, id: &str| {
+            document
+                .placements()
+                .iter()
+                .find(|placement| placement.catalog_id == id)
+                .map(punchi_fluid_doc::Placement::id)
+        };
+        let (Some(from_id), Some(to_id)) =
+            (find(&self.document, from.0), find(&self.document, to.0))
+        else {
+            return;
+        };
+        let _ = self.document.seed_connect(
+            punchi_fluid_doc::Endpoint::new(from_id, from.1),
+            punchi_fluid_doc::Endpoint::new(to_id, to.1),
+        );
     }
 
     /// Hit test against the layout of the last built frame, so the click target is
@@ -899,6 +1336,110 @@ pub unsafe extern "C" fn pf_session_advance(session: *mut PfSession, dt: f64) ->
     })
 }
 
+/// Presses the valve of one placement, as the pointer does.
+///
+/// A circuit can hold more than one valve, and the reference actuates the one under the
+/// pointer. This is that valve, by placement, not "the first one in the model".
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_press_component_valve(
+    session: *mut PfSession,
+    index: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(Some(valve)) = session.placement_valve.get(index as usize).copied() else {
+            return session.fail("that component is not a valve");
+        };
+        let Some(system) = session.system.as_mut() else {
+            return session.fail("no model is loaded");
+        };
+        system.press_valve_at(valve);
+        PF_OK
+    })
+}
+
+/// Releases the valve of one placement, letting a spring return it.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_release_component_valve(
+    session: *mut PfSession,
+    index: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(Some(valve)) = session.placement_valve.get(index as usize).copied() else {
+            return session.fail("that component is not a valve");
+        };
+        let Some(system) = session.system.as_mut() else {
+            return session.fail("no model is loaded");
+        };
+        system.release_valve_at(valve);
+        PF_OK
+    })
+}
+
+/// Active position of the valve of one placement, or `-1` when it is not a valve.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_valve_position(
+    session: *const PfSession,
+    index: u32,
+) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(Some(part)) = session.placement_part.get(index as usize).copied() else {
+        return -1;
+    };
+    let Some(system) = session.system.as_ref() else {
+        return -1;
+    };
+    system
+        .valve_position_at(part)
+        .map_or(-1, |position| i32::try_from(position).unwrap_or(-1))
+}
+
+/// `1` when the valve of that placement returns on release, `0` when it latches, `-1`
+/// when the placement is not a valve.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_valve_spring_return(
+    session: *const PfSession,
+    index: u32,
+) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(Some(part)) = session.placement_part.get(index as usize).copied() else {
+        return -1;
+    };
+    let Some(system) = session.system.as_ref() else {
+        return -1;
+    };
+    system.valve_spring_return_at(part).map_or(-1, i32::from)
+}
+
 /// Moves the valve to `position`. Out-of-range positions are refused, not clamped.
 ///
 /// # Safety
@@ -1019,7 +1560,115 @@ pub unsafe extern "C" fn pf_session_valve_spring_return(session: *const PfSessio
         let Some(system) = session.system.as_ref() else {
             return 0;
         };
-        i32::from(system.valve().spring_return)
+        i32::from(system.valve().is_some_and(|valve| valve.spring_return))
+    })
+}
+
+/// One placement's definition and effective parameters, as text for the inspector.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_describe_component(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() || capacity == 0 {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        let mut definition = definition.clone();
+        apply_edits(&mut definition, &placement.edits);
+        let mut text = String::new();
+        text.push_str(definition.display_name());
+        text.push('\n');
+        text.push_str(&definition.id);
+        text.push('\n');
+        text.push('\n');
+        let _ = writeln!(text, "Categoría: {}", category_es(definition.category));
+        let ports: Vec<&str> = definition
+            .port
+            .iter()
+            .map(|port| port.id.as_str())
+            .collect();
+        let _ = writeln!(text, "Puertos: {}", ports.join(", "));
+        match &definition.behaviour {
+            Behaviour::Supply { pressure_bar } => {
+                let _ = writeln!(text, "Presión: {pressure_bar:.2} bar");
+            }
+            Behaviour::Valve {
+                positions,
+                spring_return,
+                actuation,
+                ..
+            } => {
+                let names: Vec<&str> = positions
+                    .iter()
+                    .map(punchi_fluid_catalog::ValvePosition::display_name)
+                    .collect();
+                let _ = writeln!(text, "Posiciones: {}", names.join(", "));
+                let _ = writeln!(text, "Accionamiento: {}", actuation_es(*actuation));
+                text.push_str(if *spring_return {
+                    "Retorno: muelle — solo queda accionada mientras se mantiene\n"
+                } else {
+                    "Retorno: sin muelle — queda donde se deja\n"
+                });
+                if let Some(connection) = positions
+                    .first()
+                    .and_then(|position| position.connection.first())
+                {
+                    let _ = writeln!(
+                        text,
+                        "Conductancia: {:.2e} m³/(s·Pa)",
+                        connection.conductance
+                    );
+                }
+            }
+            Behaviour::Cylinder {
+                bore_mm,
+                rod_mm,
+                stroke_mm,
+                moving_mass_kg,
+                ..
+            } => {
+                let _ = writeln!(text, "Carrera: {stroke_mm:.1} mm");
+                let _ = writeln!(text, "Émbolo: {bore_mm:.1} mm");
+                let _ = writeln!(text, "Vástago: {rod_mm:.1} mm");
+                let _ = writeln!(text, "Masa móvil: {moving_mass_kg:.2} kg");
+            }
+            Behaviour::Throttle { conductance } => {
+                let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
+            }
+            Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
+        }
+        let bytes = text.as_bytes();
+        let capacity = capacity as usize;
+        if bytes.len() >= capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the buffer is large
+        // enough for the text plus the terminator.
+        unsafe {
+            std::ptr::copy_nonoverlapping(bytes.as_ptr().cast::<c_char>(), out, bytes.len());
+            out.add(bytes.len()).write(0);
+        }
+        #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+        let written = bytes.len() as i32;
+        written
     })
 }
 
@@ -1246,5 +1895,1322 @@ pub unsafe extern "C" fn pf_session_restart(session: *mut PfSession) -> i32 {
             return PF_ERR_NULL;
         };
         session.restart()
+    })
+}
+
+/// The box a component of this category takes when it is dropped on the sheet.
+///
+/// A valve is wide and short, a cylinder is long: the drop then looks like the symbol it
+/// brings, instead of every component arriving the same size.
+fn default_size(category: u32) -> (f32, f32) {
+    match category {
+        PF_CATEGORY_SUPPLY => (26.0, 26.0),
+        PF_CATEGORY_VALVE => (34.0, 17.0),
+        PF_CATEGORY_ACTUATOR => (62.0, 26.0),
+        PF_CATEGORY_THROTTLE => (20.0, 20.0),
+        PF_CATEGORY_ACCESSORY => (24.0, 24.0),
+        _ => (22.0, 22.0),
+    }
+}
+
+/// Snaps a point to the grid the sheet draws, so components line up instead of floating.
+fn snap(value: f32, grid: f32) -> f32 {
+    (value / grid).round() * grid
+}
+
+/// Places a catalog entry at `(x_mm, y_mm)`, snapped to the 10 mm grid.
+///
+/// Returns the index of the new placement, or a negative code.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_place_component(
+    session: *mut PfSession,
+    catalog_index: u32,
+    x_mm: f32,
+    y_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(id) = session.catalog_order.get(catalog_index as usize).cloned() else {
+            return session.fail("that catalog entry does not exist");
+        };
+        let Some(definition) = session.catalog.get(&id) else {
+            return session.fail("the catalog entry disappeared");
+        };
+        let (width, height) = default_size(category_code(definition.category));
+        let index = session.document.place(punchi_fluid_doc::Placement::new(
+            id,
+            Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)),
+            width,
+            height,
+        ));
+        session.selected = Some(index);
+        session.rebuild_model();
+        i32::try_from(index).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Starts a new document with the worked example and no history.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_new_document(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.document = Document::new();
+        session.seeded = false;
+        session.selected = None;
+        session.selected_pipe = None;
+        session.ensure_seeded();
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Keeps the selected component for a later paste.
+///
+/// The clipboard is one placement, because the editor selects one at a time; the
+/// reference copies every selected component, and multi-selection will extend this.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_copy_selected(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(index) = session.selected else {
+            return session.fail("nothing is selected");
+        };
+        let Some(placement) = session.document.placements().get(index).cloned() else {
+            return session.fail("that component does not exist");
+        };
+        session.clipboard = Some(placement);
+        PF_OK
+    })
+}
+
+/// Pastes the copied component at a point of the sheet, snapped to the grid.
+///
+/// Returns the index of the new placement, or a negative code.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_paste(session: *mut PfSession, x_mm: f32, y_mm: f32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(copy) = session.clipboard.clone() else {
+            return session.fail("the clipboard is empty");
+        };
+        let centre = Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0));
+        session.paste_at(copy, centre)
+    })
+}
+
+/// Pastes the copied component displaced from where it was copied.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_paste_offset(
+    session: *mut PfSession,
+    right_mm: f32,
+    down_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(copy) = session.clipboard.clone() else {
+            return session.fail("the clipboard is empty");
+        };
+        let centre = Pt::new(
+            snap(copy.centre.x + right_mm, 10.0),
+            snap(copy.centre.y + down_mm, 10.0),
+        );
+        session.paste_at(copy, centre)
+    })
+}
+
+/// Copies a component in place, displaced by a delta, and returns the new index.
+///
+/// This is the Shift+drag gesture: the copy is under the pointer and the original stays.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_duplicate_component(
+    session: *mut PfSession,
+    index: u32,
+    right_mm: f32,
+    down_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(source) = session.document.placements().get(index as usize) else {
+            return session.fail("that component does not exist");
+        };
+        let centre = Pt::new(
+            snap(source.centre.x + right_mm, 10.0),
+            snap(source.centre.y + down_mm, 10.0),
+        );
+        let Some(copy) = session.document.duplicate(index as usize, Some(centre)) else {
+            return session.fail("that component does not exist");
+        };
+        session.selected = Some(copy);
+        session.selected_pipe = None;
+        session.rebuild_model();
+        i32::try_from(copy).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Saves the sheet to `path`, atomically.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_save(session: *mut PfSession, path: *const c_char) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(path) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if path.is_empty() || path.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        match session.to_sheet().write(std::path::Path::new(path)) {
+            Ok(()) => PF_OK,
+            // A save is not a model error, but the interface reads one channel; the
+            // message lands there.
+            Err(cause) => session.fail(&cause.to_string()),
+        }
+    })
+}
+
+/// Opens a sheet from `path`, replacing the document and rebuilding the model.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `path` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_open(session: *mut PfSession, path: *const c_char) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if path.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(path) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if path.is_empty() || path.len() > 4096 {
+            return PF_ERR_MODEL;
+        }
+        let sheet = match Sheet::read(std::path::Path::new(path)) {
+            Ok(sheet) => sheet,
+            Err(cause) => return session.fail(&cause.to_string()),
+        };
+        match session.load(&sheet) {
+            Ok(()) => {
+                session.error = CString::default();
+                PF_OK
+            }
+            Err(cause) => session.fail(&cause),
+        }
+    })
+}
+
+/// Which fields a [`PfEditSet`] carries.
+pub const PF_EDIT_PRESSURE: u32 = 1;
+/// Valve or throttle conductance.
+pub const PF_EDIT_CONDUCTANCE: u32 = 2;
+/// Cylinder stroke.
+pub const PF_EDIT_STROKE: u32 = 4;
+/// Cylinder bore.
+pub const PF_EDIT_BORE: u32 = 8;
+/// Cylinder rod diameter.
+pub const PF_EDIT_ROD: u32 = 16;
+/// Cylinder moving mass.
+pub const PF_EDIT_MASS: u32 = 32;
+
+/// The editable parameters of one placement.
+///
+/// `mask` says which values are meaningful: a field the behaviour does not have is not
+/// shown by the interface and is ignored on write. The values are in the units the
+/// reference's dialog uses: gauge bar, millimetres and kilograms.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PfEditSet {
+    /// Bit per field, `PF_EDIT_*`.
+    pub mask: u32,
+    /// Supply pressure, gauge bar.
+    pub pressure_bar: f64,
+    /// Valve or throttle conductance, `m³ / (s · Pa)`.
+    pub conductance: f64,
+    /// Cylinder stroke, millimetres.
+    pub stroke_mm: f64,
+    /// Cylinder bore, millimetres.
+    pub bore_mm: f64,
+    /// Cylinder rod diameter, millimetres.
+    pub rod_mm: f64,
+    /// Cylinder moving mass, kilograms.
+    pub moving_mass_kg: f64,
+}
+
+/// How many components the sheet holds.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| session.document.len() as u32)
+}
+
+/// The box of one placement, as `x0 y0 x1 y1` in millimetres.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// four writable floats.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_rect(
+    session: *const PfSession,
+    index: u32,
+    out: *mut f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let rect = placement.rect();
+        // SAFETY: the caller promised four writable floats.
+        let target = unsafe { std::slice::from_raw_parts_mut(out, 4) };
+        target[0] = rect.min.x;
+        target[1] = rect.min.y;
+        target[2] = rect.max.x;
+        target[3] = rect.max.y;
+        PF_OK
+    })
+}
+
+/// The catalog id of one placement, as NUL-terminated UTF-8.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_id(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = placement.catalog_id.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Which placement is under the point, or `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_hit_component(
+    session: *const PfSession,
+    x_mm: f32,
+    y_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return -1;
+        };
+        session
+            .document
+            .hit(Pt::new(x_mm, y_mm), 1.0)
+            .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+    })
+}
+
+/// Selects a placement, or clears the selection with `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_select(session: *mut PfSession, index: i32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.selected = usize::try_from(index).ok();
+        session.selected_pipe = None;
+        PF_OK
+    })
+}
+
+/// The index of the selected placement, or `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_selected(session: *const PfSession) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }
+        .and_then(|session| session.selected)
+        .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+}
+
+/// The editable parameters of one placement, as the reference's dialog shows them.
+///
+/// The values are the effective ones: the definition with this instance's overrides
+/// already applied, so a form opens with what the model is using, not with the file.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to a
+/// writable [`PfEditSet`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_edits(
+    session: *const PfSession,
+    index: u32,
+    out: *mut PfEditSet,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        let mut definition = definition.clone();
+        apply_edits(&mut definition, &placement.edits);
+        let mut set = PfEditSet::default();
+        match &definition.behaviour {
+            Behaviour::Supply { pressure_bar } => {
+                set.mask = PF_EDIT_PRESSURE;
+                set.pressure_bar = *pressure_bar;
+            }
+            Behaviour::Valve { positions, .. } => {
+                set.mask = PF_EDIT_CONDUCTANCE;
+                set.conductance = positions
+                    .first()
+                    .and_then(|position| position.connection.first())
+                    .map_or(0.0, |connection| connection.conductance);
+            }
+            Behaviour::Throttle { conductance } => {
+                set.mask = PF_EDIT_CONDUCTANCE;
+                set.conductance = *conductance;
+            }
+            Behaviour::Cylinder {
+                bore_mm,
+                rod_mm,
+                stroke_mm,
+                moving_mass_kg,
+                ..
+            } => {
+                set.mask = PF_EDIT_STROKE | PF_EDIT_BORE | PF_EDIT_ROD | PF_EDIT_MASS;
+                set.bore_mm = *bore_mm;
+                set.rod_mm = *rod_mm;
+                set.stroke_mm = *stroke_mm;
+                set.moving_mass_kg = *moving_mass_kg;
+            }
+            Behaviour::Junction => {}
+        }
+        // SAFETY: the caller promised a writable structure.
+        unsafe { out.write(set) };
+        PF_OK
+    })
+}
+
+/// Writes the masked parameters of one placement, as one undoable edit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `set` must be null or point to a
+/// readable [`PfEditSet`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_component_edits(
+    session: *mut PfSession,
+    index: u32,
+    set: *const PfEditSet,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if set.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a readable structure.
+        let set = unsafe { *set };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return session.fail("that component does not exist");
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return session.fail("that component has no definition");
+        };
+        let mut edits = placement.edits.clone();
+        if set.mask & PF_EDIT_PRESSURE != 0 {
+            if !set.pressure_bar.is_finite() || set.pressure_bar < 0.0 {
+                return session.fail("the supply pressure must be zero or positive");
+            }
+            edits.pressure_bar = Some(set.pressure_bar);
+        }
+        if set.mask & PF_EDIT_CONDUCTANCE != 0 {
+            if !set.conductance.is_finite() || set.conductance <= 0.0 {
+                return session.fail("the conductance must be positive");
+            }
+            edits.conductance = Some(set.conductance);
+        }
+        if set.mask & PF_EDIT_STROKE != 0 {
+            if !set.stroke_mm.is_finite() || set.stroke_mm <= 0.0 {
+                return session.fail("the stroke must be positive");
+            }
+            edits.stroke_mm = Some(set.stroke_mm);
+        }
+        if set.mask & PF_EDIT_MASS != 0 {
+            if !set.moving_mass_kg.is_finite() || set.moving_mass_kg <= 0.0 {
+                return session.fail("the moving mass must be positive");
+            }
+            edits.moving_mass_kg = Some(set.moving_mass_kg);
+        }
+        let bore = if set.mask & PF_EDIT_BORE != 0 {
+            if !set.bore_mm.is_finite() || set.bore_mm <= 0.0 {
+                return session.fail("the bore must be positive");
+            }
+            edits.bore_mm = Some(set.bore_mm);
+            set.bore_mm
+        } else {
+            edits.bore_mm.unwrap_or(match &definition.behaviour {
+                Behaviour::Cylinder { bore_mm, .. } => *bore_mm,
+                _ => 0.0,
+            })
+        };
+        if set.mask & PF_EDIT_ROD != 0 {
+            if !set.rod_mm.is_finite() || set.rod_mm < 0.0 || set.rod_mm >= bore {
+                return session.fail("the rod must be smaller than the bore");
+            }
+            edits.rod_mm = Some(set.rod_mm);
+        }
+        if !session.document.edit(index as usize, edits) {
+            // The form was applied without changing anything: not an error, not an edit.
+            return PF_OK;
+        }
+        session.rebuild_model();
+        PF_OK
+    })
+}
+
+/// Moves a placement, snapping to the grid.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_move_component(
+    session: *mut PfSession,
+    index: u32,
+    x_mm: f32,
+    y_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session
+            .document
+            .move_to(index as usize, Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)))
+        {
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// Removes a placement. The selection is cleared when it was the one removed.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_remove_component(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.document.remove(index as usize).is_none() {
+            return session.fail("that component does not exist");
+        }
+        if session.selected == Some(index as usize) {
+            session.selected = None;
+        }
+        session.rebuild_model();
+        PF_OK
+    })
+}
+
+/// Takes back the last document change.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_undo(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.document.undo() {
+            session.clamp_selection();
+            session.rebuild_model();
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// Applies the last undone document change again.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_redo(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.document.redo() {
+            session.clamp_selection();
+            session.rebuild_model();
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// `1` when there is a document change to take back.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_can_undo(session: *const PfSession) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| i32::from(session.document.can_undo()))
+}
+
+/// `1` when an undone change can be applied again.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_can_redo(session: *const PfSession) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| i32::from(session.document.can_redo()))
+}
+
+/// Repaints one pipe in the accent colour, over the black one, so the selection is visible.
+fn draw_selected_pipe(
+    surface: &mut FrameBuffer<'_>,
+    document: &Document,
+    catalog: &Catalog,
+    ink: &Ink,
+    index: usize,
+) {
+    let Some(connection) = document.connections().get(index) else {
+        return;
+    };
+    let Some((start, end)) = pipe_points(document, catalog, index) else {
+        return;
+    };
+    surface.line(
+        &route_offset(start, end, connection.offset_mm()),
+        Stroke::new(2.4, ink.accent),
+    );
+}
+
+/// Spanish name of a category, because the inspector is interface copy.
+fn category_es(category: punchi_fluid_catalog::Category) -> &'static str {
+    use punchi_fluid_catalog::Category;
+    match category {
+        Category::Supply => "suministro",
+        Category::Valve => "válvula",
+        Category::Actuator => "actuador",
+        Category::Throttle => "estrangulador",
+        Category::Accessory => "accesorio",
+        Category::Sensor => "sensor",
+    }
+}
+
+/// Spanish name of an actuation, for the same reason.
+fn actuation_es(actuation: punchi_fluid_catalog::Actuation) -> &'static str {
+    use punchi_fluid_catalog::Actuation;
+    match actuation {
+        Actuation::None => "ninguno",
+        Actuation::Toggle => "conmutar",
+        Actuation::Momentary => "mantener",
+    }
+}
+
+/// Applies the per-instance values of a placement to a copy of its definition.
+///
+/// Only fields the behaviour actually has are touched, so an override left over from a
+/// previous component cannot leak into a different one.
+fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits: &PlacementEdits) {
+    match &mut definition.behaviour {
+        Behaviour::Supply { pressure_bar } => {
+            if let Some(value) = edits.pressure_bar {
+                *pressure_bar = value;
+            }
+        }
+        Behaviour::Valve { positions, .. } => {
+            if let Some(value) = edits.conductance {
+                for position in positions {
+                    for connection in &mut position.connection {
+                        connection.conductance = value;
+                    }
+                }
+            }
+        }
+        Behaviour::Throttle { conductance } => {
+            if let Some(value) = edits.conductance {
+                *conductance = value;
+            }
+        }
+        Behaviour::Cylinder {
+            bore_mm,
+            rod_mm,
+            stroke_mm,
+            moving_mass_kg,
+            ..
+        } => {
+            if let Some(value) = edits.bore_mm {
+                *bore_mm = value;
+            }
+            if let Some(value) = edits.rod_mm {
+                *rod_mm = value;
+            }
+            if let Some(value) = edits.stroke_mm {
+                *stroke_mm = value;
+            }
+            if let Some(value) = edits.moving_mass_kg {
+                *moving_mass_kg = value;
+            }
+        }
+        Behaviour::Junction => {}
+    }
+}
+
+/// The fixed-composition boxes, when the document still holds those three components.
+fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
+    let find = |wanted: &str| {
+        placed
+            .iter()
+            .find(|candidate| candidate.catalog_id == wanted)
+            .map(|candidate| candidate.rect)
+    };
+    match (
+        find(punchi_fluid_draw::schematic::SUPPLY_ID),
+        find(punchi_fluid_draw::schematic::VALVE_ID),
+        find(punchi_fluid_draw::schematic::CYLINDER_ID),
+    ) {
+        (Some(supply), Some(valve), Some(cylinder)) => Some(Layout {
+            supply,
+            valve,
+            cylinder,
+        }),
+        _ => None,
+    }
+}
+
+/// Pressure in a hose as a fraction of the supply span, for the drawing.
+///
+/// A hose of a definition the solver could not model stays neutral instead of guessing.
+fn hose_pressure(network: Option<&Network>, component: Option<usize>, id: &str) -> f32 {
+    let (Some(network), Some(component)) = (network, component) else {
+        return 0.0;
+    };
+    let Some(pressure) = network.port_pressure(component, id) else {
+        return 0.0;
+    };
+    let span = network.supply_pa() - network.atmosphere_pa();
+    if span <= 0.0 {
+        return 0.0;
+    }
+    #[allow(clippy::cast_possible_truncation)]
+    let ratio = ((pressure - network.atmosphere_pa()) / span) as f32;
+    ratio.clamp(0.0, 1.0)
+}
+
+/// Where a pipe starts and ends on the sheet, in millimetres.
+///
+/// A pipe whose components or ports cannot be found is not drawable and has no geometry:
+/// the caller skips it rather than drawing a line to nowhere.
+fn pipe_points(document: &Document, catalog: &Catalog, index: usize) -> Option<(Pt, Pt)> {
+    let connection = document.connections().get(index)?;
+    let from = document
+        .placements()
+        .get(document.index_of(connection.from.placement)?)?;
+    let to = document
+        .placements()
+        .get(document.index_of(connection.to.placement)?)?;
+    let start = port_point(
+        from.rect(),
+        catalog.get(&from.catalog_id)?,
+        &connection.from.port,
+    )?;
+    let end = port_point(to.rect(), catalog.get(&to.catalog_id)?, &connection.to.port)?;
+    Some((start, end))
+}
+
+/// Shortest distance from a point to a polyline, in the drawing's millimetres.
+fn distance_to_path(point: Pt, path: &[Pt]) -> f32 {
+    let mut best = f32::MAX;
+    for pair in path.windows(2) {
+        best = best.min(distance_to_segment(point, pair[0], pair[1]));
+    }
+    best
+}
+
+/// Shortest distance from a point to one segment.
+fn distance_to_segment(point: Pt, start: Pt, end: Pt) -> f32 {
+    let (dx, dy) = start.to(end);
+    let length_squared = dx.mul_add(dx, dy * dy);
+    if length_squared <= f32::EPSILON {
+        return Pt::new(point.x - start.x, point.y - start.y).length();
+    }
+    let (px, py) = start.to(point);
+    let t = ((px.mul_add(dx, py * dy)) / length_squared).clamp(0.0, 1.0);
+    Pt::new(
+        point.x - dx.mul_add(t, start.x),
+        point.y - dy.mul_add(t, start.y),
+    )
+    .length()
+}
+
+/// The port nearest to a point, if one is close enough to be meant.
+///
+/// Writes the placement index into `index` and the port id into `port` (NUL-terminated
+/// UTF-8). Returns `PF_OK`, or `PF_ERR_MODEL` when no port is within `tolerance_mm`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `index` must be null or writable;
+/// `port` must be null or point to `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_at(
+    session: *const PfSession,
+    x_mm: f32,
+    y_mm: f32,
+    tolerance_mm: f32,
+    index: *mut u32,
+    port: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some((found, id)) = session.port_at(Pt::new(x_mm, y_mm), tolerance_mm.max(0.5)) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = id.as_bytes();
+        if index.is_null() || port.is_null() {
+            return PF_ERR_NULL;
+        }
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised one writable index and `capacity` writable bytes.
+        unsafe { *index = found as u32 };
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(port.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        PF_OK
+    })
+}
+
+/// Draws a pipe between two ports. Returns `PF_OK`, or `PF_ERR_MODEL` when refused.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and both port ids must be
+/// NUL-terminated UTF-8.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_connect(
+    session: *mut PfSession,
+    from_index: u32,
+    from_port: *const c_char,
+    to_index: u32,
+    to_port: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session and two strings.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if from_port.is_null() || to_port.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: both were promised NUL-terminated by the caller.
+        let (Ok(from_port), Ok(to_port)) = (
+            unsafe { CStr::from_ptr(from_port) }.to_str(),
+            unsafe { CStr::from_ptr(to_port) }.to_str(),
+        ) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(from) = session
+            .document
+            .placements()
+            .get(from_index as usize)
+            .map(punchi_fluid_doc::Placement::id)
+        else {
+            return session.fail("that component does not exist");
+        };
+        let Some(to) = session
+            .document
+            .placements()
+            .get(to_index as usize)
+            .map(punchi_fluid_doc::Placement::id)
+        else {
+            return session.fail("that component does not exist");
+        };
+        if session.document.connect(
+            punchi_fluid_doc::Endpoint::new(from, from_port),
+            punchi_fluid_doc::Endpoint::new(to, to_port),
+        ) {
+            session.rebuild_model();
+            PF_OK
+        } else {
+            session.fail("esas conexiones no se pueden unir")
+        }
+    })
+}
+
+/// Splits a pipe with a T junction and joins one more pipe end to it.
+///
+/// This is the gesture the reference documents: a hose end dropped on an existing hose
+/// leaves a T where it landed. The junction is a component, so the whole thing is one entry
+/// in the undo history. Returns `PF_OK` or an error code; on an error nothing changed.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `attach_port` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_splice_pipe(
+    session: *mut PfSession,
+    pipe_index: u32,
+    x_mm: f32,
+    y_mm: f32,
+    attach_index: u32,
+    attach_port: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if attach_port.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(attach_port) = unsafe { CStr::from_ptr(attach_port) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        let Some(attach) = session
+            .document
+            .placements()
+            .get(attach_index as usize)
+            .map(punchi_fluid_doc::Placement::id)
+        else {
+            return session.fail("ese componente no existe");
+        };
+        if session
+            .document
+            .connections()
+            .get(pipe_index as usize)
+            .is_none()
+        {
+            return session.fail("ese tubo no existe");
+        }
+        if !x_mm.is_finite() || !y_mm.is_finite() {
+            return session.fail("la unión necesita un punto real");
+        }
+        let junction = punchi_fluid_doc::Placement::new(
+            JUNCTION_ID,
+            Pt::new(x_mm, y_mm),
+            JUNCTION_MM,
+            JUNCTION_MM,
+        );
+        if session.document.splice(
+            pipe_index as usize,
+            junction,
+            punchi_fluid_doc::Endpoint::new(attach, attach_port),
+        ) {
+            session.rebuild_model();
+            PF_OK
+        } else {
+            session.fail("esa unión no se puede insertar")
+        }
+    })
+}
+
+/// Where the `index`-th fault of the design check is, as `x y` in millimetres.
+///
+/// The interface marks the drawing with these, so a fault is pointed at rather than
+/// described and left to the user to find. Call `pf_session_check` first: it returns the
+/// count, and this indexes into the same list.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `out` must be null or point to two
+/// writable floats.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_finding_at(
+    session: *const PfSession,
+    index: u32,
+    out: *mut f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let findings = session.findings();
+        let Some(finding) = findings.get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised two writable floats.
+        let target = unsafe { std::slice::from_raw_parts_mut(out, 2) };
+        target[0] = finding.at.x;
+        target[1] = finding.at.y;
+        PF_OK
+    })
+}
+
+/// How many pipes the sheet holds.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_connection_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }
+        .map_or(0, |session| session.document.connections().len() as u32)
+}
+
+/// The port of a placement, in millimetres of the sheet, as `x y`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `port` must be null or a
+/// NUL-terminated string; `out` must be null or point to two writable floats.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_point(
+    session: *const PfSession,
+    index: u32,
+    port: *const c_char,
+    out: *mut f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if port.is_null() || out.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(port) = unsafe { CStr::from_ptr(port) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(point) = port_point(placement.rect(), definition, port) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised two writable floats.
+        let target = unsafe { std::slice::from_raw_parts_mut(out, 2) };
+        target[0] = point.x;
+        target[1] = point.y;
+        PF_OK
+    })
+}
+
+/// The pipe nearest to a point, or `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_pipe_at(
+    session: *const PfSession,
+    x_mm: f32,
+    y_mm: f32,
+    tolerance_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return -1;
+        };
+        session
+            .pipe_at(Pt::new(x_mm, y_mm), tolerance_mm.max(0.5))
+            .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+    })
+}
+
+/// Selects a pipe by index, or clears every selection with `-1`.
+///
+/// A pipe and a component are never selected together: `Delete` has to know which one it
+/// removes.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_select_pipe(session: *mut PfSession, index: i32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.selected_pipe = usize::try_from(index).ok();
+        session.selected = None;
+        PF_OK
+    })
+}
+
+/// The selected pipe, or `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_selected_pipe(session: *const PfSession) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }
+        .and_then(|session| session.selected_pipe)
+        .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+}
+
+/// Removes the selected pipe, if there is one.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_remove_selected_pipe(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(index) = session.selected_pipe else {
+            return PF_ERR_MODEL;
+        };
+        if session.document.disconnect(index) {
+            session.selected_pipe = None;
+            session.rebuild_model();
+            PF_OK
+        } else {
+            session.fail("that pipe does not exist")
+        }
+    })
+}
+
+/// Moves the middle segment of a pipe so it passes through a point of the sheet.
+///
+/// This is the drag that re-routes a hose: the route is an elbow and the segment between
+/// its two bends follows the pointer. Every call of one drag extends the same history
+/// entry, so the whole gesture is one undo.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_route_pipe(
+    session: *mut PfSession,
+    index: u32,
+    x_mm: f32,
+    y_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.route_pipe(index as usize, Pt::new(x_mm, y_mm))
+    })
+}
+
+/// How far the middle segment of a pipe sits from the automatic route, in millimetres.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// a writable `float`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_pipe_offset(
+    session: *const PfSession,
+    index: u32,
+    out: *mut f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(connection) = session.document.connections().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised a writable float.
+        unsafe { out.write(connection.offset_mm()) };
+        PF_OK
+    })
+}
+
+/// Checks the document and writes the findings, one per line, as NUL-terminated UTF-8.
+///
+/// Returns how many faults were found, or a negative code when there is no model or the
+/// buffer is too small. A clean circuit writes an empty string and returns `0`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_check(
+    session: *const PfSession,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let findings = session.findings();
+        let text = findings
+            .iter()
+            .map(punchi_fluid_check::Finding::describe)
+            .collect::<Vec<_>>()
+            .join("\n");
+        let bytes = text.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(findings.len()).unwrap_or(PF_ERR_MODEL)
     })
 }

@@ -43,6 +43,8 @@ qt_add_executable(punchi-fluid
     src/replay.h
     src/icons.cpp
     src/icons.h
+    src/sounds.cpp
+    src/sounds.h
     src/theme.cpp
     src/theme.h
 )
@@ -58,7 +60,24 @@ qt_add_qml_module(punchi-fluid
         RibbonButton.qml
         RibbonGroup.qml
         Sidebar.qml
+        SoundFeedback.qml
         StatusBar.qml
+)
+
+# The two event samples travel inside the binary, the way the catalog does, so an
+# installation is still one file and there is no data path to get wrong. `SoundLibrary`
+# prefers a file of the same name in $XDG_DATA_HOME/punchi-fluid-lab/sounds/ over these.
+#
+# Playing them needs the Qt Multimedia module at run time — it is imported by
+# SoundFeedback.qml, not linked here, so the build only needs the QML module present in the
+# Qt installation.
+qt_add_resources(punchi-fluid "sounds"
+    PREFIX "/sounds"
+    BASE "${REPO_ROOT}/assets/sounds"
+    FILES
+        "${REPO_ROOT}/assets/sounds/valve.wav"
+        "${REPO_ROOT}/assets/sounds/air.wav"
+        "${REPO_ROOT}/assets/sounds/cylinder.wav"
 )
 
 target_include_directories(punchi-fluid PRIVATE

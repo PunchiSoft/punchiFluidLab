@@ -11,6 +11,10 @@ Rectangle {
     id: status
     property FluidSession session
     property string hint: ""
+    /// Shown by the button below and obeyed by `SoundFeedback`; the window owns it.
+    property bool muted: false
+
+    signal muteToggled()
 
     color: session.background
 
@@ -49,8 +53,8 @@ Rectangle {
     }
 
     Text {
-        anchors.right: parent.right
-        anchors.rightMargin: 16
+        anchors.right: soundToggle.left
+        anchors.rightMargin: 12
         anchors.left: parent.left
         anchors.leftMargin: 520
         anchors.verticalCenter: parent.verticalCenter
@@ -59,5 +63,22 @@ Rectangle {
         text: session.lastError.length > 0 ? session.lastError : status.hint
         color: session.muted
         font.pixelSize: 12
+    }
+
+    // Sound is a command like any other: reachable by key, named for assistive technology,
+    // and never the only signal that something happened.
+    RibbonButton {
+        id: soundToggle
+        anchors.right: parent.right
+        anchors.rightMargin: 12
+        anchors.verticalCenter: parent.verticalCenter
+        session: status.session
+        large: false
+        label: status.muted ? qsTr("Silencio") : qsTr("Sonido")
+        iconName: status.muted ? "audio-volume-muted" : "audio-volume-high"
+        tone: status.muted ? "muted" : "foreground"
+        hint: status.muted ? qsTr("Ctrl+M · activar el sonido")
+                           : qsTr("Ctrl+M · silenciar la ventana")
+        onTriggered: status.muteToggled()
     }
 }

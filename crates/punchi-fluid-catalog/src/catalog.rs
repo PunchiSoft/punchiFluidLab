@@ -188,6 +188,7 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
         }
         Behaviour::Cylinder {
             bore_mm,
+            rod_mm,
             stroke_mm,
             dead_length_mm,
             moving_mass_kg,
@@ -208,6 +209,14 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
                 return Err(invalid(
                     path,
                     &format!("{field} must be positive, found {value}"),
+                ));
+            }
+            if !rod_mm.is_finite() || *rod_mm < 0.0 || *rod_mm >= *bore_mm {
+                return Err(invalid(
+                    path,
+                    &format!(
+                        "rod_mm must be zero or positive and smaller than the bore, found {rod_mm}"
+                    ),
                 ));
             }
             let non_negative = [
@@ -233,6 +242,9 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
             default_position,
             ..
         } => check_valve(definition, path, positions, *default_position),
+        // A junction declares no number of its own, so there is nothing to range-check:
+        // the parts that would carry a number are absent from the file by construction.
+        Behaviour::Junction => Ok(()),
     }
 }
 

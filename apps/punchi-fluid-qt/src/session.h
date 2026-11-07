@@ -4,11 +4,13 @@
 #pragma once
 
 #include <QColor>
+#include <cmath>
 #include <QObject>
 #include <QPalette>
 #include <QQmlEngine>
 #include <QString>
 #include <QVariantList>
+#include <QPointF>
 
 #include "punchi_fluid.h"
 #include "theme.h"
@@ -32,11 +34,25 @@ class FluidSession : public QObject
 
     /// `true` in edit mode: the animation does not run and a click opens properties
     /// instead of actuating, which is the split a schematic editor has.
-    Q_PROPERTY(bool editing READ editing WRITE setEditing NOTIFY modeChanged)
+    ///
+    /// The mode is not a switch of its own: it is what the transport leaves behind.
+    /// Starting or pausing enters simulation; stopping returns to editing.
+    Q_PROPERTY(bool editing READ editing NOTIFY modeChanged)
+    Q_PROPERTY(int componentCount READ componentCount NOTIFY documentChanged)
+    Q_PROPERTY(int selected READ selected NOTIFY documentChanged)
+    Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
+    Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(bool inspectorOpen READ inspectorOpen NOTIFY inspectorChanged)
+    Q_PROPERTY(bool checkOpen READ checkOpen NOTIFY inspectorChanged)
+    Q_PROPERTY(QString checkReport READ checkReport NOTIFY inspectorChanged)
+    Q_PROPERTY(int checkCount READ checkCount NOTIFY inspectorChanged)
     Q_PROPERTY(QString inspectorText READ inspectorText NOTIFY inspectorChanged)
+    Q_PROPERTY(QVariantList inspectorFields READ inspectorFields NOTIFY inspectorChanged)
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
+    Q_PROPERTY(QString currentPath READ currentPath NOTIFY documentChanged)
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
@@ -59,13 +75,30 @@ public:
     PfSession *handle() const { return m_session; }
     const ThemeTokens &tokens() const { return m_tokens; }
 
-    double pressureBar() const { return m_telemetry.pressure_pa / 1.0e5; }
+    /// Gauge pressure in the cylinder, the way a pneumatic gauge reads: zero at rest.
+    double pressureBar() const
+    {
+        const double bar = (m_telemetry.pressure_pa - PF_ATMOSPHERE_PA) / 1.0e5;
+        // A chamber at rest can sit a fraction of a pascal below the atmosphere the model
+        // uses, and "-0,00 bar" is a reading no gauge would show.
+        return std::abs(bar) < 0.005 ? 0.0 : bar;
+    }
     double positionMm() const { return m_telemetry.position_m * 1.0e3; }
     double velocityMmS() const { return m_telemetry.velocity_m_s * 1.0e3; }
     double timeS() const { return m_telemetry.time_s; }
     int valvePosition() const { return static_cast<int>(m_telemetry.valve_position); }
     bool hasModel() const { return m_telemetry.has_model == 1; }
     QString lastError() const { return m_error; }
+    /// File the document was opened from or last saved to; empty until then.
+    QString currentPath() const { return m_currentPath; }
+    /// Writes the sheet; `path` may be a local path or a `file:` URL.
+    Q_INVOKABLE bool saveTo(const QString &path);
+    /// Reads a sheet, replacing the document. On failure the document is untouched.
+    Q_INVOKABLE bool openFrom(const QString &path);
+    /// Saves to the current file. `false` when there is none yet.
+    Q_INVOKABLE bool saveCurrent();
+    /// Starts a new document and forgets the current file.
+    Q_INVOKABLE void newDocument();
 
     /// `true` while the transport is playing. Pausing stops the sheet loop without
     /// touching the model, so resuming continues from the same instant.
@@ -89,6 +122,14 @@ public:
     /// Advances exactly one frame and leaves the transport paused, the way a simulator's
     /// step button behaves.
     Q_INVOKABLE void stepForward();
+
+    /// Runs until the state changes: a piston reaches an end or a valve moves.
+    ///
+    /// The reference documents this as a transport mode (§3.2). It computes the run at
+    /// once instead of animating it, and leaves the transport paused at the frame where
+    /// the change happened. Returns `false` when four simulated seconds pass with no
+    /// change.
+    Q_INVOKABLE bool runUntilChange();
 
     /// `true` when the last frames left the state unchanged: the sheet loop can stop.
     ///
@@ -114,18 +155,93 @@ public:
     /// pointer or the key is down for a spring-return valve, latched for the others.
     Q_INVOKABLE void pressValve();
     Q_INVOKABLE void releaseValve();
+    /// The same gesture on the valve of one placement: a sheet can hold more than one.
+    Q_INVOKABLE void pressValveAt(int index);
+    Q_INVOKABLE void releaseValveAt(int index);
+    /// `-1` when that placement is not a valve.
+    Q_INVOKABLE int valvePositionAt(int index) const;
+    Q_INVOKABLE bool valveSpringReturnAt(int index) const;
 
     /// `true` when the valve returns to rest on release, so the front end holds it.
     bool valveSpringReturn() const { return m_valveSpringReturn; }
 
     bool editing() const { return m_editing; }
-    void setEditing(bool editing);
+
+    /// Enters simulation and starts: the reference's Iniciar (F9).
+    Q_INVOKABLE void startSimulation();
+    /// Stays in simulation and stops the animation. From editing, it enters simulation
+    /// without starting, which is how the reference lets settings be checked first.
+    Q_INVOKABLE void pauseSimulation();
+    /// Leaves simulation and goes back to editing: the reference's Detener (F5).
+    Q_INVOKABLE void stopSimulation();
+
+    int componentCount() const { return m_componentCount; }
+    int selected() const { return m_selected; }
+    bool canUndo() const { return m_canUndo; }
+    bool canRedo() const { return m_canRedo; }
+
+    /// Places a catalog entry at a point of the sheet, snapped by the core.
+    Q_INVOKABLE int placeComponent(int catalogIndex, double xMm, double yMm);
+    Q_INVOKABLE void moveComponent(int index, double xMm, double yMm);
+    Q_INVOKABLE void removeComponent(int index);
+    Q_INVOKABLE void removeSelected();
+    /// Keeps the selected component for a later paste.
+    Q_INVOKABLE void copySelected();
+    /// Pastes at a point of the sheet, snapped by the core.
+    Q_INVOKABLE int pasteAt(double xMm, double yMm);
+    /// Pastes ten millimetres right and down from the copied component.
+    Q_INVOKABLE void pasteOffset();
+    /// Copies the selected component ten millimetres away and selects the copy.
+    Q_INVOKABLE void duplicateSelected();
+    /// Copies a placement displaced by a delta; the Shift+drag gesture.
+    Q_INVOKABLE int duplicateComponent(int index, double dxMm, double dyMm);
+    Q_INVOKABLE void selectPipe(int index);
+    Q_INVOKABLE int pipeAt(double xMm, double yMm, double toleranceMm);
+    /// Drags the middle segment of a pipe so it passes through a point.
+    Q_INVOKABLE void routePipe(int index, double xMm, double yMm);
+    Q_INVOKABLE void select(int index);
+    Q_INVOKABLE int componentAt(double xMm, double yMm);
+
+    /// The port nearest to a point, if one is within `toleranceMm`.
+    bool portAt(double xMm, double yMm, double toleranceMm, int *index, QString *port) const;
+    /// Splits a pipe at a point and joins `fromIndex:fromPort` to the junction it leaves.
+    bool splicePipeAt(int pipeIndex, double xMm, double yMm, int fromIndex,
+                      const QString &fromPort);
+
+    /// Draws a pipe between two ports. `false` when the model refuses it.
+    bool connectPorts(int fromIndex, const QString &fromPort, int toIndex, const QString &toPort);
+    /// Where a port sits, in millimetres of the sheet.
+    bool portPoint(int index, const QString &port, QPointF *point) const;
+    int connectionCount() const;
+    /// The view: how far the sheet is magnified and whether its grid shows. Both are
+    /// view state, not document state, so neither touches the undo history.
+    double zoom() const { return m_zoom; }
+    void setZoom(double zoom);
+    bool grid() const { return m_grid; }
+    void setGrid(bool on);
+    Q_INVOKABLE void zoomIn();
+    Q_INVOKABLE void zoomOut();
+    Q_INVOKABLE void zoomReset();
+    Q_INVOKABLE void toggleGrid();
+
+    Q_INVOKABLE void undo();
+    Q_INVOKABLE void redo();
 
     bool inspectorOpen() const { return m_inspectorOpen; }
     QString inspectorText() const { return m_inspectorText; }
-    /// Opens the properties of the valve: what the definition file says, not a form the
-    /// front end made up.
+    QVariantList inspectorFields() const { return m_inspectorFields; }
+    /// Opens the properties of one placement: what its definition and its own edits say.
+    Q_INVOKABLE void inspectComponent(int index);
+    /// Opens the properties of the selected component, or of the first valve.
     Q_INVOKABLE void inspectValve();
+    /// Applies the edited fields (`key` and `value` per entry) as one undoable edit.
+    Q_INVOKABLE void applyInspectorEdits(const QVariantList &values);
+    /// Checks the circuit and opens the report. The faults are counted, not judged: an
+    /// empty report is the only clean one.
+    Q_INVOKABLE void checkCircuit();
+    bool checkOpen() const { return m_checkOpen; }
+    QString checkReport() const { return m_checkReport; }
+    int checkCount() const { return m_checkCount; }
     Q_INVOKABLE void closeInspector();
     /// Back to t = 0.
     Q_INVOKABLE void restart();
@@ -139,6 +255,8 @@ public:
 
 signals:
     void changed();
+    void viewChanged();
+    void documentChanged();
     void modeChanged();
     void inspectorChanged();
     void catalogChanged();
@@ -146,25 +264,76 @@ signals:
     void runningChanged();
     void speedChanged();
 
+    /// The valve moved: the spool has actually changed position, not merely been pressed.
+    ///
+    /// A spring-return valve returns on release, so one gesture produces two of these, and
+    /// the front end plays the sample each time — that is the tick-tick a real one makes.
+    void valveActuated();
+    /// The piston reached an end of its stroke **and got there moving**.
+    ///
+    /// The reference plays `cylinder.wav` at the cylinder's end positions, and that is the
+    /// sound a pneumatic circuit actually makes: the spool is quiet, the impact is not. A
+    /// piston that creeps up to the end has nothing to report, so the arrival is only an
+    /// event when it carries speed.
+    void cylinderReachedEnd();
+    /// The transport started or stopped, which is the front end's cue for the air.
+    void transportStarted();
+    void transportStopped();
+
 private:
     /// Republishes the telemetry. `forced` repaints even when nothing moved, which is
     /// what a single step must do.
     void refresh(bool forced = false);
+    /// Announces an arrival at the end of the stroke, at most once per arrival.
+    void announceImpact(const PfTelemetry &telemetry);
+    /// Republishes what the document reports, after any change to it.
+    void refreshDocument();
     void advanceInternal(double dt, bool forced);
     void readCatalog();
 
     PfSession *m_session = nullptr;
     PfTelemetry m_telemetry {};
     QString m_error;
+    QString m_currentPath;
     bool m_valveSpringReturn = true;
-    bool m_editing = false;
+    /// The program starts in edit mode, as the reference does: nothing moves and a click on
+    /// a valve selects it. Simulation is entered deliberately, with Iniciar or Pausa.
+    bool m_editing = true;
+    int m_componentCount = 0;
+    int m_selected = -1;
+    bool m_canUndo = false;
+    bool m_canRedo = false;
     bool m_inspectorOpen = false;
+    double m_zoom = 1.0;
+    bool m_grid = true;
+    bool m_checkOpen = false;
+    QString m_checkReport;
+    int m_checkCount = 0;
     QString m_inspectorText;
+    QVariantList m_inspectorFields;
+    int m_inspectorIndex = -1;
     QVariantList m_catalog;
     ThemeTokens m_tokens;
     Contrast m_contrast;
     bool m_settled = false;
-    bool m_running = true;
+    bool m_running = false;
     double m_speed = 1.0;
     int m_steadyFrames = 0;
+    /// How fast the piston was moving on the last frame. The solver clamps the velocity to
+    /// zero in the same step that stops the piston, so the speed that carried it into the
+    /// stop — the impact energy — only exists on the frame before.
+    double m_lastVelocity = 0.0;
+    /// How far the piston was on the last frame, so an arrival can be recognised at all.
+    double m_lastExtension = 0.0;
+    /// Which end the piston last announced, so one impact is one sound rather than sixty.
+    int m_lastEnd = -1;
+    /// When the piston was last seen away from that end, in simulated seconds.
+    ///
+    /// The model can rebound a few millimetres off the stop before the chamber charges and
+    /// it settles there, which is several arrivals a few milliseconds apart. To a listener
+    /// that is one hit, so the arrival is only news again after the piston has been away
+    /// from that end for longer than a rebound lasts.
+    double m_awaySince = 0.0;
+    /// Whether the piston was at an end of its stroke on the frame before.
+    bool m_wasAtEnd = false;
 };

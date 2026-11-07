@@ -118,7 +118,7 @@ impl ValveModel {
             definition_id: definition.id.clone(),
             position_names: positions
                 .iter()
-                .map(|position| position.name.clone())
+                .map(|position| position.display_name().to_owned())
                 .collect(),
             actuation: *actuation,
             spring_return: *spring_return,
@@ -178,6 +178,8 @@ fn roles(left: PortRole, right: PortRole) -> Option<Slot> {
 pub struct Cylinder {
     /// Piston bore, `m`.
     pub bore: f64,
+    /// Rod diameter, `m`; zero when the return chamber has the full bore.
+    pub rod: f64,
     /// Usable stroke, `m`.
     pub stroke: f64,
     /// Length standing for the residual volume at `x = 0`, `m`.
@@ -204,6 +206,7 @@ impl Cylinder {
     pub fn from_definition(definition: &ComponentDefinition) -> Result<Self, SolverError> {
         let Behaviour::Cylinder {
             bore_mm,
+            rod_mm,
             stroke_mm,
             dead_length_mm,
             moving_mass_kg,
@@ -218,6 +221,7 @@ impl Cylinder {
 
         Ok(Self {
             bore: bore_mm / 1000.0,
+            rod: rod_mm / 1000.0,
             stroke: stroke_mm / 1000.0,
             dead_length: dead_length_mm / 1000.0,
             moving_mass: *moving_mass_kg,
@@ -232,6 +236,13 @@ impl Cylinder {
     #[must_use]
     pub fn area(&self) -> f64 {
         std::f64::consts::PI * (self.bore / 2.0) * (self.bore / 2.0)
+    }
+
+    /// Area of the chamber the rod crosses, `m²`: the bore less the rod.
+    #[must_use]
+    pub fn annulus_area(&self) -> f64 {
+        std::f64::consts::PI
+            * ((self.bore / 2.0) * (self.bore / 2.0) - (self.rod / 2.0) * (self.rod / 2.0))
     }
 
     /// Gas volume at piston position `x`, `m³`.
@@ -335,7 +346,8 @@ impl PneumaticSystem {
             / (AIR_SPECIFIC_GAS_CONSTANT * temperature_kelvin);
 
         Ok(Self {
-            supply_pa: pressure_bar * 100_000.0,
+            // The datasheet pressure of a supply is gauge; the flowing gas sees absolute.
+            supply_pa: pressure_bar.mul_add(100_000.0, atmosphere_pa),
             atmosphere_pa,
             temperature_kelvin,
             valve_position: valve.default_position(),
@@ -711,6 +723,88 @@ mod tests {
         assert!(
             (measured - expected).abs() / expected < 0.01,
             "measured {measured:e} expected {expected:e}"
+        );
+    }
+
+    #[test]
+    fn a_piston_that_reaches_the_stop_stays_there_with_a_held_valve() {
+        // A hard stop absorbs the motion. The clamp zeroes the velocity on the frame the
+        // piston arrives, so nothing may kick it back: an impact that bounces is not a stop,
+        // and the front end sees a second, spurious arrival a few frames later.
+        let mut system = demo();
+        assert!(system.set_valve_position(1), "the valve has two positions");
+        let limited = system.cylinder().stroke;
+        let frames = run_for(&mut system, 1.5, 1.0 / 60.0);
+        assert!(
+            frames.iter().any(|frame| frame.position >= limited - 1e-6),
+            "the stroke was never reached"
+        );
+        let settled = &frames[frames.len() - 1];
+        assert!(
+            (settled.position - limited).abs() < 1e-6,
+            "the piston left the stop: {} mm of {} mm",
+            settled.position * 1000.0,
+            limited * 1000.0
+        );
+        assert!(
+            settled.velocity.abs() < 1e-3,
+            "the piston is still moving against the stop: {} mm/s",
+            settled.velocity * 1000.0
+        );
+        // And it never went back down after arriving.
+        if let Some(arrival) = frames
+            .iter()
+            .position(|frame| frame.position >= limited - 1e-6)
+        {
+            let lowest = frames[arrival..]
+                .iter()
+                .map(|frame| frame.position)
+                .fold(f64::INFINITY, f64::min);
+            assert!(
+                limited - lowest < 1e-6,
+                "the piston bounced back to {} mm after arriving at {} mm",
+                lowest * 1000.0,
+                limited * 1000.0
+            );
+        }
+    }
+
+    #[test]
+    fn the_cylinder_settles_at_the_stop_after_the_rebound() {
+        // Measured 2026-11-06: with a 16 ms frame the piston reaches the stop before the
+        // chamber has charged, the return spring brings it back a few millimetres, and the
+        // incoming air pushes it out again. That is the model, not a numerical crash — the
+        // steady state holds it — but it is a **visible rebound** the reference does not
+        // show, and the front end has to know about it so one hit is one sound.
+        //
+        // This test pins the behaviour so the number is not forgotten: the piston must come
+        // to rest at the stop within a quarter of a second and stay.
+        let mut system = demo();
+        assert!(system.set_valve_position(1));
+        let stroke = system.cylinder().stroke;
+        let frames = run_for(&mut system, 0.25, 0.016);
+        let settled = &frames[frames.len() - 1];
+        assert!(
+            (settled.position - stroke).abs() < 1e-9,
+            "not at the stop after 0.25 s: {:.2} mm of {:.2} mm",
+            settled.position * 1000.0,
+            stroke * 1000.0
+        );
+        assert!(
+            settled.velocity.abs() < 1e-6,
+            "still moving at the stop: {:.1} mm/s",
+            settled.velocity * 1000.0
+        );
+        // The rebound is what the front end has to collapse into one impact, so it is
+        // asserted rather than merely observed: if a later change removes it, this test
+        // fails and the impact detector can be simplified on purpose.
+        let rebound = frames
+            .iter()
+            .map(|frame| stroke - frame.position)
+            .fold(0.0_f64, f64::max);
+        assert!(
+            rebound > 1.0e-3,
+            "the rebound disappeared; the impact detector may be simplified"
         );
     }
 

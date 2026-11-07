@@ -151,6 +151,7 @@ conductance = 5.0e-10        # sonic conductance C, m³ / (s · Pa)
 [behaviour]
 type = "cylinder"
 bore_mm = 20.0
+rod_mm = 0.0                 # rod diameter; 0 when the return chamber has the full bore
 stroke_mm = 100.0
 dead_length_mm = 5.0         # residual volume expressed as a length
 moving_mass_kg = 0.5
@@ -168,7 +169,8 @@ spring_return = true         # releasing returns to default_position
 default_position = 0
 
 [[behaviour.positions]]
-name = "rest"
+name = "rest"                # identifier and English name
+name_es = "reposo"           # optional; the interface speaks Spanish and shows this
 
 [[behaviour.positions.connection]]   # one open path per position
 from = "2"
@@ -183,6 +185,20 @@ from = "1"
 to = "2"
 conductance = 1.0e-9
 ```
+
+```toml
+[behaviour]
+type = "junction"            # no fields: it adds nothing to the network
+```
+
+A junction is where hoses meet. It has no volume, no restriction and no force, so the
+solver treats all of its ports as one point — which is why a junction file puts them on
+top of each other. Three ports on one point is the honest model of a node, and the
+filled dot of ISO 1219-1 is its whole symbol; the reason it is a component at all is
+[ADR 0006](../docs/adr/0006-a-junction-is-a-component.md). The circuit check does not
+report its ports as open connections, because an unused port of a node is an artefact
+of modelling a node as a component. A part that shares air between ports *and holds a
+volume* — a manifold block — is not a junction: that one needs its own behaviour.
 
 A connection is classified by the **roles** of its two ports, not by their numbers:
 `supply`↔`working` pressurises the working line, `working`↔`exhaust` vents it. Any

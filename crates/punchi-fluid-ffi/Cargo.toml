@@ -14,7 +14,10 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 punchi-fluid-catalog = { workspace = true }
+punchi-fluid-check = { workspace = true }
+punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
+punchi-fluid-file = { workspace = true }
 punchi-fluid-solver = { workspace = true }
 
 # This crate opts out of the inherited workspace lints on purpose. The workspace sets
@@ -23,6 +26,9 @@ punchi-fluid-solver = { workspace = true }
 # frame above it. The lints are restated here with `deny` so nothing weaker slips in,
 # `src/lib.rs` tightens `unsafe_code` to `deny`, and only the test, which has to call
 # the unsafe entry points, carries an `allow`.
+[dev-dependencies]
+tempfile = { workspace = true }
+
 [lints.rust]
 unsafe_code = "warn"
 missing_debug_implementations = "warn"

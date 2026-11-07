@@ -17,6 +17,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/valve.3_2.spring_return.toml"),
     ),
     (
+        "valve.5_2.spring_return.toml",
+        include_str!("../../../assets/catalog/valve.5_2.spring_return.toml"),
+    ),
+    (
         "cylinder.single_acting_20_100.toml",
         include_str!("../../../assets/catalog/cylinder.single_acting_20_100.toml"),
     ),
@@ -27,5 +31,9 @@ pub const FILES: &[(&str, &str)] = &[
     (
         "throttle.fixed.toml",
         include_str!("../../../assets/catalog/throttle.fixed.toml"),
+    ),
+    (
+        "junction.tee.toml",
+        include_str!("../../../assets/catalog/junction.tee.toml"),
     ),
 ];

@@ -401,6 +401,9 @@ pub struct Connection {
 pub struct ValvePosition {
     /// Human-readable name of the position.
     pub name: String,
+    /// Spanish name, when the automatic one is not good enough.
+    #[serde(default)]
+    pub name_es: Option<String>,
     /// Paths that are open while the valve sits in this position.
     #[serde(default)]
     pub connection: Vec<Connection>,
@@ -412,6 +415,14 @@ pub struct ValvePosition {
     /// one at the edge of the position's square.
     #[serde(default)]
     pub blocked: Vec<String>,
+}
+
+impl ValvePosition {
+    /// The name to show in the interface, as [`ComponentDefinition::display_name`] does.
+    #[must_use]
+    pub fn display_name(&self) -> &str {
+        self.name_es.as_deref().unwrap_or(&self.name)
+    }
 }
 
 /// What the component does during the simulation.
@@ -440,6 +451,13 @@ pub enum Behaviour {
     Cylinder {
         /// Piston bore, `mm`.
         bore_mm: f64,
+        /// Rod diameter, `mm`.
+        ///
+        /// The rod reduces the area of the chamber it crosses, which is the return
+        /// chamber of a double-acting cylinder. A single-acting cylinder leaves it at
+        /// zero and both areas are the bore's.
+        #[serde(default)]
+        rod_mm: f64,
         /// Usable stroke, `mm`.
         stroke_mm: f64,
         /// Length standing for the residual volume, `mm`.
@@ -460,6 +478,12 @@ pub enum Behaviour {
         /// Sonic conductance, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// A junction: hoses meet here and the component adds nothing of its own.
+    ///
+    /// It has no volume, no restriction and no force, so the solver treats every port as
+    /// the same point. Its three ports sit on one another for exactly that reason; see
+    /// ADR 0006 for why a T junction is a component and not a document node.
+    Junction,
 }
 
 impl Behaviour {
@@ -471,6 +495,7 @@ impl Behaviour {
             Self::Valve { .. } => "valve",
             Self::Cylinder { .. } => "cylinder",
             Self::Throttle { .. } => "throttle",
+            Self::Junction => "junction",
         }
     }
 }
@@ -570,6 +595,17 @@ impl ComponentDefinition {
     #[must_use]
     pub fn declares_two_returns(&self) -> bool {
         self.return_part.is_some() && self.spring.is_some()
+    }
+
+    /// The name to show in the interface.
+    ///
+    /// The interface speaks Spanish and every built-in file carries `name_es`, so that is
+    /// the one a reader sees; `name` is the fallback and the identifier a user's own file
+    /// can leave alone. When the interface grows a real language setting this becomes the
+    /// lookup keyed by it, and no file has to change.
+    #[must_use]
+    pub fn display_name(&self) -> &str {
+        self.name_es.as_deref().unwrap_or(&self.name)
     }
 
     /// Finds the first port with `role`.
