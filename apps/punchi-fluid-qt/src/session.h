@@ -296,6 +296,10 @@ public:
     Q_INVOKABLE void inspectValve();
     /// Applies the edited fields (`key` and `value` per entry) as one undoable edit.
     Q_INVOKABLE void applyInspectorEdits(const QVariantList &values);
+    /// The designation of one placement, empty when it has none.
+    Q_INVOKABLE QString designationOf(int index) const;
+    /// Names one placement; an empty string takes the name away.
+    Q_INVOKABLE void setDesignation(int index, const QString &text);
     /// Checks the circuit and opens the report. The faults are counted, not judged: an
     /// empty report is the only clean one.
     Q_INVOKABLE void checkCircuit();

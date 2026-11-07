@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
 
 /// Format version written by this build.
 ///
-/// 2 added the orientation of a placement — the quarter turns and the mirror. A file
-/// that still declares 1 reads, because an unturned symbol is what a version 1 file
-/// described.
-pub const SHEET_VERSION: u32 = 2;
+/// 2 added the orientation of a placement — the quarter turns and the mirror. 3 added the
+/// designation, the name the user gives a component. An older file reads because both
+/// additions have an obvious default: an unturned symbol and an unnamed component.
+pub const SHEET_VERSION: u32 = 3;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -38,6 +38,12 @@ pub const MAX_ID: usize = 128;
 
 /// Largest accepted symbol box side, in millimetres.
 pub const MAX_SIDE_MM: f32 = 2_000.0;
+
+/// Longest accepted designation, in characters.
+///
+/// It matches `punchi_fluid_doc::MAX_DESIGNATION`; the format crate does not depend on the
+/// document crate, so the number is stated in both and tested here.
+pub const MAX_DESIGNATION: usize = 40;
 
 /// One component, as the sheet stores it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -64,6 +70,9 @@ pub struct StoredPlacement {
     /// `true` when the symbol is reflected on its own vertical axis.
     #[serde(default, skip_serializing_if = "is_false")]
     pub mirrored: bool,
+    /// Name the user gave this component; absent when it has none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub designation: Option<String>,
 }
 
 /// Skips a field that carries the default, so an unturned sheet looks as it always did.
@@ -203,6 +212,38 @@ impl Sheet {
                 self.pipe.len()
             )));
         }
+        let ids = self.validate_placements()?;
+        for pipe in &self.pipe {
+            if !ids.contains(&pipe.from) || !ids.contains(&pipe.to) {
+                return Err(SheetError::Invalid(String::from(
+                    "a pipe names a component that is not on the sheet",
+                )));
+            }
+            if pipe.from == pipe.to {
+                return Err(SheetError::Invalid(String::from(
+                    "a pipe joins a component to itself",
+                )));
+            }
+            for (name, port) in [("from_port", &pipe.from_port), ("to_port", &pipe.to_port)] {
+                if port.is_empty() || port.len() > MAX_ID {
+                    return Err(SheetError::Invalid(format!("{name} is empty or too long")));
+                }
+            }
+            if pipe.offset_tenths.unsigned_abs() > 10_000 {
+                return Err(SheetError::Invalid(String::from(
+                    "a pipe is routed more than a metre from the automatic elbow",
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Checks every placement, returning the identities a pipe may name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SheetError::Invalid`] for the first placement that breaks a bound.
+    fn validate_placements(&self) -> Result<Vec<u64>, SheetError> {
         let mut ids: Vec<u64> = Vec::with_capacity(self.placement.len());
         for placement in &self.placement {
             if placement.id == 0 {
@@ -215,6 +256,17 @@ impl Sheet {
                 )));
             }
             ids.push(placement.id);
+            if let Some(designation) = &placement.designation {
+                if designation.is_empty()
+                    || designation.chars().count() > MAX_DESIGNATION
+                    || designation.chars().any(char::is_control)
+                    || designation.trim() != designation
+                {
+                    return Err(SheetError::Invalid(String::from(
+                        "a component has an unusable designation",
+                    )));
+                }
+            }
             if placement.quarter_turns > 3 {
                 return Err(SheetError::Invalid(format!(
                     "a component is turned {} quarters",
@@ -252,29 +304,7 @@ impl Sheet {
                 edit.validate()?;
             }
         }
-        for pipe in &self.pipe {
-            if !ids.contains(&pipe.from) || !ids.contains(&pipe.to) {
-                return Err(SheetError::Invalid(String::from(
-                    "a pipe names a component that is not on the sheet",
-                )));
-            }
-            if pipe.from == pipe.to {
-                return Err(SheetError::Invalid(String::from(
-                    "a pipe joins a component to itself",
-                )));
-            }
-            for (name, port) in [("from_port", &pipe.from_port), ("to_port", &pipe.to_port)] {
-                if port.is_empty() || port.len() > MAX_ID {
-                    return Err(SheetError::Invalid(format!("{name} is empty or too long")));
-                }
-            }
-            if pipe.offset_tenths.unsigned_abs() > 10_000 {
-                return Err(SheetError::Invalid(String::from(
-                    "a pipe is routed more than a metre from the automatic elbow",
-                )));
-            }
-        }
-        Ok(())
+        Ok(ids)
     }
 
     /// Reads a sheet from a file.
@@ -391,6 +421,7 @@ mod tests {
                     edit: None,
                     quarter_turns: 0,
                     mirrored: false,
+                    designation: None,
                 },
                 StoredPlacement {
                     id: 2,
@@ -405,6 +436,7 @@ mod tests {
                     }),
                     quarter_turns: 1,
                     mirrored: true,
+                    designation: Some(String::from("1A1")),
                 },
             ],
             pipe: vec![StoredPipe {
@@ -475,6 +507,43 @@ mod tests {
     }
 
     #[test]
+    fn a_version_two_sheet_still_reads_and_gains_an_unnamed_component() {
+        // Exactly what the previous release wrote: orientation but no designation.
+        let text = r#"{
+          "format": 2,
+          "title": "Anterior",
+          "placement": [
+            {"id": 1, "catalog": "valve.3_2.spring_return", "x": 10.0, "y": 20.0,
+             "width": 30.0, "height": 15.0, "quarter_turns": 1, "mirrored": true}
+          ],
+          "pipe": []
+        }"#;
+        let sheet = Sheet::parse(text).expect("a version 2 sheet reads");
+        assert_eq!(sheet.format, SHEET_VERSION);
+        assert_eq!(sheet.placement[0].quarter_turns, 1);
+        assert!(sheet.placement[0].mirrored);
+        assert_eq!(sheet.placement[0].designation, None);
+        assert!(sheet.to_json().expect("valid").contains(r#""format": 3"#));
+    }
+
+    #[test]
+    fn a_designation_that_cannot_be_read_is_refused() {
+        let mut sheet = sheet();
+        sheet.placement[0].designation = Some(String::from("  "));
+        assert!(sheet.validate().is_err(), "whitespace is not a name");
+        sheet.placement[0].designation = Some("x".repeat(MAX_DESIGNATION + 1));
+        assert!(sheet.validate().is_err(), "too long");
+        sheet.placement[0].designation = Some(String::from("1A1"));
+        assert!(sheet.validate().is_ok());
+        // An unnamed component writes nothing at all, so a sheet without names looks as it
+        // did before the field existed.
+        for placement in &mut sheet.placement {
+            placement.designation = None;
+        }
+        assert!(!sheet.to_json().expect("valid").contains("designation"));
+    }
+
+    #[test]
     fn a_version_one_sheet_still_reads_and_gains_an_unturned_orientation() {
         // Exactly what the previous release wrote: no orientation field, format 1.
         let text = r#"{
@@ -492,7 +561,8 @@ mod tests {
         assert!(!sheet.placement[0].mirrored);
         // Saving it writes the format this build understands, with the fields it added.
         let saved = sheet.to_json().expect("valid");
-        assert!(saved.contains(r#""format": 2"#), "{saved}");
+        assert!(saved.contains(r#""format": 3"#), "{saved}");
+        assert_eq!(sheet.placement[0].designation, None, "and no name either");
     }
 
     #[test]

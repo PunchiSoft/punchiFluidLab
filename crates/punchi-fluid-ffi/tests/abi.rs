@@ -21,8 +21,8 @@ use punchi_fluid::{
     PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk, PfPoint, PfSession,
     PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection, pf_session_autosave,
     pf_session_build_frame, pf_session_can_undo, pf_session_catalog, pf_session_check,
-    pf_session_component_count, pf_session_component_edits, pf_session_component_id,
-    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_count, pf_session_component_designation, pf_session_component_edits,
+    pf_session_component_id, pf_session_component_orientation, pf_session_component_rect,
     pf_session_component_valve_position, pf_session_component_valve_spring_return,
     pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
     pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_finding_at,
@@ -38,9 +38,9 @@ use punchi_fluid::{
     pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
     pf_session_select_all, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
     pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_component_edits, pf_session_set_recent_file, pf_session_telemetry,
-    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_spring_return,
+    pf_session_set_component_designation, pf_session_set_component_edits,
+    pf_session_set_recent_file, pf_session_telemetry, pf_session_toggle_select,
+    pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -1689,6 +1689,84 @@ fn the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened() 
     );
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_recent_count(session) }, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_component_can_be_named_and_the_name_survives_a_save_and_an_undo() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("nombres.pfluid");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).unwrap_or_default();
+
+    let session = session();
+    let name_of = |session: *mut PfSession, index: u32| {
+        let mut buffer = [0_u8; 128];
+        // SAFETY: live session and a writable buffer of the declared size.
+        let written = unsafe {
+            pf_session_component_designation(
+                session,
+                index,
+                buffer.as_mut_ptr().cast::<std::ffi::c_char>(),
+                u32::try_from(buffer.len()).unwrap_or(0),
+            )
+        };
+        assert!(written >= 0, "the component exists");
+        String::from_utf8_lossy(&buffer[..usize::try_from(written).unwrap_or(0)]).into_owned()
+    };
+    // The worked example starts with three unnamed components.
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "");
+    let text = CString::new(" 1A1 ").unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated string.
+    assert_eq!(
+        unsafe { pf_session_set_component_designation(session, 2, text.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "1A1", "trimmed, as the sheet draws it");
+    // Naming it again with the same name is not an error and not a change.
+    // SAFETY: live session and a NUL-terminated string.
+    assert_eq!(
+        unsafe { pf_session_set_component_designation(session, 2, text.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 1);
+
+    // The name is part of the document: it is saved, reopened and undone like anything
+    // else in it.
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "1A1");
+
+    let empty = CString::new("").unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated string.
+    assert_eq!(
+        unsafe { pf_session_set_component_designation(session, 2, empty.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "", "an empty text is no name");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "1A1", "one undo brings the name back");
+    // A name nothing could draw is refused instead of stored.
+    let long = CString::new("x".repeat(41)).unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated string.
+    assert_eq!(
+        unsafe { pf_session_set_component_designation(session, 2, long.as_ptr()) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session.
+    assert_eq!(name_of(session, 2), "1A1");
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

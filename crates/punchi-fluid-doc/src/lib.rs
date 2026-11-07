@@ -16,6 +16,13 @@
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{Pt, Rect};
 
+/// Longest designation a component may carry.
+///
+/// A designation is a short name a person reads on the sheet and in the parts list, not a
+/// note: 40 characters fit beside a symbol and stop a pasted paragraph from covering the
+/// drawing.
+pub const MAX_DESIGNATION: usize = 40;
+
 /// Most entries the undo history keeps.
 pub const HISTORY_LIMIT: usize = 100;
 
@@ -128,6 +135,12 @@ pub struct Placement {
     pub edits: PlacementEdits,
     /// How the symbol is turned on the sheet.
     pub orientation: Orientation,
+    /// Name the user gave this component, shown on the sheet and in the parts list.
+    ///
+    /// `None` is "no designation", which is different from an empty one: a valve may carry
+    /// no name at all, and a circuit may have two unnamed cylinders without either of them
+    /// being a duplicate.
+    pub designation: Option<String>,
 }
 
 impl Placement {
@@ -142,6 +155,7 @@ impl Placement {
             height,
             edits: PlacementEdits::default(),
             orientation: Orientation::NONE,
+            designation: None,
         }
     }
 
@@ -165,6 +179,7 @@ impl Placement {
             height,
             edits: PlacementEdits::default(),
             orientation: Orientation::NONE,
+            designation: None,
         }
     }
 
@@ -302,6 +317,12 @@ enum Change {
         index: usize,
         from: Orientation,
         to: Orientation,
+    },
+    /// One instance was given a designation, or had it taken away.
+    Designated {
+        index: usize,
+        from: Option<String>,
+        to: Option<String>,
     },
     /// Several changes that are one edit to the user.
     ///
@@ -682,6 +703,43 @@ impl Document {
         true
     }
 
+    /// Gives a placement a designation, or takes it away with `None`.
+    ///
+    /// Whitespace is trimmed, and an empty text means no designation: a name of spaces is
+    /// a name nobody can read, and keeping it would let two components look unnamed and be
+    /// reported as duplicates. A name longer than [`MAX_DESIGNATION`] characters is refused
+    /// instead of truncated, because half a name is worse than a clear refusal.
+    pub fn designate(&mut self, index: usize, designation: Option<&str>) -> bool {
+        let wanted = designation
+            .map(str::trim)
+            .filter(|text| !text.is_empty())
+            .map(str::to_owned);
+        if wanted.as_ref().is_some_and(|text| {
+            text.chars().count() > MAX_DESIGNATION || text.chars().any(char::is_control)
+        }) {
+            return false;
+        }
+        let Some(placement) = self.placements.get_mut(index) else {
+            return false;
+        };
+        if placement.designation == wanted {
+            return false;
+        }
+        let from = std::mem::replace(&mut placement.designation, wanted.clone());
+        self.record(Change::Designated {
+            index,
+            from,
+            to: wanted,
+        });
+        true
+    }
+
+    /// The designation of one placement, if it has one.
+    #[must_use]
+    pub fn designation_of(&self, index: usize) -> Option<&str> {
+        self.placements.get(index)?.designation.as_deref()
+    }
+
     /// Turns a placement a quarter clockwise: `Edición ▸ Girar`.
     pub fn turn_clockwise(&mut self, index: usize) -> bool {
         self.turn_many(&[index], Turn::Clockwise)
@@ -985,6 +1043,11 @@ impl Document {
                     placement.orientation = *to;
                 }
             }
+            Change::Designated { index, to, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.designation.clone_from(to);
+                }
+            }
         }
     }
 
@@ -1036,6 +1099,11 @@ impl Document {
             Change::Turned { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.orientation = *from;
+                }
+            }
+            Change::Designated { index, from, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.designation.clone_from(from);
                 }
             }
         }
@@ -1562,6 +1630,30 @@ mod tests {
         assert!(document.undo());
         assert_eq!(document.orientation_of(a), Some(Orientation::NONE));
         assert_eq!(document.orientation_of(b), Some(Orientation::new(0, true)));
+    }
+
+    #[test]
+    fn a_designation_is_one_undo_and_an_empty_name_is_no_name() {
+        let mut document = Document::new();
+        let index = document.place(placement("cylinder.single_acting_20_100", 10.0, 10.0));
+        assert!(document.designate(index, Some("  1A1  ")));
+        assert_eq!(document.designation_of(index), Some("1A1"), "trimmed");
+        assert!(document.undo());
+        assert_eq!(document.designation_of(index), None);
+        assert!(document.redo());
+        assert_eq!(document.designation_of(index), Some("1A1"));
+        // A name of spaces is not a name, and clearing one leaves nothing behind.
+        assert!(document.designate(index, Some("   ")));
+        assert_eq!(document.designation_of(index), None);
+        // Renaming the same component to the same text is not a change.
+        assert!(document.designate(index, Some("2A1")));
+        assert!(!document.designate(index, Some("2A1")));
+        // A name too long to fit beside a symbol is refused instead of truncated.
+        let long = "x".repeat(MAX_DESIGNATION + 1);
+        assert!(!document.designate(index, Some(&long)));
+        assert!(!document.designate(index, Some("con\nsalto")));
+        assert_eq!(document.designation_of(index), Some("2A1"));
+        assert_eq!(document.designation_of(99), None);
     }
 
     #[test]

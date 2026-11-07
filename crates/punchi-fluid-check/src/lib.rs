@@ -28,7 +28,7 @@
 //! Every finding carries where it happens, so the interface can point at it instead of
 //! making the user map a sentence back onto the drawing.
 
-use punchi_fluid_catalog::{Catalog, PortRole};
+use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{port_point, route};
 use punchi_fluid_draw::surface::{Pt, Rect};
@@ -46,6 +46,8 @@ pub enum FindingKind {
     OverlappingPipes,
     /// A port that carries air has no pipe on it.
     OpenConnection,
+    /// Two cylinders carry the same designation.
+    DuplicateDesignation,
 }
 
 impl FindingKind {
@@ -58,6 +60,7 @@ impl FindingKind {
             Self::PipeThroughComponent => "pipe_through_component",
             Self::OverlappingPipes => "overlapping_pipes",
             Self::OpenConnection => "open_connection",
+            Self::DuplicateDesignation => "duplicate_designation",
         }
     }
 
@@ -70,6 +73,7 @@ impl FindingKind {
             Self::PipeThroughComponent => "un tubo cruza un componente que no es su extremo",
             Self::OverlappingPipes => "dos tubos se superponen",
             Self::OpenConnection => "una conexión neumática queda abierta",
+            Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
         }
     }
 }
@@ -108,31 +112,7 @@ impl Finding {
 pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding> {
     let mut findings = Vec::new();
 
-    for (index, placement) in document.placements().iter().enumerate() {
-        let rect = placement.rect();
-        if !contains_rect(sheet, rect) {
-            findings.push(Finding {
-                kind: FindingKind::OutsideSheet,
-                at: rect.center(),
-                component: Some(index),
-                pipe: None,
-            });
-        }
-    }
-
-    for (index, placement) in document.placements().iter().enumerate() {
-        for (other, candidate) in document.placements().iter().enumerate().skip(index + 1) {
-            let overlap = intersect(placement.rect(), candidate.rect());
-            if let Some(area) = overlap {
-                findings.push(Finding {
-                    kind: FindingKind::OverlappingComponents,
-                    at: area.center(),
-                    component: Some(other),
-                    pipe: None,
-                });
-            }
-        }
-    }
+    findings.extend(placement_faults(document, sheet));
 
     for (index, connection) in document.connections().iter().enumerate() {
         let Some(path) = pipe_path(document, catalog, index) else {
@@ -175,6 +155,8 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding
             }
         }
     }
+
+    findings.extend(duplicate_designations(document, catalog));
 
     for (index, placement) in document.placements().iter().enumerate() {
         let Some(definition) = catalog.get(&placement.catalog_id) else {
@@ -223,12 +205,96 @@ fn carries_air(role: PortRole) -> bool {
     matches!(role, PortRole::Supply | PortRole::Working)
 }
 
+/// Faults about where a component sits: off the sheet, or on top of another one.
+fn placement_faults(document: &Document, sheet: Rect) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        let rect = placement.rect();
+        if !contains_rect(sheet, rect) {
+            findings.push(Finding {
+                kind: FindingKind::OutsideSheet,
+                at: rect.center(),
+                component: Some(index),
+                pipe: None,
+            });
+        }
+    }
+
+    for (index, placement) in document.placements().iter().enumerate() {
+        for (other, candidate) in document.placements().iter().enumerate().skip(index + 1) {
+            let overlap = intersect(placement.rect(), candidate.rect());
+            if let Some(area) = overlap {
+                findings.push(Finding {
+                    kind: FindingKind::OverlappingComponents,
+                    at: area.center(),
+                    component: Some(other),
+                    pipe: None,
+                });
+            }
+        }
+    }
+
+    findings
+}
+
+/// Two actuators with one name.
+///
+/// The parts list would print the same actuator twice, and whoever reads the schematic
+/// cannot tell which one another document refers to. Only named actuators count, and the
+/// comparison ignores case, which is how a reader compares them.
+fn duplicate_designations(document: &Document, catalog: &Catalog) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        if !is_actuator(definition) {
+            continue;
+        }
+        let Some(name) = placement.designation.as_deref() else {
+            continue;
+        };
+        for (other_index, other) in document.placements().iter().enumerate().skip(index + 1) {
+            let Some(other_definition) = catalog.get(&other.catalog_id) else {
+                continue;
+            };
+            if !is_actuator(other_definition) {
+                continue;
+            }
+            if other
+                .designation
+                .as_deref()
+                .is_some_and(|candidate| candidate.eq_ignore_ascii_case(name))
+            {
+                findings.push(Finding {
+                    kind: FindingKind::DuplicateDesignation,
+                    at: other.box_rect().center(),
+                    component: Some(other_index),
+                    pipe: None,
+                });
+                break;
+            }
+        }
+    }
+
+    findings
+}
+
+/// `true` when the definition is an actuator.
+///
+/// The reference's duplicate-name fault is about cylinders: the parts list would print the
+/// same actuator twice and a reader could not tell which one is meant. A shared name on two
+/// valves is a naming habit, not a fault, so only actuators are compared.
+fn is_actuator(definition: &ComponentDefinition) -> bool {
+    definition.category == Category::Actuator
+}
+
 /// `true` when the port has to be wired, which a junction's never does.
 ///
 /// A junction is a point where hoses meet, modelled as a component with three ports on one
 /// spot (ADR 0006). An unused port of it is an artefact of that model, not a circuit waiting
 /// to be finished, so reporting it would teach the user to ignore the check.
-fn must_be_wired(definition: &punchi_fluid_catalog::ComponentDefinition, role: PortRole) -> bool {
+fn must_be_wired(definition: &ComponentDefinition, role: PortRole) -> bool {
     carries_air(role)
         && !matches!(
             definition.behaviour,
@@ -409,6 +475,53 @@ mod tests {
             document.connect(Endpoint::new(from.0, from.1), Endpoint::new(to.0, to.1)),
             "the test pipe was refused"
         );
+    }
+
+    #[test]
+    fn two_cylinders_with_one_designation_are_reported_at_the_second_one() {
+        let mut document = Document::new();
+        let supply = place(&mut document, "supply.workshop", 40.0, 40.0);
+        let valve = place(&mut document, "valve.5_2.spring_return", 100.0, 90.0);
+        let first = place(&mut document, "cylinder.double_acting_32_200", 160.0, 40.0);
+        let second = place(&mut document, "cylinder.double_acting_32_200", 160.0, 100.0);
+        join(&mut document, (supply, "1"), (valve, "1"));
+        join(&mut document, (valve, "2"), (first, "1"));
+        join(&mut document, (valve, "4"), (second, "1"));
+        // Unnamed, the two cylinders are not duplicates: a name is what makes them clash.
+        let findings = check(&document, &catalog(), sheet());
+        assert!(
+            !findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::DuplicateDesignation),
+            "{findings:?}"
+        );
+        let index = document
+            .placements()
+            .iter()
+            .position(|placement| placement.id() == second)
+            .unwrap_or_default();
+        assert!(document.designate(index, Some("1A1")));
+        let index = document
+            .placements()
+            .iter()
+            .position(|placement| placement.id() == first)
+            .unwrap_or_default();
+        assert!(document.designate(index, Some("1a1")));
+        let findings = check(&document, &catalog(), sheet());
+        let clash = findings
+            .iter()
+            .find(|finding| finding.kind == FindingKind::DuplicateDesignation)
+            .copied();
+        assert!(clash.is_some(), "{findings:?}");
+        let clash = clash.unwrap_or(Finding {
+            kind: FindingKind::DuplicateDesignation,
+            at: Pt::new(0.0, 0.0),
+            component: None,
+            pipe: None,
+        });
+        // Case does not matter to a reader, and the report points at the second cylinder.
+        assert_eq!(clash.component, Some(index + 1));
+        assert!((clash.at.y - 100.0).abs() < 20.0, "{:?}", clash.at);
     }
 
     #[test]

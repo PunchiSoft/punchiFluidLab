@@ -39,12 +39,12 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Área | Estado real |
 |---|---|
 | Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic), **selección múltiple** (Mayús y clic, rectángulo elástico, Ctrl+E) con arrastrar/copiar/borrar/alinear en grupo y un solo deshacer |
-| Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago y masa; Aplicar es un solo deshacer. Faltan nombre, accionamiento y los demás campos del diálogo de la referencia |
+| Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago, masa y **designación** (el nombre, dibujado bajo el símbolo); Aplicar es un solo deshacer. Faltan accionamiento y los demás campos del diálogo de la referencia |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
 | Exportación | PNG y PDF con hoja normalizada |
-| Comprobación | 5 de las 9 faltas, cada una señalada en el dibujo; las otras 4 necesitan designaciones/circuitos (F4) o la biblioteca eléctrica (F6) |
+| Comprobación | 6 de las 9 faltas, cada una señalada en el dibujo; las otras 3 necesitan un proyecto de circuitos (F4) o la biblioteca eléctrica con su encoder (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
 | Símbolos | lint de 8 reglas; revisión visual con capturas claro/oscuro; 300 dpi pendiente |
 
@@ -55,9 +55,9 @@ silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (
 proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de piezas
 (F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
 **~50 % del manual**, con F1 casi cerrada, F2 cerrada y F4 encaminada. El siguiente paso, por
-valor, son las **designaciones** (nombre por componente y por circuito), que desbloquean tres
-de las cuatro faltas de la comprobación, seguidos de los instrumentos que faltan
-(caudalímetro, dinamómetro, registrador).
+valor, es un **proyecto de circuitos** (varios circuitos en un documento), que además cierra
+la novena falta de la comprobación, seguido de los instrumentos que faltan (caudalímetro,
+dinamómetro, registrador).
 
 ### 0.2 Cómo se entrega desde el 2026-11-12
 
