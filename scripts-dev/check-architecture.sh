@@ -33,7 +33,11 @@ ALLOWED_EDGES=(
     "punchi-fluid-ffi punchi-fluid-draw"
     "punchi-fluid-ffi punchi-fluid-file"
     "punchi-fluid-ffi punchi-fluid-solver"
+    "punchi-fluid-cli punchi-fluid-catalog"
+    "punchi-fluid-cli punchi-fluid-check"
     "punchi-fluid-cli punchi-fluid-core"
+    "punchi-fluid-cli punchi-fluid-doc"
+    "punchi-fluid-cli punchi-fluid-draw"
     "punchi-fluid-cli punchi-fluid-file"
     "punchi-fluid-cli punchi-fluid-solver"
 )

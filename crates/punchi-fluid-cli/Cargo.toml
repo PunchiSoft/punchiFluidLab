@@ -14,7 +14,11 @@ name = "punchi-fluid-cli"
 path = "src/main.rs"
 
 [dependencies]
+punchi-fluid-catalog = { workspace = true }
+punchi-fluid-check = { workspace = true }
 punchi-fluid-core = { workspace = true }
+punchi-fluid-doc = { workspace = true }
+punchi-fluid-draw = { workspace = true }
 punchi-fluid-file = { workspace = true }
 punchi-fluid-solver = { workspace = true }
 
