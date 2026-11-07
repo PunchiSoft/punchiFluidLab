@@ -21,6 +21,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  SOURCE_DATE_EPOCH: 1600000000
   BINARY_NAME: punchi-fluid-lab
 
 jobs:
@@ -35,42 +36,63 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Install the Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      # Long-running GUI dependencies (wayland, x11) are needed to link the window.
-      - name: Install build dependencies
+      # The window is Qt Quick, so a release needs the same packages the CI window job
+      # installs; without them the tarball would ship a CLI and call it the product.
+      - name: Install Qt and the build tools
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            libwayland-dev libxkbcommon-dev libgl1-mesa-dev
+          sudo apt-get install -y \
+            cmake ninja-build libgl1-mesa-dev \
+            qt6-base-dev qt6-declarative-dev qt6-multimedia-dev \
+            qml6-module-qtquick qml6-module-qtquick-window \
+            qml6-module-qtquick-controls qml6-module-qtquick-templates \
+            qml6-module-qtquick-layouts qml6-module-qtquick-dialogs \
+            qml6-module-qtmultimedia \
+            breeze-icon-theme adwaita-icon-theme
+
+      - name: Read the pinned toolchain
+        id: rust
+        run: echo "channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+
+      - name: Install the Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: ${{ steps.rust.outputs.channel }}
+          components: rustfmt, clippy
 
       - name: Cache the build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Run the gate before building anything
         run: ./scripts-dev/check.sh
 
-      - name: Build the release binaries
-        env:
-          SOURCE_DATE_EPOCH: 1600000000
-        run: cargo build --release --locked --bin punchi-fluid-lab --bin punchi-fluid
+      - name: Build the headless binary
+        run: cargo build --release --locked --bin punchi-fluid
 
+      - name: Configure the window
+        run: cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build the window
+        run: cmake --build apps/punchi-fluid-qt/build
+
+      # Both binaries are called `punchi-fluid` today; they are packaged under different
+      # names until the naming decision in the plan settles it. The window is the product;
+      # the headless binary keeps its `validate` and `simulate` verbs.
       - name: Pack the binaries
         run: |
           version="${GITHUB_REF_NAME#v}"
-          mkdir -p dist
+          mkdir -p dist/bin
+          install -m 755 apps/punchi-fluid-qt/build/punchi-fluid dist/bin/punchi-fluid
+          install -m 755 target/release/punchi-fluid dist/bin/punchi-fluid-cli
           tar --sort=name --mtime="@${SOURCE_DATE_EPOCH}" --owner=0 --group=0 --numeric-owner \
-            -cJf "dist/punchi-fluid-lab-${version}-linux-x86_64.tar.xz" \
-            -C target/release punchi-fluid-lab punchi-fluid
+            -cJf "dist/punchi-fluid-lab-${version}-linux-x86_64.tar.xz" -C dist bin
+          rm -rf dist/bin
           ( cd dist && sha256sum ./*.tar.xz > SHA256SUMS )
 
-      # The AppImage and Flatpak artefacts arrive with milestone M6; until then the
-      # tarball is the honest deliverable and the release notes say so.
+      # The AppImage and Flatpak artefacts arrive with the packaging milestone; until then
+      # the tarball is the honest deliverable and the release notes say so.
       - name: Keep the artefacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist
           path: dist/*
@@ -88,7 +110,7 @@ jobs:
           persist-credentials: false
 
       - name: Download the artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist
           path: dist
@@ -98,7 +120,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" dist/* \
-            --draft \
             --title "${GITHUB_REF_NAME}" \
-            --notes-file CHANGELOG.md \
-            --verify-tag
+            --draft \
+            --notes "See CHANGELOG.md for this release. The tarball carries the window and the headless binary; AppImage and Flatpak are not built yet."

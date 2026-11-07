@@ -184,7 +184,8 @@ The profile is [.cargo/config.toml](.cargo/config.toml) and
 
 It runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `scripts-dev/test.sh` (which covers the workspace), the documentation drift check
-`scripts-dev/check-docs.sh` and a CLI smoke test over a temporary circuit file.
+`scripts-dev/check-docs.sh`, the architecture contract `scripts-dev/check-architecture.sh`
+and a CLI smoke test over a temporary circuit file.
 
 The window is built and driven headlessly when `apps/punchi-fluid-qt/build` has been
 configured: `--check-qml`, `--check-theme`, `--check-icons` and `--selftest` under

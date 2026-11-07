@@ -15,6 +15,9 @@ cargo fmt --all --check
 # The documents that declare the crate layout are read instead of the manifest, so they
 # are checked against it rather than trusted.
 ./scripts-dev/check-docs.sh
+# `cargo` prevents cycles, not layering: the graph, the one home of `unsafe` and the file
+# budget are enforced here.
+./scripts-dev/check-architecture.sh
 cargo clippy --workspace --all-targets -- -D warnings
 # The tests run through test.sh rather than `cargo test` so each binary is capped: a
 # runaway allocation in one test must not take the editor with it.
