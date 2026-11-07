@@ -53,6 +53,18 @@ fn the_media_box_matches_the_chosen_paper_within_a_point() {
             punchi_fluid_export::Orientation::Portrait,
             (215.9, 279.4),
         ),
+        // The Chilean sheet, and a custom one: the page box is the size the file says it is,
+        // which is what lets a printed page be identified after the fact.
+        (
+            punchi_fluid_export::PaperSize::Oficio,
+            punchi_fluid_export::Orientation::Portrait,
+            (216.0, 330.0),
+        ),
+        (
+            punchi_fluid_export::PaperSize::A0,
+            punchi_fluid_export::Orientation::Landscape,
+            (1189.0, 841.0),
+        ),
     ] {
         let page = Page {
             paper,
