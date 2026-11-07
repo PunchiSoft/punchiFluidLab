@@ -53,6 +53,10 @@ itself is the responsibility of whoever adds or reviews a symbol.
   spring symbol is a defect, and so is a spring drawn at the actuator end. Both are drawn
   **at a size proportional to the body** (a tenth of the body side was the defect that made
   them unreadable at palette size), and both start clear of the body edge.
+- **A lever is an arm and a grip**, not a stem with a blob: the arm leaves the end face at
+  an angle and ends in a bar **across** that arm, which is the part a hand pushes. A stem
+  that turns into a hook reads as a stray line and leaves the reader unable to tell a
+  manual lever from a detent or a pedal.
 - **The ports are drawn once**, at the square of the rest position: one set of
   numerals, stubs attached to the body at fixed x. Port positions are read inside the
   symbol box and then brought to the body edge, so a stub is straight and vertical (or
@@ -74,25 +78,69 @@ itself is the responsibility of whoever adds or reviews a symbol.
   each class with its own pattern; a definition declares which class a line belongs
   to instead of picking a random dash pattern.
 
+### Actuator glyphs
+
+Each actuation is a glyph drawn outside the body at the declared end, at a size
+proportional to the body. The shape is the only thing that tells two actuations apart, so
+these are not interchangeable decorations:
+
+| Actuation | Glyph |
+|---|---|
+| Spring return | A zigzag of four peaks against the body face, drawn in the same ink and weight as the other functional lines |
+| Manual, general | A bar across the end of the stem, square ends |
+| Lever | The bar of the general actuation, the arm, and the **pivot circle** at its far end |
+| Lever with detent | The lever plus the notch that keeps the spool where it is left |
+| Push button | The stem ending in a bar with **rounded** ends: the rounding is what makes it a button and not a manual lever |
+| Mushroom button | A stem with a **dome** a palm presses |
+| Pedal | The lever's foot with the slanting plate a foot stands on |
+| Piston (tappet) | A **dome sitting on the body**, with no stem and nothing to grip |
+| Roller | A circle on a short arm with its **axle** marked at the centre |
+| Roller, one direction | The roller plus the tick that says it only picks the cam up one way |
+| Pneumatic pilot | A **box** on the end face with an **open** triangle inside, pointing away from the body |
+| Hydraulic pilot | The same box with the triangle **filled**: open for air, filled for oil |
+| Solenoid | A box with a diagonal through it, one box per winding |
+| Motor | A circle with an `M` drawn as lines, so it scales with the symbol and not with a font |
+
+A pilot without its box cannot be told from an arrow marking a flow, and a lever without
+its pivot cannot be told from a plain manual actuation. When a definition file names an
+actuation, this table is what the renderer must draw, and a change to a glyph is a change
+to the standard's reading of it.
+
 ### Actuators and the rest
 
 - A single-acting cylinder shows the barrel, the piston, the rod **and its return
-  spring** at the rod side, between the piston and the rod-side wall. The spring is a
-  **short coil against that wall**, never a coil that fills the chamber: a spring drawn
-  across the whole barrel reads as a barrel full of wire and hides the piston and the rod
-  behind it. The spring is drawn around the rod and **compresses with the stroke**: same
-  wire, fewer pitch, slightly larger amplitude as the coils bunch. A coil that no longer fits at its nominal pitch is
+  spring** at the rod side, between the piston and the rod-side wall. The spring **spans
+  the chamber it fills**, from the piston to that wall: it is the return element of that
+  chamber and not a decoration in one corner of it. It is drawn thin around the rod and
+  **compresses with the stroke**: same wire, fewer pitch, slightly larger amplitude as the
+  coils bunch. A coil that no longer fits at its nominal pitch is
   drawn with **fewer turns** rather than with more lines stacked on the same millimetre,
   because a band of turns drawn over each other is a filled rectangle and not a spring;
-  the floor is two turns, below which the shape stops reading as a coil.
+  the floor is two turns, below which the shape stops reading as a coil. The coil is drawn
+  in the **same ink and weight as the other functional lines**: ISO 1219 has line classes,
+  not faded lines, and a grey part is the first one to disappear in a photocopy.
 - The piston **crosses the internal length the definition declares**: the chamber is the
   stroke plus the dead length, so at full extension the piston stops with only the dead
   length left against the rod-side wall. That residual space is where the return spring
   is compressed, and it is not a fraction chosen by the renderer: a cylinder that only
   used part of its chamber would read as a cylinder that had not finished its stroke.
+- The piston **meets both walls of the bore** at every position of the stroke. A line that
+  stops short of the walls reads as a bar floating inside the barrel; the piston is the
+  seal between the two chambers and is drawn as such.
 - A double-acting cylinder shows the same barrel, piston and rod and **no spring**, with
-  **two ports, one at each end**: the cap-side port on the centreline at the cap, and the
-  rod-side port above the barrel, because the rod occupies the centreline at that end.
+  **two ports, one drilled in each end cap**. Both leave their cap **downwards, at the same
+  depth**, so the pair reads at a glance as one cylinder driven from both ends. The two ways
+  this is not drawn: a port tucked into the corner where an end wall meets the barrel's edge
+  reads as part of the outline, and a port laid over the rod on the centreline reads as the
+  rod. Neither is used.
+- **Every cylinder port is drilled in a cap.** A single-acting cylinder has the one port in
+  the cap end and none at the rod end, because that absence is what makes it single-acting;
+  a double-acting cylinder has one in each cap. A port anywhere else is a different machine.
+- **The numeral of a port on a horizontal edge is written beside its own stub**, on the
+  side where no other port is written, in the band between the body edge and the end of the
+  stub. Three places are wrong and each is wrong for its own reason: between two neighbouring
+  stubs it reads as one port with two names; past the end of the stub it sits where the pipe
+  arrives and its halo cuts the pipe in two; over the body it belongs to no port at all.
 - The moving parts come from the definition, not from a hardcoded layout: the barrel is
   the widest rectangle the file declares, so a longer cylinder is a different file. The
   piston never leaves the barrel at either end of the stroke, and the rod is the only

@@ -1,7 +1,7 @@
 # cylinder.double_acting_32_200 — conformance review
 
     status: pending-300dpi
-    date: 2026-11-06
+    date: 2026-11-07
     reviewer: automated pass, unreviewed by a second person
     function: double-acting cylinder, 32 mm bore, 200 mm stroke
 
@@ -24,11 +24,23 @@ are drawn by the renderer at the current extension. No third-party asset.
 | Requirement | Result | Evidence |
 |---|---|---|
 | Barrel, piston and rod, with the rod leaving through one end | pass | catalog sheet |
-| Two ports, one at each end, no return spring | pass | cap port on the centreline at the cap; rod port above the barrel, because the rod occupies the centreline; `cylinder.double_acting_32_200-light.png` |
+| Two ports, one drilled in each end cap, no return spring | pass | both leave their cap downwards at the same depth, so the pair reads as one cylinder driven from both ends; `cylinder.double_acting_32_200-light.png` |
 | Piston crosses the internal length the file declares and stays inside the barrel | pass | at full stroke it leaves only the declared dead length against the rod-side wall; animation test |
 | Rod keeps its length and shows at rest | pass | animation test |
 | Legible at palette size | pass | `catalog-dark.png` |
 | Legible at 300 dpi | **not checked** | needs a per-symbol render |
+
+## Correction of 2026-11-07
+
+The rod-end port used to leave the barrel's top edge next to the corner, where it read as
+part of the outline and crowded the rod. It is now drilled in the rod-end cap and leaves it
+downwards, in line with the cap-side one: one port per cap, both drawn at the same depth,
+neither over the rod nor over the outline. The numeral of a port on a horizontal edge is
+written on the outer side of its own stub, so two neighbouring ports no longer end up with
+their numerals side by side between them.
+
+The piston was drawn with a tenth of the bore inset at the top and the bottom and read as a
+bar floating inside the barrel; it now meets both walls at every position of the stroke.
 
 ## What is still open
 

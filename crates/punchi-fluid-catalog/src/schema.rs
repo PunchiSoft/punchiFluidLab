@@ -149,27 +149,33 @@ pub enum Side {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ActuatorKind {
-    /// Lever with a handle: `manual, lever`.
+    /// Hand lever: a bar against the body, the arm, and the pivot it turns about.
     Lever,
-    /// Lever that stays where it is put: the lever plus a detent notch.
+    /// Lever that stays where it is put: the lever plus the notch of a detent.
     LeverDetent,
-    /// Push button: a stem with a bar across its end.
+    /// Push button: a stem ending in a bar with rounded ends, which is what a finger
+    /// presses. The rounding is the difference between a button and the plain manual
+    /// actuation, so one is not drawn as the other.
     PushButton,
-    /// Mushroom-head button, for a palm.
+    /// Mushroom-head button, for a palm: a dome a palm presses.
     MushroomButton,
-    /// Foot pedal: a stem ending in a slanted plate.
+    /// Foot pedal: the lever's foot with the slanting plate a foot stands on.
     Pedal,
-    /// Plunger or tappet: a stem ending in a small square head.
+    /// Piston actuation: a dome that sits on the body, pressed by a slave cylinder's
+    /// piston. It has no stem and nothing to grip.
     Plunger,
-    /// Roller: a stem ending in a circle the cam runs on.
+    /// Roller: a circle on a short arm, with its axle marked at the centre. The axle is
+    /// what tells a roller from a lever's pivot.
     Roller,
     /// Roller that acts in one direction only, drawn with its one-way tick.
     RollerOneWay,
-    /// Pilot line, drawn dashed with an open triangle: actuated by air.
+    /// Pneumatic pilot: a box on the end face with an **open** triangle inside, pointing
+    /// away from the body. Air does the pushing.
     Pilot,
-    /// Pilot line with a filled triangle: actuated by hydraulic fluid.
+    /// Hydraulic pilot: the same box and triangle, **filled**, because the fluid is the
+    /// medium. Open for air, filled for oil.
     PilotHydraulic,
-    /// Solenoid, one winding: a box with one diagonal.
+    /// Solenoid, one winding: a box with one diagonal through it.
     Solenoid,
     /// Solenoid with two windings: two boxes, one per coil.
     SolenoidDouble,

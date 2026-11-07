@@ -20,10 +20,14 @@ kinematics = "linear_actuator"
 [spring]
 side = "right"
 
+# The port of a single-acting cylinder is drilled in the cap end, and it is drawn leaving
+# that cap downwards: the cap is the face the air pushes on, and the bottom edge is where a
+# reader looks for the connection. The rod end carries no port at all — that is what makes
+# it single-acting — so nothing is drawn on that side but the spring and the rod.
 [[port]]
 id = "1"
 role = "working"
-position = [0.0, 0.5]
+position = [0.16, 1.0]
 
 [behaviour]
 type = "cylinder"
@@ -46,5 +50,5 @@ points = [0.08, 0.28, 0.42, 0.44]
 
 [[symbol]]
 kind = "line"
-points = [0.0, 0.5, 0.08, 0.5]
+points = [0.16, 0.72, 0.16, 1.0]
 line_class = "working"
