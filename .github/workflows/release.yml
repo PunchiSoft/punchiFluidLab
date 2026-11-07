@@ -67,7 +67,7 @@ jobs:
         run: ./scripts-dev/check.sh
 
       - name: Build the headless binary
-        run: cargo build --release --locked --bin punchi-fluid
+        run: cargo build --release --locked --bin punchi-fluid-cli
 
       - name: Configure the window
         run: cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -83,7 +83,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           mkdir -p dist/bin
           install -m 755 apps/punchi-fluid-qt/build/punchi-fluid dist/bin/punchi-fluid
-          install -m 755 target/release/punchi-fluid dist/bin/punchi-fluid-cli
+          install -m 755 target/release/punchi-fluid-cli dist/bin/punchi-fluid-cli
           tar --sort=name --mtime="@${SOURCE_DATE_EPOCH}" --owner=0 --group=0 --numeric-owner \
             -cJf "dist/punchi-fluid-lab-${version}-linux-x86_64.tar.xz" -C dist bin
           rm -rf dist/bin

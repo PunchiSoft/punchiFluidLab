@@ -38,7 +38,7 @@ suscripción, sin «edición educativa» recortada.
 | `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda y escritor PDF determinista |
 | `punchi-fluid-ffi` | El ABI C que habla la ventana: una sesión, un cuadro de dibujo, un hit test |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
-| `punchi-fluid-cli` | `punchi-fluid validate|simulate <archivo>` para comprobaciones sin ventana |
+| `punchi-fluid-cli` | `punchi-fluid-cli validate|simulate <archivo>` para comprobaciones sin ventana |
 | `apps/punchi-fluid-qt` | La ventana: cinta, barra lateral de catálogo, hoja, barra de estado y la paleta del escritorio, sobre el ABI C |
 
 ## Compilar y ejecutar
@@ -48,7 +48,7 @@ suscripción, sin «edición educativa» recortada.
 ./scripts-dev/run.sh --demo                             # arranca accionada y en marcha
 ./scripts-dev/run.sh --no-build --dark                  # binario ya compilado, sin compilar
 ./scripts-dev/run.sh --light                            # fija la paleta para una captura
-cargo run --bin punchi-fluid -- validate circuito.pfluid
+cargo run --bin punchi-fluid-cli -- validate circuito.pfluid
 ```
 
 `run.sh` compila solo cuando cambió un fuente y después ejecuta el binario directamente;

@@ -10,7 +10,7 @@ fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
 
     let Some(command) = arguments.next() else {
-        eprintln!("usage: punchi-fluid <validate|simulate> <file>");
+        eprintln!("usage: punchi-fluid-cli <validate|simulate> <file>");
         return ExitCode::from(2);
     };
     let Some(path) = arguments.next() else {

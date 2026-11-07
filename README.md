@@ -38,7 +38,7 @@ not be the thing a student cannot afford.
 | `punchi-fluid-export` | Standard sheets, title block, legend and a deterministic PDF writer |
 | `punchi-fluid-ffi` | The C ABI the window speaks: one session, one frame of drawing, one hit test |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
-| `punchi-fluid-cli` | `punchi-fluid validate|simulate <file>` for headless checks |
+| `punchi-fluid-cli` | `punchi-fluid-cli validate|simulate <file>` for headless checks |
 | `apps/punchi-fluid-qt` | The window: ribbon, catalog sidebar, sheet, status bar and the desktop's own palette, over the C ABI |
 
 ## Build and run
@@ -48,7 +48,7 @@ not be the thing a student cannot afford.
 ./scripts-dev/run.sh --demo                             # starts actuated and playing
 ./scripts-dev/run.sh --no-build --dark                  # already-built binary, no compile
 ./scripts-dev/run.sh --light                            # pin the palette for a screenshot
-cargo run --bin punchi-fluid -- validate circuit.pfluid # headless check
+cargo run --bin punchi-fluid-cli -- validate circuit.pfluid # headless check
 ```
 
 `run.sh` compiles only when a source changed and then executes the binary directly;

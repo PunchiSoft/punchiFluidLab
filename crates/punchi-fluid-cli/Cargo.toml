@@ -9,7 +9,7 @@ authors.workspace = true
 description = "Headless circuit validation and simulation"
 
 [[bin]]
-name = "punchi-fluid"
+name = "punchi-fluid-cli"
 path = "src/main.rs"
 
 [dependencies]

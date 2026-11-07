@@ -37,8 +37,8 @@ cat >"$example" <<'JSON'
 }
 JSON
 
-cargo run --quiet --bin punchi-fluid -- validate "$example"
-cargo run --quiet --bin punchi-fluid -- simulate "$example"
+cargo run --quiet --bin punchi-fluid-cli -- validate "$example"
+cargo run --quiet --bin punchi-fluid-cli -- simulate "$example"
 
 # The window is where the drawing and the gestures live, and nothing above touches it: the
 # sheet once answered no click at all with every Rust test green. The app is built and
