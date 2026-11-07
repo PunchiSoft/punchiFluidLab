@@ -64,8 +64,11 @@ dinamómetro, registrador).
 **Nada se escribe en `main`.** Cada cambio sale en su rama desde `main` actualizado
 (`feat/`, `fix/`, `docs/` o `chore/`) y entra por un pull request con squash y borrado de
 la rama. `main` está protegido: sin pull request, sin los trabajos `check`, `window` y
-`minimum supported Rust version` y sin historial lineal, el push se rechaza. El
-procedimiento completo, con lo que hay que comprobar antes de tocar nada, está en
+`minimum supported Rust version` y sin historial lineal, el push se rechaza. **El merge
+lo hace solo el propietario:** el agente abre el pull request, responde la revisión y se
+detiene; no ejecuta `gh pr merge`, no activa el auto-merge y no hace push a `main`, por
+más permisos que tenga la sesión. El procedimiento completo, con lo que hay que comprobar
+antes de tocar nada, está en
 [pull-request-workflow](../.agents/skills/pull-request-workflow/SKILL.md), y el orden de
 las fases en [next-steps.md](next-steps.md#phases-one-branch-one-pull-request).
 
@@ -74,7 +77,8 @@ git fetch origin && git switch main && git merge --ff-only origin/main
 git switch -c feat/<descriptor>
 ./scripts-dev/check.sh                    # en la rama, no en un recuerdo
 gh pr create --base main --head feat/<descriptor> --body-file /tmp/pr.md
-gh pr merge --squash --delete-branch      # solo cuando el propietario lo pida
+gh pr checks                              # verde y se entrega la URL al propietario
+gh pr merge --squash --delete-branch      # solo el propietario, nunca el agente
 ```
 
 Cómo comprobarlo sin ventana:

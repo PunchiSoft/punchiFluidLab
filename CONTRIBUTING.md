@@ -54,7 +54,8 @@ itself.
 Never work on `main`: update it, then create one branch per change —
 `feat/`, `fix/`, `docs/` or `chore/` followed by a short `kebab-case` description — and
 open a pull request from it. `main` is protected, so a direct push is rejected; the
-branch is squash-merged and deleted. Verify the base rather than assuming it:
+project owner squash-merges the pull request and deletes the branch. Verify the base
+rather than assuming it:
 
 ```bash
 git fetch origin && git switch main && git merge --ff-only origin/main
@@ -83,6 +84,10 @@ must be bigger, explain why in the description. The branch carries the gate resu
 changelog entry and the documentation of what it changed; a follow-up pull request to
 "document it later" is not accepted. The full procedure is
 [.agents/skills/pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md).
+
+The project owner is the only one who authorizes and merges a pull request into `main`.
+A contributor leaves it open with a green gate and a review answered; an agent does the
+same, whatever permissions its session holds, and never merges or enables auto-merge.
 
 ## Language
 

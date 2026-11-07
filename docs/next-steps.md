@@ -41,7 +41,7 @@ The milestone list at the end of this file was written for the vertical slice; t
 capabilities are tracked in [capabilities.md](capabilities.md), which is the source of
 truth. Delivery is ordered in phases. A phase is one branch, one pull request, one
 reviewable change: its ledger row, its `CHANGELOG.md` entry and its evidence travel
-together, and it is merged before the next one starts. If a phase grows past ~400
+together, and the owner merges it before the next one starts. If a phase grows past ~400
 changed lines outside generated files, it is two phases.
 
 | Phase | Branch prefix | What it delivers | Evidence it must carry |

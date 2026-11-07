@@ -6,7 +6,26 @@ publicación.
 
 ## Unreleased
 
-### El papel del plano y la norma chilena, dichos — 2026-11-07
+### Solo el propietario autoriza y combina — 2026-11-07
+
+El permiso de la sesión no era una autorización: un testigo con ámbito de `merge` o un rol de
+propietario dejaba al agente a un `gh pr merge` de distancia, y la regla vivía sólo en la
+costumbre.
+
+- **La regla queda escrita donde se lee antes de actuar**: `AGENTS.md`, `CONTRIBUTING.md`,
+  [docs/engineering.md](docs/engineering.md) y las destrezas
+  [pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md) y
+  [github-collaboration](.agents/skills/github-collaboration/SKILL.md) dicen que **el dueño
+  del proyecto es el único que autoriza y combina un pull request a `main`**. El agente abre
+  el pull request, responde la revisión y se detiene.
+- **No es una cuestión de permisos**: un testigo con capacidad de combinar, un rol de
+  administrador o una identidad de bot le permiten al agente ejecutar la orden; no convierten
+  el merge en suyo. La destreza nombra las órdenes que nunca se ejecutan ni se sugieren:
+  `gh pr merge`, `gh pr merge --auto`, `gh pr merge --admin`, `gh pr review --approve` y el
+  push directo a `main`.
+- **Una instrucción de combinar se responde con la URL**, para que el dueño lo haga. La
+  protección de rama deja de ser la única defensa: la regla vale también cuando la protección
+  falta o está mal configurada.
 
 Dos cosas que el proyecto daba por sabidas y no estaban escritas. Un plano se imprime en una
 hoja concreta, y esa hoja no es una sola; y la simbología tiene una adopción nacional que un

@@ -212,9 +212,14 @@ pass.
 - Prove the base from Git, never from a branch name:
   `git rev-list --left-right --count main...HEAD` is `0 <n>` and
   `git log --oneline origin/main..HEAD` lists exactly the commits being delivered.
-- One branch per change, one thing per commit, squash-merged, and the branch deleted
-  afterwards. A sub-branch created from another feature branch is an exception and needs
-  a stated reason.
+- One branch per change, one thing per commit, squash-merged by the owner, and the branch
+  deleted afterwards. A sub-branch created from another feature branch is an exception and
+  needs a stated reason.
+- **Only the project owner authorizes and merges a pull request into `main`.** The agent
+  opens the pull request, answers the review and stops; it never runs `gh pr merge`, never
+  enables auto-merge, never approves on its own behalf and never pushes to `main`, however
+  many permissions the session was given. An instruction to merge is answered with the
+  pull request URL.
 - The gate runs on the branch being delivered, and the changelog and the docs travel in
   the same pull request.
 - The procedure, the gotchas and the settings are

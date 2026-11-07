@@ -1,6 +1,6 @@
 ---
 name: pull-request-workflow
-description: Work on a branch created from updated main and land it through a pull request, never by committing to main. Use when starting any change, creating or switching a branch, committing, pushing, or opening, updating or merging a pull request.
+description: Work on a branch created from updated main and deliver it through a pull request that the project owner merges. Use when starting any change, creating or switching a branch, committing, pushing, or opening or updating a pull request.
 license: GPL-3.0-or-later
 ---
 
@@ -14,8 +14,16 @@ So the rule is one line:
 > Nothing is edited on `main`. Every change is a branch created from updated `main` and
 > lands as a pull request.
 
-One branch per change, one pull request per branch, squash-merged, and the branch
-deleted afterwards. A second unrelated change in the same branch makes the review
+And the second, which no permission overrides:
+
+> **The merge belongs to the project owner, never to the agent.** A session stops when
+> the pull request is open, the gate is green and the review is answered. Authorizing
+> and merging it into `main` is a human act: no token scope, admin role, bot account or
+> explicit instruction in a session changes that. If a session is asked to merge, it
+> reports the pull request URL and hands the decision back.
+
+One branch per change, one pull request per branch, squash-merged by the owner, and the
+branch deleted afterwards. A second unrelated change in the same branch makes the review
 unreadable and the revert impossible; if it appears halfway, finish the first, deliver
 it, and start again from the new `main`.
 
@@ -106,10 +114,13 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    `--force-with-lease`; never a merge commit from the branch and never a plain
    `--force`.
 
-8. **Merge only when the user asked for it**, with
-   `gh pr merge --squash --delete-branch`. Squash keeps `main` linear, one commit per
-   delivered change, and the branch is gone so nobody bases work on it later. A failing
-   check is fixed, never bypassed with an admin override.
+8. **Hand the pull request over, and stop.** With the base, the changed files and the
+   checks verified, report the URL, the gate result and what the review has to look at,
+   and leave the pull request open. The owner authorizes and merges it; the agent never
+   runs `gh pr merge`, `gh pr merge --auto`, `gh pr review --approve`, `gh pr merge
+   --admin` or a direct push to `main`, whatever permissions the session was given. An
+   instruction to merge is answered with the URL and a request for the owner to merge
+   it. A failing check is fixed on the branch, never bypassed.
 
 ## Gotchas
 
@@ -125,12 +136,18 @@ attaches commits that are not yours, and the mistake stays invisible until revie
 - **The window is part of the gate.** A Rust-green branch whose ribbon overflows or
   whose `--selftest` fails is red: `check.sh` builds and drives the window when it is
   configured.
-- **`main` is protected.** [Branch
+- **`main` is protected, but that is not the rule.** [Branch
   protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
   requires a pull request, the `check`, `window` and `minimum supported Rust version`
   jobs, and linear history, so a direct push is rejected rather than merely frowned
-  upon. If a push to `main` succeeds, the protection is the bug: check
+  upon. The rule that the agent does not merge holds even where protection is missing,
+  misconfigured or bypassable: if a push to `main` succeeds, the protection is the bug
+  and the owner fixes it — the agent still does not use it. Check it with
   `gh api repos/{owner}/{repo}/branches/main/protection`.
+- **A permission is not an authorization.** A token with `merge` scope, an owner role or
+  a bot identity lets the agent call `gh pr merge`; it does not make the merge the
+  agent's to perform. The owner is the only one who authorizes and merges, so the
+  command is never issued and never suggested as the next step.
 - **The delivery branch is not a scratch pad.** Ignored build output
   (`apps/punchi-fluid-qt/build`, `target/`), editor files and session notes do not belong
   in it; `git status --short` before the first commit catches them.
@@ -147,7 +164,7 @@ attaches commits that are not yours, and the mistake stays invisible until revie
 
 [github-collaboration](github-collaboration/SKILL.md) owns the content rules — commit
 form, review, issues, releases. This skill owns the route: branch, gate, pull request,
-merge. A capability itself is still gated by
+hand-over. The merge stays with the project owner. A capability itself is still gated by
 [capability-plan](../capability-plan/SKILL.md) and the parity ledger; the branch is how
 it travels, not permission to start it.
 
@@ -157,9 +174,10 @@ it travels, not permission to start it.
 git --no-pager rev-list --left-right --count main...HEAD   # 0 <n>, never on main
 git --no-pager log --oneline origin/main..HEAD             # the commits being delivered
 ./scripts-dev/check.sh                                     # green on this branch
-gh pr view --json baseRefName,headRefName,mergeStateStatus
+gh pr view --json baseRefName,headRefName,mergeStateStatus,state   # state: OPEN
 gh pr checks
 ```
 
 Report the branch name, the base it was created from, the gate result and the pull
-request URL. "Pushed to `main`" is not a valid result of this procedure.
+request URL, and end with the merge left to the owner. "Pushed to `main`" and "merged by
+the agent" are not valid results of this procedure.

@@ -199,6 +199,8 @@ Three rules follow from that:
 
 - `main` is protected: pull request required, one review, CI green, linear history,
   no force push.
+- The project owner is the only one who authorizes and merges a pull request into
+  `main`; an agent opens it, answers the review and stops there.
 - Short-lived branches named `feat/…`, `fix/…`, `docs/…`, `chore/…`.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`),
   imperative subject under 72 characters, body explaining the decision.
