@@ -30,26 +30,33 @@ file is the execution order.
 | Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | six format tests, ABI round trip, `--selftest` |
 | Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v2 with a migration test |
 
-The repository is initialised and the baseline is committed; the working tree is on
-`main` with the Qt front end merged in.
+The repository is initialised and the baseline is committed; `main` carries the Qt
+front end, and since 2026-11-12 nothing is committed there: every change travels on a
+branch and lands as a pull request
+([pull-request-workflow](../.agents/skills/pull-request-workflow/SKILL.md)).
 
-## Order after 2026-11-06
+## Phases: one branch, one pull request
 
-The milestone list below was written for the vertical slice; the capabilities are now
-tracked in [capabilities.md](capabilities.md), which is the source of truth. The
-order that follows from it:
+The milestone list at the end of this file was written for the vertical slice; the
+capabilities are tracked in [capabilities.md](capabilities.md), which is the source of
+truth. Delivery is ordered in phases. A phase is one branch, one pull request, one
+reviewable change: its ledger row, its `CHANGELOG.md` entry and its evidence travel
+together, and it is merged before the next one starts. If a phase grows past ~400
+changed lines outside generated files, it is two phases.
 
-1. **F3 — instruments and runs**: a manometer, a flow meter, a force meter and a strip
-   chart as catalog entries with readings, plus *run until state change* (manual §3.2:
-   piston at an end, valve actuated, relay, switch).
-2. **F1 — the editing functions of §4.2** that are still missing: even spacing between
-   marked objects, pipe classes, blind plugs and silencers. Selecting several components,
-   aligning, copy, paste, duplicate, turn and reflect are done.
-3. **F4 — documents**: autosave, recent documents, a warning when closing an unsaved
-   circuit, a project as a folder, and the designations that unlock three of the four
-   remaining check faults.
-4. **F5 — output**: parts list and title-block legend, then SVG.
-5. **F6 — libraries** beyond pneumatics, each with a `behaviour` variant and an ADR.
+| Phase | Branch prefix | What it delivers | Evidence it must carry |
+|---|---|---|---|
+| **P1 — no perder el trabajo** | `feat/unsaved-changes` | the document knows it is modified, the title says so, Nuevo/Abrir/cerrar warn before discarding, and an autosave copy exists | document tests, ABI round trip, `--selftest` steps for the warning and the autosave |
+| **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
+| **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
+| **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
+| **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
+| **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
+
+`P` numbers are delivery order, not dependency: P2 does not need P1's code, and a phase
+that does not touch the same files may be worked on a branch of its own once the
+previous pull request is merged. What decides the order is value to a student, and the
+first row is the one whose absence loses work.
 
 ## Before the first line of code
 

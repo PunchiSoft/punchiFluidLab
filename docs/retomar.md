@@ -58,6 +58,24 @@ proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de
 es el **autoguardado con aviso de cambios sin guardar** (F4), seguido del resto de F3
 (caudalímetro, dinamómetro, registrador) y de las clases de conducto.
 
+### 0.2 Cómo se entrega desde el 2026-11-12
+
+**Nada se escribe en `main`.** Cada cambio sale en su rama desde `main` actualizado
+(`feat/`, `fix/`, `docs/` o `chore/`) y entra por un pull request con squash y borrado de
+la rama. `main` está protegido: sin pull request, sin los trabajos `check`, `window` y
+`minimum supported Rust version` y sin historial lineal, el push se rechaza. El
+procedimiento completo, con lo que hay que comprobar antes de tocar nada, está en
+[pull-request-workflow](../.agents/skills/pull-request-workflow/SKILL.md), y el orden de
+las fases en [next-steps.md](next-steps.md#phases-one-branch-one-pull-request).
+
+```bash
+git fetch origin && git switch main && git merge --ff-only origin/main
+git switch -c feat/<descriptor>
+./scripts-dev/check.sh                    # en la rama, no en un recuerdo
+gh pr create --base main --head feat/<descriptor> --body-file /tmp/pr.md
+gh pr merge --squash --delete-branch      # solo cuando el propietario lo pida
+```
+
 Cómo comprobarlo sin ventana:
 
 ```bash

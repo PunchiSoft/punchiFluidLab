@@ -203,6 +203,23 @@ correctly or that a model matches reality.
 Behavioral tests are protected: never delete, disable or weaken one to make a change
 pass.
 
+## Branches and delivery
+
+- **Nothing is edited on `main`.** Every change is a branch created from updated `main`
+  (`feat/`, `fix/`, `docs/` or `chore/`), and it lands as a pull request. `main` is
+  protected: a pull request, the `check`, `window` and `minimum supported Rust version`
+  jobs and linear history are required, so a direct push is rejected.
+- Prove the base from Git, never from a branch name:
+  `git rev-list --left-right --count main...HEAD` is `0 <n>` and
+  `git log --oneline origin/main..HEAD` lists exactly the commits being delivered.
+- One branch per change, one thing per commit, squash-merged, and the branch deleted
+  afterwards. A sub-branch created from another feature branch is an exception and needs
+  a stated reason.
+- The gate runs on the branch being delivered, and the changelog and the docs travel in
+  the same pull request.
+- The procedure, the gotchas and the settings are
+  [.agents/skills/pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md).
+
 ## Versioning and changelog
 
 `CHANGELOG.md` is in Spanish. Work accumulates under `## Unreleased` in dated `###

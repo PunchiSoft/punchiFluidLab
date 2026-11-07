@@ -49,6 +49,19 @@ screenshots attached to the pull request. Symbols are drawn by hand to conform t
 ISO 1219-1; nothing is traced from another program, a screenshot or the standard
 itself.
 
+## Branches
+
+Never work on `main`: update it, then create one branch per change —
+`feat/`, `fix/`, `docs/` or `chore/` followed by a short `kebab-case` description — and
+open a pull request from it. `main` is protected, so a direct push is rejected; the
+branch is squash-merged and deleted. Verify the base rather than assuming it:
+
+```bash
+git fetch origin && git switch main && git merge --ff-only origin/main
+git switch -c feat/<descriptor>
+git rev-list --left-right --count main...HEAD   # 0 <n>
+```
+
 ## Commits
 
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
@@ -66,7 +79,10 @@ headless UI test, screenshot, measurement, or manual review. "It works" without 
 those is not a description.
 
 Keep pull requests reviewable: under ~400 changed lines outside generated files. If it
-must be bigger, explain why in the description.
+must be bigger, explain why in the description. The branch carries the gate result, the
+changelog entry and the documentation of what it changed; a follow-up pull request to
+"document it later" is not accepted. The full procedure is
+[.agents/skills/pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md).
 
 ## Language
 
