@@ -185,15 +185,24 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!size.isEmpty()) {
-        const QStringList parts = size.split(QLatin1Char('x'));
+    // The self test turns sheet millimetres into window pixels to drive its gestures, so it
+    // needs a viewport where the whole sheet is on screen and the canvas does not scroll
+    // under it: a window whose aspect does not match the sheet's moves the drawing between
+    // the press and the release, and the gesture then lands somewhere the test did not mean.
+    // `--size` still overrides this.
+    const QString pinned = arguments.contains(QStringLiteral("--selftest")) && size.isEmpty()
+                               ? QStringLiteral("1280x800")
+                               : size;
+
+    if (!pinned.isEmpty()) {
+        const QStringList parts = pinned.split(QLatin1Char('x'));
         bool widthOk = false;
         bool heightOk = false;
         const int width = parts.value(0).toInt(&widthOk);
         const int height = parts.value(1).toInt(&heightOk);
         if (!widthOk || !heightOk || width < 640 || height < 480) {
             std::fprintf(stderr, "--size takes WxH, at least 640x480, not \"%s\"\n",
-                         qUtf8Printable(size));
+                         qUtf8Printable(pinned));
             return 2;
         }
         for (QObject *root : engine.rootObjects()) {
