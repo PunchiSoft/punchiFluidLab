@@ -44,6 +44,34 @@ not be the thing a student cannot afford.
 > continuity note: current state, what was built step by step, how to verify it, the
 > decisions taken and the exact prompt to resume in a new session.
 
+## Why this exists
+
+In Latin America an industrial career is expensive before the first class. The software a
+mechanical or electrical course expects you to learn on is priced for a company, and it is
+usually tied to the brand of the machines in the laboratory. Student licences are rare,
+teaching licences rarer, and a course that cannot afford them ends up teaching *around* the
+tool instead of with it.
+
+The consequence is well known and rarely said out loud: students look for a pirated copy
+rather than tell the teacher they cannot pay. That copy arrives with its own bill — no
+updates, malware on a personal laptop, credentials and documents exposed. Piracy is a
+symptom, not a shortcut, and the honest fix is a tool that costs nothing to install and
+nothing to run.
+
+That is where this project comes from. It is written by someone who works in the industry
+and also teaches, and it is built for the two places where the same knowledge is needed: the
+classroom with no budget and the workshop that has to train its own people.
+
+There the value is not decorative. An operator who has watched a chamber fill, a piston
+travel and a flow choke at the critical ratio reads a slow cylinder as a diagnosis instead
+of a mystery. A team that can install a simulator on every machine can work towards
+autonomous maintenance — one of the pillars of total productive maintenance — without
+buying a seat for it, which is the difference between a plan and a poster on the wall.
+
+This is the motivation, not a measured result: the program is a prototype, and
+[docs/capabilities.md](docs/capabilities.md) says what is still missing. But the direction is
+the point. Free software is how a subject stops being an entrance fee.
+
 ## What exists today
 
 | Crate | What it does now |

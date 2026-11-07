@@ -44,6 +44,34 @@ suscripción, sin «edición educativa» recortada.
 > continuidad: estado actual, qué se construyó paso a paso, cómo verificarlo, decisiones
 > tomadas y el texto exacto para continuar en una sesión nueva.
 
+## Por qué existe
+
+En Latinoamérica una carrera industrial es cara antes de la primera clase. El programa con el
+que un curso de mecánica o electricidad espera que aprendas cuesta como cuesta para una
+empresa, y casi siempre va atado a la marca de las máquinas del laboratorio. Las licencias
+de estudiante son escasas y las de docencia más, así que un curso que no puede pagarlas
+termina enseñando *alrededor* de la herramienta en vez de con ella.
+
+La consecuencia se conoce y casi nunca se dice en voz alta: el estudiante busca una copia
+pirata antes que reconocer que no puede pagar. Esa copia llega con su propia factura —sin
+actualizaciones, con malware en el portátil personal, con credenciales y documentos
+expuestos—. La piratería es un síntoma, no un atajo, y la salida honesta es una herramienta
+que no cuesta instalarla ni cuesta ejecutarla.
+
+De ahí viene este proyecto. Lo escribe alguien que trabaja en el rubro y además enseña, y
+está pensado para los dos lugares donde hace falta el mismo conocimiento: el aula sin
+presupuesto y el taller que tiene que formar a su propia gente.
+
+Ahí el valor no es decorativo. Un operario que ha visto llenarse una cámara, avanzar un
+émbolo y cebarse el caudal en la relación crítica lee un cilindro lento como un diagnóstico,
+no como un misterio. Un equipo que puede instalar un simulador en cada máquina puede avanzar
+hacia el mantenimiento autónomo —uno de los pilares del mantenimiento productivo total— sin
+comprar una licencia por puesto, que es la diferencia entre un plan y un cartel en la pared.
+
+Esto es el motivo, no un resultado medido: el programa es un prototipo y
+[docs/capabilities.md](docs/capabilities.md) dice lo que todavía falta. Pero la dirección es
+lo importante. El software libre es cómo una materia deja de tener precio de entrada.
+
 ## Lo que existe hoy
 
 | Crate | Qué hace ahora |

@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Por qué existe: el coste de una carrera industrial — 2026-11-07
+
+El README decía para quién es el programa, pero no de dónde viene. Ahora lo dice, y lo dice
+encadenando la causa en vez de lamentarla.
+
+- **El precio de entrada**: en Latinoamérica el software que un curso de mecánica o
+  electricidad espera que uses cuesta como cuesta para una empresa y suele ir atado a la
+  marca de las máquinas del laboratorio; las licencias de estudiante y de docencia escasean,
+  así que el curso enseña *alrededor* de la herramienta.
+- **La consecuencia, sin culpar a quien la sufre**: el estudiante busca una copia pirata
+  antes que reconocer que no puede pagar, y esa copia trae su propia factura —sin
+  actualizaciones, con malware en el portátil personal, con credenciales y documentos
+  expuestos—. La piratería es un síntoma; la salida honesta es una herramienta que no cuesta
+  instalar ni ejecutar.
+- **El valor en el taller**: un operario que ha visto llenarse una cámara y cebarse el
+  caudal lee un cilindro lento como diagnóstico; un equipo que instala el simulador en cada
+  máquina puede avanzar hacia el mantenimiento autónomo sin comprar una licencia por puesto.
+- **Declarado como motivo, no como resultado**: el programa es un prototipo y el ledger dice
+  lo que falta. Sin cifras inventadas ni promesas de TPM medidas.
+
 ### El accionamiento y el muelle de la válvula, a tamaño que se lee — 2026-11-07
 
 La revisión visual marcó los dos extremos de la válvula 3/2. Se dibujaban pegados al borde de
