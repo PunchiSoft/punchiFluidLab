@@ -5,16 +5,17 @@ Thanks for reading the rules before writing the code. They are short.
 ## Set up
 
 ```bash
-git clone https://github.com/PunchiSoft/punchi-fluid-lab
+git clone https://github.com/PunchiSoft/punchiFluidLab
 cd punchi-fluid-lab
-./scripts-dev/check.sh          # fmt, clippy -D warnings, tests, CLI smoke test
+./scripts-dev/check.sh          # fmt, docs, clippy -D warnings, tests, CLI smoke test
 ./scripts-dev/test.sh           # tests only; add --no-build to skip Cargo entirely
 ./scripts-dev/run.sh            # open the window; add --no-build to run the last build
-cargo run -p punchi-fluid-desktop
+cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja   # once, for the window
 ```
 
-Rust stable, version pinned in `rust-toolchain.toml`. Nothing else is needed to
-build; the window uses `glow` on Wayland and X11.
+Rust stable, version pinned in `rust-toolchain.toml`, plus Qt 6.5 or newer with Qt Quick,
+CMake and Ninja for the window. The Rust core is linked into the Qt binary as a static
+library, so the result is one file with no runtime search path to get wrong.
 
 ## The gate is not negotiable
 
