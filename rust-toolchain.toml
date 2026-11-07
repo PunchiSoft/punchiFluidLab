@@ -1,3 +1,7 @@
 [toolchain]
-channel = "stable"
+# Pinned on purpose. "stable" here meant CI and the machine could disagree: on
+# 2026-11-07 GitHub's stable (1.99) gained `clippy::assert_is_empty`, the local
+# toolchain did not, and main went red for a lint nobody had seen. Updating the
+# compiler is now a commit that runs the gate with the new version.
+channel = "1.98.1"
 components = ["rustfmt", "clippy"]

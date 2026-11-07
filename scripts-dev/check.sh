@@ -50,5 +50,9 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     "$app" --check-icons
     "$app" --selftest
 else
-    echo "ui gate skipped: configure apps/punchi-fluid-qt to run it" >&2
+    if [[ ${PUNCHI_REQUIRE_UI:-0} == 1 ]]; then
+        echo "ui gate: the window is required but apps/punchi-fluid-qt/build is not configured" >&2
+        exit 1
+    fi
+    echo "ui gate skipped: configure apps/punchi-fluid-qt to run it (PUNCHI_REQUIRE_UI=1 makes this fatal)" >&2
 fi

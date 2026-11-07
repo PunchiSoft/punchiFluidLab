@@ -7,10 +7,10 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      egui:
-        patterns: ["egui*", "eframe", "epaint", "ecolor"]
       serialization:
         patterns: ["serde*", "toml", "ron"]
+      render:
+        patterns: ["tiny-skia", "ab_glyph", "fontdb"]
       dev:
         dependency-type: development
     commit-message:
