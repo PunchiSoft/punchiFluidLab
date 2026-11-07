@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### El documento avisa de lo que no está guardado — 2026-11-12
+
+Un simulador que cierra sin preguntar es un simulador que se lleva el trabajo del usuario, y
+hasta aquí el programa podía cerrar con un circuito editado sin decir nada.
+
+- **El documento sabe que cambió**: cuenta sus propios cambios —cada edición, cada
+  deshacer, cada rehacer— y el ABI lo compara con el número que tenía la última vez que se
+  guardó o se abrió. Marcar, seleccionar, hacer zoom o pasar la comprobación **no** cuenta:
+  el documento es el mismo.
+- **El título lo dice**: mientras hay trabajo sin guardar lleva `•` y el nombre del archivo.
+  Es un carácter y no un color, porque el color no se ve en una captura ni lo ve todo el
+  mundo.
+- **Nuevo, Abrir y cerrar preguntan**: un panel nombra lo que se va a perder y ofrece
+  Guardar, Descartar o Cancelar. Solo aparece cuando hay algo que perder, así que el camino
+  normal sigue sin modales.
+- **Copia de seguridad**: cada treinta segundos, mientras hay cambios sin guardar, se escribe
+  una copia en los datos de la aplicación. Al arrancar se **ofrece**, nunca se carga sola,
+  porque puede ser trabajo que el usuario ya guardó. Recuperarla la deja sin guardar y sin
+  ruta: el siguiente guardado pregunta dónde va en vez de pisar la copia.
+- **Probado en tres niveles**: una prueba del documento (el contador sube al editar, al
+  deshacer y al rehacer), una del ABI que edita, guarda, copia, recupera en una sesión nueva
+  y rechaza un archivo roto, y doce pasos del `--selftest`. La ventana se captura con
+  `--confirm new|open|close`, que existe para poder ver el panel sin manos.
+
 ### El agente de IA, y su apoyo, dichos en el README — 2026-11-07
 
 La ayuda de agentes de IA estaba en el flujo de trabajo —`AGENTS.md`, `.agents/`, commits

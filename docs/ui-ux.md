@@ -90,6 +90,13 @@ The transport (`▶ ⏸ ⏭ ⏹ ⟲` — start, pause, step, stop, reset, with t
 is always visible to the right of the tabs: running the model is the most frequent action
 and must never need a tab switch.
 
+**One confirmation, and only when it can lose work.** The sheet offers a safety copy when
+one is waiting from a previous run, and stops once before Nuevo, Abrir or closing discards
+unsaved work. Both are panels beside the sheet, not modal windows, and neither appears on
+the normal path: an unmodified circuit closes and opens without a question. The window
+title carries `•` while there is work that is not in the file — a character, not a tint,
+because a title bar has no other channel.
+
 **The transport changes the mode; there is no mode button.** This is how the reference
 behaves, and the reason the tabs are three and not four:
 

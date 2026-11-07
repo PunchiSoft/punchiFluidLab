@@ -8,6 +8,7 @@
 //! ```text
 //! --grab <file>        render one frame offscreen and exit
 //! --toggle             actuate the valve before that frame, the same path a click takes
+//! --confirm <what>     open the unsaved-work confirmation (`new`, `open` or `close`)
 //! --theme light|dark   force a palette instead of the desktop one
 //! --check-theme        print the contrast ratios and exit 1 when one fails
 //! --check-icons        resolve the ribbon's icons and print what the theme returned
@@ -266,6 +267,18 @@ int main(int argc, char *argv[])
             session->stopSimulation();
         }
     }
+    // The confirmation is the one panel that cannot be reached by a flag-less capture, and
+    // it is where the user decides whether work is lost: it is driven here on purpose.
+    for (int at = 0; at + 1 < arguments.size(); ++at) {
+        if (arguments.at(at) != QStringLiteral("--confirm")) {
+            continue;
+        }
+        const QString what = arguments.at(at + 1);
+        for (QObject *root : engine.rootObjects()) {
+            root->setProperty("pendingCommand", what);
+        }
+    }
+
     int drop = 0;
     for (int at = 0; at + 1 < arguments.size(); ++at) {
         if (arguments.at(at) != QStringLiteral("--place")) {
@@ -507,6 +520,8 @@ int main(int argc, char *argv[])
             QPointF routeScene;
             int routePipe = -1;
             float routeOffset = 0.0F;
+            /// A file the sheet is saved to, so a step that needs a clean document has one.
+            QString unsavedPath;
         };
         auto *state = new SelfTest();
         state->window = window;
@@ -1157,6 +1172,54 @@ int main(int argc, char *argv[])
                           && std::abs(box.center().y() - 40.0) < 12.0,
                       QStringLiteral("paleta: cae donde se suelta, no en otro sitio"));
             }
+        });
+
+        // Unsaved work is known, marked in the title and copied for safety. A crash costs
+        // the work since the last copy, and a close asks before losing the rest. The sheet
+        // has been edited by the steps above, so the baseline is a save, not an assumption.
+        steps->push_back([state, check] {
+            state->session->stopSimulation();
+            const QString path = QDir::tempPath() + QStringLiteral("/punchi-aviso.pfluid");
+            check(state->session->saveTo(path),
+                  QStringLiteral("sin guardar: guardar deja el documento limpio"));
+            check(!state->session->modified()
+                      && !state->session->title().startsWith(QChar(0x2022)),
+                  QStringLiteral("sin guardar: un documento guardado no lleva marca"));
+            state->unsavedPath = path;
+            if (state->session->componentCount() > 0) {
+                state->session->select(0);
+                state->session->moveComponent(0, 60.0, 100.0);
+            }
+            check(state->session->modified(),
+                  QStringLiteral("sin guardar: mover marca el documento"));
+            check(state->session->title().startsWith(QChar(0x2022)),
+                  QStringLiteral("sin guardar: el título avisa"));
+            check(state->session->hasUnsavedWork(),
+                  QStringLiteral("sin guardar: cerrar preguntaría antes"));
+            state->session->autosave();
+            check(state->session->modified(),
+                  QStringLiteral("sin guardar: la copia de seguridad no es guardar"));
+            state->session->undo();
+            check(state->session->modified(),
+                  QStringLiteral("sin guardar: deshacer no borra el aviso"));
+        });
+        // Recovering a safety copy brings the work back and leaves it unsaved, because the
+        // user never chose where it goes; starting over then discards both.
+        steps->push_back([state, check] {
+            const int before = state->session->componentCount();
+            check(state->session->recoverAutosave(),
+                  QStringLiteral("sin guardar: la copia se recupera"));
+            check(state->session->modified() && state->session->currentPath().isEmpty(),
+                  QStringLiteral("sin guardar: lo recuperado sigue sin guardar"));
+            check(state->session->componentCount() == before,
+                  QStringLiteral("sin guardar: la copia trae el circuito entero"));
+            state->session->discardAutosave();
+            check(!state->session->recoveryOffered(),
+                  QStringLiteral("sin guardar: descartar la copia la quita"));
+            state->session->discardAndNewDocument();
+            check(!state->session->modified(),
+                  QStringLiteral("sin guardar: empezar de nuevo arranca limpio"));
+            QFile::remove(state->unsavedPath);
         });
 
         // Saving and opening a sheet: the file has to carry the placements, the pipes,

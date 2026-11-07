@@ -46,7 +46,8 @@ changed lines outside generated files, it is two phases.
 
 | Phase | Branch prefix | What it delivers | Evidence it must carry |
 |---|---|---|---|
-| **P1 — no perder el trabajo** | `feat/unsaved-changes` | the document knows it is modified, the title says so, Nuevo/Abrir/cerrar warn before discarding, and an autosave copy exists | document tests, ABI round trip, `--selftest` steps for the warning and the autosave |
+| **P1 — no perder el trabajo** ✅ delivered | `feat/unsaved-changes` | the document knows it is modified, the title says so, Nuevo/Abrir/cerrar warn before discarding, and a safety copy is written and offered | a document test, the ABI test `unsaved_work_is_known_and_survives_a_crash_in_a_safety_copy`, twelve `--selftest` steps, light/dark captures of both panels |
+| **P1.5 — recent documents and designations** | `feat/recent-documents` | the last files opened, reachable from Archivo; designations and circuits, which unlock three of the four remaining check faults | ABI test, a check fault that stops being reported, `--selftest` |
 | **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |

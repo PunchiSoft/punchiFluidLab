@@ -3,6 +3,9 @@
 
 #include "session.h"
 
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
 #include <QUrl>
 
 #include <QEvent>
@@ -43,6 +46,10 @@ FluidSession::FluidSession(QObject *parent)
     m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
     readCatalog();
     loadTheme();
+    // A safety copy left by a previous run is offered, never loaded on its own: the user
+    // decides whether it is the work they lost or something they already saved.
+    m_recoveryOffered = QFileInfo::exists(autosavePath());
+    refreshDocument();
     refresh();
 }
 
@@ -597,7 +604,7 @@ bool FluidSession::saveTo(const QString &path)
     }
     m_currentPath = local;
     m_error.clear();
-    emit documentChanged();
+    refreshDocument();
     emit changed();
     return true;
 }
@@ -632,6 +639,112 @@ bool FluidSession::openFrom(const QString &path)
     emit runningChanged();
     emit changed();
     return true;
+}
+
+QString FluidSession::title() const
+{
+    const QString name = m_currentPath.isEmpty() ? QStringLiteral("Sin título")
+                                                 : QFileInfo(m_currentPath).fileName();
+    // The mark is a character, not a colour: a window title has no other channel, and a
+    // tint alone would be invisible in a screenshot or to a colour-blind reader.
+    return m_modified ? QStringLiteral("• %1 — Punchi Fluid Lab").arg(name)
+                      : QStringLiteral("%1 — Punchi Fluid Lab").arg(name);
+}
+
+QString FluidSession::autosavePath() const
+{
+    QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (directory.isEmpty()) {
+        directory = QDir::homePath();
+    }
+    return directory + QStringLiteral("/autosave.pfluid");
+}
+
+void FluidSession::writeAutosave()
+{
+    if (!m_session) {
+        return;
+    }
+    const QString path = autosavePath();
+    const QString directory = QFileInfo(path).absolutePath();
+    QDir().mkpath(directory);
+    const QByteArray encoded = path.toUtf8();
+    if (pf_session_autosave(m_session, encoded.constData()) == PF_OK) {
+        m_recoveryOffered = true;
+        emit documentChanged();
+    }
+}
+
+void FluidSession::autosave()
+{
+    if (!m_session || !m_modified) {
+        return;
+    }
+    writeAutosave();
+}
+
+bool FluidSession::recoverAutosave()
+{
+    if (!m_session) {
+        return false;
+    }
+    const QByteArray encoded = autosavePath().toUtf8();
+    if (pf_session_recover(m_session, encoded.constData()) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no se pudo recuperar");
+        emit changed();
+        return false;
+    }
+    // The copy is the user's work from a run that ended badly; it has no path of its own,
+    // so the next save asks where it goes.
+    m_currentPath.clear();
+    m_recoveryOffered = false;
+    m_selected = -1;
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    refreshDocument();
+    refresh(true);
+    emit catalogChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return true;
+}
+
+void FluidSession::discardAutosave()
+{
+    QFile::remove(autosavePath());
+    m_recoveryOffered = false;
+    emit documentChanged();
+}
+
+void FluidSession::discardAndNewDocument()
+{
+    newDocument();
+    // Starting over is only safe once what was there is gone from the safety copy too.
+    QFile::remove(autosavePath());
+    m_recoveryOffered = false;
+    emit documentChanged();
+}
+
+bool FluidSession::discardAndOpen(const QString &path)
+{
+    const bool opened = openFrom(path);
+    if (opened) {
+        QFile::remove(autosavePath());
+        m_recoveryOffered = false;
+        emit documentChanged();
+    }
+    return opened;
+}
+
+void FluidSession::confirmClose()
+{
+    m_closeConfirmed = true;
+    emit changed();
 }
 
 bool FluidSession::saveCurrent()
@@ -680,14 +793,16 @@ void FluidSession::refreshDocument()
     const int selected = pf_session_selected(m_session);
     const bool canUndo = pf_session_can_undo(m_session) == 1;
     const bool canRedo = pf_session_can_redo(m_session) == 1;
+    const bool modified = pf_session_is_modified(m_session) == 1;
     if (count == m_componentCount && selected == m_selected && canUndo == m_canUndo
-        && canRedo == m_canRedo) {
+        && canRedo == m_canRedo && modified == m_modified) {
         return;
     }
     m_componentCount = count;
     m_selected = selected;
     m_canUndo = canUndo;
     m_canRedo = canRedo;
+    m_modified = modified;
     emit documentChanged();
 }
 

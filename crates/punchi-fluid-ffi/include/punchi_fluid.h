@@ -230,6 +230,12 @@ int32_t pf_session_new_document(PfSession *session);
 /* Saves the sheet atomically, and opens one, replacing the document. */
 int32_t pf_session_save(PfSession *session, const char *path);
 int32_t pf_session_open(PfSession *session, const char *path);
+/* 1 when the sheet holds work that is not in the file it came from. */
+int32_t pf_session_is_modified(const PfSession *session);
+/* Writes a safety copy without counting it as the saved document. */
+int32_t pf_session_autosave(PfSession *session, const char *path);
+/* Opens an autosave copy; the document stays modified and has no path of its own. */
+int32_t pf_session_recover(PfSession *session, const char *path);
 
 /* The effective parameters of one placement; the mask says what it can edit. */
 int32_t pf_session_component_edits(const PfSession *session, uint32_t index, PfEditSet *out);
