@@ -245,6 +245,12 @@ int32_t pf_session_recent_path(const PfSession *session, uint32_t slot, char *ou
 int32_t pf_session_open_recent(PfSession *session, uint32_t slot);
 int32_t pf_session_forget_recent(PfSession *session);
 
+/* The name the user gave a component, and how to set it (an empty text clears it). */
+int32_t pf_session_component_designation(const PfSession *session, uint32_t index, char *out,
+                                         uint32_t capacity);
+int32_t pf_session_set_component_designation(PfSession *session, uint32_t index,
+                                             const char *text);
+
 /* The effective parameters of one placement; the mask says what it can edit. */
 int32_t pf_session_component_edits(const PfSession *session, uint32_t index, PfEditSet *out);
 /* Applies the masked values as one undoable edit, then rebuilds the model. */

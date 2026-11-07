@@ -247,6 +247,14 @@ void FluidSession::inspectComponent(int index)
         add(PF_EDIT_ROD, "rod_mm", "Vástago (mm)", set.rod_mm);
         add(PF_EDIT_MASS, "moving_mass_kg", "Masa móvil (kg)", set.moving_mass_kg);
     }
+    // The name comes first in the reference's dialog, and it is the one field that is text:
+    // `numeric` tells the form which keyboard to ask for and which parser to use.
+    QVariantMap name;
+    name.insert(QStringLiteral("key"), QStringLiteral("designation"));
+    name.insert(QStringLiteral("label"), QStringLiteral("Designación"));
+    name.insert(QStringLiteral("value"), designationOf(index));
+    name.insert(QStringLiteral("numeric"), false);
+    m_inspectorFields.prepend(name);
     m_inspectorOpen = true;
     emit inspectorChanged();
 }
@@ -273,6 +281,35 @@ void FluidSession::inspectValve()
     }
 }
 
+QString FluidSession::designationOf(int index) const
+{
+    if (!m_session || index < 0) {
+        return QString();
+    }
+    char buffer[128] = {};
+    const int32_t written = pf_session_component_designation(
+        m_session, static_cast<uint32_t>(index), buffer, sizeof(buffer));
+    return written > 0 ? QString::fromUtf8(buffer, written) : QString();
+}
+
+void FluidSession::setDesignation(int index, const QString &text)
+{
+    if (!m_session || index < 0) {
+        return;
+    }
+    const QByteArray encoded = text.toUtf8();
+    if (pf_session_set_component_designation(m_session, static_cast<uint32_t>(index),
+                                             encoded.constData())
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("designación no válida");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
 void FluidSession::applyInspectorEdits(const QVariantList &values)
 {
     if (!m_session || m_inspectorIndex < 0) {
@@ -282,6 +319,11 @@ void FluidSession::applyInspectorEdits(const QVariantList &values)
     for (const QVariant &entry : values) {
         const QVariantMap row = entry.toMap();
         const QString key = row.value(QStringLiteral("key")).toString();
+        if (key == QLatin1String("designation")) {
+            // A name is text, not a number, so it does not travel in the numeric edit set.
+            setDesignation(m_inspectorIndex, row.value(QStringLiteral("value")).toString());
+            continue;
+        }
         bool ok = false;
         const double value = row.value(QStringLiteral("value")).toDouble(&ok);
         if (!ok) {

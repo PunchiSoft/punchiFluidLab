@@ -90,6 +90,10 @@ The transport (`▶ ⏸ ⏭ ⏹ ⟲` — start, pause, step, stop, reset, with t
 is always visible to the right of the tabs: running the model is the most frequent action
 and must never need a tab switch.
 
+**The properties panel edits one instance, and its first field is its name.** The
+designation is text, not a number: it is the field that ends up under the symbol and in the
+parts list, so the form sends it verbatim and the core trims and bounds it.
+
 **One confirmation, and only when it can lose work.** The sheet offers a safety copy when
 one is waiting from a previous run, and stops once before Nuevo, Abrir or closing discards
 unsaved work. Both are panels beside the sheet, not modal windows, and neither appears on

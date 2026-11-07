@@ -901,6 +901,7 @@ impl PfSession {
                     system.as_ref(),
                 ),
                 orientation: placement.orientation,
+                designation: placement.designation.as_deref(),
             })
             .collect();
         let pipes: Vec<Pipe<'_>> = document
@@ -984,6 +985,7 @@ impl PfSession {
                     edit,
                     quarter_turns: placement.orientation.quarter_turns(),
                     mirrored: placement.orientation.mirrored(),
+                    designation: placement.designation.clone(),
                 }
             })
             .collect();
@@ -1031,6 +1033,7 @@ impl PfSession {
                     };
                 }
                 placement.orientation = Orientation::new(stored.quarter_turns, stored.mirrored);
+                placement.designation.clone_from(&stored.designation);
                 placement
             })
             .collect();
@@ -2687,6 +2690,90 @@ pub unsafe extern "C" fn pf_session_selected(session: *const PfSession) -> i32 {
     unsafe { borrow_shared(session) }
         .and_then(PfSession::primary)
         .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+}
+
+/// The designation of one placement, as NUL-terminated UTF-8.
+///
+/// Returns the length written (`0` when the component has no name) or a negative code.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_designation(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let designation = placement.designation.as_deref().unwrap_or("");
+        let bytes = designation.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Names one placement, or takes the name away with an empty string.
+///
+/// The name is what the sheet draws under the symbol and what the parts list prints; an
+/// empty one is no name at all, so two unnamed cylinders are not duplicates.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `text` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_component_designation(
+    session: *mut PfSession,
+    index: u32,
+    text: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if text.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        // Naming it with the name it already has is not a change, and not an error: the
+        // form applies every field it shows, so a user who opens the panel and presses
+        // Aplicar must not be told the name is invalid.
+        let trimmed = text.trim();
+        let unchanged = if trimmed.is_empty() {
+            session.document.designation_of(index as usize).is_none()
+        } else {
+            session.document.designation_of(index as usize) == Some(trimmed)
+        };
+        if unchanged || session.document.designate(index as usize, Some(text)) {
+            PF_OK
+        } else {
+            session.fail("that designation cannot be used")
+        }
+    })
 }
 
 /// The editable parameters of one placement, as the reference's dialog shows them.

@@ -48,12 +48,17 @@ changed lines outside generated files, it is two phases.
 |---|---|---|---|
 | **P1 — no perder el trabajo** ✅ delivered | `feat/unsaved-changes` | the document knows it is modified, the title says so, Nuevo/Abrir/cerrar warn before discarding, and a safety copy is written and offered | a document test, the ABI test `unsaved_work_is_known_and_survives_a_crash_in_a_safety_copy`, twelve `--selftest` steps, light/dark captures of both panels |
 | **P1.5 — recent documents** ✅ delivered | `feat/recent-documents` | the last ten files opened or saved, reachable from Archivo and dropped when their file is gone | five format tests, the ABI test `the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened`, ten `--selftest` steps |
-| **P1.6 — designations and circuits** | `feat/designations` | a name per component and per circuit, which unlocks three of the four remaining check faults | ABI test, three check faults that stop being reported, `--selftest` |
+| **P1.6 — designations** ✅ delivered | `feat/designations` | a name per component, drawn on the sheet, edited in the properties panel and saved; the check reports two actuators with one name | document, format, check and ABI tests, seven `--selftest` steps, light/dark captures |
+| **P1.7 — a project of circuits** | `feat/circuits` | several circuits in one document, which is what the reference's ninth check fault is about (a pipe running through a circuit it does not belong to) | ABI test, the ninth fault, `--selftest` |
 | **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
+
+Two corrections worth keeping: designations unlock **one** of the four remaining check
+faults, not three — the eighth needs the displacement encoder, which arrives with the
+electrical library (P5), and the ninth needs a document that holds several circuits (P1.7).
 
 `P` numbers are delivery order, not dependency: P2 does not need P1's code, and a phase
 that does not touch the same files may be worked on a branch of its own once the

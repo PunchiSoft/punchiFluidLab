@@ -1224,6 +1224,43 @@ int main(int argc, char *argv[])
             QFile::remove(state->unsavedPath);
         });
 
+        // A component can be named, the name is drawn under it and saved with the sheet,
+        // and a second cylinder with the same name is what the check reports.
+        steps->push_back([state, check] {
+            state->session->stopSimulation();
+            state->session->select(2);
+            check(state->session->designationOf(2).isEmpty(),
+                  QStringLiteral("designación: el ejemplo no trae nombres"));
+            state->session->setDesignation(2, QStringLiteral(" 1A1 "));
+            check(state->session->designationOf(2) == QStringLiteral("1A1"),
+                  QStringLiteral("designación: se guarda sin espacios"));
+            state->session->setDesignation(2, QString());
+            check(state->session->designationOf(2).isEmpty(),
+                  QStringLiteral("designación: vaciarla la quita"));
+            state->session->undo();
+            check(state->session->designationOf(2) == QStringLiteral("1A1"),
+                  QStringLiteral("designación: un deshacer la devuelve"));
+        });
+        steps->push_back([state, check] {
+            // Two actuators with one name is the fault the check has to report, and it is
+            // the reason the designation exists.
+            const int copy = state->session->duplicateComponent(2, 10.0, 40.0);
+            check(copy >= 0, QStringLiteral("designación: hay un segundo cilindro"));
+            if (copy >= 0) {
+                state->session->setDesignation(copy, QStringLiteral("1A1"));
+            }
+            state->session->select(-1);
+            state->session->checkCircuit();
+            const QString report = state->session->checkReport();
+            const bool named = report.contains(QStringLiteral("misma designación"));
+            std::fprintf(stderr, "selftest: la comprobación dice: %s\n",
+                         qUtf8Printable(report.left(240)));
+            check(named, QStringLiteral("designación: dos cilindros con el mismo nombre"));
+            state->session->closeInspector();
+            state->session->undo();
+            state->session->undo();
+        });
+
         // The documents that were saved are remembered, and one of them comes back from
         // the list without walking the file dialog.
         steps->push_back([state, check] {

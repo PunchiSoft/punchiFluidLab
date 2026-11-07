@@ -635,7 +635,11 @@ Window {
                                         text: String(modelData.value)
                                         color: session.foreground
                                         font.pixelSize: 11
-                                        inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                        // A designation is a name, not a number: the form
+                                        // asks for one keyboard and parses accordingly.
+                                        inputMethodHints: modelData.numeric === false
+                                                          ? Qt.ImhNone
+                                                          : Qt.ImhFormattedNumbersOnly
                                     }
                                 }
                             }
@@ -663,10 +667,13 @@ Window {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
+                                        // The text travels as it was typed: the form has
+                                        // numbers and a name, and parsing every field as a
+                                        // number here is how a designation becomes NaN.
                                         let values = [];
                                         for (let i = 0; i < editRows.count; ++i) {
                                             const row = editRows.itemAt(i);
-                                            values.push({ key: row.editKey, value: parseFloat(row.valueText) });
+                                            values.push({ key: row.editKey, value: row.valueText });
                                         }
                                         session.applyInspectorEdits(values);
                                     }

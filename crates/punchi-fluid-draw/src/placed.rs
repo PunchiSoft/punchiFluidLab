@@ -56,6 +56,8 @@ pub struct Placed<'a> {
     pub reading: Option<f32>,
     /// How the symbol is turned on the sheet.
     pub orientation: Orientation,
+    /// Name the user gave the component, drawn under its box.
+    pub designation: Option<&'a str>,
 }
 
 impl Placed<'_> {
@@ -135,6 +137,19 @@ pub fn draw_placed(
                 placed.valve_position,
                 placed.extension,
                 ink,
+            );
+        }
+        // The designation sits under the box, as the reference draws it: it names the
+        // component for the reader without touching the symbol itself.
+        if let Some(designation) = placed.designation.filter(|text| !text.is_empty()) {
+            let box_rect = placed.box_rect();
+            symbol::haloed_text(
+                surface,
+                Pt::new(box_rect.center().x, box_rect.max.y + symbol::NUMERAL * 1.4),
+                designation,
+                symbol::NUMERAL * 0.95,
+                ink.text,
+                ink.background,
             );
         }
         // A reading is text, not a primitive of the symbol: the dial is the file's and

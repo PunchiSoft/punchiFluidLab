@@ -6,6 +6,31 @@ publicación.
 
 ## Unreleased
 
+### Nombrar un componente: la designación — 2026-11-12
+
+Un esquema se lee por los nombres: *1A1* dice qué cilindro es, y sin nombres la lista de
+piezas imprime tres cilindros iguales. El manual lo pide en el diálogo de propiedades y lo
+usa en su séptima falta de la comprobación: *cilindros con la misma designación*.
+
+- **Un nombre por instancia**: `Placement::designation`, con un solo deshacer, recortado, de
+  cuarenta caracteres como mucho y rechazado —no truncado— si no se puede leer. Un nombre de
+  espacios es ningún nombre, así que dos cilindros sin nombre no son duplicados.
+- **Se dibuja**: la designación aparece bajo la caja del símbolo, como en la referencia, con
+  el halo del texto para que se lea sobre la trama.
+- **Se edita como texto**: el panel de propiedades gana el campo *Designación*, el único que
+  no es un número; el formulario manda el texto tal cual y el ABI lo recorta. Antes, el QML
+  convertía cada campo con `parseFloat`, que habría dejado la designación en `NaN`.
+- **Se guarda**: formato de hoja **v3**, con un archivo v2 que se lee sin nombres y se
+  guarda como v3; prueba de migración incluida.
+- **La séptima falta, cubierta**: dos actuadores con la misma designación se señalan en el
+  dibujo, ignorando mayúsculas y espacios. De las nueve faltas del manual quedan tres, y
+  ninguna depende ya de esto: la octava necesita el encoder de desplazamiento (F6) y la
+  novena, un proyecto de circuitos (F4).
+- **Probado en cuatro niveles**: una prueba del documento, tres del formato (migración,
+  rechazo, campo omitido), una de la comprobación y una del ABI que nombra, guarda, reabre,
+  vacía, deshace y rechaza un nombre imposible; más siete pasos del `--selftest`. Capturas
+  claro/oscuro con `1A1` y `1V1` dibujados y del panel con su campo.
+
 ### Los últimos circuitos, a un clic — 2026-11-12
 
 Abrir el mismo circuito tres veces al día pasa por el diálogo de archivos otras tantas.
