@@ -2,6 +2,13 @@
 
 **English** | [Español](README.es.md)
 
+> 🚧 **Under construction.** This is a working prototype, not a finished product. It is
+> built by one person in the free days left by a full-time job, so it moves steadily but
+> slowly, and **no delivery date is promised**: when a capability in
+> [docs/capabilities.md](docs/capabilities.md) says `missing` or `partial`, that is exactly
+> what it means. If something is not there, it says so; if it is half done, it says which
+> half is missing.
+
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model
 and watch the actuators move. The model, the format and the drawing are Rust; the window is

@@ -2,6 +2,13 @@
 
 [English](README.md) | **Español**
 
+> 🚧 **En construcción.** Esto es un prototipo que funciona, no un producto terminado.
+> Lo construye una sola persona en los días libres que le deja su trabajo principal, así
+> que avanza con constancia pero despacio, y **no hay fecha de entrega**: cuando una
+> capacidad de [docs/capabilities.md](docs/capabilities.md) dice `missing` o `partial`, es
+> exactamente eso, todavía no está. Si algo no existe, se dice; si está a medias, se dice
+> qué parte falta.
+
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
 licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
 ejecutar el modelo y ver moverse los actuadores. El modelo, el formato y el dibujo son Rust;

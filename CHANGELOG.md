@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### En construcción, y el repositorio lo dice — 2026-11-07
+
+El proyecto no prometía nada sobre su estado ni sobre su ritmo, y las estadísticas de GitHub
+lo presentaban como un proyecto de Shell y Python además de Rust.
+
+- **Aviso de construcción en los dos README**: prototipo que funciona, no producto
+  terminado; una sola persona, en los días libres que deja su trabajo principal; **sin fecha
+  de entrega**. Lo que el ledger marca `missing` o `partial` se dice tal cual.
+- **`CONTRIBUTING.md`** explica el ritmo: un issue puede esperar días y una revisión una
+  semana; es la cadencia, no un olvido.
+- **`.gitattributes`** saca de las estadísticas de lenguaje lo que no es el producto —
+  `scripts-dev/**` (Shell y Python), `.github/**` y `assets/**` — marca `docs/` y el
+  CHANGELOG como documentación, declara binarios y normaliza los finales de línea a LF.
+- `AGENTS.md` repite el estado para que nadie presente como hecho lo que está a medias.
+
 ### Identidad propia y una puerta que prueba la ventana — 2026-11-07
 
 El proyecto se presentaba como reemplazo de otro programa: lo nombraba en `AGENTS.md`, en los

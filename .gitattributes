@@ -1,0 +1,24 @@
+# Line endings. The project is built and tested on Linux, packaged for Windows, and read
+# on every platform: text is normalised in the repository and checked out with LF.
+* text=auto eol=lf
+
+# Binaries: never diffed, never converted. Declaring them keeps a Windows checkout from
+# corrupting a sound or a review screenshot.
+*.png binary
+*.wav binary
+*.pdf binary
+*.AppImage binary
+*.tar.gz binary
+
+# Developer tooling is not the product. `scripts-dev/` builds, tests and checks this
+# repository; it shipped in the language bar as a Shell and Python project, next to a Rust
+# one, which says the wrong thing about what this program is written in.
+scripts-dev/** linguist-detectable=false
+
+# The record, not the program: prose and automation that describe or drive the build.
+docs/** linguist-documentation
+CHANGELOG.md linguist-documentation
+.github/** linguist-detectable=false
+
+# Component definitions are data the program reads, not a language it is written in.
+assets/** linguist-detectable=false

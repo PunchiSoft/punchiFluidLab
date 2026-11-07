@@ -2,6 +2,13 @@
 
 Thanks for reading the rules before writing the code. They are short.
 
+**This project is under construction and maintained in someone's free time.** It is
+advanced on the free days left by a full-time job, so an issue may wait days and a review
+may take a week. That is the pace, not a forgotten pull request: everything is answered,
+nothing is merged without the gate. Contributions that arrive with the gate green and the
+evidence the rules ask for are the ones that fit that pace; a good report or a
+reproduction is as welcome as a patch.
+
 ## Set up
 
 ```bash

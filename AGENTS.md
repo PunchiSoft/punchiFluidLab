@@ -30,9 +30,10 @@ ports, run the model, watch the actuators move. Free and open, built so that a s
 no licence and no budget can learn the subject. **No asset, symbol set, manual, example
 circuit or file format from any other program enters this repository.**
 
-Status: `0.1.0`, unreleased. The workspace runs a working vertical slice: supply,
-3/2 valve and single-acting cylinder with real physics, drawn from the catalog and
-clickable. There is no editor and no hydraulic model yet.
+Status: `0.1.0`, unreleased, **under construction** — advanced in the maintainer's free
+time, one capability at a time, with no promised date. A capability that is `missing` or
+`partial` in [docs/capabilities.md](docs/capabilities.md) is not there yet, and nothing may
+pretend otherwise. There is no editor and no hydraulic model yet.
 
 ## Language and stack
 
