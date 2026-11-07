@@ -70,7 +70,7 @@ jobs:
       # The AppImage and Flatpak artefacts arrive with milestone M6; until then the
       # tarball is the honest deliverable and the release notes say so.
       - name: Keep the artefacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/*
