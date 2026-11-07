@@ -86,8 +86,8 @@ Rectangle {
                 {
                     title: qsTr("Paleta"),
                     note: session.editing
-                          ? qsTr("Arrastra un componente desde la barra lateral a la hoja")
-                          : qsTr("Detén la simulación para editar el circuito")
+                          ? qsTr("Arrastra desde la barra lateral")
+                          : qsTr("Detén la simulación para editar")
                 }
             ]
         },
@@ -453,7 +453,7 @@ Rectangle {
                         // A fixed width, not one derived from the wrapped text: a text that
                         // wraps needs the width it is measured with, and asking each for
                         // the other is a binding loop.
-                        width: visible ? 240 : 0
+                        width: visible ? 180 : 0
                         height: 62
 
                         Text {
