@@ -71,6 +71,47 @@ impl Turn {
     }
 }
 
+/// The edge a selection is lined up on: `Edición ▸ Alinear`.
+///
+/// The reference always lines the marked objects up on the one that already sits furthest
+/// in that direction, so the command never needs an anchor the user has to choose.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Align {
+    /// Line the left edges up on the leftmost component.
+    Left,
+    /// Line the right edges up on the rightmost component.
+    Right,
+    /// Line the top edges up on the highest component.
+    Top,
+    /// Line the bottom edges up on the lowest component.
+    Bottom,
+}
+
+impl Align {
+    /// The edge of a box this alignment lines the others up on.
+    fn edge(self, rect: Rect) -> f32 {
+        match self {
+            Self::Left => rect.min.x,
+            Self::Right => rect.max.x,
+            Self::Top => rect.min.y,
+            Self::Bottom => rect.max.y,
+        }
+    }
+
+    /// `true` when the alignment moves the box sideways.
+    const fn horizontal(self) -> bool {
+        matches!(self, Self::Left | Self::Right)
+    }
+
+    /// `true` when `edge` reaches further out than the reference, so it becomes the new one.
+    fn further_out(self, edge: f32, reference: f32) -> bool {
+        match self {
+            Self::Left | Self::Top => edge < reference,
+            Self::Right | Self::Bottom => edge > reference,
+        }
+    }
+}
+
 /// One component on the sheet.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
@@ -649,6 +690,51 @@ impl Document {
     /// Reflects a placement about its own vertical axis: `Edición ▸ Reflejar`.
     pub fn reflect(&mut self, index: usize) -> bool {
         self.turn_many(&[index], Turn::Reflect)
+    }
+
+    /// Lines several placements up on the one that is furthest out, as one change.
+    ///
+    /// The reference moves the marked objects until they reach the one already at that
+    /// edge, and it says why the result may look a fraction off: a pneumatic symbol sits on
+    /// the circuit grid, not inside its own drawing box.
+    pub fn align_many(&mut self, indices: &[usize], align: Align) -> bool {
+        let boxes: Vec<(usize, Rect)> = indices
+            .iter()
+            .filter_map(|index| {
+                let placement = self.placements.get(*index)?;
+                Some((*index, placement.box_rect()))
+            })
+            .collect();
+        if boxes.len() < 2 {
+            return false;
+        }
+        let mut reference = align.edge(boxes[0].1);
+        for (_, rect) in &boxes {
+            let edge = align.edge(*rect);
+            if align.further_out(edge, reference) {
+                reference = edge;
+            }
+        }
+        let mut moves: Vec<(usize, Pt)> = Vec::with_capacity(boxes.len());
+        for (index, rect) in boxes {
+            let delta = reference - align.edge(rect);
+            if delta.abs() <= f32::EPSILON {
+                continue;
+            }
+            let centre = self.placements[index].centre;
+            moves.push((
+                index,
+                if align.horizontal() {
+                    Pt::new(centre.x + delta, centre.y)
+                } else {
+                    Pt::new(centre.x, centre.y + delta)
+                },
+            ));
+        }
+        if moves.is_empty() {
+            return false;
+        }
+        self.move_many(&moves)
     }
 
     /// Turns every listed placement, as one entry in the history.
@@ -1407,6 +1493,40 @@ mod tests {
         assert!(document.undo());
         assert_eq!(document.len(), 3);
         assert_eq!(document.connections().len(), 1, "and came back with it");
+    }
+
+    #[test]
+    fn aligning_moves_everything_onto_the_object_already_at_that_edge() {
+        let mut document = Document::new();
+        let a = document.place(Placement::new("a", Pt::new(20.0, 20.0), 20.0, 10.0));
+        let b = document.place(Placement::new("b", Pt::new(50.0, 60.0), 10.0, 10.0));
+        let c = document.place(Placement::new("c", Pt::new(80.0, 90.0), 20.0, 10.0));
+        assert!(document.align_many(&[a, b, c], Align::Left));
+        let lefts: Vec<f32> = [a, b, c]
+            .iter()
+            .map(|index| document.placements()[*index].box_rect().min.x)
+            .collect();
+        assert!(
+            lefts.iter().all(|left| close(*left, 10.0)),
+            "every left edge is the leftmost: {lefts:?}"
+        );
+        // Nothing moved vertically, and the whole alignment is a single undo.
+        assert!(close(document.placements()[b].centre.y, 60.0));
+        assert!(document.undo());
+        assert!(close(document.placements()[a].centre.x, 20.0));
+        assert!(close(document.placements()[c].centre.x, 80.0));
+        // Right edges line up on the rightmost one, which is `c` at 90.
+        assert!(document.align_many(&[a, b, c], Align::Right));
+        let rights: Vec<f32> = [a, b, c]
+            .iter()
+            .map(|index| document.placements()[*index].box_rect().max.x)
+            .collect();
+        assert!(
+            rights.iter().all(|right| close(*right, 90.0)),
+            "every right edge is the rightmost: {rights:?}"
+        );
+        // One component on its own has nothing to line up with.
+        assert!(!document.align_many(&[a], Align::Top));
     }
 
     #[test]

@@ -42,9 +42,9 @@ order that follows from it:
 1. **F3 — instruments and runs**: a manometer, a flow meter, a force meter and a strip
    chart as catalog entries with readings, plus *run until state change* (manual §3.2:
    piston at an end, valve actuated, relay, switch).
-2. **F1 — the editing functions of §4.2** that are still missing: align and distribute
-   (which multi-selection now unblocks), pipe classes, blind plugs and silencers. Selecting
-   several components, copy, paste, duplicate, turn and reflect are done.
+2. **F1 — the editing functions of §4.2** that are still missing: even spacing between
+   marked objects, pipe classes, blind plugs and silencers. Selecting several components,
+   aligning, copy, paste, duplicate, turn and reflect are done.
 3. **F4 — documents**: autosave, recent documents, a warning when closing an unsaved
    circuit, a project as a folder, and the designations that unlock three of the four
    remaining check faults.

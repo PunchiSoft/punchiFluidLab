@@ -38,7 +38,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 
 | Área | Estado real |
 |---|---|
-| Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic), **selección múltiple** (Mayús y clic, rectángulo elástico, Ctrl+E) con arrastrar/copiar/borrar en grupo y un solo deshacer |
+| Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic), **selección múltiple** (Mayús y clic, rectángulo elástico, Ctrl+E) con arrastrar/copiar/borrar/alinear en grupo y un solo deshacer |
 | Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago y masa; Aplicar es un solo deshacer. Faltan nombre, accionamiento y los demás campos del diálogo de la referencia |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
@@ -50,13 +50,13 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 
 **Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
 (la hoja se dibuja, se conecta, se gira, se simula y se guarda), pero del manual completo
-falta bastante: alinear/distribuir sobre la selección, las clases de conducto y los
+falta bastante: repartir con separación igual, las clases de conducto y los
 silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (F3), los
 proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de piezas
 (F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
-**~45 % del manual**, con F1 casi cerrada y F2 cerrada. El siguiente paso, por valor, es
-**alinear y distribuir** sobre la selección múltiple, seguido del resto de F3
-(caudalímetro, dinamómetro, registrador) y del autoguardado con aviso de cambios.
+**~45–50 % del manual**, con F1 casi cerrada y F2 cerrada. El siguiente paso, por valor,
+es el **autoguardado con aviso de cambios sin guardar** (F4), seguido del resto de F3
+(caudalímetro, dinamómetro, registrador) y de las clases de conducto.
 
 Cómo comprobarlo sin ventana:
 

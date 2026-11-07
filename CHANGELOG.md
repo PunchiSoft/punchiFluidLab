@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### Alinear la selección — 2026-11-12
+
+Con la selección múltiple ya se podía mover un grupo, pero no colocarlo: el manual pide
+**Edición ▸ Alinear** y dice cuál es la referencia —*siempre el objeto que se halle en el
+punto más lejano de la dirección escogida*—, así que el comando no necesita que el usuario
+elija un ancla.
+
+- **Cuatro botones**: izquierda, derecha, arriba y abajo, cada uno con su símbolo del
+  escritorio. Mueven cada componente marcado hasta que su borde coincide con el del que ya
+  estaba más lejos, y el resto de la posición no se toca.
+- **La caja que cuenta es la girada**: un símbolo tumbado ocupa otra caja, así que alinear
+  usa la que se dibuja y no la del archivo.
+- **Un deshacer**: alinear seis componentes es un solo cambio en el historial.
+- **Probado en tres niveles**: una prueba del documento (izquierda y derecha, con el
+  movimiento vertical intacto y un solo deshacer), una del ABI que alinea cuatro
+  componentes, deshace y comprueba que un borde inventado se rechaza, y dos pasos del
+  `--selftest`.
+
+
 ### Marcar varios componentes y editarlos juntos — 2026-11-12
 
 El manual lo pide en §4.2 y lo dice de la forma más clara posible: *las funciones de

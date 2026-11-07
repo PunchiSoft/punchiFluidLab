@@ -75,6 +75,15 @@ Rectangle {
                     ]
                 },
                 {
+                    title: qsTr("Alinear"),
+                    items: [
+                        { id: "align-left", label: qsTr("Izquierda"), icon: "align-horizontal-left", hint: qsTr("sobre el objeto más a la izquierda"), enabled: session.selectionCount > 1 },
+                        { id: "align-right", label: qsTr("Derecha"), icon: "align-horizontal-right", hint: qsTr("sobre el objeto más a la derecha"), enabled: session.selectionCount > 1 },
+                        { id: "align-top", label: qsTr("Arriba"), icon: "align-vertical-top", hint: qsTr("sobre el objeto más alto"), enabled: session.selectionCount > 1 },
+                        { id: "align-bottom", label: qsTr("Abajo"), icon: "align-vertical-bottom", hint: qsTr("sobre el objeto más bajo"), enabled: session.selectionCount > 1 }
+                    ]
+                },
+                {
                     title: qsTr("Paleta"),
                     note: session.editing
                           ? qsTr("Arrastra un componente desde la barra lateral a la hoja")
@@ -129,6 +138,14 @@ Rectangle {
             session.rotateSelected(false);
         } else if (id === "mirror") {
             session.mirrorSelected();
+        } else if (id === "align-left") {
+            session.alignSelection(0);
+        } else if (id === "align-right") {
+            session.alignSelection(1);
+        } else if (id === "align-top") {
+            session.alignSelection(2);
+        } else if (id === "align-bottom") {
+            session.alignSelection(3);
         } else if (id === "select-all") {
             session.selectAll();
         } else if (id === "delete") {

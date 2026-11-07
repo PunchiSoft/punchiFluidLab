@@ -46,7 +46,7 @@ use punchi_fluid_check::check;
 /// hit and selected, not to take up room on the sheet.
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
-use punchi_fluid_doc::{Document, Endpoint, Placement, PlacementEdits, Turn};
+use punchi_fluid_doc::{Align, Document, Endpoint, Placement, PlacementEdits, Turn};
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -2825,6 +2825,41 @@ pub unsafe extern "C" fn pf_session_move_selection(
             })
             .collect();
         if session.document.move_many(&moves) {
+            session.rebuild_model();
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// Lines the selection up on the component that is already furthest out in one direction.
+///
+/// `edge` is `0` left, `1` right, `2` top, `3` bottom, which is the order of the buttons in
+/// the ribbon. The whole alignment is one change, so one undo puts the circuit back.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_align_selection(session: *mut PfSession, edge: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let align = match edge {
+            0 => Align::Left,
+            1 => Align::Right,
+            2 => Align::Top,
+            3 => Align::Bottom,
+            _ => return session.fail("that is not one of the four edges"),
+        };
+        if session.selected.len() < 2 {
+            return session.fail("select at least two components to line them up");
+        }
+        let indices = session.selected.clone();
+        if session.document.align_many(&indices, align) {
             session.rebuild_model();
             PF_OK
         } else {

@@ -19,17 +19,18 @@ use std::ptr;
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_HAS_STROKE,
     PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk, PfPoint, PfSession,
-    PfTelemetry, pf_abi, pf_session_advance, pf_session_build_frame, pf_session_can_undo,
-    pf_session_catalog, pf_session_check, pf_session_component_count, pf_session_component_edits,
-    pf_session_component_id, pf_session_component_orientation, pf_session_component_rect,
-    pf_session_component_valve_position, pf_session_component_valve_spring_return,
-    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_finding_at,
-    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_last_error,
-    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
-    pf_session_new, pf_session_open, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_offset, pf_session_place_component, pf_session_port_point,
-    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview, pf_session_redo,
+    PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection, pf_session_build_frame,
+    pf_session_can_undo, pf_session_catalog, pf_session_check, pf_session_component_count,
+    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
+    pf_session_component_rect, pf_session_component_valve_position,
+    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
+    pf_session_copy_selected, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_finding_at, pf_session_free, pf_session_hit_component, pf_session_hit_valve,
+    pf_session_last_error, pf_session_mirror_selected, pf_session_move_component,
+    pf_session_move_selection, pf_session_new, pf_session_open, pf_session_paste,
+    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
+    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_redo,
     pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
     pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_restart,
     pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
@@ -1432,6 +1433,56 @@ fn a_selection_of_several_components_moves_copies_and_goes_away_as_one_change() 
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn lining_up_the_selection_moves_it_onto_the_component_furthest_out() {
+    let session = session();
+    // Two components of different sizes, so an edge is not the centre.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_place_component(session, 1, 40.0, 100.0) },
+        3
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_select_all(session) }, 4);
+    let lefts = |session: *mut PfSession| {
+        let mut out = Vec::new();
+        for index in 0..4_u32 {
+            let mut bounds = [0.0_f32; 4];
+            // SAFETY: live session and four writable floats.
+            assert_eq!(
+                unsafe { pf_session_component_rect(session, index, bounds.as_mut_ptr()) },
+                PF_OK
+            );
+            out.push(bounds[0]);
+        }
+        out
+    };
+    let before = lefts(session);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_align_selection(session, 0) }, PF_OK);
+    let after = lefts(session);
+    let leftmost = before.iter().copied().fold(f32::MAX, f32::min);
+    assert!(
+        after.iter().all(|left| (left - leftmost).abs() < 1e-3),
+        "{before:?} -> {after:?}"
+    );
+    // One undo puts every component back where it was.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let restored = lefts(session);
+    for (was, now) in before.iter().zip(&restored) {
+        assert!((was - now).abs() < 1e-3, "{before:?} is not {restored:?}");
+    }
+    // An edge that does not exist is refused instead of guessed.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_align_selection(session, 9) },
+        PF_ERR_MODEL
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

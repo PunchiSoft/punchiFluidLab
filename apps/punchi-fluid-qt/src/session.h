@@ -224,6 +224,9 @@ public:
     Q_INVOKABLE void duplicateSelection(double rightMm, double downMm);
     /// Removes every selected component, as one change.
     Q_INVOKABLE void removeSelection();
+    /// Lines the selection up on the component furthest out: 0 left, 1 right, 2 top,
+    /// 3 bottom.
+    Q_INVOKABLE void alignSelection(int edge);
     Q_INVOKABLE int componentAt(double xMm, double yMm);
 
     /// The port nearest to a point, if one is within `toleranceMm`.

@@ -903,6 +903,21 @@ void FluidSession::removeSelection()
     emit changed();
 }
 
+void FluidSession::alignSelection(int edge)
+{
+    if (!m_session || edge < 0) {
+        return;
+    }
+    if (pf_session_align_selection(m_session, static_cast<uint32_t>(edge)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no hay nada que alinear");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
 void FluidSession::rotateSelected(bool anticlockwise)
 {
     if (!m_session) {

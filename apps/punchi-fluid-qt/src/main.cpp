@@ -886,6 +886,25 @@ int main(int argc, char *argv[])
             state->session->undo();
         });
 
+        // Lining a selection up moves it onto the component already furthest out, and one
+        // undo puts it back: the alignment is one change.
+        steps->push_back([state, check] {
+            state->session->selectAll();
+            float b[4] = {0.0F, 0.0F, 0.0F, 0.0F};
+            pf_session_component_rect(state->session->handle(), 1, b);
+            const float was = b[0];
+            state->session->alignSelection(0);
+            float a[4] = {0.0F, 0.0F, 0.0F, 0.0F};
+            pf_session_component_rect(state->session->handle(), 0, a);
+            pf_session_component_rect(state->session->handle(), 1, b);
+            check(std::abs(a[0] - b[0]) < 0.01,
+                  QStringLiteral("alinear: los bordes izquierdos coinciden"));
+            state->session->undo();
+            pf_session_component_rect(state->session->handle(), 1, b);
+            check(std::abs(b[0] - was) < 0.01,
+                  QStringLiteral("alinear: un deshacer lo devuelve"));
+        });
+
         // Ctrl and a double click turns the component under the pointer, which is the
         // reference's gesture. The port travels with the symbol and one undo puts both
         // back, because a turn is one change to the document.
