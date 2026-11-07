@@ -130,6 +130,12 @@ Window {
         sequence: "Delete"
         onActivated: session.removeSelected()
     }
+    // The reference marks everything with Ctrl+E; the sheet also marks with a rubber band
+    // and with Mayús and a click.
+    Shortcut {
+        sequence: "Ctrl+E"
+        onActivated: session.selectAll()
+    }
     // The reference turns a component with Ctrl and a double click; a keyboard needs its
     // own key, and Alt+R is not in the way of typing in the properties form.
     Shortcut {

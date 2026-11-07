@@ -24,17 +24,19 @@ use punchi_fluid::{
     pf_session_component_id, pf_session_component_orientation, pf_session_component_rect,
     pf_session_component_valve_position, pf_session_component_valve_spring_return,
     pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
-    pf_session_duplicate_component, pf_session_finding_at, pf_session_free,
-    pf_session_hit_component, pf_session_hit_valve, pf_session_last_error,
-    pf_session_mirror_selected, pf_session_move_component, pf_session_new, pf_session_open,
-    pf_session_paste, pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
-    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_redo,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_finding_at,
+    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_last_error,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
+    pf_session_new, pf_session_open, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
+    pf_session_pipe_offset, pf_session_place_component, pf_session_port_point,
+    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview, pf_session_redo,
     pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_pipe,
-    pf_session_selected, pf_session_selected_pipe, pf_session_set_component_edits,
-    pf_session_telemetry, pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
+    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
+    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
+    pf_session_set_component_edits, pf_session_telemetry, pf_session_toggle_select,
+    pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -1331,6 +1333,105 @@ fn a_turned_component_puts_its_ports_where_the_symbol_is_drawn() {
         PF_OK
     );
     assert_eq!(reopened, [0, 1], "the mirror is part of the sheet");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_selection_of_several_components_moves_copies_and_goes_away_as_one_change() {
+    let session = session();
+    // SAFETY: live session; the starting circuit has three components.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+    // Ctrl+E marks everything, and the last one marked is the primary the forms open on.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_select_all(session) }, 3);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 3);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selected(session) }, 2);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selection_at(session, 0) }, 0);
+
+    let rect_of = |session: *mut PfSession, index: u32| {
+        let mut out = [0.0_f32; 4];
+        // SAFETY: live session and four writable floats.
+        assert_eq!(
+            unsafe { pf_session_component_rect(session, index, out.as_mut_ptr()) },
+            PF_OK
+        );
+        out
+    };
+    let before = rect_of(session, 0);
+    // The whole selection moves by one step: the group keeps its shape.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_move_selection(session, 10.0, 0.0) },
+        PF_OK
+    );
+    let moved = rect_of(session, 0);
+    assert!(
+        (moved[0] - before[0] - 10.0).abs() < 1e-3,
+        "{before:?} -> {moved:?}"
+    );
+    // One undo puts all three back, because the drag of a group is one change.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let back = rect_of(session, 0);
+    assert!(
+        (back[0] - before[0]).abs() < 1e-3,
+        "{back:?} is not {before:?}"
+    );
+
+    // Copying the selection copies all of it, once, and selects the copies.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_duplicate_selection(session, 20.0, 20.0) },
+        3
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 6);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 3);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
+
+    // A rubber band marks what it covers; one that covers nothing marks nothing.
+    let band = rect_of(session, 2);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe {
+            pf_session_select_rect(
+                session,
+                band[0] - 1.0,
+                band[1] - 1.0,
+                band[2] + 1.0,
+                band[3] + 1.0,
+            )
+        },
+        1
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selection_at(session, 0) }, 2);
+    // Mayús and a click takes it out of the selection and puts it back.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_select(session, 2) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_select(session, 1) }, PF_OK);
+    assert_eq!(unsafe { pf_session_selection_count(session) }, 1);
+
+    // Deleting the selection is one change, and it takes the pipes with it.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_remove_selection(session) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 2);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 3);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

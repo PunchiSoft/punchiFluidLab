@@ -6,6 +6,34 @@ publicación.
 
 ## Unreleased
 
+### Marcar varios componentes y editarlos juntos — 2026-11-12
+
+El manual lo pide en §4.2 y lo dice de la forma más clara posible: *las funciones de
+edición como arrastrar, desplazar, copiar y borrar se refieren a todos los componentes
+seleccionados*. Hasta aquí solo había una selección de uno.
+
+- **La selección es un conjunto**: un clic sustituye la selección; `Mayús` y un clic
+  añade o quita el componente que está bajo el puntero —el manual lo llama *bidireccional*—;
+  el **rectángulo elástico** marca todo lo que cubre al soltar; y **Ctrl+E** (o *Todo* en
+  la cinta) marca el circuito entero.
+- **`Mayús` sigue copiando al arrastrar**: la referencia distingue los dos gestos por si el
+  puntero se movió; aquí igual, así que una pulsación con `Mayús` que no se mueve cambia la
+  pertenencia y una que se mueve copia y arrastra la copia.
+- **Arrastrar un grupo lo conserva**: si el componente pulsado ya estaba marcado, el
+  arrastre mueve todo el conjunto con el mismo paso; si no, la pulsación selecciona ese y
+  arrastra solo ese.
+- **Un gesto, un deshacer**, ahora también en grupo: mover, copiar, girar, reflejar y
+  borrar una selección son **una** entrada del historial, y el documento sabe agrupar los
+  movimientos de un arrastre de varios componentes para que no dejen una entrada por píxel.
+- **Borrar avisa de lo que borra**: al borrar se limpia la selección, porque una baja
+  renumera los índices y una marca vieja señalaría a otro componente. Ese detalle costaba
+  un componente de más en el `--selftest`, que es exactamente para lo que está.
+- **Probado en tres niveles**: tres pruebas del documento (arrastre agrupado con un solo
+  deshacer, borrado y copia de un conjunto, giro con marcas distintas), una del ABI que
+  marca, mueve, copia, deshace, marca con el rectángulo, alterna con `Mayús` y borra, y
+  ocho pasos del `--selftest` con eventos de ratón y teclado reales.
+
+
 ### Girar y reflejar un componente — 2026-11-12
 
 El manual lo documenta en dos renglones de `Edición`: *los componentes seleccionados pueden

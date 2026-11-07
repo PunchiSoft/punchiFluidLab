@@ -125,6 +125,22 @@ void SchematicItem::paint(QPainter *painter)
         painter->restore();
     }
 
+    if (m_banding) {
+        const Fit fit = placement;
+        painter->save();
+        QPen pen(m_session->tokens().accent, 1.0);
+        pen.setStyle(Qt::DashLine);
+        painter->setPen(pen);
+        QColor wash = m_session->tokens().accent;
+        wash.setAlphaF(0.10F);
+        painter->setBrush(wash);
+        painter->drawRect(QRectF(fit.originX + m_bandFrom.x() * fit.pixelsPerMm,
+                                 fit.originY + m_bandFrom.y() * fit.pixelsPerMm,
+                                 (m_bandTo.x() - m_bandFrom.x()) * fit.pixelsPerMm,
+                                 (m_bandTo.y() - m_bandFrom.y()) * fit.pixelsPerMm));
+        painter->restore();
+    }
+
     // Every fault the check found, marked where it happens. A ring and a cross, not a colour
     // alone: the marker has to read in a screenshot and to a colour-blind user.
     if (m_session && m_session->checkOpen()) {
@@ -260,16 +276,24 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
             }
         }
         int index = m_session->componentAt(sheet.x(), sheet.y());
-        // Shift+drag copies: the reference duplicates the selection and drags the copy,
-        // leaving the original in place.
-        if (index >= 0 && (event->modifiers() & Qt::ShiftModifier) != 0) {
-            const int copy = m_session->duplicateComponent(index, 0.0, 0.0);
-            if (copy >= 0) {
-                index = copy;
-            }
+        // `Mayús` is two gestures in the reference: the marked components are copied when
+        // the pointer moves, and the one under it changes membership when it does not. Until
+        // the pointer says which, the press only remembers where it started.
+        if (index >= 0 && (modifiers & Qt::ShiftModifier) != 0) {
+            m_shiftPress = index;
+            m_shiftFrom = sheet;
+            setFocus(true);
+            event->accept();
+            return;
         }
         if (index >= 0) {
-            m_session->select(index);
+            // A press on a component that is already part of a selection of several drags
+            // the whole selection: the group keeps its shape.
+            const bool grouped = m_session->selectionCount() > 1;
+            if (!m_session->isSelected(index) || !grouped) {
+                m_session->select(index);
+            }
+            m_movingSelection = grouped && m_session->isSelected(index);
         }
         if (index < 0) {
             const int pipe = m_session->pipeAt(sheet.x(), sheet.y(), kPortToleranceMm);
@@ -284,8 +308,17 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
                 event->accept();
                 return;
             }
+            // Nothing under the pointer: the press starts a rubber band, and everything it
+            // covers is selected when the button comes up.
+            m_session->select(-1);
+            m_banding = true;
+            m_bandFrom = sheet;
+            m_bandTo = sheet;
+            setFocus(true);
+            update();
+            event->accept();
+            return;
         }
-        m_session->select(index);
         if (index >= 0) {
             m_dragging = index;
             m_moved = false;
@@ -342,15 +375,64 @@ void SchematicItem::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    if (m_banding && m_session) {
+        m_bandTo = toSheet(event->position());
+        update();
+        event->accept();
+        return;
+    }
+    if (m_shiftPress >= 0 && m_session) {
+        const QPointF sheet = toSheet(event->position());
+        if ((sheet - m_shiftFrom).manhattanLength() < 3.0) {
+            return;
+        }
+        // The pointer moved, so the gesture is a copy: the marked components are copied in
+        // place and the press goes on to drag what arrived.
+        if (m_session->isSelected(m_shiftPress) && m_session->selectionCount() > 0) {
+            m_session->duplicateSelection(0.0, 0.0);
+        } else {
+            m_session->duplicateComponent(m_shiftPress, 0.0, 0.0);
+        }
+        m_shiftPress = -1;
+        m_dragging = m_session->selected();
+        m_movingSelection = m_session->selectionCount() > 1;
+        // The copy sits where the original was, so the pointer keeps its grip on it.
+        float bounds[4] = {0.0F, 0.0F, 0.0F, 0.0F};
+        if (m_dragging >= 0
+            && pf_session_component_rect(m_session->handle(),
+                                         static_cast<uint32_t>(m_dragging), bounds)
+                == PF_OK) {
+            m_dragOffset = QPointF(sheet.x() - (bounds[0] + bounds[2]) * 0.5,
+                                   sheet.y() - (bounds[1] + bounds[3]) * 0.5);
+        } else {
+            m_dragOffset = QPointF();
+        }
+        m_moved = true;
+        update();
+        event->accept();
+        return;
+    }
     if (m_dragging < 0 || !m_session) {
         return;
     }
     const QPointF sheet = toSheet(event->position());
     m_moved = true;
-    // Live movement while dragging: the document coalesces the moves into one undo entry,
-    // so a drag costs one Ctrl+Z, not one per pixel.
-    m_session->moveComponent(m_dragging, sheet.x() - m_dragOffset.x(),
-                             sheet.y() - m_dragOffset.y());
+    if (m_movingSelection) {
+        // The pointer drives the primary component and the rest follow by the same step.
+        float bounds[4] = {0.0F, 0.0F, 0.0F, 0.0F};
+        if (pf_session_component_rect(m_session->handle(), static_cast<uint32_t>(m_dragging),
+                                      bounds)
+            == PF_OK) {
+            const QPointF centre((bounds[0] + bounds[2]) * 0.5, (bounds[1] + bounds[3]) * 0.5);
+            const QPointF target(sheet.x() - m_dragOffset.x(), sheet.y() - m_dragOffset.y());
+            m_session->moveSelection(target.x() - centre.x(), target.y() - centre.y());
+        }
+    } else {
+        // Live movement while dragging: the document coalesces the moves into one undo
+        // entry, so a drag costs one Ctrl+Z, not one per pixel.
+        m_session->moveComponent(m_dragging, sheet.x() - m_dragOffset.x(),
+                                 sheet.y() - m_dragOffset.y());
+    }
     update();
     event->accept();
 }
@@ -417,6 +499,21 @@ void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() != Qt::LeftButton) {
         return;
     }
+    if (m_banding && m_session) {
+        m_banding = false;
+        m_session->selectRect(m_bandFrom.x(), m_bandFrom.y(), m_bandTo.x(), m_bandTo.y());
+        update();
+        event->accept();
+        return;
+    }
+    if (m_shiftPress >= 0 && m_session) {
+        // A press with `Mayús` that never moved is a change of membership, not a copy.
+        m_session->toggleSelect(m_shiftPress);
+        m_shiftPress = -1;
+        update();
+        event->accept();
+        return;
+    }
     if (m_connecting >= 0) {
         const QPointF sheet = toSheet(event->position());
         int targetIndex = -1;
@@ -458,6 +555,7 @@ void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
         }
         m_dragging = -1;
         m_moved = false;
+        m_movingSelection = false;
     }
     event->accept();
 }

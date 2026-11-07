@@ -818,6 +818,74 @@ int main(int argc, char *argv[])
             state->session->stopSimulation();
         });
 
+        // A rubber band over the whole sheet marks every component, and Delete takes the
+        // group away as one change.
+        steps->push_back([state, check, send, sendWith, toScene] {
+            state->session->stopSimulation();
+            state->session->select(-1);
+            const QPointF from = toScene(QPointF(2.0, 2.0));
+            const QPointF to = toScene(QPointF(198.0, 128.0));
+            send(QEvent::MouseButtonPress, from, Qt::LeftButton, Qt::LeftButton);
+            sendWith(QEvent::MouseMove, to, Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+            send(QEvent::MouseButtonRelease, to, Qt::LeftButton, Qt::NoButton);
+            const int marked = state->session->selectionCount();
+            std::fprintf(stderr, "selftest: el rectángulo marcó %d componente(s)\n", marked);
+            check(marked == state->session->componentCount(),
+                  QStringLiteral("selección: el rectángulo marca todo lo que cubre"));
+        });
+        steps->push_back([state, check] {
+            const uint32_t before = pf_session_component_count(state->session->handle());
+            state->session->removeSelection();
+            check(pf_session_component_count(state->session->handle()) == 0
+                      && before > 0,
+                  QStringLiteral("selección: Supr borra lo marcado de una vez"));
+            state->session->undo();
+            check(pf_session_component_count(state->session->handle()) == before,
+                  QStringLiteral("selección: un deshacer lo devuelve entero"));
+        });
+        // Mayús and a click changes membership: the reference's bidirectional marking.
+        steps->push_back([state, check, sendWith, toScene, componentRect] {
+            state->session->select(-1);
+            const QPointF centre = toScene(componentRect(1).center());
+            sendWith(QEvent::MouseButtonPress, centre, Qt::LeftButton, Qt::LeftButton,
+                     Qt::ShiftModifier);
+            sendWith(QEvent::MouseButtonRelease, centre, Qt::LeftButton, Qt::NoButton,
+                     Qt::ShiftModifier);
+            check(state->session->selectionCount() == 1
+                      && state->session->isSelected(1),
+                  QStringLiteral("selección: Mayús y clic marca sin abrir la ficha"));
+            sendWith(QEvent::MouseButtonPress, centre, Qt::LeftButton, Qt::LeftButton,
+                     Qt::ShiftModifier);
+            sendWith(QEvent::MouseButtonRelease, centre, Qt::LeftButton, Qt::NoButton,
+                     Qt::ShiftModifier);
+            check(state->session->selectionCount() == 0,
+                  QStringLiteral("selección: Mayús y clic otra vez lo desmarca"));
+        });
+        // Ctrl+E marks everything, and one drag moves the group without breaking it.
+        steps->push_back([state, check, send, toScene, componentRect] {
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_E, Qt::ControlModifier, QStringLiteral("e"));
+            QCoreApplication::sendEvent(state->window, &key);
+            const int marked = state->session->selectionCount();
+            check(marked > 1, QStringLiteral("selección: Ctrl+E marca todo"));
+            const QRectF box = componentRect(0);
+            state->routeScene = toScene(box.center());
+            send(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton);
+        });
+        steps->push_back([state, send] {
+            send(QEvent::MouseMove, state->routeScene + QPointF(90.0, 0.0), Qt::NoButton,
+                 Qt::LeftButton);
+        });
+        steps->push_back([state, check, send, componentRect] {
+            send(QEvent::MouseButtonRelease, state->routeScene + QPointF(90.0, 0.0),
+                 Qt::LeftButton, Qt::NoButton);
+            check(state->session->selectionCount() > 1,
+                  QStringLiteral("selección: arrastrar un grupo no lo deshace"));
+            const QRectF box = componentRect(1);
+            check(box.left() > 90.0,
+                  QStringLiteral("selección: el grupo se movió entero"));
+            state->session->undo();
+        });
+
         // Ctrl and a double click turns the component under the pointer, which is the
         // reference's gesture. The port travels with the symbol and one undo puts both
         // back, because a turn is one change to the document.

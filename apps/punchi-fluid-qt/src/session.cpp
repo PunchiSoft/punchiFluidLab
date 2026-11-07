@@ -660,6 +660,17 @@ void FluidSession::newDocument()
     emit changed();
 }
 
+void FluidSession::refreshSelection()
+{
+    if (!m_session) {
+        return;
+    }
+    // Marking a component is not an edit: the document is untouched and undo must not
+    // grow an entry, so this announces the selection and nothing else.
+    m_selected = pf_session_selected(m_session);
+    emit documentChanged();
+}
+
 void FluidSession::refreshDocument()
 {
     if (!m_session) {
@@ -763,6 +774,10 @@ void FluidSession::pasteOffset()
 
 void FluidSession::duplicateSelected()
 {
+    if (selectionCount() > 1) {
+        duplicateSelection(10.0, 10.0);
+        return;
+    }
     const int index = selected();
     if (index >= 0) {
         duplicateComponent(index, 10.0, 10.0);
@@ -780,6 +795,112 @@ int FluidSession::duplicateComponent(int index, double dxMm, double dyMm)
     refreshDocument();
     emit changed();
     return copy;
+}
+
+void FluidSession::toggleSelect(int index)
+{
+    if (!m_session || index < 0) {
+        return;
+    }
+    if (pf_session_toggle_select(m_session, index) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no se puede marcar");
+        emit changed();
+        return;
+    }
+    refreshSelection();
+    emit changed();
+}
+
+void FluidSession::selectAll()
+{
+    if (!m_session) {
+        return;
+    }
+    pf_session_select_all(m_session);
+    refreshSelection();
+    emit changed();
+}
+
+void FluidSession::selectRect(double x0Mm, double y0Mm, double x1Mm, double y1Mm)
+{
+    if (!m_session) {
+        return;
+    }
+    pf_session_select_rect(m_session, static_cast<float>(x0Mm), static_cast<float>(y0Mm),
+                           static_cast<float>(x1Mm), static_cast<float>(y1Mm));
+    refreshSelection();
+    emit changed();
+}
+
+int FluidSession::selectionCount() const
+{
+    return m_session ? static_cast<int>(pf_session_selection_count(m_session)) : 0;
+}
+
+int FluidSession::selectionAt(int slot) const
+{
+    return m_session ? pf_session_selection_at(m_session, static_cast<uint32_t>(slot)) : -1;
+}
+
+bool FluidSession::isSelected(int index) const
+{
+    if (!m_session || index < 0) {
+        return false;
+    }
+    const int count = selectionCount();
+    for (int slot = 0; slot < count; ++slot) {
+        if (selectionAt(slot) == index) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FluidSession::moveSelection(double rightMm, double downMm)
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_move_selection(m_session, static_cast<float>(rightMm),
+                                  static_cast<float>(downMm))
+        != PF_OK) {
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
+void FluidSession::duplicateSelection(double rightMm, double downMm)
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_duplicate_selection(m_session, static_cast<float>(rightMm),
+                                       static_cast<float>(downMm))
+        <= 0) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no hay nada que copiar");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
+void FluidSession::removeSelection()
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_remove_selection(m_session) <= 0) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no hay nada que borrar");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
 }
 
 void FluidSession::rotateSelected(bool anticlockwise)
@@ -817,14 +938,17 @@ void FluidSession::removeSelected()
     if (!m_session) {
         return;
     }
-    // One key, two kinds of thing: whichever is selected is the one Delete removes.
+    // One key, two kinds of thing: whichever is selected is the one Delete removes, and a
+    // selection of several components goes away in one press and one undo.
     if (pf_session_selected_pipe(m_session) >= 0) {
         pf_session_remove_selected_pipe(m_session);
         refreshDocument();
         emit changed();
         return;
     }
-    removeComponent(m_selected);
+    if (selectionCount() > 0) {
+        removeSelection();
+    }
 }
 
 void FluidSession::selectPipe(int index)

@@ -46,7 +46,7 @@ use punchi_fluid_check::check;
 /// hit and selected, not to take up room on the sheet.
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
-use punchi_fluid_doc::{Document, Endpoint, Placement, PlacementEdits};
+use punchi_fluid_doc::{Document, Endpoint, Placement, PlacementEdits, Turn};
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -500,9 +500,10 @@ pub struct PfSession {
     placement_part: Vec<Option<usize>>,
     /// Valve of the network each placement became, parallel to the document.
     placement_valve: Vec<Option<usize>>,
-    selected: Option<usize>,
-    /// One placement kept for paste, with its catalog id and per-instance values.
-    clipboard: Option<Placement>,
+    /// The selection, in the order the user added to it; the last one is the primary.
+    selected: Vec<usize>,
+    /// Placements kept for paste, with their catalog ids and per-instance values.
+    clipboard: Vec<Placement>,
     /// The pipe under the last selection, if any. A component and a pipe are never
     /// selected at the same time: Delete has to know which one it removes.
     selected_pipe: Option<usize>,
@@ -549,8 +550,8 @@ impl PfSession {
             document: Document::new(),
             placement_part: Vec::new(),
             placement_valve: Vec::new(),
-            selected: None,
-            clipboard: None,
+            selected: Vec::new(),
+            clipboard: Vec::new(),
             selected_pipe: None,
             seeded: false,
             error: CString::default(),
@@ -747,13 +748,29 @@ impl PfSession {
         }
     }
 
-    /// Places a clipboard copy at a centre and selects it.
-    fn paste_at(&mut self, copy: Placement, centre: Pt) -> i32 {
-        let index = self.document.place_copy(copy, Some(centre));
-        self.selected = Some(index);
+    /// Places the clipboard at a centre and selects what arrived.
+    ///
+    /// The copies keep the arrangement they were copied with, so pasting a group of three
+    /// gives back the group and not three corners of the sheet.
+    fn paste_at(&mut self, copies: &[Placement], centre: Pt) -> i32 {
+        let Some(anchor) = copies.first() else {
+            return PF_ERR_MODEL;
+        };
+        let (dx, dy) = (centre.x - anchor.centre.x, centre.y - anchor.centre.y);
+        let indices: Vec<usize> = copies
+            .iter()
+            .map(|copy| {
+                let moved = Pt::new(copy.centre.x + dx, copy.centre.y + dy);
+                self.document.place_copy(copy.clone(), Some(moved))
+            })
+            .collect();
+        let primary = indices.last().copied();
+        self.selected = indices;
         self.selected_pipe = None;
         self.rebuild_model();
-        i32::try_from(index).unwrap_or(PF_ERR_MODEL)
+        primary.map_or(PF_ERR_MODEL, |index| {
+            i32::try_from(index).unwrap_or(PF_ERR_MODEL)
+        })
     }
 
     /// Rebuilds the network from the document, which is the only thing that decides what
@@ -909,7 +926,7 @@ impl PfSession {
             system.as_ref(),
             catalog,
             ink,
-            *selected,
+            selected.as_slice(),
         );
         if let Some(pipe) = *selected_pipe {
             draw_selected_pipe(&mut buffer, document, catalog, ink, pipe);
@@ -1016,9 +1033,8 @@ impl PfSession {
         }
         self.document = document;
         self.seeded = true;
-        self.selected = None;
-        self.selected_pipe = None;
-        self.clipboard = None;
+        self.select_only(None);
+        self.clipboard.clear();
         self.rebuild_model();
         Ok(())
     }
@@ -1106,14 +1122,38 @@ impl PfSession {
         best.map(|(_, index, port)| (index, port))
     }
 
+    /// The component the properties form and the transport talk about: the last touched.
+    fn primary(&self) -> Option<usize> {
+        self.selected.last().copied()
+    }
+
+    /// Replaces the selection with one component, or with nothing.
+    fn select_only(&mut self, index: Option<usize>) {
+        self.selected.clear();
+        if let Some(index) = index {
+            self.selected.push(index);
+        }
+        self.selected_pipe = None;
+    }
+
+    /// Adds the component to the selection, or takes it out: `Mayús` and a click.
+    fn toggle_selected(&mut self, index: usize) {
+        if let Some(position) = self
+            .selected
+            .iter()
+            .position(|candidate| *candidate == index)
+        {
+            self.selected.remove(position);
+        } else if index < self.document.len() {
+            self.selected.push(index);
+        }
+        self.selected_pipe = None;
+    }
+
     /// Keeps the selection inside the document after an undo removed its component.
     fn clamp_selection(&mut self) {
-        if self
-            .selected
-            .is_some_and(|index| index >= self.document.len())
-        {
-            self.selected = None;
-        }
+        let len = self.document.len();
+        self.selected.retain(|index| *index < len);
         if self
             .selected_pipe
             .is_some_and(|index| index >= self.document.connections().len())
@@ -1142,7 +1182,7 @@ impl PfSession {
         // around it rather than replacing it.
         let mut all = self.document.placements().to_vec();
         all.extend(seeded);
-        self.selected = None;
+        self.select_only(None);
         self.document.seed(all);
         // The starting circuit is drawn with its hoses. Three pieces and no pipe does not
         // read as a circuit, and the checker would report two open pneumatic connections on
@@ -1968,7 +2008,7 @@ pub unsafe extern "C" fn pf_session_place_component(
             width,
             height,
         ));
-        session.selected = Some(index);
+        session.select_only(Some(index));
         session.rebuild_model();
         i32::try_from(index).unwrap_or(PF_ERR_MODEL)
     })
@@ -1988,8 +2028,7 @@ pub unsafe extern "C" fn pf_session_new_document(session: *mut PfSession) -> i32
         };
         session.document = Document::new();
         session.seeded = false;
-        session.selected = None;
-        session.selected_pipe = None;
+        session.select_only(None);
         session.ensure_seeded();
         session.error = CString::default();
         PF_OK
@@ -2011,13 +2050,14 @@ pub unsafe extern "C" fn pf_session_copy_selected(session: *mut PfSession) -> i3
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(index) = session.selected else {
+        if session.selected.is_empty() {
             return session.fail("nothing is selected");
-        };
-        let Some(placement) = session.document.placements().get(index).cloned() else {
-            return session.fail("that component does not exist");
-        };
-        session.clipboard = Some(placement);
+        }
+        session.clipboard = session
+            .selected
+            .iter()
+            .filter_map(|index| session.document.placements().get(*index).cloned())
+            .collect();
         PF_OK
     })
 }
@@ -2036,11 +2076,12 @@ pub unsafe extern "C" fn pf_session_paste(session: *mut PfSession, x_mm: f32, y_
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(copy) = session.clipboard.clone() else {
+        if session.clipboard.is_empty() {
             return session.fail("the clipboard is empty");
-        };
+        }
+        let copies = session.clipboard.clone();
         let centre = Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0));
-        session.paste_at(copy, centre)
+        session.paste_at(&copies, centre)
     })
 }
 
@@ -2060,14 +2101,18 @@ pub unsafe extern "C" fn pf_session_paste_offset(
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(copy) = session.clipboard.clone() else {
+        if session.clipboard.is_empty() {
+            return session.fail("the clipboard is empty");
+        }
+        let copies = session.clipboard.clone();
+        let Some(anchor) = copies.first() else {
             return session.fail("the clipboard is empty");
         };
         let centre = Pt::new(
-            snap(copy.centre.x + right_mm, 10.0),
-            snap(copy.centre.y + down_mm, 10.0),
+            snap(anchor.centre.x + right_mm, 10.0),
+            snap(anchor.centre.y + down_mm, 10.0),
         );
-        session.paste_at(copy, centre)
+        session.paste_at(&copies, centre)
     })
 }
 
@@ -2100,8 +2145,7 @@ pub unsafe extern "C" fn pf_session_duplicate_component(
         let Some(copy) = session.document.duplicate(index as usize, Some(centre)) else {
             return session.fail("that component does not exist");
         };
-        session.selected = Some(copy);
-        session.selected_pipe = None;
+        session.select_only(Some(copy));
         session.rebuild_model();
         i32::try_from(copy).unwrap_or(PF_ERR_MODEL)
     })
@@ -2330,8 +2374,7 @@ pub unsafe extern "C" fn pf_session_select(session: *mut PfSession, index: i32) 
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        session.selected = usize::try_from(index).ok();
-        session.selected_pipe = None;
+        session.select_only(usize::try_from(index).ok());
         PF_OK
     })
 }
@@ -2345,7 +2388,7 @@ pub unsafe extern "C" fn pf_session_select(session: *mut PfSession, index: i32) 
 pub unsafe extern "C" fn pf_session_selected(session: *const PfSession) -> i32 {
     // SAFETY: the caller promises a live session pointer.
     unsafe { borrow_shared(session) }
-        .and_then(|session| session.selected)
+        .and_then(PfSession::primary)
         .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
 }
 
@@ -2544,15 +2587,20 @@ pub unsafe extern "C" fn pf_session_rotate_selected(
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(index) = session.selected else {
+        if session.selected.is_empty() {
             return session.fail("select a component to turn it");
-        };
-        let turned = if anticlockwise == 0 {
-            session.document.turn_clockwise(index)
+        }
+        let turn = if anticlockwise == 0 {
+            Turn::Clockwise
         } else {
-            session.document.turn_anticlockwise(index)
+            Turn::Anticlockwise
         };
-        if turned { PF_OK } else { PF_ERR_MODEL }
+        let indices = session.selected.clone();
+        if session.document.turn_many(&indices, turn) {
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
     })
 }
 
@@ -2568,10 +2616,11 @@ pub unsafe extern "C" fn pf_session_mirror_selected(session: *mut PfSession) -> 
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(index) = session.selected else {
+        if session.selected.is_empty() {
             return session.fail("select a component to reflect it");
-        };
-        if session.document.reflect(index) {
+        }
+        let indices = session.selected.clone();
+        if session.document.turn_many(&indices, Turn::Reflect) {
             PF_OK
         } else {
             PF_ERR_MODEL
@@ -2610,6 +2659,214 @@ pub unsafe extern "C" fn pf_session_component_orientation(
     })
 }
 
+/// Removes every selected placement, with their pipes, as one change.
+///
+/// A component and a pipe are never selected together, so this is the `Delete` of a
+/// selection of components; the pipe is removed by its own command.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_remove_selection(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.selected.is_empty() {
+            return session.fail("nothing is selected");
+        }
+        let indices = session.selected.clone();
+        let removed = session.document.remove_many(&indices);
+        // A removal renumbers everything after it, so an index kept from before it names
+        // another component: the selection goes with what it selected.
+        session.select_only(None);
+        session.rebuild_model();
+        i32::try_from(removed.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Adds or removes one placement in the selection: `Mayús` and a click.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_toggle_select(session: *mut PfSession, index: i32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(index) = usize::try_from(index).ok() else {
+            return PF_ERR_MODEL;
+        };
+        if index >= session.document.len() {
+            return session.fail("that component does not exist");
+        }
+        session.toggle_selected(index);
+        PF_OK
+    })
+}
+
+/// Selects every component of the sheet: `Edición ▸ Seleccionar todo`, `Ctrl+E`.
+///
+/// Returns how many components are selected.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_select_all(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.selected = (0..session.document.len()).collect();
+        session.selected_pipe = None;
+        i32::try_from(session.selected.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Selects every component inside a rectangle of the sheet: the rubber band.
+///
+/// Returns how many components are selected; an empty rectangle clears the selection,
+/// which is what letting go of a band over nothing means.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_select_rect(
+    session: *mut PfSession,
+    x0_mm: f32,
+    y0_mm: f32,
+    x1_mm: f32,
+    y1_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let band = Rect::from_corners(Pt::new(x0_mm, y0_mm), Pt::new(x1_mm, y1_mm));
+        session.selected = session
+            .document
+            .placements()
+            .iter()
+            .enumerate()
+            .filter(|(_, placement)| {
+                band.expand(0.5).contains(placement.box_rect().min)
+                    && band.expand(0.5).contains(placement.box_rect().max)
+            })
+            .map(|(index, _)| index)
+            .collect();
+        session.selected_pipe = None;
+        i32::try_from(session.selected.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// How many components are selected.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_selection_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| {
+        u32::try_from(session.selected.len()).unwrap_or(0)
+    })
+}
+
+/// One selected placement by position in the selection, or `-1`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_selection_at(session: *const PfSession, slot: u32) -> i32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }
+        .and_then(|session| session.selected.get(slot as usize).copied())
+        .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
+}
+
+/// Moves the whole selection by a delta, snapped to the grid, as one change.
+///
+/// This is the drag of several components: the pointer moves the primary one and the rest
+/// follow by the same step, so the group keeps its shape.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_move_selection(
+    session: *mut PfSession,
+    right_mm: f32,
+    down_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.selected.is_empty() {
+            return session.fail("nothing is selected");
+        }
+        let moves: Vec<(usize, Pt)> = session
+            .selected
+            .iter()
+            .filter_map(|index| {
+                let centre = session.document.placements().get(*index)?.centre;
+                Some((*index, Pt::new(centre.x + right_mm, centre.y + down_mm)))
+            })
+            .collect();
+        if session.document.move_many(&moves) {
+            session.rebuild_model();
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// Copies the whole selection in place, displaced by a delta, and selects the copies.
+///
+/// This is the Shift+drag gesture when more than one component is marked.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_duplicate_selection(
+    session: *mut PfSession,
+    right_mm: f32,
+    down_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.selected.is_empty() {
+            return session.fail("nothing is selected");
+        }
+        let indices = session.selected.clone();
+        let copies = session
+            .document
+            .duplicate_many(&indices, (snap(right_mm, 10.0), snap(down_mm, 10.0)));
+        if copies.is_empty() {
+            return session.fail("nothing could be copied");
+        }
+        session.selected = copies;
+        session.rebuild_model();
+        i32::try_from(session.selected.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
 /// Removes a placement. The selection is cleared when it was the one removed.
 ///
 /// # Safety
@@ -2625,9 +2882,9 @@ pub unsafe extern "C" fn pf_session_remove_component(session: *mut PfSession, in
         if session.document.remove(index as usize).is_none() {
             return session.fail("that component does not exist");
         }
-        if session.selected == Some(index as usize) {
-            session.selected = None;
-        }
+        session
+            .selected
+            .retain(|selected| *selected != index as usize);
         session.rebuild_model();
         PF_OK
     })
@@ -3204,7 +3461,7 @@ pub unsafe extern "C" fn pf_session_select_pipe(session: *mut PfSession, index: 
             return PF_ERR_NULL;
         };
         session.selected_pipe = usize::try_from(index).ok();
-        session.selected = None;
+        session.selected.clear();
         PF_OK
     })
 }

@@ -69,8 +69,8 @@ impl Placed<'_> {
 /// Draws the sheet.
 ///
 /// The three components the model simulates are joined by their pipes when they are all
-/// present; everything else is drawn as its own symbol. `selected` gets a ring, drawn last
-/// so it is never covered.
+/// present; everything else is drawn as its own symbol. Every index in `selected` gets a
+/// ring, drawn last so it is never covered.
 pub fn draw_placed(
     surface: &mut dyn Surface,
     placements: &[Placed<'_>],
@@ -78,7 +78,7 @@ pub fn draw_placed(
     system: Option<&Network>,
     catalog: &Catalog,
     ink: &Ink,
-    selected: Option<usize>,
+    selected: &[usize],
 ) {
     for pipe in pipes {
         draw_pipe(surface, placements, pipe, catalog, ink);
@@ -162,8 +162,10 @@ pub fn draw_placed(
         schematic::draw_readouts(surface, &layout, system, catalog, ink);
     }
 
-    if let Some(index) = selected {
-        if let Some(placed) = placements.get(index) {
+    // The ring marks the selection, not the last component touched: a drag of six
+    // components shows six rings until it is done.
+    for index in selected {
+        if let Some(placed) = placements.get(*index) {
             selection_ring(surface, placed.box_rect(), ink.accent);
         }
     }

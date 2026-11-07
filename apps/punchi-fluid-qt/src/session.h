@@ -40,6 +40,7 @@ class FluidSession : public QObject
     Q_PROPERTY(bool editing READ editing NOTIFY modeChanged)
     Q_PROPERTY(int componentCount READ componentCount NOTIFY documentChanged)
     Q_PROPERTY(int selected READ selected NOTIFY documentChanged)
+    Q_PROPERTY(int selectionCount READ selectionCount NOTIFY documentChanged)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
@@ -205,6 +206,24 @@ public:
     /// Drags the middle segment of a pipe so it passes through a point.
     Q_INVOKABLE void routePipe(int index, double xMm, double yMm);
     Q_INVOKABLE void select(int index);
+    /// Adds or removes one component from the selection: `Mayús` and a click.
+    Q_INVOKABLE void toggleSelect(int index);
+    /// Marks every component: `Ctrl+E`.
+    Q_INVOKABLE void selectAll();
+    /// Marks every component inside a rectangle of the sheet: the rubber band.
+    Q_INVOKABLE void selectRect(double x0Mm, double y0Mm, double x1Mm, double y1Mm);
+    /// How many components are selected.
+    Q_INVOKABLE int selectionCount() const;
+    /// One selected component by slot, or `-1`.
+    Q_INVOKABLE int selectionAt(int slot) const;
+    /// `true` when the placement is part of the selection.
+    Q_INVOKABLE bool isSelected(int index) const;
+    /// Moves the whole selection by a delta; one drag, one undo.
+    Q_INVOKABLE void moveSelection(double rightMm, double downMm);
+    /// Copies the whole selection in place and selects the copies.
+    Q_INVOKABLE void duplicateSelection(double rightMm, double downMm);
+    /// Removes every selected component, as one change.
+    Q_INVOKABLE void removeSelection();
     Q_INVOKABLE int componentAt(double xMm, double yMm);
 
     /// The port nearest to a point, if one is within `toleranceMm`.
@@ -293,6 +312,8 @@ private:
     void announceImpact(const PfTelemetry &telemetry);
     /// Republishes what the document reports, after any change to it.
     void refreshDocument();
+    /// Republishes the selection alone: marking is not a change to the document.
+    void refreshSelection();
     void advanceInternal(double dt, bool forced);
     void readCatalog();
 

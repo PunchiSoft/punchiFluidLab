@@ -99,4 +99,15 @@ private:
     /// double click the reference turns a component with.
     qint64 m_lastPressMs = 0;
     QPointF m_lastPressSheet;
+    /// The rubber band: the corner it started at and where the pointer is now.
+    bool m_banding = false;
+    QPointF m_bandFrom;
+    QPointF m_bandTo;
+    /// Component whose press carried `Mayús`. It becomes a copy when the pointer moves and
+    /// a change of membership when it does not, which is how the reference tells the two
+    /// gestures apart.
+    int m_shiftPress = -1;
+    QPointF m_shiftFrom;
+    /// `true` while a drag moves the whole selection rather than one component.
+    bool m_movingSelection = false;
 };

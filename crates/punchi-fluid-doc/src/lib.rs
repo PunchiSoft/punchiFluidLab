@@ -48,6 +48,29 @@ impl PlacementEdits {
     }
 }
 
+/// What one command does to the orientation of a placement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Turn {
+    /// A quarter turn clockwise: `Edición ▸ Girar`.
+    Clockwise,
+    /// A quarter turn anticlockwise: `Ctrl` and a double click.
+    Anticlockwise,
+    /// A reflection on the symbol's own vertical axis: `Edición ▸ Reflejar`.
+    Reflect,
+}
+
+impl Turn {
+    /// The orientation this command produces.
+    #[must_use]
+    pub const fn apply(self, orientation: Orientation) -> Orientation {
+        match self {
+            Self::Clockwise => orientation.turned_clockwise(),
+            Self::Anticlockwise => orientation.turned_anticlockwise(),
+            Self::Reflect => orientation.reflected(),
+        }
+    }
+}
+
 /// One component on the sheet.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
@@ -335,6 +358,33 @@ impl Document {
         index
     }
 
+    /// Copies several placements displaced by a delta, as one entry in the history.
+    ///
+    /// The copies keep their catalog ids, boxes, values and orientations and get new
+    /// identities, so the pipes of the originals stay where they are.
+    pub fn duplicate_many(&mut self, indices: &[usize], offset: (f32, f32)) -> Vec<usize> {
+        let copies: Vec<Placement> = indices
+            .iter()
+            .filter_map(|index| self.placements.get(*index).cloned())
+            .collect();
+        let mut added = Vec::with_capacity(copies.len());
+        let mut changes = Vec::with_capacity(copies.len());
+        for copy in copies {
+            let mut copy = copy;
+            copy.id = self.take_id();
+            copy.centre = Pt::new(copy.centre.x + offset.0, copy.centre.y + offset.1);
+            let index = self.placements.len();
+            self.placements.push(copy.clone());
+            changes.push(Change::Added {
+                index,
+                placement: copy,
+            });
+            added.push(index);
+        }
+        self.record_group(changes);
+        added
+    }
+
     /// Draws a pipe between two ports.
     ///
     /// Refuses the three things that are not pipes: an end joined to itself, a duplicate
@@ -468,6 +518,56 @@ impl Document {
         true
     }
 
+    /// Moves several placements, as one entry in the history: one drag, one undo.
+    pub fn move_many(&mut self, moves: &[(usize, Pt)]) -> bool {
+        let mut changes = Vec::with_capacity(moves.len());
+        for (index, centre) in moves {
+            let Some(placement) = self.placements.get_mut(*index) else {
+                continue;
+            };
+            if placement.centre == *centre {
+                continue;
+            }
+            let from = placement.centre;
+            placement.centre = *centre;
+            changes.push(Change::Moved {
+                index: *index,
+                from,
+                to: *centre,
+            });
+        }
+        if changes.is_empty() {
+            return false;
+        }
+        self.record_group(changes);
+        true
+    }
+
+    /// Removes several placements, with their pipes, as one entry in the history.
+    pub fn remove_many(&mut self, indices: &[usize]) -> Vec<Placement> {
+        let mut changes = Vec::with_capacity(indices.len());
+        let mut removed = Vec::with_capacity(indices.len());
+        // Highest index first, so every index is still valid when it is used.
+        let mut ordered: Vec<usize> = indices.to_vec();
+        ordered.sort_unstable_by(|a, b| b.cmp(a));
+        ordered.dedup();
+        for index in ordered {
+            let Some((placement, orphans)) = self.take_placement(index) else {
+                continue;
+            };
+            changes.push(Change::Removed {
+                index,
+                placement: placement.clone(),
+                orphans,
+            });
+            removed.push(placement);
+        }
+        if !changes.is_empty() {
+            self.record_group(changes);
+        }
+        removed
+    }
+
     /// Displaces the middle segment of a pipe by `offset_mm`.
     ///
     /// The reference lets the reader drag a hose segment until the circuit reads clearly;
@@ -538,17 +638,47 @@ impl Document {
 
     /// Turns a placement a quarter clockwise: `Edición ▸ Girar`.
     pub fn turn_clockwise(&mut self, index: usize) -> bool {
-        self.turn(index, Orientation::turned_clockwise)
+        self.turn_many(&[index], Turn::Clockwise)
     }
 
     /// Turns a placement a quarter anticlockwise: `Ctrl` and a double click.
     pub fn turn_anticlockwise(&mut self, index: usize) -> bool {
-        self.turn(index, Orientation::turned_anticlockwise)
+        self.turn_many(&[index], Turn::Anticlockwise)
     }
 
     /// Reflects a placement about its own vertical axis: `Edición ▸ Reflejar`.
     pub fn reflect(&mut self, index: usize) -> bool {
-        self.turn(index, Orientation::reflected)
+        self.turn_many(&[index], Turn::Reflect)
+    }
+
+    /// Turns every listed placement, as one entry in the history.
+    ///
+    /// A selection of six valves turned in one gesture is one change to the user, and a
+    /// user who has to press undo six times for it has been told the program does not mind
+    /// losing their work.
+    pub fn turn_many(&mut self, indices: &[usize], turn: Turn) -> bool {
+        let mut changes = Vec::with_capacity(indices.len());
+        for index in indices {
+            let Some(placement) = self.placements.get_mut(*index) else {
+                continue;
+            };
+            let from = placement.orientation;
+            let to = turn.apply(from);
+            if to == from {
+                continue;
+            }
+            placement.orientation = to;
+            changes.push(Change::Turned {
+                index: *index,
+                from,
+                to,
+            });
+        }
+        if changes.is_empty() {
+            return false;
+        }
+        self.record_group(changes);
+        true
     }
 
     /// How a placement is turned, or `None` when there is no such placement.
@@ -559,19 +689,19 @@ impl Document {
             .map(|placement| placement.orientation)
     }
 
-    fn turn(&mut self, index: usize, turn: fn(Orientation) -> Orientation) -> bool {
-        let Some(placement) = self.placements.get_mut(index) else {
-            return false;
-        };
-        let from = placement.orientation;
-        let to = turn(from);
-        placement.orientation = to;
-        self.record(Change::Turned { index, from, to });
-        true
-    }
-
     /// Removes a placement, and with it every pipe it carried.
     pub fn remove(&mut self, index: usize) -> Option<Placement> {
+        let (placement, orphans) = self.take_placement(index)?;
+        self.record(Change::Removed {
+            index,
+            placement: placement.clone(),
+            orphans,
+        });
+        Some(placement)
+    }
+
+    /// Takes a placement and its pipes out of the document, without recording anything.
+    fn take_placement(&mut self, index: usize) -> Option<(Placement, Vec<(usize, Connection)>)> {
         if index >= self.placements.len() {
             return None;
         }
@@ -589,12 +719,7 @@ impl Document {
             }
         }
         self.connections = kept;
-        self.record(Change::Removed {
-            index,
-            placement: placement.clone(),
-            orphans,
-        });
-        Some(placement)
+        Some((placement, orphans))
     }
 
     /// `true` when there is a change to take back.
@@ -634,6 +759,19 @@ impl Document {
         self.next_id
     }
 
+    /// Records several changes as one entry, or the change itself when there is one.
+    fn record_group(&mut self, mut changes: Vec<Change>) {
+        match changes.len() {
+            0 => {}
+            1 => {
+                if let Some(only) = changes.pop() {
+                    self.record(only);
+                }
+            }
+            _ => self.record(Change::Batch(changes)),
+        }
+    }
+
     fn record(&mut self, change: Change) {
         // A drag is one edit, not one per mouse move: consecutive moves of the same
         // component extend the entry already at the top of the history.
@@ -667,6 +805,21 @@ impl Document {
                 self.redo.clear();
                 return;
             }
+        }
+        // A drag of several components is a batch of moves, and it is still one drag:
+        // consecutive batches that move the same components extend the top entry.
+        if let (Some(Change::Batch(last)), Change::Batch(current)) = (self.undo.last_mut(), &change)
+            && extends_the_same_moves(last, current)
+        {
+            for (existing, fresh) in last.iter_mut().zip(current) {
+                if let (Change::Moved { to: last_to, .. }, Change::Moved { to, .. }) =
+                    (existing, fresh)
+                {
+                    *last_to = *to;
+                }
+            }
+            self.redo.clear();
+            return;
         }
         self.undo.push(change);
         if self.undo.len() > HISTORY_LIMIT {
@@ -780,6 +933,18 @@ impl Document {
             }
         }
     }
+}
+
+/// `true` when two batches move exactly the same placements, in the same order.
+fn extends_the_same_moves(last: &[Change], current: &[Change]) -> bool {
+    last.len() == current.len()
+        && !last.is_empty()
+        && last.iter().zip(current).all(|(old, new)| {
+            matches!(
+                (old, new),
+                (Change::Moved { index: a, .. }, Change::Moved { index: b, .. }) if a == b
+            )
+        })
 }
 
 fn insert_at<T>(items: &mut Vec<T>, index: usize, item: T) {
@@ -1184,6 +1349,78 @@ mod tests {
             .duplicate(index, None)
             .map(|copy| document.placements()[copy].orientation);
         assert_eq!(copy, Some(Orientation::new(0, true)));
+    }
+
+    #[test]
+    fn moving_a_selection_is_one_drag_and_one_undo() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 40.0, 10.0));
+        let watchers = document.can_undo();
+        assert!(watchers);
+        // Three mouse moves of a drag, the same two components each time.
+        for step in 1..=3 {
+            #[allow(clippy::cast_precision_loss)]
+            let dx = step as f32;
+            assert!(
+                document.move_many(&[(a, Pt::new(10.0 + dx, 10.0)), (b, Pt::new(40.0 + dx, 10.0))])
+            );
+        }
+        assert!(close(document.placements()[a].centre.x, 13.0));
+        assert!(close(document.placements()[b].centre.x, 43.0));
+        // One undo puts both back: the drag extended the entry, it did not add two more.
+        assert!(document.undo());
+        assert!(close(document.placements()[a].centre.x, 10.0));
+        assert!(close(document.placements()[b].centre.x, 40.0));
+        // What is left in the history is the two placements and nothing else.
+        let mut earlier = 0;
+        while document.undo() {
+            earlier += 1;
+        }
+        assert_eq!(earlier, 2, "the whole drag was a single entry");
+    }
+
+    #[test]
+    fn removing_and_copying_a_selection_are_one_change_each() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 40.0, 10.0));
+        let c = document.place(placement("c", 70.0, 10.0));
+        assert!(document.connect(
+            Endpoint::new(document.placements()[a].id(), "1"),
+            Endpoint::new(document.placements()[b].id(), "1")
+        ));
+        let copies = document.duplicate_many(&[a, b, c], (10.0, 10.0));
+        assert_eq!(copies.len(), 3);
+        assert_eq!(document.len(), 6);
+        assert!(document.undo());
+        assert_eq!(document.len(), 3, "one undo puts the three copies away");
+
+        let removed = document.remove_many(&[a, b]);
+        assert_eq!(removed.len(), 2);
+        assert_eq!(document.len(), 1);
+        assert_eq!(
+            document.connections().len(),
+            0,
+            "the pipe went with its ends"
+        );
+        assert!(document.undo());
+        assert_eq!(document.len(), 3);
+        assert_eq!(document.connections().len(), 1, "and came back with it");
+    }
+
+    #[test]
+    fn turning_a_selection_keeps_the_mirror_of_each_component() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 40.0, 10.0));
+        assert!(document.reflect(b));
+        assert!(document.turn_many(&[a, b], Turn::Clockwise));
+        assert_eq!(document.orientation_of(a), Some(Orientation::new(1, false)));
+        assert_eq!(document.orientation_of(b), Some(Orientation::new(1, true)));
+        assert!(document.undo());
+        assert_eq!(document.orientation_of(a), Some(Orientation::NONE));
+        assert_eq!(document.orientation_of(b), Some(Orientation::new(0, true)));
     }
 
     #[test]

@@ -197,6 +197,17 @@ int32_t pf_session_component_id(const PfSession *session, uint32_t index, char *
 int32_t pf_session_hit_component(const PfSession *session, float x_mm, float y_mm);
 int32_t pf_session_select(PfSession *session, int32_t index);
 int32_t pf_session_selected(const PfSession *session);
+/* The selection is a set: a click replaces it, Mayus and a click toggles one member, a
+ * rubber band or Ctrl+E marks several, and every editing command acts on all of them. */
+int32_t pf_session_toggle_select(PfSession *session, int32_t index);
+int32_t pf_session_select_all(PfSession *session);
+int32_t pf_session_select_rect(PfSession *session, float x0_mm, float y0_mm, float x1_mm,
+                               float y1_mm);
+uint32_t pf_session_selection_count(const PfSession *session);
+int32_t pf_session_selection_at(const PfSession *session, uint32_t slot);
+int32_t pf_session_move_selection(PfSession *session, float right_mm, float down_mm);
+int32_t pf_session_duplicate_selection(PfSession *session, float right_mm, float down_mm);
+int32_t pf_session_remove_selection(PfSession *session);
 int32_t pf_session_move_component(PfSession *session, uint32_t index, float x_mm, float y_mm);
 int32_t pf_session_remove_component(PfSession *session, uint32_t index);
 /* One-slot clipboard: copy the selected component, paste it, or copy in place. */

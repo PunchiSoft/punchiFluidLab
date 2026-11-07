@@ -70,6 +70,7 @@ Rectangle {
                         { id: "duplicate", label: qsTr("Duplicar"), icon: "edit-duplicate", hint: qsTr("Ctrl+D · copia y desplaza"), enabled: session.selected >= 0 },
                         { id: "rotate", label: qsTr("Girar"), icon: "object-rotate-right", hint: qsTr("Alt+R · un cuarto de vuelta; Ctrl y doble clic gira al revés"), enabled: session.selected >= 0 },
                         { id: "mirror", label: qsTr("Reflejar"), icon: "object-flip-horizontal", hint: qsTr("Alt+M · sobre su propio eje"), enabled: session.selected >= 0 },
+                        { id: "select-all", label: qsTr("Todo"), icon: "edit-select-all", hint: qsTr("Ctrl+E · marca todo el circuito") },
                         { id: "delete", label: qsTr("Borrar"), icon: "edit-delete", hint: qsTr("Supr · borra lo seleccionado"), big: true, enabled: session.selected >= 0 }
                     ]
                 },
@@ -128,6 +129,8 @@ Rectangle {
             session.rotateSelected(false);
         } else if (id === "mirror") {
             session.mirrorSelected();
+        } else if (id === "select-all") {
+            session.selectAll();
         } else if (id === "delete") {
             session.removeSelected();
         } else if (id === "start") {
