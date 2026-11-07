@@ -18,6 +18,7 @@ that nobody can check is a wish, not a standard.
 | `punchi-fluid-export` | page geometry, PNG and PDF backends | interaction | M2 |
 | `punchi-fluid-ffi` | the C ABI: one session, one frame of drawing, telemetry, hit test | logic of its own | M5 |
 | `punchi-fluid-doc` | document, commands, undo, autosave | drawing, physics | M3 |
+| `punchi-fluid-check` | design checks: the faults a circuit can have before it runs | physics, UI | M3 |
 | `punchi-fluid-cli` | headless validate and simulate | UI | M0 |
 
 The window is **`apps/punchi-fluid-qt`**, a Qt Quick application outside the Cargo
@@ -37,8 +38,8 @@ Three, and no more. New behaviour arrives through one of them or not at all:
 
 1. **A catalog file** — a new valve, cylinder, instrument or symbol. No code, no
    release. This is the point of the project.
-2. **A `Surface` implementation** — a new drawing backend (egui today, a PDF writer,
-   a future QML or SVG front end).
+2. **A `Surface` implementation** — a new drawing backend (the Qt frame today, a PDF
+   writer, a future SVG writer).
 3. **A `behaviour` variant** — only when the physics is genuinely new, with an ADR and
    tests.
 
@@ -137,7 +138,7 @@ native code. Anything that changes this list needs an ADR and a security review.
 | Level | Proves | Does not prove |
 |---|---|---|
 | `cargo test --workspace` | domain, physics, format, catalog, geometry | that anything looks right |
-| Headless UI tests (egui `Context::run_ui`) | hit areas, click routing, layout maths | visual quality |
+| Headless UI tests (Qt, offscreen) | hit areas, click routing, layout maths, the theme contrast | visual quality |
 | Export tests (pixels, call lists) | margins, paper size, determinism | that the symbol is legible |
 | `check.sh` | the gate above plus the CLI | the window, the theme, the packaging |
 | Screenshot review per milestone | what the user actually sees | interaction over time |

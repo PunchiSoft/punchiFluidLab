@@ -307,7 +307,7 @@ The loader rejects a file when:
 
 ```bash
 cargo test -p punchi-fluid-catalog     # format, precedence, disabled, typo
-cargo run -p punchi-fluid-desktop      # watch it in the window
+./scripts-dev/run.sh                   # watch it in the window
 ```
 
 The built-in definitions are covered by a test that fails if any of them stops being

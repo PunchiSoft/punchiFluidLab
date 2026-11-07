@@ -47,27 +47,26 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-core` | components, ports, connections, units | numerics, files, widgets |
 | `crates/punchi-fluid-catalog` | component definition files: schema, validation, loading | physics, widgets |
 | `crates/punchi-fluid-solver` | lumped-parameter model, orifice flow, integration | editing, UI |
-| `crates/punchi-fluid-file` | versioned document format and migrations | physics |
-| `crates/punchi-fluid-theme` | colour, size and font tokens from `kdeglobals` and the portal | widgets, physics, document I/O |
+| `crates/punchi-fluid-file` | versioned documents: the sheet format and its migrations | physics |
 | `crates/punchi-fluid-draw` | the single drawing of a circuit, in millimetres, behind a `Surface` trait | windows, files, fonts, solving |
-| `crates/punchi-fluid-doc` | the edited document: placements, connections, bounded undo | physics, drawing, files |
+| `crates/punchi-fluid-doc` | the edited document: placements, commands, bounded undo | physics, drawing, files |
 | `crates/punchi-fluid-check` | design faults a circuit can have before it is run | physics, drawing, UI |
-| `crates/punchi-fluid-export` | standard sheets, title block, the PDF writer | physics, widgets |
-| `crates/punchi-fluid-icons` | icon lookup in the desktop theme and rasterisation | physics, widgets, I/O of our own |
-| `crates/punchi-fluid-ui` | ribbon, sidebar, sheet, status bar, schematic canvas and widgets | file I/O, solving, colour literals |
-| `crates/punchi-fluid-desktop` | window, menus, wiring | physics, primitives |
+| `crates/punchi-fluid-export` | standard sheets, title block, the PNG and PDF writers | physics, widgets |
 | `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
-| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter | physics, the document |
 | `crates/punchi-fluid-cli` | headless validate and simulate | UI |
+| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter | physics, the document |
 
-Dependency direction: `core` is the base; `file` and `catalog` depend on it (and on
-nothing else of ours); `solver` depends on `core` and `catalog`; `theme` and `icons` are leaves that depend on
-no crate of ours; `draw` depends on `core`, `catalog` and `solver`; `export` depends on
-`draw`, `catalog` and `solver`; `ui` depends on `draw`, `catalog`, `core`, `icons`,
-`solver` and `theme`; `desktop` depends on `ui`, `export`, `solver`,
-`catalog` and `theme`; `cli` depends on `file` and `solver`. Nothing depends on
-`desktop`. A new dependency direction needs an ADR; the `Surface` layer that made
-`draw` and `export` possible is [ADR 0003](docs/adr/0003-one-drawing-two-devices.md).
+Dependency direction: `core` is the base; `catalog` and `file` depend on it and on no
+other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
+`core` and `solver`; `doc` on `draw`; `check` on `catalog`, `doc` and `draw` (it reads
+port geometry from `draw`, because that is where a millimetre lives); `export` on
+`catalog`, `draw` and `solver`; `ffi` on all of the above; `cli` on `core`, `file` and
+`solver`. Nothing in Rust depends on the window, and the window depends only on
+`punchi-fluid-ffi`. A new dependency direction needs an ADR; the `Surface` layer that
+made `draw` and `export` possible is [ADR 0003](docs/adr/0003-one-drawing-two-devices.md),
+and the Qt window over the C ABI is
+[ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md). `scripts-dev/check-docs.sh` fails if
+this table and `Cargo.toml` disagree.
 
 Non-code directories: `assets/catalog/` (the component definitions and their guide),
 `assets/symbols/` (ISO 1219-1 reference), `docs/` (ADRs and the record), `i18n/`
@@ -151,15 +150,17 @@ tooling, never a runtime dependency).
 
 - The interface is specified in [docs/ui-ux.md](docs/ui-ux.md). Three regions: ribbon,
   sidebar that mirrors the catalog, sheet. Adding a fourth needs an ADR.
-- **Colour, size and font come from the theme layer**, never from a literal in a
-  widget. A `Color32::` outside `punchi-fluid-theme` is a bug, and a test scans for it.
-- Follow the desktop: `kdeglobals` plus the `org.freedesktop.appearance color-scheme`
-  portal, read on start and on change, never per frame.
+- **Colour, size and font come from the theme adapter**
+  (`apps/punchi-fluid-qt/src/theme.cpp`), never from a literal in a widget or in QML.
+  `--check-theme` measures the contrast and fails below the criterion.
+- Follow the desktop: the application palette, which already carries `kdeglobals`, plus
+  the `org.freedesktop.appearance color-scheme` portal, read on start and on change,
+  never per frame.
 - Components are shown by **their own symbol**, never by a separate icon set.
 - State is never colour-only, hover never changes the document, and there is no modal
   on the normal path.
 - Accessibility is part of the definition of done: keyboard reachable, contrast
-  measured, `accesskit` exposed, reduced motion honoured.
+  measured, names exposed to the accessibility layer, reduced motion honoured.
 
 ## Memory and performance rules
 
@@ -182,8 +183,14 @@ The profile is [.cargo/config.toml](.cargo/config.toml) and
 [.agents/skills/machine-resource-budget](.agents/skills/machine-resource-budget/SKILL.md).
 
 It runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
-`scripts-dev/test.sh` (which covers the workspace) and a CLI smoke test over a temporary
-circuit file.
+`scripts-dev/test.sh` (which covers the workspace), the documentation drift check
+`scripts-dev/check-docs.sh` and a CLI smoke test over a temporary circuit file.
+
+The window is built and driven headlessly when `apps/punchi-fluid-qt/build` has been
+configured: `--check-qml`, `--check-theme`, `--check-icons` and `--selftest` under
+`QT_QPA_PLATFORM=offscreen`. A machine without Qt skips that step with a message on
+stderr, and CI does not configure it yet — so a green gate there still does not prove
+the window.
 
 During a session, `./scripts-dev/test.sh` runs the same tests and
 `./scripts-dev/run.sh` opens the window; both compile only when a source changed and

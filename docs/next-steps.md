@@ -5,6 +5,13 @@ done next, which files it touches, which tests prove it and which questions belo
 the project owner. The reasoning behind every rule is in the linked documents; this
 file is the execution order.
 
+> **Read the toolkit note first.** [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) replaced
+> the egui front end with the Qt window over `punchi-fluid-ffi` and retired
+> `punchi-fluid-theme`, `punchi-fluid-ui`, `punchi-fluid-desktop` and
+> `punchi-fluid-icons`. The milestone sections below are kept as the record of the
+> reasoning; the source of truth for what comes next is
+> [reference-parity.md](reference-parity.md) and the order at the top of this file.
+
 ## Where the project stands
 
 `0.2` — a working vertical slice, and a specification for everything after it.

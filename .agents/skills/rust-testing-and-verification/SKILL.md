@@ -37,10 +37,10 @@ a claim to the cheapest test that can falsify it.
 | A catalog rule (schema, lint) | one test per rule | `crates/punchi-fluid-catalog/src/lint.rs` |
 | A format or migration | integration test | `crates/punchi-fluid-file/` (module tests today; `tests/` when a migration needs end-to-end) |
 | A physical invariant or reference curve | solver unit test with a stated reference and tolerance | `crates/punchi-fluid-solver/src/pneumatic.rs` |
-| A hit area, layout or click | headless UI test | `crates/punchi-fluid-ui/tests/click.rs` |
+| A hit area, layout or click | headless UI test | `apps/punchi-fluid-qt` (`--selftest`, offscreen) |
 | Exported geometry, margins, determinism | pixel or call-list test | `crates/punchi-fluid-export/tests/` |
 | Every built-in has a symbol review | coverage test | `crates/punchi-fluid-catalog/tests/review.rs` |
-| Contrast and no colour literals | theme test | `crates/punchi-fluid-theme/tests/` |
+| Contrast and no colour literals | theme test | `apps/punchi-fluid-qt` (`--check-theme`) |
 | The CLI contract end to end | smoke test | `scripts-dev/check.sh` |
 
 ## Rules

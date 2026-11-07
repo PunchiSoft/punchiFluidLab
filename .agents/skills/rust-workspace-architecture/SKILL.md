@@ -6,26 +6,29 @@ license: GPL-3.0-or-later
 
 # Workspace architecture
 
-The workspace is ten crates with one allowed dependency graph and exactly three
-extension points. Both are decisions recorded in
-[docs/adr/](../../../docs/adr/); a new edge or a fourth extension point is an ADR,
+The workspace is ten crates plus the Qt window in `apps/punchi-fluid-qt`, with one
+allowed dependency graph and exactly three extension points. Both are decisions recorded
+in [docs/adr/](../../../docs/adr/); a new edge or a fourth extension point is an ADR,
 not a refactor.
 
 ## The graph
 
 ```text
 core ← file
+core ← catalog
 core, catalog ← solver
 catalog, core, solver ← draw
+draw ← doc
+catalog, doc, draw ← check
 catalog, draw, solver ← export
-catalog, core, draw, solver, theme ← ui
-catalog, core, draw, export, file, solver, theme, ui ← desktop
+catalog, check, doc, draw, file, solver ← ffi ← apps/punchi-fluid-qt
 core, file, solver ← cli
 ```
 
-`catalog` and `theme` have no internal dependency: the catalog schema is self-contained
-and the theme only wraps `egui`. Verify the graph with `cargo tree` before adding an
-edge; the manifests are the source of truth when a summary and the code disagree.
+`catalog` has no internal dependency: the schema is self-contained. `check` reaches
+`draw` only for port geometry, because a millimetre lives there. Verify the graph with
+`cargo tree` before adding an edge; the manifests are the source of truth when a summary
+and the code disagree.
 
 Read [AGENTS.md](../../../AGENTS.md) for the owns / never-contains table and
 [docs/engineering.md](../../../docs/engineering.md) for the milestone version. The
@@ -37,12 +40,13 @@ short form:
 | `punchi-fluid-catalog` | definition schema, validation, loading | physics, widgets |
 | `punchi-fluid-solver` | lumped model, orifice flow, integration | editing, UI, file I/O |
 | `punchi-fluid-file` | versioned document format, migrations | physics |
-| `punchi-fluid-theme` | semantic colours, desktop theme reading | widgets |
+| `punchi-fluid-doc` | the edited document: placements, commands, undo | physics, drawing |
+| `punchi-fluid-check` | design faults found before the run | physics, UI |
 | `punchi-fluid-draw` | mm geometry, `Surface`, symbol drawing | windows, I/O |
 | `punchi-fluid-export` | page geometry, PNG/PDF backends | interaction |
-| `punchi-fluid-ui` | widgets, ribbon, sidebar, canvas | file I/O, physics |
-| `punchi-fluid-desktop` | window, menus, wiring | physics, primitives |
+| `punchi-fluid-ffi` | the C ABI: session, frame, hit test | logic of its own |
 | `punchi-fluid-cli` | headless validate and simulate | UI |
+| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, theme | physics, the document |
 
 ## Procedure: deciding where code goes
 
@@ -63,8 +67,10 @@ short form:
 
 ## Gotchas
 
-- **`cargo` prevents cycles, not layering.** `ui` depending on `file` compiles and is
-  still wrong: the canvas would gain file I/O. Review the edge, not the build.
+- **`cargo` prevents cycles, not layering.** `ffi` depending on `export` compiles and is
+  still wrong: the ABI would gain page geometry. `check` reaching into `solver` compiles
+  too, and would make a design check depend on the physics it is meant to precede. Review
+  the edge, not the build.
 - **Dev-dependencies may cross layers** because they never reach the binary, but do not
   let a test helper become a back door for production code.
 - **No `common`, `utils` or `shared` crate.** It becomes the cycle in the middle. A

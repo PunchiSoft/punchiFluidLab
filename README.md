@@ -24,12 +24,13 @@ run the model, watch the actuators move — with no asset or code taken from it.
 | `punchi-fluid-catalog` | Component definitions read from TOML files: schema, validation, override rules |
 | `punchi-fluid-file` | Versioned JSON document, round-trip and version rejection |
 | `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
-| `punchi-fluid-theme` | Colour, size and font tokens from `kdeglobals` and the colour-scheme portal |
+| `punchi-fluid-doc` | The edited document: placements, commands and bounded undo |
 | `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
 | `punchi-fluid-export` | Standard sheets, title block, legend and a deterministic PDF writer |
-| `punchi-fluid-ui` | Ribbon, catalog sidebar, sheet, status bar, shortcuts, symbols and clicks |
-| `punchi-fluid-desktop` | Window, wiring, live theme changes and `accesskit` |
+| `punchi-fluid-ffi` | The C ABI the window speaks: one session, one frame of drawing, one hit test |
+| `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
 | `punchi-fluid-cli` | `punchi-fluid validate|simulate <file>` for headless checks |
+| `apps/punchi-fluid-qt` | The window: ribbon, catalog sidebar, sheet, status bar and the desktop's own palette, over the C ABI |
 
 ## Build and run
 

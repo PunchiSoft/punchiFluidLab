@@ -25,12 +25,13 @@ código de él.
 | `punchi-fluid-catalog` | Definiciones de componente leídas de archivos TOML: esquema, validación y reglas de reemplazo |
 | `punchi-fluid-file` | Documento JSON versionado, ida y vuelta y rechazo de versiones nuevas |
 | `punchi-fluid-solver` | Integración de masa de gas, cilindro con muelle, amortiguamiento y rozamiento, flujo ISO 6358 |
-| `punchi-fluid-theme` | Tokens de color, tamaño y tipografía desde `kdeglobals` y el portal de esquema |
+| `punchi-fluid-doc` | El documento editado: colocaciones, comandos y deshacer acotado |
 | `punchi-fluid-draw` | El dibujo único del circuito, en milímetros, tras un trait `Surface` |
 | `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda y escritor PDF determinista |
-| `punchi-fluid-ui` | Cinta, barra lateral de catálogo, hoja, barra de estado, atajos, símbolos y clics |
-| `punchi-fluid-desktop` | Ventana, cableado, cambio de tema en vivo y `accesskit` |
+| `punchi-fluid-ffi` | El ABI C que habla la ventana: una sesión, un cuadro de dibujo, un hit test |
+| `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
 | `punchi-fluid-cli` | `punchi-fluid validate|simulate <archivo>` para comprobaciones sin ventana |
+| `apps/punchi-fluid-qt` | La ventana: cinta, barra lateral de catálogo, hoja, barra de estado y la paleta del escritorio, sobre el ABI C |
 
 ## Compilar y ejecutar
 
