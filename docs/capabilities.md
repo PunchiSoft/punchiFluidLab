@@ -85,7 +85,8 @@ the default; dropping it is the exception.
 | F4 | Document v2, autosave, recent documents | `partial` | versioned sheet format with atomic write, bounded parsing and the four file commands; no autosave, no recent list, no warning on close with unsaved work |
 | F4 | A project as a folder of documents | `missing` | F4 |
 | F4 | Layers, graphic objects, text and references, images | `missing` | F4 and later |
-| F5 | Parts list, title-block legend, printing | `partial` | PNG/PDF export done; list and legend missing |
+| F5 | Print what is drawn | The document is finished on screen and has to leave it: a PDF for a report, a PNG for a slide. The export crate can render, but nothing in the window calls it, and it draws the worked example instead of the sheet the user edited, so a printed circuit is currently a different circuit. | a `Surface` that both the window and the paper implement, and a PDF/PNG writer with the frame, the title block and the legend. | the missing link is the ABI: the page has to be built from the document, with print ink, and the window needs the command and the dialogs. Same for the parts list, which needs the designations this build now has. | none yet — the gap is stated instead of assumed; the test that closes it will render a document with a named cylinder and find its name in the output |
+| F5 | Parts list, title-block legend, printing | `partial` | the export crate renders a PNG and a PDF with frame, title block and legend, and eight acceptance tests prove it; **the window has no command that reaches it**, and what it prints is the worked example, not the drawn sheet. List and legend missing |
 | F5 | DXF and TIFF interchange | `missing` | F5: SVG first, DXF only if asked |
 | F6 | Electrical, digital and GRAFCET libraries | `missing` | each needs a `behaviour` variant and an ADR |
 | F7 | Third-party teaching material | `not planned` | that content is not ours; F7 authors our own circuits |
