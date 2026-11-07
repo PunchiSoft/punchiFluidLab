@@ -77,6 +77,26 @@ hasta aquí el programa podía cerrar con un circuito editado sin decir nada.
   y rechaza un archivo roto, y doce pasos del `--selftest`. La ventana se captura con
   `--confirm new|open|close`, que existe para poder ver el panel sin manos.
 
+### La ventana en el README, y el cierre que el proyecto merecía — 2026-11-07
+
+Un README que describe una interfaz sin mostrarla pide un acto de fe, y este proyecto no
+pedía nada al lector que no fuese leer.
+
+- **`assets/screenshots/window-dark.png`** es la ventana real: cinta, catálogo, hoja y barra
+  de estado, con la paleta oscura del escritorio y una válvula 3/2 en reposo alimentando un
+  cilindro de simple efecto. Su [README](assets/screenshots/README.md) fija el origen —una
+  captura de este programa, nunca de otro— y las reglas: se regenera cuando cambia el
+  ribete, sin contenido privado y a resolución real.
+- **Los dos README abren con esa captura** y un pie que dice qué se ve y qué no: nada en
+  marcha, tubos en tinta neutra, `0,00 bar`. La interfaz está en español y el plan de idiomas
+  queda enlazado.
+- **Distintivos** de CI, licencia y estado. El de estado no es adorno: es el aviso de
+  construcción en la primera línea que se ve.
+- **«Hecho con cariño, para la comunidad» / «Made with love, for the community»**: el motivo
+  del proyecto escrito de una vez —el software libre es la razón por la que un taller sin
+  presupuesto aprende con la misma clase de herramienta que una empresa— y el lema de la
+  casa: **Linux para todos**.
+
 ### El agente de IA, y su apoyo, dichos en el README — 2026-11-07
 
 La ayuda de agentes de IA estaba en el flujo de trabajo —`AGENTS.md`, `.agents/`, commits
