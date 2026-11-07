@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### El muelle del cilindro deja ver el cilindro — 2026-11-07
+
+La revisión visual del cilindro de simple efecto encontró el defecto en el dibujo, no en el
+modelo: el muelle de retorno se dibujaba a lo largo de **toda** la cámara, de modo que en
+reposo el símbolo era un rectángulo lleno de alambre y el émbolo quedaba pegado a la tapa sin
+leerse.
+
+- **Muelle corto contra la tapa del vástago**: como mucho la mitad de la cámara y nunca más
+  del 22 % del ancho de la barra, con un mínimo de seis trazos de línea para que siga leyéndose
+  como espira. Lo que queda libre entre émbolo y tapa es exactamente lo que hace visible que
+  el émbolo viaja.
+- **Sigue comprimiéndose**: mismo alambre, menos paso y algo más de amplitud al acercarse el
+  émbolo, con el tope de dos espiras que ya existía. A plena carrera el muelle queda reducido a
+  una raya contra la tapa, que es lo que un muelle comprimido parece.
+- **Contrato y evidencia**: la regla está escrita en [docs/symbology.md](docs/symbology.md) y
+  comprobada con capturas a reflujo total (muelle corto, émbolo visible) y a plena carrera
+  (muelle comprimido, vástago fuera).
+
+Queda pendiente, en su propio cambio, la revisión del accionamiento y el muelle de la
+válvula 3/2: misma clase de defecto —geometría que no se lee a tamaño de paleta—, otra
+geometría.
+
 ### Nombrar un componente: la designación — 2026-11-12
 
 Un esquema se lee por los nombres: *1A1* dice qué cilindro es, y sin nombres la lista de

@@ -1111,11 +1111,16 @@ pub fn draw_cylinder(
 
 /// Return spring between the piston and the rod-side wall, compressed by the stroke.
 ///
-/// The spring keeps its wire and loses its pitch: as the piston comes out the turns
-/// bunch against the wall. A turned coil that no longer fits at the nominal pitch is
-/// drawn with fewer turns instead of more lines in the same millimetre, because a stack
-/// of turns drawn on top of each other is a filled band and not a spring. Two turns is
-/// the floor: below that the shape stops reading as a coil.
+/// The spring is drawn as a **short coil against the rod-side wall**, not as a coil that
+/// fills the chamber: a spring that spans the whole barrel reads as a barrel full of wire
+/// and hides the piston and the rod behind it, which is the opposite of what the symbol is
+/// for. Its length is a fraction of the chamber, so the barrel, the piston, the rod and
+/// the coil are each visible at rest and the coil bunches as the piston comes out.
+///
+/// The wire is constant and the pitch shrinks: a turned coil that no longer fits at the
+/// nominal pitch is drawn with fewer turns instead of more lines in the same millimetre,
+/// because a stack of turns drawn on top of each other is a filled band and not a spring.
+/// Two turns is the floor: below that the shape stops reading as a coil.
 fn draw_cylinder_spring(
     surface: &mut dyn Surface,
     piston_x: f32,
@@ -1125,21 +1130,30 @@ fn draw_cylinder_spring(
     extension: f32,
     ink: &Ink,
 ) {
-    let span = wall_x - piston_x;
-    if span <= LINE {
+    let gap = wall_x - piston_x;
+    if gap <= LINE {
+        return;
+    }
+    // A fraction of what is left between piston and wall, never the whole of it: the gap
+    // the coil does not fill is what lets the reader see the barrel, the piston and the rod
+    // as three things instead of one barrel full of wire. Being a fraction of the gap, it
+    // also shortens with every millimetre the piston comes out, which is what a spring does.
+    let span = (gap * 0.45).max(LINE * 4.0);
+    let start_x = wall_x - span;
+    if start_x <= piston_x {
         return;
     }
     let nominal_pitch = barrel.width() * 0.055;
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let fitted = (span / nominal_pitch).round().clamp(2.0, 6.0) as u16;
+    let fitted = (span / nominal_pitch).round().clamp(2.0, 5.0) as u16;
     // A coil spring keeps its wire and loses its pitch: the amplitude grows a little as
     // the coils bunch up, which is what makes the animation read as compression.
-    let amplitude = barrel.height() * (0.09 + 0.06 * extension.clamp(0.0, 1.0));
+    let amplitude = barrel.height() * (0.09 + 0.05 * extension.clamp(0.0, 1.0));
     let steps = fitted * 2;
-    let mut points = vec![Pt::new(piston_x, axis_y)];
+    let mut points = vec![Pt::new(start_x, axis_y)];
     for step in 0..steps {
         let fraction = (f32::from(step) + 0.5) / f32::from(steps);
-        let x = piston_x + span * fraction;
+        let x = start_x + span * fraction;
         let y = axis_y + if step % 2 == 0 { -amplitude } else { amplitude };
         points.push(Pt::new(x, y));
     }

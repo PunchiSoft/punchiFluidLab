@@ -60,9 +60,11 @@ itself is the responsibility of whoever adds or reviews a symbol.
 ### Actuators and the rest
 
 - A single-acting cylinder shows the barrel, the piston, the rod **and its return
-  spring** at the rod side, between the piston and the rod-side wall. The spring is drawn
-  around the rod and **compresses with the stroke**: same wire, fewer pitch, slightly
-  larger amplitude as the coils bunch. A coil that no longer fits at its nominal pitch is
+  spring** at the rod side, between the piston and the rod-side wall. The spring is a
+  **short coil against that wall**, never a coil that fills the chamber: a spring drawn
+  across the whole barrel reads as a barrel full of wire and hides the piston and the rod
+  behind it. The spring is drawn around the rod and **compresses with the stroke**: same
+  wire, fewer pitch, slightly larger amplitude as the coils bunch. A coil that no longer fits at its nominal pitch is
   drawn with **fewer turns** rather than with more lines stacked on the same millimetre,
   because a band of turns drawn over each other is a filled rectangle and not a spring;
   the floor is two turns, below which the shape stops reading as a coil.
