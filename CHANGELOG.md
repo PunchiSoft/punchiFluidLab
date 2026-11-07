@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### Los últimos circuitos, a un clic — 2026-11-12
+
+Abrir el mismo circuito tres veces al día pasa por el diálogo de archivos otras tantas.
+`Archivo ▸ Recientes` muestra los últimos diez documentos y los abre con un clic, que es lo
+que la referencia ofrece en el mismo sitio.
+
+- **La lista es un archivo, tratado como tal**: `punchi-fluid-file::recent` guarda como mucho
+  diez rutas, rechaza una ruta vacía, de más de 4096 bytes o con un NUL, mueve al frente la
+  que se repite en vez de duplicarla y escribe con archivo temporal y renombrado. Un archivo
+  futuro se rechaza y una clave desconocida también.
+- **Solo se ofrecen los que se pueden abrir**: al leer, y al abrir desde la lista, se
+  descartan las entradas cuyo archivo ya no está. Una lista de rutas muertas es ruido en el
+  menú; el archivo que existe pero no se puede leer se conserva, porque eso puede arreglarlo
+  el usuario.
+- **El core no elige el directorio**: la ventana le dice dónde vive la lista, con la ruta
+  que ya usa para la copia de seguridad. Sin esa ruta la lista no existe, que es lo que
+  quieren las pruebas y una sesión desechable.
+- **Probado en tres niveles**: cinco pruebas del formato (orden, tope, ida y vuelta con
+  archivos reales, poda de lo que falta, rutas imposibles), una del ABI que guarda dos
+  archivos, comprueba el orden, borra uno del disco, lo ve desaparecer de la lista y
+  reabre el otro en una sesión nueva, y diez pasos del `--selftest`.
+
 ### El documento avisa de lo que no está guardado — 2026-11-12
 
 Un simulador que cierra sin preguntar es un simulador que se lleva el trabajo del usuario, y

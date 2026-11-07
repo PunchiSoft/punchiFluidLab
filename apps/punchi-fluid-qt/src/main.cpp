@@ -522,6 +522,8 @@ int main(int argc, char *argv[])
             float routeOffset = 0.0F;
             /// A file the sheet is saved to, so a step that needs a clean document has one.
             QString unsavedPath;
+            /// The document the recent list is proved with.
+            QString recentDocument;
         };
         auto *state = new SelfTest();
         state->window = window;
@@ -1220,6 +1222,46 @@ int main(int argc, char *argv[])
             check(!state->session->modified(),
                   QStringLiteral("sin guardar: empezar de nuevo arranca limpio"));
             QFile::remove(state->unsavedPath);
+        });
+
+        // The documents that were saved are remembered, and one of them comes back from
+        // the list without walking the file dialog.
+        steps->push_back([state, check] {
+            state->session->forgetRecent();
+            check(state->session->recent().isEmpty(),
+                  QStringLiteral("recientes: la lista se vacía"));
+            state->recentDocument = QDir::tempPath()
+                + QStringLiteral("/punchi-reciente.pfluid");
+            state->session->saveTo(state->recentDocument);
+            const QVariantList list = state->session->recent();
+            check(list.size() == 1,
+                  QStringLiteral("recientes: guardar apunta el archivo"));
+            const QVariantMap entry = list.value(0).toMap();
+            check(entry.value(QStringLiteral("path")).toString() == state->recentDocument,
+                  QStringLiteral("recientes: con su ruta completa"));
+            check(entry.value(QStringLiteral("name")).toString()
+                      == QStringLiteral("punchi-reciente.pfluid"),
+                  QStringLiteral("recientes: y con su nombre para el menú"));
+        });
+        steps->push_back([state, check] {
+            const int before = state->session->componentCount();
+            state->session->newDocument();
+            check(state->session->openRecent(0),
+                  QStringLiteral("recientes: se abre desde la lista"));
+            check(before > 0 && state->session->componentCount() == before,
+                  QStringLiteral("recientes: vuelve el circuito entero"));
+            check(state->session->currentPath() == state->recentDocument,
+                  QStringLiteral("recientes: el archivo abierto es el de la lista"));
+            // A file that is gone is dropped instead of left in the menu, because the list
+            // promises documents that can be opened.
+            QFile::remove(state->recentDocument);
+            check(!state->session->openRecent(0),
+                  QStringLiteral("recientes: abrir uno que ya no está falla"));
+            check(state->session->recent().isEmpty(),
+                  QStringLiteral("recientes: y se olvida de la lista"));
+            state->session->forgetRecent();
+            check(state->session->recent().isEmpty(),
+                  QStringLiteral("recientes: olvidar deja la lista vacía"));
         });
 
         // Saving and opening a sheet: the file has to carry the placements, the pipes,

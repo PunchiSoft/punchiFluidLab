@@ -58,6 +58,7 @@ class FluidSession : public QObject
     Q_PROPERTY(QString title READ title NOTIFY documentChanged)
     Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
     Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
+    Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
@@ -124,6 +125,12 @@ public:
     Q_INVOKABLE bool openFrom(const QString &path);
     /// Saves to the current file. `false` when there is none yet.
     Q_INVOKABLE bool saveCurrent();
+    /// The documents opened or saved recently, newest first: `path` and `name`.
+    QVariantList recent() const { return m_recent; }
+    /// Opens one of them by its place in the list.
+    Q_INVOKABLE bool openRecent(int slot);
+    /// Forgets every remembered document.
+    Q_INVOKABLE void forgetRecent();
     /// Starts a new document and forgets the current file.
     Q_INVOKABLE void newDocument();
 
@@ -310,6 +317,7 @@ signals:
     void changed();
     void viewChanged();
     void documentChanged();
+    void recentChanged();
     void modeChanged();
     void inspectorChanged();
     void catalogChanged();
@@ -343,6 +351,10 @@ private:
     void refreshDocument();
     /// Where the safety copy lives: one file per user, beside the application data.
     QString autosavePath() const;
+    /// Where the list of remembered documents lives, beside the safety copy.
+    QString recentPath() const;
+    /// Re-reads the list from the core into what the ribbon shows.
+    void refreshRecent();
     /// Writes the safety copy and announces whether one exists.
     void writeAutosave();
     /// Republishes the selection alone: marking is not a change to the document.
@@ -357,6 +369,7 @@ private:
     bool m_modified = false;
     bool m_recoveryOffered = false;
     bool m_closeConfirmed = false;
+    QVariantList m_recent;
     bool m_valveSpringReturn = true;
     /// The program starts in edit mode, as the reference does: nothing moves and a click on
     /// a valve selects it. Simulation is entered deliberately, with Iniciar or Pausa.

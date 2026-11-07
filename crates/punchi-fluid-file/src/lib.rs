@@ -10,6 +10,7 @@
 //! deliberately separate from [`punchi_fluid_core`]: the domain can evolve
 //! without breaking files a user already has.
 
+pub mod recent;
 pub mod sheet;
 
 use punchi_fluid_core::{Circuit, Component, ComponentKind, PortId};
