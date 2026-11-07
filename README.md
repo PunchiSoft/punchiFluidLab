@@ -2,12 +2,24 @@
 
 **English** | [Español](README.es.md)
 
+[![CI](https://github.com/PunchiSoft/punchiFluidLab/actions/workflows/ci.yml/badge.svg)](https://github.com/PunchiSoft/punchiFluidLab/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Status: under construction](https://img.shields.io/badge/status-under%20construction-orange.svg)](#)
+
 > 🚧 **Under construction.** This is a working prototype, not a finished product. It is
 > built by one person in the free days left by a full-time job, so it moves steadily but
 > slowly, and **no delivery date is promised**: when a capability in
 > [docs/capabilities.md](docs/capabilities.md) says `missing` or `partial`, that is exactly
 > what it means. If something is not there, it says so; if it is half done, it says which
 > half is missing.
+
+![The Punchi Fluid Lab window on a dark desktop: the ribbon with the edit commands, the catalog of components on the left, a 3/2 valve in its rest position feeding a single-acting cylinder on the sheet, and the status bar reading 0,00 bar, 0,0 mm and 0,0 mm/s](assets/screenshots/window-dark.png)
+
+*The window as it is today: ribbon, catalog, sheet and status bar, with the desktop's own
+dark palette. The circuit is a 3/2 valve in its rest position feeding a single-acting
+cylinder; nothing is running, so the hoses keep the neutral ink and the status bar reads
+`0,00 bar`. The interface is Spanish today — [i18n/README.md](i18n/README.md) is the plan for
+the other languages.*
 
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model
@@ -236,6 +248,16 @@ Milestones, acceptance criteria and the evidence each one needs live in
 | [packaging/README.md](packaging/README.md) | how a release will be packaged |
 | [i18n/README.md](i18n/README.md) | translation plan |
 | [assets/symbols/README.md](assets/symbols/README.md) | symbol set and its licence |
+| [assets/screenshots/README.md](assets/screenshots/README.md) | the captures used by this file, and their rules |
+
+## Made with love, for the community
+
+Free software is why a student in a workshop with no budget learns this subject on the same
+kind of tool a company uses. The code is yours: read it, teach with it, fork it, and send
+back what you fix. The project does not ask for an account, a key or a connection, and it
+never will.
+
+**Linux for everyone.**
 
 ## AI-assisted development
 

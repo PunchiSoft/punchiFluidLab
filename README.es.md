@@ -2,12 +2,24 @@
 
 [English](README.md) | **Español**
 
+[![CI](https://github.com/PunchiSoft/punchiFluidLab/actions/workflows/ci.yml/badge.svg)](https://github.com/PunchiSoft/punchiFluidLab/actions/workflows/ci.yml)
+[![Licencia: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Estado: en construcción](https://img.shields.io/badge/estado-en%20construcci%C3%B3n-orange.svg)](#)
+
 > 🚧 **En construcción.** Esto es un prototipo que funciona, no un producto terminado.
 > Lo construye una sola persona en los días libres que le deja su trabajo principal, así
 > que avanza con constancia pero despacio, y **no hay fecha de entrega**: cuando una
 > capacidad de [docs/capabilities.md](docs/capabilities.md) dice `missing` o `partial`, es
 > exactamente eso, todavía no está. Si algo no existe, se dice; si está a medias, se dice
 > qué parte falta.
+
+![La ventana de Punchi Fluid Lab en un escritorio oscuro: la cinta con los comandos de edición, el catálogo de componentes a la izquierda, una válvula 3/2 en reposo alimentando un cilindro de simple efecto sobre la hoja, y la barra de estado con 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-dark.png)
+
+*La ventana tal como está hoy: cinta, catálogo, hoja y barra de estado, con la paleta oscura
+del escritorio. El circuito es una válvula 3/2 en reposo alimentando un cilindro de simple
+efecto; no hay nada en marcha, así que los tubos conservan la tinta neutra y la barra de
+estado marca `0,00 bar`. La interfaz está en español — [i18n/README.md](i18n/README.md) es el
+plan para los demás idiomas.*
 
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
 licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
@@ -241,6 +253,16 @@ Los hitos, sus criterios de aceptación y la evidencia que exige cada uno están
 | [packaging/README.md](packaging/README.md) | cómo se empaquetará una versión |
 | [i18n/README.md](i18n/README.md) | plan de traducciones |
 | [assets/symbols/README.md](assets/symbols/README.md) | set de símbolos y su licencia |
+| [assets/screenshots/README.md](assets/screenshots/README.md) | las capturas que usa este archivo y sus reglas |
+
+## Hecho con cariño, para la comunidad
+
+El software libre es la razón por la que un estudiante de un taller sin presupuesto aprende
+esta materia con la misma clase de herramienta que usa una empresa. El código es tuyo:
+léelo, enseña con él, haz tu fork y devuelve lo que arregles. El proyecto no pide cuenta,
+clave ni conexión, y nunca lo hará.
+
+**¡Linux para todos!**
 
 ## Desarrollo asistido por IA
 
