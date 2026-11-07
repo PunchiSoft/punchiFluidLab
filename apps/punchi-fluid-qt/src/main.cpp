@@ -1135,6 +1135,18 @@ int main(int argc, char *argv[])
             if (!found) {
                 return;
             }
+            // Drag from the port nearest the drop rather than from the cylinder's: at a narrow
+            // viewport the far end of the sheet can sit outside the canvas, and a press that
+            // lands on nothing is a drag that never starts. The gesture is the same one — a hose
+            // end released on a hose — and it now begins somewhere the window can see.
+            int nearIndex = -1;
+            QString nearPort;
+            if (state->session->portAt(onPipe.x(), onPipe.y(), 1.0e6F, &nearIndex, &nearPort)) {
+                QPointF at;
+                if (state->session->portPoint(nearIndex, nearPort, &at)) {
+                    start = at;
+                }
+            }
             std::fprintf(stderr, "selftest: tubo bajo (%.0f, %.0f)\n", onPipe.x(), onPipe.y());
             state->toScene = toScene(onPipe);
             // Press, drag and release in one step. Three steps of a timer each is three chances
