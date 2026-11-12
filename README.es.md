@@ -92,15 +92,17 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 
 ```bash
 ./scripts-dev/run.sh                                    # ventana; compila solo si hace falta
-./scripts-dev/run.sh --demo                             # arranca accionada y en marcha
-./scripts-dev/run.sh --no-build --dark                  # binario ya compilado, sin compilar
-./scripts-dev/run.sh --light                            # fija la paleta para una captura
-cargo run --bin punchi-fluid-cli -- validate circuito.pfluid
+./scripts-dev/run.sh --toggle                           # arranca con la válvula accionada
+./scripts-dev/run.sh --no-build --theme dark            # binario ya compilado, paleta oscura
+./scripts-dev/run.sh --theme light                      # fija la paleta para una captura
+cargo run --bin punchi-fluid-cli -- check circuito.pfluid   # comprobación sin ventana
 ```
 
 `run.sh` compila solo cuando cambió un fuente y después ejecuta el binario directamente;
-`--no-build` no invoca Cargo. `PUNCHI_FLUID_THEME=light|dark` fija la paleta; si no,
-la ventana sigue al escritorio.
+`--no-build` no invoca Cargo, y `--theme light|dark` se pasa a la ventana. Sin `--theme`,
+la ventana sigue al escritorio. `--toggle` acciona la válvula; no arranca la simulación.
+`check` lee el formato de hoja que guarda el editor; `validate` y `simulate` todavía leen el
+formato de circuito antiguo, como explica [la referencia de la CLI](docs/reference/cli.md).
 
 En la ventana el transporte ejecuta el modelo: **Iniciar** (F9) arranca, **Pausa** (F8)
 pausa, **Paso** (F10) avanza un cuadro, **Hasta cambio** se detiene en el primer tope o
