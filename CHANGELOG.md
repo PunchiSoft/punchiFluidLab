@@ -6,6 +6,31 @@ publicación.
 
 ## Unreleased
 
+### El CI no repite Rust en un cambio de documentación — 2026-11-12
+
+Un PR que solo tocaba `docs/` compilaba, pasaba clippy y ejecutaba las 244 pruebas. La
+referencia de PunchiDock Quickshell resolvía esto con `paths-ignore` y un `docs.yml` aparte;
+allí funcionaba porque `main` no estaba protegido. Aquí sí lo está, y un workflow saltado
+por rutas deja sus checks en `Pending` y bloquea el merge, así que el patrón se adapta:
+
+- **`changes`** clasifica el diff con `scripts-dev/changed-paths.sh`; el workflow se ejecuta
+  siempre. La lista blanca es documentación, archivos comunitarios, capturas y guías de
+  autoría; todo lo demás es código. El catálogo TOML, los sonidos y las revisiones de
+  símbolos son código porque se compilan o los observan pruebas.
+- **`check` siempre reporta**: un cambio de documentación corre `check-docs.sh` (índice,
+  enlaces, ADR, crates y etiquetas); un cambio de código corre `check.sh` completo.
+- **`window` y `minimum supported Rust version`** se saltan en un cambio de documentación.
+  Un job que se ejecuta y se salta reporta éxito, que es lo que acepta la protección de
+  `main`; un workflow saltado por rutas no reporta y bloquea.
+- **`scripts-dev/test-changed-paths.sh`** prueba el clasificador dentro de `check.sh`; una
+  respuesta `docs` equivocada saltaría pruebas que sí pueden observar el cambio.
+- `docs/engineering.md`, `CONTRIBUTING.md` y `AGENTS.md` explican la regla. El empuje a
+  `main` y el release siguen corriendo la puerta completa.
+
+Validado con las pruebas del clasificador, la puerta completa y el YAML del workflow. La
+rama de CI es un cambio de código, así que este PR corre todo; el camino de documentación
+se confirma en el siguiente PR que solo toque `docs/`, como se hizo en la referencia.
+
 ### Guías para usar el programa — 2026-11-12
 
 La referencia explicaba qué es cada cosa; faltaba el camino para hacerla. Un lector nuevo
