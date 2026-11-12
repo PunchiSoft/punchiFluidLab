@@ -33,7 +33,7 @@ small and a deep tree makes a link harder to write, not easier to find.
 |---|---|---|
 | Tutorial | Teach by doing, for a reader who has never used the program | planned: `guides/first-circuit.md` |
 | How-to | Solve one task | planned: `guides/export-a-drawing.md`, `guides/troubleshooting.md` |
-| Reference | Describe a format, a command, a field or a unit | [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md), planned `reference/sheet-format.md`, `reference/cli.md` |
+| Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
 | Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
 | Decision | Record one choice and its consequences | [adr/](adr/README.md) |
@@ -61,6 +61,9 @@ A document that is not simply current carries a status line under its title:
 | [ui-ux.md](ui-ux.md) | explanation | target | The interface: regions, theme, accessibility, what is still open |
 | [symbology.md](symbology.md) | explanation | current | The ISO 1219 contract, the renderer guarantees and the review checklist |
 | [engineering.md](engineering.md) | explanation | current | Modularisation, memory budget, security model and GitHub practice |
+| [reference/sheet-format.md](reference/sheet-format.md) | reference | current | The `.pfluid` format: fields, bounds, versions and migrations |
+| [reference/cli.md](reference/cli.md) | reference | current | `check`, `validate` and `simulate`: formats, exit codes and the JSON contract |
+| [reference/catalog.md](reference/catalog.md) | reference | current | The catalog at a glance, with the authoring guide as the canonical reference |
 | [glossary.md](glossary.md) | reference | current | The vocabulary of the project, in English with the Spanish interface word |
 | [style.md](style.md) | process | current | How a document is written, linked, dated and proven |
 | [adr/README.md](adr/README.md) | decision | current | The index of architecture decisions, with status and date |
@@ -81,11 +84,6 @@ A document that is not simply current carries a status line under its title:
 These are named so the plan is visible; they are not links because a link to a file the
 repository does not have is a defect.
 
-- `reference/sheet-format.md` — the `.pfluid` format, field by field, with its versions
-  and migrations.
-- `reference/cli.md` — `validate`, `simulate` and `check`, with their exit codes and the
-  JSON contract.
-- `reference/catalog.md` — the catalog schema, with a link to the authoring guide.
 - `guides/first-circuit.md` — draw, connect, run, save.
 - `guides/export-a-drawing.md` — paper, orientation, PNG and PDF.
 - `guides/troubleshooting.md` — a catalog file that is ignored, a broken sheet, a slow

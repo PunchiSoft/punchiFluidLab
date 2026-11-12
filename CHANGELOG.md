@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### La referencia que el código ya tenía — 2026-11-12
+
+El formato de hoja, la CLI y el catálogo se podían leer en el código y en el ADR, pero no
+tenían una página de referencia. La consecuencia era un README que mandaba `validate` sobre
+un `.pfluid`, y `validate` no lee hojas: lee el formato de circuito antiguo.
+
+- **`docs/reference/sheet-format.md`**: el `.pfluid` versión 3 — versión, límites, campos de
+  una colocación y de un tubo, ejemplo completo, qué no guarda y cómo se migra.
+- **`docs/reference/cli.md`**: qué comando lee qué formato, códigos de salida, las seis
+  faltas que la comprobación conoce, el contrato JSON con versión y un ejemplo de error.
+  `check` lee la hoja; `validate` y `simulate` siguen en el formato antiguo.
+- **`docs/reference/catalog.md`**: el mapa del catálogo — carpetas, campos, roles de puerto,
+  comportamientos y lo que el cargador rechaza— con la guía de autoría como referencia
+  canónica.
+- **El README y README.es corrigen sus ejemplos**: usan `check` sobre la hoja y explican que
+  `validate`/`simulate` son el camino antiguo; `run.sh` usa `--toggle` y
+  `--theme light|dark` (no `--demo`, `--dark` ni `PUNCHI_FLUID_THEME`, que no existen) y
+  aclara que `--toggle` no arranca la simulación. El índice lista las tres páginas y la
+  lista de pendientes se acorta.
+
+No cambia el comportamiento ni el formato: documenta el que ya existe.
+
 ### Una arquitectura documental, no una carpeta de archivos — 2026-11-12
 
 La documentación tenía buenos documentos sueltos y ningún índice que dijera cuál era

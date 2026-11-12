@@ -92,15 +92,17 @@ the point. Free software is how a subject stops being an entrance fee.
 
 ```bash
 ./scripts-dev/run.sh                                    # window; builds only if stale
-./scripts-dev/run.sh --demo                             # starts actuated and playing
-./scripts-dev/run.sh --no-build --dark                  # already-built binary, no compile
-./scripts-dev/run.sh --light                            # pin the palette for a screenshot
-cargo run --bin punchi-fluid-cli -- validate circuit.pfluid # headless check
+./scripts-dev/run.sh --toggle                           # starts with the valve actuated
+./scripts-dev/run.sh --no-build --theme dark            # already-built binary, dark palette
+./scripts-dev/run.sh --theme light                      # pin the palette for a screenshot
+cargo run --bin punchi-fluid-cli -- check circuit.pfluid   # headless check of a sheet
 ```
 
 `run.sh` compiles only when a source changed and then executes the binary directly;
-`--no-build` never invokes Cargo. `PUNCHI_FLUID_THEME=light|dark` pins the palette,
-otherwise the window follows the desktop.
+`--no-build` never invokes Cargo, and `--theme light|dark` is passed to the window. Without
+`--theme`, the window follows the desktop. `--toggle` actuates the valve; it does not start
+the simulation. `check` reads the sheet format the editor saves; `validate` and `simulate`
+still read the legacy circuit format, as [the CLI reference](docs/reference/cli.md) explains.
 
 In the window the transport runs the model: **Iniciar** (F9) starts, **Pausa** (F8) pauses,
 **Paso** (F10) advances one frame, **Hasta cambio** stops at the first end stop or valve
