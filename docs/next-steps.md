@@ -31,6 +31,7 @@ file is the execution order.
 | Recent documents and the unsaved-work warning | **implemented** — [capabilities.md](capabilities.md) F4 | format and ABI tests, `--selftest` |
 | Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v3 with a migration test |
 | Flow meter | **implemented** — [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver test against the hand calculation, the ABI reading drawn on the sheet, `--selftest`, symbol review |
+| Strip chart | **implemented** — [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md) | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
 
 The repository is initialised and the baseline is committed; `main` carries the Qt
 front end, and since 2026-11-12 nothing is committed there: every change travels on a
@@ -55,7 +56,7 @@ changed lines outside generated files, it is two phases.
 | **P1.7 — print what is drawn** ✅ delivered | `feat/export-from-the-window` | the ABI builds the printed page from the document in print ink, Archivo gained Exportar PNG and PDF, the Hoja group chooses the paper and landscape, the date comes from the caller and the drawing is fitted to the page with its scale recorded | an export test that finds a named cylinder in the output, `--export` headless, `--selftest`, the gate's PDF and Oficio PNG smoke test |
 | **P1.8 — a project of circuits** ✅ delivered | `feat/circuits` | several circuits in one document with a selector, per [ADR 0013](adr/0013-a-project-is-one-document.md); the reference's ninth fault becomes a pipe that joins two circuits | format migration tests, ABI add/select/save/open test, the ninth fault, `--selftest` |
 | **P2.1 — the flow meter** ✅ delivered | `feat/flow-meter` | a meter in the line that reads the gas through it in normal litres per minute, per [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver, ABI and drawing tests, the `--selftest` steps, the symbol review |
-| **P2.2 — the force meter and the strip chart** | `feat/force-meter-and-chart` | the force meter and a strip chart that records a reading over 60 s with a bounded buffer | one test per instrument, an ABI reading, the chart's sample bound, symbol review |
+| **P2.2 — the strip chart** ✅ delivered | `feat/strip-chart` | a recorder component that charts a chosen quantity over 60 s with a bounded window, per [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md); the force meter is `not planned` until a mechanical domain exists | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |

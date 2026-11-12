@@ -97,6 +97,13 @@ and must never need a tab switch.
 designation is text, not a number: it is the field that ends up under the symbol and in the
 parts list, so the form sends it verbatim and the core trims and bounds it.
 
+**A recorder picks its source from the panel.** When the inspected component is one, the
+panel lists the quantities the circuit can report — pressure at a port, flow through a
+meter, position of a cylinder — with the bound one marked, and one click binds or unbinds
+it. The list comes from the core, so the panel cannot offer a source the model cannot
+read, and the choice is one undoable edit. State is never colour-only: the marked row also
+carries the word "en pantalla".
+
 **One confirmation, and only when it can lose work.** The sheet offers a safety copy when
 one is waiting from a previous run, and stops once before Nuevo, Abrir or closing discards
 unsaved work. Both are panels beside the sheet, not modal windows, and neither appears on

@@ -46,7 +46,9 @@ use punchi_fluid_check::check;
 /// hit and selected, not to take up room on the sheet.
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
-use punchi_fluid_doc::{Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Turn};
+use punchi_fluid_doc::{
+    Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
+};
 use punchi_fluid_draw::placed::{
     Pipe, PipeEnd, Placed, Reading, draw_placed, port_point, route_offset,
 };
@@ -269,6 +271,23 @@ pub struct PfFrame {
     pub height_mm: f32,
 }
 
+/// One quantity a recorder can chart, and the placement it belongs to.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PfChartSource {
+    /// Identity of the placement being observed.
+    pub placement: u32,
+    /// `PF_QUANTITY_PRESSURE`, `PF_QUANTITY_FLOW` or `PF_QUANTITY_POSITION`.
+    pub quantity: u32,
+}
+
+/// Gauge pressure of a port, `bar`.
+pub const PF_QUANTITY_PRESSURE: u32 = 0;
+/// Flow through a meter, normal litres per minute.
+pub const PF_QUANTITY_FLOW: u32 = 1;
+/// Extension of a cylinder, millimetres.
+pub const PF_QUANTITY_POSITION: u32 = 2;
+
 /// One catalog entry: a component the sidebar shows, by its own symbol.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -318,7 +337,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 3;
+pub const PF_ABI_VERSION: u32 = 4;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -538,6 +557,9 @@ pub struct PfSession {
     preview_calls: Vec<PfCall>,
     preview_points: Vec<PfPoint>,
     preview_text: Vec<u8>,
+    /// Samples of every bound recorder, by placement identity. A run artefact: the
+    /// document stores the source, never the samples (ADR 0015).
+    charts: std::collections::HashMap<u64, Chart>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -547,6 +569,51 @@ impl std::fmt::Debug for PfSession {
             .field("has_model", &self.system.is_some())
             .field("calls", &self.calls.len())
             .finish_non_exhaustive()
+    }
+}
+
+/// The bounded window of samples one recorder keeps.
+#[derive(Debug, Clone)]
+struct Chart {
+    /// Most samples kept, from the file's window and rate.
+    capacity: usize,
+    /// Seconds between samples.
+    interval: f64,
+    /// Simulation time at which the next sample is due.
+    next_s: f64,
+    /// Samples, oldest first, in the source's own unit.
+    values: Vec<f32>,
+}
+
+impl Chart {
+    /// A ring that keeps at most `capacity` samples, one every `interval` seconds.
+    fn new(capacity: usize, interval: f64) -> Self {
+        Self {
+            capacity: capacity.max(2),
+            interval: interval.max(f64::MIN_POSITIVE),
+            next_s: 0.0,
+            values: Vec::with_capacity(capacity.max(2)),
+        }
+    }
+
+    /// Adds one sample, dropping the oldest when the window is full.
+    fn push(&mut self, value: f32) {
+        if self.values.len() >= self.capacity {
+            self.values.remove(0);
+        }
+        self.values.push(value);
+    }
+
+    /// Lowest and highest sample in the window, or `None` when it is empty.
+    fn span(&self) -> Option<(f32, f32)> {
+        let first = *self.values.first()?;
+        let mut min = first;
+        let mut max = first;
+        for value in &self.values {
+            min = min.min(*value);
+            max = max.max(*value);
+        }
+        Some((min, max))
     }
 }
 
@@ -584,6 +651,7 @@ impl PfSession {
             preview_calls: Vec::new(),
             preview_points: Vec::new(),
             preview_text: Vec::new(),
+            charts: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -713,13 +781,62 @@ impl PfSession {
     }
 
     fn advance(&mut self, dt: f64) -> i32 {
-        let Some(system) = self.system.as_mut() else {
-            return self.fail("no model is loaded");
+        // The borrow of the model ends before the recorders are sampled: they read the
+        // same network through `self`, and holding one mutable borrow across both would
+        // be two borrows of one field.
+        let stepped = match self.system.as_mut() {
+            Some(system) => system
+                .advance(dt)
+                .map(|_| ())
+                .map_err(|cause| cause.to_string()),
+            None => return self.fail("no model is loaded"),
         };
-        match system.advance(dt) {
-            Ok(_) => PF_OK,
-            Err(cause) => self.fail(&cause.to_string()),
+        match stepped {
+            Ok(()) => {
+                self.sample_charts();
+                PF_OK
+            }
+            Err(cause) => self.fail(&cause),
         }
+    }
+
+    /// The quantities a definition can report, in the order the interface lists them.
+    fn quantities_of(
+        definition: &punchi_fluid_catalog::ComponentDefinition,
+    ) -> &'static [Quantity] {
+        const PRESSURE: [Quantity; 1] = [Quantity::Pressure];
+        const PRESSURE_FLOW: [Quantity; 2] = [Quantity::Pressure, Quantity::Flow];
+        const PRESSURE_POSITION: [Quantity; 2] = [Quantity::Pressure, Quantity::Position];
+        match definition.behaviour {
+            punchi_fluid_catalog::Behaviour::FlowMeter { .. } => &PRESSURE_FLOW,
+            punchi_fluid_catalog::Behaviour::Cylinder { .. } => &PRESSURE_POSITION,
+            _ if !definition.port.is_empty() => &PRESSURE,
+            _ => &[],
+        }
+    }
+
+    /// The placements, and the quantities of each, a recorder in `circuit` can chart.
+    ///
+    /// The recorder itself is left out: it observes, it does not report.
+    fn chart_candidates(&self, recorder: usize, circuit: u32) -> Vec<PfChartSource> {
+        let mut candidates = Vec::new();
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            if index == recorder || placement.circuit != circuit {
+                continue;
+            }
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            #[allow(clippy::cast_possible_truncation)]
+            let placement_id = placement.id() as u32;
+            for quantity in Self::quantities_of(definition) {
+                candidates.push(PfChartSource {
+                    placement: placement_id,
+                    quantity: quantity_index(*quantity),
+                });
+            }
+        }
+        candidates
     }
 
     /// The valve's definition as text, for the edit panel.
@@ -857,6 +974,109 @@ impl PfSession {
                 self.error = cstring(&cause.to_string());
             }
         }
+        self.ensure_charts();
+    }
+
+    /// Builds the sample ring of every bound recorder, keeping what a rebuild can keep.
+    ///
+    /// Called after an edit, not per frame: a source that did not change keeps its window,
+    /// a recorder that was unbound or rebound starts empty, because its old samples belong
+    /// to a quantity nobody is looking at any more.
+    fn ensure_charts(&mut self) {
+        let mut charts = std::collections::HashMap::with_capacity(self.charts.len());
+        for placement in self.document.placements() {
+            let Some(source) = placement.source else {
+                continue;
+            };
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            let punchi_fluid_catalog::Behaviour::Recorder { span_s, rate_hz } =
+                definition.behaviour
+            else {
+                continue;
+            };
+            // The catalog bounded the product already; the cast is inside `usize` by
+            // construction and the clamp keeps the ring usable even for a hand-made file.
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let capacity = ((span_s * rate_hz).round() as usize).clamp(2, 30_000);
+            let interval = 1.0 / rate_hz.max(f64::MIN_POSITIVE);
+            let existing = self.charts.remove(&placement.id());
+            let mut chart = existing.unwrap_or_else(|| Chart::new(capacity, interval));
+            chart.capacity = capacity;
+            chart.interval = interval;
+            if chart.values.len() > capacity {
+                let extra = chart.values.len() - capacity;
+                chart.values.drain(..extra);
+            }
+            let _ = source;
+            charts.insert(placement.id(), chart);
+        }
+        self.charts = charts;
+    }
+
+    /// The value one recorder charts right now, in the source's own unit.
+    fn chart_value(&self, recorder: u64) -> Option<f32> {
+        let placement = self
+            .document
+            .placements()
+            .iter()
+            .find(|placement| placement.id() == recorder)?;
+        let source = placement.source?;
+        let index = self.document.index_of(source.placement)?;
+        let target = self.document.placements().get(index)?;
+        let definition = self.catalog.get(&target.catalog_id)?;
+        let part = self.placement_part.get(index).copied().flatten()?;
+        let network = self.system.as_ref()?;
+        match source.quantity {
+            punchi_fluid_doc::Quantity::Pressure => {
+                let tap = definition.port.first()?;
+                let pressure = network.port_pressure(part, &tap.id)?;
+                #[allow(clippy::cast_possible_truncation)]
+                let reading = ((pressure - network.atmosphere_pa()) / 1e5) as f32;
+                Some(reading)
+            }
+            punchi_fluid_doc::Quantity::Flow => {
+                #[allow(clippy::cast_possible_truncation)]
+                let reading = network.part_flow_l_min(part)? as f32;
+                Some(reading)
+            }
+            punchi_fluid_doc::Quantity::Position => {
+                let punchi_fluid_catalog::Behaviour::Cylinder { stroke_mm, .. } =
+                    definition.behaviour
+                else {
+                    return None;
+                };
+                #[allow(clippy::cast_possible_truncation)]
+                let reading = (network.extension_of(part)? * stroke_mm) as f32;
+                Some(reading)
+            }
+        }
+    }
+
+    /// Takes one sample for every recorder whose next sample is due.
+    ///
+    /// The map is moved out of `self` so the value can be read from the model without
+    /// holding two borrows; nothing is allocated here, which is what keeps the advance
+    /// step free of allocations.
+    fn sample_charts(&mut self) {
+        if self.charts.is_empty() {
+            return;
+        }
+        let Some(now) = self.system.as_ref().map(Network::time) else {
+            return;
+        };
+        let mut charts = std::mem::take(&mut self.charts);
+        for (id, chart) in &mut charts {
+            if now + f64::EPSILON < chart.next_s {
+                continue;
+            }
+            if let Some(value) = self.chart_value(*id) {
+                chart.push(value);
+                chart.next_s = now + chart.interval;
+            }
+        }
+        self.charts = charts;
     }
 
     fn build_frame(&mut self, width_mm: f32, height_mm: f32, scale: f32) {
@@ -880,11 +1100,19 @@ impl PfSession {
             scale,
             selected,
             selected_pipe,
+            charts,
             ..
         } = self;
 
         let circuit = document.active_circuit();
-        let (placed, pipes) = scene(document, catalog, system.as_ref(), placement_part, circuit);
+        let (placed, pipes) = scene(
+            document,
+            catalog,
+            system.as_ref(),
+            placement_part,
+            circuit,
+            charts,
+        );
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
         *layout = layout_of(&placed);
@@ -944,6 +1172,12 @@ impl PfSession {
                     quarter_turns: placement.orientation.quarter_turns(),
                     mirrored: placement.orientation.mirrored(),
                     designation: placement.designation.clone(),
+                    source: placement
+                        .source
+                        .map(|source| punchi_fluid_file::sheet::StoredSource {
+                            placement: source.placement,
+                            quantity: source.quantity.as_str().to_owned(),
+                        }),
                 }
             })
             .collect();
@@ -1004,6 +1238,10 @@ impl PfSession {
                     };
                 }
                 placement.orientation = Orientation::new(stored.quarter_turns, stored.mirrored);
+                placement.source = stored.source.as_ref().and_then(|source| {
+                    let quantity = punchi_fluid_doc::Quantity::from_name(&source.quantity)?;
+                    Some(punchi_fluid_doc::Source::new(source.placement, quantity))
+                });
                 placement.designation.clone_from(&stored.designation);
                 placement
             })
@@ -1282,6 +1520,25 @@ impl PfSession {
 
 fn cstring(message: &str) -> CString {
     CString::new(message.replace('\0', " ")).unwrap_or_default()
+}
+
+/// The ABI number of a quantity.
+fn quantity_index(quantity: Quantity) -> u32 {
+    match quantity {
+        Quantity::Pressure => PF_QUANTITY_PRESSURE,
+        Quantity::Flow => PF_QUANTITY_FLOW,
+        Quantity::Position => PF_QUANTITY_POSITION,
+    }
+}
+
+/// The quantity an ABI number stands for, or `None` when the number is not one.
+fn quantity_from_index(index: u32) -> Option<Quantity> {
+    match index {
+        PF_QUANTITY_PRESSURE => Some(Quantity::Pressure),
+        PF_QUANTITY_FLOW => Some(Quantity::Flow),
+        PF_QUANTITY_POSITION => Some(Quantity::Position),
+        _ => None,
+    }
 }
 
 /// A caller-supplied circuit title, trimmed and bounded, or `None` when it is unusable.
@@ -1810,6 +2067,10 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             let _ = writeln!(text, "Escala: 0 … {nominal_l_min:.0} l/min");
             let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
             text.push_str("Lee el caudal que lo atraviesa\n");
+        }
+        Behaviour::Recorder { span_s, rate_hz } => {
+            let _ = writeln!(text, "Ventana: {span_s:.0} s a {rate_hz:.0} muestras/s");
+            text.push_str("Elige qué registra en la lista de fuentes\n");
         }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
@@ -2534,6 +2795,7 @@ pub unsafe extern "C" fn pf_session_export(
             session.system.as_ref(),
             &session.placement_part,
             circuit,
+            &session.charts,
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(
             &placed,
@@ -3138,6 +3400,310 @@ pub unsafe extern "C" fn pf_session_component_designation(
     })
 }
 
+/// How many sources a recorder can chart, in the circuit of the recorder.
+///
+/// Every placement that reports at least one quantity is a candidate, with one entry per
+/// quantity it reports: pressure at its first port, flow through a meter, extension of a
+/// cylinder. A recorder observes, so it is never a candidate for itself.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_chart_candidate_count(
+    session: *const PfSession,
+    index: u32,
+) -> u32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return 0;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return 0;
+    };
+    let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+        return 0;
+    };
+    if !matches!(
+        definition.behaviour,
+        punchi_fluid_catalog::Behaviour::Recorder { .. }
+    ) {
+        return 0;
+    }
+    u32::try_from(
+        session
+            .chart_candidates(index as usize, placement.circuit)
+            .len(),
+    )
+    .unwrap_or(0)
+}
+
+/// One source a recorder can chart, by slot, in the order the interface lists it.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to a
+/// writable [`PfChartSource`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_chart_candidate(
+    session: *const PfSession,
+    index: u32,
+    slot: u32,
+    out: *mut PfChartSource,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(candidate) = session
+            .chart_candidates(index as usize, placement.circuit)
+            .get(slot as usize)
+            .copied()
+        else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised a writable record.
+        unsafe { out.write(candidate) };
+        PF_OK
+    })
+}
+
+/// The label of one chart source, in Spanish, as NUL-terminated UTF-8.
+///
+/// The label names the component — its designation when it has one — and the quantity, so
+/// the inspector lists "1A1 (Cilindro) · posición" instead of an identity it cannot read.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_chart_candidate_label(
+    session: *const PfSession,
+    index: u32,
+    slot: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(candidate) = session
+            .chart_candidates(index as usize, placement.circuit)
+            .get(slot as usize)
+            .copied()
+        else {
+            return PF_ERR_MODEL;
+        };
+        let Some(target_index) = session.document.index_of(u64::from(candidate.placement)) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(target) = session.document.placements().get(target_index) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&target.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        let quantity = match candidate.quantity {
+            PF_QUANTITY_PRESSURE => "presión",
+            PF_QUANTITY_FLOW => "caudal",
+            PF_QUANTITY_POSITION => "posición",
+            _ => return PF_ERR_MODEL,
+        };
+        let name = definition.display_name();
+        let label = match target.designation.as_deref() {
+            Some(designation) => format!("{designation} ({name}) · {quantity}"),
+            None => format!("{name} · {quantity}"),
+        };
+        let bytes = label.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Binds a recorder to a source, as one undoable edit.
+///
+/// The document refuses a source that is missing, is the recorder itself or lives in
+/// another circuit; this refuses a quantity the component cannot report, which only the
+/// catalog knows.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_chart_source(
+    session: *mut PfSession,
+    index: u32,
+    placement: u32,
+    quantity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(recorder) = session.document.placements().get(index as usize) else {
+            return session.fail("no such recorder");
+        };
+        let Some(definition) = session.catalog.get(&recorder.catalog_id) else {
+            return session.fail("the recorder has no definition");
+        };
+        if !matches!(
+            definition.behaviour,
+            punchi_fluid_catalog::Behaviour::Recorder { .. }
+        ) {
+            return session.fail("the placement is not a recorder");
+        }
+        let Some(quantity) = quantity_from_index(quantity) else {
+            return session.fail("no such quantity");
+        };
+        let Some(target) = session.document.index_of(u64::from(placement)) else {
+            return session.fail("the source component is not in the document");
+        };
+        let Some(target_definition) = session
+            .document
+            .placements()
+            .get(target)
+            .and_then(|placement| session.catalog.get(&placement.catalog_id))
+        else {
+            return session.fail("the source component has no definition");
+        };
+        if !PfSession::quantities_of(target_definition).contains(&quantity) {
+            return session.fail("that component does not report that quantity");
+        }
+        let source = punchi_fluid_doc::Source::new(u64::from(placement), quantity);
+        if !session.document.bind_source(index as usize, Some(source)) {
+            return session.fail("the source was refused");
+        }
+        // A new source is a new window: the old samples describe a quantity nobody is
+        // looking at any more.
+        let recorder_id = session.document.placements()[index as usize].id();
+        session.charts.remove(&recorder_id);
+        session.rebuild_model();
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Unbinds a recorder, as one undoable edit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_clear_chart_source(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return session.fail("no such recorder");
+        };
+        let id = placement.id();
+        if !session.document.bind_source(index as usize, None) {
+            return session.fail("the recorder is not bound");
+        }
+        session.charts.remove(&id);
+        session.rebuild_model();
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// The source of a recorder: `1` when it is bound, `0` when it is not, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or point to a
+/// writable [`PfChartSource`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_chart_source(
+    session: *const PfSession,
+    index: u32,
+    out: *mut PfChartSource,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(source) = placement.source else {
+            return 0;
+        };
+        #[allow(clippy::cast_possible_truncation)]
+        let record = PfChartSource {
+            placement: source.placement as u32,
+            quantity: quantity_index(source.quantity),
+        };
+        // SAFETY: the caller promised a writable record.
+        unsafe { out.write(record) };
+        1
+    })
+}
+
+/// The Spanish name of a quantity, for the inspector, as NUL-terminated UTF-8.
+///
+/// # Safety
+///
+/// `out` must be null or point to `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_chart_quantity_name(
+    quantity: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let name = match quantity {
+            PF_QUANTITY_PRESSURE => "presión",
+            PF_QUANTITY_FLOW => "caudal",
+            PF_QUANTITY_POSITION => "posición",
+            _ => return PF_ERR_MODEL,
+        };
+        let bytes = name.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
 /// Names one placement, or takes the name away with an empty string.
 ///
 /// The name is what the sheet draws under the symbol and what the parts list prints; an
@@ -3243,7 +3809,10 @@ pub unsafe extern "C" fn pf_session_component_edits(
                 set.stroke_mm = *stroke_mm;
                 set.moving_mass_kg = *moving_mass_kg;
             }
-            Behaviour::Gauge { .. } | Behaviour::FlowMeter { .. } | Behaviour::Junction => {}
+            Behaviour::Gauge { .. }
+            | Behaviour::FlowMeter { .. }
+            | Behaviour::Recorder { .. }
+            | Behaviour::Junction => {}
         }
         // SAFETY: the caller promised a writable structure.
         unsafe { out.write(set) };
@@ -3869,7 +4438,10 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
                 *moving_mass_kg = value;
             }
         }
-        Behaviour::Gauge { .. } | Behaviour::FlowMeter { .. } | Behaviour::Junction => {}
+        Behaviour::Gauge { .. }
+        | Behaviour::FlowMeter { .. }
+        | Behaviour::Recorder { .. }
+        | Behaviour::Junction => {}
     }
 }
 
@@ -3884,6 +4456,7 @@ fn scene<'a>(
     system: Option<&'a Network>,
     placement_part: &[Option<usize>],
     circuit: u32,
+    charts: &'a std::collections::HashMap<u64, Chart>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
@@ -3912,11 +4485,14 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.valve_position_at(part))
                 .unwrap_or(0),
-            reading: instrument_reading(
-                catalog.get(placement.catalog_id.as_str()),
-                placement_part.get(index).copied().flatten(),
-                system,
-            ),
+            reading: recorder_reading(placement, charts).or_else(|| {
+                instrument_reading(
+                    catalog.get(placement.catalog_id.as_str()),
+                    placement_part.get(index).copied().flatten(),
+                    system,
+                )
+            }),
+            series: chart_series(placement.id(), charts),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
         });
@@ -3978,6 +4554,41 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
         }),
         _ => None,
     }
+}
+
+/// What a bound recorder charts, as its newest sample and its unit.
+///
+/// `None` when the recorder is unbound or has not sampled yet: an empty chart is not a
+/// reading of zero.
+fn recorder_reading(
+    placement: &punchi_fluid_doc::Placement,
+    charts: &std::collections::HashMap<u64, Chart>,
+) -> Option<Reading> {
+    let source = placement.source?;
+    let chart = charts.get(&placement.id())?;
+    let value = *chart.values.last()?;
+    Some(match source.quantity {
+        punchi_fluid_doc::Quantity::Pressure => Reading::Pressure(value),
+        punchi_fluid_doc::Quantity::Flow => Reading::Flow(value),
+        punchi_fluid_doc::Quantity::Position => Reading::Position(value),
+    })
+}
+
+/// The window of samples of one recorder, when it has at least two points to draw.
+fn chart_series(
+    id: u64,
+    charts: &std::collections::HashMap<u64, Chart>,
+) -> Option<punchi_fluid_draw::placed::Series<'_>> {
+    let chart = charts.get(&id)?;
+    if chart.values.len() < 2 {
+        return None;
+    }
+    let (min, max) = chart.span()?;
+    Some(punchi_fluid_draw::placed::Series {
+        values: &chart.values,
+        min,
+        max,
+    })
 }
 
 /// What an instrument at this placement reads, in the unit its definition declares.
@@ -4518,4 +5129,36 @@ pub unsafe extern "C" fn pf_session_check(
         target[bytes.len()] = 0;
         i32::try_from(findings.len()).unwrap_or(PF_ERR_MODEL)
     })
+}
+
+#[cfg(test)]
+mod chart_tests {
+    use super::Chart;
+
+    #[test]
+    fn a_recorder_keeps_its_window_and_drops_the_oldest() {
+        // The window is what the file declares — sixty seconds at ten samples per second —
+        // and a sample that no longer fits takes the oldest with it. A buffer that grew
+        // would be a leak, and one that dropped the newest would hide what just happened.
+        let mut chart = Chart::new(600, 0.1);
+        for sample in 0..600 {
+            chart.push(sample as f32);
+        }
+        assert_eq!(chart.values.len(), 600);
+        assert_eq!(chart.values.first(), Some(&0.0));
+        assert_eq!(chart.values.last(), Some(&599.0));
+
+        chart.push(600.0);
+        assert_eq!(chart.values.len(), 600, "the window keeps its size");
+        assert_eq!(chart.values.first(), Some(&1.0), "the oldest sample goes");
+        assert_eq!(chart.values.last(), Some(&600.0), "the newest stays");
+
+        let (min, max) = chart.span().expect("a full window has a span");
+        assert!((min - 1.0).abs() < f32::EPSILON && (max - 600.0).abs() < f32::EPSILON);
+        assert_eq!(
+            Chart::new(0, 0.0).capacity,
+            2,
+            "an empty ring is still usable"
+        );
+    }
 }

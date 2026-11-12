@@ -70,6 +70,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "flow.meter",
         include_str!("../../../assets/symbols/review/flow.meter.md"),
     ),
+    (
+        "chart.recorder",
+        include_str!("../../../assets/symbols/review/chart.recorder.md"),
+    ),
 ];
 
 /// Review text of one definition.

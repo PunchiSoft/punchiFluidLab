@@ -211,6 +211,19 @@ conductance = 1.0e-9
 
 ```toml
 [behaviour]
+type = "recorder"
+span_s = 60.0                # window of the chart, 1 to 600 seconds
+rate_hz = 10.0               # samples per second, 1 to 50 (product bounded)
+```
+
+A recorder is the one component with **no ports**: it observes a quantity of another
+component instead of joining the circuit, and the placement stores which one
+(`source` in the sheet format). Its window and rate bound the samples the session keeps;
+the curve is the model's, never a primitive of the file
+([ADR 0015](../docs/adr/0015-a-recorder-samples-a-named-quantity.md)).
+
+```toml
+[behaviour]
 type = "junction"            # no fields: it adds nothing to the network
 ```
 

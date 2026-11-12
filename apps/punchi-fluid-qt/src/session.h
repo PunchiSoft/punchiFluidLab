@@ -51,6 +51,10 @@ class FluidSession : public QObject
     Q_PROPERTY(int checkCount READ checkCount NOTIFY inspectorChanged)
     Q_PROPERTY(QString inspectorText READ inspectorText NOTIFY inspectorChanged)
     Q_PROPERTY(QVariantList inspectorFields READ inspectorFields NOTIFY inspectorChanged)
+    /// The sources a selected recorder can chart, as `placement`, `quantity` and `label`.
+    Q_PROPERTY(QVariantList chartCandidates READ chartCandidates NOTIFY inspectorChanged)
+    /// Identity of the charted placement, or `-1` when the recorder is not bound.
+    Q_PROPERTY(int chartSourcePlacement READ chartSourcePlacement NOTIFY inspectorChanged)
     Q_PROPERTY(bool hasModel READ hasModel NOTIFY changed)
     Q_PROPERTY(QString lastError READ lastError NOTIFY changed)
     Q_PROPERTY(QString currentPath READ currentPath NOTIFY documentChanged)
@@ -317,6 +321,14 @@ public:
     Q_INVOKABLE QString designationOf(int index) const;
     /// Names one placement; an empty string takes the name away.
     Q_INVOKABLE void setDesignation(int index, const QString &text);
+    /// Binds the recorder in the inspector to one source, as one undoable edit.
+    Q_INVOKABLE bool setChartSource(int placement, int quantity);
+    /// Unbinds the recorder in the inspector.
+    Q_INVOKABLE bool clearChartSource();
+    /// The sources the recorder in the inspector can chart.
+    QVariantList chartCandidates();
+    /// The placement the recorder in the inspector charts, or `-1`.
+    int chartSourcePlacement();
     /// Checks the circuit and opens the report. The faults are counted, not judged: an
     /// empty report is the only clean one.
     Q_INVOKABLE void checkCircuit();

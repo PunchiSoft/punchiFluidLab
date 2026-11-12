@@ -52,6 +52,8 @@ pub enum Reading {
     Pressure(f32),
     /// Volumetric flow at normal conditions, `l/min`.
     Flow(f32),
+    /// Extension of a cylinder, `mm`.
+    Position(f32),
 }
 
 impl Reading {
@@ -61,9 +63,27 @@ impl Reading {
         match self {
             Self::Pressure(value) => format!("{value:.1} bar"),
             Self::Flow(value) => format!("{value:.1} l/min"),
+            Self::Position(value) => format!("{value:.1} mm"),
         }
     }
 }
+
+/// A bounded series of samples to draw inside a component's box.
+///
+/// The recorder owns the samples and the window; the drawing only maps them, so a series
+/// longer than the box can show is subsampled and never truncated to a lie.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Series<'a> {
+    /// Samples, oldest first, in the quantity's own unit.
+    pub values: &'a [f32],
+    /// Value drawn at the bottom of the box.
+    pub min: f32,
+    /// Value drawn at the top of the box.
+    pub max: f32,
+}
+
+/// Most vertices a series uses; a longer one is subsampled, keeping the last sample.
+pub const SERIES_POINTS: usize = 64;
 
 /// A component of the sheet: which definition draws it and the box it occupies.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -80,6 +100,8 @@ pub struct Placed<'a> {
     pub valve_position: usize,
     /// Reading of an instrument, in the unit its definition declares, if it has one.
     pub reading: Option<Reading>,
+    /// Samples of a recorder, when this component is one and it is bound.
+    pub series: Option<Series<'a>>,
     /// How the symbol is turned on the sheet.
     pub orientation: Orientation,
     /// Name the user gave the component, drawn under its box.
@@ -91,6 +113,54 @@ impl Placed<'_> {
     #[must_use]
     pub fn box_rect(&self) -> Rect {
         self.orientation.box_of(self.rect)
+    }
+}
+
+/// The trace of a recorder inside its own box.
+///
+/// At most [`SERIES_POINTS`] vertices, so a minute of samples costs one polyline and no
+/// allocation; the last sample is always the last vertex, which is what makes the right
+/// edge of the curve the value the reading prints.
+// A window holds a bounded number of samples — a few hundred — so turning an index into a
+// fraction of the box is exact, and the cast says so instead of rounding silently.
+#[allow(clippy::cast_precision_loss)]
+fn draw_series(surface: &mut dyn Surface, placed: &Placed<'_>, ink: &Ink) {
+    let Some(series) = placed.series else {
+        return;
+    };
+    if series.values.len() < 2 {
+        return;
+    }
+    let box_rect = placed.box_rect();
+    // Inside the symbol's own frame, so the trace never covers the paper it is drawn on.
+    let margin = box_rect.width().min(box_rect.height()) * 0.14;
+    let inner = box_rect.expand(-margin);
+    if inner.width() <= 0.0 || inner.height() <= 0.0 {
+        return;
+    }
+    let span = series.max - series.min;
+    let span = if span.abs() < f32::EPSILON { 1.0 } else { span };
+    let stride = series.values.len().div_ceil(SERIES_POINTS).max(1);
+    let mut points = [Pt::new(0.0, 0.0); SERIES_POINTS + 1];
+    let mut count = 0;
+    let last = series.values.len() - 1;
+    for (index, value) in series.values.iter().enumerate().step_by(stride) {
+        let t = index as f32 / last as f32;
+        let normalised = ((value - series.min) / span).clamp(0.0, 1.0);
+        points[count] = Pt::new(
+            inner.min.x + inner.width() * t,
+            inner.max.y - inner.height() * normalised,
+        );
+        count += 1;
+    }
+    // The newest sample closes the curve even when the stride skipped it.
+    if last % stride != 0 {
+        let normalised = ((series.values[last] - series.min) / span).clamp(0.0, 1.0);
+        points[count] = Pt::new(inner.max.x, inner.max.y - inner.height() * normalised);
+        count += 1;
+    }
+    if count >= 2 {
+        surface.line(&points[..count], Stroke::new(symbol::LINE * 0.8, ink.work));
     }
 }
 
@@ -195,6 +265,9 @@ pub fn draw_placed(
                 ink.text,
                 ink.background,
             );
+        }
+        if placed.series.is_some() {
+            draw_series(surface, placed, ink);
         }
     }
 
@@ -362,6 +435,75 @@ pub fn selection_ring(surface: &mut dyn Surface, rect: Rect, colour: Colour) {
 mod tests {
     use super::*;
     use crate::orient::Orientation;
+    use crate::surface::{Call, Recording};
+
+    #[test]
+    fn a_series_draws_a_bounded_curve_inside_its_box() {
+        // A minute of samples is 600 values; the drawing keeps at most 64 vertices, inside
+        // the box, and the newest sample is the right-hand end of the curve.
+        // 600 samples fit in `u16`, so the conversion is exact and says so.
+        let values: Vec<f32> = (0_u16..600).map(f32::from).collect();
+        let catalog = Catalog::builtin();
+        let rect = Rect::from_center_size(Pt::new(50.0, 50.0), 24.0, 24.0);
+        let placed = [Placed {
+            index: 0,
+            catalog_id: "chart.recorder",
+            rect,
+            extension: 0.0,
+            valve_position: 0,
+            reading: None,
+            series: Some(Series {
+                values: &values,
+                min: 0.0,
+                max: 599.0,
+            }),
+            orientation: Orientation::NONE,
+            designation: None,
+        }];
+        let mut surface = Recording::default();
+        draw_placed(
+            &mut surface,
+            &placed,
+            &[],
+            None,
+            &catalog,
+            &Ink::print(),
+            &[],
+        );
+        let curve = surface
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                Call::Line { points, .. } => Some(points),
+                _ => None,
+            })
+            .max_by_key(|points| points.len())
+            .expect("the recorder draws a line");
+        assert!(
+            curve.len() <= SERIES_POINTS + 1,
+            "the curve has {} vertices, more than the {} the drawing allows",
+            curve.len(),
+            SERIES_POINTS
+        );
+        assert!(curve.len() > 2, "a curve is more than one segment");
+        assert!(
+            curve.iter().all(|point| rect.expand(0.01).contains(*point)),
+            "the curve left the recorder's box"
+        );
+        // The first sample sits on the bottom edge and the last in the top-right corner of
+        // the plot, which is what makes the end of the curve the value the reading prints.
+        let plot = rect.expand(-rect.height() * 0.14);
+        let first = curve.first().expect("a first point");
+        assert!(
+            (first.y - plot.max.y).abs() < 0.01,
+            "the oldest sample is at {first:?}, not on the bottom edge"
+        );
+        let last = curve.last().expect("a last point");
+        assert!(
+            (last.x - plot.max.x).abs() < 0.01 && (last.y - plot.min.y).abs() < 0.01,
+            "the last sample is at {last:?}, not at the top-right corner of the plot"
+        );
+    }
 
     #[test]
     fn a_reading_carries_the_unit_of_its_instrument() {
@@ -383,6 +525,7 @@ mod tests {
                 extension: 0.0,
                 valve_position: 0,
                 reading: None,
+                series: None,
                 orientation: Orientation::NONE,
                 designation: None,
             },
@@ -393,6 +536,7 @@ mod tests {
                 extension: 0.0,
                 valve_position: 0,
                 reading: None,
+                series: None,
                 orientation: Orientation::NONE,
                 designation: None,
             },

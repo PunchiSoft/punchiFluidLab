@@ -18,30 +18,32 @@ use std::ptr;
 
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_PDF,
-    PF_HAS_STROKE, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk,
+    PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION,
+    PF_QUANTITY_PRESSURE, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet, PfFrame, PfInk,
     PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
     pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
-    pf_session_can_undo, pf_session_catalog, pf_session_check, pf_session_circuit_count,
-    pf_session_circuit_id, pf_session_circuit_name, pf_session_component_count,
-    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
-    pf_session_component_orientation, pf_session_component_rect,
-    pf_session_component_valve_position, pf_session_component_valve_spring_return,
-    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
-    pf_session_describe_component, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_export, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
-    pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
-    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
-    pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
-    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
-    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
-    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
-    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
-    pf_session_remove_selection, pf_session_rename_circuit, pf_session_restart,
-    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
+    pf_session_chart_candidate_count, pf_session_chart_source, pf_session_check,
+    pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
+    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
+    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
+    pf_session_component_rect, pf_session_component_valve_position,
+    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
+    pf_session_copy_selected, pf_session_describe_component, pf_session_duplicate_component,
+    pf_session_duplicate_selection, pf_session_export, pf_session_finding_at,
+    pf_session_forget_recent, pf_session_free, pf_session_hit_component, pf_session_hit_valve,
+    pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
+    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
+    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
+    pf_session_pipe_offset, pf_session_place_component, pf_session_port_point,
+    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
+    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
+    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
+    pf_session_restart, pf_session_rotate_selected, pf_session_route_pipe, pf_session_save,
+    pf_session_select, pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_component_designation,
+    pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_recent_file, pf_session_telemetry,
     pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
     pf_session_valve_spring_return,
@@ -2049,6 +2051,205 @@ fn a_flow_meter_reads_the_line_it_is_connected_to() {
     assert!(
         value > 0.0,
         "the meter reads `{reading}` while the valve feeds it, not a flow"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+/// A session with a recorder and a gauge on the working line, and the sources the
+/// recorder can chart. The caller frees the session.
+fn recorder_fixture() -> (*mut PfSession, u32, Vec<PfChartSource>) {
+    let session = session();
+    let chart = catalog_index(session, "chart.recorder");
+    // SAFETY: live session.
+    let chart_index = unsafe { pf_session_place_component(session, chart, 60.0, 60.0) };
+    assert!(chart_index >= 0);
+    let chart_index = u32::try_from(chart_index).unwrap_or_default();
+
+    let gauge = catalog_index(session, "gauge.pressure");
+    // SAFETY: live session.
+    let gauge_index = unsafe { pf_session_place_component(session, gauge, 160.0, 100.0) };
+    assert!(gauge_index >= 0);
+    let gauge_index = u32::try_from(gauge_index).unwrap_or_default();
+    let working = CString::new("2").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, 1, working.as_ptr(), gauge_index, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    for _ in 0..40 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+
+    // SAFETY: live session.
+    let count = unsafe { pf_session_chart_candidate_count(session, chart_index) };
+    assert!(count > 0, "the circuit has sources to chart");
+    let mut candidates = Vec::new();
+    for slot in 0..count {
+        let mut source = PfChartSource::default();
+        // SAFETY: live session and a writable record.
+        assert_eq!(
+            unsafe { pf_session_chart_candidate(session, chart_index, slot, &raw mut source) },
+            PF_OK
+        );
+        candidates.push(source);
+    }
+    (session, chart_index, candidates)
+}
+
+#[test]
+fn a_recorder_charts_the_quantity_it_is_bound_to() {
+    let (session, chart_index, candidates) = recorder_fixture();
+
+    // Unbound, the recorder reads nothing.
+    let mut bound = PfChartSource::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(
+        unsafe { pf_session_chart_source(session, chart_index, &raw mut bound) },
+        0
+    );
+
+    // The gauge was placed last, so it is the last candidate and reports pressure alone.
+    let gauge_source = *candidates.last().expect("the gauge is a candidate");
+    assert_eq!(gauge_source.quantity, PF_QUANTITY_PRESSURE);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe {
+            pf_session_set_chart_source(
+                session,
+                chart_index,
+                gauge_source.placement,
+                PF_QUANTITY_PRESSURE,
+            )
+        },
+        PF_OK
+    );
+    // SAFETY: live session and a writable record.
+    assert_eq!(
+        unsafe { pf_session_chart_source(session, chart_index, &raw mut bound) },
+        1
+    );
+    assert_eq!(bound, gauge_source);
+
+    // The recorder samples on every advance; a few frames give it a curve.
+    for _ in 0..20 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    let mut frame = PfFrame::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        PF_OK
+    );
+    // SAFETY: the slices were produced by the call above and the session is alive.
+    let (calls, text) = unsafe {
+        (
+            std::slice::from_raw_parts(frame.calls, frame.calls_len as usize),
+            std::slice::from_raw_parts(frame.text, frame.text_len as usize),
+        )
+    };
+    // The recorder is 23.8 × 23.8 mm at (60, 60).
+    let reading = text_in(calls, text, [48.0, 48.0, 72.0, 72.0], " bar");
+    assert!(
+        !reading.is_empty(),
+        "the recorder does not print the value it charts"
+    );
+    // SAFETY: the point arena belongs to the frame the call above produced.
+    let points = unsafe { std::slice::from_raw_parts(frame.points, frame.points_len as usize) };
+    let curved = calls.iter().any(|call| {
+        if call.kind != PF_KIND_LINE || call.points_len <= 2 {
+            return false;
+        }
+        let start = call.points_at as usize;
+        let Some(slice) = points.get(start..start + call.points_len as usize) else {
+            return false;
+        };
+        slice
+            .iter()
+            .all(|point| (40.0..80.0).contains(&point.x) && (40.0..80.0).contains(&point.y))
+    });
+    assert!(curved, "the recorder draws a curve, not a single segment");
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_recorder_refuses_a_quantity_it_cannot_read_and_undoes_the_binding() {
+    let (session, chart_index, candidates) = recorder_fixture();
+    let gauge_source = *candidates.last().expect("the gauge is a candidate");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe {
+            pf_session_set_chart_source(
+                session,
+                chart_index,
+                gauge_source.placement,
+                PF_QUANTITY_PRESSURE,
+            )
+        },
+        PF_OK
+    );
+    // A gauge reports no flow, so asking for one is refused and the binding stays.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe {
+            pf_session_set_chart_source(
+                session,
+                chart_index,
+                gauge_source.placement,
+                PF_QUANTITY_FLOW,
+            )
+        },
+        PF_ERR_MODEL
+    );
+
+    // A cylinder reports its position, so that binding is accepted and undoing it returns
+    // the gauge.
+    let cylinder = candidates
+        .iter()
+        .find(|candidate| candidate.quantity == PF_QUANTITY_POSITION)
+        .copied()
+        .expect("the cylinder reports its position");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe {
+            pf_session_set_chart_source(
+                session,
+                chart_index,
+                cylinder.placement,
+                PF_QUANTITY_POSITION,
+            )
+        },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let mut bound = PfChartSource::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(
+        unsafe { pf_session_chart_source(session, chart_index, &raw mut bound) },
+        1
+    );
+    assert_eq!(bound, gauge_source, "one undo returns the previous source");
+
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_clear_chart_source(session, chart_index) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session and a writable record.
+    assert_eq!(
+        unsafe { pf_session_chart_source(session, chart_index, &raw mut bound) },
+        1,
+        "undoing the clear returns the binding"
     );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };

@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 4. The implementation is
+Status: current, format 5. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,14 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `4` | `1` to `4` | always `4` |
+| `format` | `5` | `1` to `5` | always `5` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
   understands (4)`; it is never guessed.
+- **Version 5** added the `source` of a recorder: which placement it charts and which
+  quantity. An older file reads with no recorder bound. The migration is step-wise, so a
+  format 4 project keeps its circuits; a single step that reset them would merge every
+  sheet into the first.
 - **Version 4** added the circuit list, the `circuit` id on a placement and a pipe, and the
   `active` circuit. Versions 1–3 read as a project with **one circuit**, id `0`; saving
   writes the fields the reader filled in.
@@ -114,6 +118,7 @@ change, not an undo entry.
 | `quarter_turns` | integer `0..=3` | no, default `0` | Clockwise quarter turns; omitted when zero. |
 | `mirrored` | boolean | no, default `false` | Reflection on the symbol's own vertical axis; omitted when false. |
 | `designation` | string | no | Name the user gave the component; omitted when it has none. |
+| `source` | object | no | What a recorder charts; omitted when the component is not one or is not bound. |
 
 The `edit` object, when present, may carry any of these fields. An absent field keeps the
 value from the definition.
@@ -126,6 +131,22 @@ value from the definition.
 | `bore_mm` | mm | finite, positive |
 | `rod_mm` | mm | finite, zero or positive; smaller than `bore_mm` when both are present |
 | `moving_mass_kg` | kg | finite, positive |
+
+### The source of a recorder
+
+```json
+{ "placement": 2, "quantity": "pressure" }
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `placement` | integer | Identity of the component being observed. It must exist, be in the same circuit and not be the recorder itself. |
+| `quantity` | string | `pressure` (gauge bar at the first port), `flow` (normal litres per minute through a meter) or `position` (millimetres of a cylinder). |
+
+The source is a **document setting**: it is saved, undone and checked with the placement.
+The samples are not: a recorder starts empty when the document is opened, because the run
+that produced them is gone. Whether the component can report the quantity is the catalog's
+rule, refused by the ABI rather than written into the file.
 
 ## A pipe
 
@@ -205,6 +226,16 @@ from the two ports, moved by `offset_tenths`.
       "y": 40.0,
       "width": 20.0,
       "height": 20.0
+    },
+    {
+      "id": 5,
+      "circuit": 1,
+      "catalog": "chart.recorder",
+      "x": 90.0,
+      "y": 100.0,
+      "width": 23.8,
+      "height": 23.8,
+      "source": { "placement": 2, "quantity": "pressure" }
     }
   ],
   "pipe": [
@@ -222,6 +253,7 @@ deliberately absent:
 
 - the zoom, the scroll position and the selection;
 - the undo history;
+- **the samples a recorder collected**, which belong to the run and not to the document;
 - the edit/simulation mode and the simulated time;
 - the catalog definitions themselves, which live in `assets/catalog/` and the user folder;
 - the recent-document list and the safety copy, which live in `punchi-fluid-file::recent`

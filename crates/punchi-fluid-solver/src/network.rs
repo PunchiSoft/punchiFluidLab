@@ -111,6 +111,9 @@ pub enum PartBehaviour {
     },
     /// Hoses meet here: one node, no volume of its own beyond the ports.
     Junction,
+    /// A recorder: no ports and nothing to simulate. It is a part so the document can hold
+    /// it, and the session samples its source outside the network (ADR 0015).
+    Recorder,
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -183,6 +186,7 @@ impl NetworkPart {
             Behaviour::FlowMeter { conductance, .. } => PartBehaviour::FlowMeter {
                 conductance: *conductance,
             },
+            Behaviour::Recorder { .. } => PartBehaviour::Recorder,
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {
