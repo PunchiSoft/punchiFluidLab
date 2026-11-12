@@ -287,24 +287,19 @@ En resumen:
 
 ## Documentación del proyecto
 
+El índice completo —cada documento, su tipo, su estado y el orden de lectura— está en
+[docs/README.md](docs/README.md). El contrato y los archivos comunitarios viven en la raíz
+del repositorio:
+
 | Documento | Para qué |
 |---|---|
 | [AGENTS.md](AGENTS.md) | reglas canónicas para personas y agentes |
 | [CHANGELOG.md](CHANGELOG.md) | cambios por fecha, bajo `Unreleased` |
-| [docs/retomar.md](docs/retomar.md) | nota de continuidad: todo lo necesario para retomar sin contexto |
-| [docs/next-steps.md](docs/next-steps.md) | estado actual del proyecto y orden de trabajo de lo que viene |
-| [docs/ui-ux.md](docs/ui-ux.md) | la interfaz: regiones, temas, accesibilidad |
-| [docs/symbology.md](docs/symbology.md) | conformidad ISO 1219 y lista de revisión |
-| [docs/plan.md](docs/plan.md) | hitos con criterios de aceptación |
-| [docs/engineering.md](docs/engineering.md) | modularización, presupuesto de memoria, seguridad y prácticas de GitHub |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | cómo preparar el entorno, probar y enviar cambios |
 | [SECURITY.md](SECURITY.md) | cómo reportar una vulnerabilidad en privado |
 | [SUPPORT.md](SUPPORT.md) | dónde preguntar y qué no promete el proyecto |
-| [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) | el stack y la división en crates |
-| [packaging/README.md](packaging/README.md) | cómo se empaquetará una versión |
-| [i18n/README.md](i18n/README.md) | plan de traducciones |
-| [assets/symbols/README.md](assets/symbols/README.md) | set de símbolos y su licencia |
-| [assets/screenshots/README.md](assets/screenshots/README.md) | las capturas que usa este archivo y sus reglas |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | el código de conducta, adoptado por referencia |
+| [docs/README.md](docs/README.md) | el índice: arquitectura, proceso, referencia y decisiones |
 
 ## Hecho con cariño, para la comunidad
 
