@@ -44,8 +44,8 @@ use punchi_fluid::{
     pf_session_select, pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
     pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
-    pf_session_set_component_edits, pf_session_set_recent_file, pf_session_telemetry,
-    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_set_component_edits, pf_session_set_recent_file, pf_session_space_selection,
+    pf_session_telemetry, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
     pf_session_valve_spring_return,
 };
 
@@ -2251,6 +2251,96 @@ fn a_recorder_refuses_a_quantity_it_cannot_read_and_undoes_the_binding() {
         1,
         "undoing the clear returns the binding"
     );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn even_spacing_keeps_the_ends_and_is_one_undo() {
+    let session = session();
+    let count = unsafe { pf_session_component_count(session) };
+    assert!(count >= 3, "the worked example has components to spread");
+    // SAFETY: live session.
+    assert!(
+        unsafe { pf_session_select_all(session) } >= 3,
+        "nothing to spread"
+    );
+
+    let mut before = Vec::new();
+    for index in 0..count {
+        let mut rect = [0.0_f32; 4];
+        // SAFETY: live session and a writable rectangle.
+        assert_eq!(
+            unsafe { pf_session_component_rect(session, index, rect.as_mut_ptr()) },
+            PF_OK
+        );
+        before.push(rect);
+    }
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_space_selection(session, 0) }, PF_OK);
+
+    let mut after = Vec::new();
+    for index in 0..count {
+        let mut rect = [0.0_f32; 4];
+        // SAFETY: live session and a writable rectangle.
+        assert_eq!(
+            unsafe { pf_session_component_rect(session, index, rect.as_mut_ptr()) },
+            PF_OK
+        );
+        after.push(rect);
+    }
+    // Ordered left to right, the gaps between boxes are equal.
+    after.sort_by(|left, right| left[0].total_cmp(&right[0]));
+    let gaps: Vec<f32> = after
+        .windows(2)
+        .map(|pair| pair[1][0] - pair[0][2])
+        .collect();
+    let first = gaps.first().copied().unwrap_or_default();
+    assert!(first > 0.0, "the spread left the symbols overlapping");
+    for gap in &gaps {
+        assert!(
+            (gap - first).abs() < 0.05,
+            "the gaps are {gaps:?}, not equal"
+        );
+    }
+    // The outermost kept their places: the spread changes the inside, not the extent.
+    let leftmost = after.first().copied().unwrap_or_default();
+    let rightmost = after.last().copied().unwrap_or_default();
+    let original_left = before
+        .iter()
+        .map(|rect| rect[0])
+        .fold(f32::INFINITY, f32::min);
+    let original_right = before
+        .iter()
+        .map(|rect| rect[2])
+        .fold(f32::NEG_INFINITY, f32::max);
+    assert!((leftmost[0] - original_left).abs() < 0.05);
+    assert!((rightmost[2] - original_right).abs() < 0.05);
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    for (index, rect) in before.iter().enumerate() {
+        let mut restored = [0.0_f32; 4];
+        // SAFETY: live session and a writable rectangle.
+        assert_eq!(
+            unsafe {
+                pf_session_component_rect(
+                    session,
+                    u32::try_from(index).unwrap_or_default(),
+                    restored.as_mut_ptr(),
+                )
+            },
+            PF_OK
+        );
+        assert!(
+            restored
+                .iter()
+                .zip(rect.iter())
+                .all(|(left, right)| (left - right).abs() < 1.0e-6),
+            "one undo puts component {index} back: {restored:?} against {rect:?}"
+        );
+    }
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

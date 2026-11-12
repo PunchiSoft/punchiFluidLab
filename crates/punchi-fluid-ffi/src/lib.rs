@@ -4227,6 +4227,40 @@ pub unsafe extern "C" fn pf_session_align_selection(session: *mut PfSession, edg
     })
 }
 
+/// Spreads the selection so the gaps between the symbols are equal.
+///
+/// `axis` is `0` across (left to right) and `1` down (top to bottom), the order of the two
+/// buttons in the ribbon. The two outermost keep their places and the whole spread is one
+/// change, so one undo puts every component back.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_space_selection(session: *mut PfSession, axis: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let axis = match axis {
+            0 => punchi_fluid_doc::Axis::Horizontal,
+            1 => punchi_fluid_doc::Axis::Vertical,
+            _ => return session.fail("that is not one of the two axes"),
+        };
+        if session.selected.len() < 3 {
+            return session.fail("select at least three components to spread them");
+        }
+        let indices = session.selected.clone();
+        if session.document.space_evenly(&indices, axis) {
+            session.rebuild_model();
+            PF_OK
+        } else {
+            session.fail("the selected symbols do not fit between their own ends")
+        }
+    })
+}
+
 /// Copies the whole selection in place, displaced by a delta, and selects the copies.
 ///
 /// This is the Shift+drag gesture when more than one component is marked.

@@ -141,6 +141,15 @@ Rectangle {
                     ]
                 },
                 {
+                    // Equal gaps between symbol boxes, which is what a hand-drawn sheet
+                    // needs and what "even spacing" means to a reader.
+                    title: qsTr("Repartir"),
+                    items: [
+                        { id: "space-across", label: qsTr("Horizontal"), icon: "distribute-horizontal-equal", hint: qsTr("huecos iguales entre las cajas, de izquierda a derecha"), enabled: session.selectionCount > 2 },
+                        { id: "space-down", label: qsTr("Vertical"), icon: "distribute-vertical-equal", hint: qsTr("huecos iguales entre las cajas, de arriba abajo"), enabled: session.selectionCount > 2 }
+                    ]
+                },
+                {
                     title: qsTr("Paleta"),
                     note: session.editing
                           ? qsTr("Arrastra desde la barra lateral")
@@ -229,6 +238,10 @@ Rectangle {
             session.alignSelection(2);
         } else if (id === "align-bottom") {
             session.alignSelection(3);
+        } else if (id === "space-across") {
+            session.spaceSelection(0);
+        } else if (id === "space-down") {
+            session.spaceSelection(1);
         } else if (id === "select-all") {
             session.selectAll();
         } else if (id === "delete") {

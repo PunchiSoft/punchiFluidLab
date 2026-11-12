@@ -942,7 +942,7 @@ int main(int argc, char *argv[])
 
         // Lining a selection up moves it onto the component already furthest out, and one
         // undo puts it back: the alignment is one change.
-        steps->push_back([state, check] {
+        steps->push_back([state, check, componentRect] {
             state->session->selectAll();
             float b[4] = {0.0F, 0.0F, 0.0F, 0.0F};
             pf_session_component_rect(state->session->handle(), 1, b);
@@ -1507,6 +1507,51 @@ int main(int argc, char *argv[])
             // The meter and its pipes leave the sheet as they found it; the steps after
             // this one assert on the document's own contents.
             state->session->removeComponent(index);
+        });
+
+        // Even spacing: the three symbols of the worked example, spread left to right, keep
+        // their extent and end with equal gaps between their boxes.
+        steps->push_back([state, check, componentRect] {
+            state->session->selectAll();
+            const int count = state->session->componentCount();
+            check(count >= 3, QStringLiteral("spacing: there are symbols to spread"));
+            QVector<QRectF> before;
+            for (int index = 0; index < count; ++index) {
+                before.append(componentRect(index));
+            }
+            state->session->spaceSelection(0);
+            QVector<QRectF> after;
+            for (int index = 0; index < count; ++index) {
+                after.append(componentRect(index));
+            }
+            std::sort(after.begin(), after.end(),
+                      [](const QRectF &left, const QRectF &right) {
+                          return left.left() < right.left();
+                      });
+            bool equal = after.size() >= 3;
+            const qreal first = equal ? after[1].left() - after[0].right() : 0.0;
+            for (int index = 1; equal && index + 1 < after.size(); ++index) {
+                const qreal gap = after[index + 1].left() - after[index].right();
+                equal = std::abs(gap - first) < 0.05;
+            }
+            check(equal, QStringLiteral("spacing: the gaps between boxes are equal"));
+            const qreal left_before =
+                std::min_element(before.begin(), before.end(), [](const QRectF &a, const QRectF &b) {
+                    return a.left() < b.left();
+                })->left();
+            const qreal right_before =
+                std::max_element(before.begin(), before.end(), [](const QRectF &a, const QRectF &b) {
+                    return a.right() < b.right();
+                })->right();
+            check(std::abs(after.first().left() - left_before) < 0.05
+                      && std::abs(after.last().right() - right_before) < 0.05,
+                  QStringLiteral("spacing: the outermost keep their places"));
+            state->session->undo();
+            bool restored = true;
+            for (int index = 0; index < count && index < before.size(); ++index) {
+                restored = restored && componentRect(index) == before[index];
+            }
+            check(restored, QStringLiteral("spacing: one undo puts them back"));
         });
 
         // A recorder is an empty frame until it is bound: the inspector lists what the

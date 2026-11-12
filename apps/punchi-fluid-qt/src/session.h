@@ -281,6 +281,8 @@ public:
     /// Lines the selection up on the component furthest out: 0 left, 1 right, 2 top,
     /// 3 bottom.
     Q_INVOKABLE void alignSelection(int edge);
+    /// Spreads the selection with equal gaps: `axis` 0 across, 1 down.
+    Q_INVOKABLE void spaceSelection(int axis);
     Q_INVOKABLE int componentAt(double xMm, double yMm);
 
     /// The port nearest to a point, if one is within `toleranceMm`.
