@@ -176,6 +176,21 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
             return Err(invalid(path, "a gauge needs exactly one working port"));
         }
     }
+    if matches!(definition.behaviour, Behaviour::FlowMeter { .. }) {
+        // A meter sits in the line: one port to arrive and one to leave, and nothing else
+        // to connect. An exhaust or a pilot port on a meter would have no meaning.
+        let working = definition
+            .port
+            .iter()
+            .filter(|port| port.role == PortRole::Working)
+            .count();
+        if definition.port.len() != 2 || working != 2 {
+            return Err(invalid(
+                path,
+                "a flow meter needs exactly two working ports",
+            ));
+        }
+    }
 
     for primitive in &definition.symbol {
         check_primitive(primitive).map_err(|reason| invalid(path, &reason))?;
@@ -183,6 +198,11 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
 
     crate::lint::lint(definition).map_err(|error| invalid(path, &error.to_string()))?;
 
+    check_behaviour(definition, path)
+}
+
+/// Checks the numbers of the behaviour this build knows how to simulate.
+fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     match &definition.behaviour {
         Behaviour::Supply { pressure_bar } => {
             if !pressure_bar.is_finite() || *pressure_bar <= 0.0 {
@@ -202,6 +222,18 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
         Behaviour::Throttle { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "throttle conductance must be positive"));
+            }
+            Ok(())
+        }
+        Behaviour::FlowMeter {
+            conductance,
+            nominal_l_min,
+        } => {
+            if !conductance.is_finite() || *conductance <= 0.0 {
+                return Err(invalid(path, "flow meter conductance must be positive"));
+            }
+            if !nominal_l_min.is_finite() || *nominal_l_min <= 0.0 {
+                return Err(invalid(path, "flow meter nominal flow must be positive"));
             }
             Ok(())
         }
@@ -483,6 +515,7 @@ blocked = ["1"]
         assert!(catalog.get("valve.3_2.spring_return").is_some());
         assert!(catalog.get("supply.compressor").is_some());
         assert!(catalog.get("cylinder.single_acting_20_100").is_some());
+        assert!(catalog.get("flow.meter").is_some());
         assert!(catalog.len() >= 4);
     }
 
@@ -514,6 +547,57 @@ pressure_bar = 8.0
         let supply = catalog.get("supply.compressor").expect("overridden");
         assert_eq!(supply.name, "Taller 8 bar");
         assert_eq!(supply.origin, Origin::User);
+    }
+
+    #[test]
+    fn a_flow_meter_needs_two_working_ports_a_conductance_and_a_scale() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let one_port = r#"
+schema = 3
+id = "flow.meter.one"
+name = "Meter with one port"
+category = "sensor"
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+[behaviour]
+type = "flow_meter"
+conductance = 2.0e-9
+nominal_l_min = 100.0
+"#;
+        write(dir.path(), "one.toml", one_port);
+        let catalog = Catalog::builtin().with_user_dir(dir.path());
+        assert!(
+            catalog.get("flow.meter.one").is_none(),
+            "a meter in the line needs a port to leave by"
+        );
+        assert!(
+            catalog
+                .problems()
+                .iter()
+                .any(|problem| problem.to_string().contains("two working ports")),
+            "{:?}",
+            catalog.problems()
+        );
+
+        let no_scale = one_port
+            .replace("flow.meter.one", "flow.meter.two")
+            .replace("nominal_l_min = 100.0", "nominal_l_min = 0.0")
+            .replace(
+                "[[port]]\nid = \"1\"\nrole = \"working\"\nposition = [0.0, 0.5]",
+                "[[port]]\nid = \"1\"\nrole = \"working\"\nposition = [0.0, 0.5]\n\n[[port]]\nid = \"2\"\nrole = \"working\"\nposition = [1.0, 0.5]",
+            );
+        write(dir.path(), "two.toml", &no_scale);
+        let catalog = Catalog::builtin().with_user_dir(dir.path());
+        assert!(catalog.get("flow.meter.two").is_none());
+        assert!(
+            catalog.problems().iter().any(|problem| problem
+                .to_string()
+                .contains("nominal flow must be positive")),
+            "{:?}",
+            catalog.problems()
+        );
     }
 
     #[test]

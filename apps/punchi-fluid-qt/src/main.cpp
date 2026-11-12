@@ -1436,6 +1436,79 @@ int main(int argc, char *argv[])
             QFile::remove(path);
         });
 
+        // A flow meter is an instrument in the line: it is placed, wired across the working
+        // line it measures, and it prints the gas that goes through it in its own unit,
+        // from the frame the sheet draws.
+        steps->push_back([state, check] {
+            int meter = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                if (row.value(QStringLiteral("id")).toString() == QStringLiteral("flow.meter")) {
+                    meter = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(meter >= 0, QStringLiteral("flow meter: the catalog offers it"));
+            const int index = meter >= 0 ? state->session->placeComponent(meter, 100.0, 60.0) : -1;
+            check(index >= 0, QStringLiteral("flow meter: it can be placed"));
+
+            int valve = -1;
+            int cylinder = -1;
+            const uint32_t count = pf_session_component_count(state->session->handle());
+            for (uint32_t i = 0; i < count; ++i) {
+                char id[128] = {};
+                pf_session_component_id(state->session->handle(), i, id, sizeof id);
+                const QString name = QString::fromUtf8(id);
+                if (name.startsWith(QLatin1String("valve."))) {
+                    valve = static_cast<int>(i);
+                }
+                if (name.startsWith(QLatin1String("cylinder."))) {
+                    cylinder = static_cast<int>(i);
+                }
+            }
+            const bool wired = index >= 0 && valve >= 0 && cylinder >= 0
+                && state->session->connectPorts(valve, QStringLiteral("2"), index,
+                                                QStringLiteral("1"))
+                && state->session->connectPorts(index, QStringLiteral("2"), cylinder,
+                                                QStringLiteral("1"));
+            check(wired, QStringLiteral("flow meter: it is wired to the working line"));
+
+            if (wired) {
+                state->session->pressValve();
+                for (int i = 0; i < 5; ++i) {
+                    state->session->advance(0.016);
+                }
+                PfFrame frame {};
+                int readings = 0;
+                bool positive = false;
+                if (pf_session_build_frame(state->session->handle(), 200.0, 130.0, 4.0, &frame)
+                    == PF_OK) {
+                    for (uint32_t i = 0; i < frame.calls_len; ++i) {
+                        const PfCall &call = frame.calls[i];
+                        if (call.kind != PF_KIND_TEXT) {
+                            continue;
+                        }
+                        const QString text = QString::fromUtf8(
+                            reinterpret_cast<const char *>(frame.text) + call.text_at,
+                            static_cast<int>(call.text_len));
+                        if (!text.endsWith(QLatin1String(" l/min"))) {
+                            continue;
+                        }
+                        ++readings;
+                        bool ok = false;
+                        const float value = text.left(text.size() - 6).toFloat(&ok);
+                        positive = positive || (ok && value > 0.0f);
+                    }
+                }
+                check(readings > 0 && positive,
+                      QStringLiteral("flow meter: it reports normal litres per minute"));
+                state->session->releaseValve();
+            }
+            // The meter and its pipes leave the sheet as they found it; the steps after
+            // this one assert on the document's own contents.
+            state->session->removeComponent(index);
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);

@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Flow meter, 0–100 normal litres per minute.
+#
+# The circle with the arrow is the meter and the two stubs are the line it interrupts. The
+# reading is text from the model: this file declares the restriction the meter adds and the
+# full scale of the number, never the number itself (ADR 0014).
+#
+# Conductance of a meter that does not strangle a small circuit: about 84 normal litres per
+# minute against a 6 bar supply, so the number moves with a throttle instead of sitting at
+# full scale all the time.
+
+schema = 3
+id = "flow.meter"
+name = "Flow meter"
+name_es = "Caudalímetro"
+category = "sensor"
+summary = "Measures the air that goes through it, in normal litres per minute."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [1.0, 0.5]
+
+[behaviour]
+type = "flow_meter"
+conductance = 2.0e-9
+nominal_l_min = 100.0
+
+# Dial: a circle on the line, so the meter reads as an instrument and not as a joint.
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.5, 0.30]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.20, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.80, 0.5, 1.0, 0.5]
+line_class = "working"
+
+# The arrow runs from port 1 to port 2: the direction the reading counts as positive.
+[[symbol]]
+kind = "line"
+points = [0.34, 0.5, 0.52, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.50, 0.44, 0.50, 0.56, 0.66, 0.50]
+filled = true

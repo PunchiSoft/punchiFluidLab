@@ -47,7 +47,9 @@ use punchi_fluid_check::check;
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
 use punchi_fluid_doc::{Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Turn};
-use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
+use punchi_fluid_draw::placed::{
+    Pipe, PipeEnd, Placed, Reading, draw_placed, port_point, route_offset,
+};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Layout, Orientation, dashes};
@@ -1729,59 +1731,8 @@ pub unsafe extern "C" fn pf_session_describe_component(
             .map(|port| port.id.as_str())
             .collect();
         let _ = writeln!(text, "Puertos: {}", ports.join(", "));
-        match &definition.behaviour {
-            Behaviour::Supply { pressure_bar } => {
-                let _ = writeln!(text, "Presión: {pressure_bar:.2} bar");
-            }
-            Behaviour::Valve {
-                positions,
-                spring_return,
-                actuation,
-                ..
-            } => {
-                let names: Vec<&str> = positions
-                    .iter()
-                    .map(punchi_fluid_catalog::ValvePosition::display_name)
-                    .collect();
-                let _ = writeln!(text, "Posiciones: {}", names.join(", "));
-                let _ = writeln!(text, "Accionamiento: {}", actuation_es(*actuation));
-                text.push_str(if *spring_return {
-                    "Retorno: muelle — solo queda accionada mientras se mantiene\n"
-                } else {
-                    "Retorno: sin muelle — queda donde se deja\n"
-                });
-                if let Some(connection) = positions
-                    .first()
-                    .and_then(|position| position.connection.first())
-                {
-                    let _ = writeln!(
-                        text,
-                        "Conductancia: {:.2e} m³/(s·Pa)",
-                        connection.conductance
-                    );
-                }
-            }
-            Behaviour::Cylinder {
-                bore_mm,
-                rod_mm,
-                stroke_mm,
-                moving_mass_kg,
-                ..
-            } => {
-                let _ = writeln!(text, "Carrera: {stroke_mm:.1} mm");
-                let _ = writeln!(text, "Émbolo: {bore_mm:.1} mm");
-                let _ = writeln!(text, "Vástago: {rod_mm:.1} mm");
-                let _ = writeln!(text, "Masa móvil: {moving_mass_kg:.2} kg");
-            }
-            Behaviour::Gauge { min_bar, max_bar } => {
-                let _ = writeln!(text, "Escala: {min_bar:.1} … {max_bar:.1} bar");
-                text.push_str("Lee la presión del puerto al que se conecta\n");
-            }
-            Behaviour::Throttle { conductance } => {
-                let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
-            }
-            Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
-        }
+        describe_behaviour(&mut text, &definition.behaviour);
+
         let bytes = text.as_bytes();
         let capacity = capacity as usize;
         if bytes.len() >= capacity {
@@ -1797,6 +1748,71 @@ pub unsafe extern "C" fn pf_session_describe_component(
         let written = bytes.len() as i32;
         written
     })
+}
+
+/// Writes what the behaviour means, for the inspector.
+fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behaviour) {
+    match behaviour {
+        Behaviour::Supply { pressure_bar } => {
+            let _ = writeln!(text, "Presión: {pressure_bar:.2} bar");
+        }
+        Behaviour::Valve {
+            positions,
+            spring_return,
+            actuation,
+            ..
+        } => {
+            let names: Vec<&str> = positions
+                .iter()
+                .map(punchi_fluid_catalog::ValvePosition::display_name)
+                .collect();
+            let _ = writeln!(text, "Posiciones: {}", names.join(", "));
+            let _ = writeln!(text, "Accionamiento: {}", actuation_es(*actuation));
+            text.push_str(if *spring_return {
+                "Retorno: muelle — solo queda accionada mientras se mantiene\n"
+            } else {
+                "Retorno: sin muelle — queda donde se deja\n"
+            });
+            if let Some(connection) = positions
+                .first()
+                .and_then(|position| position.connection.first())
+            {
+                let _ = writeln!(
+                    text,
+                    "Conductancia: {:.2e} m³/(s·Pa)",
+                    connection.conductance
+                );
+            }
+        }
+        Behaviour::Cylinder {
+            bore_mm,
+            rod_mm,
+            stroke_mm,
+            moving_mass_kg,
+            ..
+        } => {
+            let _ = writeln!(text, "Carrera: {stroke_mm:.1} mm");
+            let _ = writeln!(text, "Émbolo: {bore_mm:.1} mm");
+            let _ = writeln!(text, "Vástago: {rod_mm:.1} mm");
+            let _ = writeln!(text, "Masa móvil: {moving_mass_kg:.2} kg");
+        }
+        Behaviour::Gauge { min_bar, max_bar } => {
+            let _ = writeln!(text, "Escala: {min_bar:.1} … {max_bar:.1} bar");
+            text.push_str("Lee la presión del puerto al que se conecta\n");
+        }
+        Behaviour::Throttle { conductance } => {
+            let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
+        }
+        Behaviour::FlowMeter {
+            conductance,
+            nominal_l_min,
+        } => {
+            let _ = writeln!(text, "Escala: 0 … {nominal_l_min:.0} l/min");
+            let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
+            text.push_str("Lee el caudal que lo atraviesa\n");
+        }
+        Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
+    }
 }
 
 /// Writes the valve's definition into `out` as NUL-terminated UTF-8.
@@ -3227,7 +3243,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
                 set.stroke_mm = *stroke_mm;
                 set.moving_mass_kg = *moving_mass_kg;
             }
-            Behaviour::Gauge { .. } | Behaviour::Junction => {}
+            Behaviour::Gauge { .. } | Behaviour::FlowMeter { .. } | Behaviour::Junction => {}
         }
         // SAFETY: the caller promised a writable structure.
         unsafe { out.write(set) };
@@ -3853,7 +3869,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
                 *moving_mass_kg = value;
             }
         }
-        Behaviour::Gauge { .. } | Behaviour::Junction => {}
+        Behaviour::Gauge { .. } | Behaviour::FlowMeter { .. } | Behaviour::Junction => {}
     }
 }
 
@@ -3896,7 +3912,7 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.valve_position_at(part))
                 .unwrap_or(0),
-            reading: gauge_reading(
+            reading: instrument_reading(
                 catalog.get(placement.catalog_id.as_str()),
                 placement_part.get(index).copied().flatten(),
                 system,
@@ -3964,23 +3980,33 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
     }
 }
 
-/// What a gauge at this placement reads, in gauge bar, if it is one.
-fn gauge_reading(
+/// What an instrument at this placement reads, in the unit its definition declares.
+///
+/// A component that is not an instrument, or one the solver could not build, reads nothing:
+/// an absent reading and a reading of zero are different claims.
+fn instrument_reading(
     definition: Option<&punchi_fluid_catalog::ComponentDefinition>,
     part: Option<usize>,
     network: Option<&Network>,
-) -> Option<f32> {
+) -> Option<Reading> {
     let definition = definition?;
-    let punchi_fluid_catalog::Behaviour::Gauge { .. } = definition.behaviour else {
-        return None;
-    };
     let network = network?;
     let part = part?;
-    let id = definition.port.first()?;
-    let pressure = network.port_pressure(part, &id.id)?;
-    #[allow(clippy::cast_possible_truncation)]
-    let reading = ((pressure - network.atmosphere_pa()) / 1e5) as f32;
-    Some(reading)
+    match definition.behaviour {
+        punchi_fluid_catalog::Behaviour::Gauge { .. } => {
+            let id = definition.port.first()?;
+            let pressure = network.port_pressure(part, &id.id)?;
+            #[allow(clippy::cast_possible_truncation)]
+            let reading = ((pressure - network.atmosphere_pa()) / 1e5) as f32;
+            Some(Reading::Pressure(reading))
+        }
+        punchi_fluid_catalog::Behaviour::FlowMeter { .. } => {
+            #[allow(clippy::cast_possible_truncation)]
+            let reading = network.part_flow_l_min(part)? as f32;
+            Some(Reading::Flow(reading))
+        }
+        _ => None,
+    }
 }
 
 /// Pressure in a hose as a fraction of the supply span, for the drawing.

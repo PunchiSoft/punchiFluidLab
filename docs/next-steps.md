@@ -24,12 +24,13 @@ file is the execution order.
 | Canvas: catalog-driven symbols, click on the valve, live readouts | **implemented** | `--selftest`, screenshots |
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | `--check-theme`, `--check-icons`, `--selftest`, light/dark screenshots |
 | Export PNG/PDF from the window and headless | **implemented** — [plan.md](plan.md) M2 | PDF, raster and caller-drawing tests; `--export`; the gate writes a PDF and an Oficio PNG |
-| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 14 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
+| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 15 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
 | Editor: document, undo, pipes, T, re-route, per-instance properties, copy, turn, reflect, multi-selection, align, designations | **implemented** — [capabilities.md](capabilities.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
 | The sheet is the network the solver runs | **implemented** — [capabilities.md](capabilities.md) F2 | network tests, the 5/2 + double-acting ABI circuit, pipe colour |
 | Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | format tests, ABI round trip, `--selftest` |
 | Recent documents and the unsaved-work warning | **implemented** — [capabilities.md](capabilities.md) F4 | format and ABI tests, `--selftest` |
 | Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v3 with a migration test |
+| Flow meter | **implemented** — [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver test against the hand calculation, the ABI reading drawn on the sheet, `--selftest`, symbol review |
 
 The repository is initialised and the baseline is committed; `main` carries the Qt
 front end, and since 2026-11-12 nothing is committed there: every change travels on a
@@ -53,7 +54,8 @@ changed lines outside generated files, it is two phases.
 | **V2 — check without the window** ✅ delivered | `feat/headless-check` | `punchi-fluid-cli check --json --strict` over the sheet format, with a versioned contract | five contract tests and the gate's smoke test |
 | **P1.7 — print what is drawn** ✅ delivered | `feat/export-from-the-window` | the ABI builds the printed page from the document in print ink, Archivo gained Exportar PNG and PDF, the Hoja group chooses the paper and landscape, the date comes from the caller and the drawing is fitted to the page with its scale recorded | an export test that finds a named cylinder in the output, `--export` headless, `--selftest`, the gate's PDF and Oficio PNG smoke test |
 | **P1.8 — a project of circuits** ✅ delivered | `feat/circuits` | several circuits in one document with a selector, per [ADR 0013](adr/0013-a-project-is-one-document.md); the reference's ninth fault becomes a pipe that joins two circuits | format migration tests, ABI add/select/save/open test, the ninth fault, `--selftest` |
-| **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
+| **P2.1 — the flow meter** ✅ delivered | `feat/flow-meter` | a meter in the line that reads the gas through it in normal litres per minute, per [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver, ABI and drawing tests, the `--selftest` steps, the symbol review |
+| **P2.2 — the force meter and the strip chart** | `feat/force-meter-and-chart` | the force meter and a strip chart that records a reading over 60 s with a bounded buffer | one test per instrument, an ABI reading, the chart's sample bound, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
@@ -312,7 +314,7 @@ One test per rule, each failing on a purpose-built bad definition:
 ### Redraw
 
 `valve.3_2.spring_return`, `supply.compressor`, `cylinder.single_acting_20_100`,
-`throttle.fixed` (and the rest of the 14 built-ins): add port numerals, structured paths and blocking marks, declared
+`throttle.fixed` (and the rest of the built-ins): add port numerals, structured paths and blocking marks, declared
 spring and actuator, line classes, and review the cylinder's spring and rod proportions
 against Part 1. The cylinder's rod and spring were redrawn and reviewed on 2026-11-06:
 the piston now crosses the whole internal length the definition declares and the return
