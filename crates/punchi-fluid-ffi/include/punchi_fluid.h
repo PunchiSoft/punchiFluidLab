@@ -19,7 +19,7 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 2u
+#define PF_ABI_VERSION 3u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -331,9 +331,11 @@ int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, f
 
 /* Writes the sheet, as it is drawn, to `path`: a PDF when `kind` is PF_EXPORT_PDF, a raster at
  * `dpi` when it is PF_EXPORT_PNG. `paper` indexes the list `pf_export_paper_count` reports and
- * `pf_export_paper_name` names; `landscape` is 0 or 1. */
+ * `pf_export_paper_name` names; `landscape` is 0 or 1. `date` is the date the title block
+ * carries, supplied by the caller (ISO 8601 recommended): the ABI does not read the clock, so
+ * the same call on the same day is reproducible. */
 int32_t pf_session_export(PfSession *session, const char *path, uint32_t kind, uint32_t paper,
-                          uint32_t landscape, float dpi);
+                          uint32_t landscape, float dpi, const char *date);
 /* How many papers the export offers. */
 uint32_t pf_export_paper_count(void);
 /* Name of the paper at `index`, NUL-terminated UTF-8 in `out`. */

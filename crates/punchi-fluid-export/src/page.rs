@@ -196,6 +196,8 @@ pub struct TitleBlock {
     pub date: String,
     /// Extra warning, for example that the symbols are not verified yet.
     pub note: Option<String>,
+    /// Scale of the drawing on the sheet, for example `1:2`; absent when it is 1:1.
+    pub scale: Option<String>,
 }
 
 impl TitleBlock {
@@ -208,6 +210,7 @@ impl TitleBlock {
             revision: String::from("A"),
             date: date.into(),
             note: None,
+            scale: None,
         }
     }
 

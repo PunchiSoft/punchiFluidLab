@@ -13,7 +13,7 @@ use punchi_fluid_solver::network::Network;
 
 use crate::orient::{Orientation, Turned};
 use crate::schematic::{self, CYLINDER_ID, Layout, PREPARATION_ID, SUPPLY_ID, VALVE_ID};
-use crate::surface::{Colour, Pt, Rect, Stroke, Surface};
+use crate::surface::{Bounds, Colour, Pt, Rect, Stroke, Surface};
 
 /// One end of a pipe: a component of the sheet and one of its ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -287,6 +287,37 @@ fn blend(from: Colour, to: Colour, amount: f32) -> Colour {
     )
 }
 
+/// Bounding box of everything the sheet draws, for fitting it onto a page.
+///
+/// The real drawing runs once through [`Bounds`], so the symbols, the captions, the
+/// designations, the readings and the pipe routes are all measured by the same code the
+/// page will use. The result has a margin for strokes and glyph overhang, so a caller that
+/// scales it to the page cannot crop the drawing. `None` means there is nothing to draw.
+#[must_use]
+pub fn bounds_placed(
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
+    system: Option<&Network>,
+    catalog: &Catalog,
+) -> Option<Rect> {
+    let mut bounds = Bounds::default();
+    // The symbol box is the placement's footprint even when its ink does not reach the
+    // edge: a rotated cylinder and a sparse symbol must not shrink the fit.
+    for placed in placements {
+        bounds.rect(placed.box_rect(), 0.0, None, None);
+    }
+    draw_placed(
+        &mut bounds,
+        placements,
+        pipes,
+        system,
+        catalog,
+        &Ink::print(),
+        &[],
+    );
+    bounds.bounds().map(|rect| rect.expand(symbol::LINE * 3.0))
+}
+
 /// A ring around a box: the selection, and nothing else.
 pub fn selection_ring(surface: &mut dyn Surface, rect: Rect, colour: Colour) {
     let ring = rect.expand(2.0);
@@ -298,4 +329,52 @@ pub fn selection_ring(surface: &mut dyn Surface, rect: Rect, colour: Colour) {
         Pt::new(ring.min.x, ring.min.y),
     ];
     surface.line(&corners, Stroke::new(symbol::LINE, colour));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::orient::Orientation;
+
+    #[test]
+    fn the_bounds_cover_the_boxes_and_the_pipe_route() {
+        let catalog = Catalog::builtin();
+        let placements = [
+            Placed {
+                catalog_id: "supply.compressor",
+                rect: Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0),
+                extension: 0.0,
+                valve_position: 0,
+                reading: None,
+                orientation: Orientation::NONE,
+                designation: None,
+            },
+            Placed {
+                catalog_id: "cylinder.single_acting_20_100",
+                rect: Rect::from_min_size(Pt::new(100.0, 0.0), 40.0, 20.0),
+                extension: 0.0,
+                valve_position: 0,
+                reading: None,
+                orientation: Orientation::NONE,
+                designation: None,
+            },
+        ];
+        let pipes = [Pipe {
+            from: PipeEnd {
+                placement: 0,
+                port: "1",
+            },
+            to: PipeEnd {
+                placement: 1,
+                port: "1",
+            },
+            offset_mm: 10.0,
+            pressure_ratio: 0.0,
+        }];
+
+        let bounds =
+            bounds_placed(&placements, &pipes, None, &catalog).expect("a drawing has bounds");
+        assert!(bounds.contains(Pt::new(0.0, 0.0)), "{bounds:?}");
+        assert!(bounds.contains(Pt::new(140.0, 20.0)), "{bounds:?}");
+    }
 }

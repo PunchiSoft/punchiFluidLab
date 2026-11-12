@@ -68,12 +68,11 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
         "revision / date",
         &format!("{} · {}", block.revision, block.date),
     );
-    field(
-        surface,
-        3,
-        "sheet",
-        &format!("1/1 · {}", page.paper.label()),
-    );
+    let sheet = match &block.scale {
+        Some(scale) => format!("1/1 · {} · {scale}", page.paper.label()),
+        None => format!("1/1 · {}", page.paper.label()),
+    };
+    field(surface, 3, "sheet", &sheet);
 
     if let Some(note) = &block.note {
         // Inside the frame, never in the margin: the margin band belongs to the paper.

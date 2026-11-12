@@ -266,6 +266,11 @@ Window {
         sequence: "Ctrl+Shift+S"
         onActivated: saveDialog.open()
     }
+    // Export shares the dialog with the ribbon; the extension still chooses PDF or PNG.
+    Shortcut {
+        sequence: "Ctrl+Shift+E"
+        onActivated: exportDialog.open()
+    }
     Shortcut {
         sequence: "Ctrl+O"
         onActivated: openDialog.open()

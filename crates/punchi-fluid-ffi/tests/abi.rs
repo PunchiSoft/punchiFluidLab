@@ -17,30 +17,31 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 
 use punchi_fluid::{
-    PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_HAS_STROKE,
-    PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk, PfPoint, PfSession,
-    PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection, pf_session_autosave,
-    pf_session_build_frame, pf_session_can_undo, pf_session_catalog, pf_session_check,
-    pf_session_component_count, pf_session_component_designation, pf_session_component_edits,
-    pf_session_component_id, pf_session_component_orientation, pf_session_component_rect,
-    pf_session_component_valve_position, pf_session_component_valve_spring_return,
-    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_finding_at,
-    pf_session_forget_recent, pf_session_free, pf_session_hit_component, pf_session_hit_valve,
-    pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
-    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
-    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_offset, pf_session_place_component, pf_session_port_point,
-    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
-    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
-    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_restart,
-    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_all, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_component_designation, pf_session_set_component_edits,
-    pf_session_set_recent_file, pf_session_telemetry, pf_session_toggle_select,
-    pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
+    PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_PDF,
+    PF_HAS_STROKE, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk,
+    PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection,
+    pf_session_autosave, pf_session_build_frame, pf_session_can_undo, pf_session_catalog,
+    pf_session_check, pf_session_component_count, pf_session_component_designation,
+    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
+    pf_session_component_rect, pf_session_component_valve_position,
+    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
+    pf_session_copy_selected, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_export, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
+    pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
+    pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
+    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
+    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
+    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
+    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
+    pf_session_remove_selection, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
+    pf_session_select_pipe, pf_session_select_rect, pf_session_selected, pf_session_selected_pipe,
+    pf_session_selection_at, pf_session_selection_count, pf_session_set_component_designation,
+    pf_session_set_component_edits, pf_session_set_recent_file, pf_session_telemetry,
+    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -1768,6 +1769,56 @@ fn a_component_can_be_named_and_the_name_survives_a_save_and_an_undo() {
     );
     // SAFETY: live session.
     assert_eq!(name_of(session, 2), "1A1");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+/// `true` when the PDF carries `needle` as a hexadecimal string, which is how the writer
+/// encodes text.
+fn pdf_shows(pdf: &[u8], needle: &str) -> bool {
+    let hex: String = needle.bytes().fold(String::new(), |mut out, byte| {
+        let _ = std::fmt::Write::write_fmt(&mut out, format_args!("{byte:02X}"));
+        out
+    });
+    String::from_utf8_lossy(pdf).contains(&hex)
+}
+
+#[test]
+fn an_export_carries_the_caller_date_and_fits_a_large_circuit() {
+    let session = session();
+    let cylinder = catalog_index(session, "cylinder.single_acting_20_100");
+    // Far from the seeded circuit, so the drawing is larger than the page and must shrink.
+    // SAFETY: live session, a catalog index the call above found, and finite coordinates.
+    let placed = unsafe { pf_session_place_component(session, cylinder, 600.0, 400.0) };
+    assert!(placed >= 0, "the far component is placed");
+
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("plano.pdf");
+    let path = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    let date = CString::new("2026-11-12").expect("a date");
+    // SAFETY: live session, NUL-terminated path and date, A4 is index 1.
+    let code = unsafe {
+        pf_session_export(
+            session,
+            path.as_ptr(),
+            PF_EXPORT_PDF,
+            1,
+            0,
+            300.0,
+            date.as_ptr(),
+        )
+    };
+    assert_eq!(
+        code,
+        PF_OK,
+        "{}",
+        // SAFETY: live session.
+        unsafe { CStr::from_ptr(pf_session_last_error(session)) }.to_string_lossy()
+    );
+    let pdf = std::fs::read(path.to_str().unwrap_or_default()).expect("the PDF is written");
+    assert!(pdf_shows(&pdf, "2026-11-12"), "the date reaches the page");
+    assert!(pdf_shows(&pdf, "1:"), "the title block records the scale");
+
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

@@ -121,9 +121,9 @@ que está en uso. La página lleva marco, bloque de identificación y leyenda de
 línea y números de puerto, y mientras alguna revisión de símbolo siga abierta lleva además
 la nota de que los símbolos aún no están verificados contra ISO 1219-1. El mismo circuito
 exportado dos veces produce los mismos bytes. Todavía no hay panel de márgenes, tamaño
-personalizado ni resolución del PNG, la fecha del bloque de identificación sigue fija, el
-dibujo se centra en vez de escalarse para encajar, y el comando de exportación no tiene
-atajo.
+personalizado ni resolución del PNG. La fecha es la del día de la exportación, el dibujo se
+escala para encajar y la escala queda escrita en el bloque de identificación, y
+`Ctrl+Shift+E` abre el diálogo.
 
 **El papel es una decisión, no un valor por defecto.** Un plano se imprime en la hoja que usa
 la oficina técnica, y no es una sola: ISO 216/5457 A5 a A0 para el mundo ISO;

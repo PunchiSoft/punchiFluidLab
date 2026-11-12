@@ -7,6 +7,8 @@
 //! multiplies by pixels per millimetre, the paper divides by 25.4 to reach points.
 //! That is what lets the sheet and the exported page come from the same calls.
 
+pub use crate::fit::{Bounds, Scaled, fit_scale};
+
 /// Point (or vector) in millimetres of the drawing.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Pt {

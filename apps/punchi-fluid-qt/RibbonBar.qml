@@ -42,7 +42,7 @@ Rectangle {
                         { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un circuito"), big: true },
                         { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
                         { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") },
-                        { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+E · el plano en la hoja que elijas, PDF o PNG"), big: true }
+                        { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+Shift+E · el plano en la hoja que elijas, PDF o PNG"), big: true }
                     ]
                 },
                 {

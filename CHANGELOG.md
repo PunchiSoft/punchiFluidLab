@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### La exportación imprime la fecha real y encaja en la hoja — 2026-11-12
+
+El plano salía con la fecha fija del 7 de noviembre, centrado a tamaño natural: un circuito
+más grande que el área libre se recortaba, y el botón anunciaba `Ctrl+E`, que marca todo.
+Tres defectos del mismo mando.
+
+- **La fecha la pone quien llama**: `pf_session_export` recibe `date`, la ventana pasa la
+  fecha local en ISO 8601 y `--export` usa el mismo camino. El ABI no lee el reloj, así que
+  una exportación es reproducible dentro del día. La firma cambia, así que **el ABI sube a
+  la versión 3**.
+- **El dibujo se escala para encajar**: los límites incluyen los símbolos, las
+  designaciones, las lecturas y los recorridos de los tubos; `Scaled` aplica el mismo factor
+  a geometría, trazos y texto, y el bloque de título escribe la escala (`1:1`, `1:2`, …).
+  Un dibujo pequeño conserva su tamaño y se centra.
+- **`Ctrl+Shift+E` abre el diálogo**, y la pista del botón deja de mentir.
+- **La nota de símbolos sin verificar vuelve a salir en la exportación de la ventana**: el
+  ABI pasa por `block_with_review_state` en lugar de construir un bloque sin nota.
+
+Probado con `an_export_carries_the_caller_date_and_fits_a_large_circuit` (fecha y escala en
+el PDF por el ABI), las pruebas de `Scaled` y `bounds_placed`, la prueba de WinAnsi y la
+puerta completa.
+
 ### El código deja de hablar español — 2026-11-12
 
 La regla ya estaba en `CONTRIBUTING.md` —código, comentarios, pruebas y mensajes de commit

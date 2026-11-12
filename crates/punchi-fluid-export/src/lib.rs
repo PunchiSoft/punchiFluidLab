@@ -155,7 +155,15 @@ pub fn render_png(
 }
 
 /// Area the drawing may use: the content, without the block and without the note band.
-fn drawing_area(page: &Page, block: &TitleBlock) -> Result<Rect, ExportError> {
+///
+/// Public because a caller that composes its own page (the ABI prints the edited sheet)
+/// has to know the same area before it can fit the drawing and record the scale.
+///
+/// # Errors
+///
+/// [`ExportError::EmptyContent`] when the margins and the identification block leave no
+/// room for the drawing.
+pub fn drawing_area(page: &Page, block: &TitleBlock) -> Result<Rect, ExportError> {
     let drawing = page.drawing_rect();
     if drawing.is_empty() {
         return Err(ExportError::EmptyContent(page.paper.label()));
