@@ -281,26 +281,19 @@ In short:
 
 ## Project documentation
 
+The full index — every document, its kind, its status and the reading order — is
+[docs/README.md](docs/README.md). The contract and the community files stay in the
+repository root:
+
 | Document | Purpose |
 |---|---|
 | [AGENTS.md](AGENTS.md) | canonical rules for people and agents |
 | [CHANGELOG.md](CHANGELOG.md) | changes by date, under `Unreleased` |
-| [docs/retomar.md](docs/retomar.md) | continuity note: everything needed to resume with no context (Spanish) |
-| [docs/next-steps.md](docs/next-steps.md) | where the project stands and the work order for what comes next |
-| [docs/ui-ux.md](docs/ui-ux.md) | the interface: regions, theming, accessibility |
-| [docs/symbology.md](docs/symbology.md) | ISO 1219 conformance and the review checklist |
-| [docs/plan.md](docs/plan.md) | milestones with acceptance criteria |
-| [docs/engineering.md](docs/engineering.md) | modularisation, memory budget, security, GitHub practices |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | how to set up, test and send a change |
 | [SECURITY.md](SECURITY.md) | how to report a vulnerability privately |
 | [SUPPORT.md](SUPPORT.md) | where to ask, and what this project does not promise |
-| [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) | the stack and the crate split |
-| [docs/adr/0002-components-are-files.md](docs/adr/0002-components-are-files.md) | why components are definition files |
-| [assets/catalog/README.md](assets/catalog/README.md) | how to add, change or delete a component |
-| [packaging/README.md](packaging/README.md) | how a release will be packaged |
-| [i18n/README.md](i18n/README.md) | translation plan |
-| [assets/symbols/README.md](assets/symbols/README.md) | symbol set and its licence |
-| [assets/screenshots/README.md](assets/screenshots/README.md) | the captures used by this file, and their rules |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | the code of conduct, adopted by reference |
+| [docs/README.md](docs/README.md) | the index: architecture, process, reference and decisions |
 
 ## Made with love, for the community
 

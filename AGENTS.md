@@ -17,10 +17,13 @@ student must be able to do, how it behaves, and the test that proves it. The aut
 the standard and the teaching goal, never another product; the procedure is
 [.agents/skills/capability-plan](.agents/skills/capability-plan/SKILL.md).
 
-Where the rest lives: [docs/ui-ux.md](docs/ui-ux.md) (interface),
+Where the rest lives: [docs/README.md](docs/README.md) is the index and says which document
+is current, target or historical. In short, [docs/architecture.md](docs/architecture.md)
+(the system map), [docs/ui-ux.md](docs/ui-ux.md) (interface),
 [docs/symbology.md](docs/symbology.md) (ISO 1219 conformance),
 [docs/plan.md](docs/plan.md) (milestones and acceptance criteria),
 [docs/engineering.md](docs/engineering.md) (memory, security, GitHub practices),
+[docs/adr/README.md](docs/adr/README.md) (the decision index) and
 [assets/catalog/README.md](assets/catalog/README.md) (authoring a component).
 
 ## Scope and product
@@ -65,8 +68,9 @@ other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalo
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `catalog`, `draw` and `solver`; `ffi` on all of the above, `export` included, because the
 window speaks only the ABI and the ABI is the one place that holds both the document and the
-page it is printed on; `cli` on `core`, `file` and
-`solver`. Nothing in Rust depends on the window, and the window depends only on
+page it is printed on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
+`solver`, because it runs the same check and the same model without a window. Nothing in
+Rust depends on the window, and the window depends only on
 `punchi-fluid-ffi`. A new dependency direction needs an ADR; the `Surface` layer that
 made `draw` and `export` possible is [ADR 0003](docs/adr/0003-one-drawing-two-devices.md),
 and the Qt window over the C ABI is

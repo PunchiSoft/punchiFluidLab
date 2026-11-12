@@ -141,7 +141,81 @@ for doc in "${DOCS[@]}"; do
     done
 done
 
+# The documentation architecture: an index that reaches every page, links that resolve,
+# and ADRs with a number, a status, a date and a line in their own index. A page nobody
+# links to is a page nobody reads, and a link to a file that does not exist is a promise
+# the repository does not keep.
+if ! python3 - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+root = Path(".")
+docs = sorted(Path("docs").rglob("*.md"))
+index = Path("docs/README.md").read_text(encoding="utf-8")
+adr_index = Path("docs/adr/README.md").read_text(encoding="utf-8")
+problems = []
+
+for doc in docs:
+    if doc == Path("docs/README.md"):
+        continue
+    if doc.parent == Path("docs/adr") and doc.name[:4].isdigit():
+        target = adr_index
+        label = "docs/adr/README.md"
+        relative = doc.name
+    else:
+        target = index
+        label = "docs/README.md"
+        relative = doc.relative_to("docs").as_posix()
+    if f"]({relative})" not in target:
+        problems.append(f"{doc} is not linked from {label}")
+
+files = [Path("README.md"), Path("README.es.md"), Path("AGENTS.md"), *docs]
+for file in files:
+    text = file.read_text(encoding="utf-8")
+    for match in re.finditer(r"\[[^\]]*\]\(([^)#]+)(#[^)]*)?\)", text):
+        target = match.group(1).strip()
+        if not target or target.startswith(("http://", "https://", "mailto:")):
+            continue
+        if not (file.parent / target).resolve().exists():
+            problems.append(f"{file}: broken link {target}")
+
+numbers = []
+for adr in sorted(Path("docs/adr").glob("*.md")):
+    if adr.name in {"README.md", "template.md"}:
+        continue
+    match = re.match(r"^(\d{4})-", adr.name)
+    if not match:
+        problems.append(f"{adr}: name is not NNNN-kebab-case.md")
+        continue
+    numbers.append(int(match.group(1)))
+    head = "\n".join(adr.read_text(encoding="utf-8").splitlines()[:12])
+    if "Status" not in head:
+        problems.append(f"{adr}: no Status in the first lines")
+    if "Date" not in head:
+        problems.append(f"{adr}: no Date in the first lines")
+
+expected = list(range(1, len(numbers) + 1))
+if numbers != expected:
+    problems.append(f"ADR numbers are {numbers}, expected {expected}")
+
+for file in files:
+    first = next((line for line in file.read_text(encoding="utf-8").splitlines() if line.strip()), "")
+    if not first.startswith("# "):
+        problems.append(f"{file}: first non-empty line is not an H1")
+
+if problems:
+    print("check-docs: documentation structure problems:", file=sys.stderr)
+    for problem in problems:
+        print(f"  {problem}", file=sys.stderr)
+    sys.exit(1)
+PY
+then
+    status=1
+fi
+
 if ((status == 0)); then
     echo "check-docs: the workspace documents match Cargo.toml"
+    echo "check-docs: the documentation index, links and ADRs are complete"
 fi
 exit "$status"

@@ -1,5 +1,8 @@
 # 0011 — The circuit check is a public command with a versioned contract
 
+- **Status:** accepted
+- **Date:** 2026-11-07
+
 ## Context
 
 The check of §4.10 already exists as a library (`punchi-fluid-check`) and is reachable from

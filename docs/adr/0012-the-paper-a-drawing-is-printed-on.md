@@ -1,5 +1,8 @@
 # 0012 — The paper a drawing is printed on
 
+- **Status:** accepted
+- **Date:** 2026-11-07
+
 ## Context
 
 A circuit leaves the program as a PDF or a PNG, and the first question a drawing office asks

@@ -6,6 +6,33 @@ publicación.
 
 ## Unreleased
 
+### Una arquitectura documental, no una carpeta de archivos — 2026-11-12
+
+La documentación tenía buenos documentos sueltos y ningún índice que dijera cuál era
+vigente, cuál era especificación y cuál era historia. El README raíz repetía una tabla que
+ya estaba en `docs/`, los ADR no tenían índice ni plantilla, y nada comprobaba que un
+enlace llevara a un archivo existente.
+
+- **`docs/README.md` es el índice único**: tipo de documento (tutorial, how-to,
+  referencia, explicación, proceso, decisión), estado (`current`, `target`, `historical`,
+  `internal`), orden de lectura por lector y la lista de lo que falta por escribir.
+- **`docs/architecture.md`**: el mapa del sistema — crates y aristas permitidas, el flujo
+  de hoja a red, dibujo y exportación, los tres puntos de extensión y las deudas que
+  condicionan las próximas fases.
+- **`docs/style.md` y `docs/glossary.md`**: cómo se escribe y se enlaza un documento, y el
+  vocabulario del proyecto en inglés con la palabra que muestra la interfaz en español.
+- **`docs/adr/README.md` y `docs/adr/template.md`**: el índice de las doce decisiones con
+  estado y fecha, y la plantilla de la siguiente. Los ADR 0011 y 0012 ganan la cabecera de
+  estado y fecha que les faltaba.
+- **`check-docs.sh` comprueba la estructura**: todo documento está enlazado desde su
+  índice, todo enlace relativo resuelve, los ADR son contiguos y declaran estado y fecha,
+  y cada archivo empieza por un solo `H1`.
+- **El README ya no duplica el índice**: enlaza a `docs/README.md` y conserva solo los
+  archivos de contrato y comunidad. `AGENTS.md` apunta al índice y a la arquitectura.
+
+No cambia el comportamiento ni el dibujo: es la estructura que hace que la documentación
+se pueda leer, revisar y comprobar.
+
 ### La documentación vuelve a decir lo que el proyecto hace — 2026-11-12
 
 El PR de la exportación actualizó el changelog y las reglas, pero no el libro de
