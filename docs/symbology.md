@@ -190,6 +190,26 @@ to the standard's reading of it.
 - Junction dots: a filled dot where three or more lines meet; no dot where lines
   merely cross. A crossing that looks like a junction is a defect.
 
+### Instruments
+
+An instrument is drawn **as the thing it is**, on the line or on a stem, and never as a
+text label the drawing happens to put beside a component: a label does not connect, is not
+checked and reads nothing.
+
+- A **pressure gauge** is a **circle on a stem** that taps the line, with a needle and a
+  hub, and the stem ends at the connection. The dial is the symbol.
+- A **flow meter** is a **circle the line passes through**: one stub on each side and an
+  **arrow inside the circle**, from port 1 to port 2, which is the direction its reading
+  counts as positive. The line does not continue through the circle; the circle is the
+  instrument.
+- The **value is a reading, not a primitive**: it is drawn from the model beside or inside
+  the symbol, in the unit the definition declares, so one shape serves a 0–10 bar gauge and
+  a 0–100 l/min meter and neither file stores a number the simulation owns.
+- The requirement for these two shapes is written here from ISO 1219-1's function-first
+  reading of a measuring instrument; no published figure was traced. Each instrument's
+  review stays `pending` until a second reader checks it
+  ([review](../assets/symbols/review/)).
+
 ### Circuit diagrams (Part 2/3)
 
 - Components are grouped and numbered, and the diagram carries an identification

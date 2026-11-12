@@ -57,6 +57,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/gauge.pressure.toml"),
     ),
     (
+        "flow.meter.toml",
+        include_str!("../../../assets/catalog/flow.meter.toml"),
+    ),
+    (
         "throttle.fixed.toml",
         include_str!("../../../assets/catalog/throttle.fixed.toml"),
     ),

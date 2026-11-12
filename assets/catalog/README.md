@@ -156,6 +156,21 @@ max_bar = 10.0               # highest pressure on the dial, gauge bar
 
 ```toml
 [behaviour]
+type = "flow_meter"
+conductance = 2.0e-9         # restriction the meter adds, m³ / (s · Pa)
+nominal_l_min = 100.0        # full scale of the reading, normal litres per minute
+```
+
+The meter sits **in** the line: two working ports, one arriving and one leaving. The
+solver models it as the restriction its `conductance` declares and keeps the gas that
+went through it on the last substep, so the reading is a measurement of this circuit and
+not of the definition. Positive means gas from port 1 to port 2. The number is drawn in
+normal litres per minute at 20 °C and 1 013.25 hPa, the same conditions a data sheet
+quotes; the file declares the scale, never the number. See
+[ADR 0014](../docs/adr/0014-a-flow-meter-is-a-restriction-that-reports.md).
+
+```toml
+[behaviour]
 type = "cylinder"
 bore_mm = 20.0
 rod_mm = 0.0                 # rod diameter; 0 when the return chamber has the full bore
@@ -269,9 +284,9 @@ one is skipped and reported like any other malformed definition.
 
 The visual half is reviewed once per symbol and recorded in
 [assets/symbols/review/](../symbols/review/): the review file states `status:` as
-`complete` or `pending-300dpi`, and a test fails when a built-in has no review. The
-four built-ins are reviewed at palette and canvas size and still `pending-300dpi`,
-which is why the export keeps labelling the document as unverified.
+`complete` or `pending-300dpi`, and a test fails when a built-in has no review. Every
+built-in is reviewed at palette and canvas size and still `pending-300dpi`, which is why
+the export keeps labelling the document as unverified.
 
 **Convention:** the active position's square is filled and the other positions' paths
 are dimmed, so the spool position never depends on colour alone. `PUNCHI_FLUID_PREVIEW=1

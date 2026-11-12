@@ -492,6 +492,16 @@ pub enum Behaviour {
         /// Sonic conductance, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// Flow meter: an inline restriction that reports the gas that goes through it.
+    ///
+    /// The conductance is the physics — a meter does obstruct the line it measures — and
+    /// the nominal flow is the declared full scale, so a larger meter is another file.
+    FlowMeter {
+        /// Sonic conductance, `m³ / (s · Pa)`.
+        conductance: f64,
+        /// Full scale of the dial, normal litres per minute.
+        nominal_l_min: f64,
+    },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -510,6 +520,7 @@ impl Behaviour {
             Self::Cylinder { .. } => "cylinder",
             Self::Gauge { .. } => "gauge",
             Self::Throttle { .. } => "throttle",
+            Self::FlowMeter { .. } => "flow_meter",
             Self::Junction => "junction",
         }
     }

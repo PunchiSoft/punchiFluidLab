@@ -31,7 +31,7 @@ from the catalog API; the window does not show them yet.
 | `body` | For a directional valve, the rectangle split into one equal square per position. |
 | `spring` / `return` | The return part: a spring, air, fluid or a detent. `spring` is the short form of `return kind = "spring"`; declaring both is an error. |
 | `actuator` | The actuation part: lever, push button, pedal, solenoid, and so on. |
-| `behaviour` | What the solver does with it: `supply`, `valve`, `cylinder`, `gauge`, `throttle` or `junction`. |
+| `behaviour` | What the solver does with it: `supply`, `valve`, `cylinder`, `gauge`, `flow_meter`, `throttle` or `junction`. |
 | `kinematics` | Moving parts the renderer animates, for example a piston. |
 
 A port has a **role**, not a number that means something: `supply`, `working`, `exhaust` or

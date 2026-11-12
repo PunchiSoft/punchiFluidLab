@@ -36,6 +36,8 @@ today, kept here so a translator does not invent a second vocabulary.
 | throttle | estrangulador | A fixed or adjustable restriction. | ISO 5598 |
 | junction | unión en T | A three-port point where hoses meet; it adds no volume and no restriction. | ADR 0006 |
 | gauge | manómetro | A passive instrument that shows the pressure at its port. | ADR 0008 |
+| flow meter | caudalímetro | An instrument in the line that measures the gas going through it, in normal litres per minute. | ADR 0014 |
+| normal litre | litro normal | A litre at 20 °C and 1 013.25 hPa, the reference the flow reading uses; the file's scale is in this unit. | ADR 0014 |
 | service unit | unidad de mantenimiento | The filter, regulator and lubricator group that prepares the air. | ISO 5598 |
 | filter | filtro | Removes particles and condensate from the air. | ISO 5598 |
 | lubricator | lubricador | Adds oil to the air for the parts that need it. | ISO 5598 |

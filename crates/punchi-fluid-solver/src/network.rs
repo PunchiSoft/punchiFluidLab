@@ -104,6 +104,11 @@ pub enum PartBehaviour {
         /// Sonic conductance, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// Inline restriction that reports the gas it carried (ADR 0014).
+    FlowMeter {
+        /// Sonic conductance, `m³ / (s · Pa)`.
+        conductance: f64,
+    },
     /// Hoses meet here: one node, no volume of its own beyond the ports.
     Junction,
 }
@@ -175,6 +180,9 @@ impl NetworkPart {
             Behaviour::Throttle { conductance } => PartBehaviour::Throttle {
                 conductance: *conductance,
             },
+            Behaviour::FlowMeter { conductance, .. } => PartBehaviour::FlowMeter {
+                conductance: *conductance,
+            },
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {
@@ -234,6 +242,8 @@ struct Edge {
     valve: Option<usize>,
     /// Bit per position: the edge is open while the valve sits on a set bit.
     mask: u64,
+    /// Part the restriction belongs to, when an instrument reads the flow through it.
+    part: Option<usize>,
 }
 
 /// One chamber of a cylinder and the way its pressure pushes the piston.
@@ -320,6 +330,10 @@ pub struct Network {
     mass_out: f64,
     supply_flow: f64,
     working_flow: f64,
+    /// Mass flow through the restrictions an instrument owns, `kg / s`, on the last
+    /// substep. `None` for a part that owns none, so a missing reading never looks like
+    /// a reading of zero.
+    part_flow: Vec<Option<f64>>,
 }
 
 impl Network {
@@ -378,7 +392,7 @@ impl Network {
         let (mut nodes, port_node) = port_nodes(parts, atmosphere_pa, temperature_kelvin);
         let supply_pa = attach_supplies(parts, &mut nodes, &port_node);
         let (mut edges, valves, valve_parts) = valve_edges(parts, &port_node)?;
-        throttle_edges(parts, &port_node, &mut edges);
+        restriction_edges(parts, &port_node, &mut edges);
         append_pipes(&mut edges, pipes, &port_node);
         close_open_exhausts(parts, &mut nodes, &port_node, &edges, atmosphere_pa);
         let (pistons, piston_parts) = chambers(
@@ -388,6 +402,12 @@ impl Network {
             atmosphere_pa,
             temperature_kelvin,
         );
+        let mut part_flow = vec![None; parts.len()];
+        for edge in &edges {
+            if let Some(part) = edge.part {
+                part_flow[part] = Some(0.0);
+            }
+        }
         Ok(Self {
             nodes,
             edges,
@@ -405,6 +425,7 @@ impl Network {
             mass_out: 0.0,
             supply_flow: 0.0,
             working_flow: 0.0,
+            part_flow,
         })
     }
 
@@ -622,6 +643,28 @@ impl Network {
         self.working_flow
     }
 
+    /// Mass flow through the restriction `part` owns, `kg / s`, on the last substep.
+    ///
+    /// Positive means gas from port 1 to port 2 of the definition. `None` when the part
+    /// owns no restriction, so an instrument that was not built reads nothing instead of a
+    /// zero that would look like a measurement.
+    #[must_use]
+    pub fn part_flow(&self, part: usize) -> Option<f64> {
+        self.part_flow.get(part).copied().flatten()
+    }
+
+    /// The same flow in normal litres per minute.
+    ///
+    /// Normal conditions are 20 °C and 1 013.25 hPa — [`Temperature::STANDARD`] and
+    /// [`Pressure::ATMOSPHERE`] — which is the reference a data sheet quotes and the one a
+    /// student can check by hand.
+    #[must_use]
+    pub fn part_flow_l_min(&self, part: usize) -> Option<f64> {
+        let flow = self.part_flow(part)?;
+        let density = self.atmosphere_pa / (AIR_SPECIFIC_GAS_CONSTANT * self.temperature_kelvin);
+        Some(flow / density * 60_000.0)
+    }
+
     /// Builds a telemetry snapshot.
     #[must_use]
     pub fn telemetry(&self) -> Telemetry {
@@ -703,6 +746,11 @@ impl Network {
         }
 
         let mut delta = vec![0.0_f64; self.nodes.len()];
+        // Moved out of `self` so the loop can read the network while it writes the flows.
+        let mut part_flow = std::mem::take(&mut self.part_flow);
+        for slot in &mut part_flow {
+            *slot = slot.map(|_| 0.0);
+        }
         let mut supply_flow = 0.0;
         let mut mass_out = 0.0;
         let mut working = 0.0;
@@ -727,6 +775,11 @@ impl Network {
                 edge.conductance,
                 self.temperature_kelvin,
             );
+            if let Some(part) = edge.part {
+                if let Some(total) = part_flow.get_mut(part).and_then(Option::as_mut) {
+                    *total += flow;
+                }
+            }
             if flow == 0.0 {
                 continue;
             }
@@ -773,6 +826,7 @@ impl Network {
         self.mass_out += mass_out * dt;
         self.supply_flow = supply_flow;
         self.working_flow = working;
+        self.part_flow = part_flow;
 
         self.step_pistons(dt);
     }
@@ -934,6 +988,7 @@ fn valve_edges(
                     conductance: connection.conductance,
                     valve: Some(valve),
                     mask: 1_u64 << position,
+                    part: None,
                 });
             }
         }
@@ -941,21 +996,23 @@ fn valve_edges(
     Ok((edges, valves, valve_parts))
 }
 
-/// A hose conducts between two ports; it is a restriction, not a volume.
-/// A fixed restriction is an edge between its own two ports.
+/// A fixed restriction and a flow meter are edges between their own two ports.
 ///
 /// A restrictor is part of the circuit and not a dead end: without this edge the air stops at
 /// it instead of being slowed by it, and a service unit in series cuts the line in two. The
 /// conductance comes from the definition, so a slower restrictor is a different file and not
-/// a different code path.
-fn throttle_edges(
+/// a different code path. A meter is a restriction that also reports the gas it carried, so
+/// its edge remembers which part owns it (ADR 0014).
+fn restriction_edges(
     parts: &[NetworkPart],
     port_node: &[HashMap<&str, usize>],
     edges: &mut Vec<Edge>,
 ) {
     for (index, part) in parts.iter().enumerate() {
-        let PartBehaviour::Throttle { conductance } = part.behaviour else {
-            continue;
+        let (conductance, meter) = match part.behaviour {
+            PartBehaviour::Throttle { conductance } => (conductance, false),
+            PartBehaviour::FlowMeter { conductance } => (conductance, true),
+            _ => continue,
         };
         let mut nodes = part
             .ports
@@ -970,6 +1027,7 @@ fn throttle_edges(
             conductance,
             valve: None,
             mask: u64::MAX,
+            part: meter.then_some(index),
         });
     }
 }
@@ -996,6 +1054,7 @@ fn append_pipes(
             conductance: PIPE_CONDUCTANCE,
             valve: None,
             mask: u64::MAX,
+            part: None,
         });
     }
 }
@@ -1370,6 +1429,95 @@ mod tests {
             network.port_pressure(2, "2").is_some(),
             "the retract port is part of the model"
         );
+    }
+
+    #[test]
+    fn a_flow_meter_reads_the_flow_it_carries() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "flow.meter"),
+        ];
+        // The meter sits in the line the valve feeds: port 1 towards the valve, port 2
+        // towards the cylinder, which is what fixes the sign of the reading.
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
+            (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes).expect("the meter builds");
+        assert_eq!(
+            network.part_flow(3),
+            Some(0.0),
+            "a meter that has not met any air reads zero, not a guess"
+        );
+
+        // Early in the stroke, while the chamber is still filling: a meter read after the
+        // piston has stopped would show nothing and the test would pass for the wrong
+        // reason.
+        network.press_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let filling = network.part_flow(3).expect("the meter owns a restriction");
+        assert!(
+            filling > 0.0,
+            "air enters through port 1, so the reading is positive, got {filling}"
+        );
+        // The quoted unit is normal litres per minute at 20 °C and 1 013.25 hPa, where dry
+        // air is 1.204 kg/m³: the conversion is the hand calculation, not a copy of the
+        // solver's own constant.
+        let litres = network
+            .part_flow_l_min(3)
+            .expect("the flow converts to litres");
+        let expected = filling / 1.204 * 60_000.0;
+        assert!(
+            (litres - expected).abs() / expected < 0.01,
+            "{litres:.1} l/min against the hand calculation {expected:.1} l/min"
+        );
+
+        // Releasing the valve exhausts the cylinder through the meter: the reading has to
+        // follow the air, sign included, or it reports the size of the flow and lies about
+        // its direction.
+        network.release_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let emptying = network.part_flow(3).expect("the meter owns a restriction");
+        assert!(
+            emptying < 0.0,
+            "air leaves through port 1, so the reading is negative, got {emptying}"
+        );
+
+        // When the piston reaches its stop the meter reads what is still moving, which is
+        // nothing: the reading has to fall by an order of magnitude, or the instrument is
+        // reporting the size of the model's noise instead of the circuit.
+        for _ in 0..400 {
+            network.advance(0.016).expect("accepted");
+        }
+        let settled = network
+            .part_flow_l_min(3)
+            .expect("the meter owns a restriction")
+            .abs();
+        assert!(
+            settled < litres * 0.05,
+            "the settled meter reads {settled:.2} l/min against {litres:.1} while filling"
+        );
+    }
+
+    #[test]
+    fn a_part_without_a_restriction_reports_nothing() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "throttle.fixed"),
+        ];
+        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
+        let network = Network::build(&parts, &pipes).expect("builds");
+        assert_eq!(network.part_flow(0), None, "a supply owns no restriction");
+        assert_eq!(network.part_flow(9), None, "there is no ninth part");
     }
 
     #[test]

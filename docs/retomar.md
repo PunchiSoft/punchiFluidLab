@@ -46,19 +46,17 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Proyecto | **un documento con varios circuitos**: formato 4, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa y guardado/ apertura de todos; la novena falta es un tubo que une dos circuitos |
 | Exportación | **desde la ventana y sin ventana**: Archivo ▸ Exportar escribe PDF o PNG (300 dpi) de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Deuda: no hay panel de márgenes, tamaño personalizado ni resolución |
 | Comprobación | 7 de las 9 faltas, cada una señalada en el dibujo; las otras 2 necesitan el tubo cuyos extremos no encajan y la biblioteca eléctrica con su encoder (F6) |
-| Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
-| Símbolos | lint de 8 reglas; **14 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
+| Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; **caudalímetro** (`behaviour = "flow_meter"`): restricción en la línea que informa del gas que la atraviesa, en litros normales por minuto; dinamómetro y registrador pendientes |
+| Símbolos | lint de 8 reglas; **15 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
 
 **Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
 (la hoja se dibuja, se conecta, se gira, se simula y se guarda), pero del manual completo
 falta bastante: repartir con separación igual, las clases de conducto y los
-silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (F3), los
-proyectos (F4), las listas de piezas (F5), y las bibliotecas eléctrica, digital y GRAFCET
-(F6). Estimación razonable hoy: **cerca de la mitad del manual**, con F1 casi cerrada, F2
-cerrada, F4 encaminada y la exportación entregada (P1.7). El siguiente paso, por valor, es
-un **proyecto de circuitos** (varios circuitos en un documento), que además cierra la
-novena falta de la comprobación, seguido de los instrumentos que faltan (caudalímetro,
-dinamómetro, registrador).
+silenciadores/cierres (F1), el dinamómetro y el registrador (F3), las listas de piezas
+(F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
+**algo más de la mitad del manual**, con F1 casi cerrada, F2 cerrada, F4 entregada, la
+exportación entregada (P1.7) y el caudalímetro (P2.1). El siguiente paso, por valor, es el
+**dinamómetro y el registrador**, que cierran los instrumentos.
 
 ### 0.2 Cómo se entrega desde el 2026-11-12
 
@@ -126,12 +124,13 @@ especificación de lo que sigue.
 | Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
 | La hoja es la red que resuelve el solver | **hecho** | pruebas de red, el circuito 5/2 + doble efecto por el ABI, tubos coloreados |
 | Proyecto de circuitos | **hecho** | formato 4, selector, añadir/renombrar, guardado y apertura; prueba ABI `circuits_can_be_added_renamed_and_survive_a_save_and_open` y la novena falta `a_pipe_between_two_circuits_is_the_ninth_fault` |
+| Caudalímetro | **hecho** | `flow.meter`, restricción ISO 6358 en la línea que informa del caudal en litros normales por minuto; pruebas de solver, ABI y dibujo, pasos `--selftest` y revisión del símbolo |
 | Exportación PNG/PDF desde la ventana y sin ventana | **hecho** | pruebas de PDF, ráster, dibujo del llamador y fecha/escala por el ABI; `--export`; el gate escribe un PDF y un PNG en Oficio. Deuda: panel de márgenes, tamaño personalizado y resolución |
-| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 14 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
-| Instrumentos y ejecución hasta cambio | **parcial** | manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
+| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 15 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
+| Instrumentos y ejecución hasta cambio | **parcial** | manómetro, caudalímetro y «Hasta cambio»; dinamómetro y registrador pendientes |
 
-**Total de pruebas: 256** — `core` 7, `catalog` 34, `file` 23, `solver` 33, `doc` 32,
-`draw` 39, `check` 11, `export` 40, `ffi` 32, `cli` 5.
+**Total de pruebas: 261** — `core` 7, `catalog` 35, `file` 23, `solver` 35, `doc` 32,
+`draw` 40, `check` 11, `export` 40, `ffi` 33, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
@@ -299,7 +298,7 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 256 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 261 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do
@@ -389,7 +388,7 @@ Norma aplicable, verificada contra el catálogo de ISO: **ISO 1219-1:2012** (sí
 **ISO 1219-2:2012** (esquemas de circuito) e **ISO 1219-3:2016** (módulos de símbolos).
 Contrato completo y lista de revisión: [symbology.md](symbology.md).
 
-Lo que exige y **cómo está hoy** en los 14 símbolos de fábrica:
+Lo que exige y **cómo está hoy** en los 15 símbolos de fábrica:
 
 | Requisito | Estado |
 |---|---|
@@ -402,7 +401,7 @@ Lo que exige y **cómo está hoy** en los 14 símbolos de fábrica:
 | Legibilidad a 300 dpi | **pendiente** de la revisión a 300 dpi |
 | Puntos de unión en cruces de tres líneas | **hecho**: al soltar un tubo sobre otro nace un `junction.tee`, que se dibuja como punto relleno (ADR 0006); un cruce de cuatro no se ofrece |
 
-Las 14 revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
+Las 15 revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
 una prueba falla si un componente de fábrica no tiene revisión, si no dice su estado o
 si le falta la captura clara u oscura. Mientras digan `pending-300dpi`, la exportación
 lleva la nota «symbols not yet verified against ISO 1219-1».
@@ -440,19 +439,20 @@ Resumen; el detalle está en [ui-ux.md](ui-ux.md).
 ## 11. Qué se hace a continuación
 
 El orden histórico **M1 → M2 → M1.5 → M3 → M4** se cumplió. Lo que manda hoy es el orden
-de entrega de [next-steps.md](next-steps.md): **P1.7 y P1.8 entregados**, P2
-instrumentos, P3 edición restante, P4 lista de piezas y SVG, P5–P6 bibliotecas
-eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
+de entrega de [next-steps.md](next-steps.md): **P1.7, P1.8 y P2.1 entregados**, el resto
+de P2 (dinamómetro y registrador), P3 edición restante, P4 lista de piezas y SVG, P5–P6
+bibliotecas eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 
 | Hito | Estado |
 |---|---|
 | **M1** | **hecho** en Qt Quick: cinta, barra lateral, barra de estado, tema del escritorio, iconos Breeze y `--selftest` |
 | **M2** | **hecho**: `punchi-fluid-draw`, `punchi-fluid-export`, hojas A5–A0/Letter/Legal/Oficio, bloque de identificación, leyenda, PNG y PDF desde la ventana y sin ella, fecha del día y escala para encajar. Deuda: panel de márgenes, tamaño personalizado y resolución |
-| **M1.5** | `symbol lint` (8 reglas) y 14 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
+| **M1.5** | `symbol lint` (8 reglas) y 15 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
 | **M3** | **hecho**: `punchi-fluid-doc`, comandos, deshacer acotado y formato v3 con `id` de catálogo |
 | **M4** | **hecho**: conexiones y solver de red; **prueba de modularidad: una 5/2 que funciona solo como archivo** |
 | **P1.8** | **hecho**: un documento con varios circuitos, selector, añadir/renombrar y la novena falta (tubo entre circuitos) |
-| **M5** | **parcial**: manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
+| **P2.1** | **hecho**: caudalímetro en la línea, con su lectura en litros normales por minuto |
+| **M5** | **parcial**: manómetro, caudalímetro y «Hasta cambio»; dinamómetro y registrador pendientes |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
 
 El paso a paso ejecutable —ficheros exactos, firmas públicas, dependencias, trampas y
@@ -522,10 +522,10 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 - **Deuda de la exportación**: no hay panel de márgenes, tamaño personalizado ni resolución
   del PNG. La fecha es la del día, el dibujo se escala para encajar y `Ctrl+Shift+E` abre
   el diálogo. La lista de piezas y la leyenda completa siguen pendientes.
-- **La revisión a 300 dpi de los 14 símbolos sigue abierta**: por eso el documento lleva
+- **La revisión a 300 dpi de los 15 símbolos sigue abierta**: por eso el documento lleva
   la nota «symbols not yet verified against ISO 1219-1».
 - **El proyecto existe** desde P1.8: varios circuitos por documento, selector, añadir/renombrar y la novena falta. El título de la hoja no es editable; el proyecto no tiene lista de piezas por circuito.
-- **Instrumentos incompletos**: hay manómetro y «Hasta cambio»; faltan caudalímetro,
+- **Instrumentos incompletos**: hay manómetro, caudalímetro y «Hasta cambio»; faltan
   dinamómetro y registrador de 60 s.
 - **Edición incompleta**: separación igual y cuatro alineaciones; propiedades de resumen,
   accionamiento, posición inicial, ángulo, fugas y amortiguamiento; falta del tubo cuyos
@@ -556,6 +556,6 @@ Copia esto tal cual en el chat nuevo:
 
 Y añade el hito que quieras empezar:
 
-- `Empezamos P2: caudalímetro, dinamómetro y registrador de 60 s.`
+- `Empezamos P2.2: dinamómetro y registrador de 60 s.`
 - `Antes de nada, cierra la revisión a 300 dpi de los símbolos.`
 - `Antes de nada, añade el panel de exportación que falta: márgenes, tamaño personalizado y resolución.`

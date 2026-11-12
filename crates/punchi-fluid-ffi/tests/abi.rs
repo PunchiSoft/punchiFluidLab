@@ -27,9 +27,9 @@ use punchi_fluid::{
     pf_session_component_orientation, pf_session_component_rect,
     pf_session_component_valve_position, pf_session_component_valve_spring_return,
     pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
-    pf_session_finding_at, pf_session_forget_recent, pf_session_free, pf_session_hit_component,
-    pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
+    pf_session_describe_component, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_export, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
+    pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
     pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
@@ -1916,4 +1916,140 @@ fn circuits_can_be_added_renamed_and_survive_a_save_and_open() {
         pf_session_free(reopened);
         pf_session_free(original);
     }
+}
+
+/// The text of the first text call inside `area` — `x0 y0 x1 y1` — that ends with
+/// `suffix`, or an empty string when the frame carries none.
+fn text_in(calls: &[PfCall], bytes: &[u8], area: [f32; 4], suffix: &str) -> String {
+    let field = |at: u32, len: u32| -> &[u8] {
+        bytes
+            .get(at as usize..at as usize + len as usize)
+            .unwrap_or_default()
+    };
+    for call in calls.iter().filter(|call| call.kind == PF_KIND_TEXT) {
+        let inside = call.rect[0] > area[0]
+            && call.rect[0] < area[2]
+            && call.rect[1] > area[1]
+            && call.rect[1] < area[3];
+        if !inside {
+            continue;
+        }
+        let value = String::from_utf8_lossy(field(call.text_at, call.text_len)).into_owned();
+        if value.ends_with(suffix) {
+            return value;
+        }
+    }
+    String::new()
+}
+
+#[test]
+fn a_flow_meter_reads_the_line_it_is_connected_to() {
+    let session = session();
+    // The reading only means something with the meter in the line, so the hose from the
+    // valve to the cylinder comes out and the meter goes in its place.
+    let mut from = [0.0_f32; 2];
+    let valve_port = CString::new("2").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    // SAFETY: live session, a NUL-terminated port and a writable pair.
+    assert_eq!(
+        unsafe { pf_session_port_point(session, 1, valve_port.as_ptr(), from.as_mut_ptr()) },
+        PF_OK
+    );
+    let mut to = [0.0_f32; 2];
+    // SAFETY: live session and a writable pair.
+    assert_eq!(
+        unsafe { pf_session_port_point(session, 2, one.as_ptr(), to.as_mut_ptr()) },
+        PF_OK
+    );
+    // The route of a hose is a Z: its vertical segment runs through the middle of the
+    // chord, which is the point `pf_session_pipe_at` is given here.
+    let middle = (f32::midpoint(from[0], to[0]), f32::midpoint(from[1], to[1]));
+    // SAFETY: live session.
+    let hose = unsafe { pf_session_pipe_at(session, middle.0, middle.1, 1.0) };
+    assert!(hose >= 0, "the valve-to-cylinder hose was not found");
+    // SAFETY: live session and an index the hit test just returned.
+    assert_eq!(unsafe { pf_session_select_pipe(session, hose) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_remove_selected_pipe(session) }, PF_OK);
+
+    let meter = catalog_index(session, "flow.meter");
+    // SAFETY: live session.
+    let meter_index = unsafe { pf_session_place_component(session, meter, 100.0, 60.0) };
+    assert!(meter_index >= 0);
+    let meter_index = u32::try_from(meter_index).unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, 1, valve_port.as_ptr(), meter_index, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, meter_index, two.as_ptr(), 2, one.as_ptr()) },
+        PF_OK
+    );
+
+    // The file says what the instrument is and what it is scaled to, before any air moves.
+    let mut described = [0 as std::os::raw::c_char; 512];
+    // SAFETY: live session, a writable buffer and its capacity.
+    let written = unsafe {
+        pf_session_describe_component(
+            session,
+            meter_index,
+            described.as_mut_ptr(),
+            u32::try_from(described.len()).unwrap_or_default(),
+        )
+    };
+    assert!(written >= 0, "the meter has no description");
+    // SAFETY: the call above wrote a NUL-terminated string.
+    let text = unsafe { CStr::from_ptr(described.as_ptr()) }
+        .to_str()
+        .unwrap_or_default()
+        .to_owned();
+    assert!(text.contains("100 l/min"), "the scale is not in `{text}`");
+    assert!(
+        text.contains("Lee el caudal"),
+        "the meter does not say what it reads: `{text}`"
+    );
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    for _ in 0..5 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+
+    let mut frame = PfFrame::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        PF_OK
+    );
+    // SAFETY: the slices were produced by the call above and the session is alive.
+    let (calls, text) = unsafe {
+        (
+            std::slice::from_raw_parts(frame.calls, frame.calls_len as usize),
+            std::slice::from_raw_parts(frame.text, frame.text_len as usize),
+        )
+    };
+    // The meter is 22 × 22 mm at (100, 60): its reading sits inside that box.
+    let reading = text_in(calls, text, [89.0, 49.0, 111.0, 71.0], " l/min");
+    assert!(
+        !reading.is_empty(),
+        "the meter has no reading among the {} text calls in the frame",
+        calls
+            .iter()
+            .filter(|call| call.kind == PF_KIND_TEXT)
+            .count()
+    );
+    let value: f32 = reading
+        .trim_end_matches(" l/min")
+        .parse()
+        .unwrap_or_default();
+    assert!(
+        value > 0.0,
+        "the meter reads `{reading}` while the valve feeds it, not a flow"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
 }

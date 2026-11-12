@@ -66,6 +66,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "gauge.pressure",
         include_str!("../../../assets/symbols/review/gauge.pressure.md"),
     ),
+    (
+        "flow.meter",
+        include_str!("../../../assets/symbols/review/flow.meter.md"),
+    ),
 ];
 
 /// Review text of one definition.

@@ -25,6 +25,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0011](0011-the-check-is-a-public-command.md) | The circuit check is a public command with a versioned contract | accepted | 2026-11-07 |
 | [0012](0012-the-paper-a-drawing-is-printed-on.md) | The paper a drawing is printed on | accepted | 2026-11-07 |
 | [0013](0013-a-project-is-one-document.md) | A project is one document with several circuits | accepted | 2026-11-12 |
+| [0014](0014-a-flow-meter-is-a-restriction-that-reports.md) | A flow meter is an inline restriction that reports its flow | accepted | 2026-11-12 |
 
 ## When a decision needs an ADR
 

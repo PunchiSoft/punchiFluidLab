@@ -41,6 +41,30 @@ pub struct Pipe<'a> {
 }
 use crate::symbol::{self, Ink};
 
+/// What an instrument shows, in the unit its definition declares.
+///
+/// The value is the model's; the unit and the precision are the drawing's, so every device
+/// prints the same number and a new instrument is one more variant here rather than a string
+/// built in the front end.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Reading {
+    /// Gauge pressure, `bar`.
+    Pressure(f32),
+    /// Volumetric flow at normal conditions, `l/min`.
+    Flow(f32),
+}
+
+impl Reading {
+    /// The text drawn beside the symbol, with its unit.
+    #[must_use]
+    pub fn text(self) -> String {
+        match self {
+            Self::Pressure(value) => format!("{value:.1} bar"),
+            Self::Flow(value) => format!("{value:.1} l/min"),
+        }
+    }
+}
+
 /// A component of the sheet: which definition draws it and the box it occupies.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Placed<'a> {
@@ -55,7 +79,7 @@ pub struct Placed<'a> {
     /// Active position of a valve, `0` for anything that is not one.
     pub valve_position: usize,
     /// Reading of an instrument, in the unit its definition declares, if it has one.
-    pub reading: Option<f32>,
+    pub reading: Option<Reading>,
     /// How the symbol is turned on the sheet.
     pub orientation: Orientation,
     /// Name the user gave the component, drawn under its box.
@@ -166,7 +190,7 @@ pub fn draw_placed(
             symbol::haloed_text(
                 surface,
                 at,
-                &format!("{reading:.1} bar"),
+                &reading.text(),
                 symbol::NUMERAL * 1.1,
                 ink.text,
                 ink.background,
@@ -338,6 +362,15 @@ pub fn selection_ring(surface: &mut dyn Surface, rect: Rect, colour: Colour) {
 mod tests {
     use super::*;
     use crate::orient::Orientation;
+
+    #[test]
+    fn a_reading_carries_the_unit_of_its_instrument() {
+        // The drawing owns the unit and the precision, so every device prints the same
+        // number and the front end cannot invent a second format.
+        assert_eq!(Reading::Pressure(3.24).text(), "3.2 bar");
+        assert_eq!(Reading::Flow(41.0).text(), "41.0 l/min");
+        assert_eq!(Reading::Flow(-2.55).text(), "-2.5 l/min");
+    }
 
     #[test]
     fn the_bounds_cover_the_boxes_and_the_pipe_route() {

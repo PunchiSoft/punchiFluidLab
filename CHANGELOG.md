@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Un caudalímetro en la línea — 2026-11-12
+
+Un manómetro dice la presión en un punto, no cuánto aire pasa por él. El nuevo
+**caudalímetro** se coloca en serie y mide el gas que lo atraviesa, que es la segunda
+magnitud que un estudiante necesita leer en un esquema neumático.
+
+- **Un comportamiento propio** (`flow_meter`), no un manómetro con otra escala: el aparato
+  tiene dos puertos, uno de entrada y otro de salida, y es la restricción que mide
+  ([ADR 0014](docs/adr/0014-a-flow-meter-is-a-restriction-that-reports.md)).
+- **La física es del archivo**: `conductance` declara la restricción ISO 6358 que añade y
+  `nominal_l_min` la escala; un caudalímetro mayor es otro archivo, no otra rama de código.
+- **La lectura sale del modelo**: la cifra se dibuja junto al símbolo en litros normales
+  por minuto (20 °C y 1 013,25 hPa), con signo según el sentido del aire, y el inspector
+  muestra la escala y la conductancia.
+- **Evidencia**: la prueba de solver contra el cálculo a mano, la prueba ABI
+  `a_flow_meter_reads_the_line_it_is_connected_to`, los pasos `--selftest` que lo colocan,
+  lo conectan y leen su cifra, y la revisión del símbolo con capturas claro/oscuro.
+
+Quedan pendientes el dinamómetro y el registrador de 60 s (P2.2).
+
 ### Un proyecto son varios circuitos en un documento — 2026-11-12
 
 La referencia agrupa circuitos en un proyecto y comprueba que un conducto no circule por un
