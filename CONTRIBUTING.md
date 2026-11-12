@@ -14,7 +14,8 @@ reproduction is as welcome as a patch.
 ```bash
 git clone https://github.com/PunchiSoft/punchiFluidLab
 cd punchi-fluid-lab
-./scripts-dev/check.sh          # fmt, docs, clippy -D warnings, tests, CLI smoke test
+./scripts-dev/check.sh          # full gate: fmt, docs, clippy, tests, CLI smoke test
+./scripts-dev/check-docs.sh     # documentation contracts only (index, links, ADRs, labels)
 ./scripts-dev/test.sh           # tests only; add --no-build to skip Cargo entirely
 ./scripts-dev/run.sh            # open the window; add --no-build to run the last build
 cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja   # once, for the window
@@ -26,9 +27,16 @@ library, so the result is one file with no runtime search path to get wrong.
 
 ## The gate is not negotiable
 
-Every pull request must leave `./scripts-dev/check.sh` green without silencing
-warnings. A behavioural test may never be deleted, disabled or weakened to make a
-change pass: if a test is wrong, fix the test in its own commit and say why.
+Every **code** pull request must leave `./scripts-dev/check.sh` green without silencing
+warnings. A **documentation-only** pull request runs the documentation contracts
+(`./scripts-dev/check-docs.sh`): the index and links, the ADR metadata, the crate list
+against `Cargo.toml` and the issue labels. CI classifies the diff with
+`scripts-dev/changed-paths.sh`; it never skips the workflow, because a path-filtered
+workflow would leave the required checks pending on protected `main`. The full gate still
+runs on `main` and on a release.
+
+A behavioural test may never be deleted, disabled or weakened to make a change pass: if a
+test is wrong, fix the test in its own commit and say why.
 
 ## What to read first
 

@@ -19,33 +19,103 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # The classifier answers one question: can the Rust and window gate observe this
+  # change? A documentation-only pull request runs `check-docs.sh`; anything else runs
+  # the full gate. The workflow itself is never skipped by path filtering, because a
+  # skipped workflow leaves its required checks "Pending" on a protected branch. A job
+  # that runs and is skipped reports success, which is the behaviour the branch
+  # protection accepts.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - name: Check out the pull request history
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify the change
+        id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$EVENT" != "pull_request" ]]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The full checkout normally has both commits; a fork with an unusual base
+          # still gets the base fetched explicitly before the diff.
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          if ! result=$(git diff --name-only "$BASE_SHA...$HEAD_SHA" | ./scripts-dev/changed-paths.sh --stdin); then
+            echo "the changed-path classifier failed" >&2
+            exit 1
+          fi
+          if [[ "$result" == "code" ]]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$result" == "docs" ]]; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "the changed-path classifier printed '$result'" >&2
+            exit 1
+          fi
+
   check:
     name: check
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Fail when the change classifier failed
+        if: ${{ needs.changes.result != 'success' || (needs.changes.outputs.code != 'true' && needs.changes.outputs.code != 'false') }}
+        run: exit 1
+
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # A documentation-only pull request cannot change the Rust graph or the window.
+      # It still runs the contracts that read the files it edits: the index and links,
+      # the ADR metadata, the crate list against Cargo.toml and the issue labels.
+      - name: Documentation contracts
+        if: needs.changes.outputs.code != 'true'
+        env:
+          # Lets `check-docs.sh` verify that a contact link points at something the
+          # repository actually has; without it the check only warns.
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts-dev/check-docs.sh
+
       # One pin, in rust-toolchain.toml. Installing "stable" here is how main went red
       # on a lint the machine had never seen: the compiler CI used was newer than the
       # compiler the project was validated with.
       - name: Read the pinned toolchain
+        if: needs.changes.outputs.code == 'true'
         id: rust
         run: echo "channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
 
       - name: Install the Rust toolchain
+        if: needs.changes.outputs.code == 'true'
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: ${{ steps.rust.outputs.channel }}
           components: rustfmt, clippy
 
       - name: Cache the build
+        if: needs.changes.outputs.code == 'true'
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Run the full gate
+        if: needs.changes.outputs.code == 'true'
         env:
           # Lets `check-docs.sh` verify that a contact link points at something the
           # repository actually has; without it the check only warns.
@@ -54,6 +124,8 @@ jobs:
 
   window:
     name: window
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -109,6 +181,8 @@ jobs:
 
   msrv:
     name: minimum supported Rust version
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

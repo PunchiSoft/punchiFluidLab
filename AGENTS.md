@@ -196,6 +196,13 @@ It runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warni
 `scripts-dev/check-docs.sh`, the architecture contract `scripts-dev/check-architecture.sh`
 and a CLI smoke test over a temporary circuit file.
 
+CI runs that full gate for a code change. A **documentation-only** pull request runs
+`scripts-dev/check-docs.sh` instead: the index and links, the ADR metadata, the crate list
+against `Cargo.toml` and the issue labels. The workflow is never skipped by path filtering,
+because a skipped workflow leaves required checks pending on protected `main`;
+`scripts-dev/changed-paths.sh` classifies the diff and is tested in the gate. The full gate
+still runs on `main` and on a release.
+
 The window is built and driven headlessly when `apps/punchi-fluid-qt/build` has been
 configured: `--check-qml`, `--check-theme`, `--check-icons` and `--selftest` under
 `QT_QPA_PLATFORM=offscreen`. A machine without Qt skips that step with a message on

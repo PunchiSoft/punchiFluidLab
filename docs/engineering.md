@@ -170,6 +170,28 @@ Three rules follow from that:
   labels that did not exist. The goal is that someone who wants to report, ask or
   contribute finds the right door.
 
+### The gate and a documentation-only pull request
+
+`main` is protected, so every required check must report on every pull request. A
+workflow skipped by path filtering leaves its checks in `Pending` and blocks the merge
+(GitHub documents this), so `ci.yml` is never skipped by `paths` or `paths-ignore`.
+Instead:
+
+- a `changes` job classifies the diff with `scripts-dev/changed-paths.sh`; and
+- `check` always runs: a documentation-only change runs `check-docs.sh`, a code change runs
+  the full `check.sh`; and
+- `window` and `minimum supported Rust version` are skipped for documentation-only changes.
+  A job that runs and is skipped reports success, which the branch protection accepts.
+
+A documentation-only change is an **allow-list**: the pages under `docs/`, the community
+files, the captures and the authoring guides. Anything else is code. In particular, the
+catalog TOML files, the sound samples and the symbol reviews are **compiled in or observed
+by tests**, so they are code even when they are next to a Markdown file. An unknown path is
+code, never documentation. A push to `main` and a manual run always run the full gate.
+
+`scripts-dev/test-changed-paths.sh` exercises the classifier in `check.sh`, because a wrong
+`docs` answer would skip the tests on a change they can observe.
+
 ### Files that must exist
 
 | File | Purpose |
@@ -188,7 +210,7 @@ Three rules follow from that:
 | `.github/labels.txt` | the labels that exist, so a template cannot name one that does not |
 | `.github/FUNDING.yml` | the optional donation link, and nothing that costs the user |
 | `.github/dependabot.yml` | weekly cargo and Actions updates |
-| `.github/workflows/ci.yml` | the gate on every push and pull request |
+| `.github/workflows/ci.yml` | the full gate on a code change and on `main`; the documentation contracts on a docs-only pull request |
 | `.github/workflows/audit.yml` | `cargo-deny` and `cargo-audit` on a schedule |
 | `.github/workflows/release.yml` | tag → build, checksums, draft release |
 | `.agents/skills/README.md` | skill catalog: procedures for Rust, GitHub and symbology |
@@ -234,7 +256,8 @@ Three rules follow from that:
 
 A change is done when all of these are true:
 
-1. `./scripts-dev/check.sh` is green and no warning was silenced to get there.
+1. `./scripts-dev/check.sh` is green (or `./scripts-dev/check-docs.sh` for a
+   documentation-only change) and no warning was silenced to get there.
 2. Tests exist for the behaviour, and they fail if the behaviour is removed.
 3. The claim is stated with its evidence: tests, measurement, screenshot or review.
 4. Documentation updated in the same change: `CHANGELOG.md`, and the README, ADR or

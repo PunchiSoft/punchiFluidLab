@@ -15,6 +15,9 @@ cargo fmt --all --check
 # The documents that declare the crate layout are read instead of the manifest, so they
 # are checked against it rather than trusted.
 ./scripts-dev/check-docs.sh
+# The documentation-only classifier decides whether CI runs the full gate or only the
+# documentation contracts. A wrong `docs` answer would skip the tests, so it is tested here.
+./scripts-dev/test-changed-paths.sh
 # `cargo` prevents cycles, not layering: the graph, the one home of `unsafe` and the file
 # budget are enforced here.
 ./scripts-dev/check-architecture.sh
