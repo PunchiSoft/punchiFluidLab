@@ -90,6 +90,66 @@ pressure_bar = 8.0
 }
 
 #[test]
+fn a_plug_caps_one_port_and_a_silencer_needs_an_exhaust() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let two_ports = r#"
+schema = 3
+id = "plug.two"
+name = "Plug with two ports"
+category = "accessory"
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+[[port]]
+id = "2"
+role = "working"
+position = [1.0, 0.5]
+[behaviour]
+type = "plug"
+"#;
+    write(dir.path(), "plug.toml", two_ports);
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(catalog.get("plug.two").is_none(), "a plug caps one line");
+    assert!(
+        catalog
+            .problems()
+            .iter()
+            .any(|problem| problem.to_string().contains("exactly one port")),
+        "{:?}",
+        catalog.problems()
+    );
+
+    let working_silencer = r#"
+schema = 3
+id = "silencer.working"
+name = "Silencer on a working port"
+category = "accessory"
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+[behaviour]
+type = "silencer"
+conductance = 4.0e-10
+"#;
+    write(dir.path(), "silencer.toml", working_silencer);
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(
+        catalog.get("silencer.working").is_none(),
+        "a silencer vents an exhaust, not the line the circuit uses"
+    );
+    assert!(
+        catalog
+            .problems()
+            .iter()
+            .any(|problem| problem.to_string().contains("exhaust port")),
+        "{:?}",
+        catalog.problems()
+    );
+}
+
+#[test]
 fn a_recorder_has_no_ports_and_a_bounded_window() {
     let dir = tempfile::tempdir().expect("temp dir");
     // A recorder is the one component that observes instead of connecting.

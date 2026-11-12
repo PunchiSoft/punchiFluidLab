@@ -44,8 +44,8 @@ today, kept here so a translator does not invent a second vocabulary.
 | filter | filtro | Removes particles and condensate from the air. | ISO 5598 |
 | lubricator | lubricador | Adds oil to the air for the parts that need it. | ISO 5598 |
 | regulator | regulador | Holds a downstream pressure below the supply. | ISO 5598 |
-| silencer | silenciador | Reduces the noise of an exhaust; not implemented yet. | ISO 5598 |
-| blind plug | tapón ciego | Closes a port; not implemented yet. | ISO 5598 |
+| silencer | silenciador | A restriction to atmosphere fitted to an exhaust port; the noise is not modelled. | ADR 0016 |
+| blind plug | tapón ciego | A one-port component that closes the line it caps, so the check stops calling that port open. | ADR 0016 |
 
 ## The document and the drawing
 

@@ -74,6 +74,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "chart.recorder",
         include_str!("../../../assets/symbols/review/chart.recorder.md"),
     ),
+    (
+        "plug.blind",
+        include_str!("../../../assets/symbols/review/plug.blind.md"),
+    ),
+    (
+        "silencer.pneumatic",
+        include_str!("../../../assets/symbols/review/silencer.pneumatic.md"),
+    ),
 ];
 
 /// Review text of one definition.

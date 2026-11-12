@@ -187,6 +187,25 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
         // the model does not use.
         return Err(invalid(path, "a recorder has no ports"));
     }
+    if matches!(
+        definition.behaviour,
+        Behaviour::Plug | Behaviour::Silencer { .. }
+    ) {
+        let exhaust = definition
+            .port
+            .iter()
+            .filter(|port| port.role == PortRole::Exhaust)
+            .count();
+        if matches!(definition.behaviour, Behaviour::Plug) {
+            if definition.port.len() != 1 {
+                return Err(invalid(path, "a blind plug needs exactly one port"));
+            }
+        } else if definition.port.len() != 1 || exhaust != 1 {
+            // A silencer sits on an exhaust and nowhere else: a silencer on a working port
+            // would vent the line the circuit is trying to use.
+            return Err(invalid(path, "a silencer needs exactly one exhaust port"));
+        }
+    }
     if matches!(definition.behaviour, Behaviour::FlowMeter { .. }) {
         // A meter sits in the line: one port to arrive and one to leave, and nothing else
         // to connect. An exhaust or a pilot port on a meter would have no meaning.
@@ -237,6 +256,12 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             Ok(())
         }
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
+        Behaviour::Silencer { conductance } => {
+            if !conductance.is_finite() || *conductance <= 0.0 {
+                return Err(invalid(path, "silencer conductance must be positive"));
+            }
+            Ok(())
+        }
         Behaviour::FlowMeter {
             conductance,
             nominal_l_min,
@@ -307,7 +332,9 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         } => check_valve(definition, path, positions, *default_position),
         // A junction declares no number of its own, so there is nothing to range-check:
         // the parts that would carry a number are absent from the file by construction.
-        Behaviour::Junction => Ok(()),
+        // A plug and a junction declare no number of their own: closing a port and
+        // joining three are the whole of them.
+        Behaviour::Plug | Behaviour::Junction => Ok(()),
     }
 }
 
