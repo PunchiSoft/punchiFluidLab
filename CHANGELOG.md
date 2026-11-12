@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### Guías para usar el programa — 2026-11-12
+
+La referencia explicaba qué es cada cosa; faltaba el camino para hacerla. Un lector nuevo
+tenía que deducir de la ventana cómo colocar, conectar, ejecutar y guardar.
+
+- **`docs/guides/first-circuit.md`**: tutorial de diez minutos — abrir, colocar tres
+  componentes, conectar puertos, nombrar el cilindro, ejecutar, comprobar y guardar, con los
+  gestos y atajos reales.
+- **`docs/guides/export-a-drawing.md`**: elegir papel y orientación, escribir PDF o PNG, la
+  tabla de índices de `--paper`, el camino sin ventana y las deudas conocidas (fecha fija,
+  sin escala para encajar, sin atajo).
+- **`docs/guides/troubleshooting.md`**: síntoma, causa y salida — el ejemplo inicial, una
+  tubería rechazada, una válvula que no responde, un catálogo ignorado, una hoja que no
+  abre, la exportación recortada y las limitaciones de la interfaz.
+- El índice enlaza las tres guías y la lista de pendientes desaparece: ya no hay documentos
+  prometidos sin escribir.
+
+No cambia el comportamiento: documenta el que existe, incluidas sus limitaciones.
+
 ### La referencia que el código ya tenía — 2026-11-12
 
 El formato de hoja, la CLI y el catálogo se podían leer en el código y en el ADR, pero no
