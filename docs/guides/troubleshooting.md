@@ -125,21 +125,23 @@ In the application data folder. On Linux that is
 
 ### The page is blank or a component is missing
 
-Run **Editar ▸ Comprobar** first. A component outside the sheet is still exported, but it can
-fall outside the printed page. The drawing is centred, not scaled; a circuit larger than the
-area the frame leaves free can be cropped. Choose a larger paper or move the circuit inside
-the sheet.
+Run **Editar ▸ Comprobar** first. The drawing is scaled to fit the frame, so a circuit
+outside the sheet is still on the page, only smaller; the scale is in the title block. A
+component that is not drawn at all probably names a catalog id this machine does not have.
+
+### The drawing is very small
+
+It was fitted to the page. Check the scale in the title block, choose a smaller paper, or
+move the components closer together; the export does not choose a scale for you.
 
 ### The date in the title block is wrong
 
-It is fixed at 2026-11-07 in this build; the date is not read from the system. This is a
-recorded debt, not a setting.
+The date is the day the window ran; it is not a setting. If an old file has an old date, it
+was exported that day. A date far in the future means the machine clock is wrong.
 
-### The export has no shortcut
+### `Ctrl+Shift+E` does not open the export dialog
 
-The button hint says `Ctrl+E`, but that key marks everything on the sheet. Export has no
-working shortcut yet; use **Archivo ▸ Exportar**. The wrong hint is a known bug with its own
-fix.
+The shortcut needs the window to have focus. **Archivo ▸ Exportar** always works.
 
 ### The PNG is too small
 

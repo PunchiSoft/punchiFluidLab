@@ -1,13 +1,13 @@
 # Export a drawing
 
-Status: current, with two known limitations. This is the how-to: take the sheet that is on
-screen and write it as a PDF for a report or a PNG for a slide.
+Status: current. This is the how-to: take the sheet that is on screen and write it as a PDF
+for a report or a PNG for a slide.
 
 ## Before you export
 
 1. **Detener** the simulation, so the sheet is in editing.
 2. **Editar ▸ Comprobar** and fix what it reports. A component outside the sheet is still
-   exported, but it can fall outside the printed page.
+   exported: the fit includes it, so it will be on the page, perhaps smaller than the rest.
 3. Save the sheet if you want the export and the file to match.
 
 What leaves is the document in the session — the same placements, pipes, designations and
@@ -48,8 +48,10 @@ The page carries the frame, the title block, a legend of line classes and port n
 — while any symbol review is open — the note `symbols not yet verified against ISO 1219-1`.
 Two exports of the same circuit produce the same bytes.
 
-The title block takes the **name of the file** you write, not the sheet title. The date in
-the block is fixed at 2026-11-07 in this build.
+The title block takes the **name of the file** you write, not the sheet title, and the
+date of the day the window runs. A drawing larger than the area the frame leaves free is
+scaled down to fit; the scale is recorded in the sheet field of the title block (`1:1`,
+`1:2`, …). A smaller drawing keeps its size and is centred.
 
 ## Without the window
 
@@ -72,19 +74,22 @@ The gate uses this path to write a PDF and an Oficio PNG and to check both heade
 These are recorded in [capabilities.md](../capabilities.md) and in
 [ADR 0012](../adr/0012-the-paper-a-drawing-is-printed-on.md); they are not hidden:
 
-- **The title-block date is fixed at 2026-11-07.** The date is not read from the system.
-- **The drawing is centred, not scaled to fit.** A circuit larger than the area the frame
-  leaves free can be cropped; a smaller one keeps its size and the page has empty space.
 - **There is no panel for margins, custom size or the PNG resolution**, and the last paper
   choice is not remembered per user.
-- **The export command has no working keyboard shortcut.** The button hint names `Ctrl+E`,
-  but `Ctrl+E` marks everything on the sheet; this is a known bug with its own fix.
 - **There is no parts list** in the title block yet.
+- **The scale is a fit, not a chosen ratio.** The export reduces a drawing that does not
+  fit and records the resulting scale; it does not let the user pick a drawing scale.
+- **The title block has no editable project or revision field** in the window yet; the
+  block carries the file name, the date, `A` and the paper.
 
 ## If the page is wrong
 
-- Blank or missing a component: return to [troubleshooting](troubleshooting.md), run the
-  check and confirm the component is inside the sheet.
+- Blank or missing a component: return to [troubleshooting](troubleshooting.md); a component
+  with a catalog id that is not installed is kept in the file but not drawn.
 - The wrong paper: the Hoja group marks the current choice; choose again before **Exportar**.
+- The drawing is very small: it was fitted to the page; the title block records the scale.
+  Choose a smaller paper or move the components closer together.
+- `Ctrl+Shift+E` does not open the dialog: the shortcut needs the window to have focus. The
+  **Archivo ▸ Exportar** command always works.
 - A PNG that is too small: the resolution is fixed at 300 dpi in this build; export a larger
-  paper or wait for the resolution field.
+  paper, use `--dpi` on the command line, or wait for the resolution field.

@@ -154,8 +154,9 @@ and no place where a file makes the loader allocate without a bound.
   the export composition). It is the one crate allowed to know both, but it is also the
   file over the line budget; splitting it is a named debt in
   `scripts-dev/check-architecture.sh`.
-- **The export has no scale-to-fit** and uses a fixed title-block date. Both are recorded
-  in the ledger and belong to a `fix/` change, not to architecture.
+- **The export panel is incomplete**: margins, custom size and PNG resolution have no field
+  in the window, and the last paper choice is not remembered. The date and the fit are done;
+  the panel is recorded in the ledger.
 - **The project of circuits (P1.8)** is the change that will give the document more than
   one sheet; it is the first structural change after this map and will need its own ADR if
   it changes the file format or the ABI.

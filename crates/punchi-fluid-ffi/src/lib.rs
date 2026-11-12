@@ -316,7 +316,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 2;
+pub const PF_ABI_VERSION: u32 = 3;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -2235,7 +2235,8 @@ pub unsafe extern "C" fn pf_export_paper_name(index: u32, out: *mut c_char, capa
 ///
 /// # Safety
 ///
-/// `session` must be null or a live session pointer, and `path` a NUL-terminated string.
+/// `session` must be null or a live session pointer, and `path` and `date` NUL-terminated
+/// strings.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pf_session_export(
     session: *mut PfSession,
@@ -2244,6 +2245,7 @@ pub unsafe extern "C" fn pf_session_export(
     paper: u32,
     landscape: u32,
     dpi: f32,
+    date: *const c_char,
 ) -> i32 {
     guard(|| {
         // SAFETY: the caller promises a live session pointer.
@@ -2260,6 +2262,16 @@ pub unsafe extern "C" fn pf_session_export(
         if target.is_empty() || target.len() > 4096 {
             return PF_ERR_MODEL;
         }
+        if date.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(date) = unsafe { CStr::from_ptr(date) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        if date.is_empty() || date.len() > 32 || date.chars().any(char::is_control) {
+            return session.fail("the export date is empty or invalid");
+        }
         let Some(paper) = punchi_fluid_export::PaperSize::ALL.get(paper as usize) else {
             return session.fail("no such paper");
         };
@@ -2270,11 +2282,24 @@ pub unsafe extern "C" fn pf_session_export(
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing.
         let title = std::path::Path::new(target).file_stem().map_or_else(
-            || String::from("Circuito"),
+            || String::from("Circuit"),
             |stem| stem.to_string_lossy().into_owned(),
         );
-        let block = punchi_fluid_export::TitleBlock::new(title, String::from("2026-11-07"));
-        let page = punchi_fluid_export::Page {
+        let mut block = punchi_fluid_export::block_with_review_state(&title, date);
+        session.ensure_seeded();
+        let (placed, pipes) = scene(
+            &session.document,
+            &session.catalog,
+            session.system.as_ref(),
+            &session.placement_part,
+        );
+        let bounds = punchi_fluid_draw::placed::bounds_placed(
+            &placed,
+            &pipes,
+            session.system.as_ref(),
+            &session.catalog,
+        );
+        let mut page = punchi_fluid_export::Page {
             paper: *paper,
             orientation: if landscape == 0 {
                 punchi_fluid_export::Orientation::Portrait
@@ -2283,45 +2308,31 @@ pub unsafe extern "C" fn pf_session_export(
             },
             ..punchi_fluid_export::Page::a4(block.clone())
         };
-        session.ensure_seeded();
-        let (placed, pipes) = scene(
-            &session.document,
-            &session.catalog,
-            session.system.as_ref(),
-            &session.placement_part,
-        );
-        // The page hands the drawing the area the frame leaves free, and the placements carry
-        // millimetres of their own sheet. Shifting them onto that area is what puts the circuit
-        // inside the frame instead of over it; the hoses follow their ports, so only the
-        // placements move.
-        let bounds = placed
-            .iter()
-            .fold(None::<punchi_fluid_draw::Rect>, |acc, item| {
-                Some(acc.map_or(item.rect, |rect| union_rect(rect, item.rect)))
-            });
+        let Ok(area) = punchi_fluid_export::drawing_area(&page, &block) else {
+            return session.fail("the page leaves no room for the drawing");
+        };
+        let scale = bounds.map_or(1.0, |bounds| {
+            punchi_fluid_draw::surface::fit_scale(bounds, area)
+        });
+        block.scale = Some(if scale < 0.999 {
+            format!("1:{:.0}", 1.0 / scale)
+        } else {
+            String::from("1:1")
+        });
+        // Keep the page's own copy in step; the renderer takes the block explicitly, but a
+        // caller that reads the page must see the same scale.
+        page.title_block = Some(block.clone());
         let draw = |surface: &mut dyn punchi_fluid_draw::Surface, area: punchi_fluid_draw::Rect| {
-            // Centred in the area the frame leaves free: a sheet with the circuit pinned to one
-            // corner is a sheet with three quarters of the paper doing nothing.
-            let (dx, dy) = bounds.map_or((0.0, 0.0), |rect| {
-                (
-                    area.center().x - rect.center().x,
-                    area.center().y - rect.center().y,
-                )
-            });
-            let shifted: Vec<Placed<'_>> = placed
-                .iter()
-                .map(|item| Placed {
-                    rect: punchi_fluid_draw::Rect::from_min_size(
-                        punchi_fluid_draw::Pt::new(item.rect.min.x + dx, item.rect.min.y + dy),
-                        item.rect.width(),
-                        item.rect.height(),
-                    ),
-                    ..*item
-                })
-                .collect();
+            let Some(bounds) = bounds else {
+                return;
+            };
+            // The page hands the drawing the area the frame leaves free; the fit maps the
+            // drawing's own bounds onto it, so a large circuit shrinks instead of being
+            // cropped and a small one stays at its size in the middle of the page.
+            let mut fitted = punchi_fluid_draw::surface::Scaled::fit(surface, bounds, area);
             punchi_fluid_draw::draw_placed(
-                surface,
-                &shifted,
+                &mut fitted,
+                &placed,
                 &pipes,
                 session.system.as_ref(),
                 &session.catalog,
@@ -3596,14 +3607,6 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         }
         Behaviour::Gauge { .. } | Behaviour::Junction => {}
     }
-}
-
-/// Smallest rectangle containing both.
-fn union_rect(a: punchi_fluid_draw::Rect, b: punchi_fluid_draw::Rect) -> punchi_fluid_draw::Rect {
-    punchi_fluid_draw::Rect::from_corners(
-        punchi_fluid_draw::Pt::new(a.min.x.min(b.min.x), a.min.y.min(b.min.y)),
-        punchi_fluid_draw::Pt::new(a.max.x.max(b.max.x), a.max.y.max(b.max.y)),
-    )
 }
 
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for

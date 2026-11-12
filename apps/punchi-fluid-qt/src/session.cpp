@@ -3,6 +3,7 @@
 
 #include "session.h"
 
+#include <QDate>
 #include <QDir>
 #include <QFileInfo>
 #include <QLocale>
@@ -646,10 +647,13 @@ bool FluidSession::exportTo(const QString &path, bool pdf, int paper, bool lands
     const QUrl url(path);
     const QString local = url.isLocalFile() ? url.toLocalFile() : path;
     const QByteArray encoded = local.toUtf8();
+    // The ABI does not read the clock: the front end supplies the local date the title
+    // block carries, so an export is reproducible within the day.
+    const QByteArray date = QDate::currentDate().toString(Qt::ISODate).toUtf8();
     const uint32_t kind = pdf ? PF_EXPORT_PDF : PF_EXPORT_PNG;
     if (pf_session_export(m_session, encoded.constData(), kind,
                           static_cast<uint32_t>(qMax(paper, 0)), landscape ? 1U : 0U,
-                          static_cast<float>(dpi))
+                          static_cast<float>(dpi), date.constData())
         != PF_OK) {
         const char *message = pf_session_last_error(m_session);
         m_error = message ? QString::fromUtf8(message)

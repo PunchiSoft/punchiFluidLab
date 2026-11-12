@@ -10,6 +10,7 @@
 //! This crate knows nothing about windows, files or fonts: no toolkit here, no I/O
 //! here, and no colour that does not come in through [`symbol::Ink`].
 
+mod fit;
 pub mod orient;
 pub mod placed;
 pub mod schematic;

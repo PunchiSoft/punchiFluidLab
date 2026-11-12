@@ -119,9 +119,9 @@ Letter, Legal and Oficio — and the landscape orientation, and marks the one in
 carries the frame, the title block and a legend of line classes and port numerals, and while
 any symbol review is open it also carries the note that the symbols are not yet verified
 against ISO 1219-1. The same circuit exported twice produces the same bytes. There is no
-panel for margins, a custom size or the PNG resolution yet, the title-block date is still
-fixed, the drawing is centred rather than scaled to fit, and the export command has no
-keyboard shortcut yet.
+panel for margins, a custom size or the PNG resolution yet. The date is the day you export,
+the drawing is scaled to fit and its scale is recorded in the title block, and
+`Ctrl+Shift+E` opens the dialog.
 
 **The paper is a decision, not a default.** A drawing is printed on the sheet the drawing
 office uses, and that is not one size: ISO 216/5457 A5 to A0 for the ISO world;
