@@ -14,6 +14,7 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 
 | If you… | Read |
 |---|---|
+| want to draw your first circuit | [guides/first-circuit.md](guides/first-circuit.md) → [guides/export-a-drawing.md](guides/export-a-drawing.md) |
 | are opening the repository for the first time | [README](../README.md) → [architecture.md](architecture.md) → [CONTRIBUTING](../CONTRIBUTING.md) |
 | are resuming work with no context | [retomar.md](retomar.md) (Spanish) → [next-steps.md](next-steps.md) |
 | are about to write code | [next-steps.md](next-steps.md) → [capabilities.md](capabilities.md) → the relevant [skill](../.agents/skills/README.md) |
@@ -31,8 +32,8 @@ small and a deep tree makes a link harder to write, not easier to find.
 
 | Kind | What it answers | In this repository |
 |---|---|---|
-| Tutorial | Teach by doing, for a reader who has never used the program | planned: `guides/first-circuit.md` |
-| How-to | Solve one task | planned: `guides/export-a-drawing.md`, `guides/troubleshooting.md` |
+| Tutorial | Teach by doing, for a reader who has never used the program | [guides/first-circuit.md](guides/first-circuit.md) |
+| How-to | Solve one task | [guides/export-a-drawing.md](guides/export-a-drawing.md), [guides/troubleshooting.md](guides/troubleshooting.md) |
 | Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
 | Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
@@ -64,6 +65,9 @@ A document that is not simply current carries a status line under its title:
 | [reference/sheet-format.md](reference/sheet-format.md) | reference | current | The `.pfluid` format: fields, bounds, versions and migrations |
 | [reference/cli.md](reference/cli.md) | reference | current | `check`, `validate` and `simulate`: formats, exit codes and the JSON contract |
 | [reference/catalog.md](reference/catalog.md) | reference | current | The catalog at a glance, with the authoring guide as the canonical reference |
+| [guides/first-circuit.md](guides/first-circuit.md) | tutorial | current | Draw, connect, run, check and save a first circuit |
+| [guides/export-a-drawing.md](guides/export-a-drawing.md) | how-to | current | Choose the paper and write the sheet as PDF or PNG, with the known limits |
+| [guides/troubleshooting.md](guides/troubleshooting.md) | how-to | current | The symptom, the cause and the way out |
 | [glossary.md](glossary.md) | reference | current | The vocabulary of the project, in English with the Spanish interface word |
 | [style.md](style.md) | process | current | How a document is written, linked, dated and proven |
 | [adr/README.md](adr/README.md) | decision | current | The index of architecture decisions, with status and date |
@@ -78,16 +82,6 @@ A document that is not simply current carries a status line under its title:
 | [../SECURITY.md](../SECURITY.md) | process | current | Supported versions, private reporting and scope |
 | [../SUPPORT.md](../SUPPORT.md) | process | current | Where to ask, and what the project does not promise |
 | [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | process | current | The code of conduct, adopted by reference |
-
-## Planned documents
-
-These are named so the plan is visible; they are not links because a link to a file the
-repository does not have is a defect.
-
-- `guides/first-circuit.md` — draw, connect, run, save.
-- `guides/export-a-drawing.md` — paper, orientation, PNG and PDF.
-- `guides/troubleshooting.md` — a catalog file that is ignored, a broken sheet, a slow
-  window.
 
 ## Reading order for a new contributor
 
