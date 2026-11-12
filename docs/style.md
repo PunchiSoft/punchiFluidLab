@@ -7,13 +7,18 @@ is only about writing.
 
 ## Language
 
-- **English is canonical** for the repository, the code comments and `docs/`, with one
-  deliberate exception: [retomar.md](retomar.md) is the owner's continuity note in Spanish,
-  and [CHANGELOG.md](../CHANGELOG.md) is written in Spanish.
+- **English is canonical** for the repository: code identifiers, comments, logs, tests,
+  scripts, commit subjects and bodies, pull-request titles and bodies, and `docs/`. The
+  deliberate exceptions are [retomar.md](retomar.md) (the owner's continuity note in
+  Spanish) and [CHANGELOG.md](../CHANGELOG.md) (Spanish by project decision).
 - [README.es.md](../README.es.md) is the Spanish copy of the README and must say the same
   thing; when one changes, the other changes in the same pull request.
 - The interface is Spanish today. A document may name a command in Spanish and gloss it in
-  English, for example **Iniciar** (start). The i18n plan is [i18n/README.md](../i18n/README.md).
+  English, for example **Iniciar** (start). The same applies to a comment that quotes a UI
+  label: the label is Spanish, the sentence is English. The i18n plan is
+  [i18n/README.md](../i18n/README.md).
+- `--selftest` output, internal diagnostics and test names are English. A Spanish UI label
+  is quoted, never translated into a Spanish sentence.
 - No document names another simulator, copies its manual, its symbols or its examples
   (ADR 0009). When the behaviour of another program is the reference, describe the
   behaviour, never the product.
@@ -87,7 +92,8 @@ A guide may link to these and summarise one sentence; it does not restate the ta
 
 Before a documentation pull request is opened:
 
-- [ ] The language is English, except the continuity note and the changelog.
+- [ ] The language is English, except the continuity note, the changelog, the Spanish
+      README and the user-facing UI strings.
 - [ ] One `H1`, ordered sections, a status line when the document is not simply current.
 - [ ] Every claim names its evidence or is removed.
 - [ ] Every relative link resolves; no link to a file that does not exist.

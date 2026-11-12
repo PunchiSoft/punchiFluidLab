@@ -391,13 +391,13 @@ mod tests {
         let mut surface = PdfSurface::new(page());
         surface.text(
             Pt::new(1.0, 1.0),
-            "Válvula · 3/2",
+            "á · 3/2",
             3.0,
             Colour::BLACK,
             Anchor::Start,
         );
         // `á` is E1 and `·` is B7 in WinAnsi, one byte each.
-        assert!(surface.content().contains("<56E16C76756C6120B720332F32>"));
+        assert!(surface.content().contains("<E120B720332F32>"));
     }
 
     #[test]

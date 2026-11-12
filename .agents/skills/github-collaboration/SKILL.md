@@ -29,6 +29,8 @@ request URL so the owner can do it.
   `build:`, `ci:`, `chore:`, `revert:`. Scope is optional but useful:
   `fix(solver): keep the cylinder inside its stroke`.
 - Imperative subject under 72 characters; the body explains the decision, not the diff.
+- **Subject and body in English**, like the code and the documentation. The changelog is the
+  only Spanish text this skill writes.
 - One thing per commit. Formatting, renames and dependency updates travel alone.
 - **Sign off** (`git commit -s`, DCO). When an agent co-authors, add the
   `Co-authored-by:` trailer.
@@ -43,8 +45,8 @@ git commit -s -m "fix(catalog): reject a port outside the symbol box" -m "The lo
 
 ## Pull requests
 
-1. **Fill every section of the template**: what changes, milestone, claim and evidence,
-   checklist, known limitations. Reviewers read "known limitations" first.
+1. **Fill every section of the template, in English**: what changes, milestone, claim and
+   evidence, checklist, known limitations. Reviewers read "known limitations" first.
 2. **Name the evidence level**: unit test, headless UI test, pixel/call-list test,
    measurement, screenshot, symbol conformance review. "It works" is not a level.
 3. **Keep it reviewable**: under ~400 changed lines outside generated files. A larger

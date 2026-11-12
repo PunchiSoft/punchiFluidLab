@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### El código deja de hablar español — 2026-11-12
+
+La regla ya estaba en `CONTRIBUTING.md` —código, comentarios, pruebas y mensajes de commit
+en inglés—, pero los mensajes de `--selftest` y varios diagnósticos seguían en español, y
+los commits de las últimas fases se escribieron en español siguiendo el historial en vez de
+la regla. Se corrige lo que se puede corregir sin reescribir `main`.
+
+- **`--selftest` en inglés**: las 63 etiquetas de los pasos y sus mensajes de diagnóstico
+  (`editing:`, `simulation:`, `unsaved:`, `designation:`, `recent:`, `T junction:`, …) y el
+  `FALLO` de la puerta pasan a inglés. El comportamiento no cambia; el texto que lee quien
+  ejecuta la herramienta, sí.
+- **La prueba de WinAnsi** deja de usar una palabra española: comprueba `á` y `·` con un
+  fixture neutro.
+- **La regla es canónica** en `AGENTS.md` (nueva sección *Language*), `CONTRIBUTING.md`,
+  `docs/style.md` y las skills de colaboración y pull request: inglés para código,
+  identificadores, comentarios, logs, pruebas, scripts, asuntos y cuerpos de commit, títulos
+  y cuerpos de PR y documentación. Quedan en español la interfaz (hasta F8), `CHANGELOG.md`,
+  `docs/retomar.md` y `README.es.md`.
+- **Lo que no se toca**: los commits ya mezclados (#27–#31) conservan su asunto en español
+  en el historial; no se reescribe `main`. Desde ahora, asunto y cuerpo en inglés.
+
+Validado con la puerta completa, `--selftest` y la prueba de codificación del PDF.
+
 ### El CI no repite Rust en un cambio de documentación — 2026-11-12
 
 Un PR que solo tocaba `docs/` compilaba, pasaba clippy y ejecutaba las 244 pruebas. La

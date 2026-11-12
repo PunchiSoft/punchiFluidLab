@@ -569,13 +569,13 @@ int main(int argc, char *argv[])
                                                 : QList<FluidSession *>();
         state->session = sessions.isEmpty() ? nullptr : sessions.constFirst();
         if (state->sheet == nullptr || state->session == nullptr) {
-            std::fprintf(stderr, "selftest: no hay lienzo o no hay sesión\n");
+            std::fprintf(stderr, "selftest: no canvas or no session\n");
             return 1;
         }
         FluidSession *session = state->session;
 
         const auto check = [state](bool ok, const QString &what) {
-            std::fprintf(stderr, "selftest: %-48s %s\n", qPrintable(what), ok ? "ok" : "FALLO");
+            std::fprintf(stderr, "selftest: %-48s %s\n", qPrintable(what), ok ? "ok" : "FAIL");
             if (!ok) {
                 ++state->failures;
             }
@@ -613,7 +613,7 @@ int main(int argc, char *argv[])
         // must not actuate anything: the model only moves once the user asks for it.
         steps->push_back([state, check, send, valveCentre, toScene] {
             check(state->session->editing() && !state->session->running(),
-                  QStringLiteral("arranque: abre en edición, sin simular"));
+                  QStringLiteral("startup: opens in editing, without simulating"));
             state->valveScene = toScene(valveCentre());
             send(QEvent::MouseButtonPress, state->valveScene, Qt::LeftButton, Qt::LeftButton);
         });
@@ -621,17 +621,17 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonRelease, state->valveScene, Qt::LeftButton, Qt::NoButton);
         });
         steps->push_back([state, check] {
-            std::fprintf(stderr, "selftest: en edición, válvula %d y %.2f bar\n",
+            std::fprintf(stderr, "selftest: editing, valve %d and %.2f bar\n",
                          state->session->valvePosition(), state->session->pressureBar());
             check(state->session->valvePosition() == 0,
-                  QStringLiteral("edición: pulsar la válvula no la acciona"));
+                  QStringLiteral("editing: pressing the valve does not actuate it"));
             check(state->session->pressureBar() < 1.5,
-                  QStringLiteral("edición: la presión no sube sin simular"));
+                  QStringLiteral("editing: the pressure does not rise without simulating"));
             check(state->session->running() == false,
-                  QStringLiteral("edición: pulsar la válvula no arranca la simulación"));
+                  QStringLiteral("editing: pressing the valve does not start the simulation"));
             state->session->startSimulation();
             check(!state->session->editing() && state->session->running(),
-                  QStringLiteral("Iniciar entra en simulación"));
+                  QStringLiteral("start enters simulation"));
         });
 
         // Simulation: the click is a pushbutton. It opens while held and closes on release.
@@ -639,23 +639,23 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonPress, state->valveScene, Qt::LeftButton, Qt::LeftButton);
         });
         steps->push_back([state, check, send] {
-            std::fprintf(stderr, "selftest: válvula %d, %.2f bar, %.1f mm, clic en (%.0f, %.0f)\n",
+            std::fprintf(stderr, "selftest: valve %d, %.2f bar, %.1f mm, click at (%.0f, %.0f)\n",
                          state->session->valvePosition(), state->session->pressureBar(),
                          state->session->positionMm(), state->valveScene.x(),
                          state->valveScene.y());
             check(state->session->valvePosition() == 1,
-                  QStringLiteral("simulación: mantener el clic abre la válvula"));
+                  QStringLiteral("simulation: holding the click opens the valve"));
             check(state->session->pressureBar() > 2.0,
-                  QStringLiteral("simulación: la cámara recibe presión"));
+                  QStringLiteral("simulation: the chamber receives pressure"));
             check(state->session->positionMm() > 5.0,
-                  QStringLiteral("simulación: el vástago avanza"));
+                  QStringLiteral("simulation: the rod advances"));
             send(QEvent::MouseButtonRelease, state->valveScene, Qt::LeftButton, Qt::NoButton);
         });
         steps->push_back([state, check] {
             check(state->session->valvePosition() == 0,
-                  QStringLiteral("simulación: soltar cierra la válvula"));
+                  QStringLiteral("simulation: releasing closes the valve"));
             state->session->stopSimulation();
-            check(state->session->editing(), QStringLiteral("transporte: Detener vuelve a editar"));
+            check(state->session->editing(), QStringLiteral("transport: Stop returns to editing"));
         });
 
         // The properties form edits the instance, and the model is rebuilt from it: the
@@ -664,7 +664,7 @@ int main(int argc, char *argv[])
             state->session->inspectComponent(2);
             const QVariantList fields = state->session->inspectorFields();
             check(!fields.isEmpty(),
-                  QStringLiteral("ficha: el cilindro trae sus parámetros"));
+                  QStringLiteral("inspector: the cylinder brings its parameters"));
             QVariantList values;
             for (const QVariant &entry : fields) {
                 QVariantMap row = entry.toMap();
@@ -678,12 +678,12 @@ int main(int argc, char *argv[])
             PfTelemetry edited {};
             pf_session_telemetry(state->session->handle(), &edited);
             check(std::abs(edited.stroke_m - 0.05) < 1e-6,
-                  QStringLiteral("ficha: la carrera editada llega al modelo"));
+                  QStringLiteral("inspector: the edited stroke reaches the model"));
             state->session->undo();
             PfTelemetry restored {};
             pf_session_telemetry(state->session->handle(), &restored);
             check(std::abs(restored.stroke_m - 0.10) < 1e-6,
-                  QStringLiteral("ficha: deshacer devuelve la del archivo"));
+                  QStringLiteral("inspector: undo restores the one from the file"));
             state->session->closeInspector();
         });
 
@@ -696,8 +696,8 @@ int main(int argc, char *argv[])
         });
         steps->push_back([state, check, send, componentRect] {
             state->valveIndex = state->session->selected();
-            check(state->valveIndex >= 0, QStringLiteral("edición: el clic selecciona"));
-            check(state->session->inspectorOpen(), QStringLiteral("edición: la ficha se abre"));
+            check(state->valveIndex >= 0, QStringLiteral("editing: a click selects"));
+            check(state->session->inspectorOpen(), QStringLiteral("editing: the inspector opens"));
             if (state->valveIndex >= 0) {
                 state->valveX = componentRect(state->valveIndex).x();
             }
@@ -713,7 +713,7 @@ int main(int argc, char *argv[])
         });
         steps->push_back([state, check, send, toScene, componentRect] {
             check(componentRect(state->valveIndex).x() > state->valveX,
-                  QStringLiteral("edición: arrastrar mueve"));
+                  QStringLiteral("editing: dragging moves"));
             state->connections = pf_session_connection_count(state->session->handle());
             int cylinder = -1;
             char id[128] = {};
@@ -721,7 +721,7 @@ int main(int argc, char *argv[])
             for (uint32_t i = 0; i < count; ++i) {
                 id[0] = '\0';
                 pf_session_component_id(state->session->handle(), i, id, sizeof id);
-                std::fprintf(stderr, "selftest: componente %u = %s\n", i, id);
+                std::fprintf(stderr, "selftest: component %u = %s\n", i, id);
                 if (QString::fromUtf8(id).startsWith(QLatin1String("cylinder"))) {
                     cylinder = static_cast<int>(i);
                 }
@@ -733,10 +733,10 @@ int main(int argc, char *argv[])
             const bool hasTo = cylinder >= 0
                 && state->session->portPoint(cylinder, QStringLiteral("1"), &to);
             std::fprintf(stderr,
-                         "selftest: válvula %d puerto 3 %s, cilindro %d puerto 1 %s, %.1f tubo(s)\n",
-                         state->valveIndex, hasFrom ? "sí" : "no", cylinder, hasTo ? "sí" : "no",
+                         "selftest: valve %d port 3 %s, cylinder %d port 1 %s, %.1f pipe(s)\n",
+                         state->valveIndex, hasFrom ? "yes" : "no", cylinder, hasTo ? "yes" : "no",
                          static_cast<double>(state->connections));
-            check(hasFrom && hasTo, QStringLiteral("edición: los puertos se localizan"));
+            check(hasFrom && hasTo, QStringLiteral("editing: the ports are found"));
             if (hasFrom && hasTo) {
                 state->fromScene = toScene(from);
                 state->toScene = toScene(to);
@@ -752,7 +752,7 @@ int main(int argc, char *argv[])
         steps->push_back([state, check, send] {
             const uint32_t now = pf_session_connection_count(state->session->handle());
             check(now == state->connections + 1,
-                  QStringLiteral("edición: puerto a puerto dibuja un tubo"));
+                  QStringLiteral("editing: port to port draws a pipe"));
             state->components = pf_session_component_count(state->session->handle());
             send(QEvent::MouseButtonPress, state->valveScene + QPointF(90.0, 0.0), Qt::LeftButton,
                  Qt::LeftButton);
@@ -766,7 +766,7 @@ int main(int argc, char *argv[])
             QCoreApplication::sendEvent(state->window, &press);
             const uint32_t now = pf_session_component_count(state->session->handle());
             check(now + 1 == state->components,
-                  QStringLiteral("edición: Supr borra el componente seleccionado"));
+                  QStringLiteral("editing: Delete removes the selected component"));
             state->session->undo();
         });
 
@@ -778,17 +778,17 @@ int main(int argc, char *argv[])
             state->session->copySelected();
             state->session->pasteOffset();
             check(pf_session_component_count(state->session->handle()) == before + 1,
-                  QStringLiteral("edición: pegar crea una copia"));
+                  QStringLiteral("editing: paste creates a copy"));
             state->session->undo();
             check(pf_session_component_count(state->session->handle()) == before,
-                  QStringLiteral("edición: deshacer el pegado quita la copia"));
+                  QStringLiteral("editing: undoing the paste removes the copy"));
             const int copy = state->session->duplicateComponent(state->valveIndex, 10.0, 10.0);
             check(copy >= 0
                       && pf_session_component_count(state->session->handle()) == before + 1,
-                  QStringLiteral("edición: duplicar crea una copia"));
+                  QStringLiteral("editing: duplicate creates a copy"));
             state->session->undo();
             check(pf_session_component_count(state->session->handle()) == before,
-                  QStringLiteral("edición: deshacer la copia la quita"));
+                  QStringLiteral("editing: undoing the copy removes it"));
             state->components = before;
         });
         steps->push_back([state, sendWith, toScene, componentRect] {
@@ -805,11 +805,11 @@ int main(int argc, char *argv[])
             sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(20.0, 0.0),
                      Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
-                  QStringLiteral("edición: Mayús al arrastrar copia"));
+                  QStringLiteral("editing: Shift-drag copies"));
             state->session->undo();
             state->session->undo();
             check(pf_session_component_count(state->session->handle()) == state->components,
-                  QStringLiteral("edición: dos deshaceres quitan la copia movida"));
+                  QStringLiteral("editing: two undos remove the moved copy"));
         });
 
         // The sound of a circuit is the piston hitting an end of its stroke, once per
@@ -836,27 +836,27 @@ int main(int argc, char *argv[])
             for (int i = 0; i < 2; ++i) {
                 state->session->stepForward();
             }
-            std::fprintf(stderr, "selftest: a media carrera, %d mm y %d impacto(s)\n",
+            std::fprintf(stderr, "selftest: mid-stroke, %d mm and %d impact(s)\n",
                          static_cast<int>(state->session->positionMm()), *counter);
             check(*counter == 0,
-                  QStringLiteral("sonido: no hay impacto mientras el vástago viaja"));
+                  QStringLiteral("sound: there is no impact while the rod travels"));
             check(state->session->positionMm() > 5.0,
-                  QStringLiteral("sonido: el vástago se mueve de verdad"));
+                  QStringLiteral("sound: the rod really moves"));
 
             // On to the stop. Forty frames is 0.64 s, past the 0.48 s a full stroke takes.
             for (int i = 0; i < 40; ++i) {
                 state->session->stepForward();
             }
-            std::fprintf(stderr, "selftest: en el tope, %d mm y %d impacto(s)\n",
+            std::fprintf(stderr, "selftest: at the stop, %d mm and %d impact(s)\n",
                          static_cast<int>(state->session->positionMm()), *counter);
-            check(*counter == 1, QStringLiteral("sonido: llegar al tope se anuncia una vez"));
+            check(*counter == 1, QStringLiteral("sound: reaching the stop is announced once"));
 
             // Staying there, and stepping, must not repeat the impact.
             for (int i = 0; i < 40; ++i) {
                 state->session->stepForward();
             }
             check(*counter == 1,
-                  QStringLiteral("sonido: parado en el tope no repite el impacto"));
+                  QStringLiteral("sound: stopped at the stop, it does not repeat the impact"));
 
             // Releasing lets the spring bring it back, and that arrival is its own event.
             state->session->releaseValve();
@@ -865,10 +865,10 @@ int main(int argc, char *argv[])
             for (int i = 0; i < 200; ++i) {
                 state->session->stepForward();
             }
-            std::fprintf(stderr, "selftest: de vuelta, %d mm y %d impacto(s)\n",
+            std::fprintf(stderr, "selftest: back, %d mm and %d impact(s)\n",
                          static_cast<int>(state->session->positionMm()), *counter);
             check(*counter == 2,
-                  QStringLiteral("sonido: volver al otro tope es un segundo impacto"));
+                  QStringLiteral("sound: returning to the other stop is a second impact"));
             state->session->stopSimulation();
         });
 
@@ -883,19 +883,19 @@ int main(int argc, char *argv[])
             sendWith(QEvent::MouseMove, to, Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
             send(QEvent::MouseButtonRelease, to, Qt::LeftButton, Qt::NoButton);
             const int marked = state->session->selectionCount();
-            std::fprintf(stderr, "selftest: el rectángulo marcó %d componente(s)\n", marked);
+            std::fprintf(stderr, "selftest: the band marked %d component(s)\n", marked);
             check(marked == state->session->componentCount(),
-                  QStringLiteral("selección: el rectángulo marca todo lo que cubre"));
+                  QStringLiteral("selection: the band marks everything it covers"));
         });
         steps->push_back([state, check] {
             const uint32_t before = pf_session_component_count(state->session->handle());
             state->session->removeSelection();
             check(pf_session_component_count(state->session->handle()) == 0
                       && before > 0,
-                  QStringLiteral("selección: Supr borra lo marcado de una vez"));
+                  QStringLiteral("selection: Delete removes the marked set at once"));
             state->session->undo();
             check(pf_session_component_count(state->session->handle()) == before,
-                  QStringLiteral("selección: un deshacer lo devuelve entero"));
+                  QStringLiteral("selection: one undo brings it all back"));
         });
         // Mayús and a click changes membership: the reference's bidirectional marking.
         steps->push_back([state, check, sendWith, toScene, componentRect] {
@@ -907,20 +907,20 @@ int main(int argc, char *argv[])
                      Qt::ShiftModifier);
             check(state->session->selectionCount() == 1
                       && state->session->isSelected(1),
-                  QStringLiteral("selección: Mayús y clic marca sin abrir la ficha"));
+                  QStringLiteral("selection: Shift-click marks without opening the inspector"));
             sendWith(QEvent::MouseButtonPress, centre, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
             sendWith(QEvent::MouseButtonRelease, centre, Qt::LeftButton, Qt::NoButton,
                      Qt::ShiftModifier);
             check(state->session->selectionCount() == 0,
-                  QStringLiteral("selección: Mayús y clic otra vez lo desmarca"));
+                  QStringLiteral("selection: Shift-click again unmarks it"));
         });
         // Ctrl+E marks everything, and one drag moves the group without breaking it.
         steps->push_back([state, check, send, toScene, componentRect] {
             QKeyEvent key(QEvent::KeyPress, Qt::Key_E, Qt::ControlModifier, QStringLiteral("e"));
             QCoreApplication::sendEvent(state->window, &key);
             const int marked = state->session->selectionCount();
-            check(marked > 1, QStringLiteral("selección: Ctrl+E marca todo"));
+            check(marked > 1, QStringLiteral("selection: Ctrl+E marks everything"));
             const QRectF box = componentRect(0);
             state->routeScene = toScene(box.center());
             send(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton);
@@ -933,10 +933,10 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonRelease, state->routeScene + QPointF(90.0, 0.0),
                  Qt::LeftButton, Qt::NoButton);
             check(state->session->selectionCount() > 1,
-                  QStringLiteral("selección: arrastrar un grupo no lo deshace"));
+                  QStringLiteral("selection: dragging a group does not undo it"));
             const QRectF box = componentRect(1);
             check(box.left() > 90.0,
-                  QStringLiteral("selección: el grupo se movió entero"));
+                  QStringLiteral("selection: the group moved as a whole"));
             state->session->undo();
         });
 
@@ -952,11 +952,11 @@ int main(int argc, char *argv[])
             pf_session_component_rect(state->session->handle(), 0, a);
             pf_session_component_rect(state->session->handle(), 1, b);
             check(std::abs(a[0] - b[0]) < 0.01,
-                  QStringLiteral("alinear: los bordes izquierdos coinciden"));
+                  QStringLiteral("align: the left edges coincide"));
             state->session->undo();
             pf_session_component_rect(state->session->handle(), 1, b);
             check(std::abs(b[0] - was) < 0.01,
-                  QStringLiteral("alinear: un deshacer lo devuelve"));
+                  QStringLiteral("align: one undo restores it"));
         });
 
         // Ctrl and a double click turns the component under the pointer, which is the
@@ -982,16 +982,16 @@ int main(int argc, char *argv[])
             uint32_t orientation[2] = {0, 0};
             pf_session_component_orientation(state->session->handle(), index, orientation);
             check(orientation[0] == 3,
-                  QStringLiteral("edición: Ctrl y doble clic gira al revés"));
+                  QStringLiteral("editing: Ctrl and a double click turn it the other way"));
             float after[2] = {0.0F, 0.0F};
             pf_session_port_point(state->session->handle(), index, "2", after);
             check(std::abs(before[0] - after[0]) > 0.5 || std::abs(before[1] - after[1]) > 0.5,
-                  QStringLiteral("edición: el puerto gira con el símbolo"));
+                  QStringLiteral("editing: the port turns with the symbol"));
             state->session->undo();
             orientation[0] = 9;
             pf_session_component_orientation(state->session->handle(), index, orientation);
             check(orientation[0] == 0,
-                  QStringLiteral("edición: un deshacer devuelve el símbolo a su sitio"));
+                  QStringLiteral("editing: one undo puts the symbol back"));
         });
         // Alt+M reflects it, and reflecting twice is the symbol as it was drawn.
         steps->push_back([state, check] {
@@ -1002,12 +1002,12 @@ int main(int argc, char *argv[])
             pf_session_component_orientation(state->session->handle(),
                                              static_cast<uint32_t>(index), orientation);
             check(orientation[0] == 0 && orientation[1] == 1,
-                  QStringLiteral("edición: reflejar no gira, invierte"));
+                  QStringLiteral("editing: reflect does not turn, it mirrors"));
             state->session->mirrorSelected();
             pf_session_component_orientation(state->session->handle(),
                                              static_cast<uint32_t>(index), orientation);
             check(orientation[1] == 0,
-                  QStringLiteral("edición: reflejar dos veces deja el símbolo igual"));
+                  QStringLiteral("editing: reflecting twice leaves the symbol as it was"));
             state->session->undo();
             state->session->undo();
         });
@@ -1018,11 +1018,11 @@ int main(int argc, char *argv[])
             state->session->restart();
             state->session->pressValve();
             const bool changed = state->session->runUntilChange();
-            check(changed, QStringLiteral("transporte: hasta cambio se detiene"));
+            check(changed, QStringLiteral("transport: run until change stops"));
             check(state->session->positionMm() > 99.0,
-                  QStringLiteral("transporte: se detiene en el tope"));
+                  QStringLiteral("transport: it stops at the stop"));
             check(!state->session->running(),
-                  QStringLiteral("transporte: queda en pausa"));
+                  QStringLiteral("transport: it stays paused"));
             state->session->releaseValve();
             state->session->stopSimulation();
         });
@@ -1031,21 +1031,21 @@ int main(int argc, char *argv[])
         steps->push_back([state, check] {
             const bool undoes = state->session->canUndo();
             state->session->zoomIn();
-            check(state->session->zoom() > 1.0, QStringLiteral("vista: aumentar acerca la hoja"));
+            check(state->session->zoom() > 1.0, QStringLiteral("view: zoom in brings the sheet closer"));
             state->session->zoomOut();
             state->session->zoomOut();
             check(state->session->zoom() < 1.0,
-                  QStringLiteral("vista: disminuir aleja la hoja"));
+                  QStringLiteral("view: zoom out moves the sheet away"));
             state->session->zoomReset();
             check(qFuzzyCompare(state->session->zoom(), 1.0),
-                  QStringLiteral("vista: tamaño original vuelve al encaje"));
+                  QStringLiteral("view: original size returns to the fit"));
             const bool grid = state->session->grid();
             state->session->toggleGrid();
             check(state->session->grid() != grid,
-                  QStringLiteral("vista: la cuadrícula se enciende y se apaga"));
+                  QStringLiteral("view: the grid toggles"));
             state->session->toggleGrid();
             check(state->session->canUndo() == undoes,
-                  QStringLiteral("vista: el zoom no entra en el historial"));
+                  QStringLiteral("view: zoom does not enter the history"));
         });
 
         // A hose is re-routed by dragging its middle segment. The press selects it and the
@@ -1068,7 +1068,7 @@ int main(int argc, char *argv[])
                 }
             }
             check(state->routePipe >= 0,
-                  QStringLiteral("edición: se encuentra un conducto que arrastrar"));
+                  QStringLiteral("editing: a pipe to drag is found"));
             float offset = 0.0F;
             pf_session_pipe_offset(state->session->handle(),
                                    static_cast<uint32_t>(state->routePipe), &offset);
@@ -1086,12 +1086,12 @@ int main(int argc, char *argv[])
             pf_session_pipe_offset(state->session->handle(),
                                    static_cast<uint32_t>(state->routePipe), &offset);
             check(std::abs(offset - state->routeOffset) > 0.5,
-                  QStringLiteral("edición: arrastrar el segmento reencamina el tubo"));
+                  QStringLiteral("editing: dragging the segment re-routes the pipe"));
             state->session->undo();
             pf_session_pipe_offset(state->session->handle(),
                                    static_cast<uint32_t>(state->routePipe), &offset);
             check(std::abs(offset - state->routeOffset) < 0.01,
-                  QStringLiteral("edición: un deshacer devuelve el recorrido"));
+                  QStringLiteral("editing: one undo restores the route"));
         });
 
         // A hose end dropped on a hose leaves a T, and the whole splice is one undo.
@@ -1109,7 +1109,7 @@ int main(int argc, char *argv[])
             QPointF start;
             if (cylinder < 0
                 || !state->session->portPoint(cylinder, QStringLiteral("1"), &start)) {
-                check(false, QStringLiteral("T: el cilindro tiene puerto"));
+                check(false, QStringLiteral("T junction: the cylinder has a port"));
                 return;
             }
             state->pipes = pf_session_connection_count(state->session->handle());
@@ -1157,7 +1157,7 @@ int main(int argc, char *argv[])
                     break;
                 }
             }
-            check(found, QStringLiteral("T: hay un conducto donde soltar"));
+            check(found, QStringLiteral("T junction: there is a pipe to drop on"));
             if (!found) {
                 return;
             }
@@ -1173,7 +1173,7 @@ int main(int argc, char *argv[])
                     start = at;
                 }
             }
-            std::fprintf(stderr, "selftest: tubo bajo (%.0f, %.0f)\n", onPipe.x(), onPipe.y());
+            std::fprintf(stderr, "selftest: pipe under (%.0f, %.0f)\n", onPipe.x(), onPipe.y());
             state->toScene = toScene(onPipe);
             // Press, drag and release in one step. Three steps of a timer each is three chances
             // for the window to be busy with something else between them, and a drag whose
@@ -1186,16 +1186,16 @@ int main(int argc, char *argv[])
         steps->push_back([state, check] {
             const uint32_t pipes = pf_session_connection_count(state->session->handle());
             const uint32_t components = pf_session_component_count(state->session->handle());
-            std::fprintf(stderr, "selftest: tras la T, %u tubo(s) y %u componente(s)\n", pipes,
+            std::fprintf(stderr, "selftest: after the T, %u pipe(s) and %u component(s)\n", pipes,
                          components);
             check(components == state->components + 1,
-                  QStringLiteral("T: la unión aparece en el sitio del soltado"));
+                  QStringLiteral("T junction: the junction appears where it was dropped"));
             check(pipes == state->pipes + 2,
-                  QStringLiteral("T: el tubo se parte en dos y llega el tercero"));
+                  QStringLiteral("T junction: the pipe splits in two and the third arrives"));
             state->session->undo();
             check(pf_session_connection_count(state->session->handle()) == state->pipes
                       && pf_session_component_count(state->session->handle()) == state->components,
-                  QStringLiteral("T: un solo deshacer deshace la unión entera"));
+                  QStringLiteral("T junction: one undo undoes the whole junction"));
         });
 
         // Dragging out of the palette, which is how a circuit is actually drawn. The drop is
@@ -1218,12 +1218,12 @@ int main(int argc, char *argv[])
                 }
             };
             seek(state->window->contentItem());
-            check(row != nullptr, QStringLiteral("paleta: la fila del catálogo se encuentra"));
+            check(row != nullptr, QStringLiteral("palette: the catalog row is found"));
             if (row == nullptr) {
                 return;
             }
             const QPointF centre = row->mapToScene(row->boundingRect().center());
-            std::fprintf(stderr, "selftest: fila de la paleta en (%.0f, %.0f)\n", centre.x(),
+            std::fprintf(stderr, "selftest: palette row at (%.0f, %.0f)\n", centre.x(),
                          centre.y());
             state->paletteScene = centre;
             state->components = pf_session_component_count(state->session->handle());
@@ -1240,14 +1240,14 @@ int main(int argc, char *argv[])
         steps->push_back([state, check, componentRect] {
             const uint32_t now = pf_session_component_count(state->session->handle());
             check(now == state->components + 1,
-                  QStringLiteral("paleta: soltar en la hoja coloca el componente"));
+                  QStringLiteral("palette: dropping on the sheet places the component"));
             if (now == state->components + 1) {
                 const QRectF box = componentRect(static_cast<int>(now) - 1);
-                std::fprintf(stderr, "selftest: colocado en (%.0f, %.0f)\n", box.center().x(),
+                std::fprintf(stderr, "selftest: placed at (%.0f, %.0f)\n", box.center().x(),
                              box.center().y());
                 check(std::abs(box.center().x() - 150.0) < 12.0
                           && std::abs(box.center().y() - 40.0) < 12.0,
-                      QStringLiteral("paleta: cae donde se suelta, no en otro sitio"));
+                      QStringLiteral("palette: it lands where it is dropped, not elsewhere"));
             }
         });
 
@@ -1258,44 +1258,44 @@ int main(int argc, char *argv[])
             state->session->stopSimulation();
             const QString path = QDir::tempPath() + QStringLiteral("/punchi-aviso.pfluid");
             check(state->session->saveTo(path),
-                  QStringLiteral("sin guardar: guardar deja el documento limpio"));
+                  QStringLiteral("unsaved: saving leaves the document clean"));
             check(!state->session->modified()
                       && !state->session->title().startsWith(QChar(0x2022)),
-                  QStringLiteral("sin guardar: un documento guardado no lleva marca"));
+                  QStringLiteral("unsaved: a saved document has no mark"));
             state->unsavedPath = path;
             if (state->session->componentCount() > 0) {
                 state->session->select(0);
                 state->session->moveComponent(0, 60.0, 100.0);
             }
             check(state->session->modified(),
-                  QStringLiteral("sin guardar: mover marca el documento"));
+                  QStringLiteral("unsaved: moving marks the document"));
             check(state->session->title().startsWith(QChar(0x2022)),
-                  QStringLiteral("sin guardar: el título avisa"));
+                  QStringLiteral("unsaved: the title warns"));
             check(state->session->hasUnsavedWork(),
-                  QStringLiteral("sin guardar: cerrar preguntaría antes"));
+                  QStringLiteral("unsaved: closing would ask first"));
             state->session->autosave();
             check(state->session->modified(),
-                  QStringLiteral("sin guardar: la copia de seguridad no es guardar"));
+                  QStringLiteral("unsaved: the safety copy is not a save"));
             state->session->undo();
             check(state->session->modified(),
-                  QStringLiteral("sin guardar: deshacer no borra el aviso"));
+                  QStringLiteral("unsaved: undo does not clear the mark"));
         });
         // Recovering a safety copy brings the work back and leaves it unsaved, because the
         // user never chose where it goes; starting over then discards both.
         steps->push_back([state, check] {
             const int before = state->session->componentCount();
             check(state->session->recoverAutosave(),
-                  QStringLiteral("sin guardar: la copia se recupera"));
+                  QStringLiteral("unsaved: the copy is recovered"));
             check(state->session->modified() && state->session->currentPath().isEmpty(),
-                  QStringLiteral("sin guardar: lo recuperado sigue sin guardar"));
+                  QStringLiteral("unsaved: what was recovered is still unsaved"));
             check(state->session->componentCount() == before,
-                  QStringLiteral("sin guardar: la copia trae el circuito entero"));
+                  QStringLiteral("unsaved: the copy brings the whole circuit"));
             state->session->discardAutosave();
             check(!state->session->recoveryOffered(),
-                  QStringLiteral("sin guardar: descartar la copia la quita"));
+                  QStringLiteral("unsaved: discarding the copy removes it"));
             state->session->discardAndNewDocument();
             check(!state->session->modified(),
-                  QStringLiteral("sin guardar: empezar de nuevo arranca limpio"));
+                  QStringLiteral("unsaved: starting over begins clean"));
             QFile::remove(state->unsavedPath);
         });
 
@@ -1305,22 +1305,22 @@ int main(int argc, char *argv[])
             state->session->stopSimulation();
             state->session->select(2);
             check(state->session->designationOf(2).isEmpty(),
-                  QStringLiteral("designación: el ejemplo no trae nombres"));
+                  QStringLiteral("designation: the example has no names"));
             state->session->setDesignation(2, QStringLiteral(" 1A1 "));
             check(state->session->designationOf(2) == QStringLiteral("1A1"),
-                  QStringLiteral("designación: se guarda sin espacios"));
+                  QStringLiteral("designation: it is saved trimmed"));
             state->session->setDesignation(2, QString());
             check(state->session->designationOf(2).isEmpty(),
-                  QStringLiteral("designación: vaciarla la quita"));
+                  QStringLiteral("designation: clearing it removes it"));
             state->session->undo();
             check(state->session->designationOf(2) == QStringLiteral("1A1"),
-                  QStringLiteral("designación: un deshacer la devuelve"));
+                  QStringLiteral("designation: one undo restores it"));
         });
         steps->push_back([state, check] {
             // Two actuators with one name is the fault the check has to report, and it is
             // the reason the designation exists.
             const int copy = state->session->duplicateComponent(2, 10.0, 40.0);
-            check(copy >= 0, QStringLiteral("designación: hay un segundo cilindro"));
+            check(copy >= 0, QStringLiteral("designation: there is a second cylinder"));
             if (copy >= 0) {
                 state->session->setDesignation(copy, QStringLiteral("1A1"));
             }
@@ -1328,9 +1328,9 @@ int main(int argc, char *argv[])
             state->session->checkCircuit();
             const QString report = state->session->checkReport();
             const bool named = report.contains(QStringLiteral("misma designación"));
-            std::fprintf(stderr, "selftest: la comprobación dice: %s\n",
+            std::fprintf(stderr, "selftest: the check says: %s\n",
                          qUtf8Printable(report.left(240)));
-            check(named, QStringLiteral("designación: dos cilindros con el mismo nombre"));
+            check(named, QStringLiteral("designation: two cylinders with the same name"));
             state->session->closeInspector();
             state->session->undo();
             state->session->undo();
@@ -1341,39 +1341,39 @@ int main(int argc, char *argv[])
         steps->push_back([state, check] {
             state->session->forgetRecent();
             check(state->session->recent().isEmpty(),
-                  QStringLiteral("recientes: la lista se vacía"));
+                  QStringLiteral("recent: the list is emptied"));
             state->recentDocument = QDir::tempPath()
                 + QStringLiteral("/punchi-reciente.pfluid");
             state->session->saveTo(state->recentDocument);
             const QVariantList list = state->session->recent();
             check(list.size() == 1,
-                  QStringLiteral("recientes: guardar apunta el archivo"));
+                  QStringLiteral("recent: saving records the file"));
             const QVariantMap entry = list.value(0).toMap();
             check(entry.value(QStringLiteral("path")).toString() == state->recentDocument,
-                  QStringLiteral("recientes: con su ruta completa"));
+                  QStringLiteral("recent: with its full path"));
             check(entry.value(QStringLiteral("name")).toString()
                       == QStringLiteral("punchi-reciente.pfluid"),
-                  QStringLiteral("recientes: y con su nombre para el menú"));
+                  QStringLiteral("recent: and with its name for the menu"));
         });
         steps->push_back([state, check] {
             const int before = state->session->componentCount();
             state->session->newDocument();
             check(state->session->openRecent(0),
-                  QStringLiteral("recientes: se abre desde la lista"));
+                  QStringLiteral("recent: it opens from the list"));
             check(before > 0 && state->session->componentCount() == before,
-                  QStringLiteral("recientes: vuelve el circuito entero"));
+                  QStringLiteral("recent: the whole circuit returns"));
             check(state->session->currentPath() == state->recentDocument,
-                  QStringLiteral("recientes: el archivo abierto es el de la lista"));
+                  QStringLiteral("recent: the opened file is the one in the list"));
             // A file that is gone is dropped instead of left in the menu, because the list
             // promises documents that can be opened.
             QFile::remove(state->recentDocument);
             check(!state->session->openRecent(0),
-                  QStringLiteral("recientes: abrir uno que ya no está falla"));
+                  QStringLiteral("recent: opening one that is gone fails"));
             check(state->session->recent().isEmpty(),
-                  QStringLiteral("recientes: y se olvida de la lista"));
+                  QStringLiteral("recent: and it is forgotten from the list"));
             state->session->forgetRecent();
             check(state->session->recent().isEmpty(),
-                  QStringLiteral("recientes: olvidar deja la lista vacía"));
+                  QStringLiteral("recent: forgetting leaves the list empty"));
         });
 
         // Saving and opening a sheet: the file has to carry the placements, the pipes,
@@ -1382,16 +1382,16 @@ int main(int argc, char *argv[])
             const QString path = QDir::tempPath() + QStringLiteral("/punchi-selftest.pfluid");
             const uint32_t before = pf_session_component_count(state->session->handle());
             const uint32_t pipes = pf_session_connection_count(state->session->handle());
-            check(state->session->saveTo(path), QStringLiteral("documento: se guarda"));
+            check(state->session->saveTo(path), QStringLiteral("document: it saves"));
             // Change the document, then open the file: the change must disappear.
             if (state->session->componentCount() > 0) {
                 state->session->removeComponent(0);
             }
-            check(state->session->openFrom(path), QStringLiteral("documento: se abre"));
+            check(state->session->openFrom(path), QStringLiteral("document: it opens"));
             check(pf_session_component_count(state->session->handle()) == before,
-                  QStringLiteral("documento: vuelven los mismos componentes"));
+                  QStringLiteral("document: the same components return"));
             check(pf_session_connection_count(state->session->handle()) == pipes,
-                  QStringLiteral("documento: vuelven los mismos tubos"));
+                  QStringLiteral("document: the same pipes return"));
             QFile::remove(path);
         });
 
@@ -1401,7 +1401,7 @@ int main(int argc, char *argv[])
             QObject::connect(timer, &QTimer::timeout, state->window, [state, steps, timer] {
                 if (state->step >= steps->size()) {
                     timer->stop();
-                    std::fprintf(stderr, "selftest: %d fallo(s)\n", state->failures);
+                    std::fprintf(stderr, "selftest: %d failure(s)\n", state->failures);
                     QCoreApplication::exit(state->failures == 0 ? 0 : 1);
                     return;
                 }

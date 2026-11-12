@@ -40,7 +40,24 @@ pretend otherwise. There is an editor, a network solver and an export; there is 
 model yet, and the parts list, the electrical library and the 300 dpi symbol review are
 still open.
 
-## Language and stack
+## Language
+
+English is the source language for code, identifiers, comments, logs, tests, scripts,
+commit subjects and bodies, pull-request titles and bodies, documentation, skills and the
+README. The exceptions are:
+
+- **user-facing interface strings**, which are Spanish today and move to translation
+  catalogs in F8;
+- **`CHANGELOG.md`**, in Spanish by project decision;
+- **`docs/retomar.md`**, the owner's continuity note;
+- **`README.es.md`**, the Spanish copy of the README.
+
+Conversation may be in Spanish. A Spanish UI label may be quoted inside an English comment
+(`Edición ▸ Girar`, `Mayús`), but the sentence around it is English. `--selftest` output,
+internal diagnostics and test names are English. No Spanish prose in identifiers, comments,
+logs or tests.
+
+## Stack
 
 Rust, stable toolchain pinned in `rust-toolchain.toml`. See
 [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md) for the

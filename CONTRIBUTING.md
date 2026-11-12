@@ -99,8 +99,11 @@ same, whatever permissions its session holds, and never merges or enables auto-m
 
 ## Language
 
-Code, comments, commit messages, documentation and issue text in English. Channel
-conversation can be in Spanish. `CHANGELOG.md` is in Spanish, as a project decision.
+Code, identifiers, comments, logs, tests, scripts, commit subjects and bodies, pull-request
+titles and bodies, documentation and issue text in English. Channel conversation can be in
+Spanish. User-facing interface strings are Spanish today and move to translation catalogs in
+F8. `CHANGELOG.md` is in Spanish, as a project decision; `docs/retomar.md` is the owner's
+continuity note in Spanish.
 
 ## Reporting problems
 
