@@ -14,21 +14,22 @@ file is the execution order.
 
 ## Where the project stands
 
-`0.2` — a working vertical slice, and a specification for everything after it.
+`0.1.0` — a working editor and simulator, and a specification for everything after it.
 
 | Area | State | Evidence |
 |---|---|---|
 | Domain, file format, CLI | **implemented** | `cargo test --workspace`, CLI smoke test in `check.sh` |
-| Component catalog (TOML files, override, `disabled`) | **implemented** | 7 catalog tests; verified in the real session with a user override and a broken file |
+| Component catalog (TOML files, override, `disabled`) | **implemented** | catalog tests; verified in the real session with a user override and a broken file |
 | Gas model, valve positions, cylinder with spring and friction | **implemented** | ISO 6358 against a hand calculation, mass balance 1e-9, stroke time bracketed, 10⁵ steps without NaN |
-| Canvas: catalog-driven symbols, click on the valve, live readouts | **implemented** | headless click tests, screenshots |
-| Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | 17 theme tests, 4 contrast tests, colour-literal scan, 10 UI tests, light/dark screenshots |
-| Export PNG/PDF | **implemented** — [plan.md](plan.md) M2 | 8 PDF acceptance tests + 5 raster tests: pixel sizes from the IHDR, empty margin band, determinism, refusal before allocating |
-| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | 8 lint rules with a test each, 4 review files with light/dark screenshots, review-folder test; 300 dpi pending M2 |
-| Editor: document, undo, pipes, T, re-route, per-instance properties, copy, turn, reflect, multi-selection | **implemented** — [capabilities.md](capabilities.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
+| Canvas: catalog-driven symbols, click on the valve, live readouts | **implemented** | `--selftest`, screenshots |
+| Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | `--check-theme`, `--check-icons`, `--selftest`, light/dark screenshots |
+| Export PNG/PDF from the window and headless | **implemented** — [plan.md](plan.md) M2 | PDF, raster and caller-drawing tests; `--export`; the gate writes a PDF and an Oficio PNG |
+| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 14 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
+| Editor: document, undo, pipes, T, re-route, per-instance properties, copy, turn, reflect, multi-selection, align, designations | **implemented** — [capabilities.md](capabilities.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
 | The sheet is the network the solver runs | **implemented** — [capabilities.md](capabilities.md) F2 | network tests, the 5/2 + double-acting ABI circuit, pipe colour |
-| Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | six format tests, ABI round trip, `--selftest` |
-| Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v2 with a migration test |
+| Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | format tests, ABI round trip, `--selftest` |
+| Recent documents and the unsaved-work warning | **implemented** — [capabilities.md](capabilities.md) F4 | format and ABI tests, `--selftest` |
+| Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v3 with a migration test |
 
 The repository is initialised and the baseline is committed; `main` carries the Qt
 front end, and since 2026-11-12 nothing is committed there: every change travels on a
@@ -50,7 +51,7 @@ changed lines outside generated files, it is two phases.
 | **P1.5 — recent documents** ✅ delivered | `feat/recent-documents` | the last ten files opened or saved, reachable from Archivo and dropped when their file is gone | five format tests, the ABI test `the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened`, ten `--selftest` steps |
 | **P1.6 — designations** ✅ delivered | `feat/designations` | a name per component, drawn on the sheet, edited in the properties panel and saved; the check reports two actuators with one name | document, format, check and ABI tests, seven `--selftest` steps, light/dark captures |
 | **V2 — check without the window** ✅ delivered | `feat/headless-check` | `punchi-fluid-cli check --json --strict` over the sheet format, with a versioned contract | five contract tests and the gate's smoke test |
-| **P1.7 — print what is drawn** | `feat/print-the-sheet` | the ABI builds the printed page from the document in print ink, and Archivo gains Exportar PNG and PDF; today the export crate draws the worked example and no command reaches it | an export test that finds a named cylinder in the output, `--export` headless, `--selftest` |
+| **P1.7 — print what is drawn** ✅ delivered | `feat/export-from-the-window` | the ABI builds the printed page from the document in print ink, Archivo gained Exportar PNG and PDF, and the Hoja group chooses the paper and landscape; the title-block date and scale-to-fit remain open | an export test that finds a named cylinder in the output, `--export` headless, `--selftest`, the gate's PDF and Oficio PNG smoke test |
 | **P1.8 — a project of circuits** | `feat/circuits` | several circuits in one document, which is what the reference's ninth check fault is about (a pipe running through a circuit it does not belong to) | ABI test, the ninth fault, `--selftest` |
 | **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
@@ -60,7 +61,7 @@ changed lines outside generated files, it is two phases.
 
 Two corrections worth keeping: designations unlock **one** of the four remaining check
 faults, not three — the eighth needs the displacement encoder, which arrives with the
-electrical library (P5), and the ninth needs a document that holds several circuits (P1.7).
+electrical library (P5), and the ninth needs a document that holds several circuits (P1.8).
 
 `P` numbers are delivery order, not dependency: P2 does not need P1's code, and a phase
 that does not touch the same files may be worked on a branch of its own once the
@@ -310,8 +311,8 @@ One test per rule, each failing on a purpose-built bad definition:
 
 ### Redraw
 
-`valve.3_2.spring_return`, `supply.workshop`, `cylinder.single_acting_20_100`,
-`throttle.fixed`: add port numerals, structured paths and blocking marks, declared
+`valve.3_2.spring_return`, `supply.compressor`, `cylinder.single_acting_20_100`,
+`throttle.fixed` (and the rest of the 14 built-ins): add port numerals, structured paths and blocking marks, declared
 spring and actuator, line classes, and review the cylinder's spring and rod proportions
 against Part 1. The cylinder's rod and spring were redrawn and reviewed on 2026-11-06:
 the piston now crosses the whole internal length the definition declares and the return

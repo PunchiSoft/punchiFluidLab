@@ -39,24 +39,24 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Área | Estado real |
 |---|---|
 | Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic), **selección múltiple** (Mayús y clic, rectángulo elástico, Ctrl+E) con arrastrar/copiar/borrar/alinear en grupo y un solo deshacer |
-| Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago, masa y **designación** (el nombre, dibujado bajo el símbolo); Aplicar es un solo deshacer. Faltan accionamiento y los demás campos del diálogo de la referencia |
+| Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago, masa y **designación** (el nombre, dibujado bajo el símbolo); Aplicar es un solo deshacer. Faltan resumen, accionamiento, posición inicial, ángulo de montaje, fugas y amortiguamiento |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
-| Exportación | PNG y PDF con hoja normalizada |
-| Comprobación | 6 de las 9 faltas, cada una señalada en el dibujo; las otras 3 necesitan un proyecto de circuitos (F4) o la biblioteca eléctrica con su encoder (F6) |
+| Exportación | **desde la ventana y sin ventana**: Archivo ▸ Exportar escribe PDF o PNG (300 dpi) de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana. Deudas: la fecha del bloque está fija en 2026-11-07, el dibujo se centra en vez de escalarse para encajar y no hay panel de márgenes, tamaño personalizado ni resolución |
+| Comprobación | 6 de las 9 faltas, cada una señalada en el dibujo; las otras 3 necesitan un proyecto de circuitos (P1.8), la biblioteca eléctrica con su encoder (F6) y la falta del tubo cuyos extremos no encajan |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
-| Símbolos | lint de 8 reglas; revisión visual con capturas claro/oscuro; 300 dpi pendiente |
+| Símbolos | lint de 8 reglas; **14 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
 
 **Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
 (la hoja se dibuja, se conecta, se gira, se simula y se guarda), pero del manual completo
 falta bastante: repartir con separación igual, las clases de conducto y los
 silenciadores/cierres (F1), el caudalímetro, el dinamómetro y el registrador (F3), los
-proyectos, el autoguardado y el aviso de cambios sin guardar (F4), las listas de piezas
-(F5), y las bibliotecas eléctrica, digital y GRAFCET (F6). Estimación razonable hoy:
-**~50 % del manual**, con F1 casi cerrada, F2 cerrada y F4 encaminada. El siguiente paso, por
-valor, es un **proyecto de circuitos** (varios circuitos en un documento), que además cierra
-la novena falta de la comprobación, seguido de los instrumentos que faltan (caudalímetro,
+proyectos (F4), las listas de piezas (F5), y las bibliotecas eléctrica, digital y GRAFCET
+(F6). Estimación razonable hoy: **cerca de la mitad del manual**, con F1 casi cerrada, F2
+cerrada, F4 encaminada y la exportación entregada (P1.7). El siguiente paso, por valor, es
+un **proyecto de circuitos** (varios circuitos en un documento), que además cierra la
+novena falta de la comprobación, seguido de los instrumentos que faltan (caudalímetro,
 dinamómetro, registrador).
 
 ### 0.2 Cómo se entrega desde el 2026-11-12
@@ -112,29 +112,32 @@ Dos ideas lo definen y explican casi todas las decisiones:
 
 ## 2. Estado real
 
-`0.2` — rebanada vertical funcionando, armazón de la aplicación y especificación de lo que sigue.
+`0.1.0` — editor y simulador funcionando, con la exportación en la ventana y la
+especificación de lo que sigue.
 
 | Área | Estado | Evidencia |
 |---|---|---|
-| Dominio, formato de archivo, CLI | **hecho** | 7 + 3 pruebas, prueba de humo del CLI en `check.sh` |
-| Catálogo de componentes (TOML, reemplazo, `disabled`) | **hecho** | 7 pruebas; probado en la sesión real con un override y un archivo roto |
-| Física de gas, válvula por posiciones, cilindro con muelle y rozamiento | **hecho** | 18 pruebas: ISO 6358 contra cálculo a mano, balance de masa 1e-9, carrera acotada, 10⁵ pasos sin NaN |
-| Lienzo: símbolos del catálogo, clic en la válvula, lecturas en vivo | **hecho** | 2 pruebas de clic headless + capturas de pantalla |
-| Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme` mide los tres contrastes y falla si no llegan; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
-| Exportación PNG/PDF con hojas normalizadas | **hecho** | 31 pruebas de export (PDF y ráster), inspección con `pdftoppm` y del PNG a 300 dpi |
-| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 4 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
-| Editor: documento, deshacer, tuberías, red | **solo especificado** | [plan.md](plan.md) M3–M4 |
+| Dominio, formato de archivo, CLI | **hecho** | pruebas del workspace y prueba de humo del CLI en `check.sh` |
+| Catálogo de componentes (TOML, reemplazo, `disabled`) | **hecho** | pruebas de esquema, precedencia y lint; probado en la sesión real con un override y un archivo roto |
+| Física de gas, válvula por posiciones, cilindro con muelle y rozamiento | **hecho** | ISO 6358 contra cálculo a mano, balance de masa 1e-9, carrera acotada, 10⁵ pasos sin NaN |
+| Lienzo: símbolos del catálogo, clic en la válvula, lecturas en vivo | **hecho** | `--selftest` y capturas de pantalla |
+| Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme`, `--check-icons` y `--selftest`; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
+| Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
+| La hoja es la red que resuelve el solver | **hecho** | pruebas de red, el circuito 5/2 + doble efecto por el ABI, tubos coloreados |
+| Exportación PNG/PDF desde la ventana y sin ventana | **hecho, con deudas** | pruebas de PDF, ráster y dibujo del llamador; `--export`; el gate escribe un PDF y un PNG en Oficio. Deudas: fecha fija, escala para encajar y panel completo |
+| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 14 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
+| Instrumentos y ejecución hasta cambio | **parcial** | manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
 
-**Total de pruebas: 134** — `core` 7, `catalog` 31, `file` 3, `solver` 21, `draw` 25,
-`export` 34 (PDF 8, PNG 5, hoja y generador 21), `ffi` 10, `review` 3.
+**Total de pruebas: 244** — `core` 7, `catalog` 34, `file` 20, `solver` 33, `doc` 29,
+`draw` 36, `check` 10, `export` 40, `ffi` 30, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
-**El repositorio ya existe.** `git init -b main` y el primer commit (la rebanada
-vertical tal cual estaba) se hicieron el 2026-11-06. Encima entraron dos commits: el ABI C
-(`punchi-fluid-ffi`) y la ventana Qt Quick. [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md)
-está aceptado y jubila `punchi-fluid-ui`, `desktop`, `theme` e `icons`. No hay remoto
-todavía: eso sigue siendo decisión del propietario.
+**El repositorio existe y tiene remoto.** `git init -b main` y el primer commit (la
+rebanada vertical tal cual estaba) se hicieron el 2026-11-06; el remoto es
+`origin` en GitHub. [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) está aceptado y jubila
+`punchi-fluid-ui`, `desktop`, `theme` e `icons`. Desde el 2026-11-12 nada se escribe en
+`main`: cada cambio va en su rama y entra por un pull request que mezcla el propietario.
 
 Los dos números que hay que recordar de la máquina: **dos trabajos de `cargo`** y **cada
 binario de prueba bajo un tope de memoria**. `./scripts-dev/test.sh` lo aplica solo; el
@@ -155,8 +158,8 @@ de 144 Hz, no el simulador calculando.
 | Tema KDE | `~/.config/kdeglobals`; `[Colors:Window] BackgroundNormal=36,36,36`; acento `[Colors:Selection] BackgroundNormal=49,91,239`; `LookAndFeelPackage=MacDarkpunchi` |
 | Portal de color | `org.freedesktop.appearance color-scheme` → `1` (oscuro). Comprobado con `gdbus` |
 | Iconos | `/usr/share/icons/breeze/actions/22/…-symbolic.svg` existen |
-| eframe 0.37 | feature `accesskit` **activada** en `Cargo.toml` desde M1 |
-| Herramientas ausentes | no hay `ydotool`, `xdotool` ni `wtype`: **no se puede inyectar un clic real**; el clic se prueba con egui headless |
+| Ventana | Qt 6.5+ con Qt Quick sobre el ABI C; `--selftest` la conduce headless |
+| Herramientas ausentes | no hay `ydotool`, `xdotool` ni `wtype`: **no se puede inyectar un clic real**; el clic se prueba con `--selftest` y las pruebas del ABI |
 
 ---
 
@@ -164,7 +167,7 @@ de 144 Hz, no el simulador calculando.
 
 ```
 punchi-fluid-lab/
-├── Cargo.toml                 workspace: 8 crates, resolver 3, edition 2024, lints estrictos
+├── Cargo.toml                 workspace: 10 crates, resolver 3, edition 2024, lints estrictos
 ├── rust-toolchain.toml        toolchain fijado
 ├── AGENTS.md                  REGLAS canónicas (personas y agentes). Léelo antes de tocar nada
 ├── README.md / README.es.md   inglés canónico + copia española, 17 secciones equivalentes
@@ -175,7 +178,7 @@ punchi-fluid-lab/
 ├── deny.toml, clippy.toml, .editorconfig
 ├── .github/                   CI (+MSRV), audit (cargo-deny/audit), release, plantillas, CODEOWNERS, dependabot
 ├── assets/
-│   ├── catalog/               4 definiciones de fábrica + README de autoría (211 líneas)
+│   ├── catalog/               14 definiciones de fábrica + README de autoría
 │   └── symbols/               material de REVISIÓN de símbolos (no los símbolos)
 ├── crates/                    ver tabla siguiente
 ├── apps/punchi-fluid-qt/      LA VENTANA: Qt Quick + CMake, fuera del espacio de Cargo
@@ -184,22 +187,24 @@ punchi-fluid-lab/
 └── scripts-dev/               check.sh (la puerta), run.sh y test.sh (con --no-build)
 ```
 
-| Crate | Qué posee | Ficheros clave (líneas) |
+| Crate | Qué posee | Ficheros clave |
 |---|---|---|
-| `punchi-fluid-core` | componentes, puertos, conexiones, unidades tipadas | `component.rs` 151, `network.rs` 146, `units.rs` 148 |
-| `punchi-fluid-catalog` | esquema, validación y carga de las definiciones | `schema.rs` 302, `catalog.rs` 609, `builtin.rs` 27 |
-| `punchi-fluid-file` | documento JSON versionado y migraciones | `lib.rs` 285 |
-| `punchi-fluid-solver` | ISO 6358 + red de volúmenes + cilindro | `orifice.rs` 114, `pneumatic.rs` 778, `lib.rs` 199 (fachada) |
-| `punchi-fluid-draw` | símbolos ISO 1219 en mm, hoja, `Surface` | `symbol.rs` 1650, `schematic.rs` 424, `surface.rs` 570 |
+| `punchi-fluid-core` | componentes, puertos, conexiones, unidades tipadas | `component.rs`, `network.rs`, `units.rs` |
+| `punchi-fluid-catalog` | esquema, validación, carga y lint de las definiciones | `schema.rs`, `catalog.rs`, `lint.rs`, `builtin.rs` |
+| `punchi-fluid-file` | formato de hoja versionado, migraciones y recientes | `lib.rs`, `sheet.rs`, `recent.rs` |
+| `punchi-fluid-solver` | ISO 6358 + red de volúmenes + cilindro | `orifice.rs`, `network.rs`, `pneumatic.rs`, `lib.rs` |
+| `punchi-fluid-doc` | documento editado: colocaciones, comandos y deshacer | `lib.rs` |
+| `punchi-fluid-draw` | símbolos ISO 1219 en mm, hoja, `Surface` | `symbol.rs`, `schematic.rs`, `surface.rs`, `placed.rs` |
+| `punchi-fluid-check` | faltas de diseño antes de ejecutar | `lib.rs` |
 | `punchi-fluid-export` | hoja normalizada, PNG y PDF | `page.rs`, `png.rs`, `pdf.rs`, `sheet.rs` |
-| `punchi-fluid-ffi` | ABI C: sesión, cuadro de dibujo, telemetría, impacto | `lib.rs` 900, `include/punchi_fluid.h` |
-| `punchi-fluid-cli` | `validate` / `simulate` sin ventana | `main.rs` 68 |
+| `punchi-fluid-ffi` | ABI C: documento, cuadro de dibujo, hit tests, exportación | `lib.rs`, `include/punchi_fluid.h` |
+| `punchi-fluid-cli` | `validate`, `simulate` y `check` sin ventana | `main.rs` |
 
 La ventana vive fuera de `crates/`:
 
 | Aplicación | Qué posee | Ficheros clave |
 |---|---|---|
-| `apps/punchi-fluid-qt` | ribbon, barra lateral, hoja, barra de estado, tema | `Main.qml`, `Ribbon.qml`, `Sidebar.qml`, `src/{session,replay,theme,canvasitem,previewitem}.*` |
+| `apps/punchi-fluid-qt` | ribbon, barra lateral, hoja, barra de estado, tema | `Main.qml`, `RibbonBar.qml`, `Sidebar.qml`, `StatusBar.qml`, `src/{session,replay,theme,canvasitem,previewitem,icons}.*` |
 
 Documentación, para no duplicar nada:
 
@@ -292,16 +297,16 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh                     # esperado: exit 0, 37 pruebas, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 244 pruebas de Cargo + --selftest, 0 warnings
 
-# 2. Conteo por crate
-for c in core catalog file solver ui; do
+# 2. Conteo por paquete
+for c in core catalog file solver doc draw check export ffi cli; do
   echo -n "$c: "; cargo test -p punchi-fluid-$c 2>/dev/null | grep -oP 'ok\. \K[0-9]+' | paste -sd+ | bc
 done
-# esperado: core 7, catalog 7, file 3, solver 18, ui 2
+# esperado: core 7, catalog 34, file 20, solver 33, doc 29, draw 36, check 10, export 40, ffi 30, cli 5
 
 # 3. La ventana
-apps/punchi-fluid-qt/build/punchi-fluid     # el botón del ribbon acciona la válvula
+apps/punchi-fluid-qt/build/punchi-fluid     # el transporte ejecuta; el clic en la válvula la acciona
 
 # 4. Modo demostración (arranca accionada y en marcha)
 apps/punchi-fluid-qt/build/punchi-fluid --toggle   # arranca accionada
@@ -312,9 +317,10 @@ spectacle -b -n -f -o /tmp/lab.png
 # 6. El catálogo del usuario
 mkdir -p ~/.local/share/punchi-fluid-lab/catalog
 cp assets/catalog/valve.3_2.spring_return.toml ~/.local/share/punchi-fluid-lab/catalog/
-# edita la copia, pulsa Reload en el panel de catálogo:
+# edita la copia y reinicia la ventana (el catálogo se carga al arrancar):
 #   - el nombre debe salir con etiqueta [user]
-#   - si rompes una clave, aparece en «Skipped files» con la razón
+#   - si rompes una clave, el archivo se omite y la ventana sigue arrancando;
+#     la razón queda en `Catalog::skipped`, que la ventana todavía no muestra
 ```
 
 Referencia de lo que se vio la última vez en la ventana: `t = 2.506 s`, `p = 4.99 bar`,
@@ -364,8 +370,11 @@ Carpeta de fábrica `assets/catalog/`; carpeta del usuario
 - **Borrar:** borra tu archivo, o crea uno con el mismo `id` y `disabled = true` para
   retirar uno de fábrica.
 
-Identificadores de fábrica: `supply.workshop`, `valve.3_2.spring_return`,
-`cylinder.single_acting_20_100`, `throttle.fixed`.
+Identificadores de fábrica: `supply.compressor`, `supply.network`,
+`valve.3_2.spring_return`, `valve.5_2.spring_return`,
+`cylinder.single_acting_20_100`, `cylinder.double_acting_32_200`,
+`throttle.fixed`, `gauge.pressure`, `junction.tee`, los dos filtros, el lubricador y
+las dos unidades de mantenimiento. La lista completa es `assets/catalog/`.
 
 Referencia completa de campos (puertos con rol, comportamiento, símbolo, validación):
 [assets/catalog/README.md](../assets/catalog/README.md).
@@ -378,7 +387,7 @@ Norma aplicable, verificada contra el catálogo de ISO: **ISO 1219-1:2012** (sí
 **ISO 1219-2:2012** (esquemas de circuito) e **ISO 1219-3:2016** (módulos de símbolos).
 Contrato completo y lista de revisión: [symbology.md](symbology.md).
 
-Lo que exige y **cómo está hoy** en los cuatro símbolos de fábrica:
+Lo que exige y **cómo está hoy** en los 14 símbolos de fábrica:
 
 | Requisito | Estado |
 |---|---|
@@ -388,10 +397,10 @@ Lo que exige y **cómo está hoy** en los cuatro símbolos de fábrica:
 | Clases de línea con su patrón | **hecho**: `line_class` obligatorio en toda línea |
 | Proporciones del cilindro y su muelle revisadas | **revisado** a tamaño de paleta y lienzo |
 | Recorrido del vástago | **hecho**: el pistón recorre `stroke/(stroke + dead_length)` de la cámara interior y el resto es el muelle comprimido; corregido el 2026-11-06 |
-| Legibilidad a 300 dpi | **pendiente** de M2 |
-| Puntos de unión en cruces de tres líneas | no se dibujan; llegan con las tuberías (M4) |
+| Legibilidad a 300 dpi | **pendiente** de la revisión a 300 dpi |
+| Puntos de unión en cruces de tres líneas | **hecho**: al soltar un tubo sobre otro nace un `junction.tee`, que se dibuja como punto relleno (ADR 0006); un cruce de cuatro no se ofrece |
 
-Las cuatro revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
+Las 14 revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
 una prueba falla si un componente de fábrica no tiene revisión, si no dice su estado o
 si le falta la captura clara u oscura. Mientras digan `pending-300dpi`, la exportación
 lleva la nota «symbols not yet verified against ISO 1219-1».
@@ -409,7 +418,7 @@ identificación de puertos. Desde esta máquina solo se pudieron confirmar 1219-
 
 Resumen; el detalle está en [ui-ux.md](ui-ux.md).
 
-- **Cinta superior** con 4 pestañas (Archivo, Editar, Ver, Simular) y el transporte
+- **Cinta superior** con 3 pestañas (Archivo, Editar, Ver) y el transporte
   `▶ ⏸ ⟲` siempre visible. Colapsa a menú por debajo de 1100 px.
 - **Barra lateral que ES el catálogo**: grupos por categoría, búsqueda, arrastre a la
   hoja, y **la miniatura de cada componente es su propio símbolo** (no un set de iconos
@@ -421,26 +430,28 @@ Resumen; el detalle está en [ui-ux.md](ui-ux.md).
 - **Colores del entorno**: `kdeglobals` + portal `color-scheme`, cambio en vivo; acento,
   tipografía e iconos Breeze `-symbolic` teñidos y cacheados. Una capa semántica de
   tokens: **un `Color32::` fuera del crate de tema es un bug**, con test que lo escanea.
-- **Accesibilidad**: `accesskit`, contraste medido, teclado completo, movimiento reducido.
+- **Accesibilidad**: la de Qt Quick (nombres, teclado, contraste medido) y movimiento
+  reducido; `--check-theme` mide el contraste.
 
 ---
 
 ## 11. Qué se hace a continuación
 
-Orden: **M1 → M2 → M1.5** → M3 en adelante. El motivo del orden: la capa `Surface` de M2
-es la que necesita el renderizador conforme, así que M2 ya incluye números de puerto,
-clases de línea y marcas de bloqueo; a M1.5 le quedan el lint, el redibujado y la
-revisión.
+El orden histórico **M1 → M2 → M1.5 → M3 → M4** se cumplió. Lo que manda hoy es el orden
+de entrega de [next-steps.md](next-steps.md): **P1.7 entregado**, P1.8 proyecto de
+circuitos, P2 instrumentos, P3 edición restante, P4 lista de piezas y SVG, P5–P6
+bibliotecas eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 
-| Hito | Qué deja hecho |
+| Hito | Estado |
 |---|---|
-| **M1** | **hecho**: `punchi-fluid-theme` (tema desde KDE), cinta, barra lateral, barra de estado, `accesskit` |
-| **M2** | `punchi-fluid-draw` (un solo dibujo) + `punchi-fluid-export` (PNG con tiny-skia, PDF con printpdf), hojas A5–A2/Letter/Legal, márgenes, bloque de identificación, panel de exportación |
-| **M1.5** | `symbol lint` (8 reglas), redibujado de los 4 símbolos, revisión firmada por símbolo |
-| **M3** | `punchi-fluid-doc`: documento, comandos, deshacer acotado, formato v2 con `id` de catálogo |
-| **M4** | conexiones y solver de red; **prueba de modularidad: una 5/2 que funciona solo como archivo** |
-| **M5** | instrumentos y gráfica de 60 s |
-| **M6** | i18n con Fluent, AppImage/Flatpak, release firmado |
+| **M1** | **hecho** en Qt Quick: cinta, barra lateral, barra de estado, tema del escritorio, iconos Breeze y `--selftest` |
+| **M2** | **hecho**: `punchi-fluid-draw`, `punchi-fluid-export`, hojas A5–A0/Letter/Legal/Oficio, bloque de identificación, leyenda, PNG y PDF desde la ventana y sin ella. Deudas: fecha fija, escala para encajar y panel completo |
+| **M1.5** | `symbol lint` (8 reglas) y 14 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
+| **M3** | **hecho**: `punchi-fluid-doc`, comandos, deshacer acotado y formato v3 con `id` de catálogo |
+| **M4** | **hecho**: conexiones y solver de red; **prueba de modularidad: una 5/2 que funciona solo como archivo** |
+| **M5** | **parcial**: manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
+| **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
+| **P1.8** | **siguiente**: un proyecto con varios circuitos en un documento |
 
 El paso a paso ejecutable —ficheros exactos, firmas públicas, dependencias, trampas y
 criterios de aceptación— está en **[next-steps.md](next-steps.md)**. Los criterios de
@@ -471,13 +482,13 @@ Para no volver a discutirlas sin motivo:
 
 | # | Pregunta | Hito | Si no hay respuesta |
 |---|---|---|---|
-| 1 | ¿`git remote add origin` y publicar en GitHub? | cuando el propietario elija el remoto | el historial vive solo en el disco |
+| 1 | ¿`git remote add origin` y publicar en GitHub? | **resuelto** | `origin` existe y es GitHub |
 | 2 | ¿Edición vigente del estándar de identificación de puertos? | M1.5 | 1/2/4/3/5/12/14 y se dice en la revisión |
-| 3 | ¿Cinta colapsa a 1100 o a 1280 px? | M1 | 1100 |
-| 4 | ¿Exportación por defecto A4 vertical, 300 dpi, bloque con título/proyecto/revisión/fecha? | M2 | sí a todo |
-| 5 | ¿El export incluye leyenda de símbolos y lecturas de presión/posición, o solo el diagrama? | M2 | leyenda sí, lecturas no |
-| 6 | ¿Barra lateral de ancho fijo o redimensionable con preferencia guardada? | M1 | redimensionable, guardada |
-| 7 | ¿Solo iconos Breeze simbólicos, o se permite el tema de iconos del usuario? | M1 | Breeze simbólico, tema del usuario como respaldo |
+| 3 | ¿Cinta colapsa a 1100 o a 1280 px? | M1 | **resuelto**: a 1100 px |
+| 4 | ¿Exportación por defecto A4 vertical, 300 dpi, bloque con título/proyecto/revisión/fecha? | M2 | **parcial**: A4–A0, 300 dpi y bloque con título y fecha; la fecha está fija y no hay campos de proyecto ni revisión |
+| 5 | ¿El export incluye leyenda de símbolos y lecturas de presión/posición, o solo el diagrama? | M2 | **resuelto**: leyenda sí, lecturas no |
+| 6 | ¿Barra lateral de ancho fijo o redimensionable con preferencia guardada? | M1 | **abierto**: el ancho es fijo (248 px), no redimensionable |
+| 7 | ¿Solo iconos Breeze simbólicos, o se permite el tema de iconos del usuario? | M1 | **resuelto**: Breeze simbólico, con la etiqueta sola si falta el icono |
 
 ---
 
@@ -501,24 +512,34 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 
 ## 15. Lo que NO está hecho
 
-- **No hay repositorio git.** Sin commits, sin historial.
-- **Recortes del armazón (hecho, con dos deudas)**: los iconos simbólicos de Breeze no
-  se cargan (botones con texto) y la familia tipográfica de `kdeglobals` se lee pero no
-  se carga (el tamaño sí). El cambio de tema en vivo desde Plasma está cableado, pero
-  no se midió tocando la configuración del propietario.
-- **Exportación hecha** en PDF (vectorial) y PNG (72–600 dpi), con bloque de
-  identificación, leyenda y nota de «sin verificar». Lo que falta es la **imagen de
-  revisión por símbolo**: el restrictor no está en el circuito fijo, así que las cuatro
-  revisiones siguen `pending-300dpi` y la nota sigue en el documento.
-- **No hay editor**: el circuito es uno fijo de tres componentes; no se puede colocar,
-  mover ni conectar nada; no hay documento ni deshacer.
-- **El solver de red no existe**: `Solver` (fachada sobre `Circuit`) sigue devolviendo el
-  primer paso de relleno; el circuito real lo resuelve `pneumatic`, con una disposición
-  fija. `ComponentKind` en `core` todavía enumera los tipos del primer formato.
-- **Símbolos no conformes** con ISO 1219 (§9).
-- **Sin hidráulica, sin traducciones, sin empaquetado.**
+- **El repositorio git existe y tiene remoto** (`origin`, GitHub). Lo que no hay es una
+  publicación: la versión declarada sigue sin salir.
+- **Deudas del armazón**: la familia tipográfica de `kdeglobals` se lee pero no se carga
+  (el tamaño sí); el cambio de tema en vivo desde Plasma está cableado, pero no se midió
+  tocando la configuración del propietario. Los iconos Breeze sí se cargan y se tiñen.
+- **Deudas de la exportación**: la fecha del bloque está fija en 2026-11-07, el dibujo se
+  centra en vez de escalarse para encajar, no hay panel de márgenes, tamaño personalizado
+  ni resolución del PNG, y el mando no tiene atajo. La lista de piezas y la leyenda
+  completa siguen pendientes.
+- **La revisión a 300 dpi de los 14 símbolos sigue abierta**: por eso el documento lleva
+  la nota «symbols not yet verified against ISO 1219-1».
+- **El modo proyecto no existe**: un documento es un solo circuito; la novena falta de la
+  comprobación espera a P1.8. El título de la hoja no es editable.
+- **Instrumentos incompletos**: hay manómetro y «Hasta cambio»; faltan caudalímetro,
+  dinamómetro y registrador de 60 s.
+- **Edición incompleta**: separación igual y cuatro alineaciones; propiedades de resumen,
+  accionamiento, posición inicial, ángulo, fugas y amortiguamiento; falta del tubo cuyos
+  extremos no encajan.
+- **Sin bibliotecas eléctrica, digital ni GRAFCET**, y sin material didáctico propio.
+- **Sin hidráulica, sin traducciones (i18n), sin empaquetado (AppImage/Flatpak) y sin
+  publicación firmada.**
 - **El clic no se ha probado con un clic real**: no hay herramientas de inyección en la
-  sesión; la evidencia es la prueba headless de egui.
+  sesión; la evidencia es `--selftest` y las pruebas del ABI.
+- **Los presupuestos de memoria y fotograma no se miden en el gate**: están escritos en
+  [engineering.md](engineering.md) y todavía no tienen una prueba que los vigile.
+- **El formato v1 y `ComponentKind` siguen en `punchi-fluid-core`/`punchi-fluid-file`**
+  por compatibilidad con el CLI y la rebanada original; el editor y la hoja usan el
+  formato v3 con `id` de catálogo.
 
 ---
 
@@ -534,6 +555,7 @@ Copia esto tal cual en el chat nuevo:
 
 Y añade el hito que quieras empezar:
 
-- `Empezamos M2 (exportación PNG/PDF), paso 2.1: crea punchi-fluid-draw.`
-- `Antes de nada, M1.5: lint de símbolos y redibujado conforme a ISO 1219-1.`
-- `Empezamos M3 (documento, deshacer y paleta arrastrable).`
+- `Empezamos P1.8: un proyecto con varios circuitos en un documento.`
+- `Empezamos P2: caudalímetro, dinamómetro y registrador de 60 s.`
+- `Antes de nada, cierra la revisión a 300 dpi de los símbolos.`
+- `Antes de nada, corrige las deudas de la exportación: fecha real, escala para encajar y atajo.`

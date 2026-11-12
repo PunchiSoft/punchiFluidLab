@@ -51,7 +51,8 @@ Ribbon, sidebar, sheet frame, status bar, theme layer.
 ## M1.5 — Symbol conformance (runs with M2)
 
 **Status:** structural half and visual review done; the 300 dpi acceptance (2, 4) and
-the export note (5) need M2. See [symbology.md](symbology.md).
+the export note (5) are still open. M2 delivered the export; the missing piece is the
+per-symbol 300 dpi review. See [symbology.md](symbology.md).
 
 Close the gap between what is drawn today and what ISO 1219-1:2012 requires. The
 contract is [symbology.md](symbology.md); this milestone is what executes it.
@@ -82,8 +83,10 @@ contract is [symbology.md](symbology.md); this milestone is what executes it.
 ## M2 — One drawing, two exports
 
 **Status:** done. The drawing layer, the `Surface` trait, the page geometry, the PDF and
-PNG backends, the eight acceptance tests and the export panel are implemented. The note in
-the title block stays while the per-symbol 300 dpi reviews are open.
+PNG backends, the acceptance tests and the export command are implemented, and the window
+prints the document it holds. The full panel (margins, custom size, PNG resolution) and
+scale-to-fit are still open, and the note in the title block stays while the per-symbol
+300 dpi reviews are open.
 
 PNG and PDF of the sheet, with standard paper, margins and a title block.
 
@@ -119,6 +122,8 @@ and the export backends implement the same trait.
 
 ## M3 — Document, undo, palette
 
+**Status:** done, with the format at v3 (designations and orientation included).
+
 The editable document.
 
 - New `punchi-fluid-doc` crate: `Document` (components placed by catalog `id`, pipes
@@ -142,6 +147,9 @@ The editable document.
 
 ## M4 — Connections and the real solver
 
+**Status:** done. The network is built from the document, and a 5/2 valve file drives a
+double-acting cylinder.
+
 From a fixed three-component layout to a graph.
 
 - Ports, connections, orthogonal pipe routing with waypoints.
@@ -163,6 +171,9 @@ From a fixed three-component layout to a graph.
 
 ## M5 — Instruments
 
+**Status:** partial. The pressure gauge and the run-until-change command are in; the flow
+meter, force meter and strip chart are not started.
+
 Manometer, flow meter, force meter, and a strip chart of pressure and position.
 
 - Instruments are catalog entries with a `behaviour` variant and a `reading` in the
@@ -176,6 +187,8 @@ Manometer, flow meter, force meter, and a strip chart of pressure and position.
 3. No allocation in the simulation loop (counting allocator test over 10k frames).
 
 ## M6 — Language, packaging, 1.0
+
+**Status:** not started.
 
 - `i18n/` with Fluent, English and Spanish complete, no string concatenation.
 - AppImage and Flatpak manifests, desktop entry, AppStream metadata, Breeze icon in

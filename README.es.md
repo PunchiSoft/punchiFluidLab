@@ -78,14 +78,14 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 |---|---|
 | `punchi-fluid-core` | Componentes, puertos, conexiones y unidades tipadas (bar, litro, kelvin) |
 | `punchi-fluid-catalog` | Definiciones de componente leídas de archivos TOML: esquema, validación y reglas de reemplazo |
-| `punchi-fluid-file` | Documento JSON versionado, ida y vuelta y rechazo de versiones nuevas |
+| `punchi-fluid-file` | Formato de hoja versionado (v3), escritura atómica y lista de documentos recientes |
 | `punchi-fluid-solver` | Integración de masa de gas, cilindro con muelle, amortiguamiento y rozamiento, flujo ISO 6358 |
 | `punchi-fluid-doc` | El documento editado: colocaciones, comandos y deshacer acotado |
 | `punchi-fluid-draw` | El dibujo único del circuito, en milímetros, tras un trait `Surface` |
-| `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda y escritor PDF determinista |
-| `punchi-fluid-ffi` | El ABI C que habla la ventana: una sesión, un cuadro de dibujo, un hit test |
+| `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda, y los escritores PNG y PDF |
+| `punchi-fluid-ffi` | El ABI C que habla la ventana: el documento, el cuadro de dibujo, los hit tests y la exportación |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
-| `punchi-fluid-cli` | `punchi-fluid-cli validate|simulate <archivo>` para comprobaciones sin ventana |
+| `punchi-fluid-cli` | `validate`, `simulate` y `check` sin ventana |
 | `apps/punchi-fluid-qt` | La ventana: cinta, barra lateral de catálogo, hoja, barra de estado y la paleta del escritorio, sobre el ABI C |
 
 ## Compilar y ejecutar
@@ -102,26 +102,34 @@ cargo run --bin punchi-fluid-cli -- validate circuito.pfluid
 `--no-build` no invoca Cargo. `PUNCHI_FLUID_THEME=light|dark` fija la paleta; si no,
 la ventana sigue al escritorio.
 
-En la ventana: **Play** ejecuta la simulación, **Slower**/**Faster** cambian la
-velocidad (un cilindro de 20 mm con esta válvula completa la carrera en unos 0,13 s de
-tiempo simulado), **Actuate valve** o un clic sobre el símbolo de la válvula cambia su
-posición, y **Reset** vuelve a empezar. `F1` lista todos los atajos; `Ctrl+F` enfoca
-la búsqueda del catálogo.
+En la ventana el transporte ejecuta el modelo: **Iniciar** (F9) arranca, **Pausa** (F8)
+pausa, **Paso** (F10) avanza un cuadro, **Hasta cambio** se detiene en el primer tope o
+cambio de válvula, **Detener** (F5) vuelve a edición y **Restablecer** (Ctrl+R) vuelve a
+`t = 0`. Una válvula con muelle se mantiene accionada mientras el puntero está pulsado o
+**Espacio** se mantiene, y el selector de velocidad está junto al transporte (un cilindro de
+20 mm con esta válvula completa la carrera en unos 0,13 s de tiempo simulado). La cinta
+tiene tres pestañas —Archivo, Editar y Ver— y la ayuda de cada comando nombra su atajo
+cuando existe. La barra lateral lista el catálogo con el símbolo propio de cada componente;
+un clic lo selecciona y arrastrarlo lo coloca.
 
-**Export PDF** (`Ctrl+Shift+E`) o **Export PNG** (`Ctrl+Shift+P`) abre el panel de
-exportación: formato, resolución para PNG (72–600 dpi), papel, orientación, márgenes,
-bloque de identificación y destino. La página lleva marco, bloque de identificación, leyenda
-de clases de línea y números de puerto y —mientras alguna revisión de símbolo siga
-abierta— la nota de que los símbolos aún no están verificados contra ISO 1219-1. Dos
-exportaciones del mismo circuito producen los mismos bytes.
+**Exportar** en Archivo abre un diálogo de guardado: un nombre `.pdf` escribe una página
+vectorial, un nombre `.png` un ráster a 300 dpi. El grupo **Hoja** elige uno de los nueve
+papeles con nombre —A5 a A0, Letter, Legal y Oficio— y la orientación apaisada, y marca el
+que está en uso. La página lleva marco, bloque de identificación y leyenda de clases de
+línea y números de puerto, y mientras alguna revisión de símbolo siga abierta lleva además
+la nota de que los símbolos aún no están verificados contra ISO 1219-1. El mismo circuito
+exportado dos veces produce los mismos bytes. Todavía no hay panel de márgenes, tamaño
+personalizado ni resolución del PNG, la fecha del bloque de identificación sigue fija, el
+dibujo se centra en vez de escalarse para encajar, y el comando de exportación no tiene
+atajo.
 
 **El papel es una decisión, no un valor por defecto.** Un plano se imprime en la hoja que usa
-la oficina técnica, y no es una sola: ISO 216/5457 A4, A3, A2, A1 y A0 para el mundo ISO;
+la oficina técnica, y no es una sola: ISO 216/5457 A5 a A0 para el mundo ISO;
 Letter y Legal para el norteamericano; y **Oficio/Folio (216 × 330 mm)**, que no es ninguna de
 las dos y es el papel que todavía se encuentra en la mayoría de las oficinas chilenas. El plan
-está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md). El crate de exportación
-hoy conoce A4 y A3; el resto, y el mando de la ventana que lo alcanza, son la parte abierta de
-F5 — el mando de exportación todavía no está en la ventana.
+está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); el tamaño
+personalizado existe en la API de exportación pero no en la ventana, y la última elección
+todavía no se recuerda por usuario.
 
 Requisitos: Rust estable (fijado en `rust-toolchain.toml`), Qt 6.5 o superior con Qt Quick,
 CMake y Ninja. El núcleo en Rust se compila con `cargo build --release -p punchi-fluid-ffi`;
@@ -256,23 +264,25 @@ la física necesitan ojos y una curva de referencia.
 ## Hoja de ruta
 
 Los hitos, sus criterios de aceptación y la evidencia que exige cada uno están en
-[docs/plan.md](docs/plan.md). En resumen:
+[docs/plan.md](docs/plan.md); el libro de cobertura y el orden de entrega están en
+[docs/capabilities.md](docs/capabilities.md) y [docs/next-steps.md](docs/next-steps.md).
+En resumen:
 
-- **v0.1** — workspace, dominio, formato, lienzo, CLI, catálogo de definiciones.
+- **v0.1** — workspace, dominio, formato, lienzo, CLI, catálogo de definiciones. *Hecho.*
 - **v0.2** — rebanada vertical: suministro, válvula 3/2 y cilindro de simple efecto con
-  integración de masa de gas, dinámica del pistón y válvula accionable. *Hecho, en
-  revisión.*
+  integración de masa de gas, dinámica del pistón y válvula accionable. *Hecho.*
 - **M1** — armazón: cinta, barra lateral, barra de estado, tema del escritorio,
   accesibilidad. *Hecho.*
 - **M1.5** — conformidad de símbolos con ISO 1219, con lint y revisión por símbolo.
+  *Mitad estructural y revisión visual hechas; la revisión a 300 dpi está abierta.*
 - **M2** — un solo dibujo, dos exportaciones: PDF y PNG desde las mismas llamadas, papel
-  normalizado, márgenes, bloque de identificación y leyenda. *Hecho.*
+  normalizado, bloque de identificación y leyenda. *Hecho.*
 - **v0.3** — documento con deshacer, paleta generada del catálogo, colocar y conectar
-  componentes, tuberías ortogonales, guardar y cargar. Un componente colocado
-  referenciará un `id` del catálogo, lo que retira `ComponentKind` de la capa de
-  documento (hoy todavía enumera los tipos del primer formato).
+  componentes, tuberías ortogonales, guardar y cargar. *Hecho.*
 - **v0.4** — solver de red guiado por el grafo del circuito en vez de una disposición
-  fija; válvulas 5/2, reguladores de caudal, manómetros.
+  fija; válvulas 5/2, reguladores de caudal, manómetros. *Hecho.*
+- **Siguiente** — un proyecto de circuitos, los instrumentos que faltan, la lista de
+  piezas, las bibliotecas eléctrica y digital, y el material didáctico propio.
 - **v1.0** — modelo hidráulico, AppImage y Flatpak, canal de traducciones.
 
 ## Documentación del proyecto
