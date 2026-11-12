@@ -52,7 +52,7 @@ changed lines outside generated files, it is two phases.
 | **P1.6 — designations** ✅ delivered | `feat/designations` | a name per component, drawn on the sheet, edited in the properties panel and saved; the check reports two actuators with one name | document, format, check and ABI tests, seven `--selftest` steps, light/dark captures |
 | **V2 — check without the window** ✅ delivered | `feat/headless-check` | `punchi-fluid-cli check --json --strict` over the sheet format, with a versioned contract | five contract tests and the gate's smoke test |
 | **P1.7 — print what is drawn** ✅ delivered | `feat/export-from-the-window` | the ABI builds the printed page from the document in print ink, Archivo gained Exportar PNG and PDF, the Hoja group chooses the paper and landscape, the date comes from the caller and the drawing is fitted to the page with its scale recorded | an export test that finds a named cylinder in the output, `--export` headless, `--selftest`, the gate's PDF and Oficio PNG smoke test |
-| **P1.8 — a project of circuits** | `feat/circuits` | several circuits in one document, which is what the reference's ninth check fault is about (a pipe running through a circuit it does not belong to) | ABI test, the ninth fault, `--selftest` |
+| **P1.8 — a project of circuits** ✅ delivered | `feat/circuits` | several circuits in one document with a selector, per [ADR 0013](adr/0013-a-project-is-one-document.md); the reference's ninth fault becomes a pipe that joins two circuits | format migration tests, ABI add/select/save/open test, the ninth fault, `--selftest` |
 | **P2 — the rest of the instruments** | `feat/flow-and-force-meters` | flow meter, force meter and strip chart as files with readings, each a passive part of the network | solver test per instrument, an ABI reading, drawn placement, symbol review |
 | **P3 — the rest of the editing of §4.2** | `feat/edit-remainder` | even spacing between marked objects, pipe classes, blind plugs and silencers | doc tests, `--selftest`, catalog and symbol review |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
@@ -61,7 +61,7 @@ changed lines outside generated files, it is two phases.
 
 Two corrections worth keeping: designations unlock **one** of the four remaining check
 faults, not three — the eighth needs the displacement encoder, which arrives with the
-electrical library (P5), and the ninth needs a document that holds several circuits (P1.8).
+electrical library (P5), and the ninth is the cross-circuit pipe that P1.8 delivered.
 
 `P` numbers are delivery order, not dependency: P2 does not need P1's code, and a phase
 that does not touch the same files may be worked on a branch of its own once the

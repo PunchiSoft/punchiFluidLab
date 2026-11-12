@@ -28,6 +28,25 @@ Window {
     property string pendingCommand: ""
     property string pendingPath: ""
 
+    /// The rename panel for the circuit in view. It edits a project datum, not a placement.
+    property bool renameCircuitOpen: false
+    property string renameCircuitText: ""
+
+    function activeCircuitName() {
+        const circuits = session.circuits;
+        for (let index = 0; index < circuits.length; ++index) {
+            if (circuits[index].id === session.activeCircuit) {
+                return circuits[index].name;
+            }
+        }
+        return "";
+    }
+
+    function openRenameCircuit() {
+        window.renameCircuitText = window.activeCircuitName();
+        window.renameCircuitOpen = true;
+    }
+
     /// Asks before throwing work away. Only reached when there is work to lose, so the
     /// normal path still has no modal.
     function guard(cmd, path) {
@@ -211,6 +230,7 @@ Window {
         sequence: "Escape"
         onActivated: {
             window.dragCatalog = -1;
+            window.renameCircuitOpen = false;
             session.closeInspector();
         }
     }
@@ -539,6 +559,105 @@ Window {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: window.pendingCommand = ""
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // The circuit name is the one the selector and the printed title block use.
+                // It is text, not a number, and the core refuses an empty or control-laden
+                // one rather than storing a name nothing can draw.
+                Rectangle {
+                    visible: window.renameCircuitOpen
+                    anchors.centerIn: parent
+                    width: 420
+                    radius: 8
+                    color: session.panel
+                    border.width: 1
+                    border.color: session.accent
+                    height: renameColumn.implicitHeight + 32
+                    z: 45
+
+                    Column {
+                        id: renameColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        spacing: 12
+
+                        Text {
+                            width: parent.width
+                            text: qsTr("Renombrar el circuito")
+                            color: session.foreground
+                            font.pixelSize: 13
+                        }
+                        Rectangle {
+                            width: parent.width
+                            height: 30
+                            radius: 4
+                            color: session.background
+                            border.width: 1
+                            border.color: session.muted
+                            TextInput {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                verticalAlignment: TextInput.AlignVCenter
+                                text: window.renameCircuitText
+                                color: session.foreground
+                                font.pixelSize: 13
+                                selectByMouse: true
+                                focus: window.renameCircuitOpen
+                                onTextChanged: window.renameCircuitText = text
+                                onAccepted: {
+                                    session.renameCircuit(session.activeCircuit,
+                                                          window.renameCircuitText);
+                                    window.renameCircuitOpen = false;
+                                }
+                            }
+                        }
+                        Row {
+                            spacing: 10
+                            Rectangle {
+                                width: 120
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.accent
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Renombrar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        session.renameCircuit(session.activeCircuit,
+                                                              window.renameCircuitText);
+                                        window.renameCircuitOpen = false;
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                width: 120
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Cancelar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.renameCircuitOpen = false
                                 }
                             }
                         }

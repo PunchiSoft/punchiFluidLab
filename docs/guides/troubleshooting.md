@@ -55,7 +55,7 @@ measurement notes are in [engineering.md](../engineering.md).
 
 ## The check reports a fault
 
-**Editar ▸ Comprobar** lists the faults and marks them on the sheet. The six this build
+**Editar ▸ Comprobar** lists the faults and marks them on the sheet. The seven this build
 knows:
 
 | Fault | What to do |
@@ -66,10 +66,10 @@ knows:
 | two pipes overlap | re-route one of them |
 | a pneumatic connection is open | connect the port or remove the component; an exhaust port may stay open |
 | two cylinders have the same designation | give one a different name |
+| a pipe joins two circuits | draw it again inside one circuit; the ends belong to two different sheets |
 
-Three faults from the reference are not implemented: a pipe whose ends do not fit, a label
-that does not match, and a pipe through an unrelated circuit. The last two need the
-electrical library's encoder and a project of circuits, respectively.
+Two faults from the reference are not implemented: a pipe whose ends do not fit and a label
+that does not match. The label needs the electrical library's encoder.
 
 ## Files
 

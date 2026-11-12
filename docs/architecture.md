@@ -157,6 +157,7 @@ and no place where a file makes the loader allocate without a bound.
 - **The export panel is incomplete**: margins, custom size and PNG resolution have no field
   in the window, and the last paper choice is not remembered. The date and the fit are done;
   the panel is recorded in the ledger.
-- **The project of circuits (P1.8)** is the change that will give the document more than
-  one sheet; it is the first structural change after this map and will need its own ADR if
-  it changes the file format or the ABI.
+- **A project is one document with several circuits** ([ADR 0013](adr/0013-a-project-is-one-document.md)):
+  a circuit list, project-level placements and pipes with a circuit id, and one active
+  sheet. The ninth fault is a pipe that joins two circuits; the reference's geometric
+  crossing on a shared canvas is not planned.

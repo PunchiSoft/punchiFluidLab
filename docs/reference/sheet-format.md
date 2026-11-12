@@ -1,71 +1,96 @@
 # The `.pfluid` sheet format
 
-Status: current, format 3. The implementation is
+Status: current, format 4. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
-A `.pfluid` file is the circuit the editor saves: the placements, their pipes, the
-orientation and the name of each component, and the per-instance values that override the
-catalog. It is JSON, with a version number and no unknown keys. It is **not** the same
-document as the legacy circuit format that `validate` and `simulate` read; see
+A `.pfluid` file is a **project**: one or more circuits, each with its own placements and
+pipes, plus the circuit that was in view. It is JSON, with a version number and no unknown
+keys. It is **not** the old circuit format that `validate` and `simulate` read; see
 [the CLI](cli.md) for that distinction.
 
 ## Versioning
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `3` | `1` to `3` | always `3` |
+| `format` | `4` | `1` to `4` | always `4` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (3)`; it is never guessed.
-- An **older** file is read with the default of every field it does not have: version 1 had
-  no orientation, version 2 had no designation, and both read as an unturned, unnamed
-  component. Reading upgrades the in-memory document to format 3, so saving it writes the
-  fields the reader filled in.
-- A change to the shape bumps `SHEET_VERSION` and adds a migration test. A new field needs a
-  documented default for every older file.
+  understands (4)`; it is never guessed.
+- **Version 4** added the circuit list, the `circuit` id on a placement and a pipe, and the
+  `active` circuit. Versions 1–3 read as a project with **one circuit**, id `0`; saving
+  writes the fields the reader filled in.
+- Version 3 added the designation; version 2 added orientation; version 1 was the first
+  sheet. A change to the shape bumps `SHEET_VERSION` and adds a migration test.
 
 ## Bounds
 
-A sheet is untrusted input. Every collection and every number is checked before the
+A project is untrusted input. Every collection and every number is checked before the
 document is used.
 
 | Bound | Value | Constant |
 |---|---|---|
 | File size | 8 MiB, checked before reading | `MAX_BYTES` |
-| Placements | 2 000 | `MAX_PLACEMENTS` |
-| Pipes | 4 000 | `MAX_PIPES` |
+| Circuits | 64 | `MAX_CIRCUITS` |
+| Circuit title | 1 to 80 characters, trimmed, no control characters | `MAX_CIRCUIT_TITLE` |
+| Placements | 2 000 in the project | `MAX_PLACEMENTS` |
+| Pipes | 4 000 in the project | `MAX_PIPES` |
 | Catalog or port id | 128 bytes; the catalog id is ASCII | `MAX_ID` |
 | Symbol box side | greater than 0 and at most 2 000 mm | `MAX_SIDE_MM` |
 | Designation | 1 to 40 characters, trimmed, no control characters | `MAX_DESIGNATION` |
 | Pipe offset | at most 10 000 tenths of a millimetre (1 m) | — |
 
-Unknown keys are rejected at every level. A duplicate placement id, a pipe to a placement
-that is not on the sheet, or a pipe from a component to itself is an error, not a repair.
+Unknown keys are rejected at every level. A duplicate circuit id, a duplicate placement id,
+a pipe to a placement that is not in the project, or a pipe from a component to itself is an
+error, not a repair. A placement or pipe that names a circuit not in the list is an error
+too.
 
 ## Top level
 
 ```json
 {
-  "format": 3,
-  "title": "Circuito",
+  "format": 4,
+  "title": "Proyecto",
+  "circuits": [
+    { "id": 0, "title": "Potencia" },
+    { "id": 1, "title": "Control" }
+  ],
   "placement": [],
-  "pipe": []
+  "pipe": [],
+  "active": 0
 }
 ```
 
 | Key | Type | Required | Meaning |
 |---|---|---|---|
 | `format` | integer | yes | Format version. |
-| `title` | string | no, default `""` | Name shown in the window. It is stored but not editable in the interface yet. |
-| `placement` | array of objects | no, default `[]` | Components, in placement order. |
-| `pipe` | array of objects | no, default `[]` | Connections, in drawing order. |
+| `title` | string | no, default `""` | Project name. |
+| `circuits` | array of objects | yes in v4 | The circuits, in selector order. A v1–v3 file is migrated to one circuit. |
+| `placement` | array of objects | no, default `[]` | Components of the whole project. |
+| `pipe` | array of objects | no, default `[]` | Connections of the whole project. |
+| `active` | integer | no, default `0` | Circuit that was in view; a hint, not an edit. |
+
+## A circuit
+
+```json
+{ "id": 1, "title": "Control" }
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `id` | integer | Unique in the project. A placement or a pipe names it. |
+| `title` | string | Shown in the selector and the printed title block. |
+
+A circuit is a **sheet**. The solver, the drawing and the export see the active circuit;
+the other circuits keep their own placements and values. Switching circuit is a view
+change, not an undo entry.
 
 ## A placement
 
 ```json
 {
   "id": 2,
+  "circuit": 0,
   "catalog": "valve.3_2.spring_return",
   "x": 94.0,
   "y": 93.6,
@@ -80,7 +105,8 @@ that is not on the sheet, or a pipe from a component to itself is an error, not 
 
 | Key | Type | Required | Meaning |
 |---|---|---|---|
-| `id` | integer | yes | Identity a pipe uses. Unique, non-zero. |
+| `id` | integer | yes | Identity a pipe uses in the project. Unique, non-zero. |
+| `circuit` | integer | yes in v4 | Circuit this component belongs to. |
 | `catalog` | string | yes | Catalog id of the definition, for example `supply.compressor`. |
 | `x`, `y` | number | yes | Centre of the symbol box, millimetres. |
 | `width`, `height` | number | yes | Symbol box, millimetres; finite, positive, at most 2 000. |
@@ -105,6 +131,7 @@ value from the definition.
 
 ```json
 {
+  "circuit": 0,
   "from": 1,
   "from_port": "1",
   "to": 2,
@@ -115,23 +142,33 @@ value from the definition.
 
 | Key | Type | Required | Meaning |
 |---|---|---|---|
-| `from`, `to` | integer | yes | Placement ids on the sheet, different from each other. |
+| `circuit` | integer | yes in v4 | Circuit this pipe belongs to. |
+| `from`, `to` | integer | yes | Placement ids in the project, different from each other. |
 | `from_port`, `to_port` | string | yes | Port ids declared by the definition; non-empty, at most 128 bytes. |
 | `offset_tenths` | integer | no, default `0` | Offset of the middle segment from the automatic route, in tenths of a millimetre. Bounded to ±10 000. |
 
+The two ends **should** belong to the same circuit. The format does not refuse a pipe whose
+ends are in different circuits, because the check has to see it: that is the ninth fault,
+`PipeAcrossCircuits`. The editor never creates one; a hand-edited file can, and the loader
+keeps it so the check can report it instead of hiding it.
+
 The route is not stored point by point: it is the orthogonal route the editor computes
-from the two ports, moved by `offset_tenths`. That is what lets a dragged segment survive a
-move of either component without storing a second geometry.
+from the two ports, moved by `offset_tenths`.
 
 ## A complete example
 
 ```json
 {
-  "format": 3,
-  "title": "Válvula 3/2 y cilindro",
+  "format": 4,
+  "title": "Válvula 3/2 y control",
+  "circuits": [
+    { "id": 0, "title": "Potencia" },
+    { "id": 1, "title": "Control" }
+  ],
   "placement": [
     {
       "id": 1,
+      "circuit": 0,
       "catalog": "supply.compressor",
       "x": 34.0,
       "y": 39.0,
@@ -140,6 +177,7 @@ move of either component without storing a second geometry.
     },
     {
       "id": 2,
+      "circuit": 0,
       "catalog": "valve.3_2.spring_return",
       "x": 94.0,
       "y": 93.6,
@@ -150,6 +188,7 @@ move of either component without storing a second geometry.
     },
     {
       "id": 3,
+      "circuit": 0,
       "catalog": "cylinder.single_acting_20_100",
       "x": 144.0,
       "y": 33.8,
@@ -157,19 +196,29 @@ move of either component without storing a second geometry.
       "height": 33.8,
       "edit": { "stroke_mm": 80.0 },
       "designation": "1A1"
+    },
+    {
+      "id": 4,
+      "circuit": 1,
+      "catalog": "junction.tee",
+      "x": 40.0,
+      "y": 40.0,
+      "width": 20.0,
+      "height": 20.0
     }
   ],
   "pipe": [
-    { "from": 1, "from_port": "1", "to": 2, "to_port": "1" },
-    { "from": 2, "from_port": "2", "to": 3, "to_port": "1", "offset_tenths": 25 }
-  ]
+    { "circuit": 0, "from": 1, "from_port": "1", "to": 2, "to_port": "1" },
+    { "circuit": 0, "from": 2, "from_port": "2", "to": 3, "to_port": "1", "offset_tenths": 25 }
+  ],
+  "active": 0
 }
 ```
 
 ## What the sheet does not store
 
-The document is only the circuit. These belong to the session or to the user's machine and
-are deliberately absent:
+The project is the circuits. These belong to the session or to the user's machine and are
+deliberately absent:
 
 - the zoom, the scroll position and the selection;
 - the undo history;
@@ -178,16 +227,16 @@ are deliberately absent:
 - the recent-document list and the safety copy, which live in `punchi-fluid-file::recent`
   and are written by the ABI.
 
-A sheet that opens on another machine therefore opens with the same circuit and the same
-values, and with whatever the local catalog and view settings are.
+The `active` index is a convenience hint: a project opens on the circuit that was in view,
+but switching circuits is not an edit and is not undone.
 
 ## Reading and writing
 
 - **Atomic write**: the writer validates the document, writes `<name>.pfluid.tmp` in the
   same folder and renames it over the target. A crash leaves the previous file intact.
-- **Read**: the file size is checked before reading, then JSON parsing, then validation.
-  A malformed file is an error with the reason; it is not repaired into a different
-  circuit.
+- **Read**: the file size is checked before reading, then JSON parsing, then the migration,
+  then validation. A malformed file is an error with the reason; it is not repaired into a
+  different circuit.
 - **The window and the ABI** save and open this format. The `punchi-fluid-cli check`
   command reads it. The legacy `validate` and `simulate` commands do **not**; they read the
   old circuit format.

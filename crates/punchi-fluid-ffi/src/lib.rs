@@ -46,7 +46,7 @@ use punchi_fluid_check::check;
 /// hit and selected, not to take up room on the sheet.
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
-use punchi_fluid_doc::{Align, Document, Endpoint, Placement, PlacementEdits, Turn};
+use punchi_fluid_doc::{Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Turn};
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed, draw_placed, port_point, route_offset};
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -799,7 +799,11 @@ impl PfSession {
         let mut part_of: Vec<Option<usize>> = vec![None; self.document.placements().len()];
         let mut valve_of: Vec<Option<usize>> = vec![None; self.document.placements().len()];
         let mut valves = 0;
+        let circuit = self.document.active_circuit();
         for (index, placement) in self.document.placements().iter().enumerate() {
+            if placement.circuit != circuit {
+                continue;
+            }
             let Some(definition) = self.catalog.get(&placement.catalog_id) else {
                 continue;
             };
@@ -818,6 +822,9 @@ impl PfSession {
         }
         let mut pipes = Vec::new();
         for connection in self.document.connections() {
+            if connection.circuit != circuit {
+                continue;
+            }
             let (Some(from), Some(to)) = (
                 self.document.index_of(connection.from.placement),
                 self.document.index_of(connection.to.placement),
@@ -874,7 +881,8 @@ impl PfSession {
             ..
         } = self;
 
-        let (placed, pipes) = scene(document, catalog, system.as_ref(), placement_part);
+        let circuit = document.active_circuit();
+        let (placed, pipes) = scene(document, catalog, system.as_ref(), placement_part, circuit);
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
         *layout = layout_of(&placed);
@@ -924,6 +932,7 @@ impl PfSession {
                 let round = |value: f32| (value * 10.0).round() / 10.0;
                 StoredPlacement {
                     id: placement.id(),
+                    circuit: placement.circuit,
                     catalog: placement.catalog_id.clone(),
                     x: round(placement.centre.x),
                     y: round(placement.centre.y),
@@ -941,6 +950,7 @@ impl PfSession {
             .connections()
             .iter()
             .map(|connection| StoredPipe {
+                circuit: connection.circuit,
                 from: connection.from.placement,
                 from_port: connection.from.port.clone(),
                 to: connection.to.placement,
@@ -948,11 +958,22 @@ impl PfSession {
                 offset_tenths: connection.offset_tenths(),
             })
             .collect();
+        let circuits = self
+            .document
+            .circuits()
+            .iter()
+            .map(|circuit| punchi_fluid_file::sheet::StoredCircuit {
+                id: circuit.id,
+                title: circuit.title.clone(),
+            })
+            .collect();
         Sheet {
             format: punchi_fluid_file::sheet::SHEET_VERSION,
             title: String::from("Circuito"),
+            circuits,
             placement,
             pipe,
+            active: self.document.active_circuit(),
         }
     }
 
@@ -969,6 +990,7 @@ impl PfSession {
                     stored.width,
                     stored.height,
                 );
+                placement.circuit = stored.circuit;
                 if let Some(edit) = stored.edit {
                     placement.edits = PlacementEdits {
                         pressure_bar: edit.pressure_bar,
@@ -984,7 +1006,23 @@ impl PfSession {
                 placement
             })
             .collect();
+        let mut circuits: Vec<Circuit> = sheet
+            .circuits
+            .iter()
+            .map(|circuit| Circuit::new(circuit.id, circuit.title.clone()))
+            .collect();
+        if circuits.is_empty() {
+            circuits.push(Circuit::new(0, "Circuito 1"));
+        }
+        let active = if circuits.iter().any(|circuit| circuit.id == sheet.active) {
+            sheet.active
+        } else {
+            circuits[0].id
+        };
         let mut document = Document::new();
+        if !document.set_project(circuits, active) {
+            return Err(String::from("the project has no usable circuit"));
+        }
         document.seed(placements);
         for pipe in &sheet.pipe {
             if !document.seed_connect(
@@ -997,6 +1035,7 @@ impl PfSession {
                 ));
             }
             let index = document.connections().len() - 1;
+            document.seed_pipe_circuit(index, pipe.circuit);
             document.seed_route(index, pipe.offset_tenths);
         }
         self.document = document;
@@ -1014,7 +1053,12 @@ impl PfSession {
     /// cached list is a list that goes stale behind an edit.
     fn findings(&self) -> Vec<punchi_fluid_check::Finding> {
         let sheet = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
-        check(&self.document, &self.catalog, sheet)
+        check(
+            &self.document,
+            &self.catalog,
+            sheet,
+            self.document.active_circuit(),
+        )
     }
 
     /// The pipe nearest to `point`, if one runs close enough.
@@ -1023,7 +1067,11 @@ impl PfSession {
     /// the ports, so what the user sees is what answers.
     fn pipe_at(&self, point: Pt, tolerance: f32) -> Option<usize> {
         let mut best: Option<(f32, usize)> = None;
+        let circuit = self.document.active_circuit();
         for (index, connection) in self.document.connections().iter().enumerate() {
+            if connection.circuit != circuit {
+                continue;
+            }
             let Some((start, end)) = pipe_points(&self.document, &self.catalog, index) else {
                 continue;
             };
@@ -1232,6 +1280,23 @@ impl PfSession {
 
 fn cstring(message: &str) -> CString {
     CString::new(message.replace('\0', " ")).unwrap_or_default()
+}
+
+/// A caller-supplied circuit title, trimmed and bounded, or `None` when it is unusable.
+fn valid_circuit_title(title: *const c_char) -> Option<String> {
+    if title.is_null() {
+        return None;
+    }
+    // SAFETY: the caller promised a NUL-terminated string.
+    let text = unsafe { CStr::from_ptr(title) }.to_str().ok()?;
+    if text.is_empty()
+        || text.trim() != text
+        || text.chars().count() > punchi_fluid_file::sheet::MAX_CIRCUIT_TITLE
+        || text.chars().any(char::is_control)
+    {
+        return None;
+    }
+    Some(text.to_owned())
 }
 
 fn guard(body: impl FnOnce() -> i32) -> i32 {
@@ -2039,6 +2104,169 @@ pub unsafe extern "C" fn pf_session_new_document(session: *mut PfSession) -> i32
     })
 }
 
+/// How many circuits the project holds.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_circuit_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return 0;
+    };
+    u32::try_from(session.document.circuits().len()).unwrap_or(0)
+}
+
+/// Identity of the circuit at `index`, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_circuit_id(session: *const PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(circuit) = session.document.circuits().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        i32::try_from(circuit.id).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Name of the circuit at `index`, NUL-terminated UTF-8 in `out`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_circuit_name(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(circuit) = session.document.circuits().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = circuit.title.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Identity of the circuit the sheet shows, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_active_circuit(session: *const PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        i32::try_from(session.document.active_circuit()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Switches the sheet to another circuit. A view change, not an edit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_select_circuit(session: *mut PfSession, id: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if !session.document.select_circuit(id) {
+            return session.fail("no such circuit");
+        }
+        session.select_only(None);
+        session.clipboard.clear();
+        session.rebuild_model();
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Adds an empty circuit, makes it active and returns its identity.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `title` a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_add_circuit(
+    session: *mut PfSession,
+    title: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(title) = valid_circuit_title(title) else {
+            return session.fail("the circuit title is empty or invalid");
+        };
+        let id = session.document.add_circuit(title);
+        session.select_only(None);
+        session.clipboard.clear();
+        session.rebuild_model();
+        session.error = CString::default();
+        i32::try_from(id).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Renames a circuit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `title` a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_rename_circuit(
+    session: *mut PfSession,
+    id: u32,
+    title: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(title) = valid_circuit_title(title) else {
+            return session.fail("the circuit title is empty or invalid");
+        };
+        if !session.document.rename_circuit(id, title) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
 /// Keeps the selected component for a later paste.
 ///
 /// The clipboard is one placement, because the editor selects one at a time; the
@@ -2280,18 +2508,16 @@ pub unsafe extern "C" fn pf_session_export(
         }
         // A printed page has to be identifiable after the fact, and the sheet has no name of
         // its own: the block takes the name of the file being written, which is what the user
-        // called the drawing.
-        let title = std::path::Path::new(target).file_stem().map_or_else(
-            || String::from("Circuit"),
-            |stem| stem.to_string_lossy().into_owned(),
-        );
-        let mut block = punchi_fluid_export::block_with_review_state(&title, date);
+        // called the drawing, and the name of the circuit in view.
+        let mut block = export_block(&session.document, target, date);
         session.ensure_seeded();
+        let circuit = session.document.active_circuit();
         let (placed, pipes) = scene(
             &session.document,
             &session.catalog,
             session.system.as_ref(),
             &session.placement_part,
+            circuit,
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(
             &placed,
@@ -2352,6 +2578,23 @@ pub unsafe extern "C" fn pf_session_export(
             Err(cause) => session.fail(&cause.to_string()),
         }
     })
+}
+
+/// The title block for an export: the file name, the date and the circuit in view.
+fn export_block(document: &Document, target: &str, date: &str) -> punchi_fluid_export::TitleBlock {
+    // The sheet has no name of its own, so the block takes the name of the file being
+    // written, which is what the user called the drawing.
+    let title = std::path::Path::new(target).file_stem().map_or_else(
+        || String::from("Circuit"),
+        |stem| stem.to_string_lossy().into_owned(),
+    );
+    let mut block = punchi_fluid_export::block_with_review_state(&title, date);
+    block.project = document
+        .circuits()
+        .iter()
+        .find(|circuit| circuit.id == document.active_circuit())
+        .map_or_else(String::new, |circuit| circuit.title.clone());
+    block
 }
 
 /// Writes `bytes` to `path` through a temporary file, so a crash leaves no half page.
@@ -2797,9 +3040,14 @@ pub unsafe extern "C" fn pf_session_hit_component(
         let Some(session) = (unsafe { borrow_shared(session) }) else {
             return -1;
         };
+        let circuit = session.document.active_circuit();
         session
             .document
-            .hit(Pt::new(x_mm, y_mm), 1.0)
+            .placements()
+            .iter()
+            .rposition(|placement| {
+                placement.circuit == circuit && placement.contains(Pt::new(x_mm, y_mm), 1.0)
+            })
             .map_or(-1, |index| i32::try_from(index).unwrap_or(-1))
     })
 }
@@ -3619,12 +3867,19 @@ fn scene<'a>(
     catalog: &'a Catalog,
     system: Option<&'a Network>,
     placement_part: &[Option<usize>],
+    circuit: u32,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
-    let placed: Vec<Placed<'a>> = document
-        .placements()
-        .iter()
-        .enumerate()
-        .map(|(index, placement)| Placed {
+    // Scene index of every document placement, so a pipe names the end it draws while the
+    // selection and the hit test keep using the document index.
+    let mut scene_of = vec![None; document.placements().len()];
+    let mut placed: Vec<Placed<'a>> = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        scene_of[index] = Some(placed.len());
+        placed.push(Placed {
+            index,
             catalog_id: placement.catalog_id.as_str(),
             rect: placement.rect(),
             extension: placement_part
@@ -3648,14 +3903,22 @@ fn scene<'a>(
             ),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
-        })
-        .collect();
+        });
+    }
     let pipes: Vec<Pipe<'a>> = document
         .connections()
         .iter()
+        .filter(|connection| connection.circuit == circuit)
         .filter_map(|connection| {
-            let from_index = document.index_of(connection.from.placement)?;
-            let to_index = document.index_of(connection.to.placement)?;
+            let from_document = document.index_of(connection.from.placement)?;
+            let to_document = document.index_of(connection.to.placement)?;
+            if document.placements().get(from_document)?.circuit != circuit
+                || document.placements().get(to_document)?.circuit != circuit
+            {
+                return None;
+            }
+            let from_index = scene_of[from_document]?;
+            let to_index = scene_of[to_document]?;
             Some(Pipe {
                 from: PipeEnd {
                     placement: from_index,
@@ -3668,7 +3931,7 @@ fn scene<'a>(
                 offset_mm: connection.offset_mm(),
                 pressure_ratio: hose_pressure(
                     system,
-                    placement_part.get(from_index).copied().flatten(),
+                    placement_part.get(from_document).copied().flatten(),
                     &connection.from.port,
                 ),
             })

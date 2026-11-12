@@ -44,6 +44,8 @@ use crate::symbol::{self, Ink};
 /// A component of the sheet: which definition draws it and the box it occupies.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Placed<'a> {
+    /// Index of the placement in the document, for the selection rings.
+    pub index: usize,
     /// Catalog id.
     pub catalog_id: &'a str,
     /// Box in millimetres.
@@ -180,10 +182,11 @@ pub fn draw_placed(
 
     // The ring marks the selection, not the last component touched: a drag of six
     // components shows six rings until it is done.
-    for index in selected {
-        if let Some(placed) = placements.get(*index) {
-            selection_ring(surface, placed.box_rect(), ink.accent);
-        }
+    for placed in placements
+        .iter()
+        .filter(|placed| selected.contains(&placed.index))
+    {
+        selection_ring(surface, placed.box_rect(), ink.accent);
     }
 }
 
@@ -341,6 +344,7 @@ mod tests {
         let catalog = Catalog::builtin();
         let placements = [
             Placed {
+                index: 0,
                 catalog_id: "supply.compressor",
                 rect: Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0),
                 extension: 0.0,
@@ -350,6 +354,7 @@ mod tests {
                 designation: None,
             },
             Placed {
+                index: 1,
                 catalog_id: "cylinder.single_acting_20_100",
                 rect: Rect::from_min_size(Pt::new(100.0, 0.0), 40.0, 20.0),
                 extension: 0.0,

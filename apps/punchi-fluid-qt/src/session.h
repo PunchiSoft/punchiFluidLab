@@ -59,6 +59,8 @@ class FluidSession : public QObject
     Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
     Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
     Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
+    Q_PROPERTY(QVariantList circuits READ circuits NOTIFY changed)
+    Q_PROPERTY(int activeCircuit READ activeCircuit NOTIFY changed)
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
@@ -138,6 +140,11 @@ public:
     /// The documents opened or saved recently, newest first: `path` and `name`.
     QVariantList recent() const { return m_recent; }
     /// Opens one of them by its place in the list.
+    Q_INVOKABLE bool selectCircuit(int id);
+    Q_INVOKABLE int addCircuit();
+    Q_INVOKABLE bool renameCircuit(int id, const QString &title);
+    Q_INVOKABLE QVariantList circuits() const;
+    Q_INVOKABLE int activeCircuit() const;
     Q_INVOKABLE bool openRecent(int slot);
     /// Forgets every remembered document.
     Q_INVOKABLE void forgetRecent();

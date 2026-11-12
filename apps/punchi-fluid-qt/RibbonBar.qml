@@ -46,6 +46,25 @@ Rectangle {
                     ]
                 },
                 {
+                    // A project is one document with several circuits. The list is the
+                    // core's, so the selector cannot name a circuit that is not there.
+                    title: qsTr("Circuito"),
+                    items: session.circuits.map(function(circuit, index) {
+                        return {
+                            id: "circuit:" + circuit.id,
+                            label: circuit.name,
+                            icon: "x-office-document",
+                            hint: circuit.id === session.activeCircuit
+                                  ? qsTr("en pantalla")
+                                  : qsTr("abrir este circuito"),
+                            current: circuit.id === session.activeCircuit
+                        };
+                    }).concat([
+                        { id: "circuit-new", label: qsTr("Nuevo circuito"), icon: "list-add", hint: qsTr("crea una hoja vacía y la abre") },
+                        { id: "circuit-rename", label: qsTr("Renombrar"), icon: "edit-rename", hint: qsTr("cambia el nombre del circuito en pantalla") }
+                    ])
+                },
+                {
                     // The paper the sheet will be printed on. The list is the export's, so the
                     // panel cannot offer a size the writer does not know; the one in use is
                     // marked, because a list of nine without a mark is a guess.
@@ -156,6 +175,18 @@ Rectangle {
     implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
 
     function invoke(id) {
+        if (id.indexOf("circuit:") === 0) {
+            session.selectCircuit(parseInt(id.slice(8), 10));
+            return;
+        }
+        if (id === "circuit-new") {
+            session.addCircuit();
+            return;
+        }
+        if (id === "circuit-rename") {
+            window.openRenameCircuit();
+            return;
+        }
         if (id.indexOf("paper-") === 0) {
             const index = parseInt(id.slice(6), 10);
             if (!isNaN(index)) {

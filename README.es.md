@@ -27,8 +27,9 @@ ejecutar el modelo y ver moverse los actuadores. El modelo, el formato y el dibu
 la ventana es Qt Quick.
 
 **Estado: `0.1.0`, sin publicar.** Rebanada vertical que funciona: dibujar y editar un
-circuito, conectar puerto a puerto, guardarlo y abrirlo, ejecutar el modelo de gas, leer la
-presión en los tubos y exportar la hoja a PNG o PDF.
+circuito, conectar puerto a puerto, reunir varios circuitos en un proyecto y cambiar entre
+ellos, guardarlo y abrirlo, ejecutar el modelo de gas, leer la presión en los tubos y
+exportar la hoja activa a PNG o PDF.
 
 Sin cuenta, sin clave, sin red. GPL-3.0-or-later: descárgalo, enseña con él, cámbialo,
 compártelo.

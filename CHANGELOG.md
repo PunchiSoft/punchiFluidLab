@@ -6,6 +6,33 @@ publicación.
 
 ## Unreleased
 
+### Un proyecto son varios circuitos en un documento — 2026-11-12
+
+La referencia agrupa circuitos en un proyecto y comprueba que un conducto no circule por un
+circuito al que no está conectado. El propietario eligió la forma del contenedor: **un solo
+documento con varios circuitos y un selector**, no un archivo de proyecto que referencia
+archivos de circuito.
+
+- **ADR 0013** fija la forma: formato 4 con una lista de circuitos, colocaciones y tubos a
+  nivel de proyecto con su circuito, una hoja activa y un solo historial de deshacer.
+- **La novena falta se adapta**: como cada circuito es una hoja, el error equivalente es un
+  tubo cuyos extremos están en circuitos distintos. El editor no lo crea y la comprobación
+  lo señala como `PipeAcrossCircuits`.
+- **La migración** lee un archivo v1–v3 como un proyecto de un circuito y guarda v4, con
+  una prueba por versión anterior y una por el tubo que une dos circuitos.
+- **La ventana** gana el grupo **Circuito** en Archivo: el selector marca el circuito en
+  pantalla, **Nuevo circuito** añade una hoja vacía y la abre, y **Renombrar** cambia su
+  nombre. El ABI añade, renombra, selecciona y lista circuitos; cambiar de circuito es un
+  cambio de vista, no una entrada de deshacer.
+- La exportación imprime el circuito activo y lo nombra en el bloque de identificación.
+- La referencia se usa solo para el comportamiento; no entra su manual, símbolos, ejemplos
+  ni formato.
+
+Evidencia: las pruebas de migración v1–v3 de `punchi-fluid-file`, la prueba ABI
+`circuits_can_be_added_renamed_and_survive_a_save_and_open`, la falta
+`a_pipe_between_two_circuits_is_the_ninth_fault` y los pasos de `--selftest` que añaden,
+renombran, guardan, abren y cambian de circuito.
+
 ### La exportación imprime la fecha real y encaja en la hoja — 2026-11-12
 
 El plano salía con la fecha fija del 7 de noviembre, centrado a tamaño natural: un circuito

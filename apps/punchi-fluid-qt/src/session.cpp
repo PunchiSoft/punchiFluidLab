@@ -756,6 +756,118 @@ QString FluidSession::title() const
                       : QStringLiteral("%1 — Punchi Fluid Lab").arg(name);
 }
 
+QVariantList FluidSession::circuits() const
+{
+    QVariantList list;
+    if (!m_session) {
+        return list;
+    }
+    const uint32_t count = pf_session_circuit_count(m_session);
+    for (uint32_t index = 0; index < count; ++index) {
+        char name[256] = {};
+        if (pf_session_circuit_name(m_session, index, name, sizeof name) < 0) {
+            continue;
+        }
+        const int id = pf_session_circuit_id(m_session, index);
+        if (id < 0) {
+            continue;
+        }
+        QVariantMap row;
+        row.insert(QStringLiteral("id"), id);
+        row.insert(QStringLiteral("name"), QString::fromUtf8(name));
+        list.append(row);
+    }
+    return list;
+}
+
+int FluidSession::activeCircuit() const
+{
+    return m_session ? pf_session_active_circuit(m_session) : 0;
+}
+
+bool FluidSession::selectCircuit(int id)
+{
+    if (!m_session) {
+        return false;
+    }
+    if (pf_session_select_circuit(m_session, static_cast<uint32_t>(qMax(id, 0))) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo abrir el circuito");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    m_selected = -1;
+    m_inspectorOpen = false;
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    refreshDocument();
+    refresh(true);
+    emit inspectorChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return true;
+}
+
+int FluidSession::addCircuit()
+{
+    if (!m_session) {
+        return -1;
+    }
+    const uint32_t count = pf_session_circuit_count(m_session);
+    const QString title = QStringLiteral("Circuito %1").arg(count + 1);
+    const QByteArray encoded = title.toUtf8();
+    const int id = pf_session_add_circuit(m_session, encoded.constData());
+    if (id < 0) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo añadir el circuito");
+        emit changed();
+        return -1;
+    }
+    m_error.clear();
+    m_selected = -1;
+    m_inspectorOpen = false;
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    refreshDocument();
+    refresh(true);
+    emit inspectorChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return id;
+}
+
+bool FluidSession::renameCircuit(int id, const QString &title)
+{
+    if (!m_session || title.isEmpty()) {
+        return false;
+    }
+    const QByteArray encoded = title.toUtf8();
+    if (pf_session_rename_circuit(m_session, static_cast<uint32_t>(qMax(id, 0)),
+                                  encoded.constData())
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo renombrar el circuito");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit changed();
+    return true;
+}
+
 QString FluidSession::recentPath() const
 {
     QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);

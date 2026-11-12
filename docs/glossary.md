@@ -49,7 +49,7 @@ today, kept here so a translator does not invent a second vocabulary.
 |---|---|---|---|
 | sheet | hoja | The saved document: placements, pipes, orientation and designations. It is one circuit today. | `punchi-fluid-doc` |
 | circuit | circuito | The pneumatic network the sheet describes. | `punchi-fluid-solver` |
-| project | proyecto | A group of several circuits; whether it is one document or a folder is P1.8's decision. | `docs/next-steps.md` |
+| project | proyecto | A document with several circuits and one selector; each circuit is a sheet. | [ADR 0013](adr/0013-a-project-is-one-document.md) |
 | placement | colocación | One component on the sheet: catalogue id, centre, box, orientation, per-instance edits and designation. | `punchi-fluid-doc` |
 | designation | designación | The name a user gives one placement, drawn under its symbol. At most 40 characters, trimmed. | `punchi-fluid-doc` |
 | catalog id | identificador de catálogo | The stable `family.variant` name of a definition file, for example `valve.3_2.spring_return`. | `assets/catalog/` |
