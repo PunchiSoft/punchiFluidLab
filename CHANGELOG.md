@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Repartir los objetos con huecos iguales — 2026-11-12
+
+Un esquema dibujado a mano se reconoce por su ritmo: dos símbolos separados marcan la
+distancia y el resto de la fila tiene que seguirla. Hasta ahora había que medir a ojo.
+
+- **Editar ▸ Repartir ▸ Horizontal / Vertical** reparte tres o más símbolos marcados con
+  **huecos iguales entre sus cajas** —no entre sus centros, que es lo que hace que un
+  cilindro ancho y una válvula estrecha parezcan separados— y deja quietos los dos de los
+  extremos, así que la hoja conserva su extensión.
+- **Un solo deshacer** devuelve todos los centros, como en alinear y girar.
+- Se niega cuando no hay nada que igualar (menos de tres) o cuando los símbolos no caben
+  entre sus propios extremos, en vez de amontonarlos.
+- **Evidencia**: pruebas de `doc` para los huecos, el deshacer y los rechazos; prueba ABI que
+  mide las cajas y deshace; cuatro pasos `--selftest`.
+
 ### Un registrador de 60 s en la hoja — 2026-11-12
 
 El manómetro y el caudalímetro dicen cuánto vale una magnitud ahora; ninguno dice cómo

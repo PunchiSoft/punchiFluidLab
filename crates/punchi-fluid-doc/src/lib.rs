@@ -94,6 +94,49 @@ pub enum Align {
     Bottom,
 }
 
+/// Axis along which a selection is spread.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Axis {
+    /// Left to right.
+    Horizontal,
+    /// Top to bottom.
+    Vertical,
+}
+
+impl Axis {
+    /// The near edge of a box on this axis.
+    fn min(self, rect: Rect) -> f32 {
+        match self {
+            Self::Horizontal => rect.min.x,
+            Self::Vertical => rect.min.y,
+        }
+    }
+
+    /// The far edge of a box on this axis.
+    fn max(self, rect: Rect) -> f32 {
+        match self {
+            Self::Horizontal => rect.max.x,
+            Self::Vertical => rect.max.y,
+        }
+    }
+
+    /// The box's size along this axis.
+    fn size(self, rect: Rect) -> f32 {
+        match self {
+            Self::Horizontal => rect.width(),
+            Self::Vertical => rect.height(),
+        }
+    }
+
+    /// A centre moved by `delta` along this axis.
+    fn moved(self, centre: Pt, delta: f32) -> Pt {
+        match self {
+            Self::Horizontal => Pt::new(centre.x + delta, centre.y),
+            Self::Vertical => Pt::new(centre.x, centre.y + delta),
+        }
+    }
+}
+
 impl Align {
     /// The edge of a box this alignment lines the others up on.
     fn edge(self, rect: Rect) -> f32 {
@@ -1050,6 +1093,61 @@ impl Document {
                     Pt::new(centre.x, centre.y + delta)
                 },
             ));
+        }
+        if moves.is_empty() {
+            return false;
+        }
+        self.move_many(&moves)
+    }
+
+    /// Spreads several placements so the gaps between their boxes are equal.
+    ///
+    /// The two outermost keep their places, so the drawing keeps its extent and only the
+    /// middle moves — which is what a student means by "equal spacing" after dragging two
+    /// objects apart and wanting the rest to follow. The gaps are measured between symbol
+    /// **boxes**, not centres, because a wide cylinder and a narrow valve on centres look
+    /// evenly spaced and are not.
+    ///
+    /// Refuses fewer than three placements, where there is only one gap and nothing to
+    /// make equal, and a selection that does not fit between its own ends.
+    pub fn space_evenly(&mut self, indices: &[usize], axis: Axis) -> bool {
+        let mut boxes: Vec<(usize, Rect)> = indices
+            .iter()
+            .filter_map(|index| {
+                let placement = self.placements.get(*index)?;
+                Some((*index, placement.box_rect()))
+            })
+            .collect();
+        if boxes.len() < 3 {
+            return false;
+        }
+        boxes.sort_by(|left, right| {
+            axis.min(left.1)
+                .partial_cmp(&axis.min(right.1))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        let Some((_, first)) = boxes.first().copied() else {
+            return false;
+        };
+        let Some((_, last)) = boxes.last().copied() else {
+            return false;
+        };
+        let occupied: f32 = boxes.iter().map(|(_, rect)| axis.size(*rect)).sum();
+        let span = axis.max(last) - axis.min(first);
+        #[allow(clippy::cast_precision_loss)]
+        let gap = (span - occupied) / (boxes.len() - 1) as f32;
+        if gap < 0.0 {
+            return false;
+        }
+        let mut moves: Vec<(usize, Pt)> = Vec::with_capacity(boxes.len() - 2);
+        let mut cursor = axis.max(first) + gap;
+        for (index, rect) in boxes.iter().skip(1).take(boxes.len().saturating_sub(2)) {
+            let delta = cursor - axis.min(*rect);
+            if delta.abs() > f32::EPSILON {
+                let centre = self.placements[*index].centre;
+                moves.push((*index, axis.moved(centre, delta)));
+            }
+            cursor += axis.size(*rect) + gap;
         }
         if moves.is_empty() {
             return false;
@@ -2109,5 +2207,97 @@ mod source_tests {
             assert_eq!(Quantity::from_name(quantity.as_str()), Some(quantity));
         }
         assert_eq!(Quantity::from_name("temperature"), None);
+    }
+}
+
+#[cfg(test)]
+mod spacing_tests {
+    use super::*;
+
+    fn place(document: &mut Document, width: f32, x: f32, y: f32) -> usize {
+        document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(x, y),
+            width,
+            20.0,
+        ))
+    }
+
+    /// The gaps between the boxes of `indices`, left to right.
+    fn gaps(document: &Document, indices: &[usize]) -> Vec<f32> {
+        let mut boxes: Vec<Rect> = indices
+            .iter()
+            .map(|index| document.placements()[*index].box_rect())
+            .collect();
+        boxes.sort_by(|left, right| {
+            left.min
+                .x
+                .partial_cmp(&right.min.x)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        boxes
+            .windows(2)
+            .map(|pair| pair[1].min.x - pair[0].max.x)
+            .collect()
+    }
+
+    #[test]
+    fn even_spacing_equalises_the_gaps_and_keeps_the_ends() {
+        let mut document = Document::new();
+        // Three valves of different widths, unevenly spread.
+        let first = place(&mut document, 20.0, 20.0, 40.0);
+        let middle = place(&mut document, 40.0, 60.0, 40.0);
+        let last = place(&mut document, 20.0, 150.0, 40.0);
+        let before: Vec<f32> = document.placements().iter().map(|p| p.centre.x).collect();
+        assert!(document.space_evenly(&[first, middle, last], Axis::Horizontal));
+        let gaps = gaps(&document, &[first, middle, last]);
+        assert_eq!(gaps.len(), 2);
+        assert!(
+            (gaps[0] - gaps[1]).abs() < 0.01,
+            "the gaps are {gaps:?}, not equal"
+        );
+        assert!(
+            (document.placements()[first].centre.x - before[0]).abs() < f32::EPSILON
+                && (document.placements()[last].centre.x - before[2]).abs() < f32::EPSILON,
+            "the outermost components moved"
+        );
+        assert!(
+            (document.placements()[middle].centre.x - before[1]).abs() > 1.0,
+            "the middle component did not move"
+        );
+    }
+
+    #[test]
+    fn even_spacing_is_one_undo() {
+        let mut document = Document::new();
+        let first = place(&mut document, 20.0, 20.0, 20.0);
+        let middle = place(&mut document, 20.0, 40.0, 55.0);
+        let last = place(&mut document, 20.0, 60.0, 140.0);
+        let before: Vec<Pt> = document.placements().iter().map(|p| p.centre).collect();
+        assert!(document.space_evenly(&[first, middle, last], Axis::Vertical));
+        assert!(document.undo());
+        let after: Vec<Pt> = document.placements().iter().map(|p| p.centre).collect();
+        assert_eq!(after, before, "one undo puts every centre back");
+    }
+
+    #[test]
+    fn even_spacing_refuses_what_it_cannot_do() {
+        let mut document = Document::new();
+        let first = place(&mut document, 20.0, 20.0, 40.0);
+        let second = place(&mut document, 20.0, 100.0, 40.0);
+        assert!(
+            !document.space_evenly(&[first, second], Axis::Horizontal),
+            "two components have a single gap and nothing to equalise"
+        );
+        // Three boxes wider than the span between their ends cannot be spread.
+        let tight = Document::new();
+        let mut tight = tight;
+        let a = place(&mut tight, 40.0, 30.0, 40.0);
+        let b = place(&mut tight, 40.0, 50.0, 40.0);
+        let c = place(&mut tight, 40.0, 70.0, 40.0);
+        assert!(
+            !tight.space_evenly(&[a, b, c], Axis::Horizontal),
+            "overlapping boxes that do not fit are left alone"
+        );
     }
 }

@@ -121,7 +121,7 @@ especificación de lo que sigue.
 | Física de gas, válvula por posiciones, cilindro con muelle y rozamiento | **hecho** | ISO 6358 contra cálculo a mano, balance de masa 1e-9, carrera acotada, 10⁵ pasos sin NaN |
 | Lienzo: símbolos del catálogo, clic en la válvula, lecturas en vivo | **hecho** | `--selftest` y capturas de pantalla |
 | Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme`, `--check-icons` y `--selftest`; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
-| Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
+| Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, repartir, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
 | La hoja es la red que resuelve el solver | **hecho** | pruebas de red, el circuito 5/2 + doble efecto por el ABI, tubos coloreados |
 | Proyecto de circuitos | **hecho** | formato 4, selector, añadir/renombrar, guardado y apertura; prueba ABI `circuits_can_be_added_renamed_and_survive_a_save_and_open` y la novena falta `a_pipe_between_two_circuits_is_the_ninth_fault` |
 | Caudalímetro | **hecho** | `flow.meter`, restricción ISO 6358 en la línea que informa del caudal en litros normales por minuto; pruebas de solver, ABI y dibujo, pasos `--selftest` y revisión del símbolo |
@@ -130,8 +130,8 @@ especificación de lo que sigue.
 | Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 15 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Instrumentos y ejecución hasta cambio | **hecho** | manómetro, caudalímetro, registrador de 60 s y «Hasta cambio»; el dinamómetro queda `not planned` con la razón escrita |
 
-**Total de pruebas: 272** — `core` 7, `catalog` 36, `file` 25, `solver` 36, `doc` 35,
-`draw` 41, `check` 11, `export` 40, `ffi` 36, `cli` 5.
+**Total de pruebas: 276** — `core` 7, `catalog` 36, `file` 25, `solver` 36, `doc` 38,
+`draw` 41, `check` 11, `export` 40, `ffi` 37, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
@@ -299,7 +299,7 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 272 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 276 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do
@@ -454,6 +454,7 @@ eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 | **P1.8** | **hecho**: un documento con varios circuitos, selector, añadir/renombrar y la novena falta (tubo entre circuitos) |
 | **P2.1** | **hecho**: caudalímetro en la línea, con su lectura en litros normales por minuto |
 | **P2.2** | **hecho**: registrador de 60 s con fuente elegida; dinamómetro `not planned` (necesita dominio mecánico) |
+| **P3.1** | **hecho**: repartir con huecos iguales entre cajas, horizontal y vertical, en un solo deshacer |
 | **M5** | **hecho**: manómetro, caudalímetro, registrador y «Hasta cambio»; el dinamómetro queda `not planned` |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
 

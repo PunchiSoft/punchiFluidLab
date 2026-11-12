@@ -210,6 +210,8 @@ int32_t pf_session_duplicate_selection(PfSession *session, float right_mm, float
 int32_t pf_session_remove_selection(PfSession *session);
 /* Lines the selection up: 0 left, 1 right, 2 top, 3 bottom. One change, one undo. */
 int32_t pf_session_align_selection(PfSession *session, uint32_t edge);
+/* Spreads the selection with equal gaps: axis 0 across, 1 down. One undoable change. */
+int32_t pf_session_space_selection(PfSession *session, uint32_t axis);
 int32_t pf_session_move_component(PfSession *session, uint32_t index, float x_mm, float y_mm);
 int32_t pf_session_remove_component(PfSession *session, uint32_t index);
 /* One-slot clipboard: copy the selected component, paste it, or copy in place. */
