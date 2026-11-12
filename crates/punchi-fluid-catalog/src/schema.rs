@@ -502,12 +502,34 @@ pub enum Behaviour {
         /// Full scale of the dial, normal litres per minute.
         nominal_l_min: f64,
     },
+    /// Strip chart: samples a quantity of another component over a time window.
+    ///
+    /// It has no ports — it observes, it is not connected — and the document stores which
+    /// component and which quantity it charts (ADR 0015).
+    Recorder {
+        /// Length of the window, seconds.
+        #[serde(default = "default_span_s")]
+        span_s: f64,
+        /// Samples per second.
+        #[serde(default = "default_rate_hz")]
+        rate_hz: f64,
+    },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
     /// the same point. Its three ports sit on one another for exactly that reason; see
     /// ADR 0006 for why a T junction is a component and not a document node.
     Junction,
+}
+
+/// Default window of a strip chart, seconds.
+const fn default_span_s() -> f64 {
+    60.0
+}
+
+/// Default sampling rate of a strip chart, samples per second.
+const fn default_rate_hz() -> f64 {
+    10.0
 }
 
 impl Behaviour {
@@ -521,6 +543,7 @@ impl Behaviour {
             Self::Gauge { .. } => "gauge",
             Self::Throttle { .. } => "throttle",
             Self::FlowMeter { .. } => "flow_meter",
+            Self::Recorder { .. } => "recorder",
             Self::Junction => "junction",
         }
     }

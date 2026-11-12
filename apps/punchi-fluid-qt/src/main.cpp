@@ -1509,6 +1509,68 @@ int main(int argc, char *argv[])
             state->session->removeComponent(index);
         });
 
+        // A recorder is an empty frame until it is bound: the inspector lists what the
+        // circuit can report, and the sheet draws what it sampled.
+        steps->push_back([state, check] {
+            int recorder = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                if (row.value(QStringLiteral("id")).toString()
+                    == QStringLiteral("chart.recorder")) {
+                    recorder = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(recorder >= 0, QStringLiteral("recorder: the catalog offers it"));
+            const int index =
+                recorder >= 0 ? state->session->placeComponent(recorder, 60.0, 60.0) : -1;
+            check(index >= 0, QStringLiteral("recorder: it can be placed"));
+
+            state->session->inspectComponent(index);
+            const QVariantList sources = state->session->chartCandidates();
+            check(!sources.isEmpty(), QStringLiteral("recorder: the circuit offers sources"));
+            int position = -1;
+            for (const QVariant &entry : sources) {
+                const QVariantMap row = entry.toMap();
+                // Position is the quantity a cylinder reports and no other part does.
+                if (row.value(QStringLiteral("quantity")).toInt() == 2) {
+                    position = row.value(QStringLiteral("placement")).toInt();
+                }
+            }
+            check(position >= 0, QStringLiteral("recorder: the cylinder reports its position"));
+            check(state->session->setChartSource(position, 2),
+                  QStringLiteral("recorder: it can be bound"));
+            check(state->session->chartSourcePlacement() == position,
+                  QStringLiteral("recorder: the binding is the one chosen"));
+
+            state->session->pressValve();
+            for (int i = 0; i < 30; ++i) {
+                state->session->advance(0.016);
+            }
+            PfFrame frame {};
+            bool charted = false;
+            if (pf_session_build_frame(state->session->handle(), 200.0, 130.0, 4.0, &frame)
+                == PF_OK) {
+                for (uint32_t i = 0; i < frame.calls_len; ++i) {
+                    const PfCall &call = frame.calls[i];
+                    if (call.kind != PF_KIND_TEXT) {
+                        continue;
+                    }
+                    const QString text = QString::fromUtf8(
+                        reinterpret_cast<const char *>(frame.text) + call.text_at,
+                        static_cast<int>(call.text_len));
+                    charted = charted || text.endsWith(QLatin1String(" mm"));
+                }
+            }
+            check(charted, QStringLiteral("recorder: it draws the value it charts"));
+            state->session->releaseValve();
+
+            while (state->session->canUndo()) {
+                state->session->undo();
+            }
+            state->session->removeComponent(index);
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);

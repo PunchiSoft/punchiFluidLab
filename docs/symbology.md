@@ -202,9 +202,13 @@ checked and reads nothing.
   **arrow inside the circle**, from port 1 to port 2, which is the direction its reading
   counts as positive. The line does not continue through the circle; the circle is the
   instrument.
+- A **recorder** is a **frame with graduations on two axes**, with no ports and no stubs:
+  it observes one quantity of another component, and the trace inside the frame is the
+  model's. The file draws the paper, never a curve: an empty chart that looks like data is
+  worse than an empty frame.
 - The **value is a reading, not a primitive**: it is drawn from the model beside or inside
-  the symbol, in the unit the definition declares, so one shape serves a 0–10 bar gauge and
-  a 0–100 l/min meter and neither file stores a number the simulation owns.
+  the symbol, in the unit the definition declares, so one shape serves a 0–10 bar gauge, a
+  0–100 l/min meter and a 60 s chart, and no file stores a number the simulation owns.
 - The requirement for these two shapes is written here from ISO 1219-1's function-first
   reading of a measuring instrument; no published figure was traced. Each instrument's
   review stays `pending` until a second reader checks it

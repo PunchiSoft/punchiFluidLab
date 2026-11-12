@@ -37,6 +37,8 @@ today, kept here so a translator does not invent a second vocabulary.
 | junction | unión en T | A three-port point where hoses meet; it adds no volume and no restriction. | ADR 0006 |
 | gauge | manómetro | A passive instrument that shows the pressure at its port. | ADR 0008 |
 | flow meter | caudalímetro | An instrument in the line that measures the gas going through it, in normal litres per minute. | ADR 0014 |
+| recorder | registrador | An instrument on the sheet that charts one quantity of another component over a window of time; it has no ports. | ADR 0015 |
+| source | fuente | The placement and the quantity a recorder charts, stored with the placement. | ADR 0015 |
 | normal litre | litro normal | A litre at 0 °C and 1 013.25 hPa (dry air, 1.293 kg/m³), the reference ISO 6358 and the flow reading share; the file's scale is in this unit. | ADR 0014 |
 | service unit | unidad de mantenimiento | The filter, regulator and lubricator group that prepares the air. | ISO 5598 |
 | filter | filtro | Removes particles and condensate from the air. | ISO 5598 |

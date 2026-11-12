@@ -312,6 +312,94 @@ void FluidSession::setDesignation(int index, const QString &text)
     emit changed();
 }
 
+QVariantList FluidSession::chartCandidates()
+{
+    QVariantList list;
+    if (!m_session || m_inspectorIndex < 0) {
+        return list;
+    }
+    const auto index = static_cast<uint32_t>(m_inspectorIndex);
+    PfChartSource bound {};
+    int bound_id = -1;
+    if (pf_session_chart_source(m_session, index, &bound) == 1) {
+        bound_id = static_cast<int>(bound.placement);
+    }
+    const uint32_t count = pf_session_chart_candidate_count(m_session, index);
+    list.reserve(static_cast<int>(count));
+    for (uint32_t slot = 0; slot < count; ++slot) {
+        PfChartSource candidate {};
+        if (pf_session_chart_candidate(m_session, index, slot, &candidate) != PF_OK) {
+            continue;
+        }
+        char label[256] = {};
+        if (pf_session_chart_candidate_label(m_session, index, slot, label, sizeof label) < 0) {
+            continue;
+        }
+        QVariantMap row;
+        row.insert(QStringLiteral("placement"), static_cast<int>(candidate.placement));
+        row.insert(QStringLiteral("quantity"), static_cast<int>(candidate.quantity));
+        row.insert(QStringLiteral("label"), QString::fromUtf8(label));
+        row.insert(QStringLiteral("current"), static_cast<int>(candidate.placement) == bound_id
+                                             && candidate.quantity == bound.quantity
+                                             && bound_id >= 0);
+        list.append(row);
+    }
+    return list;
+}
+
+int FluidSession::chartSourcePlacement()
+{
+    if (!m_session || m_inspectorIndex < 0) {
+        return -1;
+    }
+    PfChartSource source {};
+    if (pf_session_chart_source(m_session, static_cast<uint32_t>(m_inspectorIndex), &source) != 1) {
+        return -1;
+    }
+    return static_cast<int>(source.placement);
+}
+
+bool FluidSession::setChartSource(int placement, int quantity)
+{
+    if (!m_session || m_inspectorIndex < 0) {
+        return false;
+    }
+    if (pf_session_set_chart_source(m_session, static_cast<uint32_t>(m_inspectorIndex),
+                                    static_cast<uint32_t>(qMax(placement, 0)),
+                                    static_cast<uint32_t>(qMax(quantity, 0)))
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo enlazar el registrador");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit inspectorChanged();
+    emit changed();
+    return true;
+}
+
+bool FluidSession::clearChartSource()
+{
+    if (!m_session || m_inspectorIndex < 0) {
+        return false;
+    }
+    if (pf_session_clear_chart_source(m_session, static_cast<uint32_t>(m_inspectorIndex)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo quitar la fuente");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit inspectorChanged();
+    emit changed();
+    return true;
+}
+
 void FluidSession::applyInspectorEdits(const QVariantList &values)
 {
     if (!m_session || m_inspectorIndex < 0) {

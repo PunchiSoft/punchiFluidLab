@@ -19,7 +19,7 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 3u
+#define PF_ABI_VERSION 4u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -271,6 +271,34 @@ int32_t pf_session_undo(PfSession *session);
 int32_t pf_session_redo(PfSession *session);
 int32_t pf_session_can_undo(const PfSession *session);
 int32_t pf_session_can_redo(const PfSession *session);
+
+/* ---- recorders ---- */
+
+/* One quantity a recorder can chart, and the placement it belongs to. */
+typedef struct {
+  uint32_t placement;
+  uint32_t quantity; /* PF_QUANTITY_* */
+} PfChartSource;
+
+#define PF_QUANTITY_PRESSURE 0u /* gauge bar at the first port */
+#define PF_QUANTITY_FLOW 1u     /* normal litres per minute through a meter */
+#define PF_QUANTITY_POSITION 2u /* millimetres of a cylinder */
+
+/* The sources a recorder can chart, in the order the interface lists them. */
+uint32_t pf_session_chart_candidate_count(const PfSession *session, uint32_t index);
+int32_t pf_session_chart_candidate(const PfSession *session, uint32_t index, uint32_t slot,
+                                   PfChartSource *out);
+/* Its Spanish label, for the inspector's list. */
+int32_t pf_session_chart_candidate_label(const PfSession *session, uint32_t index, uint32_t slot,
+                                         char *out, uint32_t capacity);
+/* Binds a recorder to a source, or unbinds it; both are one undoable edit each. */
+int32_t pf_session_set_chart_source(PfSession *session, uint32_t index, uint32_t placement,
+                                    uint32_t quantity);
+int32_t pf_session_clear_chart_source(PfSession *session, uint32_t index);
+/* 1 when the recorder is bound, 0 when it is not, or a negative error. */
+int32_t pf_session_chart_source(const PfSession *session, uint32_t index, PfChartSource *out);
+/* The Spanish name of a quantity, for the inspector. */
+int32_t pf_chart_quantity_name(uint32_t quantity, char *out, uint32_t capacity);
 
 /* ---- ports and pipes ---- */
 

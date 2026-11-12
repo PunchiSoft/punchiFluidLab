@@ -142,6 +142,63 @@ impl Circuit {
     }
 }
 
+/// A quantity a recorder can chart.
+///
+/// The three the model can already answer; a definition that cannot report one refuses the
+/// source instead of charting a zero (ADR 0015).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Quantity {
+    /// Pressure at the first port, gauge bar.
+    Pressure,
+    /// Flow through a flow meter, normal litres per minute.
+    Flow,
+    /// Extension of a cylinder, millimetres.
+    Position,
+}
+
+impl Quantity {
+    /// Stable name the interface and the file use.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Pressure => "pressure",
+            Self::Flow => "flow",
+            Self::Position => "position",
+        }
+    }
+
+    /// The quantity a name stands for, or `None` when the name is not one.
+    #[must_use]
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "pressure" => Some(Self::Pressure),
+            "flow" => Some(Self::Flow),
+            "position" => Some(Self::Position),
+            _ => None,
+        }
+    }
+}
+
+/// What a recorder charts: another placement and one of its quantities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Source {
+    /// Identity of the placement being observed.
+    pub placement: u64,
+    /// Which of its quantities is charted.
+    pub quantity: Quantity,
+}
+
+impl Source {
+    /// A source naming `placement` and `quantity`.
+    #[must_use]
+    pub const fn new(placement: u64, quantity: Quantity) -> Self {
+        Self {
+            placement,
+            quantity,
+        }
+    }
+}
+
 /// One component on the sheet.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
@@ -166,6 +223,11 @@ pub struct Placement {
     /// no name at all, and a circuit may have two unnamed cylinders without either of them
     /// being a duplicate.
     pub designation: Option<String>,
+    /// What a recorder charts, when this placement is one.
+    ///
+    /// `None` is "not bound yet", which the inspector shows as an incomplete instrument;
+    /// the drawing says so instead of charting a flat zero.
+    pub source: Option<Source>,
 }
 
 impl Placement {
@@ -182,6 +244,7 @@ impl Placement {
             edits: PlacementEdits::default(),
             orientation: Orientation::NONE,
             designation: None,
+            source: None,
         }
     }
 
@@ -207,6 +270,7 @@ impl Placement {
             edits: PlacementEdits::default(),
             orientation: Orientation::NONE,
             designation: None,
+            source: None,
         }
     }
 
@@ -352,6 +416,12 @@ enum Change {
         index: usize,
         from: Option<String>,
         to: Option<String>,
+    },
+    /// A recorder was bound to a source, or unbound.
+    Sourced {
+        index: usize,
+        from: Option<Source>,
+        to: Option<Source>,
     },
     /// A circuit was added to the project.
     CircuitAdded {
@@ -878,6 +948,55 @@ impl Document {
         self.placements.get(index)?.designation.as_deref()
     }
 
+    /// Binds a recorder to a source, or unbinds it with `None`.
+    ///
+    /// The document refuses what it can decide alone: a source that is not in the document,
+    /// that names the recorder itself, or that lives in another circuit. Whether the chosen
+    /// component can report the quantity is the catalog's business, so the caller checks it
+    /// before asking — the document never guesses a definition.
+    pub fn bind_source(&mut self, index: usize, source: Option<Source>) -> bool {
+        let Some(recorder) = self.placements.get(index) else {
+            return false;
+        };
+        let recorder_id = recorder.id;
+        let circuit = recorder.circuit;
+        if let Some(source) = source {
+            if source.placement == recorder_id {
+                return false;
+            }
+            let Some(target) = self
+                .placements
+                .iter()
+                .find(|placement| placement.id == source.placement)
+            else {
+                return false;
+            };
+            if target.circuit != circuit {
+                return false;
+            }
+        }
+        let Some(recorder) = self.placements.get_mut(index) else {
+            return false;
+        };
+        if recorder.source == source {
+            return false;
+        }
+        let from = recorder.source;
+        recorder.source = source;
+        self.record(Change::Sourced {
+            index,
+            from,
+            to: source,
+        });
+        true
+    }
+
+    /// The source of one placement, when it is bound.
+    #[must_use]
+    pub fn source_of(&self, index: usize) -> Option<Source> {
+        self.placements.get(index)?.source
+    }
+
     /// Turns a placement a quarter clockwise: `Edición ▸ Girar`.
     pub fn turn_clockwise(&mut self, index: usize) -> bool {
         self.turn_many(&[index], Turn::Clockwise)
@@ -1186,6 +1305,11 @@ impl Document {
                     placement.designation.clone_from(to);
                 }
             }
+            Change::Sourced { index, to, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.source = *to;
+                }
+            }
             Change::CircuitAdded { index, circuit } => {
                 insert_at(&mut self.circuits, *index, circuit.clone());
                 self.active = circuit.id;
@@ -1251,6 +1375,11 @@ impl Document {
             Change::Designated { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.designation.clone_from(from);
+                }
+            }
+            Change::Sourced { index, from, .. } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    placement.source = *from;
                 }
             }
             Change::CircuitAdded { circuit, .. } => {
@@ -1916,5 +2045,69 @@ mod circuit_tests {
         let mut document = Document::new();
         assert!(!document.select_circuit(99));
         assert_eq!(document.active_circuit(), 0);
+    }
+}
+
+#[cfg(test)]
+mod source_tests {
+    use super::*;
+
+    fn place(document: &mut Document, id: &str, x: f32) -> usize {
+        document.place(Placement::new(id, Pt::new(x, 20.0), 20.0, 20.0))
+    }
+
+    #[test]
+    fn a_recorder_is_bound_to_a_source_and_one_undo_takes_it_back() {
+        let mut document = Document::new();
+        let gauge = place(&mut document, "gauge.pressure", 30.0);
+        let recorder = place(&mut document, "chart.recorder", 80.0);
+        let source = Source::new(document.placements()[gauge].id(), Quantity::Pressure);
+        assert!(document.bind_source(recorder, Some(source)));
+        assert_eq!(document.source_of(recorder), Some(source));
+
+        assert!(document.undo());
+        assert_eq!(document.source_of(recorder), None, "one undo unbinds it");
+        assert!(document.redo());
+        assert_eq!(
+            document.source_of(recorder),
+            Some(source),
+            "and redo returns it"
+        );
+    }
+
+    #[test]
+    fn a_source_must_be_another_component_of_the_same_circuit() {
+        let mut document = Document::new();
+        let gauge = place(&mut document, "gauge.pressure", 30.0);
+        let recorder = place(&mut document, "chart.recorder", 80.0);
+        let gauge_id = document.placements()[gauge].id();
+        let recorder_id = document.placements()[recorder].id();
+
+        assert!(
+            !document.bind_source(recorder, Some(Source::new(recorder_id, Quantity::Pressure))),
+            "a recorder cannot chart itself"
+        );
+        assert!(
+            !document.bind_source(recorder, Some(Source::new(9_999, Quantity::Pressure))),
+            "a source has to exist"
+        );
+
+        document.add_circuit("Control");
+        let other = place(&mut document, "gauge.pressure", 30.0);
+        let other_id = document.placements()[other].id();
+        assert!(
+            !document.bind_source(recorder, Some(Source::new(other_id, Quantity::Pressure))),
+            "a source in another circuit is not on the same sheet"
+        );
+        // And the gauge of the first circuit still binds.
+        assert!(document.bind_source(recorder, Some(Source::new(gauge_id, Quantity::Pressure))));
+    }
+
+    #[test]
+    fn a_quantity_round_trips_through_its_name() {
+        for quantity in [Quantity::Pressure, Quantity::Flow, Quantity::Position] {
+            assert_eq!(Quantity::from_name(quantity.as_str()), Some(quantity));
+        }
+        assert_eq!(Quantity::from_name("temperature"), None);
     }
 }

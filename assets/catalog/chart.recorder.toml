@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Strip chart, 60 s at 10 samples per second.
+#
+# The frame and the trace are the symbol; the trace the sheet draws while the circuit runs
+# is the model's, and the source it charts is chosen on the placement, never in this file
+# (ADR 0015). A recorder observes: it has no ports and is not connected to anything.
+#
+# The window and the rate are file values, so a slower or longer recorder is another file;
+# the catalog bounds them so no file can ask for an unbounded buffer.
+
+schema = 3
+id = "chart.recorder"
+name = "Strip chart"
+name_es = "Registrador"
+category = "sensor"
+summary = "Charts one quantity over the last minute."
+
+[behaviour]
+type = "recorder"
+span_s = 60.0
+rate_hz = 10.0
+
+# The paper. An empty frame, on purpose: the trace is the model's, and a drawn curve in the
+# file would look like data on a recorder that has not measured anything yet.
+[[symbol]]
+kind = "rect"
+points = [0.10, 0.10, 0.80, 0.72]
+line_class = "working"
+
+# Graduations on the two axes: what tells an empty frame apart from a generic box at
+# palette size without drawing a curve that would look like data.
+[[symbol]]
+kind = "line"
+points = [0.06, 0.40, 0.14, 0.40]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.66, 0.14, 0.66]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.36, 0.78, 0.36, 0.86]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.64, 0.78, 0.64, 0.86]
+line_class = "working"

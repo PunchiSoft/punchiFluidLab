@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### Un registrador de 60 s en la hoja — 2026-11-12
+
+El manómetro y el caudalímetro dicen cuánto vale una magnitud ahora; ninguno dice cómo
+llegó hasta ahí. El **registrador** es un componente que dibuja una magnitud elegida
+durante el último minuto, con su valor actual y su curva, y viaja con el documento.
+
+- **Un comportamiento propio** (`recorder`), sin puertos: observa, no se conecta. El archivo
+  declara la ventana y la frecuencia de muestreo, y el catálogo acota su producto para que
+  ningún archivo pida un búfer sin límite ([ADR 0015](docs/adr/0015-a-recorder-samples-a-named-quantity.md)).
+- **La fuente se elige en el inspector** entre lo que el circuito puede informar —presión en
+  un puerto, caudal de un caudalímetro, posición de un cilindro— y se guarda con la
+  colocación en el **formato 5**, con migración por pasos para que un proyecto v4 conserve
+  sus circuitos.
+- **Las muestras no se guardan**: son del motor de simulación, no del documento. Al abrir un
+  archivo el registrador empieza vacío, y una hoja abierta no crece con cada segundo.
+- **La curva es del modelo**: el símbolo dibuja el papel y sus graduaciones, nunca una traza
+  que parecería una medida que no existe. El marco sin fuente lo dice, en vez de pintar un
+  cero.
+- **El dinamómetro queda `not planned`**, con la razón escrita: medir fuerza exige un enlace
+  mecánico que el modelo no tiene; una cifra `p·A` llamada fuerza enseñaría lo que no es.
+- **Evidencia**: la prueba del anillo acotado, la prueba ABI que enlaza, dibuja y deshace,
+  los pasos `--selftest` y la revisión del símbolo con capturas claro/oscuro.
+
 ### Un caudalímetro en la línea — 2026-11-12
 
 Un manómetro dice la presión en un punto, no cuánto aire pasa por él. El nuevo

@@ -756,6 +756,73 @@ Window {
                             font.pixelSize: 12
                             wrapMode: Text.WordWrap
                         }
+                        // A recorder charts one quantity of one component. The list is
+                        // the core's — only what the circuit can report — and the bound
+                        // source is marked, because a list with no mark is a guess.
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: chartSources.count > 0
+
+                            Repeater {
+                                id: chartSources
+                                model: session.chartCandidates
+
+                                delegate: Rectangle {
+                                    width: parent.width
+                                    height: 24
+                                    radius: 3
+                                    color: modelData.current ? session.accent : "transparent"
+                                    border.width: 1
+                                    border.color: modelData.current ? session.accent : session.muted
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.leftMargin: 6
+                                        anchors.rightMargin: 6
+                                        elide: Text.ElideRight
+                                        // The bound row says so in words, not only in
+                                        // colour: a mark a colour-blind reader cannot see
+                                        // is not a mark.
+                                        text: modelData.current
+                                              ? modelData.label + "  ·  " + qsTr("en pantalla")
+                                              : modelData.label
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: session.setChartSource(modelData.placement,
+                                                                          modelData.quantity)
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: 120
+                                height: 24
+                                radius: 3
+                                visible: session.chartSourcePlacement >= 0
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Quitar fuente")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: session.clearChartSource()
+                                }
+                            }
+                        }
                         Repeater {
                             id: editRows
                             model: session.inspectorFields

@@ -162,6 +162,12 @@ impl Catalog {
     }
 }
 
+/// Most samples a recorder may keep, the product of its window and its rate.
+///
+/// The bound belongs to the catalog so a file cannot ask the session for an unbounded
+/// buffer; 6 000 samples is 60 s at 100 Hz, or a minute at ten times the default rate.
+pub const MAX_RECORDER_SAMPLES: usize = 6_000;
+
 /// Checks that a parsed file describes a component that can be simulated.
 fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     check_identity(definition, path)?;
@@ -175,6 +181,11 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
         if working != 1 {
             return Err(invalid(path, "a gauge needs exactly one working port"));
         }
+    }
+    if matches!(definition.behaviour, Behaviour::Recorder { .. }) && !definition.port.is_empty() {
+        // A recorder observes a named component; a port on it would promise a connection
+        // the model does not use.
+        return Err(invalid(path, "a recorder has no ports"));
     }
     if matches!(definition.behaviour, Behaviour::FlowMeter { .. }) {
         // A meter sits in the line: one port to arrive and one to leave, and nothing else
@@ -225,6 +236,7 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             }
             Ok(())
         }
+        Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
         Behaviour::FlowMeter {
             conductance,
             nominal_l_min,
@@ -299,6 +311,31 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
     }
 }
 
+/// Checks the window and the rate of a recorder, and the buffer their product asks for.
+fn check_recorder(path: &Path, span_s: f64, rate_hz: f64) -> Result<(), CatalogError> {
+    if !span_s.is_finite() || !(1.0..=600.0).contains(&span_s) {
+        return Err(invalid(path, "a recorder window must be 1 to 600 seconds"));
+    }
+    if !rate_hz.is_finite() || !(1.0..=50.0).contains(&rate_hz) {
+        return Err(invalid(
+            path,
+            "a recorder rate must be 1 to 50 samples per second",
+        ));
+    }
+    // The count is a small integer, so the comparison is exact in `f64`.
+    #[allow(clippy::cast_precision_loss)]
+    let wanted = (span_s * rate_hz).round();
+    #[allow(clippy::cast_precision_loss)]
+    let allowed = MAX_RECORDER_SAMPLES as f64;
+    if wanted > allowed {
+        return Err(invalid(
+            path,
+            &format!("a recorder may keep at most {MAX_RECORDER_SAMPLES} samples"),
+        ));
+    }
+    Ok(())
+}
+
 fn invalid(path: &Path, reason: &str) -> CatalogError {
     CatalogError::Invalid {
         path: path.to_path_buf(),
@@ -328,7 +365,7 @@ fn check_identity(definition: &ComponentDefinition, path: &Path) -> Result<(), C
 }
 
 fn check_ports(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
-    if definition.port.is_empty() {
+    if definition.port.is_empty() && !matches!(definition.behaviour, Behaviour::Recorder { .. }) {
         return Err(invalid(path, "a component needs at least one port"));
     }
 
@@ -462,277 +499,5 @@ fn check_primitive(primitive: &Primitive) -> Result<(), String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn write(dir: &Path, name: &str, text: &str) {
-        std::fs::write(dir.join(name), text).expect("temp dir is writable");
-    }
-
-    const EXTRA_VALVE: &str = r#"
-schema = 2
-id = "valve.5_2.test"
-name = "5/2 valve"
-category = "valve"
-body = [0.06, 0.28, 0.44, 0.22]
-
-[actuator]
-kind = "lever"
-side = "left"
-
-[[port]]
-id = "1"
-role = "supply"
-position = [0.28, 1.0]
-
-[[port]]
-id = "2"
-role = "working"
-position = [0.28, 0.0]
-
-[behaviour]
-type = "valve"
-actuation = "toggle"
-[[behaviour.positions]]
-name = "left"
-[[behaviour.positions.connection]]
-from = "1"
-to = "2"
-conductance = 1.0e-9
-[[behaviour.positions]]
-name = "right"
-blocked = ["1"]
-"#;
-
-    #[test]
-    fn builtin_catalog_loads_without_problems() {
-        let catalog = Catalog::builtin();
-        assert!(
-            catalog.problems().is_empty(),
-            "built-in files must always be valid: {:?}",
-            catalog.problems()
-        );
-        assert!(catalog.get("valve.3_2.spring_return").is_some());
-        assert!(catalog.get("supply.compressor").is_some());
-        assert!(catalog.get("cylinder.single_acting_20_100").is_some());
-        assert!(catalog.get("flow.meter").is_some());
-        assert!(catalog.len() >= 4);
-    }
-
-    #[test]
-    fn user_directory_adds_and_overrides_definitions() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        write(dir.path(), "valve.toml", EXTRA_VALVE);
-        write(
-            dir.path(),
-            "supply.toml",
-            r#"
-schema = 2
-id = "supply.compressor"
-name = "Taller 8 bar"
-category = "supply"
-[[port]]
-id = "1"
-role = "supply"
-position = [0.5, 1.0]
-[behaviour]
-type = "supply"
-pressure_bar = 8.0
-"#,
-        );
-
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert!(catalog.problems().is_empty(), "{:?}", catalog.problems());
-        assert!(catalog.get("valve.5_2.test").is_some());
-        let supply = catalog.get("supply.compressor").expect("overridden");
-        assert_eq!(supply.name, "Taller 8 bar");
-        assert_eq!(supply.origin, Origin::User);
-    }
-
-    #[test]
-    fn a_flow_meter_needs_two_working_ports_a_conductance_and_a_scale() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let one_port = r#"
-schema = 3
-id = "flow.meter.one"
-name = "Meter with one port"
-category = "sensor"
-[[port]]
-id = "1"
-role = "working"
-position = [0.0, 0.5]
-[behaviour]
-type = "flow_meter"
-conductance = 2.0e-9
-nominal_l_min = 100.0
-"#;
-        write(dir.path(), "one.toml", one_port);
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert!(
-            catalog.get("flow.meter.one").is_none(),
-            "a meter in the line needs a port to leave by"
-        );
-        assert!(
-            catalog
-                .problems()
-                .iter()
-                .any(|problem| problem.to_string().contains("two working ports")),
-            "{:?}",
-            catalog.problems()
-        );
-
-        let no_scale = one_port
-            .replace("flow.meter.one", "flow.meter.two")
-            .replace("nominal_l_min = 100.0", "nominal_l_min = 0.0")
-            .replace(
-                "[[port]]\nid = \"1\"\nrole = \"working\"\nposition = [0.0, 0.5]",
-                "[[port]]\nid = \"1\"\nrole = \"working\"\nposition = [0.0, 0.5]\n\n[[port]]\nid = \"2\"\nrole = \"working\"\nposition = [1.0, 0.5]",
-            );
-        write(dir.path(), "two.toml", &no_scale);
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert!(catalog.get("flow.meter.two").is_none());
-        assert!(
-            catalog.problems().iter().any(|problem| problem
-                .to_string()
-                .contains("nominal flow must be positive")),
-            "{:?}",
-            catalog.problems()
-        );
-    }
-
-    #[test]
-    fn a_disabled_file_hides_the_builtin_with_the_same_id() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        write(
-            dir.path(),
-            "hide.toml",
-            r#"
-schema = 2
-id = "throttle.fixed"
-name = "hidden"
-category = "throttle"
-disabled = true
-[[port]]
-id = "1"
-role = "working"
-position = [0.0, 0.5]
-[behaviour]
-type = "throttle"
-conductance = 1.0e-9
-"#,
-        );
-
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert!(catalog.problems().is_empty(), "{:?}", catalog.problems());
-        assert!(catalog.get("throttle.fixed").is_none());
-        assert!(catalog.hidden().contains("throttle.fixed"));
-    }
-
-    #[test]
-    fn a_broken_file_is_reported_and_the_rest_still_loads() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        write(dir.path(), "bad-toml.toml", "schema = 1\nid = [");
-        write(
-            dir.path(),
-            "bad-connection.toml",
-            r#"
-schema = 2
-id = "valve.broken"
-name = "broken"
-category = "valve"
-body = [0.06, 0.28, 0.44, 0.22]
-[actuator]
-kind = "lever"
-side = "left"
-[[port]]
-id = "1"
-role = "supply"
-position = [0.28, 1.0]
-[behaviour]
-type = "valve"
-actuation = "toggle"
-[[behaviour.positions]]
-name = "a"
-[[behaviour.positions.connection]]
-from = "1"
-to = "9"
-conductance = 1.0e-9
-[[behaviour.positions]]
-name = "b"
-blocked = ["1"]
-"#,
-        );
-        write(dir.path(), "good.toml", EXTRA_VALVE);
-
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert_eq!(catalog.problems().len(), 2, "{:?}", catalog.problems());
-        assert!(catalog.get("valve.5_2.test").is_some());
-        assert!(catalog.get("valve.broken").is_none());
-    }
-
-    #[test]
-    fn a_typo_in_a_key_is_rejected_instead_of_ignored() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        write(
-            dir.path(),
-            "typo.toml",
-            r#"
-schema = 1
-id = "valve.typo"
-name = "typo"
-category = "valve"
-sumary = "misspelled"
-[[port]]
-id = "1"
-role = "supply"
-position = [0.5, 1.0]
-[behaviour]
-type = "valve"
-actuation = "toggle"
-[[behaviour.positions]]
-name = "a"
-[[behaviour.positions]]
-name = "b"
-"#,
-        );
-
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert_eq!(catalog.problems().len(), 1);
-        assert!(matches!(catalog.problems()[0], CatalogError::Parse { .. }));
-    }
-
-    #[test]
-    fn unsupported_schema_is_rejected() {
-        let dir = tempfile::tempdir().expect("temp dir");
-        write(
-            dir.path(),
-            "future.toml",
-            r#"
-schema = 99
-id = "valve.future"
-name = "future"
-category = "valve"
-[[port]]
-id = "1"
-role = "supply"
-position = [0.5, 1.0]
-[behaviour]
-type = "supply"
-pressure_bar = 6.0
-"#,
-        );
-
-        let catalog = Catalog::builtin().with_user_dir(dir.path());
-        assert!(matches!(
-            catalog.problems()[0],
-            CatalogError::UnsupportedSchema { found: 99, .. }
-        ));
-    }
-
-    #[test]
-    fn missing_directory_is_not_an_error() {
-        let catalog = Catalog::builtin().with_user_dir(Path::new("/nonexistent/catalog"));
-        assert!(catalog.problems().is_empty());
-        assert!(!catalog.is_empty());
-    }
-}
+#[path = "catalog_tests.rs"]
+mod tests;
