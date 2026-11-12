@@ -75,9 +75,9 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    git --no-pager log --oneline origin/main..HEAD             # expect: empty
    ```
 
-4. **Work, committing on the branch.** Conventional Commits, imperative subject under
-   72 characters, `git commit -s`, and the `Co-authored-by:` trailer when an agent
-   co-authored. One thing per commit; formatting and renames travel alone.
+4. **Work, committing on the branch.** Conventional Commits, English imperative subject
+   under 72 characters, English body, `git commit -s`, and the `Co-authored-by:` trailer
+   when an agent co-authored. One thing per commit; formatting and renames travel alone.
 
 5. **Run the gate on the branch that will be merged**, not on a memory of a green run:
 
@@ -96,11 +96,11 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    ```
 
    Fill every section of
-   [.github/PULL_REQUEST_TEMPLATE.md](../../../.github/PULL_REQUEST_TEMPLATE.md): what
-   changes, the milestone or phase, the claim and its evidence level, the checklist, and
-   **known limitations** — reviewers read that part first. The body describes behaviour,
-   never a file list. Write it to a temporary file so the formatting survives, and delete
-   the file afterwards.
+   [.github/PULL_REQUEST_TEMPLATE.md](../../../.github/PULL_REQUEST_TEMPLATE.md) in
+   English: what changes, the milestone or phase, the claim and its evidence level, the
+   checklist, and **known limitations** — reviewers read that part first. The body
+   describes behaviour, never a file list. Write it to a temporary file so the formatting
+   survives, and delete the file afterwards.
 
 7. **Verify the pull request is what was reviewed.**
 
