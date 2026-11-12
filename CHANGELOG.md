@@ -6,6 +6,34 @@ publicación.
 
 ## Unreleased
 
+### La documentación vuelve a decir lo que el proyecto hace — 2026-11-12
+
+El PR de la exportación actualizó el changelog y las reglas, pero no el libro de
+capacidades ni la nota de continuidad: durante cinco días la documentación dijo que no
+había editor, que el solver de red no existía y que la ventana no podía exportar. Una
+sesión nueva habría empezado a arreglar cosas ya hechas.
+
+- **P1.7 queda marcado como entregado** en `next-steps.md`, y la exportación aparece en el
+  estado de `capabilities.md` y de `retomar.md` con sus dos deudas: la fecha del bloque de
+  título está fija en 2026-11-07 y el dibujo se centra en vez de escalarse para encajar.
+- **Se corrigen las contradicciones**: 6 de 9 faltas de la comprobación, no 5; formato de
+  hoja v3, no v2; autoguardado, recientes y aviso de cambios sin guardar ya existían; el
+  catálogo tiene 14 definiciones; el workspace tiene 10 crates; el total real es 244
+  pruebas de Cargo.
+- **El README deja de prometer un panel de exportación que no existe** (márgenes, tamaño
+  personalizado, resolución y atajos `Ctrl+Shift+E/P`): ahora describe el diálogo de
+  guardado, el grupo Hoja y las deudas. La sección de la ventana habla del transporte y de
+  los atajos reales, no de la interfaz retirada.
+- **`supply.workshop` deja de aparecer**: la definición se llama `supply.compressor` desde
+  el juego de símbolos; se corrige en la hoja limpia del gate, en `next-steps.md` y en
+  `retomar.md`, y la hoja de humo vuelve a nombrar un componente que existe.
+- **`ui-ux.md` distingue spec de estado**: la barra lateral plana, el estado real de la
+  barra de estado y el panel de exportación incompleto quedan declarados; los iconos Breeze
+  dejan de figurar como pendientes porque ya se cargan y se tiñen.
+
+Lo que no cambia: los símbolos siguen `pending-300dpi`, la lista de piezas y las
+bibliotecas eléctrica/digital/GRAFCET no existen, y el modelo hidráulico no está empezado.
+
 ### Exportar el plano, desde la ventana — 2026-11-07
 
 La exportación existía como crate y no como función: el marco, el block de título y los dos

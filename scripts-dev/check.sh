@@ -50,7 +50,7 @@ cat >"$sheet" <<'JSON'
   "format": 3,
   "title": "Hoja limpia",
   "placement": [
-    { "id": 1, "catalog": "supply.workshop", "x": 34.0, "y": 39.0, "width": 33.8, "height": 33.8 },
+    { "id": 1, "catalog": "supply.compressor", "x": 34.0, "y": 39.0, "width": 33.8, "height": 33.8 },
     { "id": 2, "catalog": "valve.3_2.spring_return", "x": 94.0, "y": 93.6, "width": 33.8, "height": 33.8 },
     { "id": 3, "catalog": "cylinder.single_acting_20_100", "x": 144.0, "y": 33.8, "width": 74.4, "height": 33.8 }
   ],

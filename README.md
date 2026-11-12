@@ -78,14 +78,14 @@ the point. Free software is how a subject stops being an entrance fee.
 |---|---|
 | `punchi-fluid-core` | Components, ports, connections and typed units (bar, litre, kelvin) |
 | `punchi-fluid-catalog` | Component definitions read from TOML files: schema, validation, override rules |
-| `punchi-fluid-file` | Versioned JSON document, round-trip and version rejection |
+| `punchi-fluid-file` | Versioned sheet format (v3), atomic write and the recent-document list |
 | `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
 | `punchi-fluid-doc` | The edited document: placements, commands and bounded undo |
 | `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
-| `punchi-fluid-export` | Standard sheets, title block, legend and a deterministic PDF writer |
-| `punchi-fluid-ffi` | The C ABI the window speaks: one session, one frame of drawing, one hit test |
+| `punchi-fluid-export` | Standard sheets, title block, legend, and the PNG and PDF writers |
+| `punchi-fluid-ffi` | The C ABI the window speaks: the document, the drawing frame, hit tests and export |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
-| `punchi-fluid-cli` | `punchi-fluid-cli validate|simulate <file>` for headless checks |
+| `punchi-fluid-cli` | `validate`, `simulate` and `check` without a window |
 | `apps/punchi-fluid-qt` | The window: ribbon, catalog sidebar, sheet, status bar and the desktop's own palette, over the C ABI |
 
 ## Build and run
@@ -102,25 +102,31 @@ cargo run --bin punchi-fluid-cli -- validate circuit.pfluid # headless check
 `--no-build` never invokes Cargo. `PUNCHI_FLUID_THEME=light|dark` pins the palette,
 otherwise the window follows the desktop.
 
-In the window: **Play** runs the simulation, **Slower**/**Faster** change the speed (a
-20 mm cylinder with this valve finishes its stroke in about 0.13 s of simulated time),
-**Actuate valve** or a click on the valve symbol changes its position, and **Reset**
-starts again. `F1` lists every shortcut; `Ctrl+F` focuses the catalog search.
+In the window the transport runs the model: **Iniciar** (F9) starts, **Pausa** (F8) pauses,
+**Paso** (F10) advances one frame, **Hasta cambio** stops at the first end stop or valve
+change, **Detener** (F5) returns to editing and **Restablecer** (Ctrl+R) goes back to
+`t = 0`. A spring-return valve is held while the pointer is down or **Espacio** is held, and
+the speed selector sits beside the transport (a 20 mm cylinder with this valve finishes its
+stroke in about 0.13 s of simulated time). The ribbon has three tabs — Archivo, Editar and
+Ver — and the hint beside each command names its shortcut where one exists. The sidebar
+lists the catalog with each component's own symbol; a click selects and a drag places it.
 
-**Export PDF** (`Ctrl+Shift+E`) or **Export PNG** (`Ctrl+Shift+P`) opens the export panel:
-format, resolution for PNG (72–600 dpi), paper, orientation, margins, the identification
-block and the destination. The page carries the frame, the title block, a legend of line
-classes and port numerals, and — while any symbol review is open — the note that the symbols
-are not yet verified against ISO 1219-1. Two exports of the same circuit produce the same
-bytes.
+**Exportar** in Archivo opens a save dialog: a `.pdf` name writes a vector page, a `.png`
+name a raster at 300 dpi. The **Hoja** group chooses one of nine named papers — A5 to A0,
+Letter, Legal and Oficio — and the landscape orientation, and marks the one in use. The page
+carries the frame, the title block and a legend of line classes and port numerals, and while
+any symbol review is open it also carries the note that the symbols are not yet verified
+against ISO 1219-1. The same circuit exported twice produces the same bytes. There is no
+panel for margins, a custom size or the PNG resolution yet, the title-block date is still
+fixed, the drawing is centred rather than scaled to fit, and the export command has no
+keyboard shortcut yet.
 
 **The paper is a decision, not a default.** A drawing is printed on the sheet the drawing
-office uses, and that is not one size: ISO 216/5457 A4, A3, A2, A1 and A0 for the ISO world;
+office uses, and that is not one size: ISO 216/5457 A5 to A0 for the ISO world;
 US Letter and US Legal for the North American one; and **Oficio/Folio (216 × 330 mm)**, which
 is neither of the two and is the paper most Chilean offices still stock. The plan is
-[ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md). The export crate knows A4 and
-A3 today; the rest, and the window command that reaches it, are the open part of F5 — the
-export command is not in the window yet.
+[ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); the custom size exists in
+the export API but not in the window, and the last choice is not remembered per user yet.
 
 Requirements: Rust stable (pinned in `rust-toolchain.toml`), Qt 6.5 or newer with Qt Quick,
 CMake and Ninja. The Rust core builds with `cargo build --release -p punchi-fluid-ffi`; the
@@ -253,21 +259,24 @@ physics still need eyes and a reference curve.
 ## Roadmap
 
 Milestones, acceptance criteria and the evidence each one needs live in
-[docs/plan.md](docs/plan.md). In short:
+[docs/plan.md](docs/plan.md); the coverage ledger and the delivery order are
+[docs/capabilities.md](docs/capabilities.md) and [docs/next-steps.md](docs/next-steps.md).
+In short:
 
-- **v0.1** — workspace, domain, format, canvas, CLI, catalog of definition files.
+- **v0.1** — workspace, domain, format, canvas, CLI, catalog of definition files. *Done.*
 - **v0.2** — vertical slice: supply, 3/2 valve and single-acting cylinder with gas
-  mass integration, piston dynamics and a clickable valve. *Done, in review.*
+  mass integration, piston dynamics and a clickable valve. *Done.*
 - **M1** — shell: ribbon, sidebar, status bar, theme from the desktop, accessibility. *Done.*
 - **M1.5** — symbol conformance against ISO 1219, with a lint and a review per symbol.
+  *Structural half and visual review done; the 300 dpi review is open.*
 - **M2** — one drawing, two exports: PDF and PNG from the same calls, standard paper,
-  margins, title block and legend. *Done.*
+  title block and legend. *Done.*
 - **v0.3** — document model with undo, palette built from the catalog, place and
-  connect components, orthogonal pipes, save and load. A placed component will
-  reference a catalog `id`, which retires the `ComponentKind` enum from the document
-  layer (today it still enumerates the kinds of the first format).
+  connect components, orthogonal pipes, save and load. *Done.*
 - **v0.4** — network solver driven by the circuit graph instead of one fixed layout;
-  5/2 valves, flow controls, gauges.
+  5/2 valves, flow controls, gauges. *Done.*
+- **Next** — a project of circuits, the remaining instruments, the parts list, the
+  electrical and digital libraries, and our own teaching material.
 - **v1.0** — hydraulic model, AppImage and Flatpak, translation pipeline.
 
 ## Project documentation
