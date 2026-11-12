@@ -20,6 +20,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         .expect("the built-in cylinder exists");
     let rect = Rect::from_min_size(Pt::new(area.min.x + 10.0, area.min.y + 10.0), 74.4, 33.8);
     let placed = [Placed {
+        index: 0,
         catalog_id: definition.id.as_str(),
         rect,
         extension: 0.5,

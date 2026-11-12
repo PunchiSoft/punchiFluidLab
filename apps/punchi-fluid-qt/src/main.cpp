@@ -1395,6 +1395,47 @@ int main(int argc, char *argv[])
             QFile::remove(path);
         });
 
+        // A project is one document with several circuits: add one, name it, save the
+        // project, open it again and switch between the sheets.
+        steps->push_back([state, check] {
+            check(state->session->circuits().size() == 1,
+                  QStringLiteral("circuit: the project starts with one"));
+            const int first = state->session->activeCircuit();
+            const int added = state->session->addCircuit();
+            check(added >= 0 && state->session->circuits().size() == 2,
+                  QStringLiteral("circuit: a new one is added"));
+            check(state->session->activeCircuit() == added,
+                  QStringLiteral("circuit: the new one is active"));
+            check(state->session->renameCircuit(added, QStringLiteral("Control")),
+                  QStringLiteral("circuit: it can be renamed"));
+            const QVariantList circuits = state->session->circuits();
+            check(circuits.value(circuits.size() - 1)
+                          .toMap()
+                          .value(QStringLiteral("name"))
+                          .toString()
+                      == QStringLiteral("Control"),
+                  QStringLiteral("circuit: the name is kept"));
+
+            const QString path =
+                QDir::tempPath() + QStringLiteral("/punchi-circuits.pfluid");
+            check(state->session->saveTo(path),
+                  QStringLiteral("circuit: the project saves"));
+            state->session->newDocument();
+            check(state->session->circuits().size() == 1,
+                  QStringLiteral("circuit: a new document has one"));
+            check(state->session->openFrom(path),
+                  QStringLiteral("circuit: the project opens"));
+            check(state->session->circuits().size() == 2,
+                  QStringLiteral("circuit: both circuits return"));
+            check(state->session->activeCircuit() == added,
+                  QStringLiteral("circuit: the active one returns"));
+            check(state->session->selectCircuit(first),
+                  QStringLiteral("circuit: another one can be selected"));
+            check(state->session->activeCircuit() == first,
+                  QStringLiteral("circuit: the selected one is active"));
+            QFile::remove(path);
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);

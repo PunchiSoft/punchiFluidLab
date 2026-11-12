@@ -12,7 +12,7 @@ use std::process::ExitCode;
 
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_check::Finding;
-use punchi_fluid_doc::{Document, Endpoint, Placement};
+use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{Pt, Rect};
 use punchi_fluid_file::sheet::Sheet;
 
@@ -124,7 +124,7 @@ fn check(arguments: &[String]) -> ExitCode {
     };
     let catalog = Catalog::builtin();
     let area = Rect::from_min_size(Pt::new(0.0, 0.0), SHEET_MM.0, SHEET_MM.1);
-    let findings = punchi_fluid_check::check(&document, &catalog, area);
+    let findings = punchi_fluid_check::check(&document, &catalog, area, document.active_circuit());
 
     if json {
         println!("{}", as_json(path, &findings));
@@ -175,6 +175,7 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
                 stored.width,
                 stored.height,
             );
+            placement.circuit = stored.circuit;
             if let Some(edit) = &stored.edit {
                 placement.edits = punchi_fluid_doc::PlacementEdits {
                     pressure_bar: edit.pressure_bar,
@@ -191,7 +192,23 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
             placement
         })
         .collect();
+    let mut circuits: Vec<Circuit> = sheet
+        .circuits
+        .iter()
+        .map(|circuit| Circuit::new(circuit.id, circuit.title.clone()))
+        .collect();
+    if circuits.is_empty() {
+        circuits.push(Circuit::new(0, "Circuito 1"));
+    }
+    let active = if circuits.iter().any(|circuit| circuit.id == sheet.active) {
+        sheet.active
+    } else {
+        circuits[0].id
+    };
     let mut document = Document::new();
+    if !document.set_project(circuits, active) {
+        return Err(String::from("the project has no usable circuit"));
+    }
     document.seed(placements);
     for pipe in &sheet.pipe {
         if !document.seed_connect(
@@ -204,6 +221,7 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
             ));
         }
         let index = document.connections().len() - 1;
+        document.seed_pipe_circuit(index, pipe.circuit);
         document.seed_route(index, pipe.offset_tenths);
     }
     Ok(document)

@@ -19,12 +19,18 @@ use serde::{Deserialize, Serialize};
 /// 2 added the orientation of a placement — the quarter turns and the mirror. 3 added the
 /// designation, the name the user gives a component. An older file reads because both
 /// additions have an obvious default: an unturned symbol and an unnamed component.
-pub const SHEET_VERSION: u32 = 3;
+pub const SHEET_VERSION: u32 = 4;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
 
-/// Most components a sheet may hold.
+/// Most circuits a project may hold.
+pub const MAX_CIRCUITS: usize = 64;
+
+/// Longest accepted circuit title, in characters.
+pub const MAX_CIRCUIT_TITLE: usize = 80;
+
+/// Most components a project may hold.
 pub const MAX_PLACEMENTS: usize = 2_000;
 
 /// Most pipes a sheet may hold.
@@ -45,12 +51,25 @@ pub const MAX_SIDE_MM: f32 = 2_000.0;
 /// document crate, so the number is stated in both and tested here.
 pub const MAX_DESIGNATION: usize = 40;
 
+/// One circuit of a project.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StoredCircuit {
+    /// Identity a placement or a pipe names.
+    pub id: u32,
+    /// Name shown in the selector and the title block.
+    pub title: String,
+}
+
 /// One component, as the sheet stores it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StoredPlacement {
     /// Identity the pipes use. Unique and non-zero.
     pub id: u64,
+    /// Circuit this component belongs to. Format 1–3 has one circuit, id 0.
+    #[serde(default)]
+    pub circuit: u32,
     /// Catalog id of the definition.
     pub catalog: String,
     /// Centre x, millimetres.
@@ -116,6 +135,9 @@ pub struct StoredEdits {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StoredPipe {
+    /// Circuit this pipe belongs to. Format 1–3 has one circuit, id 0.
+    #[serde(default)]
+    pub circuit: u32,
     /// Placement at one end.
     pub from: u64,
     /// Its port id.
@@ -135,15 +157,21 @@ pub struct StoredPipe {
 pub struct Sheet {
     /// Format version of the document.
     pub format: u32,
-    /// Document title shown in the window.
+    /// Project title shown in the window.
     #[serde(default)]
     pub title: String,
-    /// Components in placement order.
+    /// Circuits in selector order. Format 1–3 reads as one circuit.
+    #[serde(default)]
+    pub circuits: Vec<StoredCircuit>,
+    /// Components in placement order, across all circuits.
     #[serde(default)]
     pub placement: Vec<StoredPlacement>,
-    /// Pipes in drawing order.
+    /// Pipes in drawing order, across all circuits.
     #[serde(default)]
     pub pipe: Vec<StoredPipe>,
+    /// Circuit that was in view when the file was saved.
+    #[serde(default)]
+    pub active: u32,
 }
 
 /// Everything that can go wrong while reading or writing a sheet.
@@ -182,8 +210,13 @@ impl Sheet {
         Self {
             format: SHEET_VERSION,
             title: title.into(),
+            circuits: vec![StoredCircuit {
+                id: 0,
+                title: String::from("Circuito 1"),
+            }],
             placement: Vec::new(),
             pipe: Vec::new(),
+            active: 0,
         }
     }
 
@@ -200,6 +233,50 @@ impl Sheet {
                 supported: SHEET_VERSION,
             });
         }
+        if self.circuits.len() > MAX_CIRCUITS {
+            return Err(SheetError::Invalid(format!(
+                "{} circuits, at most {MAX_CIRCUITS}",
+                self.circuits.len()
+            )));
+        }
+        let mut circuit_ids: Vec<u32> = Vec::with_capacity(self.circuits.len());
+        for circuit in &self.circuits {
+            if circuit_ids.contains(&circuit.id) {
+                return Err(SheetError::Invalid(format!(
+                    "two circuits share id {}",
+                    circuit.id
+                )));
+            }
+            circuit_ids.push(circuit.id);
+            if circuit.title.is_empty()
+                || circuit.title.trim() != circuit.title
+                || circuit.title.chars().count() > MAX_CIRCUIT_TITLE
+                || circuit.title.chars().any(char::is_control)
+            {
+                return Err(SheetError::Invalid(String::from(
+                    "a circuit has an unusable title",
+                )));
+            }
+        }
+        if self.format >= 4 {
+            if self.circuits.is_empty() {
+                return Err(SheetError::Invalid(String::from(
+                    "a project needs at least one circuit",
+                )));
+            }
+            if !circuit_ids.contains(&self.active) {
+                return Err(SheetError::Invalid(String::from(
+                    "the active circuit is not in the project",
+                )));
+            }
+            for placement in &self.placement {
+                if !circuit_ids.contains(&placement.circuit) {
+                    return Err(SheetError::Invalid(String::from(
+                        "a component names a circuit that is not in the project",
+                    )));
+                }
+            }
+        }
         if self.placement.len() > MAX_PLACEMENTS {
             return Err(SheetError::Invalid(format!(
                 "{} components, at most {MAX_PLACEMENTS}",
@@ -214,6 +291,11 @@ impl Sheet {
         }
         let ids = self.validate_placements()?;
         for pipe in &self.pipe {
+            if self.format >= 4 && !circuit_ids.contains(&pipe.circuit) {
+                return Err(SheetError::Invalid(String::from(
+                    "a pipe names a circuit that is not in the project",
+                )));
+            }
             if !ids.contains(&pipe.from) || !ids.contains(&pipe.to) {
                 return Err(SheetError::Invalid(String::from(
                     "a pipe names a component that is not on the sheet",
@@ -329,12 +411,40 @@ impl Sheet {
     /// [`Self::validate`].
     pub fn parse(text: &str) -> Result<Self, SheetError> {
         let mut sheet: Self = serde_json::from_str(text)?;
-        sheet.validate()?;
         // An older file is upgraded by reading it: every field it does not have is what
         // the older release meant, so the document in memory is this format and saving it
         // writes the fields the reader just filled in.
-        sheet.format = SHEET_VERSION;
+        sheet.migrate()?;
+        sheet.validate()?;
         Ok(sheet)
+    }
+
+    /// Wraps a format 1–3 sheet in the single circuit format 4 expects.
+    fn migrate(&mut self) -> Result<(), SheetError> {
+        if self.format >= SHEET_VERSION {
+            return Ok(());
+        }
+        if self.format < SHEET_MIN {
+            return Err(SheetError::UnsupportedVersion {
+                found: self.format,
+                supported: SHEET_VERSION,
+            });
+        }
+        if self.circuits.is_empty() {
+            self.circuits = vec![StoredCircuit {
+                id: 0,
+                title: String::from("Circuito 1"),
+            }];
+        }
+        for placement in &mut self.placement {
+            placement.circuit = 0;
+        }
+        for pipe in &mut self.pipe {
+            pipe.circuit = 0;
+        }
+        self.active = 0;
+        self.format = SHEET_VERSION;
+        Ok(())
     }
 
     /// Serialises the sheet, validating it first.
@@ -410,9 +520,14 @@ mod tests {
         Sheet {
             format: SHEET_VERSION,
             title: String::from("Prueba"),
+            circuits: vec![StoredCircuit {
+                id: 0,
+                title: String::from("Circuito 1"),
+            }],
             placement: vec![
                 StoredPlacement {
                     id: 1,
+                    circuit: 0,
                     catalog: String::from("supply.compressor"),
                     x: 10.0,
                     y: 20.0,
@@ -425,6 +540,7 @@ mod tests {
                 },
                 StoredPlacement {
                     id: 2,
+                    circuit: 0,
                     catalog: String::from("cylinder.double_acting_32_200"),
                     x: 120.0,
                     y: 80.0,
@@ -440,12 +556,14 @@ mod tests {
                 },
             ],
             pipe: vec![StoredPipe {
+                circuit: 0,
                 from: 1,
                 from_port: String::from("1"),
                 to: 2,
                 to_port: String::from("2"),
                 offset_tenths: 25,
             }],
+            active: 0,
         }
     }
 
@@ -523,7 +641,7 @@ mod tests {
         assert_eq!(sheet.placement[0].quarter_turns, 1);
         assert!(sheet.placement[0].mirrored);
         assert_eq!(sheet.placement[0].designation, None);
-        assert!(sheet.to_json().expect("valid").contains(r#""format": 3"#));
+        assert!(sheet.to_json().expect("valid").contains(r#""format": 4"#));
     }
 
     #[test]
@@ -561,7 +679,7 @@ mod tests {
         assert!(!sheet.placement[0].mirrored);
         // Saving it writes the format this build understands, with the fields it added.
         let saved = sheet.to_json().expect("valid");
-        assert!(saved.contains(r#""format": 3"#), "{saved}");
+        assert!(saved.contains(r#""format": 4"#), "{saved}");
         assert_eq!(sheet.placement[0].designation, None, "and no name either");
     }
 
@@ -580,5 +698,96 @@ mod tests {
         sheet.write(&path).expect("writes");
         assert!(!path.with_extension("pfluid.tmp").exists());
         assert_eq!(Sheet::read(&path).expect("reads"), sheet);
+    }
+}
+
+#[cfg(test)]
+mod circuit_tests {
+    use super::*;
+
+    fn project() -> Sheet {
+        let mut sheet = Sheet::new("Proyecto");
+        sheet.circuits.push(StoredCircuit {
+            id: 1,
+            title: String::from("Control"),
+        });
+        sheet.placement.push(StoredPlacement {
+            id: 1,
+            circuit: 0,
+            catalog: String::from("supply.compressor"),
+            x: 20.0,
+            y: 20.0,
+            width: 30.0,
+            height: 16.0,
+            edit: None,
+            quarter_turns: 0,
+            mirrored: false,
+            designation: None,
+        });
+        sheet.placement.push(StoredPlacement {
+            id: 2,
+            circuit: 1,
+            catalog: String::from("valve.3_2.spring_return"),
+            x: 100.0,
+            y: 80.0,
+            width: 30.0,
+            height: 16.0,
+            edit: None,
+            quarter_turns: 0,
+            mirrored: false,
+            designation: None,
+        });
+        // A pipe whose ends belong to different circuits is accepted by the format: the
+        // check is what reports it, so the loader must not hide it.
+        sheet.pipe.push(StoredPipe {
+            circuit: 1,
+            from: 1,
+            from_port: String::from("1"),
+            to: 2,
+            to_port: String::from("1"),
+            offset_tenths: 0,
+        });
+        sheet
+    }
+
+    #[test]
+    fn a_project_keeps_two_circuits_and_a_pipe_between_them() {
+        let sheet = project();
+        let text = sheet.to_json().expect("valid");
+        let parsed = Sheet::parse(&text).expect("parses");
+        assert_eq!(parsed, sheet);
+        assert_eq!(parsed.format, 4);
+        assert_eq!(parsed.circuits.len(), 2);
+        assert_eq!(parsed.placement[1].circuit, 1);
+        assert_eq!(parsed.pipe[0].circuit, 1);
+    }
+
+    #[test]
+    fn a_version_three_sheet_reads_as_one_circuit() {
+        let text = r#"{
+          "format": 3,
+          "title": "Anterior",
+          "placement": [
+            {"id": 1, "catalog": "supply.compressor", "x": 10.0, "y": 20.0,
+             "width": 26.0, "height": 26.0}
+          ],
+          "pipe": []
+        }"#;
+        let sheet = Sheet::parse(text).expect("a version 3 sheet reads");
+        assert_eq!(sheet.format, 4);
+        assert_eq!(sheet.circuits.len(), 1);
+        assert_eq!(sheet.circuits[0].id, 0);
+        assert_eq!(sheet.placement[0].circuit, 0);
+        assert_eq!(sheet.active, 0);
+    }
+
+    #[test]
+    fn a_component_or_pipe_with_an_unknown_circuit_is_refused() {
+        let mut sheet = project();
+        sheet.placement[0].circuit = 9;
+        assert!(sheet.validate().is_err());
+        sheet.placement[0].circuit = 0;
+        sheet.pipe[0].circuit = 9;
+        assert!(sheet.validate().is_err());
     }
 }

@@ -27,8 +27,9 @@ and watch the actuators move. The model, the format and the drawing are Rust; th
 Qt Quick.
 
 **Status: `0.1.0`, unreleased.** A working vertical slice: draw and edit a circuit, connect
-port to port, save and open it, run the gas model, read the pressure on the hoses, and
-export the sheet to PNG or PDF.
+port to port, keep several circuits in one project and switch between them, save and open
+it, run the gas model, read the pressure on the hoses, and export the active sheet to PNG or
+PDF.
 
 No account, no key, no network. GPL-3.0-or-later: download it, teach with it, change it,
 share it.

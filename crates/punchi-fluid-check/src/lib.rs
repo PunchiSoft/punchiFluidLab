@@ -48,6 +48,8 @@ pub enum FindingKind {
     OpenConnection,
     /// Two cylinders carry the same designation.
     DuplicateDesignation,
+    /// A pipe joins two circuits.
+    PipeAcrossCircuits,
 }
 
 impl FindingKind {
@@ -61,6 +63,7 @@ impl FindingKind {
             Self::OverlappingPipes => "overlapping_pipes",
             Self::OpenConnection => "open_connection",
             Self::DuplicateDesignation => "duplicate_designation",
+            Self::PipeAcrossCircuits => "pipe_across_circuits",
         }
     }
 
@@ -74,6 +77,7 @@ impl FindingKind {
             Self::OverlappingPipes => "dos tubos se superponen",
             Self::OpenConnection => "una conexión neumática queda abierta",
             Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
+            Self::PipeAcrossCircuits => "un tubo une dos circuitos",
         }
     }
 }
@@ -109,18 +113,21 @@ impl Finding {
 /// The result is ordered: every fault kind in [`FindingKind`] order, and inside a kind by
 /// document index, so two runs on the same document produce the same list.
 #[must_use]
-pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding> {
+pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) -> Vec<Finding> {
     let mut findings = Vec::new();
 
-    findings.extend(placement_faults(document, sheet));
+    findings.extend(placement_faults(document, sheet, circuit));
 
     for (index, connection) in document.connections().iter().enumerate() {
+        if connection.circuit != circuit {
+            continue;
+        }
         let Some(path) = pipe_path(document, catalog, index) else {
             continue;
         };
         let ends = [connection.from.placement, connection.to.placement];
         for (component, placement) in document.placements().iter().enumerate() {
-            if ends.contains(&placement.id()) {
+            if placement.circuit != circuit || ends.contains(&placement.id()) {
                 continue;
             }
             let rect = placement.rect();
@@ -136,11 +143,17 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding
         }
     }
 
-    for (index, _) in document.connections().iter().enumerate() {
+    for (index, connection) in document.connections().iter().enumerate() {
+        if connection.circuit != circuit {
+            continue;
+        }
         let Some(path) = pipe_path(document, catalog, index) else {
             continue;
         };
         for other in (index + 1)..document.connections().len() {
+            if document.connections()[other].circuit != circuit {
+                continue;
+            }
             let Some(other_path) = pipe_path(document, catalog, other) else {
                 continue;
             };
@@ -156,9 +169,24 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding
         }
     }
 
-    findings.extend(duplicate_designations(document, catalog));
+    findings.extend(duplicate_designations(document, catalog, circuit));
 
+    findings.extend(open_connections(document, catalog, circuit));
+    findings.extend(pipes_across_circuits(document, catalog));
+
+    findings.sort_by(|a, b| {
+        (a.kind as u8, a.component, a.pipe).cmp(&(b.kind as u8, b.component, b.pipe))
+    });
+    findings
+}
+
+/// A port that carries air and has nothing attached to it.
+fn open_connections(document: &Document, catalog: &Catalog, circuit: u32) -> Vec<Finding> {
+    let mut findings = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
         let Some(definition) = catalog.get(&placement.catalog_id) else {
             continue;
         };
@@ -189,10 +217,41 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect) -> Vec<Finding
             });
         }
     }
+    findings
+}
 
-    findings.sort_by(|a, b| {
-        (a.kind as u8, a.component, a.pipe).cmp(&(b.kind as u8, b.component, b.pipe))
-    });
+/// The ninth fault: a pipe whose two ends belong to different circuits.
+///
+/// The project-wide scan, unlike the geometry faults, does not filter by the active circuit:
+/// a pipe that joins two sheets is wrong whichever sheet is in view.
+fn pipes_across_circuits(document: &Document, catalog: &Catalog) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, connection) in document.connections().iter().enumerate() {
+        let (Some(from), Some(to)) = (
+            document.index_of(connection.from.placement),
+            document.index_of(connection.to.placement),
+        ) else {
+            continue;
+        };
+        let (Some(from), Some(to)) = (
+            document.placements().get(from),
+            document.placements().get(to),
+        ) else {
+            continue;
+        };
+        if from.circuit == to.circuit {
+            continue;
+        }
+        let at = pipe_path(document, catalog, index)
+            .and_then(|path| path.first().copied())
+            .unwrap_or_else(|| from.rect().center());
+        findings.push(Finding {
+            kind: FindingKind::PipeAcrossCircuits,
+            at,
+            component: None,
+            pipe: Some(index),
+        });
+    }
     findings
 }
 
@@ -206,9 +265,12 @@ fn carries_air(role: PortRole) -> bool {
 }
 
 /// Faults about where a component sits: off the sheet, or on top of another one.
-fn placement_faults(document: &Document, sheet: Rect) -> Vec<Finding> {
+fn placement_faults(document: &Document, sheet: Rect, circuit: u32) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
         let rect = placement.rect();
         if !contains_rect(sheet, rect) {
             findings.push(Finding {
@@ -221,7 +283,13 @@ fn placement_faults(document: &Document, sheet: Rect) -> Vec<Finding> {
     }
 
     for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
         for (other, candidate) in document.placements().iter().enumerate().skip(index + 1) {
+            if candidate.circuit != circuit {
+                continue;
+            }
             let overlap = intersect(placement.rect(), candidate.rect());
             if let Some(area) = overlap {
                 findings.push(Finding {
@@ -242,9 +310,12 @@ fn placement_faults(document: &Document, sheet: Rect) -> Vec<Finding> {
 /// The parts list would print the same actuator twice, and whoever reads the schematic
 /// cannot tell which one another document refers to. Only named actuators count, and the
 /// comparison ignores case, which is how a reader compares them.
-fn duplicate_designations(document: &Document, catalog: &Catalog) -> Vec<Finding> {
+fn duplicate_designations(document: &Document, catalog: &Catalog, circuit: u32) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
         let Some(definition) = catalog.get(&placement.catalog_id) else {
             continue;
         };
@@ -255,6 +326,9 @@ fn duplicate_designations(document: &Document, catalog: &Catalog) -> Vec<Finding
             continue;
         };
         for (other_index, other) in document.placements().iter().enumerate().skip(index + 1) {
+            if other.circuit != circuit {
+                continue;
+            }
             let Some(other_definition) = catalog.get(&other.catalog_id) else {
                 continue;
             };
@@ -452,235 +526,7 @@ fn ordered(a: f32, b: f32) -> (f32, f32) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use punchi_fluid_doc::{Endpoint, Placement};
-    use punchi_fluid_draw::Orientation;
+mod tests;
 
-    fn catalog() -> Catalog {
-        Catalog::builtin()
-    }
-
-    fn sheet() -> Rect {
-        Rect::from_min_size(Pt::new(0.0, 0.0), 200.0, 130.0)
-    }
-
-    fn place(document: &mut Document, id: &str, x: f32, y: f32) -> u64 {
-        let index = document.place(Placement::new(id, Pt::new(x, y), 30.0, 16.0));
-        document.placements()[index].id()
-    }
-
-    fn join(document: &mut Document, from: (u64, &str), to: (u64, &str)) {
-        assert!(
-            document.connect(Endpoint::new(from.0, from.1), Endpoint::new(to.0, to.1)),
-            "the test pipe was refused"
-        );
-    }
-
-    #[test]
-    fn two_cylinders_with_one_designation_are_reported_at_the_second_one() {
-        let mut document = Document::new();
-        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
-        let valve = place(&mut document, "valve.5_2.spring_return", 100.0, 90.0);
-        let first = place(&mut document, "cylinder.double_acting_32_200", 160.0, 40.0);
-        let second = place(&mut document, "cylinder.double_acting_32_200", 160.0, 100.0);
-        join(&mut document, (supply, "1"), (valve, "1"));
-        join(&mut document, (valve, "2"), (first, "1"));
-        join(&mut document, (valve, "4"), (second, "1"));
-        // Unnamed, the two cylinders are not duplicates: a name is what makes them clash.
-        let findings = check(&document, &catalog(), sheet());
-        assert!(
-            !findings
-                .iter()
-                .any(|finding| finding.kind == FindingKind::DuplicateDesignation),
-            "{findings:?}"
-        );
-        let index = document
-            .placements()
-            .iter()
-            .position(|placement| placement.id() == second)
-            .unwrap_or_default();
-        assert!(document.designate(index, Some("1A1")));
-        let index = document
-            .placements()
-            .iter()
-            .position(|placement| placement.id() == first)
-            .unwrap_or_default();
-        assert!(document.designate(index, Some("1a1")));
-        let findings = check(&document, &catalog(), sheet());
-        let clash = findings
-            .iter()
-            .find(|finding| finding.kind == FindingKind::DuplicateDesignation)
-            .copied();
-        assert!(clash.is_some(), "{findings:?}");
-        let clash = clash.unwrap_or(Finding {
-            kind: FindingKind::DuplicateDesignation,
-            at: Pt::new(0.0, 0.0),
-            component: None,
-            pipe: None,
-        });
-        // Case does not matter to a reader, and the report points at the second cylinder.
-        assert_eq!(clash.component, Some(index + 1));
-        assert!((clash.at.y - 100.0).abs() < 20.0, "{:?}", clash.at);
-    }
-
-    #[test]
-    fn a_clean_circuit_has_no_findings() {
-        let mut document = Document::new();
-        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
-        let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
-        let cylinder = place(&mut document, "cylinder.single_acting_20_100", 160.0, 40.0);
-        join(&mut document, (supply, "1"), (valve, "1"));
-        join(&mut document, (valve, "2"), (cylinder, "1"));
-        // The valve's port 3 is its exhaust: open to the room, and not a fault.
-        let findings = check(&document, &catalog(), sheet());
-        assert!(findings.is_empty(), "{findings:?}");
-    }
-
-    #[test]
-    fn a_component_outside_the_sheet_is_reported() {
-        let mut document = Document::new();
-        place(&mut document, "supply.compressor", 195.0, 60.0);
-        let findings = check(&document, &catalog(), sheet());
-        let outside: Vec<&Finding> = findings
-            .iter()
-            .filter(|finding| finding.kind == FindingKind::OutsideSheet)
-            .collect();
-        assert_eq!(outside.len(), 1, "{findings:?}");
-        assert_eq!(outside[0].component, Some(0));
-    }
-
-    #[test]
-    fn a_port_with_no_pipe_is_reported_but_an_exhaust_is_not() {
-        let mut document = Document::new();
-        let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
-        let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
-        let findings = check(&document, &catalog(), sheet());
-
-        // The fault points at a port, not at the component's middle, and names the component
-        // so the drawing can mark it.
-        let open: Vec<&Finding> = findings
-            .iter()
-            .filter(|finding| finding.kind == FindingKind::OpenConnection)
-            .collect();
-        assert_eq!(open.len(), 3, "supply 1, valve 1 and valve 2: {findings:?}");
-        assert!(open.iter().all(|finding| finding.component.is_some()));
-
-        // Joining the supply removes exactly one of them.
-        join(&mut document, (supply, "1"), (valve, "1"));
-        let after = check(&document, &catalog(), sheet());
-        let open_after = after
-            .iter()
-            .filter(|finding| finding.kind == FindingKind::OpenConnection)
-            .count();
-        assert_eq!(open_after, 1, "{after:?}");
-        // What is left is the valve's working port 2, never its exhaust 3.
-        let valve = catalog()
-            .get("valve.3_2.spring_return")
-            .expect("the valve is built in")
-            .clone();
-        let rect = document.placements()[1].rect();
-        let working = port_point(rect, Orientation::NONE, &valve, "2").expect("port 2");
-        let exhaust = port_point(rect, Orientation::NONE, &valve, "3").expect("port 3");
-        let remaining = after
-            .iter()
-            .find(|finding| finding.kind == FindingKind::OpenConnection)
-            .expect("one port is still open");
-        assert!((remaining.at.x - working.x).abs() < 0.01);
-        assert!((remaining.at.y - working.y).abs() < 0.01);
-        assert!((remaining.at.y - exhaust.y).abs() > 0.01);
-    }
-
-    #[test]
-    fn a_junction_alone_is_not_an_open_connection() {
-        // A junction is a point where hoses meet, not a device that has to be wired, so its
-        // unused ports must not be reported — otherwise the check cries wolf and the user
-        // learns to dismiss it.
-        let mut document = Document::new();
-        place(&mut document, "junction.tee", 100.0, 60.0);
-        let findings = check(&document, &catalog(), sheet());
-        assert!(findings.is_empty(), "{findings:?}");
-    }
-
-    #[test]
-    fn two_components_on_top_of_each_other_are_reported() {
-        let mut document = Document::new();
-        place(&mut document, "supply.compressor", 60.0, 60.0);
-        place(&mut document, "throttle.fixed", 62.0, 60.0);
-        let findings = check(&document, &catalog(), sheet());
-        assert!(
-            findings
-                .iter()
-                .any(|finding| finding.kind == FindingKind::OverlappingComponents),
-            "{findings:?}"
-        );
-    }
-
-    #[test]
-    fn components_side_by_side_do_not_overlap() {
-        let mut document = Document::new();
-        place(&mut document, "supply.compressor", 40.0, 60.0);
-        place(&mut document, "throttle.fixed", 71.0, 60.0);
-        let findings = check(&document, &catalog(), sheet());
-        assert!(
-            !findings
-                .iter()
-                .any(|finding| finding.kind == FindingKind::OverlappingComponents),
-            "{findings:?}"
-        );
-    }
-
-    #[test]
-    fn a_pipe_through_a_third_component_is_reported() {
-        let mut document = Document::new();
-        let supply = place(&mut document, "supply.compressor", 30.0, 60.0);
-        let valve = place(&mut document, "valve.3_2.spring_return", 150.0, 60.0);
-        // The throttle sits between them, right on the run.
-        place(&mut document, "throttle.fixed", 90.0, 60.0);
-        assert!(
-            document.connect(Endpoint::new(supply, "1"), Endpoint::new(valve, "1")),
-            "the pipe must exist for the check to have anything to look at"
-        );
-        let findings = check(&document, &catalog(), sheet());
-        assert!(
-            findings
-                .iter()
-                .any(|finding| finding.kind == FindingKind::PipeThroughComponent),
-            "{findings:?}"
-        );
-    }
-
-    #[test]
-    fn two_pipes_over_the_same_line_are_reported() {
-        // Straight from the geometry, because whether two catalog pipes end up collinear
-        // depends on port geometry that is not what this test is about.
-        let a = [Pt::new(10.0, 30.0), Pt::new(90.0, 30.0)];
-        let b = [Pt::new(50.0, 30.0), Pt::new(140.0, 30.0)];
-        assert!(
-            overlap(&a, &b).is_some(),
-            "the shared stretch from 50 to 90 is an overlap"
-        );
-        let apart = [Pt::new(50.0, 60.0), Pt::new(140.0, 60.0)];
-        assert!(
-            overlap(&a, &apart).is_none(),
-            "different rows do not overlap"
-        );
-        let crossing = [Pt::new(70.0, 0.0), Pt::new(70.0, 60.0)];
-        assert!(
-            overlap(&a, &crossing).is_none(),
-            "crossing is not running over the same line"
-        );
-    }
-
-    #[test]
-    fn the_same_document_always_reports_the_same_list() {
-        let mut document = Document::new();
-        place(&mut document, "supply.compressor", 195.0, 60.0);
-        place(&mut document, "throttle.fixed", 60.0, 60.0);
-        place(&mut document, "throttle.fixed", 61.0, 60.0);
-        let first = check(&document, &catalog(), sheet());
-        let second = check(&document, &catalog(), sheet());
-        assert_eq!(first, second);
-        assert!(first.len() >= 2);
-    }
-}
+#[cfg(test)]
+mod circuit_tests;

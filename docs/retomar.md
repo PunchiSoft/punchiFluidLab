@@ -43,8 +43,9 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
+| Proyecto | **un documento con varios circuitos**: formato 4, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa y guardado/ apertura de todos; la novena falta es un tubo que une dos circuitos |
 | Exportación | **desde la ventana y sin ventana**: Archivo ▸ Exportar escribe PDF o PNG (300 dpi) de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Deuda: no hay panel de márgenes, tamaño personalizado ni resolución |
-| Comprobación | 6 de las 9 faltas, cada una señalada en el dibujo; las otras 3 necesitan un proyecto de circuitos (P1.8), la biblioteca eléctrica con su encoder (F6) y la falta del tubo cuyos extremos no encajan |
+| Comprobación | 7 de las 9 faltas, cada una señalada en el dibujo; las otras 2 necesitan el tubo cuyos extremos no encajan y la biblioteca eléctrica con su encoder (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; caudalímetro, dinamómetro y registrador pendientes |
 | Símbolos | lint de 8 reglas; **14 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
 
@@ -124,12 +125,13 @@ especificación de lo que sigue.
 | Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme`, `--check-icons` y `--selftest`; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
 | Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
 | La hoja es la red que resuelve el solver | **hecho** | pruebas de red, el circuito 5/2 + doble efecto por el ABI, tubos coloreados |
+| Proyecto de circuitos | **hecho** | formato 4, selector, añadir/renombrar, guardado y apertura; prueba ABI `circuits_can_be_added_renamed_and_survive_a_save_and_open` y la novena falta `a_pipe_between_two_circuits_is_the_ninth_fault` |
 | Exportación PNG/PDF desde la ventana y sin ventana | **hecho** | pruebas de PDF, ráster, dibujo del llamador y fecha/escala por el ABI; `--export`; el gate escribe un PDF y un PNG en Oficio. Deuda: panel de márgenes, tamaño personalizado y resolución |
 | Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 14 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Instrumentos y ejecución hasta cambio | **parcial** | manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
 
-**Total de pruebas: 248** — `core` 7, `catalog` 34, `file` 20, `solver` 33, `doc` 29,
-`draw` 39, `check` 10, `export` 40, `ffi` 31, `cli` 5.
+**Total de pruebas: 256** — `core` 7, `catalog` 34, `file` 23, `solver` 33, `doc` 32,
+`draw` 39, `check` 11, `export` 40, `ffi` 32, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
@@ -297,13 +299,13 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 248 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 256 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do
   echo -n "$c: "; cargo test -p punchi-fluid-$c 2>/dev/null | grep -oP 'ok\. \K[0-9]+' | paste -sd+ | bc
 done
-# esperado: core 7, catalog 34, file 20, solver 33, doc 29, draw 39, check 10, export 40, ffi 31, cli 5
+# esperado: core 7, catalog 34, file 20, solver 33, doc 29, draw 39, check 11, export 40, ffi 32, cli 5
 
 # 3. La ventana
 apps/punchi-fluid-qt/build/punchi-fluid     # el transporte ejecuta; el clic en la válvula la acciona
@@ -438,9 +440,9 @@ Resumen; el detalle está en [ui-ux.md](ui-ux.md).
 ## 11. Qué se hace a continuación
 
 El orden histórico **M1 → M2 → M1.5 → M3 → M4** se cumplió. Lo que manda hoy es el orden
-de entrega de [next-steps.md](next-steps.md): **P1.7 entregado**, P1.8 proyecto de
-circuitos, P2 instrumentos, P3 edición restante, P4 lista de piezas y SVG, P5–P6
-bibliotecas eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
+de entrega de [next-steps.md](next-steps.md): **P1.7 y P1.8 entregados**, P2
+instrumentos, P3 edición restante, P4 lista de piezas y SVG, P5–P6 bibliotecas
+eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 
 | Hito | Estado |
 |---|---|
@@ -449,9 +451,9 @@ bibliotecas eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 | **M1.5** | `symbol lint` (8 reglas) y 14 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
 | **M3** | **hecho**: `punchi-fluid-doc`, comandos, deshacer acotado y formato v3 con `id` de catálogo |
 | **M4** | **hecho**: conexiones y solver de red; **prueba de modularidad: una 5/2 que funciona solo como archivo** |
+| **P1.8** | **hecho**: un documento con varios circuitos, selector, añadir/renombrar y la novena falta (tubo entre circuitos) |
 | **M5** | **parcial**: manómetro y «Hasta cambio»; caudalímetro, dinamómetro y registrador pendientes |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
-| **P1.8** | **siguiente**: un proyecto con varios circuitos en un documento |
 
 El paso a paso ejecutable —ficheros exactos, firmas públicas, dependencias, trampas y
 criterios de aceptación— está en **[next-steps.md](next-steps.md)**. Los criterios de
@@ -522,13 +524,13 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
   el diálogo. La lista de piezas y la leyenda completa siguen pendientes.
 - **La revisión a 300 dpi de los 14 símbolos sigue abierta**: por eso el documento lleva
   la nota «symbols not yet verified against ISO 1219-1».
-- **El modo proyecto no existe**: un documento es un solo circuito; la novena falta de la
-  comprobación espera a P1.8. El título de la hoja no es editable.
+- **El proyecto existe** desde P1.8: varios circuitos por documento, selector, añadir/renombrar y la novena falta. El título de la hoja no es editable; el proyecto no tiene lista de piezas por circuito.
 - **Instrumentos incompletos**: hay manómetro y «Hasta cambio»; faltan caudalímetro,
   dinamómetro y registrador de 60 s.
 - **Edición incompleta**: separación igual y cuatro alineaciones; propiedades de resumen,
   accionamiento, posición inicial, ángulo, fugas y amortiguamiento; falta del tubo cuyos
-  extremos no encajan.
+  extremos no encajan (la última de las nueve comprobaciones que queda, con la etiqueta del
+  encoder).
 - **Sin bibliotecas eléctrica, digital ni GRAFCET**, y sin material didáctico propio.
 - **Sin hidráulica, sin traducciones (i18n), sin empaquetado (AppImage/Flatpak) y sin
   publicación firmada.**
@@ -554,7 +556,6 @@ Copia esto tal cual en el chat nuevo:
 
 Y añade el hito que quieras empezar:
 
-- `Empezamos P1.8: un proyecto con varios circuitos en un documento.`
 - `Empezamos P2: caudalímetro, dinamómetro y registrador de 60 s.`
 - `Antes de nada, cierra la revisión a 300 dpi de los símbolos.`
 - `Antes de nada, añade el panel de exportación que falta: márgenes, tamaño personalizado y resolución.`

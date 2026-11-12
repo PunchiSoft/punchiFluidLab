@@ -84,7 +84,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG), the **Hoja** group with the nine named papers and landscape, and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the full panel (margins, custom size, PNG resolution) is still open — [capabilities.md](capabilities.md) F5 says so |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape, and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the full panel (margins, custom size, PNG resolution) is still open — [capabilities.md](capabilities.md) F5 says so |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo) |
 | **Ver** | Rejilla, Imán a rejilla, Imán a puertos, Zoom (−, %, +), Ajustar a ventana, Tema (sistema/claro/oscuro), Panel lateral, Barra de estado |
 

@@ -19,15 +19,17 @@ use std::ptr;
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_PDF,
     PF_HAS_STROKE, PF_KIND_TEXT, PF_OK, PfAbi, PfCall, PfCatalog, PfEditSet, PfFrame, PfInk,
-    PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_advance, pf_session_align_selection,
-    pf_session_autosave, pf_session_build_frame, pf_session_can_undo, pf_session_catalog,
-    pf_session_check, pf_session_component_count, pf_session_component_designation,
-    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
-    pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_copy_selected, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_export, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
-    pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
+    PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
+    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
+    pf_session_can_undo, pf_session_catalog, pf_session_check, pf_session_circuit_count,
+    pf_session_circuit_id, pf_session_circuit_name, pf_session_component_count,
+    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
+    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_copy_selected,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
+    pf_session_finding_at, pf_session_forget_recent, pf_session_free, pf_session_hit_component,
+    pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
     pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_offset,
@@ -35,10 +37,11 @@ use punchi_fluid::{
     pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
     pf_session_recover, pf_session_redo, pf_session_release_component_valve,
     pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
-    pf_session_remove_selection, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_pipe, pf_session_select_rect, pf_session_selected, pf_session_selected_pipe,
-    pf_session_selection_at, pf_session_selection_count, pf_session_set_component_designation,
+    pf_session_remove_selection, pf_session_rename_circuit, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_recent_file, pf_session_telemetry,
     pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
     pf_session_valve_spring_return,
@@ -1818,7 +1821,99 @@ fn an_export_carries_the_caller_date_and_fits_a_large_circuit() {
     let pdf = std::fs::read(path.to_str().unwrap_or_default()).expect("the PDF is written");
     assert!(pdf_shows(&pdf, "2026-11-12"), "the date reaches the page");
     assert!(pdf_shows(&pdf, "1:"), "the title block records the scale");
+    assert!(pdf_shows(&pdf, "Circuito 1"), "the circuit names the page");
 
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn circuits_can_be_added_renamed_and_survive_a_save_and_open() {
+    let original = session();
+    assert_eq!(unsafe { pf_session_circuit_count(original) }, 1);
+    let first = unsafe { pf_session_active_circuit(original) };
+    assert_eq!(first, 0);
+    assert_eq!(unsafe { pf_session_circuit_id(original, 0) }, 0);
+
+    let title = CString::new("Control").expect("a title");
+    // SAFETY: live session and a NUL-terminated title.
+    let second = unsafe { pf_session_add_circuit(original, title.as_ptr()) };
+    assert!(second > 0, "a new circuit gets a new identity");
+    assert_eq!(unsafe { pf_session_circuit_count(original) }, 2);
+    assert_eq!(unsafe { pf_session_active_circuit(original) }, second);
+
+    let mut name = [0 as std::os::raw::c_char; 128];
+    // SAFETY: live session, a writable buffer and its capacity.
+    assert!(
+        unsafe {
+            pf_session_circuit_name(
+                original,
+                1,
+                name.as_mut_ptr(),
+                u32::try_from(name.len()).expect("the buffer capacity"),
+            )
+        } >= 0
+    );
+    // SAFETY: the call above wrote a NUL-terminated string.
+    assert_eq!(
+        unsafe { CStr::from_ptr(name.as_ptr()) }.to_str(),
+        Ok("Control")
+    );
+
+    let renamed = CString::new("Power").expect("a title");
+    // SAFETY: live session, the identity just returned and a NUL-terminated title.
+    assert_eq!(
+        unsafe {
+            pf_session_rename_circuit(
+                original,
+                u32::try_from(second).expect("a circuit identity"),
+                renamed.as_ptr(),
+            )
+        },
+        PF_OK
+    );
+
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("proyecto.pfluid");
+    let path = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(original, path.as_ptr()) }, PF_OK);
+
+    let reopened = session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(reopened, path.as_ptr()) }, PF_OK);
+    assert_eq!(unsafe { pf_session_circuit_count(reopened) }, 2);
+    assert_eq!(unsafe { pf_session_active_circuit(reopened) }, second);
+    let mut name = [0 as std::os::raw::c_char; 128];
+    // SAFETY: live session, a writable buffer and its capacity.
+    assert!(
+        unsafe {
+            pf_session_circuit_name(
+                reopened,
+                1,
+                name.as_mut_ptr(),
+                u32::try_from(name.len()).expect("the buffer capacity"),
+            )
+        } >= 0
+    );
+    // SAFETY: the call above wrote a NUL-terminated string.
+    assert_eq!(
+        unsafe { CStr::from_ptr(name.as_ptr()) }.to_str(),
+        Ok("Power")
+    );
+
+    // SAFETY: live session and an identity from the file.
+    assert_eq!(
+        unsafe {
+            pf_session_select_circuit(reopened, u32::try_from(first).expect("a circuit identity"))
+        },
+        PF_OK
+    );
+    assert_eq!(unsafe { pf_session_active_circuit(reopened) }, first);
+
+    // SAFETY: the sessions are still alive.
+    unsafe {
+        pf_session_free(reopened);
+        pf_session_free(original);
+    }
 }

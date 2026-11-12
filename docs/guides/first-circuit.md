@@ -128,7 +128,18 @@ own. The last ten files are in **Archivo ▸ Recientes**.
 - With more than one component marked, **Editar ▸ Alinear** lines the edges up on the
   component already furthest out.
 
-## 9. Where to go next
+## 9. Several circuits in one project
+
+A `.pfluid` file is a **project**: it can hold several circuits, each a sheet of its own.
+The **Circuito** group in **Archivo** lists them and marks the one on screen; **Nuevo
+circuito** adds an empty sheet and opens it, and **Renombrar** changes its name. The solver,
+the drawing and the export work on the active circuit, and the other circuits keep their
+components, pipes and values.
+
+A pipe whose ends belong to different circuits is the ninth check fault; the editor never
+creates one, and saving the project keeps the circuits together.
+
+## 10. Where to go next
 
 - [Export the drawing](export-a-drawing.md) to PDF or PNG.
 - [Troubleshooting](troubleshooting.md) when a gesture does nothing.

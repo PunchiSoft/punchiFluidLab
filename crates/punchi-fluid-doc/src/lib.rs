@@ -119,10 +119,35 @@ impl Align {
     }
 }
 
+/// One circuit of a project.
+///
+/// A circuit is a sheet: it owns a subset of the project's placements and pipes, and the
+/// active circuit is the one the solver, the drawing and the export see.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Circuit {
+    /// Stable identity a placement or a pipe names.
+    pub id: u32,
+    /// Name shown in the selector and in the printed title block.
+    pub title: String,
+}
+
+impl Circuit {
+    /// A circuit with an identity and a title.
+    #[must_use]
+    pub fn new(id: u32, title: impl Into<String>) -> Self {
+        Self {
+            id,
+            title: title.into(),
+        }
+    }
+}
+
 /// One component on the sheet.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
     id: u64,
+    /// Circuit this placement belongs to.
+    pub circuit: u32,
     /// Catalog id of the definition it draws.
     pub catalog_id: String,
     /// Centre, in millimetres of the sheet.
@@ -149,6 +174,7 @@ impl Placement {
     pub fn new(catalog_id: impl Into<String>, centre: Pt, width: f32, height: f32) -> Self {
         Self {
             id: 0,
+            circuit: 0,
             catalog_id: catalog_id.into(),
             centre,
             width,
@@ -173,6 +199,7 @@ impl Placement {
     ) -> Self {
         Self {
             id,
+            circuit: 0,
             catalog_id: catalog_id.into(),
             centre,
             width,
@@ -237,6 +264,8 @@ impl Endpoint {
 /// A pipe between two ports.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Connection {
+    /// Circuit this pipe belongs to.
+    pub circuit: u32,
     /// One end; the earlier of the two under the canonical order.
     pub from: Endpoint,
     /// The other end.
@@ -324,6 +353,17 @@ enum Change {
         from: Option<String>,
         to: Option<String>,
     },
+    /// A circuit was added to the project.
+    CircuitAdded {
+        index: usize,
+        circuit: Circuit,
+    },
+    /// A circuit was renamed.
+    CircuitRenamed {
+        id: u32,
+        from: String,
+        to: String,
+    },
     /// Several changes that are one edit to the user.
     ///
     /// Splicing a junction into a pipe removes one, places a component and draws three, and
@@ -333,10 +373,12 @@ enum Change {
 }
 
 /// The document being edited.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Document {
     placements: Vec<Placement>,
     connections: Vec<Connection>,
+    circuits: Vec<Circuit>,
+    active: u32,
     next_id: u64,
     undo: Vec<Change>,
     redo: Vec<Change>,
@@ -345,11 +387,94 @@ pub struct Document {
     revision: u64,
 }
 
+impl Default for Document {
+    fn default() -> Self {
+        Self {
+            placements: Vec::new(),
+            connections: Vec::new(),
+            circuits: vec![Circuit::new(0, "Circuito 1")],
+            active: 0,
+            next_id: 0,
+            undo: Vec::new(),
+            redo: Vec::new(),
+            revision: 0,
+        }
+    }
+}
+
 impl Document {
-    /// An empty document.
+    /// An empty document with one circuit.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Every circuit, in the order the project lists them.
+    #[must_use]
+    pub fn circuits(&self) -> &[Circuit] {
+        &self.circuits
+    }
+
+    /// The circuit the solver and the drawing use.
+    #[must_use]
+    pub const fn active_circuit(&self) -> u32 {
+        self.active
+    }
+
+    /// Replaces the circuit list and the active circuit, for a document read from a file.
+    ///
+    /// This is the starting state, not an edit: it does not enter the history.
+    pub fn set_project(&mut self, circuits: Vec<Circuit>, active: u32) -> bool {
+        if circuits.is_empty() || !circuits.iter().any(|circuit| circuit.id == active) {
+            return false;
+        }
+        self.circuits = circuits;
+        self.active = active;
+        true
+    }
+
+    /// Switches the active circuit. A view change, not an edit, so it is not undoable.
+    pub fn select_circuit(&mut self, id: u32) -> bool {
+        if !self.circuits.iter().any(|circuit| circuit.id == id) {
+            return false;
+        }
+        self.active = id;
+        true
+    }
+
+    /// Adds an empty circuit and makes it active, as one undoable change.
+    pub fn add_circuit(&mut self, title: impl Into<String>) -> u32 {
+        let id = self
+            .circuits
+            .iter()
+            .map(|circuit| circuit.id)
+            .max()
+            .map_or(1, |id| id + 1);
+        let circuit = Circuit::new(id, title);
+        let index = self.circuits.len();
+        self.circuits.push(circuit.clone());
+        self.active = id;
+        self.record(Change::CircuitAdded { index, circuit });
+        id
+    }
+
+    /// Renames a circuit, as one undoable change.
+    pub fn rename_circuit(&mut self, id: u32, title: impl Into<String>) -> bool {
+        let title = title.into();
+        let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == id) else {
+            return false;
+        };
+        let from = circuit.title.clone();
+        if from == title {
+            return true;
+        }
+        circuit.title.clone_from(&title);
+        self.record(Change::CircuitRenamed {
+            id,
+            from,
+            to: title,
+        });
+        true
     }
 
     /// Every placement, in the order they were placed.
@@ -408,6 +533,7 @@ impl Document {
             if placement.id == 0 {
                 placement.id = self.take_id();
             }
+            self.next_id = self.next_id.max(placement.id + 1);
             self.placements.push(placement);
         }
     }
@@ -415,6 +541,7 @@ impl Document {
     /// Adds a component and returns its index.
     pub fn place(&mut self, placement: Placement) -> usize {
         let mut placement = placement;
+        placement.circuit = self.active;
         if placement.id == 0 {
             placement.id = self.take_id();
         }
@@ -439,6 +566,7 @@ impl Document {
         for copy in copies {
             let mut copy = copy;
             copy.id = self.take_id();
+            copy.circuit = self.active;
             copy.centre = Pt::new(copy.centre.x + offset.0, copy.centre.y + offset.1);
             let index = self.placements.len();
             self.placements.push(copy.clone());
@@ -474,6 +602,15 @@ impl Document {
         self.add_connection(from, to).is_some()
     }
 
+    /// Gives a seeded pipe its circuit without recording an edit.
+    pub fn seed_pipe_circuit(&mut self, index: usize, circuit: u32) -> bool {
+        let Some(connection) = self.connections.get_mut(index) else {
+            return false;
+        };
+        connection.circuit = circuit;
+        true
+    }
+
     /// Gives a seeded pipe its route without recording an edit.
     ///
     /// A route read from a file belongs to the starting state: opening a document must not
@@ -507,6 +644,7 @@ impl Document {
             return None;
         }
         let connection = Connection {
+            circuit: self.active,
             from,
             to,
             offset: 0,
@@ -1048,6 +1186,15 @@ impl Document {
                     placement.designation.clone_from(to);
                 }
             }
+            Change::CircuitAdded { index, circuit } => {
+                insert_at(&mut self.circuits, *index, circuit.clone());
+                self.active = circuit.id;
+            }
+            Change::CircuitRenamed { id, to, .. } => {
+                if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
+                    circuit.title.clone_from(to);
+                }
+            }
         }
     }
 
@@ -1104,6 +1251,21 @@ impl Document {
             Change::Designated { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.designation.clone_from(from);
+                }
+            }
+            Change::CircuitAdded { circuit, .. } => {
+                self.circuits.retain(|candidate| candidate.id != circuit.id);
+                self.placements
+                    .retain(|placement| placement.circuit != circuit.id);
+                self.connections
+                    .retain(|connection| connection.circuit != circuit.id);
+                if self.active == circuit.id {
+                    self.active = self.circuits.first().map_or(0, |circuit| circuit.id);
+                }
+            }
+            Change::CircuitRenamed { id, from, .. } => {
+                if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
+                    circuit.title.clone_from(from);
                 }
             }
         }
@@ -1686,5 +1848,73 @@ mod tests {
             Some("above")
         );
         assert_eq!(document.hit(Pt::new(200.0, 200.0), 0.0), None);
+    }
+}
+
+#[cfg(test)]
+mod circuit_tests {
+    use super::*;
+
+    #[test]
+    fn adding_a_circuit_switches_to_it_and_one_undo_takes_it_back() {
+        let mut document = Document::new();
+        let first = document.place(Placement::new(
+            "supply.compressor",
+            Pt::new(10.0, 10.0),
+            20.0,
+            20.0,
+        ));
+        assert_eq!(document.placements()[first].circuit, 0);
+
+        let control = document.add_circuit("Control");
+        assert_eq!(control, 1);
+        assert_eq!(document.active_circuit(), 1);
+        let second = document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(30.0, 30.0),
+            20.0,
+            20.0,
+        ));
+        assert_eq!(document.placements()[second].circuit, 1);
+
+        assert!(document.undo());
+        assert_eq!(
+            document.placements().len(),
+            1,
+            "the placement in the new circuit goes"
+        );
+        assert!(document.undo());
+        assert!(
+            document
+                .circuits()
+                .iter()
+                .all(|circuit| circuit.id != control)
+        );
+        assert_eq!(
+            document.active_circuit(),
+            0,
+            "the first circuit becomes active again"
+        );
+        assert_eq!(
+            document.placements().len(),
+            1,
+            "the first circuit keeps its placement"
+        );
+    }
+
+    #[test]
+    fn renaming_a_circuit_is_one_undo() {
+        let mut document = Document::new();
+        assert!(document.rename_circuit(0, "Power"));
+        assert_eq!(document.circuits()[0].title, "Power");
+        assert!(document.undo());
+        assert_eq!(document.circuits()[0].title, "Circuito 1");
+    }
+
+    #[test]
+    fn an_unknown_circuit_cannot_be_selected() {
+        let mut document = Document::new();
+        assert!(!document.select_circuit(99));
+        assert_eq!(document.active_circuit(), 0);
     }
 }

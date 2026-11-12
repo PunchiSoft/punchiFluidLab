@@ -227,6 +227,18 @@ int32_t pf_session_mirror_selected(PfSession *session);
 int32_t pf_session_component_orientation(const PfSession *session, uint32_t index, uint32_t *out);
 /* Starts a new document and seeds the worked example. */
 int32_t pf_session_new_document(PfSession *session);
+
+/* The circuits of the project and the one the sheet shows. */
+uint32_t pf_session_circuit_count(const PfSession *session);
+int32_t pf_session_circuit_id(const PfSession *session, uint32_t index);
+int32_t pf_session_circuit_name(const PfSession *session, uint32_t index, char *out,
+                                uint32_t capacity);
+int32_t pf_session_active_circuit(const PfSession *session);
+/* Switching is a view change, not an undoable edit. */
+int32_t pf_session_select_circuit(PfSession *session, uint32_t id);
+/* Adds an empty circuit and makes it active; returns its identity or a negative error. */
+int32_t pf_session_add_circuit(PfSession *session, const char *title);
+int32_t pf_session_rename_circuit(PfSession *session, uint32_t id, const char *title);
 /* Saves the sheet atomically, and opens one, replacing the document. */
 int32_t pf_session_save(PfSession *session, const char *path);
 int32_t pf_session_open(PfSession *session, const char *path);
