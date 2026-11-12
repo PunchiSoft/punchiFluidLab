@@ -129,7 +129,7 @@ especificación de lo que sigue.
 | Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 15 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Instrumentos y ejecución hasta cambio | **parcial** | manómetro, caudalímetro y «Hasta cambio»; dinamómetro y registrador pendientes |
 
-**Total de pruebas: 261** — `core` 7, `catalog` 35, `file` 23, `solver` 35, `doc` 32,
+**Total de pruebas: 262** — `core` 7, `catalog` 35, `file` 23, `solver` 36, `doc` 32,
 `draw` 40, `check` 11, `export` 40, `ffi` 33, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
@@ -298,7 +298,7 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 261 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 262 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do

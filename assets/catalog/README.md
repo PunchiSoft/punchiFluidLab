@@ -165,8 +165,9 @@ The meter sits **in** the line: two working ports, one arriving and one leaving.
 solver models it as the restriction its `conductance` declares and keeps the gas that
 went through it on the last substep, so the reading is a measurement of this circuit and
 not of the definition. Positive means gas from port 1 to port 2. The number is drawn in
-normal litres per minute at 20 °C and 1 013.25 hPa, the same conditions a data sheet
-quotes; the file declares the scale, never the number. See
+normal litres per minute at 0 °C and 1 013.25 hPa — the normal litre ISO 6358 uses for the
+conductance, so the number and the restriction share one reference; the file declares the
+scale, never the number. See
 [ADR 0014](../docs/adr/0014-a-flow-meter-is-a-restriction-that-reports.md).
 
 ```toml

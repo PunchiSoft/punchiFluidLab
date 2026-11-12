@@ -36,8 +36,9 @@ third-party asset and no trace of another program's symbol.
 - **A behaviour of its own** ([ADR 0014](../../docs/adr/0014-a-flow-meter-is-a-restriction-that-reports.md)):
   a gauge has one port and adds nothing; a meter has two and is the restriction it measures.
 - **The conductance and the scale are file values**: a wider meter is another file.
-- **The reading is text from the model**, in normal litres per minute at 20 °C and
-  1 013.25 hPa; the arrow fixes what counts as positive, the number carries the value.
+- **The reading is text from the model**, in normal litres per minute at 0 °C and
+  1 013.25 hPa, the normal litre ISO 6358 uses; the arrow fixes what counts as positive,
+  the number carries the value.
 
 ## What is still open
 
