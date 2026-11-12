@@ -655,14 +655,14 @@ impl Network {
 
     /// The same flow in normal litres per minute.
     ///
-    /// Normal conditions are 20 °C and 1 013.25 hPa — [`Temperature::STANDARD`] and
-    /// [`Pressure::ATMOSPHERE`] — which is the reference a data sheet quotes and the one a
-    /// student can check by hand.
+    /// The litre is the **same normal litre ISO 6358 uses for the conductance**: 0 °C and
+    /// 1 013.25 hPa, where dry air is 1.293 kg/m³. Using the model's own reference means a
+    /// student can read the number off the conductance — `C · p` in normal litres per
+    /// second — instead of meeting a second set of conditions in the same circuit.
     #[must_use]
     pub fn part_flow_l_min(&self, part: usize) -> Option<f64> {
         let flow = self.part_flow(part)?;
-        let density = self.atmosphere_pa / (AIR_SPECIFIC_GAS_CONSTANT * self.temperature_kelvin);
-        Some(flow / density * 60_000.0)
+        Some(flow / orifice::normal::AIR_DENSITY * 60_000.0)
     }
 
     /// Builds a telemetry snapshot.
@@ -1466,13 +1466,13 @@ mod tests {
             filling > 0.0,
             "air enters through port 1, so the reading is positive, got {filling}"
         );
-        // The quoted unit is normal litres per minute at 20 °C and 1 013.25 hPa, where dry
-        // air is 1.204 kg/m³: the conversion is the hand calculation, not a copy of the
-        // solver's own constant.
+        // The quoted unit is the normal litre of ISO 6358: 0 °C and 1 013.25 hPa, where dry
+        // air is 1.293 kg/m³. The density cancels in the choked branch, which is why this
+        // number does not depend on which of the two normal references a data sheet picks.
         let litres = network
             .part_flow_l_min(3)
             .expect("the flow converts to litres");
-        let expected = filling / 1.204 * 60_000.0;
+        let expected = filling / 1.293 * 60_000.0;
         assert!(
             (litres - expected).abs() / expected < 0.01,
             "{litres:.1} l/min against the hand calculation {expected:.1} l/min"
@@ -1504,6 +1504,70 @@ mod tests {
         assert!(
             settled < litres * 0.05,
             "the settled meter reads {settled:.2} l/min against {litres:.1} while filling"
+        );
+    }
+
+    #[test]
+    fn a_flow_meter_matches_the_iso_6358_flow_through_its_restriction() {
+        // The reading has to be the flow of the restriction the file declares, not a number
+        // that merely rises and falls with the circuit. The reference is ISO 6358 evaluated
+        // at the two port pressures the model reports, with the conductance and the critical
+        // ratio the model itself uses.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "flow.meter"),
+        ];
+        let conductance = match parts[3].behaviour {
+            PartBehaviour::FlowMeter { conductance } => conductance,
+            // The definition is the built-in meter, so another behaviour is a broken test.
+            _ => 0.0,
+        };
+        assert!(conductance > 0.0, "the meter has no conductance");
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
+            (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes).expect("the meter builds");
+        network.press_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+
+        let one = network
+            .port_pressure(3, "1")
+            .expect("the meter's first port is in the model");
+        let two = network
+            .port_pressure(3, "2")
+            .expect("the meter's second port is in the model");
+        let (upstream, downstream, sign) = if one >= two {
+            (one, two, 1.0)
+        } else {
+            (two, one, -1.0)
+        };
+        let expected = sign
+            * orifice::mass_flow(
+                conductance,
+                upstream,
+                downstream,
+                network.temperature_kelvin,
+                DEFAULT_CRITICAL_RATIO,
+            )
+            .expect("the pressures are physical");
+        let read = network.part_flow(3).expect("the meter owns a restriction");
+        assert!(
+            expected.abs() > 1.0e-6,
+            "the test needs a real flow, got {expected}"
+        );
+        assert!(
+            (read - expected).abs() / expected.abs() < 0.01,
+            "the meter reads {read:.3e} kg/s against the ISO 6358 flow {expected:.3e} kg/s \
+             between {:.2} bar and {:.2} bar",
+            (upstream - network.atmosphere_pa()) / 1e5,
+            (downstream - network.atmosphere_pa()) / 1e5
         );
     }
 

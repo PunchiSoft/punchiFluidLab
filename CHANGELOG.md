@@ -18,7 +18,8 @@ magnitud que un estudiante necesita leer en un esquema neumático.
 - **La física es del archivo**: `conductance` declara la restricción ISO 6358 que añade y
   `nominal_l_min` la escala; un caudalímetro mayor es otro archivo, no otra rama de código.
 - **La lectura sale del modelo**: la cifra se dibuja junto al símbolo en litros normales
-  por minuto (20 °C y 1 013,25 hPa), con signo según el sentido del aire, y el inspector
+  por minuto (0 °C y 1 013,25 hPa, el litro normal de ISO 6358), con signo según el sentido
+del aire, y el inspector
   muestra la escala y la conductancia.
 - **Evidencia**: la prueba de solver contra el cálculo a mano, la prueba ABI
   `a_flow_meter_reads_the_line_it_is_connected_to`, los pasos `--selftest` que lo colocan,

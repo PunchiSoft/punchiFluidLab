@@ -31,9 +31,11 @@ Add `behaviour = "flow_meter"` to the catalog schema:
 - **`nominal_l_min`** is the declared full scale, in normal litres per minute. It is a file
   value like the gauge's scale, so a 100 l/min meter and a 2 000 l/min one are two files.
 - The solver keeps the mass flow through the meter on the last substep. The interface turns
-  it into **normal litres per minute** at 20 °C and 1 013.25 hPa — our
-  `Temperature::STANDARD` and `Pressure::ATMOSPHERE` — and draws it beside the symbol as a
-  reading, in the same way the gauge draws its number.
+  it into **normal litres per minute** in the normal litre ISO 6358 already uses for the
+  conductance — 0 °C and 1 013.25 hPa, where dry air is 1.293 kg/m³ — and draws it beside
+  the symbol as a reading, in the same way the gauge draws its number. One reference for
+  the whole circuit: a student can read the number off `C` instead of meeting a second set
+  of conditions in the same sheet.
 - The symbol is the file's geometry. The needle, like the gauge's, is not a later promise
   this ADR makes; the number is the evidence today.
 
