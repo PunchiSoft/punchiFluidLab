@@ -104,6 +104,7 @@ the point. Free software is how a subject stops being an entrance fee.
 ./scripts-dev/run.sh --no-build --theme dark            # already-built binary, dark palette
 ./scripts-dev/run.sh --theme light                      # pin the palette for a screenshot
 ./scripts-dev/dev.sh                                   # live loop: save, rebuild, relaunch
+./scripts-dev/menu.sh                                  # interactive menu for the tasks above
 cargo run --bin punchi-fluid-cli -- check circuit.pfluid   # headless check of a sheet
 ```
 
