@@ -24,6 +24,7 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
             valve_position: 0,
             reading: None,
             series: None,
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         },
@@ -35,6 +36,7 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
             valve_position: 0,
             reading: None,
             series: None,
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         },
@@ -75,6 +77,7 @@ fn a_pneumatic_hose_keeps_its_own_class() {
             valve_position: 0,
             reading: None,
             series: None,
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         },
@@ -86,6 +89,7 @@ fn a_pneumatic_hose_keeps_its_own_class() {
             valve_position: 0,
             reading: None,
             series: None,
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         },
@@ -111,5 +115,54 @@ fn a_pneumatic_hose_keeps_its_own_class() {
             _ => false,
         }),
         "a pneumatic hose became a wire"
+    );
+}
+
+#[test]
+fn a_contact_shows_whether_it_is_open_or_closed() {
+    // The bar is the moving part: above the gap when open, across it when closed. The file
+    // holds one symbol and the run shows two states (ADR 0018).
+    let catalog = Catalog::builtin();
+    let rect = Rect::from_center_size(Pt::new(50.0, 50.0), 24.0, 24.0);
+    let bar_of = |closed: Option<bool>| {
+        let placed = [Placed {
+            index: 0,
+            catalog_id: "electrical.contact",
+            rect,
+            extension: 0.0,
+            valve_position: 0,
+            reading: None,
+            series: None,
+            contact_closed: closed,
+            orientation: Orientation::NONE,
+            designation: None,
+        }];
+        let mut surface = Recording::default();
+        draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
+        // The bar is the horizontal line nearest the middle, between the two terminals.
+        surface
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                Call::Line { points, .. } if points.len() == 2 => Some(points.clone()),
+                _ => None,
+            })
+            .filter(|points| {
+                (points[0].x - rect.min.x).abs() < 12.0 && (points[1].x - points[0].x).abs() > 5.0
+            })
+            .map(|points| points[0].y)
+            .next()
+            .unwrap_or_default()
+    };
+    let open = bar_of(Some(false));
+    let closed = bar_of(Some(true));
+    let middle = rect.center().y;
+    assert!(
+        open < middle - 1.0,
+        "the open bar sits above the gap: {open:.1} against {middle:.1}"
+    );
+    assert!(
+        (closed - middle).abs() < 1.0,
+        "the closed bar bridges the terminals: {closed:.1} against {middle:.1}"
     );
 }

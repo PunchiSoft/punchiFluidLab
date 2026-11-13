@@ -30,10 +30,10 @@ use punchi_fluid::{
     pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
     pf_session_component_rect, pf_session_component_valve_position,
     pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_copy_selected, pf_session_describe_component, pf_session_duplicate_component,
-    pf_session_duplicate_selection, pf_session_export, pf_session_export_with,
-    pf_session_finding_at, pf_session_forget_recent, pf_session_free, pf_session_hit_component,
-    pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
+    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
+    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
+    pf_session_hit_component, pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
     pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset,
@@ -47,8 +47,9 @@ use punchi_fluid::{
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
     pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
-    pf_session_space_selection, pf_session_telemetry, pf_session_toggle_select,
-    pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
+    pf_session_space_selection, pf_session_telemetry, pf_session_toggle_contact,
+    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -2519,6 +2520,76 @@ fn the_export_panel_settings_reach_the_page() {
                 &raw const too_small,
             )
         },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_contact_energises_the_solenoid_it_is_wired_to() {
+    let session = session();
+    // The control circuit: rail, button and the coil of a solenoid valve.
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact");
+    let valve = catalog_index(session, "valve.3_2.solenoid");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 40.0, 20.0) };
+    let button = unsafe { pf_session_place_component(session, button, 90.0, 20.0) };
+    let valve = unsafe { pf_session_place_component(session, valve, 140.0, 20.0) };
+    assert!(rail >= 0 && button >= 0 && valve >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let valve = u32::try_from(valve).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    let coil = CString::new("Y1").unwrap_or_default();
+
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), button, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, button, two.as_ptr(), valve, coil.as_ptr()) },
+        PF_OK
+    );
+
+    // The button starts open, so the coil is dead and the valve rests.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_contact_closed(session, button) }, 0);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+
+    // Pressed, the wire is live and the valve follows its coil.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_contact_closed(session, button) }, 1);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        1
+    );
+
+    // Released, the spring returns the spool.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+
+    // A pneumatic component is not a contact and says so.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_toggle_contact(session, 0) },
         PF_ERR_MODEL
     );
     // SAFETY: the session is still alive.

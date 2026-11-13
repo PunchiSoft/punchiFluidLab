@@ -507,6 +507,19 @@ void FluidSession::pressValve()
     }
 }
 
+bool FluidSession::toggleContactAt(int index)
+{
+    if (!m_session || index < 0) {
+        return false;
+    }
+    if (pf_session_toggle_contact(m_session, static_cast<uint32_t>(index)) != PF_OK) {
+        return false;
+    }
+    refresh();
+    emit changed();
+    return true;
+}
+
 void FluidSession::pressValveAt(int index)
 {
     if (!m_session || index < 0) {

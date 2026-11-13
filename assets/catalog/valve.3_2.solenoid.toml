@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 3/2 directional valve, solenoid operated, spring return.
+#
+# The coil is a terminal with the electrical role: the valve is actuated while the control
+# circuit holds it live and a spring returns it when the circuit opens (ADR 0018). The
+# pneumatic part is the same 3/2 body as the lever valve, so the two files differ in the
+# actuator and the terminal, and in nothing else.
+#
+# The solenoid windings are drawn by the renderer from `[actuator]`, not by a primitive.
+
+schema = 3
+id = "valve.3_2.solenoid"
+name = "3/2 valve, solenoid, spring return"
+name_es = "Válvula 3/2, solenoide, retorno por muelle"
+category = "valve"
+summary = "Pressurises the working line while its coil is energised."
+
+# Two squares of 0.44 side by side.
+body = [0.06, 0.24, 0.88, 0.44]
+
+[spring]
+side = "right"
+
+[actuator]
+kind = "solenoid"
+side = "left"
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.597, 1.0]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.72, 0.0]
+
+[[port]]
+id = "3"
+role = "exhaust"
+position = [0.843, 1.0]
+
+# The coil terminal, at the actuator end: this is where the control circuit arrives.
+[[port]]
+id = "Y1"
+role = "electrical"
+position = [0.0, 0.46]
+
+[behaviour]
+type = "valve"
+actuation = "momentary"
+spring_return = true
+default_position = 0
+
+[[behaviour.positions]]
+name = "rest"
+name_es = "reposo"
+
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9
+
+[[behaviour.positions]]
+name = "actuated"
+name_es = "accionada"
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "2"
+conductance = 1.0e-9

@@ -252,12 +252,18 @@ type = "contact"             # two electrical terminals; `normally_closed = true
 ```
 
 The electrical control circuit is a **second domain in the same document**
-([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md)). Its terminals
-declare `role = "electrical"`; the check never reports one as an open pneumatic port, and the
-solver builds no volume for it. A hose between two terminals is drawn with the `electrical`
-class, so a beginner's first wire is dotted without anyone choosing a class. The control
-model — a live line, a closed contact moving a valve — is the next slice, and until it exists
-these parts are drawn and checked, not simulated.
+([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
+[ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
+`role = "electrical"`; the check never reports one as an open pneumatic port, and the solver
+builds no volume for it. A hose between two terminals is drawn with the `electrical` class, so
+a beginner's first wire is dotted without anyone choosing a class.
+
+A **contact** declares `kinematics = "contact"`: the movable bar is drawn by the renderer,
+open or closed, and a click toggles it. A **solenoid valve** declares
+`[actuator] kind = "solenoid"` and one electrical terminal; the control model marks a rail's
+positive terminal live, propagates it through wires and closed contacts, and sets the valve
+to its actuated position while its coil is live. There is no voltage and no current: the
+circuit is a boolean net.
 
 ```toml
 [behaviour]

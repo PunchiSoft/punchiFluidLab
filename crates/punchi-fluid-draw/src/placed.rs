@@ -102,6 +102,8 @@ pub struct Placed<'a> {
     pub reading: Option<Reading>,
     /// Samples of a recorder, when this component is one and it is bound.
     pub series: Option<Series<'a>>,
+    /// Whether a contact is closed, when this component is one (ADR 0018).
+    pub contact_closed: Option<bool>,
     /// How the symbol is turned on the sheet.
     pub orientation: Orientation,
     /// Name the user gave the component, drawn under its box.
@@ -252,6 +254,21 @@ pub fn draw_placed(
         }
         if placed.series.is_some() {
             draw_series(surface, placed, ink);
+        }
+        if let Some(definition) = catalog.get(placed.catalog_id)
+            && let punchi_fluid_catalog::Behaviour::Contact { normally_closed } =
+                definition.behaviour
+        {
+            // The bar is the moving part: above the gap when the contact is open, across it
+            // when it is closed. The state is the run's, so the file holds one symbol and
+            // the sheet shows two (ADR 0018).
+            let closed = placed.contact_closed.unwrap_or(normally_closed);
+            let inner = placed.box_rect();
+            let y = if closed { 0.5 } else { 0.32 };
+            surface.line(
+                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
+                Stroke::new(symbol::LINE, ink.line),
+            );
         }
     }
 
@@ -551,6 +568,7 @@ mod tests {
                 min: 0.0,
                 max: 599.0,
             }),
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         }];
@@ -609,6 +627,7 @@ mod tests {
             valve_position: 0,
             reading: None,
             series: None,
+            contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
         }];
@@ -661,6 +680,7 @@ mod tests {
                 valve_position: 0,
                 reading: None,
                 series: None,
+                contact_closed: None,
                 orientation: Orientation::NONE,
                 designation: None,
             },
@@ -672,6 +692,7 @@ mod tests {
                 valve_position: 0,
                 reading: None,
                 series: None,
+                contact_closed: None,
                 orientation: Orientation::NONE,
                 designation: None,
             },

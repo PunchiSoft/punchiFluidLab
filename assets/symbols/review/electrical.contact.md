@@ -7,9 +7,10 @@
 
 ## Provenance
 
-Hand-written geometry in `assets/catalog/electrical.contact.toml`: two terminals with a gap,
-the movable bar above it and the push rod with its cap. No third-party asset and no trace of
-another program's symbol.
+Hand-written geometry in `assets/catalog/electrical.contact.toml`: two terminals with a gap
+and the push rod with its cap. The **movable bar** is drawn by the renderer, above the gap
+when the contact is open and across it when it is closed, the same rule that lets a piston
+travel (ADR 0018). No third-party asset and no trace of another program's symbol.
 
 ## Automated checks — `punchi-fluid-catalog` symbol lint
 
@@ -24,7 +25,8 @@ another program's symbol.
 
 | Requirement | Result | Evidence |
 |---|---|---|
-| A visible gap between the terminals | pass | the bar is above the gap, not across it |
+| A visible gap between the terminals when open | pass | `electrical.contact-light.png` |
+| The bar bridges the terminals when closed | pass | `electrical.contact-closed-light.png` |
 | The actuator is drawn, not implied | pass | the push rod and its cap |
 | The class says what the line is | pass | `electrical`, dotted |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
@@ -34,8 +36,8 @@ another program's symbol.
 
 - **A contact is a file with two terminals** ([ADR 0017](../../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md)):
   `normally_closed = true` would be another file, not a branch in the code.
-- **The gap is the state.** The symbol shows the rest state; the live state is the model's,
-  and it arrives with the control model in the next slice.
+- **The gap is the state.** The file holds one symbol; the renderer draws the bar in the
+  position the run reports, so the sheet shows whether the control circuit is closed.
 
 ## What is still open
 
@@ -45,4 +47,5 @@ another program's symbol.
 
 ## Images
 
-- `electrical.contact-light.png`, `electrical.contact-dark.png`
+- `electrical.contact-light.png`, `electrical.contact-dark.png` (open)
+- `electrical.contact-closed-light.png`, `electrical.contact-closed-dark.png` (closed)
