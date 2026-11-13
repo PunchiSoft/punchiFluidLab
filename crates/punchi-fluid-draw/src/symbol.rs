@@ -265,6 +265,29 @@ pub fn haloed_text_anchored(
     surface.text(at, text, size, colour, anchor);
 }
 
+/// Radius of the connection circle drawn at every port, in millimetres of the symbol.
+///
+/// The circle is the convention that tells a beginner where a hose attaches: ISO 1219-1
+/// marks a connection point as a small open circle, and the drawing owes it to every
+/// symbol rather than leaving it to each file to remember.
+fn connection_radius(rect: Rect) -> f32 {
+    (rect.height() * 0.05).clamp(0.55, 1.4)
+}
+
+/// Marks a port with the small open circle a hose arrives at.
+///
+/// Drawn **after** the pipes and filled with the paper colour, so the last millimetre of a
+/// hose goes behind the circle and the connection reads as a terminal instead of a line
+/// that happens to stop.
+pub fn draw_connection(surface: &mut dyn Surface, at: Pt, rect: Rect, ink: &Ink) {
+    surface.circle(
+        at,
+        connection_radius(rect),
+        Some(ink.background),
+        Some(Stroke::new(LINE, ink.line)),
+    );
+}
+
 /// Numeral of a port, outside the symbol next to its stub.
 pub fn draw_numeral(
     surface: &mut dyn Surface,
@@ -1032,6 +1055,7 @@ pub fn draw_valve(
         if (from.x - to.x).abs() > f32::EPSILON || (from.y - to.y).abs() > f32::EPSILON {
             surface.line(&[from, to], Stroke::new(LINE, ink.line));
         }
+        draw_connection(surface, from, rect, ink);
         draw_numeral(
             surface,
             rect,
@@ -1203,6 +1227,12 @@ pub fn draw_flat(
         None
     };
     for port in &definition.port {
+        draw_connection(
+            surface,
+            at(rect, port.position[0], port.position[1]),
+            rect,
+            ink,
+        );
         draw_numeral(
             surface,
             rect,

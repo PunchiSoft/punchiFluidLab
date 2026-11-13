@@ -25,6 +25,8 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The gas source is a circle with an **outline** triangle inside it | pass | a filled triangle is the hydraulic source, so the fill is a medium and not a style |
 | The triangle stands on its base line inside the circle | pass | equilateral, base 0.364 of the box, height 0.33 |
 | The delivery leaves the bottom through a stem ending in a connection circle | pass | stem below the circle, open circle at the port |
+| The triangle inside the circle points at its delivery | pass | apex on the stem, the air leaves through the point |
+| The connection circle marks the port | pass | drawn by the renderer at port 1, not by the file |
 | Legible at palette size | pass | `catalog-dark.png` |
 
 ## What is still open

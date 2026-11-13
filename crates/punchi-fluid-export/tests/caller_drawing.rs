@@ -31,7 +31,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         designation: Some("1A"),
     }];
     let pipes: [Pipe<'_>; 0] = [];
-    draw_placed(surface, &placed, &pipes, None, &catalog, &print_ink(), &[]);
+    draw_placed(surface, &placed, &pipes, &catalog, &print_ink(), &[]);
     let _ = PipeEnd {
         placement: 0,
         port: "1",

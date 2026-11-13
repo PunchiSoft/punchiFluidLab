@@ -28,9 +28,12 @@ pressure_bar = 6.0
 
 # An equilateral triangle: half the base is tan(30°) of the height, so the proportions are
 # the triangle's and not a shape that happens to look like one.
+# The apex is at the bottom, on the stem: the air leaves through the point, and the
+# point is where the hose attaches. A triangle standing on its base reads as a source that
+# delivers upwards, which is not what a supply does.
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.16, 0.7887, 0.66, 0.2113, 0.66]
+points = [0.5, 0.66, 0.7887, 0.16, 0.2113, 0.16]
 filled = false
 
 [[symbol]]
