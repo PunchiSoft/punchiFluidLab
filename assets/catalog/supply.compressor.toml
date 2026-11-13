@@ -21,7 +21,7 @@ summary = "Makes the compressed air that feeds the circuit."
 [[port]]
 id = "1"
 role = "supply"
-position = [0.5, 0.93]
+position = [0.5, 0.08]
 
 [behaviour]
 type = "supply"
@@ -31,15 +31,15 @@ pressure_bar = 6.0
 kind = "circle"
 points = [0.5, 0.40, 0.30]
 
-# The same triangle as the network's, apex on the stem: the delivery leaves through the
-# point, towards the connection.
+# The same triangle as the network's, apex up: the delivery leaves through the point and
+# the stem goes up to the connection.
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.70, 0.6819, 0.37, 0.3181, 0.37]
+points = [0.5, 0.32, 0.66, 0.66, 0.34, 0.66]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.70, 0.5, 0.86]
+points = [0.5, 0.25, 0.5, 0.08]
 line_class = "working"
 

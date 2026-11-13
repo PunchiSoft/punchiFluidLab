@@ -25,7 +25,7 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The network connection is an **outline triangle**, no circle around it | pass | a circle would be the machine that makes the air, which this symbol is not |
 | The triangle is **equilateral**, so its proportions come from the triangle and not from a drawing that happens to look like one | pass | base 0.577 of the box, height 0.50: half the base is tan(30°) of the height |
 | The delivery leaves the base on a stem | pass | stem from the middle of the base to the port |
-| The apex of the triangle is at the connection | pass | the point meets the stem, and the hose arrives at its circle |
+| The apex of the triangle is at the connection, at the top | pass | the point meets the stem, and the hose arrives at its circle |
 | The connection circle marks the port | pass | drawn by the renderer at port 1 |
 | Legible at palette size | pass | `catalog-dark.png` |
 
