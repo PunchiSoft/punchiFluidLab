@@ -284,6 +284,8 @@ int32_t pf_session_contact_closed(PfSession *session, uint32_t index);
 int32_t pf_session_indicator_active(const PfSession *session, uint32_t index);
 /* 1 when any buzzer sounds, 0 when none does. */
 int32_t pf_session_buzzer_active(const PfSession *session);
+/* The identity of one placement, or a negative error. */
+int32_t pf_session_placement_id(const PfSession *session, uint32_t index);
 
 /* ---- recorders ---- */
 

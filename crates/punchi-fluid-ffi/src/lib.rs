@@ -578,6 +578,9 @@ pub struct PfSession {
     /// Whether each buzzer sounds, by placement identity. A subset of `indicators` that the
     /// audio path reads.
     buzzers: std::collections::HashMap<u64, bool>,
+    /// Whether each limit switch is closed, by placement identity. Derived from the bound
+    /// cylinder's extension on every control pass.
+    limits: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -676,6 +679,7 @@ impl PfSession {
             timers: std::collections::HashMap::new(),
             indicators: std::collections::HashMap::new(),
             buzzers: std::collections::HashMap::new(),
+            limits: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -868,6 +872,24 @@ impl PfSession {
                     quantity: quantity_index(*quantity),
                 });
             }
+        }
+        candidates
+    }
+
+    /// The sources a placement can bind. A limit switch only takes a cylinder's position;
+    /// a recorder takes every quantity its neighbours report.
+    fn source_candidates(
+        &self,
+        index: usize,
+        circuit: u32,
+        position_only: bool,
+    ) -> Vec<PfChartSource> {
+        let mut candidates = self.chart_candidates(index, circuit);
+        if position_only {
+            candidates.retain(|candidate| {
+                quantity_from_index(candidate.quantity)
+                    == Some(punchi_fluid_doc::Quantity::Position)
+            });
         }
         candidates
     }
@@ -1153,11 +1175,13 @@ impl PfSession {
         let model = ControlModel::of(&self.document, &self.catalog, circuit, &self.contacts);
         self.control = Some(model);
         self.ensure_timers();
+        self.ensure_limits();
+        self.refresh_limits();
         {
             let Some(model) = self.control.as_mut() else {
                 return;
             };
-            model.settle(&self.timers);
+            model.settle(&self.timers, &self.limits);
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -1185,6 +1209,62 @@ impl PfSession {
         }
     }
 
+    /// Gives every limit switch an entry, so a step never inserts a key.
+    fn ensure_limits(&mut self) {
+        let Self {
+            control, limits, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        limits.retain(|id, _| model.limits.iter().any(|limit| limit.id == *id));
+        for limit in &model.limits {
+            limits.entry(limit.id).or_insert(limit.normally_closed);
+        }
+    }
+
+    /// Reads the bound cylinder of every limit switch and keeps its contact state.
+    ///
+    /// The extension is the model's, not the drawing's: `0.98` and `0.02` are the same
+    /// margins the telemetry uses to call a rod out or home, so the switch closes at the
+    /// end the student sees, not near it.
+    fn refresh_limits(&mut self) {
+        let Self {
+            control,
+            limits,
+            document,
+            placement_part,
+            system,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        for binding in &model.limits {
+            let at_end = binding
+                .source
+                .and_then(|source| {
+                    let index = document
+                        .placements()
+                        .iter()
+                        .position(|placement| placement.id() == source)?;
+                    let part = placement_part.get(index).copied().flatten()?;
+                    let extension = system.as_ref()?.extension_of(part)?;
+                    Some(match binding.end {
+                        punchi_fluid_catalog::LimitEnd::Extended => extension >= 0.98,
+                        punchi_fluid_catalog::LimitEnd::Retracted => extension <= 0.02,
+                    })
+                })
+                .unwrap_or(false);
+            let closed = if binding.normally_closed {
+                !at_end
+            } else {
+                at_end
+            };
+            limits.insert(binding.id, closed);
+        }
+    }
+
     /// Keeps the settled state for the frame; a relay is never clicked by hand.
     fn publish_relay_state(&mut self) {
         let Self {
@@ -1194,8 +1274,12 @@ impl PfSession {
             return;
         };
         relays.clear();
-        for (relay, closed) in model.relays.iter().zip(&model.state) {
+        let base = model.relays.len();
+        for (relay, closed) in model.relays.iter().zip(&model.state[..base]) {
             relays.insert(relay.id, *closed);
+        }
+        for (limit, closed) in model.limits.iter().zip(&model.state[base..]) {
+            relays.insert(limit.id, *closed);
         }
     }
 
@@ -1288,15 +1372,19 @@ impl PfSession {
         if self.control.is_none() {
             self.apply_control();
         }
+        self.refresh_limits();
         let circuit = self.document.active_circuit();
         {
             let Self {
-                control, timers, ..
+                control,
+                timers,
+                limits,
+                ..
             } = self;
             let Some(model) = control.as_mut() else {
                 return;
             };
-            model.settle(timers);
+            model.settle(timers, limits);
             for i in 0..model.relays.len() {
                 let relay = model.relays[i];
                 if !relay.kind.is_timer() {
@@ -1332,7 +1420,7 @@ impl PfSession {
                     punchi_fluid_catalog::RelayKind::Instant => {}
                 }
             }
-            model.settle(timers);
+            model.settle(timers, limits);
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -2388,12 +2476,12 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             kind,
             delay_s,
         } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
-        Behaviour::Lamp => {
-            text.push_str("Lámpara indicadora: encendida mientras su terminal está vivo\n");
-        }
-        Behaviour::Buzzer => {
-            text.push_str("Zumbador: suena mientras su terminal está vivo\n");
-        }
+        Behaviour::LimitSwitch {
+            end,
+            normally_closed,
+        } => describe_limit_switch(text, *end, *normally_closed),
+        Behaviour::Lamp => describe_indicator(text, false),
+        Behaviour::Buzzer => describe_indicator(text, true),
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
 }
@@ -3909,15 +3997,21 @@ pub unsafe extern "C" fn pf_session_chart_candidate_count(
     let Some(definition) = session.catalog.get(&placement.catalog_id) else {
         return 0;
     };
-    if !matches!(
+    let limit = matches!(
         definition.behaviour,
-        punchi_fluid_catalog::Behaviour::Recorder { .. }
-    ) {
+        punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+    );
+    if !limit
+        && !matches!(
+            definition.behaviour,
+            punchi_fluid_catalog::Behaviour::Recorder { .. }
+        )
+    {
         return 0;
     }
     u32::try_from(
         session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, limit)
             .len(),
     )
     .unwrap_or(0)
@@ -3947,8 +4041,17 @@ pub unsafe extern "C" fn pf_session_chart_candidate(
         let Some(placement) = session.document.placements().get(index as usize) else {
             return PF_ERR_MODEL;
         };
+        let position_only = session
+            .catalog
+            .get(&placement.catalog_id)
+            .is_some_and(|definition| {
+                matches!(
+                    definition.behaviour,
+                    punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+                )
+            });
         let Some(candidate) = session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, position_only)
             .get(slot as usize)
             .copied()
         else {
@@ -3988,8 +4091,17 @@ pub unsafe extern "C" fn pf_session_chart_candidate_label(
         let Some(placement) = session.document.placements().get(index as usize) else {
             return PF_ERR_MODEL;
         };
+        let position_only = session
+            .catalog
+            .get(&placement.catalog_id)
+            .is_some_and(|definition| {
+                matches!(
+                    definition.behaviour,
+                    punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+                )
+            });
         let Some(candidate) = session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, position_only)
             .get(slot as usize)
             .copied()
         else {
@@ -4055,15 +4167,23 @@ pub unsafe extern "C" fn pf_session_set_chart_source(
         let Some(definition) = session.catalog.get(&recorder.catalog_id) else {
             return session.fail("the recorder has no definition");
         };
-        if !matches!(
+        let recorder = matches!(
             definition.behaviour,
             punchi_fluid_catalog::Behaviour::Recorder { .. }
-        ) {
-            return session.fail("the placement is not a recorder");
+        );
+        let limit = matches!(
+            definition.behaviour,
+            punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+        );
+        if !recorder && !limit {
+            return session.fail("the placement does not take a source");
         }
         let Some(quantity) = quantity_from_index(quantity) else {
             return session.fail("no such quantity");
         };
+        if limit && quantity != punchi_fluid_doc::Quantity::Position {
+            return session.fail("a limit switch follows a position");
+        }
         let Some(target) = session.document.index_of(u64::from(placement)) else {
             return session.fail("the source component is not in the document");
         };
@@ -4303,6 +4423,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
             | Behaviour::Relay { .. }
+            | Behaviour::LimitSwitch { .. }
             | Behaviour::Lamp
             | Behaviour::Buzzer
             | Behaviour::Plug
@@ -4818,6 +4939,26 @@ pub unsafe extern "C" fn pf_session_indicator_active(session: *const PfSession, 
     }
 }
 
+/// The identity of one placement, or a negative error.
+///
+/// The document names pipes and bindings by identity, so a front end that binds a source
+/// needs it without reading the file.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_placement_id(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    i32::try_from(placement.id()).unwrap_or(PF_ERR_MODEL)
+}
+
 /// `1` when any buzzer of the session sounds, `0` when none does.
 ///
 /// The audio path asks once per refresh instead of walking the placements: the state is
@@ -5106,6 +5247,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::ElectricalSupply { .. }
         | Behaviour::Contact { .. }
         | Behaviour::Relay { .. }
+        | Behaviour::LimitSwitch { .. }
         | Behaviour::Lamp
         | Behaviour::Buzzer
         | Behaviour::Plug
@@ -5266,6 +5408,17 @@ struct RelayBinding {
     delay_s: f64,
 }
 
+/// A limit switch in the control model: its contact nodes, the end it watches and the
+/// cylinder placement it follows.
+#[derive(Debug, Clone, Copy)]
+struct LimitBinding {
+    id: u64,
+    contact: (usize, usize),
+    normally_closed: bool,
+    end: punchi_fluid_catalog::LimitEnd,
+    source: Option<u64>,
+}
+
 /// The control circuit of one document, ready to settle without rebuilding it per step.
 ///
 /// The topology — terminals, wires, relays — is built on an edit. A settle only clears and
@@ -5276,6 +5429,7 @@ struct ControlModel {
     wires: Vec<(usize, usize)>,
     contacts: Vec<(usize, usize)>,
     relays: Vec<RelayBinding>,
+    limits: Vec<LimitBinding>,
     indicators: Vec<(u64, usize, bool)>,
     seeds: Vec<usize>,
     edges: Vec<Vec<usize>>,
@@ -5443,12 +5597,53 @@ fn indicators_of(
     indicators
 }
 
+/// The limit switches of one circuit, with the cylinder each one follows.
+fn limits_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+) -> Vec<LimitBinding> {
+    let mut limits = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        let Behaviour::LimitSwitch {
+            end,
+            normally_closed,
+        } = &definition.behaviour
+        else {
+            continue;
+        };
+        let Some((a, b)) = contact_pair(definition) else {
+            continue;
+        };
+        let (Some(a), Some(b)) = (node_of(terminals, index, &a), node_of(terminals, index, &b))
+        else {
+            continue;
+        };
+        limits.push(LimitBinding {
+            id: placement.id(),
+            contact: (a, b),
+            normally_closed: *normally_closed,
+            end: *end,
+            source: placement.source.map(|source| source.placement),
+        });
+    }
+    limits
+}
+
 /// Reserves the degree of every node so a refill never grows an edge list.
 fn reserved_edges(
     nodes: usize,
     wires: &[(usize, usize)],
     contacts: &[(usize, usize)],
     relays: &[RelayBinding],
+    limits: &[LimitBinding],
 ) -> Vec<Vec<usize>> {
     let mut degree = vec![0usize; nodes];
     for (a, b) in wires.iter().chain(contacts.iter()) {
@@ -5458,6 +5653,10 @@ fn reserved_edges(
     for relay in relays {
         degree[relay.contact.0] += 1;
         degree[relay.contact.1] += 1;
+    }
+    for limit in limits {
+        degree[limit.contact.0] += 1;
+        degree[limit.contact.1] += 1;
     }
     degree.into_iter().map(Vec::with_capacity).collect()
 }
@@ -5473,16 +5672,18 @@ impl ControlModel {
         let (terminals, seeds) = terminals_of(document, catalog, circuit);
         let wires = wires_of(document, circuit, &terminals);
         let (contacts, relays) = switches_of(document, catalog, circuit, &terminals, contacts);
+        let limits = limits_of(document, catalog, circuit, &terminals);
         let indicators = indicators_of(document, catalog, circuit, &terminals);
-        let edges = reserved_edges(terminals.len(), &wires, &contacts, &relays);
+        let edges = reserved_edges(terminals.len(), &wires, &contacts, &relays, &limits);
         let live = vec![false; terminals.len()];
-        let state = vec![false; relays.len()];
+        let state = vec![false; relays.len() + limits.len()];
         let pending = Vec::with_capacity(terminals.len());
         Self {
             terminals,
             wires,
             contacts,
             relays,
+            limits,
             indicators,
             seeds,
             edges,
@@ -5522,6 +5723,15 @@ impl ControlModel {
             self.edges[a].push(b);
             self.edges[b].push(a);
         }
+        let base = self.relays.len();
+        for j in 0..self.limits.len() {
+            if !self.state[base + j] {
+                continue;
+            }
+            let (a, b) = self.limits[j].contact;
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
     }
 
     /// Marks the live nodes in `live`, reusing the queue.
@@ -5542,8 +5752,12 @@ impl ControlModel {
         }
     }
 
-    /// Settles every instantaneous relay; a timer's contact is fixed for this pass.
-    fn settle(&mut self, timers: &std::collections::HashMap<u64, TimerState>) {
+    /// Settles every instantaneous relay; a timer or a limit switch is fixed for this pass.
+    fn settle(
+        &mut self,
+        timers: &std::collections::HashMap<u64, TimerState>,
+        limits: &std::collections::HashMap<u64, bool>,
+    ) {
         for i in 0..self.relays.len() {
             let relay = self.relays[i];
             self.state[i] = if relay.kind.is_timer() {
@@ -5556,6 +5770,13 @@ impl ControlModel {
             } else {
                 relay.normally_closed
             };
+        }
+        let base = self.relays.len();
+        for (slot, limit) in self.limits.iter().enumerate() {
+            self.state[base + slot] = limits
+                .get(&limit.id)
+                .copied()
+                .unwrap_or(limit.normally_closed);
         }
         let bound = self.relays.len().saturating_mul(2).saturating_add(2);
         for _ in 0..=bound {
@@ -5593,7 +5814,7 @@ fn contact_pair(
     definition: &punchi_fluid_catalog::ComponentDefinition,
 ) -> Option<(String, String)> {
     match &definition.behaviour {
-        Behaviour::Contact { .. } => {
+        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
             let mut terminals = definition
                 .port
                 .iter()
@@ -5621,6 +5842,29 @@ fn indicator_reading(
     } else {
         Reading::Indicator(on)
     })
+}
+
+/// Writes what an indicator means, for the inspector.
+fn describe_indicator(text: &mut String, audible: bool) {
+    text.push_str(if audible {
+        "Zumbador: suena mientras su terminal está vivo\n"
+    } else {
+        "Lámpara indicadora: encendida mientras su terminal está vivo\n"
+    });
+}
+
+/// Writes what a limit switch means, for the inspector.
+fn describe_limit_switch(
+    text: &mut String,
+    end: punchi_fluid_catalog::LimitEnd,
+    normally_closed: bool,
+) {
+    let _ = writeln!(text, "Final de carrera: extremo {}", end.as_str());
+    text.push_str(if normally_closed {
+        "Contacto cerrado con el rodillo libre\n"
+    } else {
+        "Contacto abierto con el rodillo libre\n"
+    });
 }
 
 /// Whether a contact on the sheet is closed, when the definition is one.

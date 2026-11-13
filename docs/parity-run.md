@@ -37,6 +37,7 @@ that proves it.
 | 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
 | 4 | Indicator lamp | `feat(catalog): let a lamp read the control line` | `a_lamp_lights_while_its_line_is_live`, `a_lamp_shows_its_state_as_rays_not_only_colour`, the symbol review |
 | 5 | Buzzer with a continuous sound | `feat(audio): loop the buzzer while its line is live` | `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, the symbol review |
+| 6 | Limit switch at a cylinder end | `feat(catalog): follow a cylinder end with a limit switch` | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
 
 ## Decisions taken in this run
 
@@ -73,26 +74,22 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 6, the limit switch
+## Next entry: 7, the pressure and vacuum switches
 
-The run is at the first entry that crosses the mechanical domain. The design that avoids a
-document-format change:
+The limit switch is done; the next entry reads the other side of the model.
 
-- **The binding already exists.** `Placement.source` stores a `Source { placement, quantity }`
-  and is saved with the sheet. A limit switch reuses it with `Quantity::Position`; no format
-  bump and no migration.
-- **Schema**: `Behaviour::LimitSwitch { end: LimitEnd, normally_closed: bool }`, two
-  electrical terminals like a contact, and `LimitEnd` is `extended` or `retracted`.
-- **Catalog**: two files (one per end) with a roller lever; the renderer adds the bar with
-  the other two-terminal parts.
-- **Model**: the control model caches `limits: Vec<(id, (usize, usize))>` like the timers;
-  every `advance_control` reads `Network::extension_of(part)` for the bound cylinder and
-  closes at `>= 0.98` (extended) or `<= 0.02` (retracted), then settles. The design check
-  uses the rest state, because no run has happened yet.
-- **ABI and inspector**: `pf_session_bind_limit_source` and `pf_session_limit_source`, plus a
-  cylinder combo in the inspector mirroring the recorder's source selector.
-- **Evidence**: an ABI test that binds a cylinder, presses the valve and steps until the
-  switch closes; the symbol review; the catalog lint.
+- **Schema**: `Behaviour::PressureSwitch { threshold_bar, vacuum, normally_closed }`, one
+  pneumatic port (working) and two electrical terminals. A vacuum switch is the same part
+  with `vacuum = true` and a threshold below atmosphere.
+- **No binding needed**: the switch reads the pressure at its own port, so the model asks the
+  network for that part instead of following another placement.
+- **Model**: cached `pressure_switches` like the limit switches; `advance_control` reads the
+  port pressure from the network, compares it with the threshold and settles the contact.
+  The design check reads the rest state.
+- **Catalog**: two files (pressure and vacuum) with a gauge body and a contact; the renderer
+  adds the bar.
+- **Evidence**: an ABI test that charges a line past the threshold and steps until the switch
+  closes, plus the falling side; the symbol reviews; the catalog lint.
 
 ## How to continue after a reset
 

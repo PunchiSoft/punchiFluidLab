@@ -271,6 +271,13 @@ type = "lamp"                # one electrical terminal; lit while its line is li
 type = "buzzer"              # one electrical terminal; sounds while its line is live
 ```
 
+```toml
+[behaviour]
+type = "limit_switch"        # two electrical terminals, a roller on a cylinder end
+end = "extended"             # `extended` or `retracted`
+normally_closed = false      # closed while the roller is free
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -304,6 +311,13 @@ A **buzzer** is the audible indicator ([ADR 0022](../docs/adr/0022-an-audible-in
 the same one terminal and the same liveness, drawn with the word `sonando` or `en silencio`.
 The window loops `assets/sounds/buzzer.wav` while any buzzer is live and stops it when the
 line opens or the user mutes the window; the core and the solver stay silent.
+
+A **limit switch** is a contact whose roller follows one cylinder
+([ADR 0023](../docs/adr/0023-a-limit-switch-follows-a-cylinder-end.md)): two electrical
+terminals, an `end` and the usual `normally_closed`. The cylinder is chosen in the inspector
+and stored as the placement source with the `position` quantity, so the file never hardcodes
+an identity; the contact closes at 98 % of the stroke, and the design check reads its rest
+state because no run has happened yet.
 
 ```toml
 [behaviour]

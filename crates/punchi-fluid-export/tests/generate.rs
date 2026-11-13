@@ -102,6 +102,7 @@ fn write_review_images(catalog: &Catalog) {
             let stateful = matches!(
                 definition.behaviour,
                 punchi_fluid_catalog::Behaviour::Contact { .. }
+                    | punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
                     | punchi_fluid_catalog::Behaviour::Relay { .. }
                     | punchi_fluid_catalog::Behaviour::Lamp
                     | punchi_fluid_catalog::Behaviour::Buzzer

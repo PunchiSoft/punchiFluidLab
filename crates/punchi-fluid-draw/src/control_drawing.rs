@@ -26,7 +26,10 @@ pub(crate) fn moving_bar(
     ink: &Ink,
 ) {
     match &definition.behaviour {
-        punchi_fluid_catalog::Behaviour::Contact { normally_closed } => {
+        punchi_fluid_catalog::Behaviour::Contact { normally_closed }
+        | punchi_fluid_catalog::Behaviour::LimitSwitch {
+            normally_closed, ..
+        } => {
             let closed = placed.contact_closed.unwrap_or(*normally_closed);
             let inner = placed.box_rect();
             let y = if closed { 0.5 } else { 0.32 };

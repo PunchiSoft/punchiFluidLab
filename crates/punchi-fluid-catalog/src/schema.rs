@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::switch::{LimitEnd, RelayKind};
+
 /// Version of the file format understood by this build.
 ///
 /// 2 added the declared valve body, the declared spring and actuator parts, the
@@ -88,40 +90,6 @@ pub enum Actuation {
     Toggle,
     /// Held while the pointer is pressed, released afterwards.
     Momentary,
-}
-
-/// When a relay's contact follows its coil.
-///
-/// The names and the behaviour follow IEC 61131-3: `ton` is an on-delay and `tof` an
-/// off-delay. An `instant` relay is the part with no timer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RelayKind {
-    /// The contact follows the coil at once.
-    #[default]
-    Instant,
-    /// On-delay: the contact closes after the coil has been live for the delay.
-    Ton,
-    /// Off-delay: the contact opens after the coil has been dead for the delay.
-    Tof,
-}
-
-impl RelayKind {
-    /// Stable name written in the definition file.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Instant => "instant",
-            Self::Ton => "ton",
-            Self::Tof => "tof",
-        }
-    }
-
-    /// `true` when the part is a timer rather than an instantaneous relay.
-    #[must_use]
-    pub const fn is_timer(self) -> bool {
-        !matches!(self, Self::Instant)
-    }
 }
 
 /// Moving part the renderer has to draw with the simulation state.
@@ -573,6 +541,15 @@ pub enum Behaviour {
         #[serde(default)]
         normally_closed: bool,
     },
+    /// A limit switch: a contact whose roller follows a cylinder end (ADR 0023).
+    LimitSwitch {
+        /// Which end of the stroke presses the roller.
+        #[serde(default)]
+        end: LimitEnd,
+        /// `true` when the contact is closed while the roller is free.
+        #[serde(default)]
+        normally_closed: bool,
+    },
     /// A relay: a coil whose state closes its own contact (ADR 0019).
     ///
     /// The file names the two pairs, because a relay has four electrical terminals and the
@@ -630,6 +607,7 @@ impl Behaviour {
             Self::Silencer { .. } => "silencer",
             Self::ElectricalSupply { .. } => "electrical_supply",
             Self::Contact { .. } => "contact",
+            Self::LimitSwitch { .. } => "limit_switch",
             Self::Relay { .. } => "relay",
             Self::Lamp => "lamp",
             Self::Buzzer => "buzzer",

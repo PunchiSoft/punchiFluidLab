@@ -257,7 +257,9 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         }
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
         Behaviour::ElectricalSupply { voltage_v } => check_electrical_supply(path, *voltage_v),
-        Behaviour::Contact { .. } => check_contact(definition, path),
+        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
+            check_contact(definition, path)
+        }
         Behaviour::Relay {
             coil,
             contact,

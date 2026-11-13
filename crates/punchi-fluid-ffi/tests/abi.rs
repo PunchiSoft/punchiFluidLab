@@ -38,15 +38,15 @@ use punchi_fluid::{
     pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
     pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
     pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
-    pf_session_port_point, pf_session_press_component_valve, pf_session_press_valve,
-    pf_session_preview, pf_session_recent_count, pf_session_recent_path, pf_session_recover,
-    pf_session_redo, pf_session_release_component_valve, pf_session_release_valve,
-    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
-    pf_session_rename_circuit, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
+    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
+    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
+    pf_session_remove_selection, pf_session_rename_circuit, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
     pf_session_space_selection, pf_session_telemetry, pf_session_toggle_contact,
     pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
@@ -2913,6 +2913,91 @@ fn a_buzzer_sounds_while_its_line_is_live() {
     assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_buzzer_active(session) }, 0);
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_limit_switch_closes_at_the_end_of_its_cylinder() {
+    let session = session();
+    // The seeded circuit keeps its first three placements in this order: supply, valve and
+    // cylinder. The switch watches the cylinder, chosen through the same source binding a
+    // recorder uses.
+    // SAFETY: live session.
+    let cylinder = unsafe { pf_session_placement_id(session, 2) };
+    assert!(cylinder > 0, "the seeded cylinder has an identity");
+    let rail = catalog_index(session, "electrical.supply");
+    let limit = catalog_index(session, "electrical.limit_switch.extended");
+    let lamp = catalog_index(session, "electrical.lamp");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let limit = unsafe { pf_session_place_component(session, limit, 20.0, 80.0) };
+    let lamp = unsafe { pf_session_place_component(session, lamp, 70.0, 80.0) };
+    assert!(rail >= 0 && limit >= 0 && lamp >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let limit = u32::try_from(limit).unwrap_or_default();
+    let lamp = u32::try_from(lamp).unwrap_or_default();
+    assert_eq!(
+        unsafe {
+            pf_session_set_chart_source(
+                session,
+                limit,
+                u32::try_from(cylinder).unwrap_or_default(),
+                PF_QUANTITY_POSITION,
+            )
+        },
+        PF_OK
+    );
+    let mut bound = PfChartSource::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(
+        unsafe { pf_session_chart_source(session, limit, &raw mut bound) },
+        1
+    );
+    assert_eq!(bound.placement, u32::try_from(cylinder).unwrap_or_default());
+
+    // The rail feeds the switch and the switch feeds the lamp, so the lamp shows the state
+    // the student would read on the machine.
+    let l = CString::new("L").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), limit, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, limit, two.as_ptr(), lamp, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 0);
+
+    // Pressed, the rod goes out and the roller reaches the far end.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_press_component_valve(session, 1) },
+        PF_OK
+    );
+    for _ in 0..500 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 1);
+
+    // Released, the rod returns and the switch opens again.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_release_component_valve(session, 1) },
+        PF_OK
+    );
+    for _ in 0..500 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 0);
 
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };

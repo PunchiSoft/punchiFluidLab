@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### El final de carrera: la secuencia sabe dónde está el vástago — 2026-11-13
+
+Una secuencia no solo necesita manos, bobinas y tiempo: necesita saber dónde está la máquina.
+El vástago está fuera, así que el paso siguiente puede empezar. El final de carrera es la
+primera pieza eléctrica cuyo estado viene del modelo del gas.
+
+- **Dos terminales y un rodillo**: `end = "extended"` o `"retracted"`, con `normally_closed`
+  para el contacto que cierra con el rodillo libre ([ADR 0023](docs/adr/0023-a-limit-switch-follows-a-cylinder-end.md)).
+- **El cilindro se elige, no se adivina**: el inspector escribe la misma fuente que un
+  registrador, con la cantidad `position`, así que no hay campo nuevo ni migración; el
+  selector lista solo cilindros.
+- **Cierra en el extremo, no cerca**: extensión `>= 0.98` o `<= 0.02`, los mismos márgenes
+  con los que la telemetría llama «fuera» o «recogido» al vástago.
+- **El estado es del ensayo**: la comprobación de diseño lee el reposo, porque no ha habido
+  carrera; cada `advance` lee la extensión y vuelve a asentar la red.
+- **Evidencia**: `a_limit_switch_closes_at_the_end_of_its_cylinder` (raíl, final de carrera,
+  lámpara, válvula y 500 pasos), las dos revisiones de símbolo y el lint.
+
 ### El zumbador: una alarma que suena mientras la línea está viva — 2026-11-13
 
 Una luz dice «mira»; un zumbador dice «actúa». El zumbador es la primera pieza cuya salida se

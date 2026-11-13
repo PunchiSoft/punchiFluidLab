@@ -101,6 +101,14 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/electrical.buzzer.toml"),
     ),
     (
+        "electrical.limit_switch.extended.toml",
+        include_str!("../../../assets/catalog/electrical.limit_switch.extended.toml"),
+    ),
+    (
+        "electrical.limit_switch.retracted.toml",
+        include_str!("../../../assets/catalog/electrical.limit_switch.retracted.toml"),
+    ),
+    (
         "valve.3_2.solenoid.toml",
         include_str!("../../../assets/catalog/valve.3_2.solenoid.toml"),
     ),

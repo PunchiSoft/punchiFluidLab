@@ -205,6 +205,7 @@ impl NetworkPart {
             Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
             | Behaviour::Relay { .. }
+            | Behaviour::LimitSwitch { .. }
             | Behaviour::Lamp
             | Behaviour::Buzzer => PartBehaviour::Electrical,
             Behaviour::Junction => PartBehaviour::Junction,
