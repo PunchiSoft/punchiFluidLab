@@ -24,7 +24,8 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 |---|---|---|
 | The lubricator is a square turned 45° with the flow crossing it from vertex to vertex | pass | half-diagonal 0.22 on both axes |
 | It carries **no dashed element**, which is what tells it from the filter | pass | the filter and the lubricator are the same diamond otherwise |
-| Connection points are the small open circles of the reference set | pass | circles at both ends |
+| The oil mark is the short arrow to the upper vertex | pass | the file draws it, as the reference does |
+| Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
 | Legible at palette size | pass | `catalog-dark.png` |
 
 ## What is still open

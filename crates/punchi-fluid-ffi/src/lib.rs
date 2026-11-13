@@ -2838,7 +2838,10 @@ pub unsafe extern "C" fn pf_session_restart(session: *mut PfSession) -> i32 {
 fn default_size(category: u32) -> (f32, f32) {
     match category {
         PF_CATEGORY_SUPPLY => (26.0, 26.0),
-        PF_CATEGORY_VALVE => (34.0, 17.0),
+        // A valve body is two squares side by side, expressed as 2:1 in box units. The
+        // placement box has to stay square or the cells are squashed to half their height;
+        // the seeded valve already uses a square for exactly this reason.
+        PF_CATEGORY_VALVE => (34.0, 34.0),
         PF_CATEGORY_ACTUATOR => (62.0, 26.0),
         PF_CATEGORY_THROTTLE => (20.0, 20.0),
         PF_CATEGORY_ACCESSORY => (24.0, 24.0),

@@ -318,6 +318,31 @@ disappears on its own window colour.
 - Targets ≥ 24 × 24 px; the canvas is exempt because it is a drawing surface, and it
   has keyboard alternatives for everything it does.
 
+### Animation on the sheet
+
+Being in simulation mode *is* the animation; a stopped sheet is still, and a paused sheet
+keeps the frame it was on. The reference's signature is the circuit in motion, and the sheet
+replicates it from the model, never from a timer that guesses.
+
+| What moves | Source | Rule |
+|---|---|---|
+| Piston and rod | `extension` | Already; the position is the model's |
+| Valve spool | valve position | Already; the active square is the model's |
+| Contact blade, relay bar, lamp rays | run state | Already; the shape changes, never colour alone |
+| **Flow in a hose** | **signed mass flow of that hose** | Travelling chevrons along the route; speed from `|flow|`, direction from the sign; none at zero |
+| Instrument reading | the quantity | The number and the needle update with the sample |
+
+- **Direction is the model's.** A pressure difference at a dead end is not flow; the
+  chevrons stay still unless the solver reports flow through that hose.
+- **Start, pause, reset.** Starting begins the phase at zero; pausing freezes it; reset
+  clears it. A single step advances the phase by one step, not by a frame.
+- **Reduced motion.** `[KDE] AnimationDurationFactor = 0` replaces the travelling chevrons
+  with one static direction arrow; pressure colours and moving parts remain readable.
+- **No allocation per frame.** The route is already computed; the phase and the flow are
+  scalars, and the chevrons are line segments on the same surface.
+- **Performance.** The animation must not move the frame budget; if a long route costs more
+  than the static draw, the chevrons are capped per hose, not skipped silently.
+
 ### Sound
 
 Sound is feedback, not information. Two events make a noise and nothing else does:

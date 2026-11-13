@@ -44,10 +44,19 @@ kind = "line"
 points = [0.72, 0.5, 0.94, 0.5]
 line_class = "working"
 
+# The oil mark: a short arrow from the centre to the upper vertex, as the reference
+# draws a lubricator.
 [[symbol]]
-kind = "circle"
-points = [0.06, 0.5, 0.045]
+kind = "line"
+points = [0.5, 0.5, 0.5, 0.30]
+line_class = "working"
 
 [[symbol]]
-kind = "circle"
-points = [0.94, 0.5, 0.045]
+kind = "line"
+points = [0.46, 0.36, 0.5, 0.30]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.30, 0.54, 0.36]
+line_class = "working"

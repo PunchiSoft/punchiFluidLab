@@ -131,6 +131,10 @@ role = "supply"
 position = [0.32, 1.0]
 ```
 
+A port with `show_numeral = false` still connects and routes, but prints no fixed number.
+It is for a coil terminal whose `Y1` is a connection label the user sets, not a numeral of
+the symbol.
+
 ### Behaviour
 
 Exactly one `[behaviour]` table, tagged with `type`.

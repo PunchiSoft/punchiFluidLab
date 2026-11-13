@@ -261,7 +261,14 @@ fn all_primitives(definition: &ComponentDefinition) -> Vec<&Primitive> {
 
 fn check_primitive(primitive: &Primitive) -> Result<(), LintError> {
     let points = &primitive.points;
-    for value in points {
+    // An arc is `[cx, cy, radius, start, end]`: the first three are box coordinates, the
+    // last two are degrees and may leave 0..=1 by design.
+    let coordinates = if primitive.kind == PrimitiveKind::Arc && points.len() >= 3 {
+        &points[..3]
+    } else {
+        points.as_slice()
+    };
+    for value in coordinates {
         if !value.is_finite() {
             return Err(LintError::Geometry(String::from(
                 "a coordinate is not a number",

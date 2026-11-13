@@ -38,6 +38,12 @@ kind = "polygon"
 points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
 filled = false
 
+# The filter element: the dashed line on the upper half of the vertical diagonal.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.28, 0.5, 0.5]
+line_class = "drain"
+
 [[symbol]]
 kind = "line"
 points = [0.06, 0.5, 0.28, 0.5]
@@ -48,10 +54,3 @@ kind = "line"
 points = [0.72, 0.5, 0.94, 0.5]
 line_class = "working"
 
-[[symbol]]
-kind = "circle"
-points = [0.06, 0.5, 0.045]
-
-[[symbol]]
-kind = "circle"
-points = [0.94, 0.5, 0.045]

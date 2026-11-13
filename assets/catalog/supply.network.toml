@@ -20,23 +20,21 @@ summary = "The compressed-air network arrives here."
 [[port]]
 id = "1"
 role = "supply"
-position = [0.5, 0.92]
+position = [0.5, 0.08]
 
 [behaviour]
 type = "supply"
 pressure_bar = 6.0
 
-# An equilateral triangle: half the base is tan(30°) of the height, so the proportions are
-# the triangle's and not a shape that happens to look like one.
-# The apex is at the bottom, on the stem: the air leaves through the point, and the
-# point is where the hose attaches. A triangle standing on its base reads as a source that
-# delivers upwards, which is not what a supply does.
+# An equilateral triangle with its apex up, as the reference draws the air source: the
+# delivery leaves through the apex and the stem goes up to the connection. Half the base is
+# tan(30°) of the height, so the proportions are the triangle's.
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.66, 0.7887, 0.16, 0.2113, 0.16]
+points = [0.5, 0.30, 0.7887, 0.80, 0.2113, 0.80]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.66, 0.5, 0.92]
+points = [0.5, 0.30, 0.5, 0.08]
 line_class = "working"

@@ -13,6 +13,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/supply.compressor.toml"),
     ),
     (
+        "supply.compressor_adjustable.toml",
+        include_str!("../../../assets/catalog/supply.compressor_adjustable.toml"),
+    ),
+    (
         "supply.network.toml",
         include_str!("../../../assets/catalog/supply.network.toml"),
     ),

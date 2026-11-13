@@ -36,7 +36,7 @@ filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.26, 0.5, 0.66]
+points = [0.5, 0.26, 0.5, 0.46]
 line_class = "drain"
 
 [[symbol]]
@@ -49,16 +49,25 @@ kind = "line"
 points = [0.70, 0.46, 0.94, 0.46]
 line_class = "working"
 
-[[symbol]]
-kind = "circle"
-points = [0.06, 0.46, 0.045]
 
+# The bowl under the element and the drain, the reference's mark for a filter that can be
+# purged by hand.
 [[symbol]]
-kind = "circle"
-points = [0.94, 0.46, 0.045]
+kind = "polygon"
+points = [0.42, 0.66, 0.58, 0.66, 0.5, 0.78]
+line_class = "working"
 
-# The drain, from the bottom vertex.
 [[symbol]]
 kind = "line"
-points = [0.5, 0.66, 0.5, 0.88]
+points = [0.45, 0.68, 0.49, 0.74]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.51, 0.68, 0.55, 0.74]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.78, 0.5, 0.90]
 line_class = "working"

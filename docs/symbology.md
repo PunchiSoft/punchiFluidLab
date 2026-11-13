@@ -87,8 +87,8 @@ reference set so that a hose is visibly meant to arrive there.
 
 | Symbol | Shape, and what carries the meaning |
 |---|---|
-| Compressed-air **network** | The bare **outline triangle** on a stem, **apex at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering upwards, away from its own line |
-| **Compressor** | The same triangle inside a **circle**, apex on the stem, its delivery leaving the bottom through that stem and ending in the connection circle |
+| Compressed-air **network** | The bare **outline triangle** on a stem, **apex up at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering downwards, away from its own line |
+| **Compressor** | The same triangle inside a **circle**, apex up, its delivery leaving the top through that stem and ending in the connection circle |
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
 | **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal** and the **drain stem** leaving the bottom vertex. Without the stem it is a filter, not a separator with a drain |
 | **Oil lubricator** | The same diamond and **no dashed element**: nothing is filtered here, oil is added. The absent element is the difference |

@@ -23,9 +23,9 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | Requirement | Result | Evidence |
 |---|---|---|
 | The filter is a square turned 45°, the same shape as the plain filter | pass | half-diagonal 0.20 on both axes |
-| The element is the **dashed line on the vertical diagonal** | pass | dashed chord from top vertex to bottom vertex |
-| The **drain** leaves the bottom vertex on a stem | pass | without the stem the symbol is a filter, not a separator with a drain |
-| Connection points are the small open circles of the reference set | pass | circles at both ends |
+| The element is the **dashed line on the upper diagonal** | pass | dashed chord from the top vertex to the centre |
+| The **bowl and the drain** below the lower vertex | pass | the bowl, its hatching and the stem, as the reference draws a manual purge |
+| Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
 | Legible at palette size | pass | `catalog-dark.png` |
 
 ## What is still open

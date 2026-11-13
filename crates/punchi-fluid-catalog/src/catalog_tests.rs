@@ -432,7 +432,8 @@ fn a_source_triangle_points_at_its_connection() {
             .iter()
             .find(|primitive| matches!(primitive.kind, PrimitiveKind::Polygon))
             .expect("the supply draws a triangle");
-        // The apex is the vertex furthest from the base's midpoint on the vertical axis.
+        // The apex is the vertex furthest from the base on the vertical axis; the reference
+        // draws it at the top, with the stem going up to the connection.
         let ys: Vec<f64> = triangle
             .points
             .chunks(2)
@@ -441,7 +442,7 @@ fn a_source_triangle_points_at_its_connection() {
         let apex = ys
             .iter()
             .copied()
-            .reduce(f64::max)
+            .reduce(f64::min)
             .expect("the triangle has points");
         let apex_y = ys
             .iter()
@@ -454,8 +455,8 @@ fn a_source_triangle_points_at_its_connection() {
             port.position[1]
         );
         assert!(
-            apex_y > 0.5,
-            "{id}: the apex must be at the bottom, on the stem, not at the top"
+            apex_y < 0.5,
+            "{id}: the apex must be at the top, on the stem, not at the bottom"
         );
     }
 }

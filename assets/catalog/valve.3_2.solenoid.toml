@@ -47,6 +47,7 @@ position = [0.843, 1.0]
 id = "Y1"
 role = "electrical"
 position = [0.0, 0.46]
+show_numeral = false
 
 [behaviour]
 type = "valve"

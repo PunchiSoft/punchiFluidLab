@@ -7,8 +7,8 @@
 
 ## Provenance
 
-Hand-written geometry in `assets/catalog/electrical.vacuum_switch.toml`: a sensing circle, a working stem to the
-port, a dashed link and a two-terminal contact. The **bar** is drawn by the renderer from
+Hand-written geometry in `assets/catalog/electrical.vacuum_switch.toml`: a rectangular pressure actuator, a perpendicular line, a working stem to the
+port, a dashed link and a two-terminal contact. The **blade** is drawn by the renderer from
 the switch state (ADR 0024). No third-party asset and no trace of another program's symbol.
 
 ## Automated checks — `punchi-fluid-catalog` symbol lint
@@ -25,7 +25,7 @@ the switch state (ADR 0024). No third-party asset and no trace of another progra
 
 | Requirement | Result | Evidence |
 |---|---|---|
-| The sensing circle and the contact are distinct | pass | `electrical.vacuum_switch-light.png` |
+| The rectangular actuator and the contact are distinct | pass | `electrical.vacuum_switch-light.png` |
 | A visible gap at rest | pass | the open bar above the terminals |
 | The class says what each line is | pass | dotted stems for the wires |
 | Legible at 300 dpi | **not checked** | needs the maintainer's reader |

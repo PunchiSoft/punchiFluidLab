@@ -45,20 +45,21 @@ contact = ["11", "14"]
 kind = "ton"
 delay_s = 2.0
 
-# The coil: a rectangle between its two stems, with a small clock face that marks a delay.
+# The coil: a rectangle between its two stems, with the X that marks a delay in the
+# reference's palette.
 [[symbol]]
 kind = "rect"
 points = [0.08, 0.30, 0.14, 0.40]
 line_class = "working"
 
 [[symbol]]
-kind = "circle"
-points = [0.15, 0.50, 0.05]
+kind = "line"
+points = [0.10, 0.36, 0.20, 0.64]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.15, 0.50, 0.15, 0.46]
+points = [0.20, 0.36, 0.10, 0.64]
 line_class = "working"
 
 # Stems from the coil terminals to the rectangle.

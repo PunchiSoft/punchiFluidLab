@@ -8,7 +8,7 @@
 ## Provenance
 
 Hand-written geometry in `assets/catalog/electrical.limit_switch.retracted.toml`: a two-terminal contact with a roller
-lever on top, mirrored so the two ends read differently. The **bar** is drawn by the
+lever on top, mirrored so the two ends read differently. The **blade** is drawn by the
 renderer from the switch state, and the cylinder it watches is the placement source the
 inspector writes (ADR 0023). No third-party asset and no trace of another program's symbol.
 

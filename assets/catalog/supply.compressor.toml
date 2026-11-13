@@ -21,7 +21,7 @@ summary = "Makes the compressed air that feeds the circuit."
 [[port]]
 id = "1"
 role = "supply"
-position = [0.5, 0.93]
+position = [0.5, 0.06]
 
 [behaviour]
 type = "supply"
@@ -29,17 +29,30 @@ pressure_bar = 6.0
 
 [[symbol]]
 kind = "circle"
-points = [0.5, 0.40, 0.30]
+points = [0.5, 0.45, 0.28]
 
-# The same triangle as the network's, apex on the stem: the delivery leaves through the
-# point, towards the connection.
+# The same triangle as the network's, apex up: the delivery leaves through the point and
+# the stem goes up to the connection. The bottom connection is the intake/condensate the
+# reference draws with a second circle.
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.70, 0.6819, 0.37, 0.3181, 0.37]
+points = [0.5, 0.33, 0.66, 0.67, 0.34, 0.67]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.70, 0.5, 0.86]
+points = [0.5, 0.17, 0.5, 0.06]
 line_class = "working"
 
+[[symbol]]
+kind = "line"
+points = [0.5, 0.73, 0.5, 0.90]
+line_class = "working"
+
+# The reference draws the intake/condensate mark as a second connection circle. The
+# compressor is a one-port constant-pressure source in this model, so the mark is drawn by
+# the file and is not a port; the review says so.
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.94, 0.047]
+line_class = "working"

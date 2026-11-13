@@ -33,13 +33,18 @@ pub(crate) fn moving_bar(
         | punchi_fluid_catalog::Behaviour::PressureSwitch {
             normally_closed, ..
         } => {
+            // The IEC contact is a blade that pivots at the fixed contact: flat across the
+            // gap when closed, lifted at an angle when open. A horizontal bar would read as
+            // a different switch.
             let closed = placed.contact_closed.unwrap_or(*normally_closed);
             let inner = placed.box_rect();
-            let y = if closed { 0.5 } else { 0.32 };
-            surface.line(
-                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
-                Stroke::new(symbol::LINE, ink.line),
-            );
+            let pivot = symbol::at(inner, 0.30, 0.5);
+            let end = if closed {
+                symbol::at(inner, 0.70, 0.5)
+            } else {
+                symbol::at(inner, 0.64, 0.28)
+            };
+            surface.line(&[pivot, end], Stroke::new(symbol::LINE, ink.line));
         }
         punchi_fluid_catalog::Behaviour::Relay {
             normally_closed, ..

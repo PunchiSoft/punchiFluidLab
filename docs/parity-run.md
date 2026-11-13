@@ -86,7 +86,20 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 10, the counter relay
+## Owner order: the animations come first
+
+On 2026-11-13 the owner ordered the reference's animations replicated as part of the parity,
+not as a later polish. Entry **10a, running animations**, runs before the counter: the sheet
+already moves the piston, the spool and the contact blades, but the flow in the hoses still
+does not animate, and that is the reference's signature. The specification and the evidence
+are in [ui-ux.md](ui-ux.md) and [work-queue.md](work-queue.md); it needs the solver's signed
+flow per hose, not a pressure-gradient guess.
+
+## Next entries: the pneumatic base first (10a, 10b, 10c)
+
+The owner ordered the **pneumatic base** first, in symbology and behaviour, before the counter and the digital library. 10a is the hose flow; 10b is the pneumatic symbol conformance pass; 10c is the valve configuration dialog and the conditional coil labels (`Y1` is a user mark, not a fixed numeral). The sources are
+already corrected (apex up); filter, spring, missing feed elements and actuators are the next
+files. The detail is in [work-queue.md](work-queue.md).
 
 The latch is done; the next entry counts pulses.
 

@@ -1,14 +1,14 @@
 # Work queue: what the parity run does, in order
 
-Status: the authority for **order and scope** of the long branch `feat/parity`, chosen by the
-owner on 2026-11-13 (delivery option **c**: one long branch, one commit per capability, one
-pull request at the end). It does not replace [capabilities.md](capabilities.md), which says
+Status: the authority for **order and scope** of the long branch `feat/parity-2` (run 2;
+run 1 was delivered as #57), chosen by the owner on 2026-11-13 (delivery option **c**: one
+long branch, one commit per capability, one pull request at the end). It does not replace [capabilities.md](capabilities.md), which says
 what a capability *is* and how it is proven; this file says which one comes next and what
 "done" means for the session doing the work.
 
 ## Rules of the run
 
-1. **One commit per capability**, on `feat/parity`, with its test and its documentation in
+1. **One commit per capability**, on `feat/parity-2`, with its test and its documentation in
    the same commit.
 2. **The gate runs on the branch before each commit**: `./scripts-dev/check.sh` green. A red
    gate stops the run until it is fixed on the same branch.
@@ -36,16 +36,187 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 7 | Pressure switch and vacuum switch | done | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
 | 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | done | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
 | 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
+| 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | ready | a hose shows the model's signed flow as travelling chevrons while the simulation runs, none at zero flow, reversed with the flow, frozen by reduced motion, and an ABI/drawing test at two phases |
+| 10b | **Pneumatic symbol conformance against the reference palette** (owner order, runs with 10a) | doing | every pneumatic symbol and its menu family matches the reference: source apex up, filter element and drain, spring outside the barrel, reservoir/separator/cooler/dryer/motor/rotary/multi-position present, with a review and a lint per file |
+| 10c | **Valve configuration dialog and conditional coil labels** (owner order) | ready | double-click a valve opens the reference dialog: left/right actuation (spring, detent, external supply, pneumatic spring, muscle, mechanical, pneumatic/electrical), reversible body, initial position, nominal flow, reflect, preview; double-click a solenoid opens the connection-label dialog with `Marca` (`Y1`); only an electrical terminal can carry a coil label; labels are per placement and saved |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
 | 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
 | 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
 | 13 | GRAFCET: steps, transitions and actions | ready | an ADR and a first slice: a sequence drawn from files, one step active, transitions advance it; a test that walks the sequence |
 | 14 | Full symbol key in the printed legend | ready | every built-in symbol printed once with its name, bounded to the page, with an export test |
-| 15 | The 300 dpi review of every built-in symbol | blocked | unblocked by a screenshot pass at 300 dpi in both themes; needs the maintainer's reader |
-| 16 | Hydraulic model and library | blocked | needs its own ADR and phase: fluid properties, incompressible network, symbols; it is not a slice |
-| 17 | DC motor and generator | blocked | needs a mechanical domain and an electrical machine model, each with its own ADR; a spinning box without a load would not be a model |
-| 18 | Voltmeter, ammeter and analogue pressure sensor | blocked | the boolean net carries liveness, not voltage or current; unblocked by a voltage/current model with its own ADR |
-| 19 | Force sensor | blocked | needs a mechanical domain: `p·A` is not a force measurement, so the sensor waits with the force meter |
+| 15 | Momentary press and release gesture | ready | a push button closes while held and opens on release; the ABI gains press/release for a contact, the test drives both edges, and the drawing follows |
+| 16 | Multi-position selector | ready | a selector file with more than two positions drives one contact per position; the file names the connections, and a test turns it through every position |
+| 17 | Vacuum source and dynamic vacuum test | ready | a vacuum generator file pulls a line below atmosphere; the vacuum switch closes under it and opens when the line returns; a test with pressure falling and rising |
+| 18 | The 300 dpi review of every built-in symbol | blocked | unblocked by a screenshot pass at 300 dpi in both themes; needs the maintainer's reader |
+| 19 | Hydraulic model and library | blocked | needs its own ADR and phase: fluid properties, incompressible network, symbols; it is not a slice |
+| 20 | DC motor and generator | blocked | needs a mechanical domain and an electrical machine model, each with its own ADR; a spinning box without a load would not be a model |
+| 21 | Voltmeter, ammeter and analogue pressure sensor | blocked | the boolean net carries liveness, not voltage or current; unblocked by a voltage/current model with its own ADR |
+| 22 | Force sensor | blocked | needs a mechanical domain: `p·A` is not a force measurement, so the sensor waits with the force meter |
+
+## Detail of the remaining entries
+
+This is the work order a session follows without asking. Each entry names the layer it
+touches, the decision it may need and the test that proves it. An entry that grows beyond
+its slice is split, and the split is written here before the code.
+
+### 10a — Running animations: flow in the hoses
+
+The owner ordered the reference's animations replicated, and the reference's signature is
+the circuit in motion. This entry runs before 10.
+
+- **Decision first**: an ADR, *the sheet animates the model, not a decoration*. The chevrons
+  follow the mass flow the solver computed for that hose; a pressure difference alone is not
+  flow, and a dead-end line with a pressure difference must stay still.
+- **Solver**: `Edge` gains `pipe: Option<usize>` and the network keeps `pipe_flow`, filled
+  where the edge flow is already computed; `Network::pipe_flow_l_min(index)` exposes it.
+  Test: a known restriction at a known pressure difference, compared with the orifice
+  calculation.
+- **ABI**: `Pipe` carries `flow_l_min` with sign and `phase_s`; `scene` fills them from the
+  network time, so the drawing never reads the solver.
+- **Drawing**: `draw_pipe` draws travelling chevrons along the existing route when the flow
+  is above a threshold; speed follows `|flow|`, direction follows the sign, zero draws none.
+  The phase is a scalar; no allocation per frame. Reduced motion freezes one static arrow.
+- **Window**: starting resets the phase, pausing freezes it, reset clears it; the transport
+  already drives the redraw.
+- **Evidence**: `a_pipe_reports_the_flow_through_it`, `the_flow_chevrons_move_with_the_phase`,
+  `no_flow_draws_no_chevron`, `reduced_motion_freezes_the_chevron`, and a recorded clip in
+  the pull request.
+
+### 10b — Pneumatic symbol conformance
+
+The reference palette was raised, captured and zoomed. The audit of the feed elements and
+actuators found these corrections; the sources are already fixed in `3cb5d14`.
+
+- **Source and compressor**: triangle apex **up**, connection at the top. Done; the test that
+  enforced the old orientation was corrected.
+- **Filter**: the reference filter is a diamond with the element as a **dashed line on the
+  vertical diagonal** and a **bowl/drain** below the lower vertex for the manual-drain file.
+  Our diamond has neither; add the element and the drain, and keep the plain filter without
+  the drain stem.
+- **Lubricator**: the reference puts the oil drop/arrow on the vertical diagonal; compare and
+  correct the file.
+- **Single-acting cylinder**: the reference draws the return **spring outside the barrel**;
+  ours draws it inside. Move it out in the renderer and the file, then regenerate.
+- **Missing feed elements**: reservoir (rounded tank), separator, cooler and dryer, each a
+  file with its review, added to the supply family in the reference order.
+- **Missing actuators**: pneumatic motor, rotary actuator, and the multi-position/cushion
+  cylinders the palette groups under *Cilindros de uso frecuente*.
+- **Menu distribution**: the sidebar group order mirrors the reference: Elementos de
+  alimentación, Actuadores, Cilindros de uso frecuente, Válvulas, Válvulas configurables,
+  Accionamiento mecánico/manual/electromagnético. The catalog has `category`; the sidebar
+  sorts by it, so add the missing categories or map them without inventing a fourth region.
+- **Evidence**: one review per corrected or new symbol with the reference capture named, the
+  catalog lint, the drawing tests, and the full gate.
+
+The installed `.ct` symbol files are compiled data and cannot be read as definitions; the
+running palette is the readable reference. Do not guess a symbol from a binary blob.
+
+### 10c — Valve configuration dialog and conditional coil labels
+
+The owner supplied the reference dialog. It is part of the pneumatic base, not a later UI
+polish.
+
+- **Double-click a valve body** opens *Configurar válvula*: left and right actuation
+  (spring return, detent, external supply, pneumatic spring, muscle, mechanical,
+  pneumatic/electrical), component name, reversible body, initial position, standard
+  nominal flow in l/min, reflect horizontal/vertical and a live preview.
+- **Double-click a solenoid** opens *Conexión de válvula*: a `Marca` field (`Y1`, `Y2`, …)
+  and the matching electrical component preview. The label is **per placement**, saved, and
+  printed near the coil only when the user sets it; it is not a fixed port numeral.
+- **Only an electrical terminal can carry a coil connection.** The actuation dropdown
+  offers the coil only for the electrical family; a mechanical or pneumatic actuator does
+  not get a `Marca` field.
+- **Model**: actuation and initial position become per-placement overrides with one undo;
+  the coil label is a new document field, so the format version bumps with a migration.
+- **Evidence**: the ABI test that sets a label and reopens it, the drawing test that the
+  label follows the placement and not the port id, the dialog's `--selftest` steps, and the
+  reference captures in the review.
+
+### 10 — Counter relay
+
+- **Schema**: `Behaviour::Counter { preset: u32 }`, a count-coil pair, a reset-coil pair and
+  a contact pair. The preset is bounded (1–9999) and validated.
+- **Model**: a rising edge on the count coil increments a run counter capped at the preset;
+  the reset coil clears it; the contact closes at the preset. The edge is detected against
+  the previous step, so a held button counts once. The state lives in the same cached model
+  and the same bounded settle.
+- **Catalog**: one file with the counter mark; the bar is the renderer's.
+- **Evidence**: `a_counter_counts_to_its_preset_and_resets` (a button, N pulses, the contact
+  at the preset and one pulse more), the symbol review, the catalog lint.
+- **Decision**: none; IEC 61131-3 CTU is the reference.
+
+### 11 — Digital library: AND, OR and NOT
+
+- **Decision first**: ADR 0026, *a gate drives the net*. The current model has one kind of
+  source, the rail. A gate is a second: its output is a seed when its inputs satisfy the
+  truth table. The ADR fixes the rule for a driven output that is also wired to a rail, and
+  says the check will report two drivers as a fault in a later slice.
+- **Schema**: `Behaviour::Gate { kind: And | Or | Not }`, two input terminals (one for NOT)
+  and one output terminal.
+- **Model**: each settle pass adds the live outputs of the gates to the seeds, iterating with
+  the relays/gates until stable; the bound is the number of switches plus gates.
+- **Catalog**: three files with the IEC 60617 gate shapes; the output terminal is the only
+  driver.
+- **Evidence**: one truth-table test per gate over the ABI, the three symbol reviews, the
+  catalog lint.
+
+### 12 — Digital: RS latch and edge detection
+
+- **Schema**: `Behaviour::Digital { kind: Rs | RisingEdge }`; the RS has set/reset inputs and
+  one output, the edge has one input and one output.
+- **Model**: the RS holds its output between pulses; the edge output is live for exactly one
+  step after a rising input. Both use the latch map and the step counter already in place.
+- **Catalog**: two files; the reviews record the pulse width of the edge.
+- **Evidence**: `an_rs_latch_holds_between_pulses`, `a_rising_edge_fires_once_per_press`.
+
+### 13 — GRAFCET: steps, transitions and actions
+
+- **Decision first**: an ADR for the first slice. The smallest honest slice is a sequence of
+  *step* files joined by *transition* files, with one active step and one action per step.
+  A full GRAFCET editor is a phase of its own; the ADR says what the slice leaves out.
+- **Schema**: `Behaviour::GrafcetStep`, `Behaviour::GrafcetTransition { condition }` and
+  `Behaviour::GrafcetAction { … }` with the step/transition linking stored in the placement
+  source or a small sequence table.
+- **Model**: a run state with one active step; a transition fires when its condition is live
+  and advances the active step; the action of the active step drives its output.
+- **Catalog**: the step, transition and action shapes.
+- **Evidence**: `a_sequence_walks_three_steps` (a pulse per transition, one active step at a
+  time), the symbol reviews, the ADR.
+
+### 14 — Full symbol key in the printed legend
+
+- **Layer**: `punchi-fluid-export`.
+- **Work**: every built-in definition printed once with its name, in a bounded column that
+  takes room from the drawing; the existing title block and parts list stay.
+- **Evidence**: an export test that finds every built-in name once and the column bounded to
+  the page; a rendered A4 at 300 dpi.
+
+### 15 — Momentary press and release
+
+- **Layer**: `punchi-fluid-ffi` and the window.
+- **Work**: `pf_session_press_contact` and `pf_session_release_contact` for a momentary
+  contact; the mouse-down/mouse-up and keyboard press/release gestures call them; the
+  existing `toggle_contact` stays for maintained parts.
+- **Evidence**: an ABI test that closes while pressed and opens on release; the window
+  `--selftest` step; no document change.
+
+### 16 — Multi-position selector
+
+- **Layer**: catalog, model and drawing.
+- **Work**: a file with a common terminal and N position terminals, the same behaviour as a
+  contact for each position, and a state per position. The click advances the position; the
+  drawing shows the knob at the active one.
+- **Evidence**: a test that turns through every position and closes the matching contact; the
+  catalog lint; the review.
+
+### 17 — Vacuum source and dynamic vacuum test
+
+- **Layer**: catalog, solver and ABI.
+- **Work**: a vacuum generator file with a negative supply pressure (or a dedicated
+  `VacuumSupply` behaviour), the solver already handles a pressure below atmosphere; the
+  vacuum switch then closes under it.
+- **Evidence**: `a_vacuum_switch_closes_under_a_vacuum_source` (pressure falls below −0.4 bar
+  and rises again), the symbol review, the catalog lint.
 
 ## The electrical palette as scope
 
@@ -61,6 +232,34 @@ ones that need a domain we do not have yet.
 The palette also shows a **0 V reference** beside the 24 V supply. Here the return is the `N`
 terminal every supply already carries, so no separate file is queued until a circuit needs a
 second reference point; inventing one now would duplicate the terminal that exists.
+
+## The loop, without stopping
+
+For every entry in order:
+
+1. `git switch feat/parity-2`; `git status --short` must be clean.
+2. Mark the entry `doing` in this file and in [parity-run.md](parity-run.md).
+3. Implement in layer order: catalog file, model, drawing, ABI, window, document only if a
+   format change is unavoidable (it needs a migration).
+4. Write the evidence the entry names, and the documentation in the same commit: the
+   capability ledger, the ADR when a decision is new, the catalog guide when a field is new,
+   `CHANGELOG.md` in Spanish.
+5. `./scripts-dev/check.sh`; green before the commit. A red gate is fixed on the branch.
+6. Commit once with `-s`, push, and update this file and the continuity note in that same
+   commit (amend the message if the hash is not known yet).
+7. Take the next `ready` entry, with 10a before 10. Do not open the pull request yet.
+
+**After a context reset** the repository is the memory: read
+[parity-run.md](parity-run.md), this file and `git log --oneline main..HEAD`; the first
+`ready` entry is the next step. Never rebuild from a summary of the conversation.
+
+**Stopping is only allowed** when: an entry needs an owner decision (the three at the end of
+the queue), the same gate fails twice for the same reason, or every remaining entry is
+`blocked`. A context reset is not a stop: the note and the queue carry the state.
+
+**Closing run 2**: full gate, final state in the note, push, then one pull request from
+`feat/parity-2` to `main` with a section per capability (what was built, the test, what
+remains). The owner merges; the agent never does.
 
 ## The report at the end
 
