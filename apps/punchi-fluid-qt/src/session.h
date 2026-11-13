@@ -40,6 +40,8 @@ class FluidSession : public QObject
     Q_PROPERTY(bool editing READ editing NOTIFY modeChanged)
     Q_PROPERTY(int componentCount READ componentCount NOTIFY documentChanged)
     Q_PROPERTY(int selected READ selected NOTIFY documentChanged)
+    /// The selected pipe, or `-1`; a pipe and a component are never both selected.
+    Q_PROPERTY(int selectedPipe READ selectedPipe NOTIFY documentChanged)
     Q_PROPERTY(int selectionCount READ selectionCount NOTIFY documentChanged)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
@@ -283,6 +285,10 @@ public:
     Q_INVOKABLE void alignSelection(int edge);
     /// Spreads the selection with equal gaps: `axis` 0 across, 1 down.
     Q_INVOKABLE void spaceSelection(int axis);
+    /// Gives the selected pipe a line class: 0 working, 1 pilot, 2 drain.
+    Q_INVOKABLE void setPipeClass(int lineClass);
+    /// The selected pipe, or `-1`.
+    int selectedPipe() const;
     Q_INVOKABLE int componentAt(double xMm, double yMm);
 
     /// The port nearest to a point, if one is within `toleranceMm`.

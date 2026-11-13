@@ -13,7 +13,7 @@ use punchi_fluid_solver::network::Network;
 
 use crate::orient::{Orientation, Turned};
 use crate::schematic::{self, CYLINDER_ID, Layout, PREPARATION_ID, SUPPLY_ID, VALVE_ID};
-use crate::surface::{Bounds, Colour, Pt, Rect, Stroke, Surface};
+use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
 
 /// One end of a pipe: a component of the sheet and one of its ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +38,8 @@ pub struct Pipe<'a> {
     /// The document owns the pipe; the model owns the gas; this is the model's answer for
     /// this pipe, so the sheet can colour it without knowing the network.
     pub pressure_ratio: f32,
+    /// Class of the line: working, pilot or drain, which decides its pattern.
+    pub class: LineClass,
 }
 use crate::symbol::{self, Ink};
 
@@ -339,7 +341,12 @@ fn draw_pipe(
     // The neutral ink at atmosphere, the working colour at supply pressure. The status
     // bar carries the number too, so pressure is never told by colour alone.
     let colour = blend(ink.line, ink.work, pipe.pressure_ratio);
-    surface.line(&points, Stroke::new(symbol::LINE * 1.2, colour));
+    // The pattern is the class's, never a literal: a pilot or drain line is read by its
+    // dashes before anyone reads its label.
+    surface.line(
+        &points,
+        Stroke::new(symbol::LINE * 1.2, colour).with_class(pipe.class),
+    );
 }
 
 /// The polyline between two points: straight, or an elbow with one jog.
@@ -542,6 +549,7 @@ mod tests {
             },
         ];
         let pipes = [Pipe {
+            class: LineClass::Working,
             from: PipeEnd {
                 placement: 0,
                 port: "1",

@@ -85,7 +85,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape, and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the full panel (margins, custom size, PNG resolution) is still open — [capabilities.md](capabilities.md) F5 says so |
-| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo), Repartir (horizontal, vertical) |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Rejilla, Imán a rejilla, Imán a puertos, Zoom (−, %, +), Ajustar a ventana, Tema (sistema/claro/oscuro), Panel lateral, Barra de estado |
 
 
@@ -96,6 +96,12 @@ and must never need a tab switch.
 **The properties panel edits one instance, and its first field is its name.** The
 designation is text, not a number: it is the field that ends up under the symbol and in the
 parts list, so the form sends it verbatim and the core trims and bounds it.
+
+**Conducto acts on the selected hose.** A pilot line and a drain line differ by their
+pattern before anyone reads a label, so the class is a property of the pipe, the drawing
+takes the dashes from it and the file keeps it. The three commands are disabled until a
+hose is selected, and the electrical class is not offered until the electrical library
+exists.
 
 **Repartir measures gaps between symbol boxes, not centres.** A wide cylinder and a narrow
 valve look evenly spaced on centres and are not; the command follows what a reader sees and

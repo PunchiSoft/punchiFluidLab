@@ -48,6 +48,7 @@ fn project() -> Sheet {
         to: 2,
         to_port: String::from("1"),
         offset_tenths: 0,
+        class: StoredClass::Working,
     });
     sheet
 }
@@ -58,7 +59,7 @@ fn a_project_keeps_two_circuits_and_a_pipe_between_them() {
     let text = sheet.to_json().expect("valid");
     let parsed = Sheet::parse(&text).expect("parses");
     assert_eq!(parsed, sheet);
-    assert_eq!(parsed.format, 5);
+    assert_eq!(parsed.format, 6);
     assert_eq!(parsed.circuits.len(), 2);
     assert_eq!(parsed.placement[1].circuit, 1);
     assert_eq!(parsed.pipe[0].circuit, 1);
@@ -76,7 +77,7 @@ fn a_version_three_sheet_reads_as_one_circuit() {
           "pipe": []
         }"#;
     let sheet = Sheet::parse(text).expect("a version 3 sheet reads");
-    assert_eq!(sheet.format, 5);
+    assert_eq!(sheet.format, 6);
     assert_eq!(sheet.circuits.len(), 1);
     assert_eq!(sheet.circuits[0].id, 0);
     assert_eq!(sheet.placement[0].circuit, 0);
@@ -104,7 +105,7 @@ fn a_version_four_project_keeps_its_circuits_and_has_unbound_recorders() {
           "active": 7
         }"#;
     let sheet = Sheet::parse(text).expect("a version 4 project reads");
-    assert_eq!(sheet.format, 5);
+    assert_eq!(sheet.format, 6);
     assert_eq!(sheet.circuits.len(), 2);
     assert_eq!(sheet.placement[1].circuit, 7, "the second circuit survives");
     assert_eq!(sheet.active, 7);
@@ -178,6 +179,45 @@ fn a_recorder_source_round_trips_and_is_validated() {
         other_circuit.validate().is_err(),
         "a source in another circuit is refused"
     );
+}
+
+#[test]
+fn a_version_five_project_reads_its_pipes_as_working_lines() {
+    // The trap: format 6 added the line class, and every pipe an older release wrote is a
+    // working line. A migration that guessed anything else would redraw a whole sheet.
+    let text = r#"{
+      "format": 5,
+      "title": "Anterior",
+      "circuits": [{"id": 0, "title": "Potencia"}],
+      "placement": [
+        {"id": 1, "circuit": 0, "catalog": "supply.compressor", "x": 10.0, "y": 20.0,
+         "width": 26.0, "height": 26.0},
+        {"id": 2, "circuit": 0, "catalog": "cylinder.single_acting_20_100", "x": 90.0,
+         "y": 20.0, "width": 60.0, "height": 26.0, "source": null}
+      ],
+      "pipe": [
+        {"circuit": 0, "from": 1, "from_port": "1", "to": 2, "to_port": "1"}
+      ],
+      "active": 0
+    }"#;
+    let sheet = Sheet::parse(text).expect("a version 5 project reads");
+    assert_eq!(sheet.format, 6);
+    assert_eq!(sheet.pipe[0].class, StoredClass::Working);
+    let saved = sheet.to_json().expect("valid");
+    assert!(
+        !saved.contains("\"class\""),
+        "a working line is not written, so an old sheet looks as it always did: {saved}"
+    );
+}
+
+#[test]
+fn a_pipe_keeps_its_class() {
+    let mut sheet = project();
+    sheet.pipe[0].class = StoredClass::Pilot;
+    let text = sheet.to_json().expect("valid");
+    assert!(text.contains("\"class\": \"pilot\""), "{text}");
+    let parsed = Sheet::parse(&text).expect("parses");
+    assert_eq!(parsed.pipe[0].class, StoredClass::Pilot);
 }
 
 #[test]

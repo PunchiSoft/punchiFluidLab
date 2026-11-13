@@ -14,7 +14,7 @@
 //! reached again — the behaviour every editor has.
 
 use punchi_fluid_draw::Orientation;
-use punchi_fluid_draw::surface::{Pt, Rect};
+use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 
 /// Longest designation a component may carry.
 ///
@@ -383,6 +383,8 @@ pub struct Connection {
     /// Tenths keep the offset exact in a type the history can compare, so a drag records
     /// one entry and an undo puts the pipe back where it was instead of re-rounding it.
     offset: i32,
+    /// Class of the line, which decides its pattern.
+    class: LineClass,
 }
 
 impl Connection {
@@ -397,6 +399,12 @@ impl Connection {
     #[must_use]
     pub const fn offset_tenths(&self) -> i32 {
         self.offset
+    }
+
+    /// Class of this line: working, pilot or drain.
+    #[must_use]
+    pub const fn class(&self) -> LineClass {
+        self.class
     }
 
     /// The middle segment's displacement from the automatic route, in millimetres.
@@ -459,6 +467,12 @@ enum Change {
         index: usize,
         from: Option<String>,
         to: Option<String>,
+    },
+    /// A pipe was given another line class.
+    Classed {
+        index: usize,
+        from: LineClass,
+        to: LineClass,
     },
     /// A recorder was bound to a source, or unbound.
     Sourced {
@@ -724,6 +738,37 @@ impl Document {
         true
     }
 
+    /// Gives a seeded pipe its class without recording an edit.
+    pub fn seed_pipe_class(&mut self, index: usize, class: LineClass) -> bool {
+        let Some(connection) = self.connections.get_mut(index) else {
+            return false;
+        };
+        connection.class = class;
+        true
+    }
+
+    /// Gives a pipe another line class, as one undoable change.
+    ///
+    /// The class is what makes a pilot or drain line readable as itself; it is a property
+    /// of the pipe and not of the component, so it travels with the connection and the
+    /// drawing only has to follow it.
+    pub fn set_pipe_class(&mut self, index: usize, class: LineClass) -> bool {
+        let Some(connection) = self.connections.get_mut(index) else {
+            return false;
+        };
+        if connection.class == class {
+            return false;
+        }
+        let from = connection.class;
+        connection.class = class;
+        self.record(Change::Classed {
+            index,
+            from,
+            to: class,
+        });
+        true
+    }
+
     /// Gives a seeded pipe its route without recording an edit.
     ///
     /// A route read from a file belongs to the starting state: opening a document must not
@@ -758,6 +803,7 @@ impl Document {
         }
         let connection = Connection {
             circuit: self.active,
+            class: LineClass::Working,
             from,
             to,
             offset: 0,
@@ -1403,6 +1449,11 @@ impl Document {
                     placement.designation.clone_from(to);
                 }
             }
+            Change::Classed { index, to, .. } => {
+                if let Some(connection) = self.connections.get_mut(*index) {
+                    connection.class = *to;
+                }
+            }
             Change::Sourced { index, to, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.source = *to;
@@ -1473,6 +1524,11 @@ impl Document {
             Change::Designated { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.designation.clone_from(from);
+                }
+            }
+            Change::Classed { index, from, .. } => {
+                if let Some(connection) = self.connections.get_mut(*index) {
+                    connection.class = *from;
                 }
             }
             Change::Sourced { index, from, .. } => {

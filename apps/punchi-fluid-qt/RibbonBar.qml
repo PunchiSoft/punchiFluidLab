@@ -141,6 +141,19 @@ Rectangle {
                     ]
                 },
                 {
+                    // A pipe is read by its dashes before anyone reads a label. The class
+                    // is a property of the pipe, so the buttons act on the selected one.
+                    // The three share the line icon on purpose: the theme has no dashed
+                    // one, and inventing a second shape for a dash would be worse than
+                    // letting the label say which class the button gives.
+                    title: qsTr("Conducto"),
+                    items: [
+                        { id: "pipe-working", label: qsTr("Trabajo"), icon: "draw-line", hint: qsTr("línea llena, la del aire que trabaja"), enabled: session.selectedPipe >= 0 },
+                        { id: "pipe-pilot", label: qsTr("Pilotaje"), icon: "draw-line", hint: qsTr("línea discontinua, la que manda"), enabled: session.selectedPipe >= 0 },
+                        { id: "pipe-drain", label: qsTr("Drenaje"), icon: "draw-line", hint: qsTr("discontinua larga, la que evacua"), enabled: session.selectedPipe >= 0 }
+                    ]
+                },
+                {
                     // Equal gaps between symbol boxes, which is what a hand-drawn sheet
                     // needs and what "even spacing" means to a reader.
                     title: qsTr("Repartir"),
@@ -238,6 +251,12 @@ Rectangle {
             session.alignSelection(2);
         } else if (id === "align-bottom") {
             session.alignSelection(3);
+        } else if (id === "pipe-working") {
+            session.setPipeClass(0);
+        } else if (id === "pipe-pilot") {
+            session.setPipeClass(1);
+        } else if (id === "pipe-drain") {
+            session.setPipeClass(2);
         } else if (id === "space-across") {
             session.spaceSelection(0);
         } else if (id === "space-down") {

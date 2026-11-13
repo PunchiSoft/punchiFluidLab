@@ -35,18 +35,19 @@ use punchi_fluid::{
     pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
     pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
     pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_offset, pf_session_place_component, pf_session_port_point,
-    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
-    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
-    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
-    pf_session_restart, pf_session_rotate_selected, pf_session_route_pipe, pf_session_save,
-    pf_session_select, pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
-    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
-    pf_session_set_component_edits, pf_session_set_recent_file, pf_session_space_selection,
-    pf_session_telemetry, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_spring_return,
+    pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
+    pf_session_port_point, pf_session_press_component_valve, pf_session_press_valve,
+    pf_session_preview, pf_session_recent_count, pf_session_recent_path, pf_session_recover,
+    pf_session_redo, pf_session_release_component_valve, pf_session_release_valve,
+    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
+    pf_session_rename_circuit, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
+    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
+    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
+    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
+    pf_session_space_selection, pf_session_telemetry, pf_session_toggle_select,
+    pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -2343,4 +2344,63 @@ fn even_spacing_keeps_the_ends_and_is_one_undo() {
     }
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_pipe_takes_another_line_class_and_keeps_it_in_the_file() {
+    let original = session();
+    // The worked example draws its hoses as working lines.
+    let pipes = unsafe { pf_session_connection_count(original) };
+    assert!(pipes > 0, "the example has hoses");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_class(original, 0) }, 0);
+
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_set_pipe_class(original, 0, 1) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_class(original, 0) }, 1);
+    // The same class twice is not an edit, so it is refused rather than recorded.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_set_pipe_class(original, 0, 1) },
+        PF_ERR_MODEL
+    );
+    // A class this build does not know is refused.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_set_pipe_class(original, 0, 9) },
+        PF_ERR_MODEL
+    );
+    // A pipe that is not there is refused, not answered with another pipe.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_pipe_class(original, 9_999) },
+        PF_ERR_MODEL
+    );
+
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("clases.pfluid");
+    let path = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(original, path.as_ptr()) }, PF_OK);
+    let reopened = session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(reopened, path.as_ptr()) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_class(reopened, 0) }, 1);
+
+    // One undo returns the working line, and redo takes the pilot one back.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(original) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_class(original, 0) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_redo(original) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_class(original, 0) }, 1);
+    // SAFETY: both sessions are still alive.
+    unsafe {
+        pf_session_free(reopened);
+        pf_session_free(original);
+    }
 }

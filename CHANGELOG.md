@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Clases de conducto — 2026-11-12
+
+Un esquema se lee por las líneas antes que por las etiquetas: un tubo de pilotaje y uno de
+drenaje se distinguen por su trazo, y hasta ahora todos los tubos salían llenos.
+
+- **Editar ▸ Conducto ▸ Trabajo / Pilotaje / Drenaje** cambia la clase del tubo
+  seleccionado. El dibujo toma el trazo de la clase —lleno, discontinuo, discontinuo largo—
+  y el tubo la guarda en el **formato 6**; un tubo de trabajo no se escribe, así que una hoja
+  anterior se ve igual que siempre.
+- **Un solo deshacer** devuelve la clase anterior, como el resto de las órdenes de edición.
+- La clase eléctrica **no se ofrece todavía**: llega con la biblioteca eléctrica (F6), y el
+  formato no la escribe hasta entonces.
+- **Evidencia**: la prueba ABI que cambia la clase, guarda, abre y deshace; las pruebas de
+  formato con la migración v5 y el trazo; y seis pasos `--selftest`.
+
 ### Tapón ciego y silenciador — 2026-11-12
 
 Un esquema tiene que poder decir dos cosas que una manguera no dice: que un puerto está

@@ -1554,6 +1554,30 @@ int main(int argc, char *argv[])
             check(restored, QStringLiteral("spacing: one undo puts them back"));
         });
 
+        // A pipe's class is a property of the pipe: the selected hose tilts its dashes, the
+        // drawing follows, and the file keeps it.
+        steps->push_back([state, check] {
+            check(state->session->connectionCount() > 0,
+                  QStringLiteral("pipe class: the example has hoses"));
+            // Select the first hose by its index, then give it a class.
+            state->session->selectPipe(0);
+            check(state->session->selectedPipe() == 0,
+                  QStringLiteral("pipe class: a hose can be selected"));
+            state->session->setPipeClass(1);
+            check(pf_session_pipe_class(state->session->handle(), 0) == 1,
+                  QStringLiteral("pipe class: the hose takes the pilot class"));
+            state->session->setPipeClass(2);
+            check(pf_session_pipe_class(state->session->handle(), 0) == 2,
+                  QStringLiteral("pipe class: and then the drain one"));
+            state->session->undo();
+            check(pf_session_pipe_class(state->session->handle(), 0) == 1,
+                  QStringLiteral("pipe class: one undo returns the previous class"));
+            state->session->setPipeClass(0);
+            check(pf_session_pipe_class(state->session->handle(), 0) == 0,
+                  QStringLiteral("pipe class: a working line is the default again"));
+            state->session->selectPipe(-1);
+        });
+
         // The two terminations are files like everything else: they are placed, inspected
         // and removed, and the inspector says what they do.
         steps->push_back([state, check] {

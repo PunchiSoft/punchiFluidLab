@@ -18,10 +18,10 @@ use serde::{Deserialize, Serialize};
 ///
 /// 2 added the orientation of a placement — the quarter turns and the mirror. 3 added the
 /// designation, the name the user gives a component. 4 made a file a project of circuits.
-/// 5 added the source of a recorder. An older file reads because every addition has an
-/// obvious default: an unturned symbol, an unnamed component, one circuit and an unbound
-/// recorder.
-pub const SHEET_VERSION: u32 = 5;
+/// 5 added the source of a recorder, and 6 the line class of a pipe. An older file reads
+/// because every addition has an obvious default: an unturned symbol, an unnamed component,
+/// one circuit, an unbound recorder and a working line.
+pub const SHEET_VERSION: u32 = 6;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -146,6 +146,19 @@ pub struct StoredEdits {
     pub moving_mass_kg: Option<f64>,
 }
 
+/// Class of a pipe's line, as the file stores it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StoredClass {
+    /// A working line: solid.
+    #[default]
+    Working,
+    /// A pilot line: dashed.
+    Pilot,
+    /// A drain line: longer dashes.
+    Drain,
+}
+
 /// One pipe between two ports, named by placement identity.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -164,6 +177,16 @@ pub struct StoredPipe {
     /// Middle-segment offset from the automatic route, tenths of a millimetre.
     #[serde(default)]
     pub offset_tenths: i32,
+    /// Line class; absent when it is a working line, which is what every older file means.
+    #[serde(default, skip_serializing_if = "is_working_class")]
+    pub class: StoredClass,
+}
+
+/// Skips the class of a pipe that is a plain working line.
+// serde hands the field to the predicate by reference, whatever its size.
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_working_class(value: &StoredClass) -> bool {
+    *value == StoredClass::Working
 }
 
 /// A saved schematic.

@@ -53,6 +53,7 @@ fn sheet() -> Sheet {
             to: 2,
             to_port: String::from("2"),
             offset_tenths: 25,
+            class: StoredClass::Working,
         }],
         active: 0,
     }
@@ -132,7 +133,7 @@ fn a_version_two_sheet_still_reads_and_gains_an_unnamed_component() {
     assert_eq!(sheet.placement[0].quarter_turns, 1);
     assert!(sheet.placement[0].mirrored);
     assert_eq!(sheet.placement[0].designation, None);
-    assert!(sheet.to_json().expect("valid").contains(r#""format": 5"#));
+    assert!(sheet.to_json().expect("valid").contains(r#""format": 6"#));
 }
 
 #[test]
@@ -170,7 +171,7 @@ fn a_version_one_sheet_still_reads_and_gains_an_unturned_orientation() {
     assert!(!sheet.placement[0].mirrored);
     // Saving it writes the format this build understands, with the fields it added.
     let saved = sheet.to_json().expect("valid");
-    assert!(saved.contains(r#""format": 5"#), "{saved}");
+    assert!(saved.contains(r#""format": 6"#), "{saved}");
     assert_eq!(sheet.placement[0].designation, None, "and no name either");
 }
 

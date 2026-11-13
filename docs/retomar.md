@@ -43,7 +43,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
-| Proyecto | **un documento con varios circuitos**: formato 5, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa, guardado/apertura de todos y la fuente de cada registrador; la novena falta es un tubo que une dos circuitos |
+| Proyecto | **un documento con varios circuitos**: formato 6, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa, guardado/apertura de todos y la fuente de cada registrador; la novena falta es un tubo que une dos circuitos |
 | Exportación | **desde la ventana y sin ventana**: Archivo ▸ Exportar escribe PDF o PNG (300 dpi) de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Deuda: no hay panel de márgenes, tamaño personalizado ni resolución |
 | Comprobación | 7 de las 9 faltas, cada una señalada en el dibujo; las otras 2 necesitan el tubo cuyos extremos no encajan y la biblioteca eléctrica con su encoder (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; **caudalímetro** (`behaviour = "flow_meter"`): restricción en la línea que informa del gas que la atraviesa, en litros normales por minuto; **registrador** (`behaviour = "recorder"`): componente sin puertos que dibuja una magnitud elegida durante 60 s; el dinamómetro queda `not planned` hasta que exista un dominio mecánico |
@@ -121,7 +121,7 @@ especificación de lo que sigue.
 | Física de gas, válvula por posiciones, cilindro con muelle y rozamiento | **hecho** | ISO 6358 contra cálculo a mano, balance de masa 1e-9, carrera acotada, 10⁵ pasos sin NaN |
 | Lienzo: símbolos del catálogo, clic en la válvula, lecturas en vivo | **hecho** | `--selftest` y capturas de pantalla |
 | Armazón (cinta, barra lateral, barra de estado) y tema | **hecho, en Qt Quick** | `--check-theme`, `--check-icons` y `--selftest`; capturas claro/oscuro; barra lateral dibujada con el símbolo de cada definición |
-| Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, repartir, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
+| Editor: documento, deshacer, tuberías, T, reencaminar, copiar, girar, reflejar, selección múltiple, alinear, repartir, clases de conducto, designación | **hecho** | pruebas de `doc`, del ABI y `--selftest`; fila por fila en [capabilities.md](capabilities.md) |
 | La hoja es la red que resuelve el solver | **hecho** | pruebas de red, el circuito 5/2 + doble efecto por el ABI, tubos coloreados |
 | Proyecto de circuitos | **hecho** | formato 4, selector, añadir/renombrar, guardado y apertura; prueba ABI `circuits_can_be_added_renamed_and_survive_a_save_and_open` y la novena falta `a_pipe_between_two_circuits_is_the_ninth_fault` |
 | Caudalímetro | **hecho** | `flow.meter`, restricción ISO 6358 en la línea que informa del caudal en litros normales por minuto; pruebas de solver, ABI y dibujo, pasos `--selftest` y revisión del símbolo |
@@ -130,8 +130,8 @@ especificación de lo que sigue.
 | Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 17 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Instrumentos y ejecución hasta cambio | **hecho** | manómetro, caudalímetro, registrador de 60 s y «Hasta cambio»; el dinamómetro queda `not planned` con la razón escrita |
 
-**Total de pruebas: 280** — `core` 7, `catalog` 37, `file` 25, `solver` 38, `doc` 38,
-`draw` 41, `check` 12, `export` 40, `ffi` 37, `cli` 5.
+**Total de pruebas: 283** — `core` 7, `catalog` 37, `file` 27, `solver` 38, `doc` 38,
+`draw` 41, `check` 12, `export` 40, `ffi` 38, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
@@ -299,7 +299,7 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 280 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 283 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do
@@ -456,6 +456,7 @@ eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 | **P2.2** | **hecho**: registrador de 60 s con fuente elegida; dinamómetro `not planned` (necesita dominio mecánico) |
 | **P3.1** | **hecho**: repartir con huecos iguales entre cajas, horizontal y vertical, en un solo deshacer |
 | **P3.2** | **hecho**: tapón ciego y silenciador como archivos, con el escape restringido de verdad |
+| **P3.3** | **hecho**: clases de conducto por tubo (trabajo, pilotaje, drenaje) en el formato 6 |
 | **M5** | **hecho**: manómetro, caudalímetro, registrador y «Hasta cambio»; el dinamómetro queda `not planned` |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
 

@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 5. The implementation is
+Status: current, format 6. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,12 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `5` | `1` to `5` | always `5` |
+| `format` | `6` | `1` to `6` | always `6` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
   understands (4)`; it is never guessed.
+- **Version 6** added the `class` of a pipe: working, pilot or drain. A working line is
+  not written, so an old sheet looks as it always did.
 - **Version 5** added the `source` of a recorder: which placement it charts and which
   quantity. An older file reads with no recorder bound. The migration is step-wise, so a
   format 4 project keeps its circuits; a single step that reset them would merge every
@@ -157,7 +159,8 @@ rule, refused by the ABI rather than written into the file.
   "from_port": "1",
   "to": 2,
   "to_port": "1",
-  "offset_tenths": 25
+  "offset_tenths": 25,
+  "class": "pilot"
 }
 ```
 
@@ -167,6 +170,7 @@ rule, refused by the ABI rather than written into the file.
 | `from`, `to` | integer | yes | Placement ids in the project, different from each other. |
 | `from_port`, `to_port` | string | yes | Port ids declared by the definition; non-empty, at most 128 bytes. |
 | `offset_tenths` | integer | no, default `0` | Offset of the middle segment from the automatic route, in tenths of a millimetre. Bounded to ±10 000. |
+| `class` | string | no, default `working` | `working`, `pilot` or `drain`; decides the dash pattern. A working line is omitted. |
 
 The two ends **should** belong to the same circuit. The format does not refuse a pipe whose
 ends are in different circuits, because the check has to see it: that is the ninth fault,
