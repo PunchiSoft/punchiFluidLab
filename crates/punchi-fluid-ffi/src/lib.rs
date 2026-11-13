@@ -337,7 +337,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 4;
+pub const PF_ABI_VERSION: u32 = 5;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -2764,6 +2764,63 @@ pub unsafe extern "C" fn pf_export_paper_name(index: u32, out: *mut c_char, capa
     })
 }
 
+/// Export settings, as the window's panel provides them.
+///
+/// One structure instead of a longer argument list: a sheet has a paper, an orientation, a
+/// margin on each side, a resolution and a list, and a caller that wanted to leave one of
+/// them out would otherwise have to remember its place.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PfExportOptions {
+    /// `PF_EXPORT_PNG`, `PF_EXPORT_PDF` or `PF_EXPORT_SVG`.
+    pub kind: u32,
+    /// Index into the paper list, or [`PF_EXPORT_CUSTOM_PAPER`].
+    pub paper: u32,
+    /// `PF_EXPORT_LANDSCAPE` and `PF_EXPORT_PARTS_LIST`, OR-ed together.
+    pub flags: u32,
+    /// Resolution for a PNG, ignored by the vector writers.
+    pub dpi: f32,
+    /// Margin above the frame, millimetres.
+    pub margin_top: f32,
+    /// Margin right of the frame, millimetres.
+    pub margin_right: f32,
+    /// Margin below the frame, millimetres.
+    pub margin_bottom: f32,
+    /// Margin left of the frame, millimetres.
+    pub margin_left: f32,
+    /// Width of a custom sheet, millimetres; ignored for a named paper.
+    pub width_mm: f32,
+    /// Height of a custom sheet, millimetres.
+    pub height_mm: f32,
+}
+
+/// The `paper` value that means "the size in `width_mm` and `height_mm`".
+pub const PF_EXPORT_CUSTOM_PAPER: u32 = u32::MAX;
+
+/// Turns the sheet on its side.
+pub const PF_EXPORT_LANDSCAPE: u32 = 1;
+
+/// Prints the parts list above the block.
+pub const PF_EXPORT_PARTS_LIST: u32 = 2;
+
+/// The settings a caller gets when it passes nothing: A4 portrait, 18 mm margins, the list.
+impl Default for PfExportOptions {
+    fn default() -> Self {
+        Self {
+            kind: PF_EXPORT_PDF,
+            paper: 1,
+            flags: PF_EXPORT_PARTS_LIST,
+            dpi: 300.0,
+            margin_top: 18.0,
+            margin_right: 18.0,
+            margin_bottom: 18.0,
+            margin_left: 18.0,
+            width_mm: 210.0,
+            height_mm: 297.0,
+        }
+    }
+}
+
 /// Writes the sheet, as it is drawn, to `path`.
 ///
 /// The page is composed by the export crate and drawn by the session, so what is printed is
@@ -2783,64 +2840,119 @@ pub unsafe extern "C" fn pf_session_export(
     dpi: f32,
     date: *const c_char,
 ) -> i32 {
+    let options = PfExportOptions {
+        kind,
+        paper,
+        flags: if landscape == 0 {
+            PF_EXPORT_PARTS_LIST
+        } else {
+            PF_EXPORT_LANDSCAPE | PF_EXPORT_PARTS_LIST
+        },
+        dpi,
+        ..PfExportOptions::default()
+    };
+    // SAFETY: the caller upholds the contract of the same three pointers.
+    unsafe { pf_session_export_with(session, path, date, &raw const options) }
+}
+
+/// Writes the sheet with the panel's settings: paper, margins, resolution and list.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, `path` and `date` NUL-terminated
+/// strings, and `options` null or pointing to a readable [`PfExportOptions`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_export_with(
+    session: *mut PfSession,
+    path: *const c_char,
+    date: *const c_char,
+    options: *const PfExportOptions,
+) -> i32 {
     guard(|| {
         // SAFETY: the caller promises a live session pointer.
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        if path.is_null() {
+        if path.is_null() || date.is_null() || options.is_null() {
             return PF_ERR_NULL;
         }
-        // SAFETY: the caller promised a NUL-terminated string.
-        let Ok(target) = unsafe { CStr::from_ptr(path) }.to_str() else {
+        // SAFETY: the caller promised a readable structure.
+        let options = unsafe { options.read() };
+        // SAFETY: the caller promised NUL-terminated strings.
+        let (Ok(target), Ok(date)) = (
+            unsafe { CStr::from_ptr(path) }.to_str(),
+            unsafe { CStr::from_ptr(date) }.to_str(),
+        ) else {
             return PF_ERR_MODEL;
         };
+        session.export_page(target, date, &options)
+    })
+}
+
+impl PfSession {
+    /// Composes and writes one page, from the panel's settings.
+    fn export_page(&mut self, target: &str, date: &str, options: &PfExportOptions) -> i32 {
+        let kind = options.kind;
         if target.is_empty() || target.len() > 4096 {
-            return PF_ERR_MODEL;
+            return self.fail("the export path is empty or too long");
         }
-        if date.is_null() {
-            return PF_ERR_NULL;
-        }
-        // SAFETY: the caller promised a NUL-terminated string.
-        let Ok(date) = unsafe { CStr::from_ptr(date) }.to_str() else {
-            return PF_ERR_MODEL;
-        };
         if date.is_empty() || date.len() > 32 || date.chars().any(char::is_control) {
-            return session.fail("the export date is empty or invalid");
+            return self.fail("the export date is empty or invalid");
         }
-        let Some(paper) = punchi_fluid_export::PaperSize::ALL.get(paper as usize) else {
-            return session.fail("no such paper");
+        let paper = if options.paper == PF_EXPORT_CUSTOM_PAPER {
+            match punchi_fluid_export::PaperSize::custom(options.width_mm, options.height_mm) {
+                Some(paper) => paper,
+                None => {
+                    return self.fail("the custom paper is outside the bounds the export accepts");
+                }
+            }
+        } else {
+            match punchi_fluid_export::PaperSize::ALL.get(options.paper as usize) {
+                Some(paper) => *paper,
+                None => return self.fail("no such paper"),
+            }
         };
-        if !paper.is_valid() {
-            return session.fail("the paper is outside the bounds the export accepts");
+        let margins = punchi_fluid_export::Margins {
+            top: options.margin_top,
+            right: options.margin_right,
+            bottom: options.margin_bottom,
+            left: options.margin_left,
+        };
+        if !margins.is_valid() {
+            return self.fail("the margins must be zero or positive");
         }
         // A printed page has to be identifiable after the fact, and the sheet has no name of
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing, and the name of the circuit in view.
-        let mut block = export_block(&session.document, target, date);
-        session.ensure_seeded();
-        let circuit = session.document.active_circuit();
+        let mut block = export_block(&self.document, target, date);
+        self.ensure_seeded();
+        let circuit = self.document.active_circuit();
         let (placed, pipes) = scene(
-            &session.document,
-            &session.catalog,
-            session.system.as_ref(),
-            &session.placement_part,
+            &self.document,
+            &self.catalog,
+            self.system.as_ref(),
+            &self.placement_part,
             circuit,
-            &session.charts,
+            &self.charts,
         );
-        let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &session.catalog);
+        let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
         let mut page = punchi_fluid_export::Page {
-            paper: *paper,
-            orientation: if landscape == 0 {
+            paper,
+            orientation: if options.flags & PF_EXPORT_LANDSCAPE == 0 {
                 punchi_fluid_export::Orientation::Portrait
             } else {
                 punchi_fluid_export::Orientation::Landscape
             },
-            parts: Some(parts_list(&session.document, &session.catalog, circuit)),
+            margins,
+            parts: if options.flags & PF_EXPORT_PARTS_LIST == 0 {
+                None
+            } else {
+                Some(parts_list(&self.document, &self.catalog, circuit))
+            },
             ..punchi_fluid_export::Page::a4(block.clone())
         };
         let Ok(area) = punchi_fluid_export::drawing_area(&page, &block) else {
-            return session.fail("the page leaves no room for the drawing");
+            return self.fail("the page leaves no room for the drawing");
         };
         let scale = bounds.map_or(1.0, |bounds| {
             punchi_fluid_draw::surface::fit_scale(bounds, area)
@@ -2865,7 +2977,7 @@ pub unsafe extern "C" fn pf_session_export(
                 &mut fitted,
                 &placed,
                 &pipes,
-                &session.catalog,
+                &self.catalog,
                 &punchi_fluid_export::print_ink(),
                 &[],
             );
@@ -2876,14 +2988,14 @@ pub unsafe extern "C" fn pf_session_export(
                 .and_then(|bytes| write_atomically(path, "pdf", &bytes)),
             PF_EXPORT_SVG => punchi_fluid_export::render_svg_with(&page, &block, draw)
                 .and_then(|text| write_atomically(path, "svg", text.as_bytes())),
-            _ => punchi_fluid_export::render_png_with(&page, &block, dpi.max(72.0), draw)
+            _ => punchi_fluid_export::render_png_with(&page, &block, options.dpi.max(72.0), draw)
                 .and_then(|bytes| write_atomically(path, "png", &bytes)),
         };
         match written {
             Ok(()) => PF_OK,
-            Err(cause) => session.fail(&cause.to_string()),
+            Err(cause) => self.fail(&cause.to_string()),
         }
-    })
+    }
 }
 
 /// The parts list of one circuit: what it holds, grouped by definition.

@@ -64,7 +64,7 @@ changed lines outside generated files, it is two phases.
 | **P3.3 — pipe classes** ✅ delivered | `feat/pipe-classes` | working, pilot and drain lines chosen per hose, in format 6 | format migration test, ABI test, `--selftest` |
 | **P4.1 — the parts list** ✅ delivered | `feat/parts-list` | a parts list on the printed page, grouped by definition, with quantities and designations | export tests, the ABI export test and a rendered A4 |
 | **P4.2 — SVG** ✅ delivered | `feat/svg-export` | the sheet as a vector document beside PDF and PNG, in millimetres and as text | a vector fixture, the PDF/SVG text parity test, the ABI test, `--selftest` |
-| **P4.3 — the export panel** | `feat/export-panel` | margins, custom paper size, PNG resolution and a parts-list toggle | panel tests, `--selftest` |
+| **P4.3 — the export panel** ✅ delivered | `feat/export-panel` | custom paper, four margins, PNG resolution and the parts-list toggle, in one options structure | ABI test with its refusals, `--selftest` |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 

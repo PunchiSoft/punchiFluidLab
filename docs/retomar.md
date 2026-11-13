@@ -44,7 +44,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
 | Proyecto | **un documento con varios circuitos**: formato 6, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa, guardado/apertura de todos y la fuente de cada registrador; la novena falta es un tubo que une dos circuitos |
-| Exportación | **desde la ventana y sin ventana**, con **lista de piezas** en la hoja: Archivo ▸ Exportar escribe PDF, PNG (300 dpi) o **SVG** de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Deuda: no hay panel de márgenes, tamaño personalizado ni resolución |
+| Exportación | **desde la ventana y sin ventana**, con **lista de piezas** en la hoja: Archivo ▸ Exportar escribe PDF, PNG (300 dpi) o **SVG** de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Con panel de **márgenes, tamaño personalizado, resolución y lista de piezas** |
 | Comprobación | 7 de las 9 faltas, cada una señalada en el dibujo; las otras 2 necesitan el tubo cuyos extremos no encajan y la biblioteca eléctrica con su encoder (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; **caudalímetro** (`behaviour = "flow_meter"`): restricción en la línea que informa del gas que la atraviesa, en litros normales por minuto; **registrador** (`behaviour = "recorder"`): componente sin puertos que dibuja una magnitud elegida durante 60 s; el dinamómetro queda `not planned` hasta que exista un dominio mecánico |
 | Símbolos | lint de 8 reglas; **17 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
@@ -459,6 +459,7 @@ eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 | **P3.3** | **hecho**: clases de conducto por tubo (trabajo, pilotaje, drenaje) en el formato 6 |
 | **P4.1** | **hecho**: lista de piezas en la hoja impresa, agrupada por definición |
 | **P4.2** | **hecho**: la hoja como SVG vectorial, en milímetros y como texto |
+| **P4.3** | **hecho**: panel de exportación con papel personalizado, márgenes, resolución y lista |
 | **M5** | **hecho**: manómetro, caudalímetro, registrador y «Hasta cambio»; el dinamómetro queda `not planned` |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
 

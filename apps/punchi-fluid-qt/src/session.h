@@ -137,6 +137,9 @@ public:
     ///
     /// `pdf` is `true` for a vector page and `false` for a raster at `dpi`. `paper` is an index
     /// into the list the export offers, which `paperNames` mirrors for the panel.
+    /// Writes the sheet with the panel's settings, as a map of `path`, `kind`, `paper`,
+    /// `width`, `height`, `landscape`, `dpi`, `margins` (four values) and `parts_list`.
+    Q_INVOKABLE bool exportWithOptions(const QVariantMap &options);
     /// Writes the sheet: `kind` 0 PNG, 1 PDF, 2 SVG.
     Q_INVOKABLE bool exportTo(const QString &path, int kind, int paper, bool landscape,
                               qreal dpi);

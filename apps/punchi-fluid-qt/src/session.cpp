@@ -726,6 +726,56 @@ void FluidSession::applyPalette(const QPalette &palette)
     emit changed();
 }
 
+bool FluidSession::exportWithOptions(const QVariantMap &options)
+{
+    if (!m_session) {
+        return false;
+    }
+    const QString local = options.value(QStringLiteral("path")).toString();
+    if (local.isEmpty()) {
+        return false;
+    }
+    const QString path = QUrl(local).isLocalFile() ? QUrl(local).toLocalFile() : local;
+    const QByteArray encoded = path.toUtf8();
+    const QByteArray date = QDate::currentDate().toString(Qt::ISODate).toUtf8();
+    const QVariantList margins = options.value(QStringLiteral("margins")).toList();
+    const auto margin = [&margins](int index) -> float {
+        return margins.size() > index ? margins.at(index).toFloat() : 18.0F;
+    };
+    PfExportOptions settings {};
+    const int kind = options.value(QStringLiteral("kind"), 1).toInt();
+    settings.kind = kind == 0 ? PF_EXPORT_PNG : (kind == 2 ? PF_EXPORT_SVG : PF_EXPORT_PDF);
+    settings.paper = static_cast<uint32_t>(
+        qMax(options.value(QStringLiteral("paper"), 1).toInt(), 0));
+    if (options.value(QStringLiteral("custom_paper")).toBool()) {
+        settings.paper = PF_EXPORT_CUSTOM_PAPER;
+        settings.width_mm = options.value(QStringLiteral("width")).toFloat();
+        settings.height_mm = options.value(QStringLiteral("height")).toFloat();
+    }
+    settings.flags = 0;
+    if (options.value(QStringLiteral("landscape")).toBool()) {
+        settings.flags |= PF_EXPORT_LANDSCAPE;
+    }
+    if (options.value(QStringLiteral("parts_list")).toBool()) {
+        settings.flags |= PF_EXPORT_PARTS_LIST;
+    }
+    settings.dpi = options.value(QStringLiteral("dpi")).toFloat();
+    settings.margin_top = margin(0);
+    settings.margin_right = margin(1);
+    settings.margin_bottom = margin(2);
+    settings.margin_left = margin(3);
+    if (pf_session_export_with(m_session, encoded.constData(), date.constData(), &settings)
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no se pudo exportar");
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    emit changed();
+    return true;
+}
+
 bool FluidSession::exportTo(const QString &path, int kind, int paper, bool landscape,
                             qreal dpi)
 {

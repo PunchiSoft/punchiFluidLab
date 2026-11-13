@@ -17,12 +17,13 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 
 use punchi_fluid::{
-    PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_PDF,
-    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
-    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet,
-    PfFrame, PfInk, PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_active_circuit,
-    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
-    pf_session_build_frame, pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
+    PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL,
+    PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE,
+    PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PfAbi,
+    PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
+    PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
+    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
+    pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
     pf_session_chart_candidate_count, pf_session_chart_source, pf_session_check,
     pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
     pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
@@ -30,21 +31,21 @@ use punchi_fluid::{
     pf_session_component_rect, pf_session_component_valve_position,
     pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
     pf_session_copy_selected, pf_session_describe_component, pf_session_duplicate_component,
-    pf_session_duplicate_selection, pf_session_export, pf_session_finding_at,
-    pf_session_forget_recent, pf_session_free, pf_session_hit_component, pf_session_hit_valve,
-    pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
-    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
-    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
-    pf_session_port_point, pf_session_press_component_valve, pf_session_press_valve,
-    pf_session_preview, pf_session_recent_count, pf_session_recent_path, pf_session_recover,
-    pf_session_redo, pf_session_release_component_valve, pf_session_release_valve,
-    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
-    pf_session_rename_circuit, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_duplicate_selection, pf_session_export, pf_session_export_with,
+    pf_session_finding_at, pf_session_forget_recent, pf_session_free, pf_session_hit_component,
+    pf_session_hit_valve, pf_session_is_modified, pf_session_last_error,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
+    pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
+    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset,
+    pf_session_place_component, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
+    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
+    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
+    pf_session_remove_selection, pf_session_rename_circuit, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
     pf_session_space_selection, pf_session_telemetry, pf_session_toggle_select,
     pf_session_toggle_valve, pf_session_undo, pf_session_valve_spring_return,
@@ -2442,6 +2443,84 @@ fn an_export_can_be_a_vector_drawing() {
     for text in ["2026-11-12", "Circuito 1", "lista de piezas", "Cilindro"] {
         assert!(svg.contains(text), "the sheet is missing {text}");
     }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_export_panel_settings_reach_the_page() {
+    let session = session();
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("panel.svg");
+    let path_c = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    let date = CString::new("2026-11-12").expect("a date");
+
+    // A custom sheet with 5 mm margins and no parts list, as a vector page.
+    let options = PfExportOptions {
+        kind: PF_EXPORT_SVG,
+        paper: PF_EXPORT_CUSTOM_PAPER,
+        flags: 0,
+        margin_top: 5.0,
+        margin_right: 5.0,
+        margin_bottom: 5.0,
+        margin_left: 5.0,
+        width_mm: 100.0,
+        height_mm: 80.0,
+        ..PfExportOptions::default()
+    };
+    // SAFETY: live session, NUL-terminated strings and a readable structure.
+    assert_eq!(
+        unsafe {
+            pf_session_export_with(session, path_c.as_ptr(), date.as_ptr(), &raw const options)
+        },
+        PF_OK
+    );
+    let svg = std::fs::read_to_string(path.to_str().unwrap_or_default()).expect("the SVG exists");
+    assert!(
+        svg.contains("viewBox=\"0 0 100.0 80.0\""),
+        "the custom paper reached the page"
+    );
+    assert!(
+        !svg.contains("lista de piezas"),
+        "the panel turned the list off"
+    );
+
+    // A page whose margins leave no room is refused before anything is written.
+    let impossible = PfExportOptions {
+        margin_top: 60.0,
+        margin_bottom: 60.0,
+        ..options
+    };
+    // SAFETY: the same contracts as above.
+    assert_eq!(
+        unsafe {
+            pf_session_export_with(
+                session,
+                path_c.as_ptr(),
+                date.as_ptr(),
+                &raw const impossible,
+            )
+        },
+        PF_ERR_MODEL
+    );
+    // A custom size outside the bounds is refused, not clamped.
+    let too_small = PfExportOptions {
+        width_mm: 10.0,
+        height_mm: 10.0,
+        ..options
+    };
+    // SAFETY: the same contracts as above.
+    assert_eq!(
+        unsafe {
+            pf_session_export_with(
+                session,
+                path_c.as_ptr(),
+                date.as_ptr(),
+                &raw const too_small,
+            )
+        },
+        PF_ERR_MODEL
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
