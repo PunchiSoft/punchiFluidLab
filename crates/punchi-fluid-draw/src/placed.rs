@@ -54,6 +54,8 @@ pub enum Reading {
     Flow(f32),
     /// Extension of a cylinder, `mm`.
     Position(f32),
+    /// Whether an indicator is active: a lamp is lit, a buzzer sounds.
+    Indicator(bool),
 }
 
 impl Reading {
@@ -64,6 +66,8 @@ impl Reading {
             Self::Pressure(value) => format!("{value:.1} bar"),
             Self::Flow(value) => format!("{value:.1} l/min"),
             Self::Position(value) => format!("{value:.1} mm"),
+            Self::Indicator(true) => "encendida".to_owned(),
+            Self::Indicator(false) => "apagada".to_owned(),
         }
     }
 }
@@ -158,6 +162,42 @@ fn draw_moving_bar(
             surface.line(&[fixed, end], Stroke::new(symbol::LINE, ink.line));
         }
         _ => {}
+    }
+}
+
+/// Draws the rays of a lit indicator around the circle its file declares.
+///
+/// The state is never colour alone: a lit lamp gains rays and the word `encendida` beside
+/// it, and an unlit one keeps both away. The centre and radius come from the file, so a
+/// larger lamp is another file and not another branch.
+#[allow(clippy::cast_possible_truncation)]
+fn draw_indicator_rays(
+    surface: &mut dyn Surface,
+    placed: &Placed<'_>,
+    definition: &ComponentDefinition,
+    ink: &Ink,
+) {
+    let Some(circle) = definition.symbol.iter().find(|primitive| {
+        primitive.kind == punchi_fluid_catalog::PrimitiveKind::Circle && primitive.points.len() >= 3
+    }) else {
+        return;
+    };
+    let inner = placed.box_rect();
+    let unit = inner.width().min(inner.height());
+    let centre = symbol::at(inner, circle.points[0], circle.points[1]);
+    let radius = circle.points[2] as f32 * unit;
+    let from = radius * 1.2;
+    let to = radius * 1.45;
+    for step in 0..8_u16 {
+        let angle = f32::from(step) * std::f32::consts::FRAC_PI_4;
+        let (sin, cos) = angle.sin_cos();
+        surface.line(
+            &[
+                Pt::new(centre.x + from * cos, centre.y + from * sin),
+                Pt::new(centre.x + to * cos, centre.y + to * sin),
+            ],
+            Stroke::new(symbol::LINE, ink.line),
+        );
     }
 }
 
@@ -300,6 +340,9 @@ pub fn draw_placed(
         }
         if let Some(definition) = catalog.get(placed.catalog_id) {
             draw_moving_bar(surface, placed, definition, ink);
+            if matches!(placed.reading, Some(Reading::Indicator(true))) {
+                draw_indicator_rays(surface, placed, definition, ink);
+            }
         }
     }
 

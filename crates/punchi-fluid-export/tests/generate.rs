@@ -99,19 +99,21 @@ fn write_review_images(catalog: &Catalog) {
             );
             // A contact and a relay have a moving bar the renderer draws from the run
             // state; the review image shows it at rest, not only the file's static part.
-            let moving = matches!(
+            let stateful = matches!(
                 definition.behaviour,
                 punchi_fluid_catalog::Behaviour::Contact { .. }
                     | punchi_fluid_catalog::Behaviour::Relay { .. }
+                    | punchi_fluid_catalog::Behaviour::Lamp
             );
-            if moving {
+            if stateful {
                 let placed = punchi_fluid_draw::Placed {
                     index: 0,
                     catalog_id: &definition.id,
                     rect: inner,
                     extension: 0.0,
                     valve_position: 0,
-                    reading: None,
+                    reading: matches!(definition.behaviour, punchi_fluid_catalog::Behaviour::Lamp)
+                        .then_some(punchi_fluid_draw::placed::Reading::Indicator(true)),
                     series: None,
                     contact_closed: Some(false),
                     orientation: punchi_fluid_draw::Orientation::NONE,

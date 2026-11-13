@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Indicator lamp: one terminal, lit while the control net feeds it.
+#
+# The lamp is a load of the control circuit, not a source: its single terminal is live when
+# the line that reaches it is live, and the return is the rail the whole net already has
+# (ADR 0018, ADR 0021). A lit lamp is drawn with rays and the word `encendida`, so the state
+# is never told by colour alone.
+#
+# The symbol is drawn from the general convention for an indicator: a circle with a cross
+# and a stem to its terminal.
+
+schema = 3
+id = "electrical.lamp"
+name = "Indicator lamp"
+name_es = "Lámpara indicadora"
+category = "sensor"
+summary = "Lights while its terminal is live."
+
+[[port]]
+id = "1"
+role = "electrical"
+position = [0.0, 0.42]
+
+[behaviour]
+type = "lamp"
+
+# The stem from the terminal to the glass.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.42, 0.38, 0.42]
+line_class = "electrical"
+
+# The glass and the cross the convention puts inside it. The renderer adds the rays when
+# the lamp is lit; the file draws the lamp at rest.
+[[symbol]]
+kind = "circle"
+points = [0.55, 0.42, 0.17]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.43, 0.30, 0.67, 0.54]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.43, 0.54, 0.67, 0.30]
+line_class = "working"

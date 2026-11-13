@@ -35,6 +35,7 @@ that proves it.
 | 1 | Ninth fault: the short circuit of the rail, and the ledger corrected | `feat(check): short circuit of the rail` | `short_circuit_tests::*`, the CLI reference and the reconciled ledger |
 | 2 | Relay: a coil that closes a contact | `feat(catalog): a relay closes its contact from its coil` | `a_relay_names_two_coil_and_two_contact_terminals`, `a_relay_closes_its_contact_while_its_coil_is_live`, the symbol review |
 | 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
+| 4 | Indicator lamp | `feat(catalog): let a lamp read the control line` | `a_lamp_lights_while_its_line_is_live`, `a_lamp_shows_its_state_as_rays_not_only_colour`, the symbol review |
 
 ## Decisions taken in this run
 
@@ -54,7 +55,10 @@ Recorded so a later session does not reopen them:
 4. **Labels are drawn under the symbol** (already true) and never carry electrical meaning.
 5. **The LED/lamp, the limit switch and the encoder are separate capabilities**, each with its
    own file and test, not one generic "output".
-6. **The reference is a guide to behaviour, not to appearance.** The owner supplied captures
+6. **The lamp and the buzzer are separate capabilities.** The lamp shipped as a visual state;
+   a continuous sound needs the audio path and its own decoding test, so the queue carries
+   the buzzer on its own rather than calling a silent lamp a buzzer.
+7. **The reference is a guide to behaviour, not to appearance.** The owner supplied captures
    and a recording of the reference on 2026-11-13; the ribbon, the animations, the Rust
    workspace and the drawing are ours and stay. No symbol, icon, name or file from that
    program enters the repository: the palette is read as a checklist of components, and every

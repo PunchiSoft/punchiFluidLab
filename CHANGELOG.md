@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### La lámpara indicadora: ver la línea sin mover nada — 2026-11-13
+
+Una línea que solo alimenta una lámpara no tiene parte móvil, así que el estudiante no podía
+ver si estaba viva. La lámpara es el resultado visible más pequeño del circuito de mando y la
+primera pieza que un lector comprueba de un vistazo.
+
+- **Un terminal y nada más**: `type = "lamp"`, con la validación que rechaza un segundo
+  puerto o un rol neumático ([ADR 0021](docs/adr/0021-an-indicator-reads-the-net.md)).
+- **Encendida significa que su terminal está vivo**, con el mismo asentamiento que los relés.
+  La lámpara no añade aristas: observa la red, no la conduce, y el circuito se comporta igual
+  con ella o sin ella.
+- **El estado no es solo color**: una lámpara encendida gana ocho rayos alrededor del círculo
+  que declara su archivo y la palabra «encendida»; apagada no tiene ninguno y dice «apagada».
+- **La interfaz puede preguntar**: `pf_session_indicator_active` devuelve 1, 0 o error, para
+  que la barra de estado y el futuro zumbador lean el mismo estado que la hoja.
+- **El zumbador va aparte**: su sonido continuo necesita el camino de audio y sus propias
+  pruebas; queda en la cola como capacidad propia y no se declara hecho a medias.
+- **Evidencia**: `a_lamp_lights_while_its_line_is_live`,
+  `a_lamp_shows_its_state_as_rays_not_only_colour`, la revisión del símbolo y el lint.
+
 ### Temporizadores TON y TOF, contados por el paso — 2026-11-13
 
 Un pulsador que actúa en el acto no puede arrancar una secuencia después de un tiempo de

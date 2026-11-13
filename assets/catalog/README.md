@@ -261,6 +261,11 @@ kind = "ton"                 # `instant` (default), `ton` or `tof`
 delay_s = 2.0                # 0 to 3600 s; an instant relay leaves it at zero
 ```
 
+```toml
+[behaviour]
+type = "lamp"                # one electrical terminal; lit while its line is live
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -284,6 +289,12 @@ from the state the run settled on. With `kind = "ton"` or `"tof"` the same file 
 the output follows the coil after `delay_s`, counted by the simulation step and never slept
 ([ADR 0020](../docs/adr/0020-timers-count-steps.md)). An `instant` relay must leave the
 delay at zero.
+
+A **lamp** is the load that makes a line visible without a moving part
+([ADR 0021](../docs/adr/0021-an-indicator-reads-the-net.md)): one electrical terminal, lit
+while the net reaches it. The drawing adds rays and the word `encendida` when it is lit, so
+the state is never colour alone, and the solver adds nothing to the gas. An audible indicator
+is a separate part with its own sound path.
 
 ```toml
 [behaviour]

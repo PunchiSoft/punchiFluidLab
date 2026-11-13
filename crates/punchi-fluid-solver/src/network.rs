@@ -204,7 +204,8 @@ impl NetworkPart {
             // exists so the document can hold it, and it contributes nothing to the gas.
             Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
-            | Behaviour::Relay { .. } => PartBehaviour::Electrical,
+            | Behaviour::Relay { .. }
+            | Behaviour::Lamp => PartBehaviour::Electrical,
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {

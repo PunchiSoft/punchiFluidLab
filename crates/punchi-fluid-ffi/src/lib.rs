@@ -573,6 +573,8 @@ pub struct PfSession {
     /// Elapsed time and output of every timer, by placement identity. Bounded by the timer
     /// placements and never grown by a step.
     timers: std::collections::HashMap<u64, TimerState>,
+    /// Whether each lamp is lit, by placement identity. Derived from the net like a coil.
+    indicators: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -669,6 +671,7 @@ impl PfSession {
             relays: std::collections::HashMap::new(),
             control: None,
             timers: std::collections::HashMap::new(),
+            indicators: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -1145,6 +1148,7 @@ impl PfSession {
             model.settle(&self.timers);
         }
         self.publish_relay_state();
+        self.publish_indicators();
         self.position_solenoids(circuit);
     }
 
@@ -1180,6 +1184,22 @@ impl PfSession {
         relays.clear();
         for (relay, closed) in model.relays.iter().zip(&model.state) {
             relays.insert(relay.id, *closed);
+        }
+    }
+
+    /// Keeps the lit state of every lamp for the frame and the interface.
+    fn publish_indicators(&mut self) {
+        let Self {
+            control,
+            indicators,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        indicators.clear();
+        for (id, node) in &model.indicators {
+            indicators.insert(*id, model.live[*node]);
         }
     }
 
@@ -1298,6 +1318,7 @@ impl PfSession {
             model.settle(timers);
         }
         self.publish_relay_state();
+        self.publish_indicators();
         self.position_solenoids(circuit);
     }
 
@@ -1326,6 +1347,7 @@ impl PfSession {
             charts,
             contacts,
             relays,
+            indicators,
             ..
         } = self;
 
@@ -1337,7 +1359,11 @@ impl PfSession {
             placement_part,
             circuit,
             charts,
-            ContactStates { contacts, relays },
+            ContactStates {
+                contacts,
+                relays,
+                indicators,
+            },
         );
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
@@ -2345,6 +2371,9 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             kind,
             delay_s,
         } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
+        Behaviour::Lamp => {
+            text.push_str("Lámpara indicadora: encendida mientras su terminal está vivo\n");
+        }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
 }
@@ -3209,6 +3238,7 @@ impl PfSession {
             ContactStates {
                 contacts: &self.contacts,
                 relays: &self.relays,
+                indicators: &self.indicators,
             },
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
@@ -4253,6 +4283,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
             | Behaviour::Relay { .. }
+            | Behaviour::Lamp
             | Behaviour::Plug
             | Behaviour::Junction => {}
         }
@@ -4743,6 +4774,29 @@ pub unsafe extern "C" fn pf_session_contact_closed(session: *mut PfSession, inde
     })
 }
 
+/// `1` when the lamp at `index` is lit, `0` when it is dark, or a negative error.
+///
+/// A component that is not an indicator reports `PF_ERR_MODEL`, so the front end never
+/// confuses "dark" with "there is no lamp".
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_indicator_active(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    match session.indicators.get(&placement.id()) {
+        Some(on) => i32::from(*on),
+        None => PF_ERR_MODEL,
+    }
+}
+
 /// The line class of one pipe: `0` working, `1` pilot, `2` drain, or a negative error.
 ///
 /// # Safety
@@ -5014,6 +5068,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::ElectricalSupply { .. }
         | Behaviour::Contact { .. }
         | Behaviour::Relay { .. }
+        | Behaviour::Lamp
         | Behaviour::Plug
         | Behaviour::Junction => {}
     }
@@ -5025,6 +5080,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
 struct ContactStates<'a> {
     contacts: &'a std::collections::HashMap<u64, bool>,
     relays: &'a std::collections::HashMap<u64, bool>,
+    indicators: &'a std::collections::HashMap<u64, bool>,
 }
 
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for
@@ -5068,13 +5124,15 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.valve_position_at(part))
                 .unwrap_or(0),
-            reading: recorder_reading(placement, charts).or_else(|| {
-                instrument_reading(
-                    catalog.get(placement.catalog_id.as_str()),
-                    placement_part.get(index).copied().flatten(),
-                    system,
-                )
-            }),
+            reading: indicator_reading(placement, states.indicators)
+                .or_else(|| recorder_reading(placement, charts))
+                .or_else(|| {
+                    instrument_reading(
+                        catalog.get(placement.catalog_id.as_str()),
+                        placement_part.get(index).copied().flatten(),
+                        system,
+                    )
+                }),
             series: chart_series(placement.id(), charts),
             contact_closed: contact_closed(placement, states.contacts, states.relays),
             orientation: placement.orientation,
@@ -5175,6 +5233,7 @@ struct ControlModel {
     wires: Vec<(usize, usize)>,
     contacts: Vec<(usize, usize)>,
     relays: Vec<RelayBinding>,
+    indicators: Vec<(u64, usize)>,
     seeds: Vec<usize>,
     edges: Vec<Vec<usize>>,
     live: Vec<bool>,
@@ -5310,6 +5369,34 @@ fn switches_of(
     (closed_contacts, relays)
 }
 
+/// The lamps of one circuit: the placement identity and the node that lights it.
+fn indicators_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+) -> Vec<(u64, usize)> {
+    let mut indicators = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        if !matches!(definition.behaviour, Behaviour::Lamp) {
+            continue;
+        }
+        let Some(port) = definition.port.first() else {
+            continue;
+        };
+        if let Some(node) = node_of(terminals, index, &port.id) {
+            indicators.push((placement.id(), node));
+        }
+    }
+    indicators
+}
+
 /// Reserves the degree of every node so a refill never grows an edge list.
 fn reserved_edges(
     nodes: usize,
@@ -5340,6 +5427,7 @@ impl ControlModel {
         let (terminals, seeds) = terminals_of(document, catalog, circuit);
         let wires = wires_of(document, circuit, &terminals);
         let (contacts, relays) = switches_of(document, catalog, circuit, &terminals, contacts);
+        let indicators = indicators_of(document, catalog, circuit, &terminals);
         let edges = reserved_edges(terminals.len(), &wires, &contacts, &relays);
         let live = vec![false; terminals.len()];
         let state = vec![false; relays.len()];
@@ -5349,6 +5437,7 @@ impl ControlModel {
             wires,
             contacts,
             relays,
+            indicators,
             seeds,
             edges,
             live,
@@ -5469,6 +5558,19 @@ fn contact_pair(
         Behaviour::Relay { contact, .. } => Some((contact[0].clone(), contact[1].clone())),
         _ => None,
     }
+}
+
+/// The lit state of a lamp as a reading, when the placement is one.
+///
+/// The drawing prints it as the word beside the symbol and the rays around it, so the state
+/// is never told by colour alone.
+fn indicator_reading(
+    placement: &punchi_fluid_doc::Placement,
+    indicators: &std::collections::HashMap<u64, bool>,
+) -> Option<Reading> {
+    indicators
+        .get(&placement.id())
+        .map(|on| Reading::Indicator(*on))
 }
 
 /// Whether a contact on the sheet is closed, when the definition is one.

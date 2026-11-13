@@ -30,21 +30,22 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 1 | The ledger tells the truth; the ninth fault is the short circuit of the control rail | done | a new `short_circuit` finding with a test per side (L–N through a closed contact is reported; a live line with no return is not), and the stale ledger rows corrected |
 | 2 | Relay: a coil that closes a contact | done | a relay file with a coil and a contact; the contact closes only while the coil is live; ABI test with a lamp or a valve behind it |
 | 3 | Timers TON and TOF, bounded | done | a timer file with `kind = "ton"`/`"tof"` and a delay; the output changes after the declared time and never allocates per step; a test with a fixed step count |
-| 4 | Indicator lamp and buzzer | ready | a one-terminal lamp lit while its net is live, and an acoustic indicator that sounds while it is; the drawing shows lit/unlit as shape and text, never colour alone |
-| 5 | Limit switch, driven by a cylinder at an end | ready | a contact whose state follows a chosen cylinder reaching an end; a test with a stroke that closes it |
-| 6 | Pressure switch and vacuum switch | ready | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
-| 7 | Manual switches: selector, maintained, mushroom and a normally-closed contact | ready | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
-| 8 | Latching relay: set and reset coils | ready | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
-| 9 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
-| 10 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
-| 11 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
-| 12 | GRAFCET: steps, transitions and actions | ready | an ADR and a first slice: a sequence drawn from files, one step active, transitions advance it; a test that walks the sequence |
-| 13 | Full symbol key in the printed legend | ready | every built-in symbol printed once with its name, bounded to the page, with an export test |
-| 14 | The 300 dpi review of every built-in symbol | blocked | unblocked by a screenshot pass at 300 dpi in both themes; needs the maintainer's reader |
-| 15 | Hydraulic model and library | blocked | needs its own ADR and phase: fluid properties, incompressible network, symbols; it is not a slice |
-| 16 | DC motor and generator | blocked | needs a mechanical domain and an electrical machine model, each with its own ADR; a spinning box without a load would not be a model |
-| 17 | Voltmeter, ammeter and analogue pressure sensor | blocked | the boolean net carries liveness, not voltage or current; unblocked by a voltage/current model with its own ADR |
-| 18 | Force sensor | blocked | needs a mechanical domain: `p·A` is not a force measurement, so the sensor waits with the force meter |
+| 4 | Indicator lamp | done | a one-terminal lamp lit while its net is live; the drawing shows lit/unlit as rays and the word beside it, never colour alone; ABI query and a drawing test |
+| 5 | Buzzer with a continuous sound | ready | an audible indicator with one terminal; it sounds while its net is live and stops when it is not; a generated `buzzer.wav`, the sample decoding in `--check-sounds`, and a session test that starts and stops it |
+| 6 | Limit switch, driven by a cylinder at an end | ready | a contact whose state follows a chosen cylinder reaching an end; a test with a stroke that closes it |
+| 7 | Pressure switch and vacuum switch | ready | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
+| 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | ready | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
+| 9 | Latching relay: set and reset coils | ready | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
+| 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
+| 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
+| 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
+| 13 | GRAFCET: steps, transitions and actions | ready | an ADR and a first slice: a sequence drawn from files, one step active, transitions advance it; a test that walks the sequence |
+| 14 | Full symbol key in the printed legend | ready | every built-in symbol printed once with its name, bounded to the page, with an export test |
+| 15 | The 300 dpi review of every built-in symbol | blocked | unblocked by a screenshot pass at 300 dpi in both themes; needs the maintainer's reader |
+| 16 | Hydraulic model and library | blocked | needs its own ADR and phase: fluid properties, incompressible network, symbols; it is not a slice |
+| 17 | DC motor and generator | blocked | needs a mechanical domain and an electrical machine model, each with its own ADR; a spinning box without a load would not be a model |
+| 18 | Voltmeter, ammeter and analogue pressure sensor | blocked | the boolean net carries liveness, not voltage or current; unblocked by a voltage/current model with its own ADR |
+| 19 | Force sensor | blocked | needs a mechanical domain: `p·A` is not a force measurement, so the sensor waits with the force meter |
 
 ## The electrical palette as scope
 
