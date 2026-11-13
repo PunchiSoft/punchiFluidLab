@@ -39,6 +39,7 @@ pub struct Pipe<'a> {
     /// Class of the line: working, pilot or drain, which decides its pattern.
     pub class: LineClass,
 }
+use crate::control_drawing::{indicator_rays, moving_bar};
 use crate::symbol::{self, Ink};
 
 /// What an instrument shows, in the unit its definition declares.
@@ -54,8 +55,10 @@ pub enum Reading {
     Flow(f32),
     /// Extension of a cylinder, `mm`.
     Position(f32),
-    /// Whether an indicator is active: a lamp is lit, a buzzer sounds.
+    /// Whether a lamp is lit.
     Indicator(bool),
+    /// Whether a buzzer sounds.
+    Audible(bool),
 }
 
 impl Reading {
@@ -68,6 +71,8 @@ impl Reading {
             Self::Position(value) => format!("{value:.1} mm"),
             Self::Indicator(true) => "encendida".to_owned(),
             Self::Indicator(false) => "apagada".to_owned(),
+            Self::Audible(true) => "sonando".to_owned(),
+            Self::Audible(false) => "en silencio".to_owned(),
         }
     }
 }
@@ -119,85 +124,6 @@ impl Placed<'_> {
     #[must_use]
     pub fn box_rect(&self) -> Rect {
         self.orientation.box_of(self.rect)
-    }
-}
-
-/// Draws the moving bar of a contact or a relay from the state the run reports.
-///
-/// The bar is the same idea for both parts: the file holds one symbol and the sheet shows
-/// two, because the state belongs to the run and not to the document. A relay's bar is drawn
-/// between the gap its file leaves at x = 0.72, and tilts away from the moving terminal when
-/// it rests (ADR 0019).
-fn draw_moving_bar(
-    surface: &mut dyn Surface,
-    placed: &Placed<'_>,
-    definition: &ComponentDefinition,
-    ink: &Ink,
-) {
-    match &definition.behaviour {
-        punchi_fluid_catalog::Behaviour::Contact { normally_closed } => {
-            let closed = placed.contact_closed.unwrap_or(*normally_closed);
-            let inner = placed.box_rect();
-            let y = if closed { 0.5 } else { 0.32 };
-            surface.line(
-                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
-                Stroke::new(symbol::LINE, ink.line),
-            );
-        }
-        punchi_fluid_catalog::Behaviour::Relay {
-            normally_closed, ..
-        } => {
-            let closed = placed.contact_closed.unwrap_or(*normally_closed);
-            let inner = placed.box_rect();
-            let fixed = symbol::at(inner, 0.72, 0.30);
-            let moving = symbol::at(inner, 0.72, 0.70);
-            let end = if closed {
-                moving
-            } else {
-                Pt::new(
-                    moving.x + inner.width() * 0.10,
-                    moving.y - inner.height() * 0.12,
-                )
-            };
-            surface.line(&[fixed, end], Stroke::new(symbol::LINE, ink.line));
-        }
-        _ => {}
-    }
-}
-
-/// Draws the rays of a lit indicator around the circle its file declares.
-///
-/// The state is never colour alone: a lit lamp gains rays and the word `encendida` beside
-/// it, and an unlit one keeps both away. The centre and radius come from the file, so a
-/// larger lamp is another file and not another branch.
-#[allow(clippy::cast_possible_truncation)]
-fn draw_indicator_rays(
-    surface: &mut dyn Surface,
-    placed: &Placed<'_>,
-    definition: &ComponentDefinition,
-    ink: &Ink,
-) {
-    let Some(circle) = definition.symbol.iter().find(|primitive| {
-        primitive.kind == punchi_fluid_catalog::PrimitiveKind::Circle && primitive.points.len() >= 3
-    }) else {
-        return;
-    };
-    let inner = placed.box_rect();
-    let unit = inner.width().min(inner.height());
-    let centre = symbol::at(inner, circle.points[0], circle.points[1]);
-    let radius = circle.points[2] as f32 * unit;
-    let from = radius * 1.2;
-    let to = radius * 1.45;
-    for step in 0..8_u16 {
-        let angle = f32::from(step) * std::f32::consts::FRAC_PI_4;
-        let (sin, cos) = angle.sin_cos();
-        surface.line(
-            &[
-                Pt::new(centre.x + from * cos, centre.y + from * sin),
-                Pt::new(centre.x + to * cos, centre.y + to * sin),
-            ],
-            Stroke::new(symbol::LINE, ink.line),
-        );
     }
 }
 
@@ -339,9 +265,11 @@ pub fn draw_placed(
             draw_series(surface, placed, ink);
         }
         if let Some(definition) = catalog.get(placed.catalog_id) {
-            draw_moving_bar(surface, placed, definition, ink);
+            moving_bar(surface, placed, definition, ink);
+            // A lamp gains rays when lit; a buzzer's waves are in its file, and the word
+            // beside it plus the sound carry its state (ADR 0022).
             if matches!(placed.reading, Some(Reading::Indicator(true))) {
-                draw_indicator_rays(surface, placed, definition, ink);
+                indicator_rays(surface, placed, definition, ink);
             }
         }
     }

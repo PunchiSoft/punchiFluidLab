@@ -605,6 +605,7 @@ void FluidSession::refresh(bool forced)
     if (!m_session) {
         return;
     }
+    refreshBuzzer();
     PfTelemetry telemetry {};
     if (pf_session_telemetry(m_session, &telemetry) != PF_OK) {
         return;
@@ -1032,6 +1033,16 @@ QString FluidSession::recentPath() const
         directory = QDir::homePath();
     }
     return directory + QStringLiteral("/recent.json");
+}
+
+void FluidSession::refreshBuzzer()
+{
+    const bool active = m_session && pf_session_buzzer_active(m_session) == 1;
+    if (active == m_buzzerActive) {
+        return;
+    }
+    m_buzzerActive = active;
+    emit buzzerChanged();
 }
 
 void FluidSession::refreshRecent()

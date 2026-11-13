@@ -21,6 +21,7 @@ struct SoundSources
     SoundSource valve;
     SoundSource air;
     SoundSource cylinder;
+    SoundSource buzzer;
 };
 
 /// Resolves every sample: a file in `$XDG_DATA_HOME/punchi-fluid-lab/sounds/` if it
@@ -49,6 +50,7 @@ class SoundLibrary : public QObject
     Q_PROPERTY(QUrl valve READ valve CONSTANT)
     Q_PROPERTY(QUrl air READ air CONSTANT)
     Q_PROPERTY(QUrl cylinder READ cylinder CONSTANT)
+    Q_PROPERTY(QUrl buzzer READ buzzer CONSTANT)
 
 public:
     explicit SoundLibrary(QObject *parent = nullptr);
@@ -56,6 +58,7 @@ public:
     QUrl valve() const { return m_sources.valve.url; }
     QUrl air() const { return m_sources.air.url; }
     QUrl cylinder() const { return m_sources.cylinder.url; }
+    QUrl buzzer() const { return m_sources.buzzer.url; }
 
 private:
     SoundSources m_sources;

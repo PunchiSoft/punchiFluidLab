@@ -153,6 +153,7 @@ int main(int argc, char *argv[])
         report("valve", sources.valve);
         report("air", sources.air);
         report("cyl", sources.cylinder);
+        report("buzz", sources.buzzer);
         if (failures > 0) {
             return 1;
         }

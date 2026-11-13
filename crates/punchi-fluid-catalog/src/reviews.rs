@@ -107,6 +107,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.lamp.md"),
     ),
     (
+        "electrical.buzzer",
+        include_str!("../../../assets/symbols/review/electrical.buzzer.md"),
+    ),
+    (
         "valve.3_2.solenoid",
         include_str!("../../../assets/symbols/review/valve.3_2.solenoid.md"),
     ),

@@ -78,6 +78,7 @@ qt_add_resources(punchi-fluid "sounds"
         "${REPO_ROOT}/assets/sounds/valve.wav"
         "${REPO_ROOT}/assets/sounds/air.wav"
         "${REPO_ROOT}/assets/sounds/cylinder.wav"
+        "${REPO_ROOT}/assets/sounds/buzzer.wav"
 )
 
 target_include_directories(punchi-fluid PRIVATE

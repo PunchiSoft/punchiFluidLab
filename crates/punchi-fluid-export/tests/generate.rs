@@ -104,6 +104,7 @@ fn write_review_images(catalog: &Catalog) {
                 punchi_fluid_catalog::Behaviour::Contact { .. }
                     | punchi_fluid_catalog::Behaviour::Relay { .. }
                     | punchi_fluid_catalog::Behaviour::Lamp
+                    | punchi_fluid_catalog::Behaviour::Buzzer
             );
             if stateful {
                 let placed = punchi_fluid_draw::Placed {
@@ -112,8 +113,15 @@ fn write_review_images(catalog: &Catalog) {
                     rect: inner,
                     extension: 0.0,
                     valve_position: 0,
-                    reading: matches!(definition.behaviour, punchi_fluid_catalog::Behaviour::Lamp)
-                        .then_some(punchi_fluid_draw::placed::Reading::Indicator(true)),
+                    reading: match definition.behaviour {
+                        punchi_fluid_catalog::Behaviour::Lamp => {
+                            Some(punchi_fluid_draw::placed::Reading::Indicator(true))
+                        }
+                        punchi_fluid_catalog::Behaviour::Buzzer => {
+                            Some(punchi_fluid_draw::placed::Reading::Audible(true))
+                        }
+                        _ => None,
+                    },
                     series: None,
                     contact_closed: Some(false),
                     orientation: punchi_fluid_draw::Orientation::NONE,

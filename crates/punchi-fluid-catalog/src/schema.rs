@@ -594,6 +594,8 @@ pub enum Behaviour {
     },
     /// An indicator lamp: one terminal, lit while its net is live (ADR 0021).
     Lamp,
+    /// An audible indicator: one terminal, sounding while its net is live (ADR 0022).
+    Buzzer,
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -630,6 +632,7 @@ impl Behaviour {
             Self::Contact { .. } => "contact",
             Self::Relay { .. } => "relay",
             Self::Lamp => "lamp",
+            Self::Buzzer => "buzzer",
             Self::Junction => "junction",
         }
     }

@@ -575,6 +575,9 @@ pub struct PfSession {
     timers: std::collections::HashMap<u64, TimerState>,
     /// Whether each lamp is lit, by placement identity. Derived from the net like a coil.
     indicators: std::collections::HashMap<u64, bool>,
+    /// Whether each buzzer sounds, by placement identity. A subset of `indicators` that the
+    /// audio path reads.
+    buzzers: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -672,6 +675,7 @@ impl PfSession {
             control: None,
             timers: std::collections::HashMap::new(),
             indicators: std::collections::HashMap::new(),
+            buzzers: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -831,7 +835,15 @@ impl PfSession {
         match definition.behaviour {
             punchi_fluid_catalog::Behaviour::FlowMeter { .. } => &PRESSURE_FLOW,
             punchi_fluid_catalog::Behaviour::Cylinder { .. } => &PRESSURE_POSITION,
-            _ if !definition.port.is_empty() => &PRESSURE,
+            // Only a part with a port that carries air can report a pressure: a lamp, a
+            // buzzer or a terminal has no gas to read.
+            _ if definition
+                .port
+                .iter()
+                .any(|port| port.role != punchi_fluid_catalog::PortRole::Electrical) =>
+            {
+                &PRESSURE
+            }
             _ => &[],
         }
     }
@@ -1192,14 +1204,19 @@ impl PfSession {
         let Self {
             control,
             indicators,
+            buzzers,
             ..
         } = self;
         let Some(model) = control.as_ref() else {
             return;
         };
         indicators.clear();
-        for (id, node) in &model.indicators {
-            indicators.insert(*id, model.live[*node]);
+        for (id, node, audible) in &model.indicators {
+            let on = model.live[*node];
+            indicators.insert(*id, on);
+            if *audible {
+                buzzers.insert(*id, on);
+            }
         }
     }
 
@@ -2373,6 +2390,9 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
         } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
         Behaviour::Lamp => {
             text.push_str("Lámpara indicadora: encendida mientras su terminal está vivo\n");
+        }
+        Behaviour::Buzzer => {
+            text.push_str("Zumbador: suena mientras su terminal está vivo\n");
         }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
@@ -4284,6 +4304,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::Contact { .. }
             | Behaviour::Relay { .. }
             | Behaviour::Lamp
+            | Behaviour::Buzzer
             | Behaviour::Plug
             | Behaviour::Junction => {}
         }
@@ -4797,6 +4818,23 @@ pub unsafe extern "C" fn pf_session_indicator_active(session: *const PfSession, 
     }
 }
 
+/// `1` when any buzzer of the session sounds, `0` when none does.
+///
+/// The audio path asks once per refresh instead of walking the placements: the state is
+/// already in the session, and the answer is the aggregate the mixer needs.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_buzzer_active(session: *const PfSession) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    i32::from(session.buzzers.values().any(|on| *on))
+}
+
 /// The line class of one pipe: `0` working, `1` pilot, `2` drain, or a negative error.
 ///
 /// # Safety
@@ -5069,6 +5107,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::Contact { .. }
         | Behaviour::Relay { .. }
         | Behaviour::Lamp
+        | Behaviour::Buzzer
         | Behaviour::Plug
         | Behaviour::Junction => {}
     }
@@ -5124,15 +5163,19 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.valve_position_at(part))
                 .unwrap_or(0),
-            reading: indicator_reading(placement, states.indicators)
-                .or_else(|| recorder_reading(placement, charts))
-                .or_else(|| {
-                    instrument_reading(
-                        catalog.get(placement.catalog_id.as_str()),
-                        placement_part.get(index).copied().flatten(),
-                        system,
-                    )
-                }),
+            reading: indicator_reading(
+                placement,
+                catalog.get(placement.catalog_id.as_str()),
+                states.indicators,
+            )
+            .or_else(|| recorder_reading(placement, charts))
+            .or_else(|| {
+                instrument_reading(
+                    catalog.get(placement.catalog_id.as_str()),
+                    placement_part.get(index).copied().flatten(),
+                    system,
+                )
+            }),
             series: chart_series(placement.id(), charts),
             contact_closed: contact_closed(placement, states.contacts, states.relays),
             orientation: placement.orientation,
@@ -5233,7 +5276,7 @@ struct ControlModel {
     wires: Vec<(usize, usize)>,
     contacts: Vec<(usize, usize)>,
     relays: Vec<RelayBinding>,
-    indicators: Vec<(u64, usize)>,
+    indicators: Vec<(u64, usize, bool)>,
     seeds: Vec<usize>,
     edges: Vec<Vec<usize>>,
     live: Vec<bool>,
@@ -5369,13 +5412,14 @@ fn switches_of(
     (closed_contacts, relays)
 }
 
-/// The lamps of one circuit: the placement identity and the node that lights it.
+/// The indicators of one circuit: the placement identity, the node that lights it and
+/// whether it is audible.
 fn indicators_of(
     document: &Document,
     catalog: &Catalog,
     circuit: u32,
     terminals: &[Terminal],
-) -> Vec<(u64, usize)> {
+) -> Vec<(u64, usize, bool)> {
     let mut indicators = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
         if placement.circuit != circuit {
@@ -5384,14 +5428,16 @@ fn indicators_of(
         let Some(definition) = catalog.get(&placement.catalog_id) else {
             continue;
         };
-        if !matches!(definition.behaviour, Behaviour::Lamp) {
-            continue;
-        }
+        let audible = match definition.behaviour {
+            Behaviour::Lamp => false,
+            Behaviour::Buzzer => true,
+            _ => continue,
+        };
         let Some(port) = definition.port.first() else {
             continue;
         };
         if let Some(node) = node_of(terminals, index, &port.id) {
-            indicators.push((placement.id(), node));
+            indicators.push((placement.id(), node, audible));
         }
     }
     indicators
@@ -5566,11 +5612,15 @@ fn contact_pair(
 /// is never told by colour alone.
 fn indicator_reading(
     placement: &punchi_fluid_doc::Placement,
+    definition: Option<&punchi_fluid_catalog::ComponentDefinition>,
     indicators: &std::collections::HashMap<u64, bool>,
 ) -> Option<Reading> {
-    indicators
-        .get(&placement.id())
-        .map(|on| Reading::Indicator(*on))
+    let on = *indicators.get(&placement.id())?;
+    Some(if matches!(definition?.behaviour, Behaviour::Buzzer) {
+        Reading::Audible(on)
+    } else {
+        Reading::Indicator(on)
+    })
 }
 
 /// Whether a contact on the sheet is closed, when the definition is one.

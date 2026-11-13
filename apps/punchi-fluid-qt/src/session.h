@@ -31,6 +31,7 @@ class FluidSession : public QObject
     Q_PROPERTY(double timeS READ timeS NOTIFY changed)
     Q_PROPERTY(int valvePosition READ valvePosition NOTIFY changed)
     Q_PROPERTY(bool valveSpringReturn READ valveSpringReturn NOTIFY changed)
+    Q_PROPERTY(bool buzzerActive READ buzzerActive NOTIFY buzzerChanged)
 
     /// `true` in edit mode: the animation does not run and a click opens properties
     /// instead of actuating, which is the split a schematic editor has.
@@ -166,6 +167,7 @@ public:
     /// `true` while the transport is playing. Pausing stops the sheet loop without
     /// touching the model, so resuming continues from the same instant.
     bool running() const { return m_running; }
+    bool buzzerActive() const { return m_buzzerActive; }
     void setRunning(bool running);
     Q_INVOKABLE void toggleRunning();
 
@@ -389,6 +391,8 @@ signals:
     /// The transport started or stopped, which is the front end's cue for the air.
     void transportStarted();
     void transportStopped();
+    /// An audible indicator started or stopped sounding; the QML loop follows this.
+    void buzzerChanged();
 
 private:
     /// Republishes the telemetry. `forced` repaints even when nothing moved, which is
@@ -396,6 +400,8 @@ private:
     void refresh(bool forced = false);
     /// Announces an arrival at the end of the stroke, at most once per arrival.
     void announceImpact(const PfTelemetry &telemetry);
+    /// Polls the buzzer state and announces a change, so the QML loop can start or stop.
+    void refreshBuzzer();
     /// Republishes what the document reports, after any change to it.
     void refreshDocument();
     /// Where the list of remembered documents lives, beside the safety copy.
@@ -439,6 +445,7 @@ private:
     Contrast m_contrast;
     bool m_settled = false;
     bool m_running = false;
+    bool m_buzzerActive = false;
     double m_speed = 1.0;
     int m_steadyFrames = 0;
     /// How fast the piston was moving on the last frame. The solver clamps the velocity to

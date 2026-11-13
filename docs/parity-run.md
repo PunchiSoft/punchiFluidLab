@@ -36,6 +36,7 @@ that proves it.
 | 2 | Relay: a coil that closes a contact | `feat(catalog): a relay closes its contact from its coil` | `a_relay_names_two_coil_and_two_contact_terminals`, `a_relay_closes_its_contact_while_its_coil_is_live`, the symbol review |
 | 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
 | 4 | Indicator lamp | `feat(catalog): let a lamp read the control line` | `a_lamp_lights_while_its_line_is_live`, `a_lamp_shows_its_state_as_rays_not_only_colour`, the symbol review |
+| 5 | Buzzer with a continuous sound | `feat(audio): loop the buzzer while its line is live` | `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, the symbol review |
 
 ## Decisions taken in this run
 

@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### El zumbador: una alarma que suena mientras la línea está viva — 2026-11-13
+
+Una luz dice «mira»; un zumbador dice «actúa». El zumbador es la primera pieza cuya salida se
+oye y la primera que dura: la ventana tiene que saber cuándo empieza y cuándo para.
+
+- **Un terminal y la misma red booleana**: `type = "buzzer"`, cargado por el mismo
+  asentamiento que la lámpara; no añade aristas y el circuito se comporta igual con él o sin
+  él ([ADR 0022](docs/adr/0022-an-audible-indicator-owns-its-sound.md)).
+- **La hoja lo dice con palabras**: `sonando` o `en silencio`, a través de `Reading::Audible`,
+  además del cuerpo y las ondas del archivo.
+- **El ABI responde una sola pregunta**: `pf_session_buzzer_active` devuelve 1 si suena algún
+  zumbador y 0 si ninguno; la ventana consulta una vez por refresco, no una por pieza.
+- **El sonido vive en la ventana**: la sesión Qt expone `buzzerActive`, emite
+  `buzzerChanged` solo al cambiar y el QML enlaza un `SoundEffect` en bucle; el silencio del
+  usuario lo detiene y, al quitar el silencio, vuelve solo si sigue sonando.
+- **La muestra se genera**: `scripts-dev/make-sounds.py` escribe `buzzer.wav` desde una
+  semilla fija, con fundamental y armónicos impares y un número entero de ciclos por segundo
+  para que el bucle no chasquee; `--check-sounds` prueba que el binario la decodifica.
+- **Evidencia**: `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, la revisión del
+  símbolo y el lint del catálogo.
+
 ### La lámpara indicadora: ver la línea sin mover nada — 2026-11-13
 
 Una línea que solo alimenta una lámpara no tiene parte móvil, así que el estudiante no podía

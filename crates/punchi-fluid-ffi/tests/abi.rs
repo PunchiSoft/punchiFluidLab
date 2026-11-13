@@ -23,7 +23,7 @@ use punchi_fluid::{
     PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
     PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
     pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
-    pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
+    pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
     pf_session_chart_candidate_count, pf_session_chart_source, pf_session_check,
     pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
     pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
@@ -2847,6 +2847,73 @@ fn a_lamp_lights_while_its_line_is_live() {
         unsafe { pf_session_indicator_active(session, 0) },
         PF_ERR_MODEL
     );
+
+    // A lamp has no gas to report: it is not a quantity a recorder can chart.
+    let chart = catalog_index(session, "chart.recorder");
+    // SAFETY: live session.
+    let chart = unsafe { pf_session_place_component(session, chart, 20.0, 80.0) };
+    assert!(chart >= 0);
+    let chart = u32::try_from(chart).unwrap_or_default();
+    // SAFETY: live session.
+    let count = unsafe { pf_session_chart_candidate_count(session, chart) };
+    for slot in 0..count {
+        let mut source = PfChartSource::default();
+        // SAFETY: live session and a writable record.
+        assert_eq!(
+            unsafe { pf_session_chart_candidate(session, chart, slot, &raw mut source) },
+            PF_OK
+        );
+        assert_ne!(
+            source.placement, lamp,
+            "a lamp was offered as a chart source"
+        );
+    }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_buzzer_sounds_while_its_line_is_live() {
+    let session = session();
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact");
+    let buzzer = catalog_index(session, "electrical.buzzer");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let button = unsafe { pf_session_place_component(session, button, 70.0, 20.0) };
+    let buzzer = unsafe { pf_session_place_component(session, buzzer, 120.0, 20.0) };
+    assert!(rail >= 0 && button >= 0 && buzzer >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let buzzer = u32::try_from(buzzer).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), button, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, button, two.as_ptr(), buzzer, one.as_ptr()) },
+        PF_OK
+    );
+
+    // The button is open, so no buzzer is sounding.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_buzzer_active(session) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_buzzer_active(session) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, buzzer) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_buzzer_active(session) }, 0);
+
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

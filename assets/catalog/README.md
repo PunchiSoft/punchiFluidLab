@@ -266,6 +266,11 @@ delay_s = 2.0                # 0 to 3600 s; an instant relay leaves it at zero
 type = "lamp"                # one electrical terminal; lit while its line is live
 ```
 
+```toml
+[behaviour]
+type = "buzzer"              # one electrical terminal; sounds while its line is live
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -293,8 +298,12 @@ delay at zero.
 A **lamp** is the load that makes a line visible without a moving part
 ([ADR 0021](../docs/adr/0021-an-indicator-reads-the-net.md)): one electrical terminal, lit
 while the net reaches it. The drawing adds rays and the word `encendida` when it is lit, so
-the state is never colour alone, and the solver adds nothing to the gas. An audible indicator
-is a separate part with its own sound path.
+the state is never colour alone, and the solver adds nothing to the gas.
+
+A **buzzer** is the audible indicator ([ADR 0022](../docs/adr/0022-an-audible-indicator-owns-its-sound.md)):
+the same one terminal and the same liveness, drawn with the word `sonando` or `en silencio`.
+The window loops `assets/sounds/buzzer.wav` while any buzzer is live and stops it when the
+line opens or the user mutes the window; the core and the solver stay silent.
 
 ```toml
 [behaviour]

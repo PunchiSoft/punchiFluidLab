@@ -33,6 +33,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0019](0019-a-relay-is-a-coil-and-a-contact.md) | A relay is a coil and a contact in one file | accepted | 2026-11-13 |
 | [0020](0020-timers-count-steps.md) | Timers count steps, they do not sleep | accepted | 2026-11-13 |
 | [0021](0021-an-indicator-reads-the-net.md) | An indicator reads the net, it does not drive it | accepted | 2026-11-13 |
+| [0022](0022-an-audible-indicator-owns-its-sound.md) | An audible indicator owns its sound path | accepted | 2026-11-13 |
 
 ## When a decision needs an ADR
 

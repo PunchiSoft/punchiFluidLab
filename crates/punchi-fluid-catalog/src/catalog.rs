@@ -265,7 +265,7 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             delay_s,
             ..
         } => check_relay(definition, path, coil, contact, *kind, *delay_s),
-        Behaviour::Lamp => check_lamp(definition, path),
+        Behaviour::Lamp | Behaviour::Buzzer => check_indicator(definition, path),
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -480,12 +480,12 @@ fn check_relay(
     Ok(())
 }
 
-/// A lamp shows one line: one electrical terminal and nothing else.
-fn check_lamp(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
+/// An indicator shows one line: one electrical terminal and nothing else.
+fn check_indicator(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     if definition.port.len() != 1 || definition.port[0].role != PortRole::Electrical {
         return Err(invalid(
             path,
-            "a lamp needs exactly one electrical terminal",
+            "an indicator needs exactly one electrical terminal",
         ));
     }
     Ok(())
