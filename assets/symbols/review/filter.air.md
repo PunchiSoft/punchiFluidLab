@@ -24,7 +24,8 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 |---|---|---|
 | The filter is a **square turned 45°**: four equal sides, diagonals meeting at the centre | pass | half-diagonal 0.22 on both axes, so no deformation |
 | The flow crosses it from vertex to vertex and is not drawn through the inside | pass | the line stops at each vertex |
-| Connection points are the small open circles of the reference set | pass | circles at both ends |
+| The element is the dashed line on the upper diagonal | pass | the file draws it, as the reference does |
+| Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
 | Legible at palette size | pass | `catalog-dark.png` |
 
 ## What is still open
