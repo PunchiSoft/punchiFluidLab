@@ -132,13 +132,14 @@ Window {
     FileDialog {
         id: exportDialog
         title: qsTr("Exportar el plano")
-        nameFilters: [qsTr("Documento PDF (*.pdf)"), qsTr("Imagen PNG (*.png)")]
+        nameFilters: [qsTr("Documento PDF (*.pdf)"), qsTr("Imagen PNG (*.png)"),
+                      qsTr("Dibujo vectorial SVG (*.svg)")]
         fileMode: FileDialog.SaveFile
         defaultSuffix: "pdf"
         onAccepted: function (file) {
             const name = file.toString().toLowerCase();
-            const pdf = !name.endsWith(".png");
-            session.exportTo(file, pdf, window.exportPaper, window.exportLandscape,
+            const kind = name.endsWith(".png") ? 0 : (name.endsWith(".svg") ? 2 : 1);
+            session.exportTo(file, kind, window.exportPaper, window.exportLandscape,
                              window.exportDpi);
         }
     }

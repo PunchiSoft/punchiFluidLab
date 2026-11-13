@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La hoja también sale en SVG — 2026-11-12
+
+Un PDF se imprime y un PNG se pega en una diapositiva, pero ninguno se puede ampliar hasta un
+símbolo, medir ni editar. La exportación ofrece ahora **SVG**.
+
+- **El mismo dibujo, vectorial**: marco, bloque de identificación, lista de piezas y circuito,
+  medidos en milímetros (`viewBox` del tamaño del papel), con el texto como texto.
+- **Escritor propio y determinista**: sin dependencias, sin identificador ni fecha de
+  generación; dos exportaciones de la misma hoja son el mismo archivo.
+- **La misma página que el PDF**: una prueba compara los textos de los dos dispositivos, así
+  que ninguno puede quedarse con una hoja distinta.
+- El título se escapa (`&`, `<`, `>`), porque un nombre de archivo con un ampersand no puede
+  romper el documento.
+- **Evidencia**: cuatro pruebas del documento vectorial, la paridad PDF/SVG, la prueba ABI
+  `an_export_can_be_a_vector_drawing` y cuatro pasos `--selftest`.
+
 ### La hoja impresa lleva su lista de piezas — 2026-11-12
 
 Un plano del que no se puede construir no sirve: los símbolos dicen qué tipo de válvula es,

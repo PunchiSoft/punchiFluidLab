@@ -726,7 +726,7 @@ void FluidSession::applyPalette(const QPalette &palette)
     emit changed();
 }
 
-bool FluidSession::exportTo(const QString &path, bool pdf, int paper, bool landscape,
+bool FluidSession::exportTo(const QString &path, int kind, int paper, bool landscape,
                             qreal dpi)
 {
     if (!m_session || path.isEmpty()) {
@@ -738,8 +738,9 @@ bool FluidSession::exportTo(const QString &path, bool pdf, int paper, bool lands
     // The ABI does not read the clock: the front end supplies the local date the title
     // block carries, so an export is reproducible within the day.
     const QByteArray date = QDate::currentDate().toString(Qt::ISODate).toUtf8();
-    const uint32_t kind = pdf ? PF_EXPORT_PDF : PF_EXPORT_PNG;
-    if (pf_session_export(m_session, encoded.constData(), kind,
+    const uint32_t format = kind == 1 ? PF_EXPORT_PDF
+                                      : (kind == 2 ? PF_EXPORT_SVG : PF_EXPORT_PNG);
+    if (pf_session_export(m_session, encoded.constData(), format,
                           static_cast<uint32_t>(qMax(paper, 0)), landscape ? 1U : 0U,
                           static_cast<float>(dpi), date.constData())
         != PF_OK) {

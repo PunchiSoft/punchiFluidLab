@@ -18,11 +18,11 @@ use std::ptr;
 
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_PDF,
-    PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION,
-    PF_QUANTITY_PRESSURE, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet, PfFrame, PfInk,
-    PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
-    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
-    pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
+    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
+    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet,
+    PfFrame, PfInk, PfPoint, PfSession, PfTelemetry, pf_abi, pf_session_active_circuit,
+    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    pf_session_build_frame, pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
     pf_session_chart_candidate_count, pf_session_chart_source, pf_session_check,
     pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
     pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
@@ -2407,4 +2407,41 @@ fn a_pipe_takes_another_line_class_and_keeps_it_in_the_file() {
         pf_session_free(reopened);
         pf_session_free(original);
     }
+}
+
+#[test]
+fn an_export_can_be_a_vector_drawing() {
+    let session = session();
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("plano.svg");
+    let path = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    let date = CString::new("2026-11-12").expect("a date");
+    // SAFETY: live session, NUL-terminated path and date, A4 is index 1.
+    assert_eq!(
+        unsafe {
+            pf_session_export(
+                session,
+                path.as_ptr(),
+                PF_EXPORT_SVG,
+                1,
+                0,
+                300.0,
+                date.as_ptr(),
+            )
+        },
+        PF_OK
+    );
+    let svg =
+        std::fs::read_to_string(path.to_str().unwrap_or_default()).expect("the SVG is written");
+    assert!(svg.starts_with("<?xml"), "an XML document");
+    assert!(svg.contains("<svg"), "with the document element");
+    assert!(
+        svg.contains("viewBox=\"0 0 210.0 297.0\""),
+        "A4 in millimetres"
+    );
+    for text in ["2026-11-12", "Circuito 1", "lista de piezas", "Cilindro"] {
+        assert!(svg.contains(text), "the sheet is missing {text}");
+    }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
 }

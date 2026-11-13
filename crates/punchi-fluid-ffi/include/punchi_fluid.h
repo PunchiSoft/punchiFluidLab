@@ -373,9 +373,10 @@ int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, f
 /* What `pf_session_export` writes. */
 #define PF_EXPORT_PNG 0U
 #define PF_EXPORT_PDF 1U
+#define PF_EXPORT_SVG 2U
 
-/* Writes the sheet, as it is drawn, to `path`: a PDF when `kind` is PF_EXPORT_PDF, a raster at
- * `dpi` when it is PF_EXPORT_PNG. `paper` indexes the list `pf_export_paper_count` reports and
+/* Writes the sheet, as it is drawn, to `path`: a PDF when `kind` is PF_EXPORT_PDF, an SVG
+ * document when it is PF_EXPORT_SVG, and a raster at `dpi` when it is PF_EXPORT_PNG. `paper` indexes the list `pf_export_paper_count` reports and
  * `pf_export_paper_name` names; `landscape` is 0 or 1. `date` is the date the title block
  * carries, supplied by the caller (ISO 8601 recommended): the ABI does not read the clock, so
  * the same call on the same day is reproducible. */
