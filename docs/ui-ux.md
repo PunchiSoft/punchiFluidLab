@@ -97,6 +97,12 @@ and must never need a tab switch.
 designation is text, not a number: it is the field that ends up under the symbol and in the
 parts list, so the form sends it verbatim and the core trims and bounds it.
 
+**The window opens on the circuit, not on an empty sheet.** The starting composition is
+the source top left, the service unit below it, the valve at the middle right and the
+cylinder above the valve, so the air reads down the left and rises to the actuator on the
+right. The floating captions of the old example are gone from the editable sheet: a
+component carries its designation, and the values live in the inspector and the status bar.
+
 **Conducto acts on the selected hose.** A pilot line and a drain line differ by their
 pattern before anyone reads a label, so the class is a property of the pipe, the drawing
 takes the dashes from it and the file keeps it. The three commands are disabled until a

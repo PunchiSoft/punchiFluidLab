@@ -9,10 +9,8 @@
 //! physics until connections exist.
 
 use punchi_fluid_catalog::{Catalog, ComponentDefinition};
-use punchi_fluid_solver::network::Network;
 
 use crate::orient::{Orientation, Turned};
-use crate::schematic::{self, CYLINDER_ID, Layout, PREPARATION_ID, SUPPLY_ID, VALVE_ID};
 use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
 
 /// One end of a pipe: a component of the sheet and one of its ports.
@@ -175,7 +173,6 @@ pub fn draw_placed(
     surface: &mut dyn Surface,
     placements: &[Placed<'_>],
     pipes: &[Pipe<'_>],
-    system: Option<&Network>,
     catalog: &Catalog,
     ink: &Ink,
     selected: &[usize],
@@ -183,24 +180,9 @@ pub fn draw_placed(
     for pipe in pipes {
         draw_pipe(surface, placements, pipe, catalog, ink);
     }
-    let boxes = |id: &str| {
-        placements
-            .iter()
-            .find(|placed| placed.catalog_id == id)
-            .map(Placed::box_rect)
-    };
-    let circuit = system.and_then(|system| {
-        Some((
-            system,
-            Layout {
-                supply: boxes(SUPPLY_ID)?,
-                preparation: boxes(PREPARATION_ID)?,
-                valve: boxes(VALVE_ID)?,
-                cylinder: boxes(CYLINDER_ID)?,
-            },
-        ))
-    });
-
+    for pipe in pipes {
+        draw_pipe(surface, placements, pipe, catalog, ink);
+    }
     // Every placement is drawn from the document and its own state: a cylinder with the
     // extension the network reports for it, a valve with its own position. There is no
     // list of the three components the model knows, because the model follows the sheet.
@@ -271,12 +253,6 @@ pub fn draw_placed(
         if placed.series.is_some() {
             draw_series(surface, placed, ink);
         }
-    }
-
-    if let Some((system, layout)) = circuit {
-        // The document draws its own symbols and pipes, so the fixed pass adds only the
-        // readouts it can place on its own composition.
-        schematic::draw_readouts(surface, &layout, system, catalog, ink);
     }
 
     // The ring marks the selection, not the last component touched: a drag of six
@@ -396,15 +372,13 @@ fn blend(from: Colour, to: Colour, amount: f32) -> Colour {
 
 /// Bounding box of everything the sheet draws, for fitting it onto a page.
 ///
-/// The real drawing runs once through [`Bounds`], so the symbols, the captions, the
-/// designations, the readings and the pipe routes are all measured by the same code the
-/// page will use. The result has a margin for strokes and glyph overhang, so a caller that
+/// The real drawing runs once through [`Bounds`], so the symbols, the designations, the
+/// readings and the pipe routes are all measured by the same code the page will use. The result has a margin for strokes and glyph overhang, so a caller that
 /// scales it to the page cannot crop the drawing. `None` means there is nothing to draw.
 #[must_use]
 pub fn bounds_placed(
     placements: &[Placed<'_>],
     pipes: &[Pipe<'_>],
-    system: Option<&Network>,
     catalog: &Catalog,
 ) -> Option<Rect> {
     let mut bounds = Bounds::default();
@@ -413,15 +387,7 @@ pub fn bounds_placed(
     for placed in placements {
         bounds.rect(placed.box_rect(), 0.0, None, None);
     }
-    draw_placed(
-        &mut bounds,
-        placements,
-        pipes,
-        system,
-        catalog,
-        &Ink::print(),
-        &[],
-    );
+    draw_placed(&mut bounds, placements, pipes, catalog, &Ink::print(), &[]);
     bounds.bounds().map(|rect| rect.expand(symbol::LINE * 3.0))
 }
 
@@ -468,15 +434,7 @@ mod tests {
             designation: None,
         }];
         let mut surface = Recording::default();
-        draw_placed(
-            &mut surface,
-            &placed,
-            &[],
-            None,
-            &catalog,
-            &Ink::print(),
-            &[],
-        );
+        draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
         let curve = surface
             .calls()
             .iter()
@@ -534,15 +492,7 @@ mod tests {
             designation: None,
         }];
         let mut surface = Recording::default();
-        draw_placed(
-            &mut surface,
-            &placed,
-            &[],
-            None,
-            &catalog,
-            &Ink::print(),
-            &[],
-        );
+        draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
         let ink = Ink::print();
         for port in &definition.port {
             let point = port_point(rect, Orientation::NONE, definition, &port.id)
@@ -619,8 +569,7 @@ mod tests {
             pressure_ratio: 0.0,
         }];
 
-        let bounds =
-            bounds_placed(&placements, &pipes, None, &catalog).expect("a drawing has bounds");
+        let bounds = bounds_placed(&placements, &pipes, &catalog).expect("a drawing has bounds");
         assert!(bounds.contains(Pt::new(0.0, 0.0)), "{bounds:?}");
         assert!(bounds.contains(Pt::new(140.0, 20.0)), "{bounds:?}");
     }

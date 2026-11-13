@@ -187,16 +187,16 @@ fn the_hit_test_uses_the_layout_of_the_last_frame() {
     // SAFETY: live session, writable output.
     unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) };
 
-    // The valve sits at 47 % of the width and 72 % of the height of the fixed layout.
+    // The valve sits at 62 % of the width and 52 % of the height of the fixed layout.
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_hit_valve(session, 200.0 * 0.47, 130.0 * 0.72) },
+        unsafe { pf_session_hit_valve(session, 200.0 * 0.62, 130.0 * 0.52) },
         1
     );
     // The supply box is elsewhere, so a click there must not reach the valve.
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_hit_valve(session, 200.0 * 0.17, 130.0 * 0.30) },
+        unsafe { pf_session_hit_valve(session, 200.0 * 0.13, 130.0 * 0.20) },
         0
     );
     // SAFETY: the session is still alive.

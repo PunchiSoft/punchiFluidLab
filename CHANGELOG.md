@@ -6,7 +6,7 @@ publicación.
 
 ## Unreleased
 
-### Círculos de conexión y fuentes que apuntan a su tubo — 2026-11-12
+### La hoja de arranque, con círculos de conexión y fuentes que apuntan a su tubo — 2026-11-12
 
 Dos correcciones de simbología que se veían en la hoja:
 
@@ -17,6 +17,12 @@ Dos correcciones de simbología que se veían en la hoja:
 - **Los triángulos de las fuentes apuntan al tubo**: la red y el compresor tenían el vértice
   arriba y el puerto abajo, de modo que la fuente parecía entregar hacia arriba, lejos de su
   propia conexión. Ahora el vértice está en el vástago y el punto es donde se conecta.
+- **La plantilla de arranque es la composición del esquema**: la fuente arriba a la
+  izquierda, la unidad de mantenimiento debajo, la válvula a la derecha y el cilindro arriba
+  a la derecha, con el aire leyéndose de arriba abajo a la izquierda y subiendo al cilindro.
+  Los rótulos flotantes del ejemplo desaparecen de la hoja editable: el documento tiene
+  designaciones, el inspector y la barra de estado, y aquellos rótulos se cruzaban con las
+  mangueras de la nueva composición.
 - Las 18 revisiones de símbolos se regeneraron con las capturas claro/oscuro, y la de las
   dos fuentes registra el vértice y el círculo.
 - **Evidencia**: `every_port_carries_its_connection_circle`,

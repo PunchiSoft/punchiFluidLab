@@ -1127,7 +1127,6 @@ impl PfSession {
             &mut buffer,
             &placed,
             &pipes,
-            system.as_ref(),
             catalog,
             ink,
             selected.as_slice(),
@@ -2825,12 +2824,7 @@ pub unsafe extern "C" fn pf_session_export(
             circuit,
             &session.charts,
         );
-        let bounds = punchi_fluid_draw::placed::bounds_placed(
-            &placed,
-            &pipes,
-            session.system.as_ref(),
-            &session.catalog,
-        );
+        let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &session.catalog);
         let mut page = punchi_fluid_export::Page {
             paper: *paper,
             orientation: if landscape == 0 {
@@ -2867,7 +2861,6 @@ pub unsafe extern "C" fn pf_session_export(
                 &mut fitted,
                 &placed,
                 &pipes,
-                session.system.as_ref(),
                 &session.catalog,
                 &punchi_fluid_export::print_ink(),
                 &[],

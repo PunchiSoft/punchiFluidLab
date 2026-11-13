@@ -46,15 +46,19 @@ pub fn layout(area: Rect) -> Option<Layout> {
     if square < 8.0 {
         return None;
     }
-    let supply = Rect::from_center_size(area.point_at(0.14, 0.24), square, square);
+    // The composition a student meets on opening: the source top left, the service unit
+    // below it, the valve at the middle right and the cylinder above the valve. The air
+    // reads top to bottom on the left and rises to the cylinder on the right, which is the
+    // order the parts are met in and the order the hoses travel.
+    let supply = Rect::from_center_size(area.point_at(0.13, 0.20), square, square);
     // The service unit sits between the source and the first valve, in series and in that
     // order: what comes out of it is the line pressure the rest of the circuit is designed
     // around, so it cannot be drawn after the valve.
     // Square, like every other accessory: the symbol is drawn in a square box, so a box of
     // another shape would stretch its diamonds and its dial.
-    let preparation = Rect::from_center_size(area.point_at(0.40, 0.24), square, square);
-    let valve = Rect::from_center_size(area.point_at(0.50, 0.74), square, square);
-    let cylinder = Rect::from_center_size(area.point_at(0.80, 0.28), square * 2.2, square);
+    let preparation = Rect::from_center_size(area.point_at(0.30, 0.66), square, square);
+    let valve = Rect::from_center_size(area.point_at(0.62, 0.52), square, square);
+    let cylinder = Rect::from_center_size(area.point_at(0.76, 0.15), square * 2.2, square);
     Some(Layout {
         supply,
         preparation,
@@ -337,19 +341,22 @@ fn draw_labels(
         ink.background,
     );
 
-    // The valve's caption sits beside the body, not under it: the ports leave downwards,
-    // so a caption underneath would be written across the supply line climbing to port 1.
+    // The valve's caption sits **above** the body and runs leftwards: the ports leave
+    // downwards, and the right-hand side of the sheet is the margin. A caption that starts
+    // to the right of the valve runs past the content and prints in the margin — which is
+    // exactly what the margin test caught when the composition moved. A halo over a hose is
+    // the caption doing its job; ink in the margin is a layout bug.
     symbol::haloed_text_anchored(
         surface,
         Pt::new(
-            placed.valve.max.x + placed.valve.width() * 0.04,
-            placed.valve.max.y + placed.valve.height() * 0.18,
+            placed.valve.max.x,
+            placed.valve.min.y - placed.valve.height() * 0.10,
         ),
         valve.display_name(),
         symbol::NUMERAL,
         ink.muted,
         ink.background,
-        Anchor::Start,
+        Anchor::End,
     );
     if let Some(name) = system
         .valve()
@@ -358,14 +365,14 @@ fn draw_labels(
         symbol::haloed_text_anchored(
             surface,
             Pt::new(
-                placed.valve.max.x + placed.valve.width() * 0.04,
-                placed.valve.max.y + placed.valve.height() * 0.32,
+                placed.valve.max.x,
+                placed.valve.min.y - placed.valve.height() * 0.02,
             ),
             name,
             symbol::NUMERAL * 0.85,
             ink.line,
             ink.background,
-            Anchor::Start,
+            Anchor::End,
         );
     }
 
