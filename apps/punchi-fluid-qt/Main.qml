@@ -102,6 +102,34 @@ Window {
     property bool exportLandscape: false
     /// The raster resolution. 300 dpi is what a printed sheet needs; the vector page has none.
     property int exportDpi: 300
+    /// What the printed page carries beyond the drawing: the sheet, its margins and whether
+    /// the parts list is printed. The panel edits these; the export reads them.
+    property bool exportPanelOpen: false
+    property bool exportCustomPaper: false
+    property int exportWidthMm: 210
+    property int exportHeightMm: 297
+    property int exportMarginTop: 18
+    property int exportMarginRight: 18
+    property int exportMarginBottom: 18
+    property int exportMarginLeft: 18
+    property bool exportPartsList: true
+
+    /// The options the export dialog hands to the session, in one map.
+    function exportOptions(path, kind) {
+        return {
+            path: path,
+            kind: kind,
+            paper: window.exportPaper,
+            custom_paper: window.exportCustomPaper,
+            width: window.exportWidthMm,
+            height: window.exportHeightMm,
+            landscape: window.exportLandscape,
+            dpi: window.exportDpi,
+            margins: [window.exportMarginTop, window.exportMarginRight,
+                      window.exportMarginBottom, window.exportMarginLeft],
+            parts_list: window.exportPartsList
+        };
+    }
 
     property int dragCatalog: -1
     property point dragPoint: Qt.point(0, 0)
@@ -139,8 +167,7 @@ Window {
         onAccepted: function (file) {
             const name = file.toString().toLowerCase();
             const kind = name.endsWith(".png") ? 0 : (name.endsWith(".svg") ? 2 : 1);
-            session.exportTo(file, kind, window.exportPaper, window.exportLandscape,
-                             window.exportDpi);
+            session.exportWithOptions(window.exportOptions(file, kind));
         }
     }
 
@@ -566,7 +593,229 @@ Window {
                     }
                 }
 
-                // The circuit name is the one the selector and the printed title block use.
+                // What the printed sheet carries: the paper, its margins, the raster
+                // resolution and the parts list. The export dialog reads these; the panel
+                // never writes the document.
+                Rectangle {
+                    visible: window.exportPanelOpen
+                    anchors.centerIn: parent
+                    width: 440
+                    radius: 8
+                    color: session.panel
+                    border.width: 1
+                    border.color: session.accent
+                    height: exportColumn.implicitHeight + 32
+                    z: 46
+
+                    Column {
+                        id: exportColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        spacing: 8
+
+                        Text {
+                            width: parent.width
+                            text: qsTr("Lo que la hoja lleva")
+                            color: session.foreground
+                            font.pixelSize: 13
+                        }
+
+                        Row {
+                            spacing: 8
+                            Text {
+                                text: qsTr("Papel")
+                                color: session.muted
+                                font.pixelSize: 11
+                                width: 150
+                            }
+                            Rectangle {
+                                width: 90
+                                height: 26
+                                radius: 4
+                                color: window.exportCustomPaper ? session.accent : "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Personalizado")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.exportCustomPaper = !window.exportCustomPaper
+                                }
+                            }
+                        }
+
+                        Row {
+                            spacing: 8
+                            visible: window.exportCustomPaper
+                            Text {
+                                text: qsTr("Ancho × alto (mm)")
+                                color: session.muted
+                                font.pixelSize: 11
+                                width: 150
+                            }
+                            TextInput {
+                                width: 60
+                                height: 26
+                                verticalAlignment: TextInput.AlignVCenter
+                                text: String(window.exportWidthMm)
+                                color: session.foreground
+                                font.pixelSize: 11
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                onTextChanged: window.exportWidthMm = parseInt(text, 10) || 0
+                            }
+                            Text {
+                                text: "×"
+                                color: session.muted
+                                font.pixelSize: 11
+                            }
+                            TextInput {
+                                width: 60
+                                height: 26
+                                verticalAlignment: TextInput.AlignVCenter
+                                text: String(window.exportHeightMm)
+                                color: session.foreground
+                                font.pixelSize: 11
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                onTextChanged: window.exportHeightMm = parseInt(text, 10) || 0
+                            }
+                        }
+
+                        // The four margins, in the order a page is read: above, right,
+                        // below, left.
+                        Row {
+                            spacing: 6
+                            Text {
+                                text: qsTr("Márgenes (mm)")
+                                color: session.muted
+                                font.pixelSize: 11
+                                width: 150
+                            }
+                            Repeater {
+                                model: [
+                                    { key: "top", value: window.exportMarginTop },
+                                    { key: "right", value: window.exportMarginRight },
+                                    { key: "bottom", value: window.exportMarginBottom },
+                                    { key: "left", value: window.exportMarginLeft }
+                                ]
+                                delegate: TextInput {
+                                    width: 40
+                                    height: 26
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    text: String(modelData.value)
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                    onTextChanged: {
+                                        const parsed = parseInt(text, 10) || 0;
+                                        if (modelData.key === "top") window.exportMarginTop = parsed;
+                                        if (modelData.key === "right") window.exportMarginRight = parsed;
+                                        if (modelData.key === "bottom") window.exportMarginBottom = parsed;
+                                        if (modelData.key === "left") window.exportMarginLeft = parsed;
+                                    }
+                                }
+                            }
+                        }
+
+                        Row {
+                            spacing: 8
+                            Text {
+                                text: qsTr("Resolución (dpi)")
+                                color: session.muted
+                                font.pixelSize: 11
+                                width: 150
+                            }
+                            TextInput {
+                                width: 60
+                                height: 26
+                                verticalAlignment: TextInput.AlignVCenter
+                                text: String(window.exportDpi)
+                                color: session.foreground
+                                font.pixelSize: 11
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                onTextChanged: window.exportDpi = parseInt(text, 10) || 300
+                            }
+                        }
+
+                        Row {
+                            spacing: 8
+                            Text {
+                                text: qsTr("Lista de piezas")
+                                color: session.muted
+                                font.pixelSize: 11
+                                width: 150
+                            }
+                            Rectangle {
+                                width: 60
+                                height: 26
+                                radius: 4
+                                color: window.exportPartsList ? session.accent : "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: window.exportPartsList ? qsTr("Sí") : qsTr("No")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.exportPartsList = !window.exportPartsList
+                                }
+                            }
+                        }
+
+                        Row {
+                            spacing: 10
+                            Rectangle {
+                                width: 130
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.accent
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Exportar…")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        window.exportPanelOpen = false;
+                                        exportDialog.open();
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                width: 100
+                                height: 28
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Cerrar")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.exportPanelOpen = false
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // The circuit name is the one the selector and the printed title block use.                // The circuit name is the one the selector and the printed title block use.
                 // It is text, not a number, and the core refuses an empty or control-laden
                 // one rather than storing a name nothing can draw.
                 Rectangle {

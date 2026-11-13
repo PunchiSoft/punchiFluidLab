@@ -103,6 +103,11 @@ cylinder top right, so the air reads left to right along the bottom and rises to
 actuator. The floating captions of the old example are gone from the editable sheet: a
 component carries its designation, and the values live in the inspector and the status bar.
 
+**The export panel says what the page carries, not what the document is.** Paper (named or
+custom, in millimetres), four margins, the raster resolution and the parts list live in the
+panel; the export dialog then asks only for the file. A setting that leaves no room for the
+drawing is refused with a message instead of printing an empty page.
+
 **Conducto acts on the selected hose.** A pilot line and a drain line differ by their
 pattern before anyone reads a label, so the class is a property of the pipe, the drawing
 takes the dashes from it and the file keeps it. The three commands are disabled until a

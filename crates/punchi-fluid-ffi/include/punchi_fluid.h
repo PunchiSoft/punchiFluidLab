@@ -19,7 +19,7 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 4u
+#define PF_ABI_VERSION 5u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -374,6 +374,28 @@ int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, f
 #define PF_EXPORT_PNG 0U
 #define PF_EXPORT_PDF 1U
 #define PF_EXPORT_SVG 2U
+
+/* Export settings from the panel: paper, margins, resolution and parts list. */
+typedef struct {
+  uint32_t kind;   /* PF_EXPORT_* */
+  uint32_t paper;  /* index from the paper list, or PF_EXPORT_CUSTOM_PAPER */
+  uint32_t flags;  /* PF_EXPORT_LANDSCAPE | PF_EXPORT_PARTS_LIST */
+  float dpi;       /* resolution for a PNG */
+  float margin_top;
+  float margin_right;
+  float margin_bottom;
+  float margin_left;
+  float width_mm;  /* used when paper is PF_EXPORT_CUSTOM_PAPER */
+  float height_mm;
+} PfExportOptions;
+
+#define PF_EXPORT_CUSTOM_PAPER 0xFFFFFFFFu
+#define PF_EXPORT_LANDSCAPE 1u
+#define PF_EXPORT_PARTS_LIST 2u
+
+/* Writes the sheet with the panel's settings. `options` may be null for the defaults. */
+int32_t pf_session_export_with(PfSession *session, const char *path, const char *date,
+                               const PfExportOptions *options);
 
 /* Writes the sheet, as it is drawn, to `path`: a PDF when `kind` is PF_EXPORT_PDF, an SVG
  * document when it is PF_EXPORT_SVG, and a raster at `dpi` when it is PF_EXPORT_PNG. `paper` indexes the list `pf_export_paper_count` reports and

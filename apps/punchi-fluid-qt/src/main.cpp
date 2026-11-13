@@ -1583,6 +1583,34 @@ int main(int argc, char *argv[])
             QFile::remove(path);
         });
 
+        // The export panel decides what the page carries: the sheet, its margins and
+        // whether the parts list is printed.
+        steps->push_back([state, check] {
+            const QString path = QDir::tempPath() + QStringLiteral("/punchi-panel.svg");
+            QVariantMap options;
+            options.insert(QStringLiteral("path"), path);
+            options.insert(QStringLiteral("kind"), 2);
+            options.insert(QStringLiteral("paper"), state->session->defaultPaper());
+            options.insert(QStringLiteral("custom_paper"), true);
+            options.insert(QStringLiteral("width"), 90);
+            options.insert(QStringLiteral("height"), 60);
+            options.insert(QStringLiteral("landscape"), false);
+            options.insert(QStringLiteral("dpi"), 300);
+            options.insert(QStringLiteral("parts_list"), false);
+            options.insert(QStringLiteral("margins"),
+                           QVariantList { 5, 5, 5, 5 });
+            check(state->session->exportWithOptions(options),
+                  QStringLiteral("export panel: the settings are accepted"));
+            QFile file(path);
+            const bool opened = file.open(QIODevice::ReadOnly);
+            const QString svg = opened ? QString::fromUtf8(file.readAll()) : QString();
+            check(svg.contains(QStringLiteral("viewBox=\"0 0 90.0 60.0\"")),
+                  QStringLiteral("export panel: the custom paper reaches the page"));
+            check(!svg.contains(QStringLiteral("lista de piezas")),
+                  QStringLiteral("export panel: the list can be left off"));
+            QFile::remove(path);
+        });
+
         // A pipe's class is a property of the pipe: the selected hose tilts its dashes, the
         // drawing follows, and the file keeps it.
         steps->push_back([state, check] {

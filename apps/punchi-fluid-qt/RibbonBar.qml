@@ -83,6 +83,11 @@ Rectangle {
                         icon: "object-rotate-right",
                         hint: qsTr("la hoja girada; el dibujo es el mismo"),
                         current: window.exportLandscape
+                    }, {
+                        id: "export-panel",
+                        label: qsTr("Márgenes, tamaño y lista…"),
+                        icon: "document-export",
+                        hint: qsTr("lo que la hoja lleva al imprimirse")
                     }])
                 },
                 {

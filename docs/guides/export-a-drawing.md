@@ -48,6 +48,11 @@ The page carries the frame, the title block, a legend of line classes and port n
 — while any symbol review is open — the note `symbols not yet verified against ISO 1219-1`.
 Two exports of the same circuit produce the same bytes.
 
+**Archivo ▸ Hoja ▸ Márgenes, tamaño y lista…** opens the panel that decides what the page
+carries: a named paper or a custom size in millimetres, the four margins, the raster
+resolution and whether the parts list is printed. The panel never touches the document; it
+only says how the sheet leaves.
+
 **Archivo ▸ Exportar** offers three files: PDF for printing, PNG for a slide and **SVG** for
 a drawing that stays vector. The SVG is the same page — frame, block, parts list and circuit
 — measured in millimetres, its text readable and its lines editable, and two exports of the
