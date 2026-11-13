@@ -31,13 +31,13 @@ from the catalog API; the window does not show them yet.
 | `body` | For a directional valve, the rectangle split into one equal square per position. |
 | `spring` / `return` | The return part: a spring, air, fluid or a detent. `spring` is the short form of `return kind = "spring"`; declaring both is an error. |
 | `actuator` | The actuation part: lever, push button, pedal, solenoid, and so on. |
-| `behaviour` | What the solver does with it: `supply`, `valve`, `cylinder`, `gauge`, `flow_meter`, `recorder`, `plug`, `silencer`, `throttle` or `junction`. |
+| `behaviour` | What the solver does with it: `supply`, `valve`, `cylinder`, `gauge`, `flow_meter`, `recorder`, `plug`, `silencer`, `electrical_supply`, `contact`, `throttle` or `junction`. |
 | `kinematics` | Moving parts the renderer animates, for example a piston. |
 
 A component needs **at least one port**, with one documented exception: a `recorder`
 observes a named quantity of another component and is not connected to anything.
-A port has a **role**, not a number that means something: `supply`, `working`, `exhaust` or
-`mechanical`. A valve position declares its open paths by port id, and the solver classifies
+A port has a **role**, not a number that means something: `supply`, `working`, `exhaust`,
+`mechanical` or `electrical`. A valve position declares its open paths by port id, and the solver classifies
 them by role. That is why a new valve is a new file and not a new branch in a `match`.
 
 The `behaviour` is the one closed enum, and a new variant is the exception that needs an ADR

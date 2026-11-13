@@ -256,6 +256,8 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             Ok(())
         }
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
+        Behaviour::ElectricalSupply { voltage_v } => check_electrical_supply(path, *voltage_v),
+        Behaviour::Contact { .. } => check_contact(definition, path),
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -284,56 +286,24 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             spring_preload,
             damping,
             friction,
-        } => {
-            let positive = [
-                ("bore_mm", *bore_mm),
-                ("stroke_mm", *stroke_mm),
-                ("moving_mass_kg", *moving_mass_kg),
-            ];
-            if let Some((field, value)) = positive
-                .into_iter()
-                .find(|(_, value)| !value.is_finite() || *value <= 0.0)
-            {
-                return Err(invalid(
-                    path,
-                    &format!("{field} must be positive, found {value}"),
-                ));
-            }
-            if !rod_mm.is_finite() || *rod_mm < 0.0 || *rod_mm >= *bore_mm {
-                return Err(invalid(
-                    path,
-                    &format!(
-                        "rod_mm must be zero or positive and smaller than the bore, found {rod_mm}"
-                    ),
-                ));
-            }
-            let non_negative = [
-                ("dead_length_mm", *dead_length_mm),
-                ("spring_rate", *spring_rate),
-                ("spring_preload", *spring_preload),
-                ("damping", *damping),
-                ("friction", *friction),
-            ];
-            if let Some((field, value)) = non_negative
-                .into_iter()
-                .find(|(_, value)| !value.is_finite() || *value < 0.0)
-            {
-                return Err(invalid(
-                    path,
-                    &format!("{field} must be zero or positive, found {value}"),
-                ));
-            }
-            Ok(())
-        }
+        } => check_cylinder(
+            path,
+            *bore_mm,
+            *rod_mm,
+            *stroke_mm,
+            *dead_length_mm,
+            *moving_mass_kg,
+            *spring_rate,
+            *spring_preload,
+            *damping,
+            *friction,
+        ),
         Behaviour::Valve {
             positions,
             default_position,
             ..
         } => check_valve(definition, path, positions, *default_position),
-        // A junction declares no number of its own, so there is nothing to range-check:
-        // the parts that would carry a number are absent from the file by construction.
-        // A plug and a junction declare no number of their own: closing a port and
-        // joining three are the whole of them.
+        // A plug closes a port and a junction joins three: neither declares a number.
         Behaviour::Plug | Behaviour::Junction => Ok(()),
     }
 }
@@ -358,6 +328,87 @@ fn check_recorder(path: &Path, span_s: f64, rate_hz: f64) -> Result<(), CatalogE
         return Err(invalid(
             path,
             &format!("a recorder may keep at most {MAX_RECORDER_SAMPLES} samples"),
+        ));
+    }
+    Ok(())
+}
+
+/// Checks the numbers of a cylinder: the ones that must be positive and the ones that may be
+/// zero, with the rod smaller than the bore it runs in.
+#[allow(clippy::too_many_arguments)]
+fn check_cylinder(
+    path: &Path,
+    bore_mm: f64,
+    rod_mm: f64,
+    stroke_mm: f64,
+    dead_length_mm: f64,
+    moving_mass_kg: f64,
+    spring_rate: f64,
+    spring_preload: f64,
+    damping: f64,
+    friction: f64,
+) -> Result<(), CatalogError> {
+    let positive = [
+        ("bore_mm", bore_mm),
+        ("stroke_mm", stroke_mm),
+        ("moving_mass_kg", moving_mass_kg),
+    ];
+    if let Some((field, value)) = positive
+        .into_iter()
+        .find(|(_, value)| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(invalid(
+            path,
+            &format!("{field} must be positive, found {value}"),
+        ));
+    }
+    if !rod_mm.is_finite() || rod_mm < 0.0 || rod_mm >= bore_mm {
+        return Err(invalid(
+            path,
+            &format!("rod_mm must be zero or positive and smaller than the bore, found {rod_mm}"),
+        ));
+    }
+    let non_negative = [
+        ("dead_length_mm", dead_length_mm),
+        ("spring_rate", spring_rate),
+        ("spring_preload", spring_preload),
+        ("damping", damping),
+        ("friction", friction),
+    ];
+    if let Some((field, value)) = non_negative
+        .into_iter()
+        .find(|(_, value)| !value.is_finite() || *value < 0.0)
+    {
+        return Err(invalid(
+            path,
+            &format!("{field} must be zero or positive, found {value}"),
+        ));
+    }
+    Ok(())
+}
+
+/// Checks the rail of the control circuit.
+fn check_electrical_supply(path: &Path, voltage_v: f64) -> Result<(), CatalogError> {
+    if !voltage_v.is_finite() || voltage_v <= 0.0 {
+        return Err(invalid(
+            path,
+            "an electrical supply needs a positive voltage",
+        ));
+    }
+    Ok(())
+}
+
+/// Checks that a contact is a two-terminal electrical part.
+fn check_contact(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
+    let terminals = definition
+        .port
+        .iter()
+        .filter(|port| port.role == PortRole::Electrical)
+        .count();
+    if terminals != 2 {
+        return Err(invalid(
+            path,
+            "a contact needs exactly two electrical terminals",
         ));
     }
     Ok(())

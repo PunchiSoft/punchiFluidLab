@@ -121,6 +121,8 @@ pub enum PartBehaviour {
         /// Sonic conductance to atmosphere, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// An electrical component: drawn and checked, not yet simulated (ADR 0017).
+    Electrical,
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -198,6 +200,11 @@ impl NetworkPart {
             Behaviour::Silencer { conductance } => PartBehaviour::Silencer {
                 conductance: *conductance,
             },
+            // The electrical control circuit is not simulated yet (ADR 0017): the part
+            // exists so the document can hold it, and it contributes nothing to the gas.
+            Behaviour::ElectricalSupply { .. } | Behaviour::Contact { .. } => {
+                PartBehaviour::Electrical
+            }
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {
@@ -1794,5 +1801,53 @@ mod tests {
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(7, "1"))];
         let network = Network::build(&parts, &pipes).expect("still builds");
         assert!(network.cylinder().is_none());
+    }
+}
+
+#[cfg(test)]
+mod electrical_tests {
+    use super::*;
+    use punchi_fluid_catalog::Catalog;
+
+    fn part(catalog: &Catalog, id: &str) -> NetworkPart {
+        let definition = catalog.get(id).expect("definition");
+        NetworkPart::from_definition(definition).expect("a part")
+    }
+
+    #[test]
+    fn an_electrical_component_adds_nothing_to_the_gas() {
+        // The control circuit is drawn and checked, and the air model ignores it: the same
+        // pneumatic circuit with and without a supply and a contact must behave identically.
+        let catalog = Catalog::builtin();
+        let base = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let mut with = base.to_vec();
+        with.push(part(&catalog, "electrical.supply"));
+        with.push(part(&catalog, "electrical.contact"));
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let mut pneumatic = Network::build(&base, &pipes).expect("builds");
+        let mut control = Network::build(&with, &pipes).expect("builds with the control circuit");
+        for network in [&mut pneumatic, &mut control] {
+            network.press_valve();
+            for _ in 0..40 {
+                network.advance(0.016).expect("accepted");
+            }
+        }
+        assert!(
+            (control.position() - pneumatic.position()).abs() < 1e-9,
+            "the control circuit changed the stroke: {:.3} mm against {:.3} mm",
+            control.position() * 1000.0,
+            pneumatic.position() * 1000.0
+        );
+        assert!(
+            (control.pressure_pa() - pneumatic.pressure_pa()).abs() < 1e-6,
+            "the control circuit changed the pressure"
+        );
     }
 }

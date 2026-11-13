@@ -82,6 +82,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
         "silencer.pneumatic",
         include_str!("../../../assets/symbols/review/silencer.pneumatic.md"),
     ),
+    (
+        "electrical.supply",
+        include_str!("../../../assets/symbols/review/electrical.supply.md"),
+    ),
+    (
+        "electrical.contact",
+        include_str!("../../../assets/symbols/review/electrical.contact.md"),
+    ),
 ];
 
 /// Review text of one definition.

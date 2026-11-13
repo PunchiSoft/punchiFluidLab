@@ -73,6 +73,14 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/silencer.pneumatic.toml"),
     ),
     (
+        "electrical.supply.toml",
+        include_str!("../../../assets/catalog/electrical.supply.toml"),
+    ),
+    (
+        "electrical.contact.toml",
+        include_str!("../../../assets/catalog/electrical.contact.toml"),
+    ),
+    (
         "throttle.fixed.toml",
         include_str!("../../../assets/catalog/throttle.fixed.toml"),
     ),

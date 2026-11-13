@@ -229,6 +229,23 @@ checked and reads nothing.
   port, not a valve; the silencer's file states a conductance and the review states that
   the noise is not modelled.
 
+### The electrical control circuit
+
+The control circuit is a second domain in the same document, and its symbols follow the
+general convention for electrical diagrams; the geometry is ours, hand-drawn, and no figure
+from another program or from the standard was traced.
+
+- A **supply** is the pair of plates of a d.c. source: the **long line positive**, the short
+  one negative, with a stem to each terminal and the polarity drawn as lines, never typed.
+- A **contact** is two terminals with a **visible gap**, the movable bar above it and the
+  push rod with its cap. The gap is the rest state; a normally closed contact is another
+  file, not another drawing.
+- **A wire is dotted.** The electrical class says what the line is, so a hose between two
+  electrical terminals is drawn dotted without anyone choosing a class, and the class is
+  what the reader sees before any label.
+- **The body of a symbol is solid**; only the wires carry the class. A symbol drawn entirely
+  in dots is a symbol that looks like a wire.
+
 ### Circuit diagrams (Part 2/3)
 
 - Components are grouped and numbered, and the diagram carries an identification

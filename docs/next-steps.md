@@ -65,7 +65,8 @@ changed lines outside generated files, it is two phases.
 | **P4.1 — the parts list** ✅ delivered | `feat/parts-list` | a parts list on the printed page, grouped by definition, with quantities and designations | export tests, the ABI export test and a rendered A4 |
 | **P4.2 — SVG** ✅ delivered | `feat/svg-export` | the sheet as a vector document beside PDF and PNG, in millimetres and as text | a vector fixture, the PDF/SVG text parity test, the ABI test, `--selftest` |
 | **P4.3 — the export panel** ✅ delivered | `feat/export-panel` | custom paper, four margins, PNG resolution and the parts-list toggle, in one options structure | ABI test with its refusals, `--selftest` |
-| **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
+| **P5.1 — the electrical library** ✅ delivered | `feat/electrical-library` | a 24 V supply and a push button as files, the `electrical` port role and line class, per [ADR 0017](adr/0017-the-electrical-circuit-is-a-second-domain.md) | catalog, check, solver and drawing tests, two symbol reviews |
+| **P5.2 — the control model** | `feat/control-model` | a line that is live or dead, a contact that joins two lines, a coil that moves a valve | ADR, solver tests, an ABI circuit with the switch acting on the valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 
 Two corrections worth keeping: designations unlock **one** of the four remaining check

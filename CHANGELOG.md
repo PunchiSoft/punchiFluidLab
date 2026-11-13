@@ -6,6 +6,53 @@ publicación.
 
 ## Unreleased
 
+### La biblioteca eléctrica empieza — 2026-11-13
+
+Un esquema neumático es medio mecanismo: la válvula la mueve un solenoide y el solenoide un
+pulsador. Sin el circuito de mando, el estudiante ha dibujado la mitad de la máquina.
+
+- **Fuente de 24 V y pulsador** como archivos, con sus símbolos dibujados a mano y sus
+  revisiones. El terminal es un **rol de puerto**, `electrical`, no un tipo de componente:
+  bobinas, contactos y raíles lo declaran y el catálogo no necesita un formato nuevo.
+- **El cable es punteado**: una manguera entre dos terminales se dibuja con la clase
+  `electrical` sin que nadie elija una clase, y el cuerpo del símbolo queda sólido.
+- **La comprobación deja los terminales en paz**: un terminal sin cable no es aire que
+  escapa; la falta de conexión mal encajada llegará con el resto de la biblioteca.
+- **El solver no cambia**: el circuito de mando se dibuja y se comprueba, y el aire se simula
+  exactamente igual que sin él. El modelo de control —línea viva, contacto que cierra y
+  bobina que mueve la válvula— es la rebanada siguiente, con su ADR.
+- **Evidencia**: el cable punteado, el terminal que no es falta, la prueba de que el aire no
+  cambia y la validación de los dos terminales del contacto; más las dos revisiones.
+
+### La hoja se configura antes de imprimirse — 2026-11-12
+
+La exportación salía siempre en A4 con 18 mm de marco. Un taller pide otra hoja, un trazador
+un tamaño propio, una diapositiva menos resolución, y un esquema rápido no necesita lista de
+piezas.
+
+- **Archivo ▸ Hoja ▸ Márgenes, tamaño y lista…** abre el panel: papel con nombre o
+  **personalizado en milímetros**, cuatro márgenes, resolución del PNG y la **lista de
+  piezas** sí o no.
+- Las opciones viajan al núcleo en **una estructura** (`PfExportOptions`), no en una lista de
+  argumentos que crece con cada campo; el ABI sube a la versión 5.
+- Una hoja cuyos márgenes no dejan sitio al dibujo, o un tamaño fuera de los límites, se
+  **rechazan con un mensaje** en vez de imprimir una página vacía.
+- **Evidencia**: `the_export_panel_settings_reach_the_page` y los tres pasos `--selftest`.
+
+### Las mangueras doblan una vez cuando pueden — 2026-11-12
+
+El trazador automático siempre dibujaba una Z, aunque los dos puertos no la pidieran: una
+manguera que salía de un costado y entraba por abajo daba dos quiebres y se veía como una
+escalera.
+
+- **El trazado lee la dirección de cada puerto**: un puerto lateral y uno inferior se unen
+  con **un solo doblez**; dos puertos en lados paralelos conservan la Z, que es el camino
+  ortogonal más corto entre ellos y el que el usuario puede arrastrar.
+- Una manguera con un solo doblez **no tiene tramo central** que mover, y el arrastre lo dice
+  en vez de no hacer nada.
+- **Evidencia**: las pruebas de trazado del dibujo, las de ABI de ruta y guardado, y los pasos
+  `--selftest` que encuentran una manguera arrastrable.
+
 ### La hoja de arranque, con círculos de conexión y fuentes que apuntan a su tubo — 2026-11-12
 
 Dos correcciones de simbología que se veían en la hoja:

@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Push button, normally open: the simplest contact of a control circuit.
+#
+# Two terminals with a gap between them and a bar that closes it when somebody presses. The
+# electrical circuit is drawn, connected and checked, and it does not take part in the gas
+# model yet (ADR 0017).
+#
+# The symbol is drawn from the general convention: a fixed contact, a movable bar and the
+# push rod that moves it, with the gap between the two terminals.
+
+schema = 3
+id = "electrical.contact"
+name = "Push button, normally open"
+name_es = "Pulsador, abierto en reposo"
+category = "sensor"
+summary = "Closes the control circuit while it is pressed."
+
+[[port]]
+id = "1"
+role = "electrical"
+position = [0.0, 0.5]
+
+[[port]]
+id = "2"
+role = "electrical"
+position = [1.0, 0.5]
+
+[behaviour]
+type = "contact"
+
+# The two terminals, with the gap the button closes.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.30, 0.5]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.70, 0.5, 1.0, 0.5]
+line_class = "electrical"
+
+# The movable bar, above the gap: it drops when the button is pressed. The body of a symbol
+# is solid; the wires are what carries the class.
+[[symbol]]
+kind = "line"
+points = [0.30, 0.32, 0.70, 0.32]
+line_class = "working"
+
+# The push rod and its cap.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.32, 0.5, 0.18]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.40, 0.18, 0.60, 0.18]
+line_class = "working"

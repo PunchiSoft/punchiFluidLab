@@ -242,6 +242,25 @@ modelled and the file does not pretend otherwise
 
 ```toml
 [behaviour]
+type = "electrical_supply"
+voltage_v = 24.0             # the rail the control circuit hangs from
+```
+
+```toml
+[behaviour]
+type = "contact"             # two electrical terminals; `normally_closed = true` is another file
+```
+
+The electrical control circuit is a **second domain in the same document**
+([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md)). Its terminals
+declare `role = "electrical"`; the check never reports one as an open pneumatic port, and the
+solver builds no volume for it. A hose between two terminals is drawn with the `electrical`
+class, so a beginner's first wire is dotted without anyone choosing a class. The control
+model — a live line, a closed contact moving a valve — is the next slice, and until it exists
+these parts are drawn and checked, not simulated.
+
+```toml
+[behaviour]
 type = "junction"            # no fields: it adds nothing to the network
 ```
 

@@ -459,3 +459,38 @@ fn a_source_triangle_points_at_its_connection() {
         );
     }
 }
+
+#[test]
+fn a_contact_needs_two_electrical_terminals() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let with_a_working_port = r#"
+schema = 3
+id = "electrical.contact.bad"
+name = "Contact with a pneumatic port"
+category = "sensor"
+[[port]]
+id = "1"
+role = "electrical"
+position = [0.0, 0.5]
+[[port]]
+id = "2"
+role = "working"
+position = [1.0, 0.5]
+[behaviour]
+type = "contact"
+"#;
+    write(dir.path(), "contact.toml", with_a_working_port);
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(
+        catalog.get("electrical.contact.bad").is_none(),
+        "a contact is an electrical part, not a pneumatic one"
+    );
+    assert!(
+        catalog
+            .problems()
+            .iter()
+            .any(|problem| problem.to_string().contains("two electrical terminals")),
+        "{:?}",
+        catalog.problems()
+    );
+}

@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 24 V control supply: the rail that feeds the electrical circuit.
+#
+# Two terminals, +24 V and 0 V. The electrical circuit is a second domain in the same
+# document (ADR 0017): the component is drawn, connected and checked, and it does not take
+# part in the gas model yet.
+#
+# The symbol is drawn from the general convention for a d.c. source: the long line is the
+# positive plate and the short one the negative, with a stem to each terminal.
+
+schema = 3
+id = "electrical.supply"
+name = "24 V supply"
+name_es = "Fuente 24 V"
+category = "supply"
+summary = "Feeds the electrical control circuit."
+
+[[port]]
+id = "L"
+role = "electrical"
+position = [0.0, 0.5]
+
+[[port]]
+id = "N"
+role = "electrical"
+position = [1.0, 0.5]
+
+[behaviour]
+type = "electrical_supply"
+voltage_v = 24.0
+
+# The pair of plates: long for +, short for -, the usual d.c. source. The body of a symbol
+# is solid; the wires are what carries the class.
+[[symbol]]
+kind = "line"
+points = [0.42, 0.28, 0.42, 0.72]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.58, 0.36, 0.58, 0.64]
+line_class = "working"
+
+# Stems to the two terminals.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.42, 0.5]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.58, 0.5, 1.0, 0.5]
+line_class = "electrical"
+
+# A plus and a minus, drawn as lines so they scale with the symbol and not with a font.
+[[symbol]]
+kind = "line"
+points = [0.22, 0.24, 0.34, 0.24]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.28, 0.18, 0.28, 0.30]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.66, 0.24, 0.78, 0.24]
+line_class = "working"
