@@ -3185,3 +3185,48 @@ fn a_latching_relay_holds_until_the_reset_coil() {
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
+
+#[test]
+fn a_new_valve_keeps_the_symbol_square() {
+    let session = session();
+    let valve = catalog_index(session, "valve.3_2.spring_return");
+    // SAFETY: live session.
+    let first = unsafe { pf_session_place_component(session, valve, 60.0, 60.0) };
+    let second = unsafe { pf_session_place_component(session, valve, 120.0, 60.0) };
+    assert!(first >= 0 && second >= 0);
+    let first = u32::try_from(first).unwrap_or_default();
+    let second = u32::try_from(second).unwrap_or_default();
+    let rect = |index: u32| {
+        let mut bounds = [0.0_f32; 4];
+        // SAFETY: live session and a writable array.
+        assert_eq!(
+            unsafe { pf_session_component_rect(session, index, bounds.as_mut_ptr()) },
+            PF_OK
+        );
+        bounds
+    };
+    let first_before = rect(first);
+    let second_rect = rect(second);
+    let width = first_before[2] - first_before[0];
+    let height = first_before[3] - first_before[1];
+    assert!(
+        (width - height).abs() < 0.01,
+        "the first valve is not square: {width:.1} x {height:.1}"
+    );
+    let second_width = second_rect[2] - second_rect[0];
+    let second_height = second_rect[3] - second_rect[1];
+    assert!(
+        (second_width - second_height).abs() < 0.01,
+        "the second valve is not square: {second_width:.1} x {second_height:.1}"
+    );
+    let first_after = rect(first);
+    assert!(
+        first_before
+            .iter()
+            .zip(&first_after)
+            .all(|(before, after)| (before - after).abs() < 1.0e-6),
+        "placing a second valve changed the first one: {first_before:?} -> {first_after:?}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
