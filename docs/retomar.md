@@ -45,7 +45,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
 | Proyecto | **un documento con varios circuitos**: formato 6, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa, guardado/apertura de todos y la fuente de cada registrador; la novena falta es un tubo que une dos circuitos |
 | Exportación | **desde la ventana y sin ventana**, con **lista de piezas** en la hoja: Archivo ▸ Exportar escribe PDF, PNG (300 dpi) o **SVG** de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Con panel de **márgenes, tamaño personalizado, resolución y lista de piezas** |
-| Comprobación | 8 de las 9 faltas, cada una señalada en el dibujo; la que falta es la etiqueta que no coincide, que en la referencia empareja una bobina y su contacto por nombre |
+| Comprobación | 9 de las 9 faltas, cada una señalada en el dibujo; la etiqueta que no coincide no aplica porque aquí la bobina y su contacto van cableados, así que la novena es el cortocircuito del raíl |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; **caudalímetro** (`behaviour = "flow_meter"`): restricción en la línea que informa del gas que la atraviesa, en litros normales por minuto; **registrador** (`behaviour = "recorder"`): componente sin puertos que dibuja una magnitud elegida durante 60 s; el dinamómetro queda `not planned` hasta que exista un dominio mecánico |
 | Símbolos | lint de 8 reglas; **17 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
 
@@ -527,20 +527,19 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 - **Deudas del armazón**: la familia tipográfica de `kdeglobals` se lee pero no se carga
   (el tamaño sí); el cambio de tema en vivo desde Plasma está cableado, pero no se midió
   tocando la configuración del propietario. Los iconos Breeze sí se cargan y se tiñen.
-- **Deuda de la exportación**: no hay panel de márgenes, tamaño personalizado ni resolución
-  del PNG. La fecha es la del día, el dibujo se escala para encajar y `Ctrl+Shift+E` abre
-  el diálogo. La lista de piezas y la leyenda completa siguen pendientes.
+- **Deuda de la exportación**: el panel ya tiene márgenes, tamaño personalizado y resolución
+  del PNG, y la lista de piezas se imprime; falta la **leyenda completa de símbolos** y que el
+  panel recuerde la última elección. La fecha es la del día y el dibujo se escala para encajar.
 - **La revisión a 300 dpi de los 17 símbolos sigue abierta**: por eso el documento lleva
   la nota «symbols not yet verified against ISO 1219-1».
 - **El proyecto existe** desde P1.8: varios circuitos por documento, selector, añadir/renombrar y la novena falta. El título de la hoja no es editable; el proyecto no tiene lista de piezas por circuito.
 - **Instrumentos**: manómetro, caudalímetro, registrador de 60 s y «Hasta cambio». El
   dinamómetro está `not planned`: medir fuerza exige un enlace mecánico que el modelo no
   tiene, y una cifra `p·A` con el nombre de fuerza enseñaría lo que no es.
-- **Edición incompleta**: separación igual y cuatro alineaciones; propiedades de resumen,
-  accionamiento, posición inicial, ángulo, fugas y amortiguamiento; falta del tubo cuyos
-  extremos no encajan (la última de las nueve comprobaciones que queda, con la etiqueta del
-  encoder).
-- **Sin bibliotecas eléctrica, digital ni GRAFCET**, y sin material didáctico propio.
+- **Edición incompleta**: propiedades de resumen, accionamiento, posición inicial, ángulo,
+  fugas y amortiguamiento. Separación igual, cuatro alineaciones y las nueve comprobaciones
+  ya están; la novena es el cortocircuito del raíl, no la etiqueta del encoder.
+- **La biblioteca eléctrica tiene su primera porción, la red de control, el relé, los temporizadores TON/TOF, la lámpara, el zumbador y el final de carrera**; faltan presostato y vacuostato, setas, contador, encoder, y también la biblioteca digital, GRAFCET y el material didáctico propio.
 - **Sin hidráulica, sin traducciones (i18n), sin empaquetado (AppImage/Flatpak) y sin
   publicación firmada.**
 - **El clic no se ha probado con un clic real**: no hay herramientas de inyección en la

@@ -280,6 +280,12 @@ int32_t pf_session_can_redo(const PfSession *session);
 int32_t pf_session_toggle_contact(PfSession *session, uint32_t index);
 /* 1 closed, 0 open, or a negative error when the component is not a contact. */
 int32_t pf_session_contact_closed(PfSession *session, uint32_t index);
+/* 1 lit, 0 dark, or a negative error when the component is not an indicator. */
+int32_t pf_session_indicator_active(const PfSession *session, uint32_t index);
+/* 1 when any buzzer sounds, 0 when none does. */
+int32_t pf_session_buzzer_active(const PfSession *session);
+/* The identity of one placement, or a negative error. */
+int32_t pf_session_placement_id(const PfSession *session, uint32_t index);
 
 /* ---- recorders ---- */
 

@@ -24,6 +24,7 @@ skill is the bug.
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
+| [parity-run](parity-run/SKILL.md) | the loop of an owner-authorized long run: queue, one commit per capability, gate, one pull request | a parity run is authorized or resumed; a fresh session continues it after a reset |
 
 ## The order to read them
 

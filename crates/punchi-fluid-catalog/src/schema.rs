@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::switch::{LimitEnd, RelayKind};
+
 /// Version of the file format understood by this build.
 ///
 /// 2 added the declared valve body, the declared spring and actuator parts, the
@@ -539,6 +541,38 @@ pub enum Behaviour {
         #[serde(default)]
         normally_closed: bool,
     },
+    /// A limit switch: a contact whose roller follows a cylinder end (ADR 0023).
+    LimitSwitch {
+        /// Which end of the stroke presses the roller.
+        #[serde(default)]
+        end: LimitEnd,
+        /// `true` when the contact is closed while the roller is free.
+        #[serde(default)]
+        normally_closed: bool,
+    },
+    /// A relay: a coil whose state closes its own contact (ADR 0019).
+    ///
+    /// The file names the two pairs, because a relay has four electrical terminals and the
+    /// pair a terminal belongs to is behaviour, not geometry.
+    Relay {
+        /// The two coil terminals, positive side first.
+        coil: [String; 2],
+        /// The two contact terminals, in the order the contact joins them.
+        contact: [String; 2],
+        /// `true` when the contact is closed with the coil at rest.
+        #[serde(default)]
+        normally_closed: bool,
+        /// When the contact follows the coil: instantly, on delay or off delay.
+        #[serde(default)]
+        kind: RelayKind,
+        /// Delay of a `ton` or `tof`, seconds. An instant relay must leave it at zero.
+        #[serde(default)]
+        delay_s: f64,
+    },
+    /// An indicator lamp: one terminal, lit while its net is live (ADR 0021).
+    Lamp,
+    /// An audible indicator: one terminal, sounding while its net is live (ADR 0022).
+    Buzzer,
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -573,6 +607,10 @@ impl Behaviour {
             Self::Silencer { .. } => "silencer",
             Self::ElectricalSupply { .. } => "electrical_supply",
             Self::Contact { .. } => "contact",
+            Self::LimitSwitch { .. } => "limit_switch",
+            Self::Relay { .. } => "relay",
+            Self::Lamp => "lamp",
+            Self::Buzzer => "buzzer",
             Self::Junction => "junction",
         }
     }

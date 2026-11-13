@@ -202,9 +202,12 @@ impl NetworkPart {
             },
             // The electrical control circuit is not simulated yet (ADR 0017): the part
             // exists so the document can hold it, and it contributes nothing to the gas.
-            Behaviour::ElectricalSupply { .. } | Behaviour::Contact { .. } => {
-                PartBehaviour::Electrical
-            }
+            Behaviour::ElectricalSupply { .. }
+            | Behaviour::Contact { .. }
+            | Behaviour::Relay { .. }
+            | Behaviour::LimitSwitch { .. }
+            | Behaviour::Lamp
+            | Behaviour::Buzzer => PartBehaviour::Electrical,
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {

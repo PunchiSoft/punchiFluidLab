@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Buzzer: one terminal, sounding while the control net feeds it.
+#
+# The audible twin of the indicator lamp: a load of the boolean net, not a source. Its state
+# is drawn as the word `sonando` or `en silencio`, and the window loops a generated sample
+# while the state is active (ADR 0022).
+#
+# The symbol is drawn from the general convention for an audible indicator: a round body
+# with two sound waves opening to the right and a stem to its terminal.
+
+schema = 3
+id = "electrical.buzzer"
+name = "Buzzer"
+name_es = "Zumbador"
+category = "sensor"
+summary = "Sounds while its terminal is live."
+
+[[port]]
+id = "1"
+role = "electrical"
+position = [0.0, 0.40]
+
+[behaviour]
+type = "buzzer"
+
+# The stem from the terminal to the body.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.40, 0.30, 0.40]
+line_class = "electrical"
+
+# The body.
+[[symbol]]
+kind = "circle"
+points = [0.38, 0.40, 0.15]
+line_class = "working"
+
+# Two sound waves, drawn as polylines so they stay inside the symbol box and scale with it.
+[[symbol]]
+kind = "polyline"
+points = [0.56, 0.28, 0.64, 0.34, 0.64, 0.46, 0.56, 0.52]
+line_class = "working"
+
+[[symbol]]
+kind = "polyline"
+points = [0.70, 0.20, 0.80, 0.28, 0.80, 0.52, 0.70, 0.60]
+line_class = "working"

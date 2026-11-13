@@ -13,17 +13,15 @@
 //! - two pipes running over each other;
 //! - a pneumatic port left with nothing attached to it.
 //!
-//! The reference lists nine faults. Four of the nine are deliberately absent, not
-//! forgotten, and each is blocked on a feature rather than on this crate:
+//! The reference lists nine faults, and all nine are decided here. The eighth is a
+//! connection whose two ends belong to different domains; the ninth is the live rail joined
+//! to its own return. The reference's own ninth — a label that does not match — belongs to a
+//! model that couples a coil and its contact by name; this control circuit couples them by
+//! wire, so the equivalent fault under our rules is the short circuit, and the ledger says
+//! why.
 //!
-//! - a mismatched connection, which in the reference means a pneumatic line on a terminal
-//!   that is not pneumatic, and needs the electrical library (F6) to exist at all;
-//! - two cylinders sharing a designation, a label that does not match, and a pipe through
-//!   an unrelated circuit, which all three need component designations and circuit
-//!   grouping (F4).
-//!
-//! A check that guesses is worse than no check, so [`FindingKind`] grows when the missing
-//! feature lands, not before.
+//! A check that guesses is worse than no check, so [`FindingKind`] grows only when the
+//! feature that makes a fault decidable has landed.
 //!
 //! Every finding carries where it happens, so the interface can point at it instead of
 //! making the user map a sentence back onto the drawing.
@@ -32,6 +30,8 @@ use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{port_point, route};
 use punchi_fluid_draw::surface::{Pt, Rect};
+
+use electrical::short_circuits;
 
 /// What kind of fault was found.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +52,8 @@ pub enum FindingKind {
     PipeAcrossCircuits,
     /// A pipe joins two terminals of different domains.
     MismatchedConnection,
+    /// The live rail and its return are joined: a short circuit of the control circuit.
+    ShortCircuit,
 }
 
 impl FindingKind {
@@ -67,6 +69,7 @@ impl FindingKind {
             Self::DuplicateDesignation => "duplicate_designation",
             Self::PipeAcrossCircuits => "pipe_across_circuits",
             Self::MismatchedConnection => "mismatched_connection",
+            Self::ShortCircuit => "short_circuit",
         }
     }
 
@@ -82,6 +85,7 @@ impl FindingKind {
             Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
             Self::PipeAcrossCircuits => "un tubo une dos circuitos",
             Self::MismatchedConnection => "una conexión une dos terminales que no encajan",
+            Self::ShortCircuit => "el positivo del raíl y su retorno están unidos",
         }
     }
 }
@@ -178,6 +182,7 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
     findings.extend(open_connections(document, catalog, circuit));
     findings.extend(pipes_across_circuits(document, catalog));
     findings.extend(mismatched_connections(document, catalog, circuit));
+    findings.extend(short_circuits(document, catalog, circuit));
 
     findings.sort_by(|a, b| {
         (a.kind as u8, a.component, a.pipe).cmp(&(b.kind as u8, b.component, b.pipe))
@@ -606,6 +611,8 @@ fn collinear_overlap(a0: Pt, a1: Pt, b0: Pt, b1: Pt) -> Option<Pt> {
 fn ordered(a: f32, b: f32) -> (f32, f32) {
     if a <= b { (a, b) } else { (b, a) }
 }
+
+mod electrical;
 
 #[cfg(test)]
 mod tests;

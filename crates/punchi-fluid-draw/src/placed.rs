@@ -39,6 +39,7 @@ pub struct Pipe<'a> {
     /// Class of the line: working, pilot or drain, which decides its pattern.
     pub class: LineClass,
 }
+use crate::control_drawing::{indicator_rays, moving_bar};
 use crate::symbol::{self, Ink};
 
 /// What an instrument shows, in the unit its definition declares.
@@ -54,6 +55,10 @@ pub enum Reading {
     Flow(f32),
     /// Extension of a cylinder, `mm`.
     Position(f32),
+    /// Whether a lamp is lit.
+    Indicator(bool),
+    /// Whether a buzzer sounds.
+    Audible(bool),
 }
 
 impl Reading {
@@ -64,6 +69,10 @@ impl Reading {
             Self::Pressure(value) => format!("{value:.1} bar"),
             Self::Flow(value) => format!("{value:.1} l/min"),
             Self::Position(value) => format!("{value:.1} mm"),
+            Self::Indicator(true) => "encendida".to_owned(),
+            Self::Indicator(false) => "apagada".to_owned(),
+            Self::Audible(true) => "sonando".to_owned(),
+            Self::Audible(false) => "en silencio".to_owned(),
         }
     }
 }
@@ -255,20 +264,13 @@ pub fn draw_placed(
         if placed.series.is_some() {
             draw_series(surface, placed, ink);
         }
-        if let Some(definition) = catalog.get(placed.catalog_id)
-            && let punchi_fluid_catalog::Behaviour::Contact { normally_closed } =
-                definition.behaviour
-        {
-            // The bar is the moving part: above the gap when the contact is open, across it
-            // when it is closed. The state is the run's, so the file holds one symbol and
-            // the sheet shows two (ADR 0018).
-            let closed = placed.contact_closed.unwrap_or(normally_closed);
-            let inner = placed.box_rect();
-            let y = if closed { 0.5 } else { 0.32 };
-            surface.line(
-                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
-                Stroke::new(symbol::LINE, ink.line),
-            );
+        if let Some(definition) = catalog.get(placed.catalog_id) {
+            moving_bar(surface, placed, definition, ink);
+            // A lamp gains rays when lit; a buzzer's waves are in its file, and the word
+            // beside it plus the sound carry its state (ADR 0022).
+            if matches!(placed.reading, Some(Reading::Indicator(true))) {
+                indicator_rays(surface, placed, definition, ink);
+            }
         }
     }
 

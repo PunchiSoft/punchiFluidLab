@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Limit switch at the extended end of a cylinder.
+#
+# The roller follows a cylinder end: the contact closes when the rod reaches its far end
+# (ADR 0023). The cylinder is chosen in the inspector and stored as the placement source,
+# so the file only says which end it watches.
+#
+# The symbol is a two-terminal contact with a roller lever on top; the renderer draws the
+# moving bar from the switch state.
+
+schema = 3
+id = "electrical.limit_switch.extended"
+name = "Limit switch, extended end"
+name_es = "Final de carrera, extremo extendido"
+category = "sensor"
+summary = "Closes when the chosen cylinder is fully out."
+kinematics = "contact"
+
+[[port]]
+id = "1"
+role = "electrical"
+position = [0.0, 0.5]
+
+[[port]]
+id = "2"
+role = "electrical"
+position = [1.0, 0.5]
+
+[behaviour]
+type = "limit_switch"
+end = "extended"
+
+# The two terminals and the gap the bar closes.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.30, 0.5]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.70, 0.5, 1.0, 0.5]
+line_class = "electrical"
+
+# The roller lever, mirrored so the two ends read differently at palette size.
+[[symbol]]
+kind = "line"
+points = [0.46, 0.32, 0.58, 0.16]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.60, 0.14, 0.05]
+line_class = "working"

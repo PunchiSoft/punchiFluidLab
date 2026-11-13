@@ -170,6 +170,28 @@ def cylinder_stop(rate):
     return normalise(out, 0.72)
 
 
+def buzzer_tone(rate):
+    """One second of an audible indicator, looped while its line is live.
+
+    The fundamental and the odd harmonics are what make a tone read as a buzzer rather than
+    a flute, and the slow modulation gives it the pulse a listener expects. Every frequency
+    is an integer number of cycles in one second and there is no fade, so the loop joins
+    without a click.
+    """
+    duration = 1.0
+    total = int(duration * rate)
+    frequency = 440.0
+    out = []
+    for index in range(total):
+        t = index / rate
+        sample = math.sin(2.0 * math.pi * frequency * t)
+        sample += 0.35 * math.sin(2.0 * math.pi * 3.0 * frequency * t)
+        sample += 0.20 * math.sin(2.0 * math.pi * 5.0 * frequency * t)
+        sample *= 0.85 + 0.15 * math.sin(2.0 * math.pi * 4.0 * t)
+        out.append(sample)
+    return normalise(out, 0.5)
+
+
 def smoothstep(edge0, edge1, value):
     x = max(0.0, min(1.0, (value - edge0) / (edge1 - edge0)))
     return x * x * (3.0 - 2.0 * x)
@@ -181,6 +203,7 @@ def main():
         ("valve.wav", 44100, valve_click(44100)),
         ("air.wav", 44100, air_charge(44100)),
         ("cylinder.wav", 44100, cylinder_stop(44100)),
+        ("buzzer.wav", 44100, buzzer_tone(44100)),
     ):
         path = write_wav(name, rate, samples)
         print(f"{path.relative_to(OUT.parent.parent)}  {len(samples) / rate:.2f} s  "

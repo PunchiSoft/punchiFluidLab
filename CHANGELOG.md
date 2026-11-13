@@ -6,6 +6,128 @@ publicación.
 
 ## Unreleased
 
+### El final de carrera: la secuencia sabe dónde está el vástago — 2026-11-13
+
+Una secuencia no solo necesita manos, bobinas y tiempo: necesita saber dónde está la máquina.
+El vástago está fuera, así que el paso siguiente puede empezar. El final de carrera es la
+primera pieza eléctrica cuyo estado viene del modelo del gas.
+
+- **Dos terminales y un rodillo**: `end = "extended"` o `"retracted"`, con `normally_closed`
+  para el contacto que cierra con el rodillo libre ([ADR 0023](docs/adr/0023-a-limit-switch-follows-a-cylinder-end.md)).
+- **El cilindro se elige, no se adivina**: el inspector escribe la misma fuente que un
+  registrador, con la cantidad `position`, así que no hay campo nuevo ni migración; el
+  selector lista solo cilindros.
+- **Cierra en el extremo, no cerca**: extensión `>= 0.98` o `<= 0.02`, los mismos márgenes
+  con los que la telemetría llama «fuera» o «recogido» al vástago.
+- **El estado es del ensayo**: la comprobación de diseño lee el reposo, porque no ha habido
+  carrera; cada `advance` lee la extensión y vuelve a asentar la red.
+- **Evidencia**: `a_limit_switch_closes_at_the_end_of_its_cylinder` (raíl, final de carrera,
+  lámpara, válvula y 500 pasos), las dos revisiones de símbolo y el lint.
+
+### El zumbador: una alarma que suena mientras la línea está viva — 2026-11-13
+
+Una luz dice «mira»; un zumbador dice «actúa». El zumbador es la primera pieza cuya salida se
+oye y la primera que dura: la ventana tiene que saber cuándo empieza y cuándo para.
+
+- **Un terminal y la misma red booleana**: `type = "buzzer"`, cargado por el mismo
+  asentamiento que la lámpara; no añade aristas y el circuito se comporta igual con él o sin
+  él ([ADR 0022](docs/adr/0022-an-audible-indicator-owns-its-sound.md)).
+- **La hoja lo dice con palabras**: `sonando` o `en silencio`, a través de `Reading::Audible`,
+  además del cuerpo y las ondas del archivo.
+- **El ABI responde una sola pregunta**: `pf_session_buzzer_active` devuelve 1 si suena algún
+  zumbador y 0 si ninguno; la ventana consulta una vez por refresco, no una por pieza.
+- **El sonido vive en la ventana**: la sesión Qt expone `buzzerActive`, emite
+  `buzzerChanged` solo al cambiar y el QML enlaza un `SoundEffect` en bucle; el silencio del
+  usuario lo detiene y, al quitar el silencio, vuelve solo si sigue sonando.
+- **La muestra se genera**: `scripts-dev/make-sounds.py` escribe `buzzer.wav` desde una
+  semilla fija, con fundamental y armónicos impares y un número entero de ciclos por segundo
+  para que el bucle no chasquee; `--check-sounds` prueba que el binario la decodifica.
+- **Evidencia**: `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, la revisión del
+  símbolo y el lint del catálogo.
+
+### La lámpara indicadora: ver la línea sin mover nada — 2026-11-13
+
+Una línea que solo alimenta una lámpara no tiene parte móvil, así que el estudiante no podía
+ver si estaba viva. La lámpara es el resultado visible más pequeño del circuito de mando y la
+primera pieza que un lector comprueba de un vistazo.
+
+- **Un terminal y nada más**: `type = "lamp"`, con la validación que rechaza un segundo
+  puerto o un rol neumático ([ADR 0021](docs/adr/0021-an-indicator-reads-the-net.md)).
+- **Encendida significa que su terminal está vivo**, con el mismo asentamiento que los relés.
+  La lámpara no añade aristas: observa la red, no la conduce, y el circuito se comporta igual
+  con ella o sin ella.
+- **El estado no es solo color**: una lámpara encendida gana ocho rayos alrededor del círculo
+  que declara su archivo y la palabra «encendida»; apagada no tiene ninguno y dice «apagada».
+- **La interfaz puede preguntar**: `pf_session_indicator_active` devuelve 1, 0 o error, para
+  que la barra de estado y el futuro zumbador lean el mismo estado que la hoja.
+- **El zumbador va aparte**: su sonido continuo necesita el camino de audio y sus propias
+  pruebas; queda en la cola como capacidad propia y no se declara hecho a medias.
+- **Evidencia**: `a_lamp_lights_while_its_line_is_live`,
+  `a_lamp_shows_its_state_as_rays_not_only_colour`, la revisión del símbolo y el lint.
+
+### Temporizadores TON y TOF, contados por el paso — 2026-11-13
+
+Un pulsador que actúa en el acto no puede arrancar una secuencia después de un tiempo de
+llenado ni mantener un motor tras el botón de paro. Los dos temporizadores de relé resuelven
+esas dos preguntas sin dormir el modelo ni leer el reloj de la máquina.
+
+- **El temporizador es un relé con una regla de tiempo**: `kind = "ton"` (cierra tras el
+  retardo con la bobina viva) o `"tof"` (abre tras el retardo con la bobina muerta), con
+  `delay_s` entre 0 y 3600 s ([ADR 0020](docs/adr/0020-timers-count-steps.md)).
+- **El paso da el tiempo**: cada `advance(dt)` asienta la red, actualiza los temporizadores
+  con `dt` y vuelve a asentar con los contactos nuevos. Un TON con la bobina muerta se
+  reinicia en el acto; un TOF con la bobina viva cierra en el acto.
+- **Sin asignar memoria por paso**: la topología de control se cachea al editar y el paso
+  solo rellena listas con capacidad reservada; el tiempo transcurrido está acotado por el
+  retardo.
+- **El estado es del ensayo**: no se guarda; un circuito reabierto empieza con los
+  temporizadores en reposo.
+- **Evidencia**: `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`,
+  `a_ton_contact_closes_after_its_delay` y `a_tof_contact_opens_after_its_delay`, con pasos
+  fijos de 10 ms, además de las dos revisiones de símbolo.
+
+### El relé: una bobina que cierra su contacto — 2026-11-13
+
+Un circuito de mando que solo puede conmutar una mano no puede encadenar dos líneas. El relé
+es la pieza que deja que una señal mueva otra, y la primera realimentación de la red: su
+contacto puede alimentar la bobina de otro relé, o la suya propia.
+
+- **Un archivo, dos parejas**: `coil = ["A1", "A2"]` y `contact = ["11", "14"]` nombradas por
+  el propio relé, porque los cuatro terminales comparten el rol eléctrico
+  ([ADR 0019](docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)).
+- **La bobina se energiza cuando exactamente uno de sus terminales está vivo**, que es la
+  sombra booleana de una diferencia de potencial; el contacto es una arista mientras la
+  bobina está energizada (o mientras descansa, si el archivo lo declara cerrado).
+- **La red se asienta en pasadas acotadas** (`2 · relés + 2`): un relé puede alimentar a otro
+  o a sí mismo, y el circuito termina igualmente. La comprobación eléctrica usa el mismo
+  asentamiento, así que un cortocircuito a través de un contacto de relé también se ve.
+- **El estado es del ensayo**, no del documento: no se guarda y un relé no se pulsa con el
+  ratón; su contacto se mueve porque su bobina está viva.
+- **La barra la dibuja el renderizador**, como la del pulsador, y el enlace mecánico va a
+  trazos.
+- **Evidencia**: `a_relay_names_two_coil_and_two_contact_terminals`,
+  `a_relay_closes_its_contact_while_its_coil_is_live` (raíl, pulsador, relé y válvula de
+  solenoide), la revisión del símbolo y el lint del catálogo.
+
+### La novena comprobación: el raíl en cortocircuito — 2026-11-13
+
+La referencia cierra sus nueve comprobaciones con una etiqueta que no coincide, porque allí un
+contacto se ata a su bobina por nombre. Aquí el contacto y la bobina van unidos por un cable,
+así que esa falta no existe; la equivalente bajo nuestras reglas es eléctrica y se puede
+señalar antes de ejecutar.
+
+- **El positivo del raíl unido a su retorno** —por cables y contactos cerrados— se señala como
+  `short_circuit`, en la fuente y antes de ejecutar. La red booleana lo decide sin simular:
+  terminales como nodos, cables y contactos cerrados como aristas.
+- **Un contacto abierto es un hueco**: el pulsador en reposo no convierte en cortocircuito lo
+  que el ensayo todavía no ha cerrado.
+- **La comprobación queda completa**: 9 de 9 en nuestro modelo, con la falta de etiquetas
+  registrada como no aplicable y su razón escrita.
+- **Evidencia**: `a_rail_joined_to_its_return_through_a_closed_contact_is_a_short`,
+  `a_live_rail_with_no_return_is_not_a_short`,
+  `an_open_contact_in_the_path_is_a_gap_not_a_short`, y el contrato del CLI con el noveno
+  nombre estable y su mensaje en español.
+
 ### El pulsador mueve la válvula — 2026-11-13
 
 Con la biblioteca eléctrica sola, el pulsador era un dibujo: se cableaba el raíl al pulsador

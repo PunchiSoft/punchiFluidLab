@@ -166,3 +166,43 @@ fn a_contact_shows_whether_it_is_open_or_closed() {
         "the closed bar bridges the terminals: {closed:.1} against {middle:.1}"
     );
 }
+
+#[test]
+fn a_lamp_shows_its_state_as_rays_not_only_colour() {
+    let catalog = Catalog::builtin();
+    let rect = Rect::from_center_size(Pt::new(60.0, 45.0), 30.0, 30.0);
+    let placed = |lit: bool| {
+        [Placed {
+            index: 0,
+            catalog_id: "electrical.lamp",
+            rect,
+            extension: 0.0,
+            valve_position: 0,
+            reading: Some(Reading::Indicator(lit)),
+            series: None,
+            contact_closed: None,
+            orientation: Orientation::NONE,
+            designation: None,
+        }]
+    };
+    let lines = |lit: bool| {
+        let mut surface = Recording::default();
+        draw_placed(
+            &mut surface,
+            &placed(lit),
+            &[],
+            &catalog,
+            &Ink::print(),
+            &[],
+        );
+        surface
+            .calls()
+            .iter()
+            .filter(|call| matches!(call, Call::Line { .. }))
+            .count()
+    };
+    assert!(
+        lines(true) > lines(false),
+        "a lit lamp draws rays, not only a different colour"
+    );
+}

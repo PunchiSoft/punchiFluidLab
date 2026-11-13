@@ -251,6 +251,33 @@ voltage_v = 24.0             # the rail the control circuit hangs from
 type = "contact"             # two electrical terminals; `normally_closed = true` is another file
 ```
 
+```toml
+[behaviour]
+type = "relay"               # four electrical terminals in two named pairs
+coil = ["A1", "A2"]          # the terminals the net feeds
+contact = ["11", "14"]       # the terminals the contact joins
+normally_closed = false      # the contact at rest; a changeover is another file
+kind = "ton"                 # `instant` (default), `ton` or `tof`
+delay_s = 2.0                # 0 to 3600 s; an instant relay leaves it at zero
+```
+
+```toml
+[behaviour]
+type = "lamp"                # one electrical terminal; lit while its line is live
+```
+
+```toml
+[behaviour]
+type = "buzzer"              # one electrical terminal; sounds while its line is live
+```
+
+```toml
+[behaviour]
+type = "limit_switch"        # two electrical terminals, a roller on a cylinder end
+end = "extended"             # `extended` or `retracted`
+normally_closed = false      # closed while the roller is free
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -264,6 +291,33 @@ open or closed, and a click toggles it. A **solenoid valve** declares
 positive terminal live, propagates it through wires and closed contacts, and sets the valve
 to its actuated position while its coil is live. There is no voltage and no current: the
 circuit is a boolean net.
+
+A **relay** names its coil pair and its contact pair
+([ADR 0019](../docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)). The coil is energised when
+exactly one of its terminals is live; the contact joins its pair while the coil is energised
+(or while it rests, with `normally_closed = true`). The net settles in bounded passes, so a
+relay may feed another relay or its own coil, and the contact bar is drawn by the renderer
+from the state the run settled on. With `kind = "ton"` or `"tof"` the same file is a timer:
+the output follows the coil after `delay_s`, counted by the simulation step and never slept
+([ADR 0020](../docs/adr/0020-timers-count-steps.md)). An `instant` relay must leave the
+delay at zero.
+
+A **lamp** is the load that makes a line visible without a moving part
+([ADR 0021](../docs/adr/0021-an-indicator-reads-the-net.md)): one electrical terminal, lit
+while the net reaches it. The drawing adds rays and the word `encendida` when it is lit, so
+the state is never colour alone, and the solver adds nothing to the gas.
+
+A **buzzer** is the audible indicator ([ADR 0022](../docs/adr/0022-an-audible-indicator-owns-its-sound.md)):
+the same one terminal and the same liveness, drawn with the word `sonando` or `en silencio`.
+The window loops `assets/sounds/buzzer.wav` while any buzzer is live and stops it when the
+line opens or the user mutes the window; the core and the solver stay silent.
+
+A **limit switch** is a contact whose roller follows one cylinder
+([ADR 0023](../docs/adr/0023-a-limit-switch-follows-a-cylinder-end.md)): two electrical
+terminals, an `end` and the usual `normally_closed`. The cylinder is chosen in the inspector
+and stored as the placement source with the `position` quantity, so the file never hardcodes
+an identity; the contact closes at 98 % of the stroke, and the design check reads its rest
+state because no run has happened yet.
 
 ```toml
 [behaviour]

@@ -39,7 +39,8 @@ SoundSources resolveSoundSources()
                             + QStringLiteral("/punchi-fluid-lab/sounds");
     return SoundSources { resolve(userDir, QStringLiteral("valve.wav")),
                           resolve(userDir, QStringLiteral("air.wav")),
-                          resolve(userDir, QStringLiteral("cylinder.wav")) };
+                          resolve(userDir, QStringLiteral("cylinder.wav")),
+                          resolve(userDir, QStringLiteral("buzzer.wav")) };
 }
 
 bool isWaveFile(const QUrl &source)

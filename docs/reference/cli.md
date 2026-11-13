@@ -49,7 +49,7 @@ punchi-fluid-cli check circuito.pfluid --strict
   against the built-in one; a user definition the build does not have is not seen at all.
   `--catalog` is a later phase.
 
-The eight findings this build knows, in the order the report uses:
+The nine findings this build knows, in the order the report uses:
 
 | `kind` | Message (Spanish) |
 |---|---|
@@ -61,14 +61,17 @@ The eight findings this build knows, in the order the report uses:
 | `duplicate_designation` | dos cilindros llevan la misma designación |
 | `pipe_across_circuits` | un tubo une dos circuitos |
 | `mismatched_connection` | una conexión une dos terminales que no encajan |
+| `short_circuit` | el positivo del raíl y su retorno están unidos |
 
 The check runs the geometry faults on the **active circuit** and the cross-circuit fault on
 the whole project, because that one is about a pipe whose ends are in different circuits.
 The active circuit is the `active` index the project file stores.
 
-One fault the reference lists is not implemented yet: a label that does not match, which in
-the reference couples a coil and its contact by name. The ledger in
-[capabilities.md](../capabilities.md) says why it waits and what it would need.
+All nine are implemented. The reference's ninth — a label that does not match — is not
+applicable to this model: it couples a coil and its contact by name, and our control circuit
+couples them by wire. The ninth fault here is the equivalent mistake under our rules, the
+live rail joined to its return, and the ledger in [capabilities.md](../capabilities.md) says
+why.
 
 ### `validate <file>`
 

@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::error::CatalogError;
 use crate::schema::{
     Behaviour, Category, ComponentDefinition, Origin, PortRole, Primitive, PrimitiveKind,
-    SCHEMA_MIN, SCHEMA_VERSION,
+    RelayKind, SCHEMA_MIN, SCHEMA_VERSION,
 };
 
 /// Every definition this build can use, indexed by identifier.
@@ -257,7 +257,17 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         }
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
         Behaviour::ElectricalSupply { voltage_v } => check_electrical_supply(path, *voltage_v),
-        Behaviour::Contact { .. } => check_contact(definition, path),
+        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
+            check_contact(definition, path)
+        }
+        Behaviour::Relay {
+            coil,
+            contact,
+            kind,
+            delay_s,
+            ..
+        } => check_relay(definition, path, coil, contact, *kind, *delay_s),
+        Behaviour::Lamp | Behaviour::Buzzer => check_indicator(definition, path),
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -409,6 +419,75 @@ fn check_contact(definition: &ComponentDefinition, path: &Path) -> Result<(), Ca
         return Err(invalid(
             path,
             "a contact needs exactly two electrical terminals",
+        ));
+    }
+    Ok(())
+}
+
+/// A relay names two coil terminals and two contact terminals, and nothing else.
+///
+/// The pair a terminal belongs to is behaviour: a coil and a contact share the same role,
+/// so the file has to say which is which instead of the code guessing from a port number.
+fn check_relay(
+    definition: &ComponentDefinition,
+    path: &Path,
+    coil: &[String; 2],
+    contact: &[String; 2],
+    kind: RelayKind,
+    delay_s: f64,
+) -> Result<(), CatalogError> {
+    if coil[0] == coil[1] || contact[0] == contact[1] {
+        return Err(invalid(
+            path,
+            "a relay coil and its contact each need two distinct terminals",
+        ));
+    }
+    if definition.port.len() != 4 {
+        return Err(invalid(
+            path,
+            "a relay needs exactly four electrical terminals",
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for id in coil.iter().chain(contact.iter()) {
+        let electrical = definition
+            .port
+            .iter()
+            .any(|port| port.id == *id && port.role == PortRole::Electrical);
+        if !electrical {
+            return Err(invalid(
+                path,
+                &format!("relay terminal `{id}` is missing or is not electrical"),
+            ));
+        }
+        if !seen.insert(id.as_str()) {
+            return Err(invalid(
+                path,
+                &format!("relay terminal `{id}` is used twice"),
+            ));
+        }
+    }
+    if !delay_s.is_finite() || !(0.0..=3600.0).contains(&delay_s) {
+        return Err(invalid(
+            path,
+            "a relay delay must be between 0 and 3600 seconds",
+        ));
+    }
+    if kind == RelayKind::Instant && delay_s != 0.0 {
+        return Err(invalid(
+            path,
+            "an instant relay must leave its delay at zero",
+        ));
+    }
+    Ok(())
+}
+
+/// An indicator shows one line: one electrical terminal and nothing else.
+fn check_indicator(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
+    if definition.port.len() != 1 || definition.port[0].role != PortRole::Electrical {
+        return Err(invalid(
+            path,
+            "an indicator needs exactly one electrical terminal",
         ));
     }
     Ok(())

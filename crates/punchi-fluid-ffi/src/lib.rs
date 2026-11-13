@@ -564,6 +564,23 @@ pub struct PfSession {
     /// position: the file says how the contact starts, the user clicks it, a reopened
     /// document starts at rest (ADR 0018).
     contacts: std::collections::HashMap<u64, bool>,
+    /// Whether each relay contact is closed, by placement identity. Derived from the net
+    /// on every control pass, never clicked: a relay moves because its coil is live
+    /// (ADR 0019).
+    relays: std::collections::HashMap<u64, bool>,
+    /// The control topology of the active circuit, rebuilt on an edit and reused per step.
+    control: Option<ControlModel>,
+    /// Elapsed time and output of every timer, by placement identity. Bounded by the timer
+    /// placements and never grown by a step.
+    timers: std::collections::HashMap<u64, TimerState>,
+    /// Whether each lamp is lit, by placement identity. Derived from the net like a coil.
+    indicators: std::collections::HashMap<u64, bool>,
+    /// Whether each buzzer sounds, by placement identity. A subset of `indicators` that the
+    /// audio path reads.
+    buzzers: std::collections::HashMap<u64, bool>,
+    /// Whether each limit switch is closed, by placement identity. Derived from the bound
+    /// cylinder's extension on every control pass.
+    limits: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -657,6 +674,12 @@ impl PfSession {
             preview_text: Vec::new(),
             charts: std::collections::HashMap::new(),
             contacts: std::collections::HashMap::new(),
+            relays: std::collections::HashMap::new(),
+            control: None,
+            timers: std::collections::HashMap::new(),
+            indicators: std::collections::HashMap::new(),
+            buzzers: std::collections::HashMap::new(),
+            limits: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -798,6 +821,7 @@ impl PfSession {
         };
         match stepped {
             Ok(()) => {
+                self.advance_control(dt);
                 self.sample_charts();
                 PF_OK
             }
@@ -815,7 +839,15 @@ impl PfSession {
         match definition.behaviour {
             punchi_fluid_catalog::Behaviour::FlowMeter { .. } => &PRESSURE_FLOW,
             punchi_fluid_catalog::Behaviour::Cylinder { .. } => &PRESSURE_POSITION,
-            _ if !definition.port.is_empty() => &PRESSURE,
+            // Only a part with a port that carries air can report a pressure: a lamp, a
+            // buzzer or a terminal has no gas to read.
+            _ if definition
+                .port
+                .iter()
+                .any(|port| port.role != punchi_fluid_catalog::PortRole::Electrical) =>
+            {
+                &PRESSURE
+            }
             _ => &[],
         }
     }
@@ -840,6 +872,24 @@ impl PfSession {
                     quantity: quantity_index(*quantity),
                 });
             }
+        }
+        candidates
+    }
+
+    /// The sources a placement can bind. A limit switch only takes a cylinder's position;
+    /// a recorder takes every quantity its neighbours report.
+    fn source_candidates(
+        &self,
+        index: usize,
+        circuit: u32,
+        position_only: bool,
+    ) -> Vec<PfChartSource> {
+        let mut candidates = self.chart_candidates(index, circuit);
+        if position_only {
+            candidates.retain(|candidate| {
+                quantity_from_index(candidate.quantity)
+                    == Some(punchi_fluid_doc::Quantity::Position)
+            });
         }
         candidates
     }
@@ -1122,30 +1172,156 @@ impl PfSession {
     /// actuated position. No voltage, no current, no short circuit (ADR 0018).
     fn apply_control(&mut self) {
         let circuit = self.document.active_circuit();
-        // The states are read first: reading one may write the map, which cannot happen
-        // while the document is borrowed by a loop.
-        let mut closed: Vec<usize> = Vec::new();
-        let candidates: Vec<usize> = self
-            .document
-            .placements()
-            .iter()
-            .enumerate()
-            .filter(|(_, placement)| placement.circuit == circuit)
-            .map(|(index, _)| index)
-            .collect();
-        for index in candidates {
-            if self.contact_closed_at(index).unwrap_or(false) {
-                closed.push(index);
+        let model = ControlModel::of(&self.document, &self.catalog, circuit, &self.contacts);
+        self.control = Some(model);
+        self.ensure_timers();
+        self.ensure_limits();
+        self.refresh_limits();
+        {
+            let Some(model) = self.control.as_mut() else {
+                return;
+            };
+            model.settle(&self.timers, &self.limits);
+        }
+        self.publish_relay_state();
+        self.publish_indicators();
+        self.position_solenoids(circuit);
+    }
+
+    /// Gives every timer an entry before a step runs, so a step never inserts a key.
+    fn ensure_timers(&mut self) {
+        let Self {
+            control, timers, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        timers.retain(|id, _| {
+            model
+                .relays
+                .iter()
+                .any(|relay| relay.id == *id && relay.kind.is_timer())
+        });
+        for relay in &model.relays {
+            if relay.kind.is_timer() {
+                timers.entry(relay.id).or_default();
             }
         }
-        let net = control_net(&self.document, &self.catalog, circuit, &closed);
-        let live = net.energised();
-        // A solenoid valve follows its coil.
-        for (index, placement) in self.document.placements().iter().enumerate() {
+    }
+
+    /// Gives every limit switch an entry, so a step never inserts a key.
+    fn ensure_limits(&mut self) {
+        let Self {
+            control, limits, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        limits.retain(|id, _| model.limits.iter().any(|limit| limit.id == *id));
+        for limit in &model.limits {
+            limits.entry(limit.id).or_insert(limit.normally_closed);
+        }
+    }
+
+    /// Reads the bound cylinder of every limit switch and keeps its contact state.
+    ///
+    /// The extension is the model's, not the drawing's: `0.98` and `0.02` are the same
+    /// margins the telemetry uses to call a rod out or home, so the switch closes at the
+    /// end the student sees, not near it.
+    fn refresh_limits(&mut self) {
+        let Self {
+            control,
+            limits,
+            document,
+            placement_part,
+            system,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        for binding in &model.limits {
+            let at_end = binding
+                .source
+                .and_then(|source| {
+                    let index = document
+                        .placements()
+                        .iter()
+                        .position(|placement| placement.id() == source)?;
+                    let part = placement_part.get(index).copied().flatten()?;
+                    let extension = system.as_ref()?.extension_of(part)?;
+                    Some(match binding.end {
+                        punchi_fluid_catalog::LimitEnd::Extended => extension >= 0.98,
+                        punchi_fluid_catalog::LimitEnd::Retracted => extension <= 0.02,
+                    })
+                })
+                .unwrap_or(false);
+            let closed = if binding.normally_closed {
+                !at_end
+            } else {
+                at_end
+            };
+            limits.insert(binding.id, closed);
+        }
+    }
+
+    /// Keeps the settled state for the frame; a relay is never clicked by hand.
+    fn publish_relay_state(&mut self) {
+        let Self {
+            control, relays, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        relays.clear();
+        let base = model.relays.len();
+        for (relay, closed) in model.relays.iter().zip(&model.state[..base]) {
+            relays.insert(relay.id, *closed);
+        }
+        for (limit, closed) in model.limits.iter().zip(&model.state[base..]) {
+            relays.insert(limit.id, *closed);
+        }
+    }
+
+    /// Keeps the lit state of every lamp for the frame and the interface.
+    fn publish_indicators(&mut self) {
+        let Self {
+            control,
+            indicators,
+            buzzers,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        indicators.clear();
+        for (id, node, audible) in &model.indicators {
+            let on = model.live[*node];
+            indicators.insert(*id, on);
+            if *audible {
+                buzzers.insert(*id, on);
+            }
+        }
+    }
+
+    /// A solenoid valve follows its coil in the net the relays settled on.
+    fn position_solenoids(&mut self, circuit: u32) {
+        let Self {
+            document,
+            catalog,
+            control,
+            placement_valve,
+            system,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        for (index, placement) in document.placements().iter().enumerate() {
             if placement.circuit != circuit {
                 continue;
             }
-            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+            let Some(definition) = catalog.get(&placement.catalog_id) else {
                 continue;
             };
             let punchi_fluid_catalog::Behaviour::Valve {
@@ -1166,22 +1342,89 @@ impl PfSession {
             else {
                 continue;
             };
-            let Some(node) = net.node_of(index, &coil.id) else {
+            let Some(node) = model.node_of(index, &coil.id) else {
                 continue;
             };
-            let position = if live[node] {
+            let position = if model.live[node] {
                 1 - *default_position
             } else {
                 *default_position
             };
             // The setter names the valve; the getter names the part it belongs to.
-            let Some(valve) = self.placement_valve.get(index).copied().flatten() else {
+            let Some(valve) = placement_valve.get(index).copied().flatten() else {
                 continue;
             };
-            if let Some(system) = self.system.as_mut() {
+            if let Some(system) = system.as_mut() {
                 system.set_valve_position_at(valve, position);
             }
         }
+    }
+
+    /// Advances the timers by one step and re-settles the control net.
+    ///
+    /// The timers read the liveness of the net as it was at the start of the step, then the
+    /// net is settled again with their new contacts. A timer that feeds another therefore
+    /// reacts one step later, which is the resolution the step already has.
+    fn advance_control(&mut self, dt: f64) {
+        if !(dt.is_finite() && dt > 0.0) {
+            return;
+        }
+        if self.control.is_none() {
+            self.apply_control();
+        }
+        self.refresh_limits();
+        let circuit = self.document.active_circuit();
+        {
+            let Self {
+                control,
+                timers,
+                limits,
+                ..
+            } = self;
+            let Some(model) = control.as_mut() else {
+                return;
+            };
+            model.settle(timers, limits);
+            for i in 0..model.relays.len() {
+                let relay = model.relays[i];
+                if !relay.kind.is_timer() {
+                    continue;
+                }
+                let energised = model.live[relay.coil.0] != model.live[relay.coil.1];
+                let Some(timer) = timers.get_mut(&relay.id) else {
+                    continue;
+                };
+                match relay.kind {
+                    punchi_fluid_catalog::RelayKind::Ton => {
+                        if energised {
+                            timer.elapsed_s = (timer.elapsed_s + dt).min(relay.delay_s);
+                            if timer.elapsed_s >= relay.delay_s {
+                                timer.output = true;
+                            }
+                        } else {
+                            timer.elapsed_s = 0.0;
+                            timer.output = false;
+                        }
+                    }
+                    punchi_fluid_catalog::RelayKind::Tof => {
+                        if energised {
+                            timer.elapsed_s = 0.0;
+                            timer.output = true;
+                        } else {
+                            timer.elapsed_s = (timer.elapsed_s + dt).min(relay.delay_s);
+                            if timer.elapsed_s >= relay.delay_s {
+                                timer.output = false;
+                            }
+                        }
+                    }
+                    punchi_fluid_catalog::RelayKind::Instant => {}
+                }
+            }
+            model.settle(timers, limits);
+        }
+        self.publish_relay_state();
+        self.publish_indicators();
+        self.position_solenoids(circuit);
     }
 
     /// Builds the frame the front end draws.    /// Builds the frame the front end draws.
@@ -1208,6 +1451,8 @@ impl PfSession {
             selected_pipe,
             charts,
             contacts,
+            relays,
+            indicators,
             ..
         } = self;
 
@@ -1219,7 +1464,11 @@ impl PfSession {
             placement_part,
             circuit,
             charts,
-            contacts,
+            ContactStates {
+                contacts,
+                relays,
+                indicators,
+            },
         );
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
@@ -2220,7 +2469,47 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             });
             text.push_str("Circuito eléctrico: se dibuja, todavía no se simula\n");
         }
+        Behaviour::Relay {
+            coil,
+            contact,
+            normally_closed,
+            kind,
+            delay_s,
+        } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
+        Behaviour::LimitSwitch {
+            end,
+            normally_closed,
+        } => describe_limit_switch(text, *end, *normally_closed),
+        Behaviour::Lamp => describe_indicator(text, false),
+        Behaviour::Buzzer => describe_indicator(text, true),
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
+    }
+}
+
+/// Writes what a relay or timer means, for the inspector.
+fn describe_relay(
+    text: &mut String,
+    coil: &[String; 2],
+    contact: &[String; 2],
+    normally_closed: bool,
+    kind: punchi_fluid_catalog::RelayKind,
+    delay_s: f64,
+) {
+    let _ = writeln!(text, "Bobina: {}–{}", coil[0], coil[1]);
+    let _ = writeln!(text, "Contacto: {}–{}", contact[0], contact[1]);
+    text.push_str(if normally_closed {
+        "Contacto cerrado en reposo\n"
+    } else {
+        "Contacto abierto en reposo\n"
+    });
+    match kind {
+        punchi_fluid_catalog::RelayKind::Instant => {}
+        punchi_fluid_catalog::RelayKind::Ton => {
+            let _ = writeln!(text, "Temporizador TON: {delay_s:.2} s");
+        }
+        punchi_fluid_catalog::RelayKind::Tof => {
+            let _ = writeln!(text, "Temporizador TOF: {delay_s:.2} s");
+        }
     }
 }
 
@@ -3054,7 +3343,11 @@ impl PfSession {
             &self.placement_part,
             circuit,
             &self.charts,
-            &self.contacts,
+            ContactStates {
+                contacts: &self.contacts,
+                relays: &self.relays,
+                indicators: &self.indicators,
+            },
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
         let mut page = punchi_fluid_export::Page {
@@ -3704,15 +3997,21 @@ pub unsafe extern "C" fn pf_session_chart_candidate_count(
     let Some(definition) = session.catalog.get(&placement.catalog_id) else {
         return 0;
     };
-    if !matches!(
+    let limit = matches!(
         definition.behaviour,
-        punchi_fluid_catalog::Behaviour::Recorder { .. }
-    ) {
+        punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+    );
+    if !limit
+        && !matches!(
+            definition.behaviour,
+            punchi_fluid_catalog::Behaviour::Recorder { .. }
+        )
+    {
         return 0;
     }
     u32::try_from(
         session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, limit)
             .len(),
     )
     .unwrap_or(0)
@@ -3742,8 +4041,17 @@ pub unsafe extern "C" fn pf_session_chart_candidate(
         let Some(placement) = session.document.placements().get(index as usize) else {
             return PF_ERR_MODEL;
         };
+        let position_only = session
+            .catalog
+            .get(&placement.catalog_id)
+            .is_some_and(|definition| {
+                matches!(
+                    definition.behaviour,
+                    punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+                )
+            });
         let Some(candidate) = session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, position_only)
             .get(slot as usize)
             .copied()
         else {
@@ -3783,8 +4091,17 @@ pub unsafe extern "C" fn pf_session_chart_candidate_label(
         let Some(placement) = session.document.placements().get(index as usize) else {
             return PF_ERR_MODEL;
         };
+        let position_only = session
+            .catalog
+            .get(&placement.catalog_id)
+            .is_some_and(|definition| {
+                matches!(
+                    definition.behaviour,
+                    punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+                )
+            });
         let Some(candidate) = session
-            .chart_candidates(index as usize, placement.circuit)
+            .source_candidates(index as usize, placement.circuit, position_only)
             .get(slot as usize)
             .copied()
         else {
@@ -3850,15 +4167,23 @@ pub unsafe extern "C" fn pf_session_set_chart_source(
         let Some(definition) = session.catalog.get(&recorder.catalog_id) else {
             return session.fail("the recorder has no definition");
         };
-        if !matches!(
+        let recorder = matches!(
             definition.behaviour,
             punchi_fluid_catalog::Behaviour::Recorder { .. }
-        ) {
-            return session.fail("the placement is not a recorder");
+        );
+        let limit = matches!(
+            definition.behaviour,
+            punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+        );
+        if !recorder && !limit {
+            return session.fail("the placement does not take a source");
         }
         let Some(quantity) = quantity_from_index(quantity) else {
             return session.fail("no such quantity");
         };
+        if limit && quantity != punchi_fluid_doc::Quantity::Position {
+            return session.fail("a limit switch follows a position");
+        }
         let Some(target) = session.document.index_of(u64::from(placement)) else {
             return session.fail("the source component is not in the document");
         };
@@ -4097,6 +4422,10 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::Recorder { .. }
             | Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
+            | Behaviour::Relay { .. }
+            | Behaviour::LimitSwitch { .. }
+            | Behaviour::Lamp
+            | Behaviour::Buzzer
             | Behaviour::Plug
             | Behaviour::Junction => {}
         }
@@ -4587,6 +4916,66 @@ pub unsafe extern "C" fn pf_session_contact_closed(session: *mut PfSession, inde
     })
 }
 
+/// `1` when the lamp at `index` is lit, `0` when it is dark, or a negative error.
+///
+/// A component that is not an indicator reports `PF_ERR_MODEL`, so the front end never
+/// confuses "dark" with "there is no lamp".
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_indicator_active(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    match session.indicators.get(&placement.id()) {
+        Some(on) => i32::from(*on),
+        None => PF_ERR_MODEL,
+    }
+}
+
+/// The identity of one placement, or a negative error.
+///
+/// The document names pipes and bindings by identity, so a front end that binds a source
+/// needs it without reading the file.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_placement_id(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    i32::try_from(placement.id()).unwrap_or(PF_ERR_MODEL)
+}
+
+/// `1` when any buzzer of the session sounds, `0` when none does.
+///
+/// The audio path asks once per refresh instead of walking the placements: the state is
+/// already in the session, and the answer is the aggregate the mixer needs.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_buzzer_active(session: *const PfSession) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    i32::from(session.buzzers.values().any(|on| *on))
+}
+
 /// The line class of one pipe: `0` working, `1` pilot, `2` drain, or a negative error.
 ///
 /// # Safety
@@ -4857,9 +5246,22 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::Recorder { .. }
         | Behaviour::ElectricalSupply { .. }
         | Behaviour::Contact { .. }
+        | Behaviour::Relay { .. }
+        | Behaviour::LimitSwitch { .. }
+        | Behaviour::Lamp
+        | Behaviour::Buzzer
         | Behaviour::Plug
         | Behaviour::Junction => {}
     }
+}
+
+/// The run state a frame reads for its moving contacts: the clicked buttons and the relays
+/// the net settled on.
+#[derive(Clone, Copy)]
+struct ContactStates<'a> {
+    contacts: &'a std::collections::HashMap<u64, bool>,
+    relays: &'a std::collections::HashMap<u64, bool>,
+    indicators: &'a std::collections::HashMap<u64, bool>,
 }
 
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for
@@ -4874,7 +5276,7 @@ fn scene<'a>(
     placement_part: &[Option<usize>],
     circuit: u32,
     charts: &'a std::collections::HashMap<u64, Chart>,
-    contacts: &std::collections::HashMap<u64, bool>,
+    states: ContactStates<'_>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
@@ -4903,7 +5305,13 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.valve_position_at(part))
                 .unwrap_or(0),
-            reading: recorder_reading(placement, charts).or_else(|| {
+            reading: indicator_reading(
+                placement,
+                catalog.get(placement.catalog_id.as_str()),
+                states.indicators,
+            )
+            .or_else(|| recorder_reading(placement, charts))
+            .or_else(|| {
                 instrument_reading(
                     catalog.get(placement.catalog_id.as_str()),
                     placement_part.get(index).copied().flatten(),
@@ -4911,7 +5319,7 @@ fn scene<'a>(
                 )
             }),
             series: chart_series(placement.id(), charts),
-            contact_closed: contact_closed(placement, contacts),
+            contact_closed: contact_closed(placement, states.contacts, states.relays),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
         });
@@ -4976,54 +5384,74 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
     }
 }
 
-/// The electrical terminals of one circuit and the edges between them.
+/// One electrical terminal of the model: the placement index and the port id.
+type Terminal = (usize, String);
+
+/// The state of a timer in the run, keyed by placement identity.
 ///
-/// The net is what makes the control circuit a model instead of a drawing: terminals are
-/// nodes, a wire and a closed contact are edges, and a rail marks its positive terminal as a
-/// source (ADR 0018).
-struct ControlNet {
-    /// Terminal of each node: the placement index and the port id.
-    nodes: Vec<(usize, String)>,
-    /// Neighbours of each node.
-    adjacency: Vec<Vec<usize>>,
-    /// Nodes a rail energises.
+/// `output` is the timer's own result (the Q of IEC 61131-3), before the contact's rest
+/// state is applied; `elapsed_s` is bounded by the declared delay.
+#[derive(Debug, Clone, Copy, Default)]
+struct TimerState {
+    elapsed_s: f64,
+    output: bool,
+}
+
+/// A relay in the control model: the placement identity, the node pairs and its time rule.
+#[derive(Debug, Clone, Copy)]
+struct RelayBinding {
+    id: u64,
+    coil: (usize, usize),
+    contact: (usize, usize),
+    normally_closed: bool,
+    kind: punchi_fluid_catalog::RelayKind,
+    delay_s: f64,
+}
+
+/// A limit switch in the control model: its contact nodes, the end it watches and the
+/// cylinder placement it follows.
+#[derive(Debug, Clone, Copy)]
+struct LimitBinding {
+    id: u64,
+    contact: (usize, usize),
+    normally_closed: bool,
+    end: punchi_fluid_catalog::LimitEnd,
+    source: Option<u64>,
+}
+
+/// The control circuit of one document, ready to settle without rebuilding it per step.
+///
+/// The topology — terminals, wires, relays — is built on an edit. A settle only clears and
+/// refills the edges from the state, with capacities reserved when the model is built, so a
+/// simulation step allocates nothing.
+struct ControlModel {
+    terminals: Vec<Terminal>,
+    wires: Vec<(usize, usize)>,
+    contacts: Vec<(usize, usize)>,
+    relays: Vec<RelayBinding>,
+    limits: Vec<LimitBinding>,
+    indicators: Vec<(u64, usize, bool)>,
     seeds: Vec<usize>,
+    edges: Vec<Vec<usize>>,
+    live: Vec<bool>,
+    state: Vec<bool>,
+    pending: Vec<usize>,
 }
 
-impl ControlNet {
-    fn node_of(&self, index: usize, port: &str) -> Option<usize> {
-        self.nodes
-            .iter()
-            .position(|(candidate, id)| *candidate == index && id == port)
-    }
-
-    /// Which nodes are live: the seeds, then everything they reach.
-    fn energised(&self) -> Vec<bool> {
-        let mut live = vec![false; self.nodes.len()];
-        let mut queue = self.seeds.clone();
-        for seed in &self.seeds {
-            live[*seed] = true;
-        }
-        while let Some(node) = queue.pop() {
-            for next in &self.adjacency[node] {
-                if !live[*next] {
-                    live[*next] = true;
-                    queue.push(*next);
-                }
-            }
-        }
-        live
-    }
+/// The node of a terminal inside the model.
+fn node_of(terminals: &[Terminal], index: usize, port: &str) -> Option<usize> {
+    terminals
+        .iter()
+        .position(|(candidate, id)| *candidate == index && id == port)
 }
 
-/// Builds the net of one circuit, with the contacts that are closed.
-fn control_net(
+/// Every electrical terminal of one circuit, and the rail positives that seed the net.
+fn terminals_of(
     document: &Document,
     catalog: &Catalog,
     circuit: u32,
-    closed_contacts: &[usize],
-) -> ControlNet {
-    let mut nodes: Vec<(usize, String)> = Vec::new();
+) -> (Vec<Terminal>, Vec<usize>) {
+    let mut terminals: Vec<Terminal> = Vec::new();
     let mut seeds: Vec<usize> = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
         if placement.circuit != circuit {
@@ -5036,8 +5464,8 @@ fn control_net(
             if port.role != punchi_fluid_catalog::PortRole::Electrical {
                 continue;
             }
-            let node = nodes.len();
-            nodes.push((index, port.id.clone()));
+            let node = terminals.len();
+            terminals.push((index, port.id.clone()));
             if matches!(
                 definition.behaviour,
                 punchi_fluid_catalog::Behaviour::ElectricalSupply { .. }
@@ -5047,18 +5475,12 @@ fn control_net(
             }
         }
     }
-    let count = nodes.len();
-    let mut net = ControlNet {
-        nodes,
-        adjacency: vec![Vec::new(); count],
-        seeds,
-    };
-    let node_of = |index: usize, port: &str| {
-        net.nodes
-            .iter()
-            .position(|(candidate, id)| *candidate == index && id == port)
-    };
-    // Wires join the terminals they connect.
+    (terminals, seeds)
+}
+
+/// The wires of one circuit as node pairs.
+fn wires_of(document: &Document, circuit: u32, terminals: &[Terminal]) -> Vec<(usize, usize)> {
+    let mut wires: Vec<(usize, usize)> = Vec::new();
     for connection in document.connections() {
         if connection.circuit != circuit {
             continue;
@@ -5070,46 +5492,395 @@ fn control_net(
             continue;
         };
         if let (Some(a), Some(b)) = (
-            node_of(from, &connection.from.port),
-            node_of(to, &connection.to.port),
+            node_of(terminals, from, &connection.from.port),
+            node_of(terminals, to, &connection.to.port),
         ) {
-            net.adjacency[a].push(b);
-            net.adjacency[b].push(a);
+            wires.push((a, b));
         }
     }
-    // A closed contact joins its own two terminals.
-    for index in closed_contacts {
-        let Some(placement) = document.placements().get(*index) else {
+    wires
+}
+
+/// The closed contacts and the relays of one circuit.
+fn switches_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+    contacts: &std::collections::HashMap<u64, bool>,
+) -> (Vec<(usize, usize)>, Vec<RelayBinding>) {
+    let mut closed_contacts: Vec<(usize, usize)> = Vec::new();
+    let mut relays: Vec<RelayBinding> = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
             continue;
-        };
+        }
         let Some(definition) = catalog.get(&placement.catalog_id) else {
             continue;
         };
-        let terminals: Vec<&str> = definition
-            .port
-            .iter()
-            .filter(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
-            .map(|port| port.id.as_str())
-            .collect();
-        if let [first, second] = terminals[..]
-            && let (Some(a), Some(b)) = (node_of(*index, first), node_of(*index, second))
-        {
-            net.adjacency[a].push(b);
-            net.adjacency[b].push(a);
+        match &definition.behaviour {
+            punchi_fluid_catalog::Behaviour::Contact { normally_closed } => {
+                let closed = contacts
+                    .get(&placement.id())
+                    .copied()
+                    .unwrap_or(*normally_closed);
+                if closed && let Some((a, b)) = contact_pair(definition) {
+                    if let (Some(a), Some(b)) =
+                        (node_of(terminals, index, &a), node_of(terminals, index, &b))
+                    {
+                        closed_contacts.push((a, b));
+                    }
+                }
+            }
+            punchi_fluid_catalog::Behaviour::Relay {
+                coil,
+                contact,
+                normally_closed,
+                kind,
+                delay_s,
+            } => {
+                let (Some(a), Some(b)) = (
+                    node_of(terminals, index, &coil[0]),
+                    node_of(terminals, index, &coil[1]),
+                ) else {
+                    continue;
+                };
+                let (Some(c), Some(d)) = (
+                    node_of(terminals, index, &contact[0]),
+                    node_of(terminals, index, &contact[1]),
+                ) else {
+                    continue;
+                };
+                relays.push(RelayBinding {
+                    id: placement.id(),
+                    coil: (a, b),
+                    contact: (c, d),
+                    normally_closed: *normally_closed,
+                    kind: *kind,
+                    delay_s: *delay_s,
+                });
+            }
+            _ => {}
         }
     }
-    net
+    (closed_contacts, relays)
+}
+
+/// The indicators of one circuit: the placement identity, the node that lights it and
+/// whether it is audible.
+fn indicators_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+) -> Vec<(u64, usize, bool)> {
+    let mut indicators = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        let audible = match definition.behaviour {
+            Behaviour::Lamp => false,
+            Behaviour::Buzzer => true,
+            _ => continue,
+        };
+        let Some(port) = definition.port.first() else {
+            continue;
+        };
+        if let Some(node) = node_of(terminals, index, &port.id) {
+            indicators.push((placement.id(), node, audible));
+        }
+    }
+    indicators
+}
+
+/// The limit switches of one circuit, with the cylinder each one follows.
+fn limits_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+) -> Vec<LimitBinding> {
+    let mut limits = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        let Behaviour::LimitSwitch {
+            end,
+            normally_closed,
+        } = &definition.behaviour
+        else {
+            continue;
+        };
+        let Some((a, b)) = contact_pair(definition) else {
+            continue;
+        };
+        let (Some(a), Some(b)) = (node_of(terminals, index, &a), node_of(terminals, index, &b))
+        else {
+            continue;
+        };
+        limits.push(LimitBinding {
+            id: placement.id(),
+            contact: (a, b),
+            normally_closed: *normally_closed,
+            end: *end,
+            source: placement.source.map(|source| source.placement),
+        });
+    }
+    limits
+}
+
+/// Reserves the degree of every node so a refill never grows an edge list.
+fn reserved_edges(
+    nodes: usize,
+    wires: &[(usize, usize)],
+    contacts: &[(usize, usize)],
+    relays: &[RelayBinding],
+    limits: &[LimitBinding],
+) -> Vec<Vec<usize>> {
+    let mut degree = vec![0usize; nodes];
+    for (a, b) in wires.iter().chain(contacts.iter()) {
+        degree[*a] += 1;
+        degree[*b] += 1;
+    }
+    for relay in relays {
+        degree[relay.contact.0] += 1;
+        degree[relay.contact.1] += 1;
+    }
+    for limit in limits {
+        degree[limit.contact.0] += 1;
+        degree[limit.contact.1] += 1;
+    }
+    degree.into_iter().map(Vec::with_capacity).collect()
+}
+
+impl ControlModel {
+    /// Builds the model from the document, the catalog and the clicked contact states.
+    fn of(
+        document: &Document,
+        catalog: &Catalog,
+        circuit: u32,
+        contacts: &std::collections::HashMap<u64, bool>,
+    ) -> Self {
+        let (terminals, seeds) = terminals_of(document, catalog, circuit);
+        let wires = wires_of(document, circuit, &terminals);
+        let (contacts, relays) = switches_of(document, catalog, circuit, &terminals, contacts);
+        let limits = limits_of(document, catalog, circuit, &terminals);
+        let indicators = indicators_of(document, catalog, circuit, &terminals);
+        let edges = reserved_edges(terminals.len(), &wires, &contacts, &relays, &limits);
+        let live = vec![false; terminals.len()];
+        let state = vec![false; relays.len() + limits.len()];
+        let pending = Vec::with_capacity(terminals.len());
+        Self {
+            terminals,
+            wires,
+            contacts,
+            relays,
+            limits,
+            indicators,
+            seeds,
+            edges,
+            live,
+            state,
+            pending,
+        }
+    }
+
+    /// The node of a terminal.
+    fn node_of(&self, index: usize, port: &str) -> Option<usize> {
+        self.terminals
+            .iter()
+            .position(|(candidate, id)| *candidate == index && id == port)
+    }
+
+    /// Refills the edges for the current relay state, reusing the reserved lists.
+    fn refill_edges(&mut self) {
+        for edge in &mut self.edges {
+            edge.clear();
+        }
+        for i in 0..self.wires.len() {
+            let (a, b) = self.wires[i];
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
+        for i in 0..self.contacts.len() {
+            let (a, b) = self.contacts[i];
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
+        for i in 0..self.relays.len() {
+            if !self.state[i] {
+                continue;
+            }
+            let (a, b) = self.relays[i].contact;
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
+        let base = self.relays.len();
+        for j in 0..self.limits.len() {
+            if !self.state[base + j] {
+                continue;
+            }
+            let (a, b) = self.limits[j].contact;
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
+    }
+
+    /// Marks the live nodes in `live`, reusing the queue.
+    fn energised(&mut self) {
+        self.live.fill(false);
+        self.pending.clear();
+        for seed in &self.seeds {
+            self.live[*seed] = true;
+            self.pending.push(*seed);
+        }
+        while let Some(node) = self.pending.pop() {
+            for next in &self.edges[node] {
+                if !self.live[*next] {
+                    self.live[*next] = true;
+                    self.pending.push(*next);
+                }
+            }
+        }
+    }
+
+    /// Settles every instantaneous relay; a timer or a limit switch is fixed for this pass.
+    fn settle(
+        &mut self,
+        timers: &std::collections::HashMap<u64, TimerState>,
+        limits: &std::collections::HashMap<u64, bool>,
+    ) {
+        for i in 0..self.relays.len() {
+            let relay = self.relays[i];
+            self.state[i] = if relay.kind.is_timer() {
+                let output = timers.get(&relay.id).is_some_and(|timer| timer.output);
+                if relay.normally_closed {
+                    !output
+                } else {
+                    output
+                }
+            } else {
+                relay.normally_closed
+            };
+        }
+        let base = self.relays.len();
+        for (slot, limit) in self.limits.iter().enumerate() {
+            self.state[base + slot] = limits
+                .get(&limit.id)
+                .copied()
+                .unwrap_or(limit.normally_closed);
+        }
+        let bound = self.relays.len().saturating_mul(2).saturating_add(2);
+        for _ in 0..=bound {
+            self.refill_edges();
+            self.energised();
+            let mut changed = false;
+            for i in 0..self.relays.len() {
+                let relay = self.relays[i];
+                if relay.kind.is_timer() {
+                    continue;
+                }
+                let energised = self.live[relay.coil.0] != self.live[relay.coil.1];
+                let closed = if relay.normally_closed {
+                    !energised
+                } else {
+                    energised
+                };
+                if self.state[i] != closed {
+                    self.state[i] = closed;
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+    }
+}
+
+/// The two terminals a contact or a relay contact joins, when the file says so.
+///
+/// A push button has exactly two electrical terminals; a relay has four and names its
+/// contact pair in the behaviour, because its coil terminals share the same role.
+fn contact_pair(
+    definition: &punchi_fluid_catalog::ComponentDefinition,
+) -> Option<(String, String)> {
+    match &definition.behaviour {
+        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
+            let mut terminals = definition
+                .port
+                .iter()
+                .filter(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
+                .map(|port| port.id.clone());
+            Some((terminals.next()?, terminals.next()?))
+        }
+        Behaviour::Relay { contact, .. } => Some((contact[0].clone(), contact[1].clone())),
+        _ => None,
+    }
+}
+
+/// The lit state of a lamp as a reading, when the placement is one.
+///
+/// The drawing prints it as the word beside the symbol and the rays around it, so the state
+/// is never told by colour alone.
+fn indicator_reading(
+    placement: &punchi_fluid_doc::Placement,
+    definition: Option<&punchi_fluid_catalog::ComponentDefinition>,
+    indicators: &std::collections::HashMap<u64, bool>,
+) -> Option<Reading> {
+    let on = *indicators.get(&placement.id())?;
+    Some(if matches!(definition?.behaviour, Behaviour::Buzzer) {
+        Reading::Audible(on)
+    } else {
+        Reading::Indicator(on)
+    })
+}
+
+/// Writes what an indicator means, for the inspector.
+fn describe_indicator(text: &mut String, audible: bool) {
+    text.push_str(if audible {
+        "Zumbador: suena mientras su terminal está vivo\n"
+    } else {
+        "Lámpara indicadora: encendida mientras su terminal está vivo\n"
+    });
+}
+
+/// Writes what a limit switch means, for the inspector.
+fn describe_limit_switch(
+    text: &mut String,
+    end: punchi_fluid_catalog::LimitEnd,
+    normally_closed: bool,
+) {
+    let _ = writeln!(text, "Final de carrera: extremo {}", end.as_str());
+    text.push_str(if normally_closed {
+        "Contacto cerrado con el rodillo libre\n"
+    } else {
+        "Contacto abierto con el rodillo libre\n"
+    });
 }
 
 /// Whether a contact on the sheet is closed, when the definition is one.
 ///
 /// A state nobody has clicked yet starts at what the file declares, so the sheet opens with
-/// the contact in its rest position and the drawing needs no default of its own.
+/// the contact in its rest position and the drawing needs no default of its own. A relay's
+/// state is the net's, not the user's, and it lives in its own map.
 fn contact_closed(
     placement: &punchi_fluid_doc::Placement,
     contacts: &std::collections::HashMap<u64, bool>,
+    relays: &std::collections::HashMap<u64, bool>,
 ) -> Option<bool> {
-    contacts.get(&placement.id()).copied()
+    contacts
+        .get(&placement.id())
+        .or_else(|| relays.get(&placement.id()))
+        .copied()
 }
 
 /// What a bound recorder charts, as its newest sample and its unit.

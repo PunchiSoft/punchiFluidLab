@@ -1006,9 +1006,10 @@ Window {
                             font.pixelSize: 12
                             wrapMode: Text.WordWrap
                         }
-                        // A recorder charts one quantity of one component. The list is
-                        // the core's — only what the circuit can report — and the bound
-                        // source is marked, because a list with no mark is a guess.
+                        // A recorder or a limit switch binds one component: the recorder
+                        // charts a quantity, the switch follows a cylinder's position. The
+                        // list is the core's — only what the circuit can report — and the
+                        // bound source is marked, because a list with no mark is a guess.
                         Column {
                             width: parent.width
                             spacing: 4
