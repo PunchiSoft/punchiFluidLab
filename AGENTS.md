@@ -36,9 +36,10 @@ circuit or file format from any other program enters this repository.**
 Status: `0.1.0`, unreleased, **under construction** — advanced in the maintainer's free
 time, one capability at a time, with no promised date. A capability that is `missing` or
 `partial` in [docs/capabilities.md](docs/capabilities.md) is not there yet, and nothing may
-pretend otherwise. There is an editor, a network solver and an export; there is no hydraulic
-model yet, and the parts list, the electrical library and the 300 dpi symbol review are
-still open.
+pretend otherwise. There is an editor, a network solver, an export, a parts list and the
+first slice of the electrical library with its boolean control model; there is no hydraulic
+model yet, the rest of the electrical, digital and GRAFCET libraries are missing, and the
+300 dpi symbol review is still open.
 
 ## Language
 

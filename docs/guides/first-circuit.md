@@ -98,11 +98,12 @@ opens its properties. The mode is the transport's, not a separate button.
 Press **Detener** to return to editing, then **Editar ▸ Comprobar**. The check looks at the
 sheet before you run it and marks each fault where it happens; the panel lists them.
 
-The six faults this build knows are: a component outside the sheet, two components on top of
+The nine faults this build knows are: a component outside the sheet, two components on top of
 each other, a pipe through a component, two pipes on top of each other, a pneumatic port
-with nothing attached, and two cylinders with the same designation. Three more faults from
-the reference are not implemented yet; the ledger in
-[capabilities.md](../capabilities.md) says which and why.
+with nothing attached, two cylinders with the same designation, a pipe that joins two
+circuits, a connection between two terminals that do not fit, and the live rail joined to
+its return. The reference's label fault is not applicable here, because a coil and its
+contact are wired rather than paired by name.
 
 ## 7. Save it
 

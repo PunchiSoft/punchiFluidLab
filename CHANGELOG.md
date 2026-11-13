@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### La novena comprobación: el raíl en cortocircuito — 2026-11-13
+
+La referencia cierra sus nueve comprobaciones con una etiqueta que no coincide, porque allí un
+contacto se ata a su bobina por nombre. Aquí el contacto y la bobina van unidos por un cable,
+así que esa falta no existe; la equivalente bajo nuestras reglas es eléctrica y se puede
+señalar antes de ejecutar.
+
+- **El positivo del raíl unido a su retorno** —por cables y contactos cerrados— se señala como
+  `short_circuit`, en la fuente y antes de ejecutar. La red booleana lo decide sin simular:
+  terminales como nodos, cables y contactos cerrados como aristas.
+- **Un contacto abierto es un hueco**: el pulsador en reposo no convierte en cortocircuito lo
+  que el ensayo todavía no ha cerrado.
+- **La comprobación queda completa**: 9 de 9 en nuestro modelo, con la falta de etiquetas
+  registrada como no aplicable y su razón escrita.
+- **Evidencia**: `a_rail_joined_to_its_return_through_a_closed_contact_is_a_short`,
+  `a_live_rail_with_no_return_is_not_a_short`,
+  `an_open_contact_in_the_path_is_a_gap_not_a_short`, y el contrato del CLI con el noveno
+  nombre estable y su mensaje en español.
+
 ### El pulsador mueve la válvula — 2026-11-13
 
 Con la biblioteca eléctrica sola, el pulsador era un dibujo: se cableaba el raíl al pulsador

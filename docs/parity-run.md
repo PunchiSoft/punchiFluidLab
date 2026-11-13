@@ -31,7 +31,8 @@ that proves it.
 
 | # | Capability | Commit | Evidence |
 |---|---|---|---|
-| — | Queue, skill and this note | _(this commit)_ | `scripts-dev/check-docs.sh` |
+| — | Queue, skill and this note | `a19850c` | `scripts-dev/check-docs.sh` |
+| 1 | Ninth fault: the short circuit of the rail, and the ledger corrected | `feat(check): short circuit of the rail` | `short_circuit_tests::*`, the CLI reference and the reconciled ledger |
 
 ## Decisions taken in this run
 

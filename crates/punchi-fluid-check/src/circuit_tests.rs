@@ -243,3 +243,105 @@ mod connection_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod short_circuit_tests {
+    use super::*;
+    use punchi_fluid_catalog::Origin;
+    use punchi_fluid_doc::{Endpoint, Placement};
+
+    fn catalog() -> Catalog {
+        Catalog::builtin()
+    }
+
+    /// The built-in contact, overridden to start closed: the check has to read the state the
+    /// file declares, because no run has happened yet.
+    fn catalog_with_closed_contact() -> Catalog {
+        let mut catalog = Catalog::builtin();
+        let (_, text) = punchi_fluid_catalog::builtin::FILES
+            .iter()
+            .find(|(name, _)| *name == "electrical.contact.toml")
+            .expect("the contact is built in");
+        let text = text.replace(
+            "type = \"contact\"",
+            "type = \"contact\"\nnormally_closed = true",
+        );
+        catalog.add_text(Origin::User, "test/electrical.contact.toml", &text);
+        catalog
+    }
+
+    fn sheet() -> Rect {
+        Rect::from_min_size(Pt::new(0.0, 0.0), 200.0, 130.0)
+    }
+
+    fn rail_and_contact(document: &mut Document) -> (usize, u64, u64) {
+        let supply = document.place(Placement::new(
+            "electrical.supply",
+            Pt::new(30.0, 30.0),
+            30.0,
+            16.0,
+        ));
+        let supply_id = document.placements()[supply].id();
+        let contact = document.place(Placement::new(
+            "electrical.contact",
+            Pt::new(90.0, 30.0),
+            20.0,
+            12.0,
+        ));
+        let contact_id = document.placements()[contact].id();
+        assert!(document.connect(
+            Endpoint::new(supply_id, "L"),
+            Endpoint::new(contact_id, "1"),
+        ));
+        (supply, supply_id, contact_id)
+    }
+
+    #[test]
+    fn a_rail_joined_to_its_return_through_a_closed_contact_is_a_short() {
+        let mut document = Document::new();
+        let (supply, supply_id, contact_id) = rail_and_contact(&mut document);
+        assert!(document.connect(
+            Endpoint::new(contact_id, "2"),
+            Endpoint::new(supply_id, "N"),
+        ));
+
+        let findings = check(&document, &catalog_with_closed_contact(), sheet(), 0);
+        let short = findings
+            .iter()
+            .find(|finding| finding.kind == FindingKind::ShortCircuit)
+            .expect("the rail shorted to its return is reported");
+        assert_eq!(short.component, Some(supply));
+    }
+
+    #[test]
+    fn a_live_rail_with_no_return_is_not_a_short() {
+        let mut document = Document::new();
+        rail_and_contact(&mut document);
+
+        let findings = check(&document, &catalog_with_closed_contact(), sheet(), 0);
+        assert!(
+            !findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::ShortCircuit),
+            "a rail with nothing on its return was called a short"
+        );
+    }
+
+    #[test]
+    fn an_open_contact_in_the_path_is_a_gap_not_a_short() {
+        let mut document = Document::new();
+        let (_, supply_id, contact_id) = rail_and_contact(&mut document);
+        assert!(document.connect(
+            Endpoint::new(contact_id, "2"),
+            Endpoint::new(supply_id, "N"),
+        ));
+
+        let findings = check(&document, &catalog(), sheet(), 0);
+        assert!(
+            !findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::ShortCircuit),
+            "an open contact was treated as closed"
+        );
+    }
+}

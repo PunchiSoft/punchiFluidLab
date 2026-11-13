@@ -27,7 +27,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 
 | # | Capability | State | Acceptance |
 |---|---|---|---|
-| 1 | The ledger tells the truth; the ninth fault is the short circuit of the control rail | ready | a new `short_circuit` finding with a test per side (L–N through a closed contact is reported; a live line with no return is not), and the stale ledger rows corrected |
+| 1 | The ledger tells the truth; the ninth fault is the short circuit of the control rail | done | a new `short_circuit` finding with a test per side (L–N through a closed contact is reported; a live line with no return is not), and the stale ledger rows corrected |
 | 2 | Relay: a coil that closes a contact | ready | a relay file with a coil and a contact; the contact closes only while the coil is live; ABI test with a lamp or a valve behind it |
 | 3 | Timers TON and TOF, bounded | ready | a timer file with `kind = "ton"`/`"tof"` and a delay; the output changes after the declared time and never allocates per step; a test with a fixed step count |
 | 4 | Indicator lamp | ready | a one-terminal lamp that is lit while its net is live; the drawing shows lit/unlit as shape and text, never colour alone |
