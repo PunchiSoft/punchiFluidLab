@@ -23,8 +23,12 @@ así que los tubos conservan la tinta neutra y la barra de estado marca `0,00 ba
 interfaz está en español — [i18n/README.md](i18n/README.md) es el plan para los demás
 idiomas.*
 
-▶ **[Verlo funcionar](assets/screenshots/run.mp4)** — catorce segundos de la hoja, la válvula
-accionada y el cilindro moviéndose (MP4, sin sonido).
+![La hoja en movimiento: la válvula accionada, el cilindro desplazándose y los tubos coloreados por la presión](assets/screenshots/run.gif)
+
+*La hoja en movimiento: la válvula accionada y el cilindro desplazándose, con los tubos
+coloreados por la presión que llevan. El clip se grabó antes de corregir el aviso de copia de
+seguridad, así que todavía lo muestra; el aviso ya no aparece. [Vídeo completo]
+(assets/screenshots/run.mp4), MP4, sin sonido.*
 
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
 licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
