@@ -235,6 +235,10 @@ checked and reads nothing.
   block: title, project, date, sheet, revision.
 - Lines are orthogonal; a line never passes behind a symbol; a connection is drawn
   between ports, never between arbitrary points on the body.
+- **A hose turns as few times as its two ports require.** Leaving a side and entering a top
+  is one bend; two ports on parallel edges keep the Z, which is the shortest orthogonal
+  route between them and the one a user can drag. The old router always drew the Z, and a
+  connection that did not need a stair read like one.
 - The sheet has a frame and margins, and the drawing sits inside the content area —
   the same rule the PNG and PDF export uses.
 

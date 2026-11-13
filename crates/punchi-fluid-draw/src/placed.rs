@@ -313,7 +313,13 @@ fn draw_pipe(
         return;
     };
 
-    let points = route_offset(start, end, pipe.offset_mm);
+    let points = route_between(
+        start,
+        port_edge(from_definition, pipe.from.port),
+        end,
+        port_edge(to_definition, pipe.to.port),
+        pipe.offset_mm,
+    );
     // The neutral ink at atmosphere, the working colour at supply pressure. The status
     // bar carries the number too, so pressure is never told by colour alone.
     let colour = blend(ink.line, ink.work, pipe.pressure_ratio);
@@ -323,6 +329,88 @@ fn draw_pipe(
         &points,
         Stroke::new(symbol::LINE * 1.2, colour).with_class(pipe.class),
     );
+}
+
+/// The edge of its box a port sits on, which is the direction the hose leaves in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PortEdge {
+    /// The left side: the hose leaves horizontally.
+    Left,
+    /// The right side: the hose leaves horizontally.
+    Right,
+    /// The top side: the hose leaves vertically.
+    Top,
+    /// The bottom side: the hose leaves vertically.
+    Bottom,
+}
+
+impl PortEdge {
+    /// `true` when a hose leaves this edge on the horizontal axis.
+    #[must_use]
+    pub const fn horizontal(self) -> bool {
+        matches!(self, Self::Left | Self::Right)
+    }
+}
+
+/// The edge a port sits on, read from its declared position inside the symbol box.
+///
+/// A port declared exactly on an edge leaves along that edge's axis. A port declared inside
+/// the box — a rounded symbol, a file drawn by hand — takes the axis of the edge it is
+/// nearest, so the route still leaves the symbol instead of cutting through it.
+#[must_use]
+pub fn port_edge(definition: &ComponentDefinition, id: &str) -> PortEdge {
+    let Some(port) = definition.port.iter().find(|port| port.id == id) else {
+        return PortEdge::Left;
+    };
+    let [x, y] = port.position;
+    let distances = [
+        (PortEdge::Left, x),
+        (PortEdge::Right, 1.0 - x),
+        (PortEdge::Top, y),
+        (PortEdge::Bottom, 1.0 - y),
+    ];
+    distances
+        .into_iter()
+        .min_by(|left, right| {
+            left.1
+                .partial_cmp(&right.1)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .map_or(PortEdge::Left, |(edge, _)| edge)
+}
+
+/// The route between two ports, leaving each one along its own edge.
+///
+/// Two ports on perpendicular edges are joined with **one bend**: a hose leaving a unit
+/// horizontally and entering a valve from below turns once. The old router always drew a Z,
+/// which is what made a connection look like a staircase when the two ports were not
+/// aligned. Two ports on the same axis keep the Z, because an orthogonal route between them
+/// needs the jog; there the `offset` is what the user drags.
+#[must_use]
+pub fn route_between(
+    start: Pt,
+    start_edge: PortEdge,
+    end: Pt,
+    end_edge: PortEdge,
+    offset: f32,
+) -> Vec<Pt> {
+    match (start_edge.horizontal(), end_edge.horizontal()) {
+        (true, false) => {
+            // Out horizontally, then straight into the end's edge.
+            if (end.x - start.x).abs() < 0.5 {
+                return vec![start, end];
+            }
+            vec![start, Pt::new(end.x, start.y), end]
+        }
+        (false, true) => {
+            if (end.y - start.y).abs() < 0.5 {
+                return vec![start, end];
+            }
+            vec![start, Pt::new(start.x, end.y), end]
+        }
+        // Parallel edges: the Z of two jogs, displaced by the drag.
+        _ => route_offset(start, end, offset),
+    }
 }
 
 /// The polyline between two points: straight, or an elbow with one jog.
@@ -572,5 +660,77 @@ mod tests {
         let bounds = bounds_placed(&placements, &pipes, &catalog).expect("a drawing has bounds");
         assert!(bounds.contains(Pt::new(0.0, 0.0)), "{bounds:?}");
         assert!(bounds.contains(Pt::new(140.0, 20.0)), "{bounds:?}");
+    }
+}
+
+#[cfg(test)]
+mod routing_tests {
+    use super::*;
+    use punchi_fluid_catalog::Catalog;
+
+    #[test]
+    fn perpendicular_ports_are_joined_with_one_bend() {
+        // A hose that leaves a side and enters a bottom is one turn, not a staircase. The
+        // owner's sheet showed the old Z and called it what it looked like.
+        let points = route_between(
+            Pt::new(10.0, 50.0),
+            PortEdge::Right,
+            Pt::new(80.0, 90.0),
+            PortEdge::Bottom,
+            0.0,
+        );
+        assert_eq!(points.len(), 3, "one bend has three points: {points:?}");
+        assert!(
+            (points[1].x - 80.0).abs() < 1e-6,
+            "the turn is above the arrival"
+        );
+        assert!(
+            (points[1].y - 50.0).abs() < 1e-6,
+            "and level with the departure"
+        );
+        // Every segment is orthogonal.
+        for pair in points.windows(2) {
+            assert!(
+                (pair[0].x - pair[1].x).abs() < 1e-6 || (pair[0].y - pair[1].y).abs() < 1e-6,
+                "a diagonal segment in {points:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn parallel_ports_keep_the_z_that_can_be_dragged() {
+        let direct = route_between(
+            Pt::new(50.0, 10.0),
+            PortEdge::Bottom,
+            Pt::new(50.0, 90.0),
+            PortEdge::Top,
+            0.0,
+        );
+        assert_eq!(direct.len(), 2, "aligned ports are a straight line");
+        let offset = route_between(
+            Pt::new(50.0, 10.0),
+            PortEdge::Bottom,
+            Pt::new(90.0, 90.0),
+            PortEdge::Top,
+            5.0,
+        );
+        assert_eq!(
+            offset.len(),
+            4,
+            "a jog between parallel ports has both bends"
+        );
+    }
+
+    #[test]
+    fn a_port_reads_the_edge_it_sits_on() {
+        let catalog = Catalog::builtin();
+        let valve = catalog.get("valve.3_2.spring_return").expect("a valve");
+        assert_eq!(port_edge(valve, "1"), PortEdge::Bottom);
+        assert_eq!(port_edge(valve, "2"), PortEdge::Top);
+        let unit = catalog
+            .get("preparation.service_unit_simple")
+            .expect("a unit");
+        assert_eq!(port_edge(unit, "1"), PortEdge::Left);
+        assert_eq!(port_edge(unit, "2"), PortEdge::Right);
     }
 }

@@ -1062,7 +1062,16 @@ int main(int argc, char *argv[])
                         continue;
                     }
                     const int hit = state->session->pipeAt(x, y, 2.5);
-                    if (hit >= 0) {
+                    if (hit < 0) {
+                        continue;
+                    }
+                    // Only a hose with two jogs has a segment to drag: one bend is
+                    // already the shortest orthogonal route. Ask the core by trying the
+                    // drag on a scratch edit and taking it back at once.
+                    if (pf_session_route_pipe(state->session->handle(),
+                                              static_cast<uint32_t>(hit), x, y)
+                        == PF_OK) {
+                        state->session->undo();
                         state->routePipe = hit;
                         state->routeScene = toScene(QPointF(x, y));
                         break;
