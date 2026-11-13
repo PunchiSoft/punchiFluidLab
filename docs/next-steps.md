@@ -66,7 +66,7 @@ changed lines outside generated files, it is two phases.
 | **P4.2 — SVG** ✅ delivered | `feat/svg-export` | the sheet as a vector document beside PDF and PNG, in millimetres and as text | a vector fixture, the PDF/SVG text parity test, the ABI test, `--selftest` |
 | **P4.3 — the export panel** ✅ delivered | `feat/export-panel` | custom paper, four margins, PNG resolution and the parts-list toggle, in one options structure | ABI test with its refusals, `--selftest` |
 | **P5.1 — the electrical library** ✅ delivered | `feat/electrical-library` | a 24 V supply and a push button as files, the `electrical` port role and line class, per [ADR 0017](adr/0017-the-electrical-circuit-is-a-second-domain.md) | catalog, check, solver and drawing tests, two symbol reviews |
-| **P5.2 — the control model** | `feat/control-model` | a line that is live or dead, a contact that joins two lines, a coil that moves a valve | ADR, solver tests, an ABI circuit with the switch acting on the valve |
+| **P5.2 — the control model** ✅ delivered | `feat/control-model` | a boolean net, a contact that joins two lines and a coil that moves its valve, per [ADR 0018](adr/0018-the-control-circuit-is-a-boolean-net.md) | ADR, the ABI circuit with the button moving the valve, the `--selftest` steps and the drawing test |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 
 Two corrections worth keeping: designations unlock **one** of the four remaining check

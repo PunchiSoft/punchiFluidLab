@@ -1583,6 +1583,54 @@ int main(int argc, char *argv[])
             QFile::remove(path);
         });
 
+        // The control circuit: rail, button and coil. A click on the button closes it, the
+        // coil reads the live line and the solenoid valve follows (ADR 0018).
+        steps->push_back([state, check] {
+            int rail = -1;
+            int button = -1;
+            int coil = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                const QString id = row.value(QStringLiteral("id")).toString();
+                if (id == QStringLiteral("electrical.supply")) {
+                    rail = row.value(QStringLiteral("index")).toInt();
+                }
+                if (id == QStringLiteral("electrical.contact")) {
+                    button = row.value(QStringLiteral("index")).toInt();
+                }
+                if (id == QStringLiteral("valve.3_2.solenoid")) {
+                    coil = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(rail >= 0 && button >= 0 && coil >= 0,
+                  QStringLiteral("control: the catalog offers the three parts"));
+            const int rail_index = state->session->placeComponent(rail, 40.0, 20.0);
+            const int button_index = state->session->placeComponent(button, 90.0, 20.0);
+            const int coil_index = state->session->placeComponent(coil, 140.0, 20.0);
+            check(rail_index >= 0 && button_index >= 0 && coil_index >= 0,
+                  QStringLiteral("control: they can be placed"));
+            check(state->session->connectPorts(rail_index, QStringLiteral("L"), button_index,
+                                               QStringLiteral("1")),
+                  QStringLiteral("control: the rail reaches the button"));
+            check(state->session->connectPorts(button_index, QStringLiteral("2"), coil_index,
+                                               QStringLiteral("Y1")),
+                  QStringLiteral("control: the button reaches the coil"));
+            check(state->session->valvePositionAt(coil_index) == 0,
+                  QStringLiteral("control: the valve rests while the button is open"));
+            check(state->session->toggleContactAt(button_index),
+                  QStringLiteral("control: a click closes the contact"));
+            check(state->session->valvePositionAt(coil_index) == 1,
+                  QStringLiteral("control: the solenoid follows the live line"));
+            check(state->session->toggleContactAt(button_index),
+                  QStringLiteral("control: a second click opens it"));
+            check(state->session->valvePositionAt(coil_index) == 0,
+                  QStringLiteral("control: the spring returns the spool"));
+            state->session->removeComponent(coil_index);
+            state->session->removeComponent(button_index);
+            state->session->removeComponent(rail_index);
+        });
+
         // The export panel decides what the page carries: the sheet, its margins and
         // whether the parts list is printed.
         steps->push_back([state, check] {

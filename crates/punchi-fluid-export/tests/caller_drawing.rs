@@ -27,6 +27,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         valve_position: 0,
         reading: None,
         series: None,
+        contact_closed: None,
         orientation: Orientation::NONE,
         designation: Some("1A"),
     }];

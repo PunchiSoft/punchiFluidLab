@@ -173,6 +173,11 @@ fn check_positions(
     }
 
     for port in &definition.port {
+        // An electrical terminal feeds the coil and no valve position opens or closes it;
+        // it is not an orphan, it is the other domain (ADR 0018).
+        if port.role == crate::schema::PortRole::Electrical {
+            continue;
+        }
         let used = positions.iter().any(|position| {
             position.blocked.contains(&port.id)
                 || position

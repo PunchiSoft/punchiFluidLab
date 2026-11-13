@@ -237,9 +237,13 @@ from another program or from the standard was traced.
 
 - A **supply** is the pair of plates of a d.c. source: the **long line positive**, the short
   one negative, with a stem to each terminal and the polarity drawn as lines, never typed.
-- A **contact** is two terminals with a **visible gap**, the movable bar above it and the
-  push rod with its cap. The gap is the rest state; a normally closed contact is another
-  file, not another drawing.
+- A **contact** is two terminals with a **visible gap**, the movable bar and the push rod
+  with its cap. The bar is drawn by the renderer: above the gap when the contact is open,
+  across it when the circuit is closed, so the sheet shows the state the run reports. A
+  normally closed contact is another file, not another drawing.
+- A **solenoid valve** is the familiar valve body with the windings at the end opposite the
+  spring and a **coil terminal** beside them; the terminal is where the control circuit
+  arrives, and no valve position opens or closes it.
 - **A wire is dotted.** The electrical class says what the line is, so a hose between two
   electrical terminals is drawn dotted without anyone choosing a class, and the class is
   what the reader sees before any label.

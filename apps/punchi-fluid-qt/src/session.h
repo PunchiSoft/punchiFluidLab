@@ -217,6 +217,8 @@ public:
     Q_INVOKABLE void pressValve();
     Q_INVOKABLE void releaseValve();
     /// The same gesture on the valve of one placement: a sheet can hold more than one.
+    /// Closes or opens the contact at one placement; false when it is not one.
+    Q_INVOKABLE bool toggleContactAt(int index);
     Q_INVOKABLE void pressValveAt(int index);
     Q_INVOKABLE void releaseValveAt(int index);
     /// `-1` when that placement is not a valve.
