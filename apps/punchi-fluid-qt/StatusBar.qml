@@ -26,6 +26,7 @@ Rectangle {
     }
 
     Row {
+        id: readings
         x: 16
         anchors.verticalCenter: parent.verticalCenter
         spacing: 26
@@ -50,13 +51,21 @@ Rectangle {
             color: session.muted
             font.pixelSize: 13
         }
+        // The magnification is a number, not a slider: a reader who is about to place a
+        // symbol needs to know whether the sheet is at 1:1 before trusting the grid.
+        Text {
+            text: qsTr("Zoom %1 %").arg(Math.round(session.zoom * 100))
+            color: session.muted
+            font.pixelSize: 13
+        }
     }
 
     Text {
         anchors.right: soundToggle.left
         anchors.rightMargin: 12
-        anchors.left: parent.left
-        anchors.leftMargin: 520
+        // After the readings, so a new one never lands on top of the hint.
+        anchors.left: readings.right
+        anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         horizontalAlignment: Text.AlignRight
         elide: Text.ElideRight

@@ -24,6 +24,7 @@
 #include <QFile>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -560,6 +561,12 @@ int main(int argc, char *argv[])
             QPointF routeScene;
             int routePipe = -1;
             float routeOffset = 0.0F;
+            /// The view gestures: the pointer the wheel is aimed at, the sheet point under
+            /// it, and the document state that must not change.
+            QPointF viewScene;
+            QPointF viewSheet;
+            uint32_t viewComponents = 0;
+            bool viewCanUndo = false;
             /// A file the sheet is saved to, so a step that needs a clean document has one.
             QString unsavedPath;
             /// The document the recent list is proved with.
@@ -594,6 +601,13 @@ int main(int argc, char *argv[])
                                       Qt::KeyboardModifiers modifiers) {
             QMouseEvent event(type, scene, state->window->mapToGlobal(scene), button, buttons,
                               modifiers);
+            QCoreApplication::sendEvent(state->window, &event);
+        };
+        const auto sendWheel = [state](const QPointF &scene, int delta,
+                                       Qt::KeyboardModifiers modifiers) {
+            QWheelEvent event(scene, state->window->mapToGlobal(scene), QPoint(0, 0),
+                              QPoint(0, delta), Qt::NoButton, modifiers,
+                              Qt::NoScrollPhase, false);
             QCoreApplication::sendEvent(state->window, &event);
         };
         const auto toScene = [state](const QPointF &sheetMm) {
@@ -1808,6 +1822,79 @@ int main(int argc, char *argv[])
                 state->session->undo();
             }
             state->session->removeComponent(index);
+        });
+
+        // The view: Ctrl and the wheel magnify at the pointer, the wheel pans, the middle
+        // button drags the sheet, the arrows pan from the keyboard, and Ctrl+0 returns to
+        // 1:1. None of it is a document change, so none of it may enter the history.
+        steps->push_back([state, check, toScene] {
+            state->session->stopSimulation();
+            state->session->zoomReset();
+            state->viewScene = toScene(QPointF(150.0, 30.0));
+            state->viewSheet = state->sheet->sheetPointForScene(state->viewScene);
+            state->viewComponents = pf_session_component_count(state->session->handle());
+            state->viewCanUndo = state->session->canUndo();
+            std::fprintf(stderr, "selftest: view probe at (%.0f, %.0f), sheet (%.1f, %.1f)\n",
+                         state->viewScene.x(), state->viewScene.y(), state->viewSheet.x(),
+                         state->viewSheet.y());
+            check(std::abs(state->viewSheet.x() - 150.0) < 0.5
+                      && std::abs(state->viewSheet.y() - 30.0) < 0.5,
+                  QStringLiteral("view: the probe is where the sheet says"));
+        });
+        steps->push_back([state, sendWheel] {
+            sendWheel(state->viewScene, 120, Qt::ControlModifier);
+        });
+        steps->push_back([state, check] {
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            std::fprintf(stderr, "selftest: zoom %.2f, probe under (%.2f, %.2f)\n",
+                         state->session->zoom(), under.x(), under.y());
+            check(state->session->zoom() > 1.2,
+                  QStringLiteral("view: Ctrl and the wheel magnify"));
+            check((under - state->viewSheet).manhattanLength() < 0.5,
+                  QStringLiteral("view: the point under the pointer stays under it"));
+            check(pf_session_component_count(state->session->handle()) == state->viewComponents
+                      && state->session->canUndo() == state->viewCanUndo,
+                  QStringLiteral("view: zooming is not a document change"));
+            state->viewSheet = under;
+        });
+        steps->push_back([state, sendWheel] {
+            sendWheel(state->viewScene, -120, Qt::NoModifier);
+        });
+        steps->push_back([state, check] {
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            check(under.y() > state->viewSheet.y() + 0.1,
+                  QStringLiteral("view: the wheel pans the sheet vertically"));
+            state->viewSheet = under;
+        });
+        steps->push_back([state, check] {
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->sheet, &key);
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            check(under.x() > state->viewSheet.x() + 0.1,
+                  QStringLiteral("view: the arrow key pans the sheet"));
+            state->viewSheet = under;
+        });
+        steps->push_back([state, send] {
+            send(QEvent::MouseButtonPress, state->viewScene, Qt::MiddleButton, Qt::MiddleButton);
+            send(QEvent::MouseMove, state->viewScene + QPointF(40.0, 0.0), Qt::NoButton,
+                 Qt::MiddleButton);
+            send(QEvent::MouseButtonRelease, state->viewScene + QPointF(40.0, 0.0),
+                 Qt::MiddleButton, Qt::NoButton);
+        });
+        steps->push_back([state, check] {
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            check(under.x() < state->viewSheet.x() - 0.1,
+                  QStringLiteral("view: the middle button drags the sheet"));
+            check(pf_session_component_count(state->session->handle()) == state->viewComponents
+                      && state->session->canUndo() == state->viewCanUndo,
+                  QStringLiteral("view: panning is not a document change"));
+        });
+        steps->push_back([state, check] {
+            state->session->zoomReset();
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            check(qFuzzyCompare(state->session->zoom(), 1.0)
+                      && (under - QPointF(150.0, 30.0)).manhattanLength() < 0.5,
+                  QStringLiteral("view: Ctrl+0 returns to 1:1 and drops the pan"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {

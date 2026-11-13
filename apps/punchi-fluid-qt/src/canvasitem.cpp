@@ -16,12 +16,20 @@
 #include <QHoverEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QWheelEvent>
+
+#include <algorithm>
+#include <cmath>
 
 namespace {
 /// How close, in millimetres of the sheet, a press must be to a port to mean it.
 constexpr double kPortToleranceMm = 2.5;
 /// Ruling of the sheet's grid, in millimetres.
 constexpr double kGridMm = 10.0;
+/// Pixels one wheel notch pans, and pixels one arrow key pans. Enough to feel like a
+/// scroll and little enough that a port stays under the eye.
+constexpr double kPanPerNotch = 48.0;
+constexpr double kPanPerArrow = 24.0;
 } // namespace
 
 SchematicItem::SchematicItem(QQuickItem *parent)
@@ -31,8 +39,9 @@ SchematicItem::SchematicItem(QQuickItem *parent)
     setOpaquePainting(false);
     setAcceptHoverEvents(true);
     // Without this the item accepts no button at all and Qt never delivers a press, so
-    // the sheet looks inert to the mouse: no selection, no actuation, no dragging.
-    setAcceptedMouseButtons(Qt::LeftButton);
+    // the sheet looks inert to the mouse: no selection, no actuation, no dragging. The
+    // middle button is the other half: it pans the sheet without touching the document.
+    setAcceptedMouseButtons(Qt::LeftButton | Qt::MiddleButton);
     // The sidebar drops catalog entries here; the sheet is the only place that accepts
     // them, so a drop anywhere else is refused by Qt itself.
     setFlag(QQuickItem::ItemAcceptsDrops, true);
@@ -50,6 +59,15 @@ void SchematicItem::setSession(FluidSession *session)
     m_session = session;
     if (m_session) {
         connect(m_session, &FluidSession::changed, this, [this] { update(); });
+        // Back at 1:1 the whole sheet fits again, so a pan left over from a magnified view
+        // is not merely invisible: it would reappear the next time the reader magnified
+        // with the ribbon. `Ctrl+0` clears it here, once, instead of in every caller.
+        connect(m_session, &FluidSession::viewChanged, this, [this] {
+            if (qFuzzyCompare(m_session->zoom(), 1.0)) {
+                m_pan = QPointF();
+            }
+            update();
+        });
     }
     emit sessionChanged();
     update();
@@ -199,16 +217,33 @@ QPointF SchematicItem::toSheet(const QPointF &position) const
 
 Fit SchematicItem::placement() const
 {
-    const Fit fitted = fitArea(width(), height(), kLogicalWidth, kLogicalHeight);
     const double zoom = m_session ? m_session->zoom() : 1.0;
-    if (qFuzzyCompare(zoom, 1.0)) {
-        return fitted;
-    }
+    const Fit centred = centredPlacement(zoom);
+    const QPointF pan = limitedPan(centred);
+    return Fit { centred.pixelsPerMm, centred.originX + pan.x(), centred.originY + pan.y() };
+}
+
+Fit SchematicItem::centredPlacement(double zoom) const
+{
+    const Fit fitted = fitArea(width(), height(), kLogicalWidth, kLogicalHeight);
     // Zoom keeps the middle of the sheet in the middle of the item, so magnifying does not
-    // throw the circuit off screen.
+    // throw the circuit off screen; the pan is what moves it afterwards.
     const qreal scale = fitted.pixelsPerMm * zoom;
     return Fit { scale, (width() - kLogicalWidth * scale) * 0.5,
                  (height() - kLogicalHeight * scale) * 0.5 };
+}
+
+QPointF SchematicItem::limitedPan(const Fit &centred) const
+{
+    // A sheet larger than the viewport may be dragged until its edge meets the frame; one
+    // smaller than the viewport has nothing to reveal, so it stays centred. Without the
+    // bound a fast wheel leaves the reader looking at empty background.
+    const qreal slackX =
+        std::max<qreal>(0.0, (kLogicalWidth * centred.pixelsPerMm - width()) * 0.5);
+    const qreal slackY =
+        std::max<qreal>(0.0, (kLogicalHeight * centred.pixelsPerMm - height()) * 0.5);
+    return QPointF(std::clamp(m_pan.x(), -slackX, slackX),
+                   std::clamp(m_pan.y(), -slackY, slackY));
 }
 
 bool SchematicItem::onValve(const QPointF &position) const
@@ -225,7 +260,20 @@ bool SchematicItem::onValve(const QPointF &position) const
 
 void SchematicItem::mousePressEvent(QMouseEvent *event)
 {
-    if (!m_session || event->button() != Qt::LeftButton) {
+    if (!m_session) {
+        return;
+    }
+    // The middle button pans; it never selects, actuates or edits. Starting here, before
+    // the left-button split, keeps the two gestures from ever sharing a branch.
+    if (event->button() == Qt::MiddleButton) {
+        m_panning = true;
+        m_panFrom = event->position();
+        setCursor(QCursor(Qt::ClosedHandCursor));
+        setFocus(true);
+        event->accept();
+        return;
+    }
+    if (event->button() != Qt::LeftButton) {
         return;
     }
     const QPointF sheet = toSheet(event->position());
@@ -352,6 +400,44 @@ QPointF SchematicItem::scenePointForSheet(const QPointF &sheetMm) const
                    fit.originY + sheetMm.y() * fit.pixelsPerMm);
 }
 
+QPointF SchematicItem::sheetPointForScene(const QPointF &scenePosition) const
+{
+    return toSheet(mapFromScene(scenePosition));
+}
+
+void SchematicItem::zoomAt(const QPointF &position, double factor)
+{
+    if (!m_session || factor <= 0.0) {
+        return;
+    }
+    const QPointF sheet = toSheet(position);
+    const double before = m_session->zoom();
+    m_session->setZoom(before * factor);
+    if (qFuzzyCompare(m_session->zoom(), before)) {
+        return;
+    }
+    // The anchor: solve the new origin that leaves `sheet` under `position`, then express
+    // it as the pan the rest of the class carries. Zooming at the pointer is what makes a
+    // wheel feel like a lens instead of a jump.
+    const Fit centred = centredPlacement(m_session->zoom());
+    m_pan = QPointF(position.x() - sheet.x() * centred.pixelsPerMm - centred.originX,
+                    position.y() - sheet.y() * centred.pixelsPerMm - centred.originY);
+    m_pan = limitedPan(centred);
+    update();
+}
+
+void SchematicItem::panBy(const QPointF &delta)
+{
+    if (!m_session) {
+        return;
+    }
+    m_pan += delta;
+    // Bounded at the gesture, not only at the paint, so dragging back does not have to
+    // retrace an overshoot the reader never saw.
+    m_pan = limitedPan(centredPlacement(m_session->zoom()));
+    update();
+}
+
 void SchematicItem::placeCatalogAt(int catalogIndex, const QPointF &position)
 {
     if (!m_session || !m_session->editing() || catalogIndex < 0) {
@@ -365,6 +451,12 @@ void SchematicItem::placeCatalogAt(int catalogIndex, const QPointF &position)
 
 void SchematicItem::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_panning) {
+        panBy(event->position() - m_panFrom);
+        m_panFrom = event->position();
+        event->accept();
+        return;
+    }
     if (m_connecting >= 0 && m_session) {
         m_connectCursor = toSheet(event->position());
         update();
@@ -451,7 +543,73 @@ void SchematicItem::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     }
+    // The keyboard path for panning. It is the only way to reach a corner of a magnified
+    // sheet without a pointer, and it stays out of the way because the sheet only sees a
+    // key when it holds the focus. Shift takes a longer step.
+    const double step = (event->modifiers() & Qt::ShiftModifier) != 0
+        ? kPanPerArrow * 4.0
+        : kPanPerArrow;
+    switch (event->key()) {
+    case Qt::Key_Left:
+        panBy(QPointF(step, 0.0));
+        event->accept();
+        return;
+    case Qt::Key_Right:
+        panBy(QPointF(-step, 0.0));
+        event->accept();
+        return;
+    case Qt::Key_Up:
+        panBy(QPointF(0.0, step));
+        event->accept();
+        return;
+    case Qt::Key_Down:
+        panBy(QPointF(0.0, -step));
+        event->accept();
+        return;
+    default:
+        break;
+    }
     QQuickPaintedItem::keyPressEvent(event);
+}
+
+void SchematicItem::wheelEvent(QWheelEvent *event)
+{
+    if (!m_session) {
+        QQuickPaintedItem::wheelEvent(event);
+        return;
+    }
+    // Ctrl turns the wheel into a lens anchored at the pointer, which is the gesture every
+    // drawing tool has and the one a hand reaches for without being told. The step is the
+    // buttons' step, so a notch and a press of `+` magnify by the same quarter.
+    if ((event->modifiers() & Qt::ControlModifier) != 0) {
+        double notches = static_cast<double>(event->angleDelta().y()) / 120.0;
+        if (qFuzzyIsNull(notches)) {
+            notches = static_cast<double>(event->pixelDelta().y()) / 120.0;
+        }
+        if (qFuzzyIsNull(notches)) {
+            event->ignore();
+            return;
+        }
+        zoomAt(event->position(), std::pow(FluidSession::kZoomStep, notches));
+        event->accept();
+        return;
+    }
+    // Plain wheel pans the way a scroll area does, and Shift swaps the axis. The pan is
+    // bounded by `limitedPan`, so a fast flick stops at the edge of the sheet instead of
+    // leaving the reader staring at the background.
+    QPointF delta = event->pixelDelta();
+    if (delta.isNull()) {
+        delta = event->angleDelta() / 120.0 * kPanPerNotch;
+    }
+    if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+        delta = QPointF(-delta.y(), 0.0);
+    }
+    if (delta.isNull()) {
+        event->ignore();
+        return;
+    }
+    panBy(delta);
+    event->accept();
 }
 
 void SchematicItem::dragEnterEvent(QDragEnterEvent *event)
@@ -499,6 +657,15 @@ void SchematicItem::dropEvent(QDropEvent *event)
 
 void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::MiddleButton) {
+        if (m_panning) {
+            m_panning = false;
+            unsetCursor();
+            update();
+            event->accept();
+        }
+        return;
+    }
     if (event->button() != Qt::LeftButton) {
         return;
     }

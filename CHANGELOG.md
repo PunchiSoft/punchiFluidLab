@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### El zoom responde a la rueda y la hoja se desplaza — 2026-11-13
+
+Ctrl y la rueda acercan la hoja allí donde está el puntero, que es el gesto que la mano
+prueba sin que nadie lo explique; la rueda sola desplaza, el botón central arrastra y las
+flechas hacen lo mismo desde el teclado.
+
+- **Anclado al puntero**: el punto de la hoja que está bajo el cursor se queda quieto
+  mientras cambia la escala, entre 0,4× y 6× y en los pasos de un cuarto de los botones.
+- **Desplazamiento acotado**: el borde de la hoja se detiene en el marco, así que una
+  sacudida de la rueda no deja al lector mirando el fondo.
+- **Teclado**: flechas para desplazar; `Ctrl+=`, `Ctrl++`, `Ctrl+-`, `>` y `<` para la
+  escala; `Ctrl+0` para volver a 1:1 y soltar el desplazamiento.
+- **El estado de vista no es documento**: ni el zoom ni el desplazamiento entran en el
+  historial ni marcan la hoja como modificada.
+- **La barra de estado dice la ampliación** en tanto por ciento.
+- **Evidencia**: los nueve pasos `view: …` de `--selftest`, que anclan el punto bajo el
+  puntero, desplazan con rueda, flechas y botón central, y comprueban que nada entra en el
+  historial; la puerta completa (326 pruebas, `--check-qml` 0 problemas).
+
+**Siguiente**: la hoja dejará de ser un área lógica de 200 × 130 mm y pasará a ser el papel
+elegido (ISO 216: A0–A5, Letter, Legal, Oficio y tamaño propio, A4 por defecto), con el
+marco de ISO 5457, para que lo que se ve sea lo que se imprime.
+
 ### El relé enclavado: un pulso que se convierte en memoria — 2026-11-13
 
 Un arranque que sigue funcionando cuando el dedo suelta el pulsador, y un paro que se queda

@@ -328,13 +328,26 @@ Window {
         onActivated: session.newDocument()
     }
     // The reference zooms with the keys `>` and `<`, and so does this one: a hand stays on
-    // the same corner of the keyboard as the mouse.
+    // the same corner of the keyboard as the mouse. Ctrl and the plus or minus key is the
+    // usual path from every other program, and Ctrl+0 returns to 1:1 and drops the pan.
     Shortcut {
         sequence: ">"
         onActivated: session.zoomIn()
     }
     Shortcut {
         sequence: "<"
+        onActivated: session.zoomOut()
+    }
+    Shortcut {
+        sequence: "Ctrl+="
+        onActivated: session.zoomIn()
+    }
+    Shortcut {
+        sequence: "Ctrl++"
+        onActivated: session.zoomIn()
+    }
+    Shortcut {
+        sequence: "Ctrl+-"
         onActivated: session.zoomOut()
     }
     Shortcut {

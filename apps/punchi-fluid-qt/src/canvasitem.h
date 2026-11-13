@@ -13,6 +13,8 @@
 #include "replay.h"
 #include "session.h"
 
+class QWheelEvent;
+
 /// The sheet: one frame of the drawing, replayed onto a `QPainter`.
 ///
 /// This is the whole of the toolkit's involvement, the same way `EguiSurface` was on
@@ -47,6 +49,11 @@ public:
     /// Exposed so a test can aim at the valve without duplicating the fit.
     Q_INVOKABLE QPointF scenePointForSheet(const QPointF &sheetMm) const;
 
+    /// Where a point of the scene, in pixels, falls on the sheet, in millimetres. The
+    /// inverse of `scenePointForSheet`, and the way a test states "the point under the
+    /// pointer did not move" after a zoom.
+    Q_INVOKABLE QPointF sheetPointForScene(const QPointF &scenePosition) const;
+
 signals:
     void sessionChanged();
     void paintCountChanged();
@@ -61,6 +68,7 @@ protected:
     void dragMoveEvent(QDragMoveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     /// The logical drawing area in millimetres, the same one the egui canvas used.
@@ -70,6 +78,16 @@ private:
     /// `true` when the point falls on the valve, in millimetres of the drawing.
     [[nodiscard]] bool onValve(const QPointF &position) const;
     [[nodiscard]] Fit placement() const;
+    /// The placement at `zoom` with the sheet centred, before the reader pans it.
+    [[nodiscard]] Fit centredPlacement(double zoom) const;
+    /// `m_pan` limited so the sheet never leaves a gap the reader cannot cross: when it
+    /// is larger than the viewport the edge stops at the frame, and when it is smaller
+    /// it stays centred.
+    [[nodiscard]] QPointF limitedPan(const Fit &centred) const;
+    /// Multiplies the zoom by `factor` while keeping the sheet point under `position`.
+    void zoomAt(const QPointF &position, double factor);
+    /// Moves the view by `delta` pixels, limited by `limitedPan`.
+    void panBy(const QPointF &delta);
 
     QPointer<FluidSession> m_session;
     int m_paintCount = 0;
@@ -110,4 +128,10 @@ private:
     QPointF m_shiftFrom;
     /// `true` while a drag moves the whole selection rather than one component.
     bool m_movingSelection = false;
+    /// How far the sheet is moved inside the item, in pixels, on top of the zoom's own
+    /// centring. View state, like the zoom: it never reaches the document.
+    QPointF m_pan;
+    /// A middle-button pan in progress, and where it started.
+    bool m_panning = false;
+    QPointF m_panFrom;
 };
