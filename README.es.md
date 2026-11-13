@@ -26,8 +26,7 @@ idiomas.*
 ![La hoja en movimiento: la válvula accionada, el cilindro desplazándose y los tubos coloreados por la presión](assets/screenshots/run.gif)
 
 *La hoja en movimiento: la válvula accionada y el cilindro desplazándose, con los tubos
-coloreados por la presión que llevan. El clip se grabó antes de corregir el aviso de copia de
-seguridad, así que todavía lo muestra; el aviso ya no aparece. [Vídeo completo]
+coloreados por la presión que llevan. 44 segundos a 4× de velocidad. [Vídeo completo]
 (assets/screenshots/run.mp4), MP4, sin sonido.*
 
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
