@@ -34,6 +34,7 @@ that proves it.
 | — | Queue, skill and this note | `a19850c` | `scripts-dev/check-docs.sh` |
 | 1 | Ninth fault: the short circuit of the rail, and the ledger corrected | `feat(check): short circuit of the rail` | `short_circuit_tests::*`, the CLI reference and the reconciled ledger |
 | 2 | Relay: a coil that closes a contact | `feat(catalog): a relay closes its contact from its coil` | `a_relay_names_two_coil_and_two_contact_terminals`, `a_relay_closes_its_contact_while_its_coil_is_live`, the symbol review |
+| 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
 
 ## Decisions taken in this run
 

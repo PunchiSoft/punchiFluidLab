@@ -257,6 +257,8 @@ type = "relay"               # four electrical terminals in two named pairs
 coil = ["A1", "A2"]          # the terminals the net feeds
 contact = ["11", "14"]       # the terminals the contact joins
 normally_closed = false      # the contact at rest; a changeover is another file
+kind = "ton"                 # `instant` (default), `ton` or `tof`
+delay_s = 2.0                # 0 to 3600 s; an instant relay leaves it at zero
 ```
 
 The electrical control circuit is a **second domain in the same document**
@@ -278,7 +280,10 @@ A **relay** names its coil pair and its contact pair
 exactly one of its terminals is live; the contact joins its pair while the coil is energised
 (or while it rests, with `normally_closed = true`). The net settles in bounded passes, so a
 relay may feed another relay or its own coil, and the contact bar is drawn by the renderer
-from the state the run settled on. The relay has no delay: a timer is a different file.
+from the state the run settled on. With `kind = "ton"` or `"tof"` the same file is a timer:
+the output follows the coil after `delay_s`, counted by the simulation step and never slept
+([ADR 0020](../docs/adr/0020-timers-count-steps.md)). An `instant` relay must leave the
+delay at zero.
 
 ```toml
 [behaviour]

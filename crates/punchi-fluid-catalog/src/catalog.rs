@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::error::CatalogError;
 use crate::schema::{
     Behaviour, Category, ComponentDefinition, Origin, PortRole, Primitive, PrimitiveKind,
-    SCHEMA_MIN, SCHEMA_VERSION,
+    RelayKind, SCHEMA_MIN, SCHEMA_VERSION,
 };
 
 /// Every definition this build can use, indexed by identifier.
@@ -258,7 +258,13 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
         Behaviour::ElectricalSupply { voltage_v } => check_electrical_supply(path, *voltage_v),
         Behaviour::Contact { .. } => check_contact(definition, path),
-        Behaviour::Relay { coil, contact, .. } => check_relay(definition, path, coil, contact),
+        Behaviour::Relay {
+            coil,
+            contact,
+            kind,
+            delay_s,
+            ..
+        } => check_relay(definition, path, coil, contact, *kind, *delay_s),
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -424,6 +430,8 @@ fn check_relay(
     path: &Path,
     coil: &[String; 2],
     contact: &[String; 2],
+    kind: RelayKind,
+    delay_s: f64,
 ) -> Result<(), CatalogError> {
     if coil[0] == coil[1] || contact[0] == contact[1] {
         return Err(invalid(
@@ -455,6 +463,18 @@ fn check_relay(
                 &format!("relay terminal `{id}` is used twice"),
             ));
         }
+    }
+    if !delay_s.is_finite() || !(0.0..=3600.0).contains(&delay_s) {
+        return Err(invalid(
+            path,
+            "a relay delay must be between 0 and 3600 seconds",
+        ));
+    }
+    if kind == RelayKind::Instant && delay_s != 0.0 {
+        return Err(invalid(
+            path,
+            "an instant relay must leave its delay at zero",
+        ));
     }
     Ok(())
 }

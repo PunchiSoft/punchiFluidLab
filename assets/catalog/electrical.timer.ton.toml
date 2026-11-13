@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Timer, on delay (TON): the contact follows the coil after a delay.
+#
+# The student presses a button and the contact closes once the declared time has
+# passed, not at once. A TON is the on-delay of IEC 61131-3: the output follows the
+# input after `delay_s`, and a dead input resets the elapsed time.
+#
+# The symbol is the relay body — coil, contact and the dashed mechanical link — with a
+# half-circle inside the coil marking the delay. The contact bar is drawn by the renderer
+# from the state the run settled on, like the bar of a push button.
+
+schema = 3
+id = "electrical.timer.ton"
+name = "Timer, on delay"
+name_es = "Temporizador TON"
+category = "sensor"
+summary = "Closes its contact after the coil has been live for the delay."
+
+[[port]]
+id = "A1"
+role = "electrical"
+position = [0.0, 0.30]
+
+[[port]]
+id = "A2"
+role = "electrical"
+position = [0.0, 0.70]
+
+[[port]]
+id = "11"
+role = "electrical"
+position = [1.0, 0.30]
+
+[[port]]
+id = "14"
+role = "electrical"
+position = [1.0, 0.70]
+
+[behaviour]
+type = "relay"
+coil = ["A1", "A2"]
+contact = ["11", "14"]
+kind = "ton"
+delay_s = 2.0
+
+# The coil: a rectangle between its two stems, with a small clock face that marks a delay.
+[[symbol]]
+kind = "rect"
+points = [0.08, 0.30, 0.14, 0.40]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.15, 0.50, 0.05]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.15, 0.50, 0.15, 0.46]
+line_class = "working"
+
+# Stems from the coil terminals to the rectangle.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.30, 0.08, 0.30]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.70, 0.08, 0.70]
+line_class = "electrical"
+
+# The mechanical link between the coil and the contact.
+[[symbol]]
+kind = "line"
+points = [0.22, 0.50, 0.72, 0.50]
+line_class = "drain"
+
+# The contact terminals and the gap the bar closes.
+[[symbol]]
+kind = "line"
+points = [0.72, 0.30, 1.0, 0.30]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.70, 1.0, 0.70]
+line_class = "electrical"

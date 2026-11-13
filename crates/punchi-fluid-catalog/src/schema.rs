@@ -90,6 +90,40 @@ pub enum Actuation {
     Momentary,
 }
 
+/// When a relay's contact follows its coil.
+///
+/// The names and the behaviour follow IEC 61131-3: `ton` is an on-delay and `tof` an
+/// off-delay. An `instant` relay is the part with no timer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RelayKind {
+    /// The contact follows the coil at once.
+    #[default]
+    Instant,
+    /// On-delay: the contact closes after the coil has been live for the delay.
+    Ton,
+    /// Off-delay: the contact opens after the coil has been dead for the delay.
+    Tof,
+}
+
+impl RelayKind {
+    /// Stable name written in the definition file.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Instant => "instant",
+            Self::Ton => "ton",
+            Self::Tof => "tof",
+        }
+    }
+
+    /// `true` when the part is a timer rather than an instantaneous relay.
+    #[must_use]
+    pub const fn is_timer(self) -> bool {
+        !matches!(self, Self::Instant)
+    }
+}
+
 /// Moving part the renderer has to draw with the simulation state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -551,6 +585,12 @@ pub enum Behaviour {
         /// `true` when the contact is closed with the coil at rest.
         #[serde(default)]
         normally_closed: bool,
+        /// When the contact follows the coil: instantly, on delay or off delay.
+        #[serde(default)]
+        kind: RelayKind,
+        /// Delay of a `ton` or `tof`, seconds. An instant relay must leave it at zero.
+        #[serde(default)]
+        delay_s: f64,
     },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///

@@ -95,6 +95,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.relay.md"),
     ),
     (
+        "electrical.timer.ton",
+        include_str!("../../../assets/symbols/review/electrical.timer.ton.md"),
+    ),
+    (
+        "electrical.timer.tof",
+        include_str!("../../../assets/symbols/review/electrical.timer.tof.md"),
+    ),
+    (
         "valve.3_2.solenoid",
         include_str!("../../../assets/symbols/review/valve.3_2.solenoid.md"),
     ),

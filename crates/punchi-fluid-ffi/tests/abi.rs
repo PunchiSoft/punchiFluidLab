@@ -2679,3 +2679,123 @@ fn a_relay_closes_its_contact_while_its_coil_is_live() {
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
+
+/// Places a rail, a button, a timer and a solenoid valve, and wires them as a timer rig.
+///
+/// The button feeds the coil and the timer's own contact; the contact feeds the valve.
+fn timer_rig(session: *mut PfSession, timer: &str) -> (u32, u32) {
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact");
+    let timer = catalog_index(session, timer);
+    let valve = catalog_index(session, "valve.3_2.solenoid");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let button = unsafe { pf_session_place_component(session, button, 70.0, 20.0) };
+    let timer = unsafe { pf_session_place_component(session, timer, 120.0, 20.0) };
+    let valve = unsafe { pf_session_place_component(session, valve, 170.0, 20.0) };
+    assert!(rail >= 0 && button >= 0 && timer >= 0 && valve >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let timer = u32::try_from(timer).unwrap_or_default();
+    let valve = u32::try_from(valve).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let n = CString::new("N").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    let a1 = CString::new("A1").unwrap_or_default();
+    let a2 = CString::new("A2").unwrap_or_default();
+    let eleven = CString::new("11").unwrap_or_default();
+    let fourteen = CString::new("14").unwrap_or_default();
+    let coil = CString::new("Y1").unwrap_or_default();
+    for (from, from_port, to, to_port) in [
+        (rail, &l, button, &one),
+        (button, &two, timer, &a1),
+        (rail, &l, timer, &eleven),
+        (timer, &a2, rail, &n),
+        (timer, &fourteen, valve, &coil),
+    ] {
+        // SAFETY: live session and NUL-terminated ports.
+        assert_eq!(
+            unsafe { pf_session_connect(session, from, from_port.as_ptr(), to, to_port.as_ptr()) },
+            PF_OK
+        );
+    }
+    (button, valve)
+}
+
+#[test]
+fn a_ton_contact_closes_after_its_delay() {
+    let session = session();
+    let (button, valve) = timer_rig(session, "electrical.timer.ton");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // One second of steps: the two-second delay has not elapsed and the valve rests.
+    for _ in 0..100 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+    // Two more tenths of a second cross the delay; the contact closes and the valve moves.
+    for _ in 0..110 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        1
+    );
+    // A dead coil resets the timer at once, without waiting for the delay.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_tof_contact_opens_after_its_delay() {
+    let session = session();
+    let (button, valve) = timer_rig(session, "electrical.timer.tof");
+    // A TOF follows a live coil at once: the first step closes its contact.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        1
+    );
+    // Released, the contact stays closed during the delay.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    for _ in 0..100 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        1
+    );
+    // Past the delay the contact opens and the valve springs back.
+    for _ in 0..110 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.01) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}

@@ -31,6 +31,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0017](0017-the-electrical-circuit-is-a-second-domain.md) | The electrical control circuit is a second domain | accepted | 2026-11-13 |
 | [0018](0018-the-control-circuit-is-a-boolean-net.md) | The control circuit is a boolean net, not a voltage | accepted | 2026-11-13 |
 | [0019](0019-a-relay-is-a-coil-and-a-contact.md) | A relay is a coil and a contact in one file | accepted | 2026-11-13 |
+| [0020](0020-timers-count-steps.md) | Timers count steps, they do not sleep | accepted | 2026-11-13 |
 
 ## When a decision needs an ADR
 

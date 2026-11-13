@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### Temporizadores TON y TOF, contados por el paso — 2026-11-13
+
+Un pulsador que actúa en el acto no puede arrancar una secuencia después de un tiempo de
+llenado ni mantener un motor tras el botón de paro. Los dos temporizadores de relé resuelven
+esas dos preguntas sin dormir el modelo ni leer el reloj de la máquina.
+
+- **El temporizador es un relé con una regla de tiempo**: `kind = "ton"` (cierra tras el
+  retardo con la bobina viva) o `"tof"` (abre tras el retardo con la bobina muerta), con
+  `delay_s` entre 0 y 3600 s ([ADR 0020](docs/adr/0020-timers-count-steps.md)).
+- **El paso da el tiempo**: cada `advance(dt)` asienta la red, actualiza los temporizadores
+  con `dt` y vuelve a asentar con los contactos nuevos. Un TON con la bobina muerta se
+  reinicia en el acto; un TOF con la bobina viva cierra en el acto.
+- **Sin asignar memoria por paso**: la topología de control se cachea al editar y el paso
+  solo rellena listas con capacidad reservada; el tiempo transcurrido está acotado por el
+  retardo.
+- **El estado es del ensayo**: no se guarda; un circuito reabierto empieza con los
+  temporizadores en reposo.
+- **Evidencia**: `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`,
+  `a_ton_contact_closes_after_its_delay` y `a_tof_contact_opens_after_its_delay`, con pasos
+  fijos de 10 ms, además de las dos revisiones de símbolo.
+
 ### El relé: una bobina que cierra su contacto — 2026-11-13
 
 Un circuito de mando que solo puede conmutar una mano no puede encadenar dos líneas. El relé

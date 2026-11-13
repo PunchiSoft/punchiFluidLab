@@ -148,6 +148,7 @@ impl ControlNet {
                     coil,
                     contact,
                     normally_closed,
+                    ..
                 } => {
                     let a = net.node(placement.id(), &coil[0]);
                     let b = net.node(placement.id(), &coil[1]);
