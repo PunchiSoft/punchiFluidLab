@@ -49,7 +49,7 @@ punchi-fluid-cli check circuito.pfluid --strict
   against the built-in one; a user definition the build does not have is not seen at all.
   `--catalog` is a later phase.
 
-The seven findings this build knows, in the order the report uses:
+The eight findings this build knows, in the order the report uses:
 
 | `kind` | Message (Spanish) |
 |---|---|
@@ -60,14 +60,15 @@ The seven findings this build knows, in the order the report uses:
 | `open_connection` | una conexión neumática queda abierta |
 | `duplicate_designation` | dos cilindros llevan la misma designación |
 | `pipe_across_circuits` | un tubo une dos circuitos |
+| `mismatched_connection` | una conexión une dos terminales que no encajan |
 
 The check runs the geometry faults on the **active circuit** and the cross-circuit fault on
 the whole project, because that one is about a pipe whose ends are in different circuits.
 The active circuit is the `active` index the project file stores.
 
-Two faults the reference lists are not implemented yet: a pipe whose ends do not fit and a
-label that does not match. The ledger in [capabilities.md](../capabilities.md) says why
-each one waits.
+One fault the reference lists is not implemented yet: a label that does not match, which in
+the reference couples a coil and its contact by name. The ledger in
+[capabilities.md](../capabilities.md) says why it waits and what it would need.
 
 ### `validate <file>`
 

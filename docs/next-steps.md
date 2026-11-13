@@ -69,9 +69,10 @@ changed lines outside generated files, it is two phases.
 | **P5.2 — the control model** ✅ delivered | `feat/control-model` | a boolean net, a contact that joins two lines and a coil that moves its valve, per [ADR 0018](adr/0018-the-control-circuit-is-a-boolean-net.md) | ADR, the ABI circuit with the button moving the valve, the `--selftest` steps and the drawing test |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 
-Two corrections worth keeping: designations unlock **one** of the four remaining check
-faults, not three — the eighth needs the displacement encoder, which arrives with the
-electrical library (P5), and the ninth is the cross-circuit pipe that P1.8 delivered.
+Two corrections worth keeping: designations unlocked **one** of the four remaining check
+faults, the eighth was the mismatched connection that the electrical library made
+checkable, and the ninth is the cross-circuit pipe that P1.8 delivered. The label that does
+not match is the last one open.
 
 `P` numbers are delivery order, not dependency: P2 does not need P1's code, and a phase
 that does not touch the same files may be worked on a branch of its own once the
