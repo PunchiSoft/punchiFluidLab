@@ -2100,6 +2100,18 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             let _ = writeln!(text, "Ventana: {span_s:.0} s a {rate_hz:.0} muestras/s");
             text.push_str("Elige qué registra en la lista de fuentes\n");
         }
+        Behaviour::ElectricalSupply { voltage_v } => {
+            let _ = writeln!(text, "Tensión: {voltage_v:.0} V");
+            text.push_str("Circuito eléctrico: se dibuja, todavía no se simula\n");
+        }
+        Behaviour::Contact { normally_closed } => {
+            text.push_str(if *normally_closed {
+                "Contacto cerrado en reposo\n"
+            } else {
+                "Contacto abierto en reposo\n"
+            });
+            text.push_str("Circuito eléctrico: se dibuja, todavía no se simula\n");
+        }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
 }
@@ -3969,9 +3981,13 @@ pub unsafe extern "C" fn pf_session_component_edits(
                 set.stroke_mm = *stroke_mm;
                 set.moving_mass_kg = *moving_mass_kg;
             }
+            // Neither an instrument nor a termination nor a terminal has a pneumatic
+            // parameter of its own to edit here.
             Behaviour::Gauge { .. }
             | Behaviour::FlowMeter { .. }
             | Behaviour::Recorder { .. }
+            | Behaviour::ElectricalSupply { .. }
+            | Behaviour::Contact { .. }
             | Behaviour::Plug
             | Behaviour::Junction => {}
         }
@@ -4690,6 +4706,8 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         Behaviour::Gauge { .. }
         | Behaviour::FlowMeter { .. }
         | Behaviour::Recorder { .. }
+        | Behaviour::ElectricalSupply { .. }
+        | Behaviour::Contact { .. }
         | Behaviour::Plug
         | Behaviour::Junction => {}
     }

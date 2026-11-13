@@ -70,6 +70,11 @@ pub enum PortRole {
     Exhaust,
     /// Rod, shaft or other mechanical connection.
     Mechanical,
+    /// Electrical terminal: a coil, a contact, a supply rail.
+    ///
+    /// It is not a conduit for air, so the pneumatic rules never apply to it: the check
+    /// leaves it alone and the solver does not build a volume for it.
+    Electrical,
 }
 
 /// How the user changes the position of a valve.
@@ -521,6 +526,17 @@ pub enum Behaviour {
         /// Sonic conductance to atmosphere, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// An electrical rail at a declared voltage (ADR 0017).
+    ElectricalSupply {
+        /// Voltage of the rail, volts.
+        voltage_v: f64,
+    },
+    /// A two-terminal contact: a push button, a limit switch.
+    Contact {
+        /// `true` when the contact is closed with nobody touching it.
+        #[serde(default)]
+        normally_closed: bool,
+    },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -553,6 +569,8 @@ impl Behaviour {
             Self::Recorder { .. } => "recorder",
             Self::Plug => "plug",
             Self::Silencer { .. } => "silencer",
+            Self::ElectricalSupply { .. } => "electrical_supply",
+            Self::Contact { .. } => "contact",
             Self::Junction => "junction",
         }
     }

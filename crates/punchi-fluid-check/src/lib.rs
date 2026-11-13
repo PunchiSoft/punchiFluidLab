@@ -191,7 +191,7 @@ fn open_connections(document: &Document, catalog: &Catalog, circuit: u32) -> Vec
             continue;
         };
         for port in &definition.port {
-            if !must_be_wired(definition, port.role) {
+            if is_electrical(port.role) || !must_be_wired(definition, port.role) {
                 continue;
             }
             let joined = document.connections().iter().any(|connection| {
@@ -262,6 +262,15 @@ fn pipes_across_circuits(document: &Document, catalog: &Catalog) -> Vec<Finding>
 /// off. A mechanical port is not a conduit at all.
 fn carries_air(role: PortRole) -> bool {
     matches!(role, PortRole::Supply | PortRole::Working)
+}
+
+/// `true` for a port that belongs to the electrical control circuit.
+///
+/// The check reports a pneumatic port left open, because air escaping is a fault; a
+/// terminal with no wire is a drawing the student has not finished, and the reference has a
+/// separate fault for a mismatched connection that this build does not implement yet.
+fn is_electrical(role: PortRole) -> bool {
+    matches!(role, PortRole::Electrical)
 }
 
 /// Faults about where a component sits: off the sheet, or on top of another one.

@@ -8,7 +8,7 @@
 //! selection. The passive components are drawn as symbols and nothing else — they have no
 //! physics until connections exist.
 
-use punchi_fluid_catalog::{Catalog, ComponentDefinition};
+use punchi_fluid_catalog::{Catalog, ComponentDefinition, PortRole};
 
 use crate::orient::{Orientation, Turned};
 use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
@@ -323,11 +323,21 @@ fn draw_pipe(
     // The neutral ink at atmosphere, the working colour at supply pressure. The status
     // bar carries the number too, so pressure is never told by colour alone.
     let colour = blend(ink.line, ink.work, pipe.pressure_ratio);
+    // An all-electrical hose is drawn with the electrical class: the wire says what it is
+    // before anyone reads a label, and a student who has just placed a contact does not
+    // have to choose a class for the first wire of the control circuit.
+    let class = if pipe.class == LineClass::Working
+        && is_electrical(from_definition, pipe.from.port, to_definition, pipe.to.port)
+    {
+        LineClass::Electrical
+    } else {
+        pipe.class
+    };
     // The pattern is the class's, never a literal: a pilot or drain line is read by its
     // dashes before anyone reads its label.
     surface.line(
         &points,
-        Stroke::new(symbol::LINE * 1.2, colour).with_class(pipe.class),
+        Stroke::new(symbol::LINE * 1.2, colour).with_class(class),
     );
 }
 
@@ -377,6 +387,29 @@ pub fn port_edge(definition: &ComponentDefinition, id: &str) -> PortEdge {
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
         .map_or(PortEdge::Left, |(edge, _)| edge)
+}
+
+/// `true` when both ends of a hose are electrical terminals.
+///
+/// The class of the line follows the ports: two terminals make a wire, and the drawing says
+/// so without the user choosing a class for it.
+fn is_electrical(
+    from: &ComponentDefinition,
+    from_port: &str,
+    to: &ComponentDefinition,
+    to_port: &str,
+) -> bool {
+    let role = |definition: &ComponentDefinition, id: &str| {
+        definition
+            .port
+            .iter()
+            .find(|port| port.id == id)
+            .map(|port| port.role)
+    };
+    matches!(
+        (role(from, from_port), role(to, to_port)),
+        (Some(PortRole::Electrical), Some(PortRole::Electrical))
+    )
 }
 
 /// The route between two ports, leaving each one along its own edge.
@@ -664,73 +697,9 @@ mod tests {
 }
 
 #[cfg(test)]
-mod routing_tests {
-    use super::*;
-    use punchi_fluid_catalog::Catalog;
+#[path = "placed_routing_tests.rs"]
+mod routing_tests;
 
-    #[test]
-    fn perpendicular_ports_are_joined_with_one_bend() {
-        // A hose that leaves a side and enters a bottom is one turn, not a staircase. The
-        // owner's sheet showed the old Z and called it what it looked like.
-        let points = route_between(
-            Pt::new(10.0, 50.0),
-            PortEdge::Right,
-            Pt::new(80.0, 90.0),
-            PortEdge::Bottom,
-            0.0,
-        );
-        assert_eq!(points.len(), 3, "one bend has three points: {points:?}");
-        assert!(
-            (points[1].x - 80.0).abs() < 1e-6,
-            "the turn is above the arrival"
-        );
-        assert!(
-            (points[1].y - 50.0).abs() < 1e-6,
-            "and level with the departure"
-        );
-        // Every segment is orthogonal.
-        for pair in points.windows(2) {
-            assert!(
-                (pair[0].x - pair[1].x).abs() < 1e-6 || (pair[0].y - pair[1].y).abs() < 1e-6,
-                "a diagonal segment in {points:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn parallel_ports_keep_the_z_that_can_be_dragged() {
-        let direct = route_between(
-            Pt::new(50.0, 10.0),
-            PortEdge::Bottom,
-            Pt::new(50.0, 90.0),
-            PortEdge::Top,
-            0.0,
-        );
-        assert_eq!(direct.len(), 2, "aligned ports are a straight line");
-        let offset = route_between(
-            Pt::new(50.0, 10.0),
-            PortEdge::Bottom,
-            Pt::new(90.0, 90.0),
-            PortEdge::Top,
-            5.0,
-        );
-        assert_eq!(
-            offset.len(),
-            4,
-            "a jog between parallel ports has both bends"
-        );
-    }
-
-    #[test]
-    fn a_port_reads_the_edge_it_sits_on() {
-        let catalog = Catalog::builtin();
-        let valve = catalog.get("valve.3_2.spring_return").expect("a valve");
-        assert_eq!(port_edge(valve, "1"), PortEdge::Bottom);
-        assert_eq!(port_edge(valve, "2"), PortEdge::Top);
-        let unit = catalog
-            .get("preparation.service_unit_simple")
-            .expect("a unit");
-        assert_eq!(port_edge(unit, "1"), PortEdge::Left);
-        assert_eq!(port_edge(unit, "2"), PortEdge::Right);
-    }
-}
+#[cfg(test)]
+#[path = "placed_electrical_tests.rs"]
+mod electrical_tests;

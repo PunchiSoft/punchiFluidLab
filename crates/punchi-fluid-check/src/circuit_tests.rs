@@ -114,3 +114,33 @@ mod termination_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod electrical_tests {
+    use super::*;
+    use punchi_fluid_doc::Placement;
+
+    fn sheet() -> Rect {
+        Rect::from_min_size(Pt::new(0.0, 0.0), 200.0, 130.0)
+    }
+
+    #[test]
+    fn an_open_electrical_terminal_is_not_a_pneumatic_fault() {
+        // A terminal with no wire is an unfinished drawing, not escaping air: the check
+        // reports the hazards of the pneumatic circuit and leaves the control circuit alone.
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "electrical.supply",
+            Pt::new(40.0, 40.0),
+            30.0,
+            16.0,
+        ));
+        let findings = check(&document, &Catalog::builtin(), sheet(), 0);
+        assert!(
+            !findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::OpenConnection),
+            "an electrical terminal was reported as an open pneumatic port"
+        );
+    }
+}
