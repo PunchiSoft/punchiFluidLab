@@ -69,7 +69,9 @@ pub(crate) fn short_circuits(document: &Document, catalog: &Catalog, circuit: u3
 /// The two terminals a contact or a relay contact joins, when the file says so.
 fn pair(definition: &punchi_fluid_catalog::ComponentDefinition) -> Option<(String, String)> {
     match &definition.behaviour {
-        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
+        Behaviour::Contact { .. }
+        | Behaviour::LimitSwitch { .. }
+        | Behaviour::PressureSwitch { .. } => {
             let mut terminals = definition
                 .port
                 .iter()
@@ -139,6 +141,9 @@ impl ControlNet {
             match &definition.behaviour {
                 Behaviour::Contact { normally_closed }
                 | Behaviour::LimitSwitch {
+                    normally_closed, ..
+                }
+                | Behaviour::PressureSwitch {
                     normally_closed, ..
                 } => {
                     if *normally_closed && let Some((first, second)) = pair(definition) {

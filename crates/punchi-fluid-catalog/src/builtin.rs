@@ -81,8 +81,28 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/electrical.contact.toml"),
     ),
     (
+        "electrical.contact.nc.toml",
+        include_str!("../../../assets/catalog/electrical.contact.nc.toml"),
+    ),
+    (
+        "electrical.switch.maintained.toml",
+        include_str!("../../../assets/catalog/electrical.switch.maintained.toml"),
+    ),
+    (
+        "electrical.switch.selector.toml",
+        include_str!("../../../assets/catalog/electrical.switch.selector.toml"),
+    ),
+    (
+        "electrical.button.mushroom.toml",
+        include_str!("../../../assets/catalog/electrical.button.mushroom.toml"),
+    ),
+    (
         "electrical.relay.toml",
         include_str!("../../../assets/catalog/electrical.relay.toml"),
+    ),
+    (
+        "electrical.relay.latching.toml",
+        include_str!("../../../assets/catalog/electrical.relay.latching.toml"),
     ),
     (
         "electrical.timer.ton.toml",
@@ -107,6 +127,14 @@ pub const FILES: &[(&str, &str)] = &[
     (
         "electrical.limit_switch.retracted.toml",
         include_str!("../../../assets/catalog/electrical.limit_switch.retracted.toml"),
+    ),
+    (
+        "electrical.pressure_switch.toml",
+        include_str!("../../../assets/catalog/electrical.pressure_switch.toml"),
+    ),
+    (
+        "electrical.vacuum_switch.toml",
+        include_str!("../../../assets/catalog/electrical.vacuum_switch.toml"),
     ),
     (
         "valve.3_2.solenoid.toml",

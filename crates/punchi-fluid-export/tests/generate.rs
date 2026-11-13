@@ -103,6 +103,7 @@ fn write_review_images(catalog: &Catalog) {
                 definition.behaviour,
                 punchi_fluid_catalog::Behaviour::Contact { .. }
                     | punchi_fluid_catalog::Behaviour::LimitSwitch { .. }
+                    | punchi_fluid_catalog::Behaviour::PressureSwitch { .. }
                     | punchi_fluid_catalog::Behaviour::Relay { .. }
                     | punchi_fluid_catalog::Behaviour::Lamp
                     | punchi_fluid_catalog::Behaviour::Buzzer
@@ -124,7 +125,7 @@ fn write_review_images(catalog: &Catalog) {
                         _ => None,
                     },
                     series: None,
-                    contact_closed: Some(false),
+                    contact_closed: None,
                     orientation: punchi_fluid_draw::Orientation::NONE,
                     designation: None,
                 };

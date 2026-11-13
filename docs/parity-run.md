@@ -1,6 +1,8 @@
 # The parity run: continuity note
 
-Status: **active**, branch `feat/parity`. This file is the memory of the run. After a context
+Status: **run 2 active**, branch `feat/parity-2`. Run 1 was delivered as
+[#57](https://github.com/PunchiSoft/punchiFluidLab/pull/57) in `6def1d2`. This file is the
+memory of the run. After a context
 reset, a compaction or a new session, read this file first, then
 [work-queue.md](work-queue.md), then `git log --oneline main..HEAD`.
 
@@ -14,6 +16,8 @@ The owner chose delivery option **c** on 2026-11-13: *one long branch, one commi
 capability, one pull request at the end*. That is the whole permission. It does **not**
 include merging: the owner merges, the agent never does.
 
+Run 2 was authorized the same way on 2026-11-13, after the owner merged run 1 (#57).
+
 ## Where things are
 
 | Thing | File |
@@ -24,7 +28,7 @@ include merging: the owner merges, the agent never does.
 | The sheet format | [reference/sheet-format.md](reference/sheet-format.md) |
 | The loop and its gotchas | [.agents/skills/parity-run](../.agents/skills/parity-run/SKILL.md) |
 
-## Progress log
+## Progress log — run 1 (delivered as #57)
 
 One line per commit, newest last. Each entry names the capability, the commit and the test
 that proves it.
@@ -37,7 +41,15 @@ that proves it.
 | 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
 | 4 | Indicator lamp | `feat(catalog): let a lamp read the control line` | `a_lamp_lights_while_its_line_is_live`, `a_lamp_shows_its_state_as_rays_not_only_colour`, the symbol review |
 | 5 | Buzzer with a continuous sound | `feat(audio): loop the buzzer while its line is live` | `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, the symbol review |
-| 6 | Limit switch at a cylinder end | `feat(catalog): follow a cylinder end with a limit switch` | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
+
+## Progress log — run 2
+
+| # | Capability | Commit | Evidence |
+|---|---|---|---|
+| 6 | Limit switch at a cylinder end (done in run 1) | #57 | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
+| 7 | Pressure and vacuum switches | `feat(catalog): read a line with a pressure switch` | `a_pressure_switch_follows_its_line_up_and_down`, the two symbol reviews |
+| 8 | Manual family: maintained, selector, mushroom, NC button | `feat(catalog): add the manual switch family` | `a_normally_closed_contact_opens_when_clicked`, the four symbol reviews |
+| 9 | Latching relay: set and reset | `feat(catalog): hold a latching relay between two pulses` | `a_latching_relay_holds_until_the_reset_coil`, the symbol review |
 
 ## Decisions taken in this run
 
@@ -74,28 +86,24 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 7, the pressure and vacuum switches
+## Next entry: 10, the counter relay
 
-The limit switch is done; the next entry reads the other side of the model.
+The latch is done; the next entry counts pulses.
 
-- **Schema**: `Behaviour::PressureSwitch { threshold_bar, vacuum, normally_closed }`, one
-  pneumatic port (working) and two electrical terminals. A vacuum switch is the same part
-  with `vacuum = true` and a threshold below atmosphere.
-- **No binding needed**: the switch reads the pressure at its own port, so the model asks the
-  network for that part instead of following another placement.
-- **Model**: cached `pressure_switches` like the limit switches; `advance_control` reads the
-  port pressure from the network, compares it with the threshold and settles the contact.
-  The design check reads the rest state.
-- **Catalog**: two files (pressure and vacuum) with a gauge body and a contact; the renderer
-  adds the bar.
-- **Evidence**: an ABI test that charges a line past the threshold and steps until the switch
-  closes, plus the falling side; the symbol reviews; the catalog lint.
+- **Schema**: a `Behaviour::Counter { preset: u32 }` with a count coil, a reset coil and one
+  contact; the count is a run artefact bounded by the preset.
+- **Model**: a rising edge on the count coil increments (capped at the preset), the reset coil
+  clears it, and the contact closes at the preset. The edge is detected against the previous
+  step, so a held button counts once.
+- **Catalog**: one file with the counter mark; the bar is the renderer's.
+- **Evidence**: an ABI test with a button, N pulses, the contact at the preset and one pulse
+  more; the symbol review and the lint.
 
 ## How to continue after a reset
 
 1. `git status --short` must be clean; if not, the previous capability was interrupted: read
    `git diff` and finish it before anything else.
-2. `git switch feat/parity` and `git --no-pager log --oneline main..HEAD` — one commit per
+2. `git switch feat/parity-2` and `git --no-pager log --oneline main..HEAD` — one commit per
    capability, in queue order.
 3. Open [work-queue.md](work-queue.md): take the first `ready` entry.
 4. Follow the loop in the [parity-run skill](../.agents/skills/parity-run/SKILL.md): implement,

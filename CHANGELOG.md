@@ -6,6 +6,58 @@ publicación.
 
 ## Unreleased
 
+### El relé enclavado: un pulso que se convierte en memoria — 2026-11-13
+
+Un arranque que sigue funcionando cuando el dedo suelta el pulsador, y un paro que se queda
+abierto: las dos cosas piden memoria. El relé enclavado es el primer relé cuyo estado
+sobrevive al gesto.
+
+- **Dos bobinas y un contacto**: `reset = ["R1", "R2"]` opcional sobre el mismo `relay`; la
+  de set cierra, la de reset abre, y con ninguna viva el contacto conserva el estado
+  ([ADR 0025](docs/adr/0025-a-latching-relay-holds-its-last-pulse.md)).
+- **Seis terminales en tres parejas**: la validación acepta cuatro o seis y rechaza una
+  pareja compartida o ausente.
+- **El enclavamiento vive en el mismo punto fijo**: cada pasada lee las bobinas, actualiza el
+  estado y vuelve a llenar las aristas; la topología cacheada mantiene el paso sin memoria
+  dinámica.
+- **El estado es del ensayo**, no del documento.
+- **Evidencia**: `a_latching_relay_holds_until_the_reset_coil` (set, suelta, mantiene, reset,
+  suelta, mantiene abierto), la revisión del símbolo y el lint.
+
+### La familia manual: el panel de mando — 2026-11-13
+
+Un panel no es un solo pulsador: la seta debe abrir al golpearla y quedarse abierta, el
+selector debe quedarse donde se gira, y un pulsador cerrado en reposo es la mitad que el otro
+pulsador no cubre.
+
+- **Cuatro archivos, un comportamiento**: interruptor mantenido, selector, seta con
+  `normally_closed = true` y pulsador NC. Todos son `contact`; el clic mantiene el estado y
+  el reposo lo declara el archivo.
+- **La seta es un contacto NC enclavado**: abre al pulsarla y no vuelve hasta el clic
+  siguiente, que es lo que un paro de emergencia debe hacer.
+- **La comprobación y el dibujo leen el reposo NC**: un contacto cerrado en reposo conduce
+  desde el primer fotograma, sin que nadie lo toque.
+- **Evidencia**: `a_normally_closed_contact_opens_when_clicked`, las cuatro revisiones de
+  símbolo y el lint del catálogo.
+
+### Presostato y vacuostato: la línea también decide — 2026-11-13
+
+Una secuencia no solo mira dónde está el vástago: mira si el depósito se ha cargado, si la
+pinza ha agarrado, si la ventosa ha hecho vacío. El presostato es el contacto que responde
+desde la línea en la que está enroscado.
+
+- **Dos terminales y un puerto de trabajo**: `threshold_bar` en bar de presión relativa,
+  `above = true` cierra al llegar al umbral y `above = false` cierra por debajo, que es el
+  vacuostato con un umbral negativo ([ADR 0024](docs/adr/0024-a-pressure-switch-reads-its-own-port.md)).
+- **Sin binding**: lee su propio puerto con `Network::port_pressure`; no hay fuente que
+  elegir ni identidad que guardar, porque el puerto es la línea.
+- **El estado es del ensayo**: la comprobación de diseño lee el reposo; cada `advance` lee la
+  presión y vuelve a asentar la red.
+- **La barra la dibuja el renderizador**; el círculo sensor, el vástago y el enlace a trazos
+  están en el archivo.
+- **Evidencia**: `a_pressure_switch_follows_its_line_up_and_down` (sube con la válvula
+  accionada y baja al descargar), las dos revisiones de símbolo y el lint.
+
 ### El final de carrera: la secuencia sabe dónde está el vástago — 2026-11-13
 
 Una secuencia no solo necesita manos, bobinas y tiempo: necesita saber dónde está la máquina.

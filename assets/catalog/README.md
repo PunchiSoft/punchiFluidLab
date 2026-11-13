@@ -255,6 +255,7 @@ type = "contact"             # two electrical terminals; `normally_closed = true
 [behaviour]
 type = "relay"               # four electrical terminals in two named pairs
 coil = ["A1", "A2"]          # the terminals the net feeds
+reset = ["R1", "R2"]         # optional second winding: a latching relay
 contact = ["11", "14"]       # the terminals the contact joins
 normally_closed = false      # the contact at rest; a changeover is another file
 kind = "ton"                 # `instant` (default), `ton` or `tof`
@@ -278,6 +279,14 @@ end = "extended"             # `extended` or `retracted`
 normally_closed = false      # closed while the roller is free
 ```
 
+```toml
+[behaviour]
+type = "pressure_switch"     # two electrical terminals and one working port
+threshold_bar = 3.0          # gauge bar; a vacuum switch uses a negative value
+above = true                 # `false` closes below the threshold
+normally_closed = false      # closed at rest
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -292,6 +301,11 @@ positive terminal live, propagates it through wires and closed contacts, and set
 to its actuated position while its coil is live. There is no voltage and no current: the
 circuit is a boolean net.
 
+The **manual family** is one behaviour and several files: the push button, a normally-closed
+button, a maintained switch, a selector and a mushroom. They differ in the actuator and the
+rest state (`normally_closed`), not in the model; a click toggles the contact and a maintained
+part keeps the state it was left in.
+
 A **relay** names its coil pair and its contact pair
 ([ADR 0019](../docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)). The coil is energised when
 exactly one of its terminals is live; the contact joins its pair while the coil is energised
@@ -301,6 +315,11 @@ from the state the run settled on. With `kind = "ton"` or `"tof"` the same file 
 the output follows the coil after `delay_s`, counted by the simulation step and never slept
 ([ADR 0020](../docs/adr/0020-timers-count-steps.md)). An `instant` relay must leave the
 delay at zero.
+
+With `reset = ["R1", "R2"]` the same behaviour is a **latching relay**
+([ADR 0025](../docs/adr/0025-a-latching-relay-holds-its-last-pulse.md)): the set coil closes
+the contact, the reset coil opens it, and with neither live it holds the last state. The file
+has six terminals in three named pairs, and the state is a run artefact.
 
 A **lamp** is the load that makes a line visible without a moving part
 ([ADR 0021](../docs/adr/0021-an-indicator-reads-the-net.md)): one electrical terminal, lit
@@ -318,6 +337,12 @@ terminals, an `end` and the usual `normally_closed`. The cylinder is chosen in t
 and stored as the placement source with the `position` quantity, so the file never hardcodes
 an identity; the contact closes at 98 % of the stroke, and the design check reads its rest
 state because no run has happened yet.
+
+A **pressure switch** reads its own working port
+([ADR 0024](../docs/adr/0024-a-pressure-switch-reads-its-own-port.md)): the threshold is in
+gauge bar, `above = true` closes at or over it, and `above = false` closes below it, which is
+a vacuum switch with a negative threshold. No source is needed — the port is the line — and
+the design check reads the rest state.
 
 ```toml
 [behaviour]

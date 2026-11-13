@@ -95,6 +95,26 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.relay.md"),
     ),
     (
+        "electrical.relay.latching",
+        include_str!("../../../assets/symbols/review/electrical.relay.latching.md"),
+    ),
+    (
+        "electrical.contact.nc",
+        include_str!("../../../assets/symbols/review/electrical.contact.nc.md"),
+    ),
+    (
+        "electrical.switch.maintained",
+        include_str!("../../../assets/symbols/review/electrical.switch.maintained.md"),
+    ),
+    (
+        "electrical.switch.selector",
+        include_str!("../../../assets/symbols/review/electrical.switch.selector.md"),
+    ),
+    (
+        "electrical.button.mushroom",
+        include_str!("../../../assets/symbols/review/electrical.button.mushroom.md"),
+    ),
+    (
         "electrical.timer.ton",
         include_str!("../../../assets/symbols/review/electrical.timer.ton.md"),
     ),
@@ -117,6 +137,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
     (
         "electrical.limit_switch.retracted",
         include_str!("../../../assets/symbols/review/electrical.limit_switch.retracted.md"),
+    ),
+    (
+        "electrical.pressure_switch",
+        include_str!("../../../assets/symbols/review/electrical.pressure_switch.md"),
+    ),
+    (
+        "electrical.vacuum_switch",
+        include_str!("../../../assets/symbols/review/electrical.vacuum_switch.md"),
     ),
     (
         "valve.3_2.solenoid",

@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Pressure switch: a contact that follows the pressure at its port.
+#
+# The contact follows the pressure at its own working port; no source binding is needed,
+# because the switch reads the line it is screwed into (ADR 0024). The design check reads
+# the rest state, since no run has happened yet.
+#
+# The symbol is a sensing circle over a two-terminal contact, with a dashed link between
+# them; the renderer draws the bar.
+
+schema = 3
+id = "electrical.pressure_switch"
+name = "Pressure switch"
+name_es = "Presostato"
+category = "sensor"
+summary = "Closes when its line reaches the threshold."
+kinematics = "contact"
+
+[[port]]
+id = "3"
+role = "electrical"
+position = [0.0, 0.5]
+
+[[port]]
+id = "4"
+role = "electrical"
+position = [1.0, 0.5]
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.5, 1.0]
+
+[behaviour]
+type = "pressure_switch"
+threshold_bar = 3.0
+above = true
+
+# The pressure line to the sensing circle.
+[[symbol]]
+kind = "line"
+points = [0.5, 1.0, 0.5, 0.25]
+line_class = "working"
+
+# The sensing circle and the dashed link to the contact.
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.14, 0.11]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.25, 0.5, 0.32]
+line_class = "drain"
+
+# The two electrical terminals and the gap the bar closes.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.30, 0.5]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.70, 0.5, 1.0, 0.5]
+line_class = "electrical"

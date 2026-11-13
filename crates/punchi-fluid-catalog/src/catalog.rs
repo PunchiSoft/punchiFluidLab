@@ -263,11 +263,23 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         Behaviour::Relay {
             coil,
             contact,
+            reset,
             kind,
             delay_s,
             ..
-        } => check_relay(definition, path, coil, contact, *kind, *delay_s),
+        } => check_relay(
+            definition,
+            path,
+            coil,
+            contact,
+            reset.as_ref(),
+            *kind,
+            *delay_s,
+        ),
         Behaviour::Lamp | Behaviour::Buzzer => check_indicator(definition, path),
+        Behaviour::PressureSwitch { threshold_bar, .. } => {
+            check_pressure_switch(definition, path, *threshold_bar)
+        }
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -433,6 +445,7 @@ fn check_relay(
     path: &Path,
     coil: &[String; 2],
     contact: &[String; 2],
+    reset: Option<&[String; 2]>,
     kind: RelayKind,
     delay_s: f64,
 ) -> Result<(), CatalogError> {
@@ -442,14 +455,23 @@ fn check_relay(
             "a relay coil and its contact each need two distinct terminals",
         ));
     }
-    if definition.port.len() != 4 {
+    let expected = if reset.is_some() { 6 } else { 4 };
+    if definition.port.len() != expected {
         return Err(invalid(
             path,
-            "a relay needs exactly four electrical terminals",
+            if reset.is_some() {
+                "a latching relay needs exactly six electrical terminals"
+            } else {
+                "a relay needs exactly four electrical terminals"
+            },
         ));
     }
     let mut seen = BTreeSet::new();
-    for id in coil.iter().chain(contact.iter()) {
+    let pairs = coil
+        .iter()
+        .chain(contact.iter())
+        .chain(reset.into_iter().flatten());
+    for id in pairs {
         let electrical = definition
             .port
             .iter()
@@ -488,6 +510,37 @@ fn check_indicator(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         return Err(invalid(
             path,
             "an indicator needs exactly one electrical terminal",
+        ));
+    }
+    Ok(())
+}
+
+/// A pressure switch reads one line and switches two terminals.
+fn check_pressure_switch(
+    definition: &ComponentDefinition,
+    path: &Path,
+    threshold_bar: f64,
+) -> Result<(), CatalogError> {
+    let electrical = definition
+        .port
+        .iter()
+        .filter(|port| port.role == PortRole::Electrical)
+        .count();
+    let working = definition
+        .port
+        .iter()
+        .filter(|port| port.role == PortRole::Working)
+        .count();
+    if electrical != 2 || working != 1 || definition.port.len() != 3 {
+        return Err(invalid(
+            path,
+            "a pressure switch needs two electrical terminals and one working port",
+        ));
+    }
+    if !threshold_bar.is_finite() || !(-1.0..=100.0).contains(&threshold_bar) {
+        return Err(invalid(
+            path,
+            "a pressure switch threshold must be between -1 and 100 bar",
         ));
     }
     Ok(())

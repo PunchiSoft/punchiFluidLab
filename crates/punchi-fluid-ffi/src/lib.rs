@@ -581,6 +581,12 @@ pub struct PfSession {
     /// Whether each limit switch is closed, by placement identity. Derived from the bound
     /// cylinder's extension on every control pass.
     limits: std::collections::HashMap<u64, bool>,
+    /// Whether each pressure switch is closed, by placement identity. Derived from the
+    /// pressure at its own port on every control pass.
+    pressures: std::collections::HashMap<u64, bool>,
+    /// Whether each latching relay is set, by placement identity. The set and reset coils
+    /// change it; neither live holds it.
+    latches: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -680,6 +686,8 @@ impl PfSession {
             indicators: std::collections::HashMap::new(),
             buzzers: std::collections::HashMap::new(),
             limits: std::collections::HashMap::new(),
+            pressures: std::collections::HashMap::new(),
+            latches: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -1176,12 +1184,20 @@ impl PfSession {
         self.control = Some(model);
         self.ensure_timers();
         self.ensure_limits();
+        self.ensure_pressures();
+        self.ensure_latches();
         self.refresh_limits();
+        self.refresh_pressures();
         {
             let Some(model) = self.control.as_mut() else {
                 return;
             };
-            model.settle(&self.timers, &self.limits);
+            model.settle(
+                &self.timers,
+                &mut self.latches,
+                &self.limits,
+                &self.pressures,
+            );
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -1265,6 +1281,78 @@ impl PfSession {
         }
     }
 
+    /// Gives every pressure switch an entry, so a step never inserts a key.
+    fn ensure_pressures(&mut self) {
+        let Self {
+            control, pressures, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        pressures.retain(|id, _| model.pressures.iter().any(|switch| switch.id == *id));
+        for switch in &model.pressures {
+            pressures.entry(switch.id).or_insert(switch.normally_closed);
+        }
+    }
+
+    /// Gives every latching relay an entry, so a step never inserts a key.
+    fn ensure_latches(&mut self) {
+        let Self {
+            control, latches, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        latches.retain(|id, _| {
+            model
+                .relays
+                .iter()
+                .any(|relay| relay.id == *id && relay.reset.is_some())
+        });
+        for relay in &model.relays {
+            if relay.reset.is_some() {
+                latches.entry(relay.id).or_insert(relay.normally_closed);
+            }
+        }
+    }
+
+    /// Reads the pressure at every switch's own port and keeps its contact state.
+    ///
+    /// The comparison is in gauge bar, the unit the threshold is written in; a vacuum
+    /// switch is the same code with `above = false` and a threshold below atmosphere.
+    fn refresh_pressures(&mut self) {
+        let Self {
+            control,
+            pressures,
+            placement_part,
+            system,
+            ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        let Some(system) = system.as_ref() else {
+            return;
+        };
+        for binding in &model.pressures {
+            let at = placement_part
+                .get(binding.placement)
+                .copied()
+                .flatten()
+                .and_then(|part| system.port_pressure(part, &binding.port))
+                .is_some_and(|absolute| {
+                    let gauge = (absolute - system.atmosphere_pa()) / 1e5;
+                    if binding.above {
+                        gauge >= binding.threshold_bar
+                    } else {
+                        gauge <= binding.threshold_bar
+                    }
+                });
+            let closed = if binding.normally_closed { !at } else { at };
+            pressures.insert(binding.id, closed);
+        }
+    }
+
     /// Keeps the settled state for the frame; a relay is never clicked by hand.
     fn publish_relay_state(&mut self) {
         let Self {
@@ -1280,6 +1368,10 @@ impl PfSession {
         }
         for (limit, closed) in model.limits.iter().zip(&model.state[base..]) {
             relays.insert(limit.id, *closed);
+        }
+        let pressure_base = base + model.limits.len();
+        for (switch, closed) in model.pressures.iter().zip(&model.state[pressure_base..]) {
+            relays.insert(switch.id, *closed);
         }
     }
 
@@ -1373,18 +1465,22 @@ impl PfSession {
             self.apply_control();
         }
         self.refresh_limits();
+        self.refresh_pressures();
+        self.ensure_latches();
         let circuit = self.document.active_circuit();
         {
             let Self {
                 control,
                 timers,
+                latches,
                 limits,
+                pressures,
                 ..
             } = self;
             let Some(model) = control.as_mut() else {
                 return;
             };
-            model.settle(timers, limits);
+            model.settle(timers, latches, limits, pressures);
             for i in 0..model.relays.len() {
                 let relay = model.relays[i];
                 if !relay.kind.is_timer() {
@@ -1420,7 +1516,7 @@ impl PfSession {
                     punchi_fluid_catalog::RelayKind::Instant => {}
                 }
             }
-            model.settle(timers, limits);
+            model.settle(timers, latches, limits, pressures);
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -2395,29 +2491,7 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             spring_return,
             actuation,
             ..
-        } => {
-            let names: Vec<&str> = positions
-                .iter()
-                .map(punchi_fluid_catalog::ValvePosition::display_name)
-                .collect();
-            let _ = writeln!(text, "Posiciones: {}", names.join(", "));
-            let _ = writeln!(text, "Accionamiento: {}", actuation_es(*actuation));
-            text.push_str(if *spring_return {
-                "Retorno: muelle — solo queda accionada mientras se mantiene\n"
-            } else {
-                "Retorno: sin muelle — queda donde se deja\n"
-            });
-            if let Some(connection) = positions
-                .first()
-                .and_then(|position| position.connection.first())
-            {
-                let _ = writeln!(
-                    text,
-                    "Conductancia: {:.2e} m³/(s·Pa)",
-                    connection.conductance
-                );
-            }
-        }
+        } => describe_valve_behaviour(text, positions, *spring_return, *actuation),
         Behaviour::Cylinder {
             bore_mm,
             rod_mm,
@@ -2472,14 +2546,28 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
         Behaviour::Relay {
             coil,
             contact,
+            reset,
             normally_closed,
             kind,
             delay_s,
-        } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
+        } => describe_relay(
+            text,
+            coil,
+            contact,
+            reset.is_some(),
+            *normally_closed,
+            *kind,
+            *delay_s,
+        ),
         Behaviour::LimitSwitch {
             end,
             normally_closed,
         } => describe_limit_switch(text, *end, *normally_closed),
+        Behaviour::PressureSwitch {
+            threshold_bar,
+            above,
+            normally_closed,
+        } => describe_pressure_switch(text, *threshold_bar, *above, *normally_closed),
         Behaviour::Lamp => describe_indicator(text, false),
         Behaviour::Buzzer => describe_indicator(text, true),
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
@@ -2491,12 +2579,16 @@ fn describe_relay(
     text: &mut String,
     coil: &[String; 2],
     contact: &[String; 2],
+    latching: bool,
     normally_closed: bool,
     kind: punchi_fluid_catalog::RelayKind,
     delay_s: f64,
 ) {
     let _ = writeln!(text, "Bobina: {}–{}", coil[0], coil[1]);
     let _ = writeln!(text, "Contacto: {}–{}", contact[0], contact[1]);
+    if latching {
+        text.push_str("Relé enclavado: una bobina lo pone y otra lo quita\n");
+    }
     text.push_str(if normally_closed {
         "Contacto cerrado en reposo\n"
     } else {
@@ -4424,6 +4516,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::Contact { .. }
             | Behaviour::Relay { .. }
             | Behaviour::LimitSwitch { .. }
+            | Behaviour::PressureSwitch { .. }
             | Behaviour::Lamp
             | Behaviour::Buzzer
             | Behaviour::Plug
@@ -5248,6 +5341,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::Contact { .. }
         | Behaviour::Relay { .. }
         | Behaviour::LimitSwitch { .. }
+        | Behaviour::PressureSwitch { .. }
         | Behaviour::Lamp
         | Behaviour::Buzzer
         | Behaviour::Plug
@@ -5403,6 +5497,7 @@ struct RelayBinding {
     id: u64,
     coil: (usize, usize),
     contact: (usize, usize),
+    reset: Option<(usize, usize)>,
     normally_closed: bool,
     kind: punchi_fluid_catalog::RelayKind,
     delay_s: f64,
@@ -5419,6 +5514,18 @@ struct LimitBinding {
     source: Option<u64>,
 }
 
+/// A pressure or vacuum switch: its contact nodes, the threshold and the port it reads.
+#[derive(Debug, Clone)]
+struct PressureBinding {
+    id: u64,
+    placement: usize,
+    port: String,
+    contact: (usize, usize),
+    normally_closed: bool,
+    threshold_bar: f64,
+    above: bool,
+}
+
 /// The control circuit of one document, ready to settle without rebuilding it per step.
 ///
 /// The topology — terminals, wires, relays — is built on an edit. A settle only clears and
@@ -5430,6 +5537,7 @@ struct ControlModel {
     contacts: Vec<(usize, usize)>,
     relays: Vec<RelayBinding>,
     limits: Vec<LimitBinding>,
+    pressures: Vec<PressureBinding>,
     indicators: Vec<(u64, usize, bool)>,
     seeds: Vec<usize>,
     edges: Vec<Vec<usize>>,
@@ -5535,6 +5643,7 @@ fn switches_of(
             punchi_fluid_catalog::Behaviour::Relay {
                 coil,
                 contact,
+                reset,
                 normally_closed,
                 kind,
                 delay_s,
@@ -5551,10 +5660,17 @@ fn switches_of(
                 ) else {
                     continue;
                 };
+                let reset = reset.as_ref().and_then(|reset| {
+                    Some((
+                        node_of(terminals, index, &reset[0])?,
+                        node_of(terminals, index, &reset[1])?,
+                    ))
+                });
                 relays.push(RelayBinding {
                     id: placement.id(),
                     coil: (a, b),
                     contact: (c, d),
+                    reset,
                     normally_closed: *normally_closed,
                     kind: *kind,
                     delay_s: *delay_s,
@@ -5637,6 +5753,57 @@ fn limits_of(
     limits
 }
 
+/// The pressure and vacuum switches of one circuit, with the port each reads.
+fn pressures_of(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    terminals: &[Terminal],
+) -> Vec<PressureBinding> {
+    let mut pressures = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        let Behaviour::PressureSwitch {
+            threshold_bar,
+            above,
+            normally_closed,
+        } = &definition.behaviour
+        else {
+            continue;
+        };
+        let Some((a, b)) = contact_pair(definition) else {
+            continue;
+        };
+        let Some(port) = definition
+            .port
+            .iter()
+            .find(|port| port.role == punchi_fluid_catalog::PortRole::Working)
+            .map(|port| port.id.clone())
+        else {
+            continue;
+        };
+        let (Some(a), Some(b)) = (node_of(terminals, index, &a), node_of(terminals, index, &b))
+        else {
+            continue;
+        };
+        pressures.push(PressureBinding {
+            id: placement.id(),
+            placement: index,
+            port,
+            contact: (a, b),
+            normally_closed: *normally_closed,
+            threshold_bar: *threshold_bar,
+            above: *above,
+        });
+    }
+    pressures
+}
+
 /// Reserves the degree of every node so a refill never grows an edge list.
 fn reserved_edges(
     nodes: usize,
@@ -5644,6 +5811,7 @@ fn reserved_edges(
     contacts: &[(usize, usize)],
     relays: &[RelayBinding],
     limits: &[LimitBinding],
+    pressures: &[PressureBinding],
 ) -> Vec<Vec<usize>> {
     let mut degree = vec![0usize; nodes];
     for (a, b) in wires.iter().chain(contacts.iter()) {
@@ -5657,6 +5825,10 @@ fn reserved_edges(
     for limit in limits {
         degree[limit.contact.0] += 1;
         degree[limit.contact.1] += 1;
+    }
+    for pressure in pressures {
+        degree[pressure.contact.0] += 1;
+        degree[pressure.contact.1] += 1;
     }
     degree.into_iter().map(Vec::with_capacity).collect()
 }
@@ -5673,10 +5845,18 @@ impl ControlModel {
         let wires = wires_of(document, circuit, &terminals);
         let (contacts, relays) = switches_of(document, catalog, circuit, &terminals, contacts);
         let limits = limits_of(document, catalog, circuit, &terminals);
+        let pressures = pressures_of(document, catalog, circuit, &terminals);
         let indicators = indicators_of(document, catalog, circuit, &terminals);
-        let edges = reserved_edges(terminals.len(), &wires, &contacts, &relays, &limits);
+        let edges = reserved_edges(
+            terminals.len(),
+            &wires,
+            &contacts,
+            &relays,
+            &limits,
+            &pressures,
+        );
         let live = vec![false; terminals.len()];
-        let state = vec![false; relays.len() + limits.len()];
+        let state = vec![false; relays.len() + limits.len() + pressures.len()];
         let pending = Vec::with_capacity(terminals.len());
         Self {
             terminals,
@@ -5684,6 +5864,7 @@ impl ControlModel {
             contacts,
             relays,
             limits,
+            pressures,
             indicators,
             seeds,
             edges,
@@ -5732,6 +5913,15 @@ impl ControlModel {
             self.edges[a].push(b);
             self.edges[b].push(a);
         }
+        let pressure_base = base + self.limits.len();
+        for j in 0..self.pressures.len() {
+            if !self.state[pressure_base + j] {
+                continue;
+            }
+            let (a, b) = self.pressures[j].contact;
+            self.edges[a].push(b);
+            self.edges[b].push(a);
+        }
     }
 
     /// Marks the live nodes in `live`, reusing the queue.
@@ -5756,7 +5946,9 @@ impl ControlModel {
     fn settle(
         &mut self,
         timers: &std::collections::HashMap<u64, TimerState>,
+        latches: &mut std::collections::HashMap<u64, bool>,
         limits: &std::collections::HashMap<u64, bool>,
+        pressures: &std::collections::HashMap<u64, bool>,
     ) {
         for i in 0..self.relays.len() {
             let relay = self.relays[i];
@@ -5767,6 +5959,11 @@ impl ControlModel {
                 } else {
                     output
                 }
+            } else if relay.reset.is_some() {
+                latches
+                    .get(&relay.id)
+                    .copied()
+                    .unwrap_or(relay.normally_closed)
             } else {
                 relay.normally_closed
             };
@@ -5778,6 +5975,13 @@ impl ControlModel {
                 .copied()
                 .unwrap_or(limit.normally_closed);
         }
+        let pressure_base = base + self.limits.len();
+        for (slot, switch) in self.pressures.iter().enumerate() {
+            self.state[pressure_base + slot] = pressures
+                .get(&switch.id)
+                .copied()
+                .unwrap_or(switch.normally_closed);
+        }
         let bound = self.relays.len().saturating_mul(2).saturating_add(2);
         for _ in 0..=bound {
             self.refill_edges();
@@ -5785,6 +5989,27 @@ impl ControlModel {
             let mut changed = false;
             for i in 0..self.relays.len() {
                 let relay = self.relays[i];
+                if let Some((reset_a, reset_b)) = relay.reset {
+                    // A latching relay holds its state: set closes, reset opens, and
+                    // neither coil live changes nothing.
+                    let set = self.live[relay.coil.0] != self.live[relay.coil.1];
+                    let reset = self.live[reset_a] != self.live[reset_b];
+                    let latch = latches.entry(relay.id).or_insert(relay.normally_closed);
+                    if set && !reset {
+                        if !*latch {
+                            *latch = true;
+                            changed = true;
+                        }
+                    } else if reset && !set && *latch {
+                        *latch = false;
+                        changed = true;
+                    }
+                    if self.state[i] != *latch {
+                        self.state[i] = *latch;
+                        changed = true;
+                    }
+                    continue;
+                }
                 if relay.kind.is_timer() {
                     continue;
                 }
@@ -5814,7 +6039,9 @@ fn contact_pair(
     definition: &punchi_fluid_catalog::ComponentDefinition,
 ) -> Option<(String, String)> {
     match &definition.behaviour {
-        Behaviour::Contact { .. } | Behaviour::LimitSwitch { .. } => {
+        Behaviour::Contact { .. }
+        | Behaviour::LimitSwitch { .. }
+        | Behaviour::PressureSwitch { .. } => {
             let mut terminals = definition
                 .port
                 .iter()
@@ -5850,6 +6077,59 @@ fn describe_indicator(text: &mut String, audible: bool) {
         "Zumbador: suena mientras su terminal está vivo\n"
     } else {
         "Lámpara indicadora: encendida mientras su terminal está vivo\n"
+    });
+}
+
+/// Writes what a valve means, for the inspector.
+fn describe_valve_behaviour(
+    text: &mut String,
+    positions: &[punchi_fluid_catalog::ValvePosition],
+    spring_return: bool,
+    actuation: punchi_fluid_catalog::Actuation,
+) {
+    let names: Vec<&str> = positions
+        .iter()
+        .map(punchi_fluid_catalog::ValvePosition::display_name)
+        .collect();
+    let _ = writeln!(text, "Posiciones: {}", names.join(", "));
+    let _ = writeln!(text, "Accionamiento: {}", actuation_es(actuation));
+    text.push_str(if spring_return {
+        "Retorno: muelle — solo queda accionada mientras se mantiene\n"
+    } else {
+        "Retorno: sin muelle — queda donde se deja\n"
+    });
+    if let Some(connection) = positions
+        .first()
+        .and_then(|position| position.connection.first())
+    {
+        let _ = writeln!(
+            text,
+            "Conductancia: {:.2e} m³/(s·Pa)",
+            connection.conductance
+        );
+    }
+}
+
+/// Writes what a pressure switch means, for the inspector.
+fn describe_pressure_switch(
+    text: &mut String,
+    threshold_bar: f64,
+    above: bool,
+    normally_closed: bool,
+) {
+    let _ = writeln!(
+        text,
+        "Umbral: {threshold_bar:.2} bar, {}",
+        if above {
+            "cierra por encima"
+        } else {
+            "cierra por debajo"
+        }
+    );
+    text.push_str(if normally_closed {
+        "Contacto cerrado en reposo\n"
+    } else {
+        "Contacto abierto en reposo\n"
     });
 }
 
