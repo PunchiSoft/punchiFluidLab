@@ -21,14 +21,6 @@
 #include <vector>
 
 namespace {
-/// Zoom limits and the step a button takes. The reference zooms by buttons and by the
-/// keys `>` and `<`; a step of a quarter is what makes five presses double the size.
-constexpr double kMinZoom = 0.4;
-constexpr double kMaxZoom = 6.0;
-constexpr double kZoomStep = 1.25;
-} // namespace
-
-namespace {
 
 PfRgb toRgb(const QColor &colour)
 {

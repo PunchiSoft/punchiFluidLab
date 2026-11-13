@@ -86,7 +86,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape, and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the full panel (margins, custom size, PNG resolution) is still open — [capabilities.md](capabilities.md) F5 says so |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
-| **Ver** | Rejilla, Imán a rejilla, Imán a puertos, Zoom (−, %, +), Ajustar a ventana, Tema (sistema/claro/oscuro), Panel lateral, Barra de estado |
+| **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 
 
 The transport (`▶ ⏸ ⏭ ⏹ ⟲` — start, pause, step, stop, reset, with the speed beside them)
@@ -232,6 +232,17 @@ schematic simulator lives by, and the one the reference tool uses:
 
 - Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
   The grid is a *guide*, not a background pattern to be proud of.
+- **Today the sheet is a fixed 200 × 130 mm logical area**, the one the check and the
+  export measure against; it is not yet an ISO 216 paper. Making the sheet the paper the
+  drawing is printed on is the next change, and [capabilities.md](capabilities.md) records
+  it as the gap of the zoom row rather than pretending the two already agree.
+- **Zoom and pan are view state.** `Ctrl` and the wheel magnify about the pointer in the
+  buttons' quarter steps, between 0.4× and 6×; a plain wheel pans and `Shift` swaps the
+  axis; the middle button drags the sheet; the arrow keys pan from the keyboard, and
+  `Ctrl+0` returns to 1:1 and drops the pan. The pan stops when the sheet's edge meets the
+  frame, so a flick never leaves the reader looking at an empty background, and the status
+  bar prints the magnification. None of it is a document change, so none of it enters the
+  undo history.
 - Two modes, visibly different:
   - **Edición** (default): select, move, connect, delete. Grid snapping on.
   - **Simulación**: the model runs; clicking a valve actuates it, dragging a
@@ -310,8 +321,9 @@ disappears on its own window colour.
 - Contrast: text ≥ 4.5:1, lines and icons ≥ 3:1 against their surface, measured in a
   test, not by eye.
 - Keyboard: every action reachable without a pointer; `Tab` cycles regions, arrows
-  move the selection on the grid, `Del` deletes, `Ctrl+Z`/`Ctrl+Y` undo and redo,
-  `Space` starts and stops the simulation, `F1` opens shortcuts.
+  pan a magnified sheet while the sheet holds the focus, `Del` deletes,
+  `Ctrl+Z`/`Ctrl+Y` undo and redo, `Space` starts and stops the simulation, `F1` opens
+  shortcuts.
 - State never communicated by colour alone.
 - Reduced motion: `[KDE] AnimationDurationFactor = 0` disables every animation; the
   piston still shows its position, it just does not ease.

@@ -314,6 +314,13 @@ public:
     int connectionCount() const;
     /// The view: how far the sheet is magnified and whether its grid shows. Both are
     /// view state, not document state, so neither touches the undo history.
+    ///
+    /// The limits and the step a button takes: a quarter per press doubles the size in
+    /// five presses. Public because the sheet anchors one wheel notch to the pointer with
+    /// the same step the buttons and the keys use.
+    static constexpr double kMinZoom = 0.4;
+    static constexpr double kMaxZoom = 6.0;
+    static constexpr double kZoomStep = 1.25;
     double zoom() const { return m_zoom; }
     void setZoom(double zoom);
     bool grid() const { return m_grid; }

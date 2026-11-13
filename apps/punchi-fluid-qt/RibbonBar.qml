@@ -181,9 +181,9 @@ Rectangle {
                 {
                     title: qsTr("Vista"),
                     items: [
-                        { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("> · acerca la hoja") },
-                        { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("< · aleja la hoja") },
-                        { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom") },
+                        { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("Ctrl+rueda · acerca la hoja") },
+                        { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("Ctrl+rueda · aleja la hoja") },
+                        { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") },
                         { id: "grid", label: qsTr("Cuadrícula"), icon: "view-grid", hint: session.grid ? qsTr("Visible · pulsa para ocultar") : qsTr("Oculta · pulsa para mostrar") }
                     ]
                 },
