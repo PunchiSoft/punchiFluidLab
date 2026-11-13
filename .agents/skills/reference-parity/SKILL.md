@@ -18,7 +18,7 @@ implementation show the same thing, the evidence is in the repository, and the g
 ## Before touching a symbol or an animation
 
 1. **Find the reference window.** It runs through Proton and its window class is
-   `steam_proton`, not `FluidSIM`. It may be behind other windows or minimised. List windows
+   `steam_proton`, not its caption. It may be behind other windows or minimised. List windows
    with a KWin script; do not guess:
 
    ```bash
@@ -121,7 +121,7 @@ with the exact missing input. A plan alone is not progress.
 
 ## Gotchas
 
-- The reference window class is `steam_proton`; searching for "FluidSIM" finds nothing.
+- The reference window class is `steam_proton`; searching for its caption finds nothing.
 - `spectacle` captures the current screen, so raise the window first.
 - A KWin script runs once; load it under a new name when it changes.
 - The review image generator draws the rest state; do not claim a run state from it.
