@@ -1310,6 +1310,37 @@ int main(int argc, char *argv[])
             QFile::remove(state->unsavedPath);
         });
 
+        // A safety copy exists for a crash and for nothing else: saving, recovering or
+        // closing cleanly must leave none behind, or the next start offers work that is
+        // already safe — which is what it did, every time.
+        steps->push_back([state, check] {
+            // Whatever the previous steps left, an edit of its own makes the point: the copy
+            // exists for unsaved work and for nothing else.
+            if (!state->session->modified()) {
+                state->session->setDesignation(0, QStringLiteral("1V1"));
+            }
+            check(state->session->modified(), QStringLiteral("safety copy: there is unsaved work"));
+            state->session->autosave();
+            check(QFile::exists(state->session->autosavePath()),
+                  QStringLiteral("safety copy: the timer writes one"));
+            const QString path = QDir::tempPath() + QStringLiteral("/punchi-close.pfluid");
+            check(state->session->saveTo(path),
+                  QStringLiteral("safety copy: the work is saved"));
+            check(!QFile::exists(state->session->autosavePath())
+                      && !state->session->recoveryOffered(),
+                  QStringLiteral("safety copy: saving removes the copy"));
+            // One more, and a clean close: neither may leave it behind.
+            state->session->undo();
+            state->session->autosave();
+            check(QFile::exists(state->session->autosavePath()),
+                  QStringLiteral("safety copy: it comes back with unsaved work"));
+            state->session->confirmClose();
+            check(!QFile::exists(state->session->autosavePath())
+                      && !state->session->recoveryOffered(),
+                  QStringLiteral("safety copy: a clean close leaves none"));
+            QFile::remove(path);
+        });
+
         // A component can be named, the name is drawn under it and saved with the sheet,
         // and a second cylinder with the same name is what the check reports.
         steps->push_back([state, check] {

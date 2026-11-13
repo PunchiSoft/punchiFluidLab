@@ -111,6 +111,8 @@ public:
     QString title() const;
     /// `true` when a safety copy from a previous run is waiting to be recovered.
     bool recoveryOffered() const { return m_recoveryOffered; }
+    /// Where the safety copy lives: one file per user, beside the application data.
+    QString autosavePath() const;
     /// `true` once the user said the unsaved work may be lost.
     bool closeConfirmed() const { return m_closeConfirmed; }
     /// Loads the safety copy and leaves it unsaved, as the core asks.
@@ -396,8 +398,6 @@ private:
     void announceImpact(const PfTelemetry &telemetry);
     /// Republishes what the document reports, after any change to it.
     void refreshDocument();
-    /// Where the safety copy lives: one file per user, beside the application data.
-    QString autosavePath() const;
     /// Where the list of remembered documents lives, beside the safety copy.
     QString recentPath() const;
     /// Re-reads the list from the core into what the ribbon shows.

@@ -859,6 +859,11 @@ bool FluidSession::saveTo(const QString &path)
     }
     m_currentPath = local;
     m_error.clear();
+    // The copy exists for a crash, not for a saved file: once the work is in the file it
+    // has nothing left to rescue, and leaving it behind makes the next start offer to
+    // recover work that is already safe.
+    QFile::remove(autosavePath());
+    m_recoveryOffered = false;
     refreshRecent();
     refreshDocument();
     emit changed();
@@ -1143,7 +1148,9 @@ bool FluidSession::recoverAutosave()
         return false;
     }
     // The copy is the user's work from a run that ended badly; it has no path of its own,
-    // so the next save asks where it goes.
+    // so the next save asks where it goes. The copy itself is consumed: what is on the
+    // sheet is the document now, and the timer writes a new one while it is unsaved.
+    QFile::remove(autosavePath());
     m_currentPath.clear();
     m_recoveryOffered = false;
     m_selected = -1;
@@ -1190,6 +1197,11 @@ bool FluidSession::discardAndOpen(const QString &path)
 
 void FluidSession::confirmClose()
 {
+    // Closing is not a crash: whichever way the user leaves — saved or discarded — the copy
+    // must not be offered on the next start. Only a run that ends without this call leaves
+    // one, which is exactly the case it is for.
+    QFile::remove(autosavePath());
+    m_recoveryOffered = false;
     m_closeConfirmed = true;
     emit changed();
 }
