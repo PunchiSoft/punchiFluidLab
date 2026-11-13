@@ -103,6 +103,7 @@ the point. Free software is how a subject stops being an entrance fee.
 ./scripts-dev/run.sh --toggle                           # starts with the valve actuated
 ./scripts-dev/run.sh --no-build --theme dark            # already-built binary, dark palette
 ./scripts-dev/run.sh --theme light                      # pin the palette for a screenshot
+./scripts-dev/dev.sh                                   # live loop: save, rebuild, relaunch
 cargo run --bin punchi-fluid-cli -- check circuit.pfluid   # headless check of a sheet
 ```
 
