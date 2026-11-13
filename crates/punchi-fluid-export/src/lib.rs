@@ -9,6 +9,7 @@
 //! the only things this crate adds.
 
 pub mod page;
+pub mod parts;
 pub mod pdf;
 pub mod png;
 pub mod sheet;
@@ -21,6 +22,7 @@ use punchi_fluid_solver::network::Network;
 use thiserror::Error;
 
 pub use page::{Margins, Orientation, Page, PaperSize, TitleBlock};
+pub use parts::{PartRow, PartsList};
 pub use pdf::{PdfSurface, assemble};
 
 /// Why an export did not happen.

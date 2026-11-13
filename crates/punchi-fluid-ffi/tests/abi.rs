@@ -1825,6 +1825,10 @@ fn an_export_carries_the_caller_date_and_fits_a_large_circuit() {
     assert!(pdf_shows(&pdf, "2026-11-12"), "the date reaches the page");
     assert!(pdf_shows(&pdf, "1:"), "the title block records the scale");
     assert!(pdf_shows(&pdf, "Circuito 1"), "the circuit names the page");
+    assert!(
+        pdf_shows(&pdf, "lista de piezas"),
+        "the sheet carries its parts list"
+    );
 
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };

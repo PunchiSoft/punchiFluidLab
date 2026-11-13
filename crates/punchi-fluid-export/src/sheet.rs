@@ -86,6 +86,78 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     }
 
     draw_legend(surface, page);
+    draw_parts(surface, page);
+}
+
+/// The parts list, in its own column above the block.
+///
+/// A schematic without it is a drawing a technician cannot build from: the symbols say
+/// what kind of valve it is, the list says how many and with which designation. The column
+/// shares the block's width so the bottom-right corner reads as one block of information.
+fn draw_parts(surface: &mut dyn Surface, page: &Page) {
+    let rect = page.parts_rect();
+    if rect.is_empty() {
+        return;
+    }
+    let Some(parts) = &page.parts else {
+        return;
+    };
+    surface.rect(rect, 0.0, None, Some(Stroke::new(RULE, Colour::BLACK)));
+    surface.text(
+        Pt::new(rect.min.x + 2.0, rect.min.y + 3.6),
+        "lista de piezas",
+        LABEL,
+        Colour::new(90, 90, 90),
+        Anchor::Start,
+    );
+    // A rule under the heading, so the rows do not read as one paragraph with the title.
+    let rule_y = rect.min.y + 5.0;
+    surface.line(
+        &[Pt::new(rect.min.x, rule_y), Pt::new(rect.max.x, rule_y)],
+        Stroke::new(RULE * 0.6, Colour::new(90, 90, 90)),
+    );
+
+    // The quantity column is as wide as three digits; the name takes the rest, and the
+    // designations close the row, which is the order a parts list is read in.
+    let quantity_x = rect.min.x + 2.0;
+    let name_x = quantity_x + 8.0;
+    let designation_x = rect.min.x + rect.width() * 0.62;
+    let mut y = rule_y + 4.0;
+    for row in &parts.rows {
+        surface.text(
+            Pt::new(quantity_x, y),
+            &row.quantity.to_string(),
+            VALUE,
+            Colour::BLACK,
+            Anchor::Start,
+        );
+        surface.text(
+            Pt::new(name_x, y),
+            &row.name,
+            LABEL,
+            Colour::BLACK,
+            Anchor::Start,
+        );
+        if !row.designations.is_empty() {
+            surface.text(
+                Pt::new(designation_x, y),
+                &row.designations,
+                LABEL,
+                Colour::new(60, 60, 60),
+                Anchor::Start,
+            );
+        }
+        y += 4.4;
+    }
+    if parts.omitted > 0 {
+        surface.text(
+            Pt::new(name_x, y),
+            &format!("… y {} más", parts.omitted),
+            LABEL,
+            Colour::new(90, 90, 90),
+            Anchor::Start,
+        );
+    }
 }
 
 /// Legend of line classes and port numerals, above the title block.
@@ -162,6 +234,34 @@ mod tests {
         assert!(texts.contains(&"title"));
         assert!(texts.iter().any(|text| text.contains("1 supply")));
         assert!(texts.contains(&"working"));
+    }
+
+    #[test]
+    fn the_parts_list_is_drawn_with_its_counts() {
+        let mut page = Page::a4(TitleBlock::new("A circuit", "2026-11-12"));
+        page.parts = Some(crate::parts::PartsList::group(
+            &punchi_fluid_catalog::Catalog::builtin(),
+            [
+                ("cylinder.single_acting_20_100", Some("1A1")),
+                ("cylinder.single_acting_20_100", Some("1A2")),
+                ("supply.compressor", None),
+            ],
+        ));
+        let block = page.title_block.clone().unwrap_or_default();
+        let mut recording = Recording::default();
+        draw(&mut recording, &page, &block);
+        let texts: Vec<String> = recording
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                punchi_fluid_draw::Call::Text { text, .. } => Some(text.clone()),
+                _ => None,
+            })
+            .collect();
+        assert!(texts.iter().any(|text| text == "lista de piezas"));
+        assert!(texts.iter().any(|text| text == "2"), "the count of two");
+        assert!(texts.iter().any(|text| text.contains("Cilindro")));
+        assert!(texts.iter().any(|text| text.contains("1A1, 1A2")));
     }
 
     #[test]

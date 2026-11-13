@@ -9,6 +9,8 @@
 
 use punchi_fluid_draw::{Pt, Rect};
 
+use crate::parts::PartsList;
+
 /// Paper the sheet can be printed on.
 ///
 /// The ISO 216 series with the ISO 5457 frame, the two American sheets, the Chilean
@@ -244,6 +246,8 @@ pub struct Page {
     pub margins: Margins,
     /// Identification block, drawn at the bottom-right of the content area.
     pub title_block: Option<TitleBlock>,
+    /// Parts list, drawn in a column above the block. `None` prints no list.
+    pub parts: Option<PartsList>,
 }
 
 impl Page {
@@ -255,6 +259,7 @@ impl Page {
             orientation: Orientation::Portrait,
             margins: Margins::standard(),
             title_block: Some(title_block),
+            parts: None,
         }
     }
 
@@ -310,7 +315,31 @@ impl Page {
         )
     }
 
-    /// Area the drawing itself may use: the content without the title block.
+    /// Column the parts list occupies, or an empty rectangle when there is no list.
+    ///
+    /// It shares the width of the block and grows upward from it, so the printed sheet
+    /// reads block, list, drawing from the bottom right, and the drawing keeps the rest.
+    #[must_use]
+    pub fn parts_rect(&self) -> Rect {
+        let content = self.content_rect();
+        let Some(parts) = &self.parts else {
+            return Rect::default();
+        };
+        if parts.is_empty() {
+            return Rect::default();
+        }
+        let title = self.title_rect();
+        let width = title.width();
+        #[allow(clippy::cast_precision_loss)]
+        let rows = parts.rows.len() as f32 + if parts.omitted > 0 { 1.0 } else { 0.0 };
+        let height = (rows * 4.4 + 6.0).min(content.height() * 0.55);
+        Rect::from_corners(
+            Pt::new(title.min.x, title.min.y - 2.0 - height),
+            Pt::new(title.min.x + width, title.min.y - 2.0),
+        )
+    }
+
+    /// Area the drawing itself may use: the content without the title block and the list.
     #[must_use]
     pub fn drawing_rect(&self) -> Rect {
         let content = self.content_rect();
@@ -318,7 +347,13 @@ impl Page {
             return content;
         }
         let title = self.title_rect();
-        Rect::from_corners(content.min, Pt::new(content.max.x, title.min.y))
+        let parts = self.parts_rect();
+        let right = if parts.is_empty() {
+            content.max.x
+        } else {
+            parts.min.x - 2.0
+        };
+        Rect::from_corners(content.min, Pt::new(right, title.min.y))
     }
 
     /// Pixel size of a raster export at `dpi`.
@@ -337,6 +372,40 @@ impl Page {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_parts_column_takes_room_from_the_drawing() {
+        let mut page = Page::a4(TitleBlock::default());
+        let without = page.drawing_rect();
+        page.parts = Some(PartsList::group(
+            &punchi_fluid_catalog::Catalog::builtin(),
+            [
+                ("cylinder.single_acting_20_100", Some("1A1")),
+                ("supply.compressor", None),
+                ("valve.3_2.spring_return", Some("1V1")),
+            ],
+        ));
+        let with = page.drawing_rect();
+        let parts = page.parts_rect();
+        assert!(!parts.is_empty());
+        assert!(with.max.x < without.max.x, "the list kept its room");
+        assert!(
+            with.max.x <= parts.min.x,
+            "the drawing runs under the parts list"
+        );
+        let content = page.content_rect();
+        assert!(
+            parts.min.x >= content.min.x
+                && parts.max.x <= content.max.x
+                && parts.min.y >= content.min.y
+                && parts.max.y <= content.max.y,
+            "the list left the page: {parts:?} against {content:?}"
+        );
+        // A page without a list draws exactly where it always did.
+        page.parts = None;
+        assert_eq!(page.drawing_rect(), without);
+        assert!(page.parts_rect().is_empty());
+    }
 
     #[test]
     fn a4_portrait_at_300_dpi_is_2480_by_3508() {

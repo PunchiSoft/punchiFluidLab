@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La hoja impresa lleva su lista de piezas — 2026-11-12
+
+Un plano del que no se puede construir no sirve: los símbolos dicen qué tipo de válvula es,
+pero no cuántas hay, con qué designación ni con qué nombre.
+
+- **La hoja exportada incluye una lista de piezas** en una columna encima del bloque de
+  identificación: una fila por definición con su cantidad, el nombre del catálogo y las
+  designaciones del grupo en orden de colocación.
+- **La lista se agrupa por definición**: dos cilindros iguales son una fila de cantidad dos,
+  que es como se lee una lista y lo que hace visible un cambio de cantidad.
+- **La columna quita espacio al dibujo**, que ya se ajustaba a lo que queda: una lista larga
+  encoge el esquema, nunca lo tapa.
+- **Evidencia**: la prueba de agrupación, la de la hoja que dibuja cabecera, cantidad,
+  nombres y designaciones, la de la columna que recorta el área de dibujo, y la prueba ABI
+  que encuentra «lista de piezas» en el PDF exportado.
+
 ### Clases de conducto — 2026-11-12
 
 Un esquema se lee por las líneas antes que por las etiquetas: un tubo de pilotaje y uno de
