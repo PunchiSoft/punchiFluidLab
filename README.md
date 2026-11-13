@@ -22,8 +22,12 @@ cylinder. Every port carries its connection circle, and nothing is running, so t
 the neutral ink and the status bar reads `0,00 bar`. The interface is Spanish today —
 [i18n/README.md](i18n/README.md) is the plan for the other languages.*
 
-▶ **[See it run](assets/screenshots/run.mp4)** — fourteen seconds of the sheet, the valve
-actuated and the cylinder moving (MP4, silent, no audio track).
+![The sheet in motion: the valve actuated, the cylinder travelling and the hoses coloured by pressure](assets/screenshots/run.gif)
+
+*The sheet in motion: the valve actuated and the cylinder moving, with the hoses coloured by
+the pressure in them. The clip was recorded before the safety-copy prompt was fixed, so it
+still shows it; the prompt no longer appears. [Full video](assets/screenshots/run.mp4), MP4,
+silent.*
 
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model
