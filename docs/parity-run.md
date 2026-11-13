@@ -73,6 +73,27 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
+## Next entry: 6, the limit switch
+
+The run is at the first entry that crosses the mechanical domain. The design that avoids a
+document-format change:
+
+- **The binding already exists.** `Placement.source` stores a `Source { placement, quantity }`
+  and is saved with the sheet. A limit switch reuses it with `Quantity::Position`; no format
+  bump and no migration.
+- **Schema**: `Behaviour::LimitSwitch { end: LimitEnd, normally_closed: bool }`, two
+  electrical terminals like a contact, and `LimitEnd` is `extended` or `retracted`.
+- **Catalog**: two files (one per end) with a roller lever; the renderer adds the bar with
+  the other two-terminal parts.
+- **Model**: the control model caches `limits: Vec<(id, (usize, usize))>` like the timers;
+  every `advance_control` reads `Network::extension_of(part)` for the bound cylinder and
+  closes at `>= 0.98` (extended) or `<= 0.02` (retracted), then settles. The design check
+  uses the rest state, because no run has happened yet.
+- **ABI and inspector**: `pf_session_bind_limit_source` and `pf_session_limit_source`, plus a
+  cylinder combo in the inspector mirroring the recorder's source selector.
+- **Evidence**: an ABI test that binds a cylinder, presses the valve and steps until the
+  switch closes; the symbol review; the catalog lint.
+
 ## How to continue after a reset
 
 1. `git status --short` must be clean; if not, the previous capability was interrupted: read
