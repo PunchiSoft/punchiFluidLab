@@ -46,19 +46,19 @@ pub fn layout(area: Rect) -> Option<Layout> {
     if square < 8.0 {
         return None;
     }
-    // The composition a student meets on opening: the source top left, the service unit
-    // below it, the valve at the middle right and the cylinder above the valve. The air
-    // reads top to bottom on the left and rises to the cylinder on the right, which is the
-    // order the parts are met in and the order the hoses travel.
-    let supply = Rect::from_center_size(area.point_at(0.13, 0.20), square, square);
+    // The composition a student meets on opening: the source bottom left, the service unit
+    // beside it, the valve at the middle right and the cylinder top right. The air reads
+    // left to right along the bottom and rises to the actuator, which is the order the parts
+    // are met in and the order the hoses travel.
+    let supply = Rect::from_center_size(area.point_at(0.13, 0.82), square, square);
     // The service unit sits between the source and the first valve, in series and in that
     // order: what comes out of it is the line pressure the rest of the circuit is designed
     // around, so it cannot be drawn after the valve.
     // Square, like every other accessory: the symbol is drawn in a square box, so a box of
     // another shape would stretch its diamonds and its dial.
-    let preparation = Rect::from_center_size(area.point_at(0.30, 0.66), square, square);
-    let valve = Rect::from_center_size(area.point_at(0.62, 0.52), square, square);
-    let cylinder = Rect::from_center_size(area.point_at(0.76, 0.15), square * 2.2, square);
+    let preparation = Rect::from_center_size(area.point_at(0.38, 0.82), square, square);
+    let valve = Rect::from_center_size(area.point_at(0.64, 0.58), square, square);
+    let cylinder = Rect::from_center_size(area.point_at(0.76, 0.22), square * 2.2, square);
     Some(Layout {
         supply,
         preparation,
