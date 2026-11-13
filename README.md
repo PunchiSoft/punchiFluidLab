@@ -25,9 +25,8 @@ the neutral ink and the status bar reads `0,00 bar`. The interface is Spanish to
 ![The sheet in motion: the valve actuated, the cylinder travelling and the hoses coloured by pressure](assets/screenshots/run.gif)
 
 *The sheet in motion: the valve actuated and the cylinder moving, with the hoses coloured by
-the pressure in them. The clip was recorded before the safety-copy prompt was fixed, so it
-still shows it; the prompt no longer appears. [Full video](assets/screenshots/run.mp4), MP4,
-silent.*
+the pressure in them. 44 seconds at 4× playback. [Full video](assets/screenshots/run.mp4),
+MP4, silent.*
 
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model

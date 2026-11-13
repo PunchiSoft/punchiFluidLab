@@ -5,8 +5,8 @@ Images of the running application, used by the README and by pull request review
 | File | What it shows |
 |---|---|
 | `window-light.png` | The window on a light desktop, on the sheet the program opens with: compressor, service unit, 3/2 valve and cylinder, every port with its connection circle |
-| `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 537 KB), because GitHub does not play a repository video inside a page |
-| `run.mp4` | The full clip: fourteen seconds of the sheet in motion, the valve actuated, the cylinder travelling and the hoses coloured by pressure |
+| `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 924 KB), because GitHub does not play a repository video inside a page |
+| `run.mp4` | The clip at 4× playback: 44 seconds of the sheet in motion in 11, the valve actuated, the cylinder travelling and the hoses coloured by pressure |
 
 ## Origin and licence
 
@@ -33,12 +33,12 @@ The video follows what a repository can serve cheaply, as GitHub recommends for 
 downloaded, no audio track, and **under 1 MB** — it is 208 KB for fourteen seconds.
 
 ```bash
-# The full clip, the way a repository serves one cheaply.
-ffmpeg -i recording.webm -vf "fps=30,scale=1280:-2:flags=lanczos" \
+# The full clip at 4x, the way a repository serves one cheaply.
+ffmpeg -i recording.webm -vf "setpts=PTS/4,fps=30,scale=1280:-2:flags=lanczos" \
   -c:v libx264 -profile:v high -level 4.0 -crf 26 -preset slow -pix_fmt yuv420p \
   -movflags +faststart -an assets/screenshots/run.mp4
 # The inline one: a GIF, because a README shows an image and not a video.
-ffmpeg -i recording.webm -vf "fps=12,scale=720:-2:flags=lanczos,split[a][b];\
+ffmpeg -i recording.webm -vf "setpts=PTS/4,fps=12,scale=720:-2:flags=lanczos,split[a][b];\
 [a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a" assets/screenshots/run.gif
 ```
 
