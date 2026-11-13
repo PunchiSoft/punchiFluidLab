@@ -1416,6 +1416,28 @@ void FluidSession::alignSelection(int edge)
     emit changed();
 }
 
+int FluidSession::selectedPipe() const
+{
+    return m_session ? pf_session_selected_pipe(m_session) : -1;
+}
+
+void FluidSession::setPipeClass(int lineClass)
+{
+    if (!m_session || selectedPipe() < 0) {
+        return;
+    }
+    if (pf_session_set_pipe_class(m_session, static_cast<uint32_t>(selectedPipe()),
+                                  static_cast<uint32_t>(lineClass))
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message) : QStringLiteral("no se pudo cambiar la clase");
+        emit changed();
+        return;
+    }
+    refreshDocument();
+    emit changed();
+}
+
 void FluidSession::spaceSelection(int axis)
 {
     if (!m_session || axis < 0) {

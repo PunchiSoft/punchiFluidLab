@@ -340,6 +340,9 @@ int32_t pf_session_pipe_at(const PfSession *session, float x_mm, float y_mm, flo
 int32_t pf_session_select_pipe(PfSession *session, int32_t index);
 int32_t pf_session_selected_pipe(const PfSession *session);
 int32_t pf_session_remove_selected_pipe(PfSession *session);
+/* The line class of a pipe: 0 working, 1 pilot, 2 drain. One undo per change. */
+int32_t pf_session_pipe_class(const PfSession *session, uint32_t index);
+int32_t pf_session_set_pipe_class(PfSession *session, uint32_t index, uint32_t line_class);
 /* Drags the middle segment of a pipe so it passes through a point; one undo per drag. */
 int32_t pf_session_route_pipe(PfSession *session, uint32_t index, float x_mm, float y_mm);
 /* How far that segment sits from the automatic route, in millimetres. */

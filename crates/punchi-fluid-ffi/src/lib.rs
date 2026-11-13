@@ -1192,6 +1192,15 @@ impl PfSession {
                 to: connection.to.placement,
                 to_port: connection.to.port.clone(),
                 offset_tenths: connection.offset_tenths(),
+                class: match connection.class() {
+                    LineClass::Pilot => punchi_fluid_file::sheet::StoredClass::Pilot,
+                    LineClass::Drain => punchi_fluid_file::sheet::StoredClass::Drain,
+                    // The file has no electrical class yet, so a line the format cannot
+                    // name is written as working until F6 gives it one.
+                    LineClass::Working | LineClass::Electrical => {
+                        punchi_fluid_file::sheet::StoredClass::Working
+                    }
+                },
             })
             .collect();
         let circuits = self
@@ -1277,6 +1286,14 @@ impl PfSession {
             let index = document.connections().len() - 1;
             document.seed_pipe_circuit(index, pipe.circuit);
             document.seed_route(index, pipe.offset_tenths);
+            document.seed_pipe_class(
+                index,
+                match pipe.class {
+                    punchi_fluid_file::sheet::StoredClass::Working => LineClass::Working,
+                    punchi_fluid_file::sheet::StoredClass::Pilot => LineClass::Pilot,
+                    punchi_fluid_file::sheet::StoredClass::Drain => LineClass::Drain,
+                },
+            );
         }
         self.document = document;
         self.seeded = true;
@@ -4271,6 +4288,62 @@ pub unsafe extern "C" fn pf_session_space_selection(session: *mut PfSession, axi
     })
 }
 
+/// The line class of one pipe: `0` working, `1` pilot, `2` drain, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_pipe_class(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(connection) = session.document.connections().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    match connection.class() {
+        LineClass::Working => 0,
+        LineClass::Pilot => 1,
+        LineClass::Drain => 2,
+        // The electrical class arrives with F6; the ABI does not offer it yet.
+        LineClass::Electrical => PF_ERR_MODEL,
+    }
+}
+
+/// Gives one pipe another line class, as one undoable change.
+///
+/// `class` is `0` working, `1` pilot, `2` drain. The pattern is the class's, so the sheet
+/// draws a pilot or drain line as itself, and the value travels with the pipe in the file.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_pipe_class(
+    session: *mut PfSession,
+    index: u32,
+    class: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let class = match class {
+            0 => LineClass::Working,
+            1 => LineClass::Pilot,
+            2 => LineClass::Drain,
+            _ => return session.fail("that is not a line class this build knows"),
+        };
+        if !session.document.set_pipe_class(index as usize, class) {
+            return session.fail("the pipe is not there or already has that class");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
 /// Copies the whole selection in place, displaced by a delta, and selects the copies.
 ///
 /// This is the Shift+drag gesture when more than one component is marked.
@@ -4567,6 +4640,7 @@ fn scene<'a>(
                     port: connection.to.port.as_str(),
                 },
                 offset_mm: connection.offset_mm(),
+                class: connection.class(),
                 pressure_ratio: hose_pressure(
                     system,
                     placement_part.get(from_document).copied().flatten(),

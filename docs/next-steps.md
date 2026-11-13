@@ -32,6 +32,7 @@ file is the execution order.
 | Pressure gauge, turn and reflect | **implemented** — [capabilities.md](capabilities.md) F1, F3 | solver/ABI tests, `--selftest`, symbol review, sheet format v3 with a migration test |
 | Flow meter | **implemented** — [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver test against the hand calculation, the ABI reading drawn on the sheet, `--selftest`, symbol review |
 | Strip chart | **implemented** — [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md) | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
+| Pipe classes | **implemented** — format 6 | the format migration test, the ABI class test, the `--selftest` steps |
 
 The repository is initialised and the baseline is committed; `main` carries the Qt
 front end, and since 2026-11-12 nothing is committed there: every change travels on a
@@ -59,7 +60,7 @@ changed lines outside generated files, it is two phases.
 | **P2.2 — the strip chart** ✅ delivered | `feat/strip-chart` | a recorder component that charts a chosen quantity over 60 s with a bounded window, per [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md); the force meter is `not planned` until a mechanical domain exists | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
 | **P3.1 — even spacing** ✅ delivered | `feat/even-spacing` | Repartir horizontal and vertical, equal gaps between symbol boxes, one undo | doc, ABI and `--selftest` evidence |
 | **P3.2 — blind plugs and silencers** ✅ delivered | `feat/blind-plugs-and-silencers` | a plug that caps a port and a silencer that vents an exhaust through its conductance, per [ADR 0016](adr/0016-a-termination-is-a-component.md) | solver, check, catalog and `--selftest` evidence, two symbol reviews |
-| **P3.3 — pipe classes** | `feat/pipe-classes` | working, pilot and drain lines chosen per pipe | format test, `--selftest` |
+| **P3.3 — pipe classes** ✅ delivered | `feat/pipe-classes` | working, pilot and drain lines chosen per hose, in format 6 | format migration test, ABI test, `--selftest` |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
