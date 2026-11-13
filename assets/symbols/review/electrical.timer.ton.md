@@ -28,7 +28,7 @@ another program's symbol.
 | Requirement | Result | Evidence |
 |---|---|---|
 | The coil, the contact and the link are readable | pass | `electrical.timer.ton-light.png` |
-| The clock face marks the delay, not a second coil | pass | the circle on the coil |
+| The X marks the delay, as the reference draws it | pass | the X inside the coil |
 | A visible gap at rest, with the blade tilted away | pass | `electrical.timer.ton-light.png` |
 | The terminals are named in the file, not in code | pass | A1, A2, 11, 14 |
 | The class says what each line is | pass | dotted stems for the wires |

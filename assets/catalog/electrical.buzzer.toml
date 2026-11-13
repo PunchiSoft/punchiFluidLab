@@ -20,40 +20,30 @@ summary = "Sounds while its terminal is live."
 [[port]]
 id = "1"
 role = "electrical"
-position = [0.0, 0.5]
+position = [0.0, 0.41]
 
 [behaviour]
 type = "buzzer"
 
-# The stem from the terminal to the baseline.
+# The stem from the terminal to the body.
 [[symbol]]
 kind = "line"
-points = [0.0, 0.5, 0.30, 0.5]
+points = [0.0, 0.41, 0.30, 0.41]
 line_class = "electrical"
 
-# The IEC acoustic device: a semicircle on a baseline with the outward arrow that says
-# sound leaves the part. It is not a circle with decorative waves.
+# The reference's acoustic indicator: a small body with a flared horn, not a circle with
+# waves.
 [[symbol]]
-kind = "line"
-points = [0.30, 0.5, 0.70, 0.5]
+kind = "rect"
+points = [0.30, 0.33, 0.10, 0.16]
 line_class = "working"
 
 [[symbol]]
-kind = "arc"
-points = [0.5, 0.5, 0.18, 180.0, 360.0]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.5, 0.30, 0.5, 0.10]
+kind = "polygon"
+points = [0.40, 0.33, 0.62, 0.20, 0.62, 0.62, 0.40, 0.49]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.46, 0.16, 0.5, 0.10]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.5, 0.10, 0.54, 0.16]
+points = [0.62, 0.20, 0.62, 0.62]
 line_class = "working"

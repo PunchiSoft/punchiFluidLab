@@ -7,8 +7,8 @@
 
 ## Provenance
 
-Hand-written geometry in `assets/catalog/electrical.relay.latching.toml`: two coil
-rectangles, four coil terminals, one contact and two dashed links. The **blade** is drawn by
+Hand-written geometry in `assets/catalog/electrical.relay.latching.toml`: one coil
+rectangle with a filled latch square, four coil terminals, one contact and two dashed links. The **blade** is drawn by
 the renderer from the latched state (ADR 0025). No third-party asset and no trace of another
 program's symbol.
 
@@ -26,7 +26,7 @@ program's symbol.
 
 | Requirement | Result | Evidence |
 |---|---|---|
-| The two coils are distinguishable | pass | `electrical.relay.latching-light.png` |
+| The latch square marks the memory | pass | `electrical.relay.latching-light.png` |
 | One contact, linked from both windings | pass | the two dashed links |
 | A visible gap at rest | pass | the open bar between 11 and 14 |
 | The terminal names sit close at palette size | **caveat** | A2/R1 are tight; the 300 dpi pass must confirm |
