@@ -396,6 +396,12 @@ pub struct Port {
     pub role: PortRole,
     /// Position inside the symbol box, `[x, y]` in `0..=1`.
     pub position: [f64; 2],
+    /// Whether the renderer prints this port's id beside it.
+    ///
+    /// A coil label such as `Y1` is a connection mark the user sets, not a fixed numeral;
+    /// a port with this flag off still connects and routes, but prints no number.
+    #[serde(default = "default_true")]
+    pub show_numeral: bool,
 }
 
 /// Internal path that a valve position opens.

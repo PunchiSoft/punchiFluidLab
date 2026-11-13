@@ -1056,15 +1056,17 @@ pub fn draw_valve(
             surface.line(&[from, to], Stroke::new(LINE, ink.line));
         }
         draw_connection(surface, from, rect, ink);
-        draw_numeral(
-            surface,
-            rect,
-            definition,
-            Some(body),
-            &port.id,
-            port.position,
-            ink,
-        );
+        if port.show_numeral {
+            draw_numeral(
+                surface,
+                rect,
+                definition,
+                Some(body),
+                &port.id,
+                port.position,
+                ink,
+            );
+        }
     }
 
     if let Some(part) = definition.resolved_return() {
@@ -1233,15 +1235,17 @@ pub fn draw_flat(
             rect,
             ink,
         );
-        draw_numeral(
-            surface,
-            rect,
-            definition,
-            body,
-            &port.id,
-            port.position,
-            ink,
-        );
+        if port.show_numeral {
+            draw_numeral(
+                surface,
+                rect,
+                definition,
+                body,
+                &port.id,
+                port.position,
+                ink,
+            );
+        }
     }
 }
 

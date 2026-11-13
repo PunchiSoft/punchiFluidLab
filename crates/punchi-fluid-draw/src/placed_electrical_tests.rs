@@ -211,3 +211,31 @@ fn a_lamp_shows_its_state_as_rays_not_only_colour() {
         "a lit lamp draws rays, not only a different colour"
     );
 }
+
+#[test]
+fn a_coil_label_is_not_printed_as_a_fixed_port_number() {
+    // The coil mark (`Y1`) is a connection label the user sets, not a port numeral; a
+    // solenoid valve must not print it on the sheet by itself.
+    let catalog = Catalog::builtin();
+    let placed = [Placed {
+        index: 0,
+        catalog_id: "valve.3_2.solenoid",
+        rect: Rect::from_center_size(Pt::new(60.0, 40.0), 40.0, 40.0),
+        extension: 0.0,
+        valve_position: 0,
+        reading: None,
+        series: None,
+        contact_closed: None,
+        orientation: Orientation::NONE,
+        designation: None,
+    }];
+    let mut surface = Recording::default();
+    draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
+    assert!(
+        !surface
+            .calls()
+            .iter()
+            .any(|call| matches!(call, Call::Text { text, .. } if text == "Y1")),
+        "the coil label was printed as a fixed port numeral"
+    );
+}
