@@ -66,6 +66,8 @@ stop_window() {
         wait "$running" 2>/dev/null || true
     fi
     running=
+    local autosave="${XDG_DATA_HOME:-$HOME/.local/share}/PunchiSoft/Punchi Fluid Lab/autosave.pfluid"
+    rm -f "$autosave"
 }
 
 cleanup() {

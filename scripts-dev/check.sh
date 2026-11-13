@@ -87,6 +87,9 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     cmake --build apps/punchi-fluid-qt/build >/dev/null
     app=apps/punchi-fluid-qt/build/punchi-fluid
     export QT_QPA_PLATFORM=offscreen
+    ui_data_dir="$(mktemp -d)"
+    trap 'rm -f "$example" "$sheet" "$faulty"; rm -rf "$ui_data_dir"' EXIT
+    export XDG_DATA_HOME="$ui_data_dir"
     "$app" --check-qml
     "$app" --check-theme
     "$app" --check-icons
