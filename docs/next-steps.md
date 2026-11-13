@@ -67,7 +67,8 @@ changed lines outside generated files, it is two phases.
 | **P4.3 — the export panel** ✅ delivered | `feat/export-panel` | custom paper, four margins, PNG resolution and the parts-list toggle, in one options structure | ABI test with its refusals, `--selftest` |
 | **P5.1 — the electrical library** ✅ delivered | `feat/electrical-library` | a 24 V supply and a push button as files, the `electrical` port role and line class, per [ADR 0017](adr/0017-the-electrical-circuit-is-a-second-domain.md) | catalog, check, solver and drawing tests, two symbol reviews |
 | **P5.2 — the control model** ✅ delivered | `feat/control-model` | a boolean net, a contact that joins two lines and a coil that moves its valve, per [ADR 0018](adr/0018-the-control-circuit-is-a-boolean-net.md) | ADR, the ABI circuit with the button moving the valve, the `--selftest` steps and the drawing test |
-| **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
+| **P5.3 — the electrical library, second half** ✅ delivered | `feat/parity`, `feat/parity-2` | relay, TON/TOF timers, lamp, buzzer, limit switch, pressure and vacuum switches, and the manual family, per [work-queue.md](work-queue.md) | ADRs 0019–0024, ABI tests, symbol reviews |
+| **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET; the order and the remaining electrical entries are in [work-queue.md](work-queue.md) | ADR each, per-library tests |
 
 All nine check faults are covered now: designation unlocked one, the cross-circuit pipe came
 with P1.8, the mismatched connection with the electrical library, and the ninth is the rail
