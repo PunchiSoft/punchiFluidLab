@@ -13,17 +13,13 @@
 > what it means. If something is not there, it says so; if it is half done, it says which
 > half is missing.
 
-![The Punchi Fluid Lab window on a dark desktop: the ribbon, the catalog of components on the left with the electrical 24 V supply at the top of the list, and the starting circuit on the sheet — the compressor at the bottom left with its connection circle, the service unit beside it, the 3/2 valve at the middle right and the cylinder above it, with the status bar reading 0,00 bar, 0,0 mm and 0,0 mm/s](assets/screenshots/window-dark.png)
+![The Punchi Fluid Lab window on a dark desktop: the ribbon with the edit commands, the catalog of components on the left, a 3/2 valve in its rest position feeding a single-acting cylinder on the sheet, and the status bar reading 0,00 bar, 0,0 mm and 0,0 mm/s](assets/screenshots/window-dark.png)
 
 *The window as it is today: ribbon, catalog, sheet and status bar, with the desktop's own
-dark palette. The circuit is the sheet the program opens on: a compressor feeding the
-service unit, the unit feeding a 3/2 valve in its rest position and the valve feeding a
-single-acting cylinder. Every port carries its connection circle, and nothing is running, so
-the hoses keep the neutral ink and the status bar reads `0,00 bar`. The interface is Spanish
-today — [i18n/README.md](i18n/README.md) is the plan for the other languages.*
-
-▶ **[See it run](assets/screenshots/run.mp4)** — fourteen seconds of the sheet, the valve
-actuated and the cylinder moving (MP4, silent, no audio track).
+dark palette. The circuit is a 3/2 valve in its rest position feeding a single-acting
+cylinder; nothing is running, so the hoses keep the neutral ink and the status bar reads
+`0,00 bar`. The interface is Spanish today — [i18n/README.md](i18n/README.md) is the plan for
+the other languages.*
 
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model

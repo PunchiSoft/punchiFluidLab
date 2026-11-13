@@ -4,9 +4,7 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-dark.png` | The window on a dark desktop, on the sheet the program opens with: compressor, service unit, 3/2 valve and cylinder, every port with its connection circle |
-| `window-light.png` | The same window on a light desktop, taken in the same run |
-| `run.mp4` | Fourteen seconds of the same sheet in motion: the valve actuated, the cylinder travelling and the hoses coloured by pressure |
+| `window-dark.png` | The window on a dark desktop: ribbon, catalog, sheet and status bar, with a 3/2 valve in its rest position feeding a single-acting cylinder |
 
 ## Origin and licence
 
@@ -14,22 +12,6 @@ Every file here is a capture of **this** program running on the maintainer's mac
 from the window itself — never a mock-up, never a composition of another program, never a
 screenshot of a competitor. They are distributed under the same licence as the project,
 GPL-3.0-or-later.
-
-## How they are taken
-
-```bash
-# A clean profile, so no safety copy or recent list appears in the frame.
-mkdir -p /tmp/punchi-capture
-XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --grab /tmp/window-dark.png
-```
-
-The video is a screen recording of the window, transcoded to MP4 with the same content:
-
-```bash
-ffmpeg -i recording.webm -c:v libx264 -crf 30 -preset slow -pix_fmt yuv420p \
-  -movflags +faststart -an assets/screenshots/run.mp4
-```
 
 ## Rules
 
