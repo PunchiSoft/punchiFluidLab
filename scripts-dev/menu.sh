@@ -11,7 +11,7 @@
 #   ./scripts-dev/menu.sh                 # interactive menu
 #   ./scripts-dev/menu.sh --check-deps    # report tools and exit
 #   ./scripts-dev/menu.sh --build         # one action, then exit
-#   ./scripts-dev/menu.sh --run | --dev | --test | --gate | --docs
+#   ./scripts-dev/menu.sh --run | --try | --dev | --test | --gate | --docs
 set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -140,10 +140,10 @@ menu() {
     while true; do
         show_header
         cat <<'EOF'
-  1) Check dependencies
-  2) Build the window
-  3) Run the window
-  4) Live loop (save, rebuild, relaunch)
+  1) Try live: save, rebuild and reload   <- the one to keep open while editing
+  2) Check dependencies
+  3) Build the window
+  4) Run the window
   5) Tests (scripts-dev/test.sh)
   6) Full gate (scripts-dev/check.sh)
   7) Documentation check
@@ -152,12 +152,13 @@ menu() {
  10) Remove the window build
   q) Quit
 EOF
-        read -r -p "Choice: " choice
+        read -r -p "Choice [1]: " choice
+        choice=${choice:-1}
         case "$choice" in
-            1) check_deps || true; pause ;;
-            2) build_window; pause ;;
-            3) run_window ;;
-            4) run_dev ;;
+            1) run_dev ;;
+            2) check_deps || true; pause ;;
+            3) build_window; pause ;;
+            4) run_window ;;
             5) ./scripts-dev/test.sh; pause ;;
             6) ./scripts-dev/check.sh; pause ;;
             7) ./scripts-dev/check-docs.sh; pause ;;
@@ -177,7 +178,7 @@ while (($# > 0)); do
         --check-deps) action=deps ;;
         --build) action=build ;;
         --run) action=run ;;
-        --dev) action=dev ;;
+        --dev | --try) action=dev ;;
         --test) action=test ;;
         --gate) action=gate ;;
         --docs) action=docs ;;
