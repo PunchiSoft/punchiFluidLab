@@ -95,6 +95,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.relay.md"),
     ),
     (
+        "electrical.relay.latching",
+        include_str!("../../../assets/symbols/review/electrical.relay.latching.md"),
+    ),
+    (
         "electrical.contact.nc",
         include_str!("../../../assets/symbols/review/electrical.contact.nc.md"),
     ),

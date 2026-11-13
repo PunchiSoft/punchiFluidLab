@@ -49,6 +49,7 @@ that proves it.
 | 6 | Limit switch at a cylinder end (done in run 1) | #57 | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
 | 7 | Pressure and vacuum switches | `feat(catalog): read a line with a pressure switch` | `a_pressure_switch_follows_its_line_up_and_down`, the two symbol reviews |
 | 8 | Manual family: maintained, selector, mushroom, NC button | `feat(catalog): add the manual switch family` | `a_normally_closed_contact_opens_when_clicked`, the four symbol reviews |
+| 9 | Latching relay: set and reset | `feat(catalog): hold a latching relay between two pulses` | `a_latching_relay_holds_until_the_reset_coil`, the symbol review |
 
 ## Decisions taken in this run
 
@@ -85,20 +86,18 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 9, the latching relay
+## Next entry: 10, the counter relay
 
-The manual family is done; the next entry needs a second coil on the part that already has
-one.
+The latch is done; the next entry counts pulses.
 
-- **Schema**: add an optional `reset = ["A1", "A2"]` pair to `Behaviour::Relay`; a latching
-  relay has two coils and the same contact, and the plain relay keeps working with the field
-  absent.
-- **Model**: the set coil energises the contact, the reset coil de-energises it, and neither
-  coil live holds the last state. The state is a run artefact like the relay's.
-- **Catalog**: one file per coil family (`set`/`reset` terminals) with the latch mark; the
-  bar is the renderer's.
-- **Evidence**: a set pulse, release with the contact still closed, a reset pulse and the
-  contact open, plus the symbol review and the lint.
+- **Schema**: a `Behaviour::Counter { preset: u32 }` with a count coil, a reset coil and one
+  contact; the count is a run artefact bounded by the preset.
+- **Model**: a rising edge on the count coil increments (capped at the preset), the reset coil
+  clears it, and the contact closes at the preset. The edge is detected against the previous
+  step, so a held button counts once.
+- **Catalog**: one file with the counter mark; the bar is the renderer's.
+- **Evidence**: an ABI test with a button, N pulses, the contact at the preset and one pulse
+  more; the symbol review and the lint.
 
 ## How to continue after a reset
 

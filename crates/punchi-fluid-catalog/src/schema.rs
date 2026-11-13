@@ -572,6 +572,9 @@ pub enum Behaviour {
         coil: [String; 2],
         /// The two contact terminals, in the order the contact joins them.
         contact: [String; 2],
+        /// The two reset terminals of a latching relay; absent on a plain relay.
+        #[serde(default)]
+        reset: Option<[String; 2]>,
         /// `true` when the contact is closed with the coil at rest.
         #[serde(default)]
         normally_closed: bool,

@@ -101,6 +101,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/electrical.relay.toml"),
     ),
     (
+        "electrical.relay.latching.toml",
+        include_str!("../../../assets/catalog/electrical.relay.latching.toml"),
+    ),
+    (
         "electrical.timer.ton.toml",
         include_str!("../../../assets/catalog/electrical.timer.ton.toml"),
     ),

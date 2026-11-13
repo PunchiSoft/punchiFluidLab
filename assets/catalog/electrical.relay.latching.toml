@@ -1,0 +1,108 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Latching relay: two coils and one contact that remembers which one was last live.
+#
+# The set coil closes the contact and the reset coil opens it; with neither coil live the
+# contact keeps the state it had. It is the part that turns a pulse into a memory, and the
+# first relay whose state survives the gesture (ADR 0025).
+#
+# The symbol is the relay body with two coil rectangles, one for each winding, linked to the
+# same contact. The renderer draws the bar from the latched state.
+
+schema = 3
+id = "electrical.relay.latching"
+name = "Latching relay"
+name_es = "Relé enclavado"
+category = "sensor"
+summary = "Sets with one coil, resets with the other, and holds in between."
+
+[[port]]
+id = "A1"
+role = "electrical"
+position = [0.0, 0.20]
+
+[[port]]
+id = "A2"
+role = "electrical"
+position = [0.0, 0.44]
+
+[[port]]
+id = "R1"
+role = "electrical"
+position = [0.0, 0.56]
+
+[[port]]
+id = "R2"
+role = "electrical"
+position = [0.0, 0.80]
+
+[[port]]
+id = "11"
+role = "electrical"
+position = [1.0, 0.30]
+
+[[port]]
+id = "14"
+role = "electrical"
+position = [1.0, 0.70]
+
+[behaviour]
+type = "relay"
+coil = ["A1", "A2"]
+reset = ["R1", "R2"]
+contact = ["11", "14"]
+
+# The two coils.
+[[symbol]]
+kind = "rect"
+points = [0.20, 0.20, 0.14, 0.24]
+line_class = "working"
+
+[[symbol]]
+kind = "rect"
+points = [0.20, 0.56, 0.14, 0.24]
+line_class = "working"
+
+# Stems to the four coil terminals.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.20, 0.20, 0.20]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.44, 0.20, 0.44]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.56, 0.20, 0.56]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.80, 0.20, 0.80]
+line_class = "electrical"
+
+# The two dashed links to the same contact: either winding can move it.
+[[symbol]]
+kind = "line"
+points = [0.34, 0.32, 0.72, 0.30]
+line_class = "drain"
+
+[[symbol]]
+kind = "line"
+points = [0.34, 0.68, 0.72, 0.70]
+line_class = "drain"
+
+# The contact terminals and the gap the bar closes.
+[[symbol]]
+kind = "line"
+points = [0.72, 0.30, 1.0, 0.30]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.70, 1.0, 0.70]
+line_class = "electrical"

@@ -584,6 +584,9 @@ pub struct PfSession {
     /// Whether each pressure switch is closed, by placement identity. Derived from the
     /// pressure at its own port on every control pass.
     pressures: std::collections::HashMap<u64, bool>,
+    /// Whether each latching relay is set, by placement identity. The set and reset coils
+    /// change it; neither live holds it.
+    latches: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -684,6 +687,7 @@ impl PfSession {
             buzzers: std::collections::HashMap::new(),
             limits: std::collections::HashMap::new(),
             pressures: std::collections::HashMap::new(),
+            latches: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -1181,13 +1185,19 @@ impl PfSession {
         self.ensure_timers();
         self.ensure_limits();
         self.ensure_pressures();
+        self.ensure_latches();
         self.refresh_limits();
         self.refresh_pressures();
         {
             let Some(model) = self.control.as_mut() else {
                 return;
             };
-            model.settle(&self.timers, &self.limits, &self.pressures);
+            model.settle(
+                &self.timers,
+                &mut self.latches,
+                &self.limits,
+                &self.pressures,
+            );
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -1282,6 +1292,27 @@ impl PfSession {
         pressures.retain(|id, _| model.pressures.iter().any(|switch| switch.id == *id));
         for switch in &model.pressures {
             pressures.entry(switch.id).or_insert(switch.normally_closed);
+        }
+    }
+
+    /// Gives every latching relay an entry, so a step never inserts a key.
+    fn ensure_latches(&mut self) {
+        let Self {
+            control, latches, ..
+        } = self;
+        let Some(model) = control.as_ref() else {
+            return;
+        };
+        latches.retain(|id, _| {
+            model
+                .relays
+                .iter()
+                .any(|relay| relay.id == *id && relay.reset.is_some())
+        });
+        for relay in &model.relays {
+            if relay.reset.is_some() {
+                latches.entry(relay.id).or_insert(relay.normally_closed);
+            }
         }
     }
 
@@ -1435,11 +1466,13 @@ impl PfSession {
         }
         self.refresh_limits();
         self.refresh_pressures();
+        self.ensure_latches();
         let circuit = self.document.active_circuit();
         {
             let Self {
                 control,
                 timers,
+                latches,
                 limits,
                 pressures,
                 ..
@@ -1447,7 +1480,7 @@ impl PfSession {
             let Some(model) = control.as_mut() else {
                 return;
             };
-            model.settle(timers, limits, pressures);
+            model.settle(timers, latches, limits, pressures);
             for i in 0..model.relays.len() {
                 let relay = model.relays[i];
                 if !relay.kind.is_timer() {
@@ -1483,7 +1516,7 @@ impl PfSession {
                     punchi_fluid_catalog::RelayKind::Instant => {}
                 }
             }
-            model.settle(timers, limits, pressures);
+            model.settle(timers, latches, limits, pressures);
         }
         self.publish_relay_state();
         self.publish_indicators();
@@ -2513,10 +2546,19 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
         Behaviour::Relay {
             coil,
             contact,
+            reset,
             normally_closed,
             kind,
             delay_s,
-        } => describe_relay(text, coil, contact, *normally_closed, *kind, *delay_s),
+        } => describe_relay(
+            text,
+            coil,
+            contact,
+            reset.is_some(),
+            *normally_closed,
+            *kind,
+            *delay_s,
+        ),
         Behaviour::LimitSwitch {
             end,
             normally_closed,
@@ -2537,12 +2579,16 @@ fn describe_relay(
     text: &mut String,
     coil: &[String; 2],
     contact: &[String; 2],
+    latching: bool,
     normally_closed: bool,
     kind: punchi_fluid_catalog::RelayKind,
     delay_s: f64,
 ) {
     let _ = writeln!(text, "Bobina: {}–{}", coil[0], coil[1]);
     let _ = writeln!(text, "Contacto: {}–{}", contact[0], contact[1]);
+    if latching {
+        text.push_str("Relé enclavado: una bobina lo pone y otra lo quita\n");
+    }
     text.push_str(if normally_closed {
         "Contacto cerrado en reposo\n"
     } else {
@@ -5451,6 +5497,7 @@ struct RelayBinding {
     id: u64,
     coil: (usize, usize),
     contact: (usize, usize),
+    reset: Option<(usize, usize)>,
     normally_closed: bool,
     kind: punchi_fluid_catalog::RelayKind,
     delay_s: f64,
@@ -5596,6 +5643,7 @@ fn switches_of(
             punchi_fluid_catalog::Behaviour::Relay {
                 coil,
                 contact,
+                reset,
                 normally_closed,
                 kind,
                 delay_s,
@@ -5612,10 +5660,17 @@ fn switches_of(
                 ) else {
                     continue;
                 };
+                let reset = reset.as_ref().and_then(|reset| {
+                    Some((
+                        node_of(terminals, index, &reset[0])?,
+                        node_of(terminals, index, &reset[1])?,
+                    ))
+                });
                 relays.push(RelayBinding {
                     id: placement.id(),
                     coil: (a, b),
                     contact: (c, d),
+                    reset,
                     normally_closed: *normally_closed,
                     kind: *kind,
                     delay_s: *delay_s,
@@ -5891,6 +5946,7 @@ impl ControlModel {
     fn settle(
         &mut self,
         timers: &std::collections::HashMap<u64, TimerState>,
+        latches: &mut std::collections::HashMap<u64, bool>,
         limits: &std::collections::HashMap<u64, bool>,
         pressures: &std::collections::HashMap<u64, bool>,
     ) {
@@ -5903,6 +5959,11 @@ impl ControlModel {
                 } else {
                     output
                 }
+            } else if relay.reset.is_some() {
+                latches
+                    .get(&relay.id)
+                    .copied()
+                    .unwrap_or(relay.normally_closed)
             } else {
                 relay.normally_closed
             };
@@ -5928,6 +5989,27 @@ impl ControlModel {
             let mut changed = false;
             for i in 0..self.relays.len() {
                 let relay = self.relays[i];
+                if let Some((reset_a, reset_b)) = relay.reset {
+                    // A latching relay holds its state: set closes, reset opens, and
+                    // neither coil live changes nothing.
+                    let set = self.live[relay.coil.0] != self.live[relay.coil.1];
+                    let reset = self.live[reset_a] != self.live[reset_b];
+                    let latch = latches.entry(relay.id).or_insert(relay.normally_closed);
+                    if set && !reset {
+                        if !*latch {
+                            *latch = true;
+                            changed = true;
+                        }
+                    } else if reset && !set && *latch {
+                        *latch = false;
+                        changed = true;
+                    }
+                    if self.state[i] != *latch {
+                        self.state[i] = *latch;
+                        changed = true;
+                    }
+                    continue;
+                }
                 if relay.kind.is_timer() {
                     continue;
                 }

@@ -255,6 +255,7 @@ type = "contact"             # two electrical terminals; `normally_closed = true
 [behaviour]
 type = "relay"               # four electrical terminals in two named pairs
 coil = ["A1", "A2"]          # the terminals the net feeds
+reset = ["R1", "R2"]         # optional second winding: a latching relay
 contact = ["11", "14"]       # the terminals the contact joins
 normally_closed = false      # the contact at rest; a changeover is another file
 kind = "ton"                 # `instant` (default), `ton` or `tof`
@@ -314,6 +315,11 @@ from the state the run settled on. With `kind = "ton"` or `"tof"` the same file 
 the output follows the coil after `delay_s`, counted by the simulation step and never slept
 ([ADR 0020](../docs/adr/0020-timers-count-steps.md)). An `instant` relay must leave the
 delay at zero.
+
+With `reset = ["R1", "R2"]` the same behaviour is a **latching relay**
+([ADR 0025](../docs/adr/0025-a-latching-relay-holds-its-last-pulse.md)): the set coil closes
+the contact, the reset coil opens it, and with neither live it holds the last state. The file
+has six terminals in three named pairs, and the state is a run artefact.
 
 A **lamp** is the load that makes a line visible without a moving part
 ([ADR 0021](../docs/adr/0021-an-indicator-reads-the-net.md)): one electrical terminal, lit

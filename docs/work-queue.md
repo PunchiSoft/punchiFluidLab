@@ -35,7 +35,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 6 | Limit switch, driven by a cylinder at an end | done | a contact whose state follows a chosen cylinder reaching an end; the cylinder is chosen in the inspector and saved in the placement source; a test with a stroke that closes it |
 | 7 | Pressure switch and vacuum switch | done | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
 | 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | done | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
-| 9 | Latching relay: set and reset coils | ready | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
+| 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
 | 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
 | 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |

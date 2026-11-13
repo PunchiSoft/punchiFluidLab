@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### El relé enclavado: un pulso que se convierte en memoria — 2026-11-13
+
+Un arranque que sigue funcionando cuando el dedo suelta el pulsador, y un paro que se queda
+abierto: las dos cosas piden memoria. El relé enclavado es el primer relé cuyo estado
+sobrevive al gesto.
+
+- **Dos bobinas y un contacto**: `reset = ["R1", "R2"]` opcional sobre el mismo `relay`; la
+  de set cierra, la de reset abre, y con ninguna viva el contacto conserva el estado
+  ([ADR 0025](docs/adr/0025-a-latching-relay-holds-its-last-pulse.md)).
+- **Seis terminales en tres parejas**: la validación acepta cuatro o seis y rechaza una
+  pareja compartida o ausente.
+- **El enclavamiento vive en el mismo punto fijo**: cada pasada lee las bobinas, actualiza el
+  estado y vuelve a llenar las aristas; la topología cacheada mantiene el paso sin memoria
+  dinámica.
+- **El estado es del ensayo**, no del documento.
+- **Evidencia**: `a_latching_relay_holds_until_the_reset_coil` (set, suelta, mantiene, reset,
+  suelta, mantiene abierto), la revisión del símbolo y el lint.
+
 ### La familia manual: el panel de mando — 2026-11-13
 
 Un panel no es un solo pulsador: la seta debe abrir al golpearla y quedarse abierta, el
