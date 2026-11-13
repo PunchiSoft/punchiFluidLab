@@ -37,6 +37,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | done | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
 | 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
 | 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | ready | a hose shows the model's signed flow as travelling chevrons while the simulation runs, none at zero flow, reversed with the flow, frozen by reduced motion, and an ABI/drawing test at two phases |
+| 10b | **Pneumatic symbol conformance against the reference palette** (owner order, runs with 10a) | doing | every pneumatic symbol and its menu family matches the reference: source apex up, filter element and drain, spring outside the barrel, reservoir/separator/cooler/dryer/motor/rotary/multi-position present, with a review and a lint per file |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
 | 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
 | 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
@@ -79,6 +80,35 @@ the circuit in motion. This entry runs before 10.
 - **Evidence**: `a_pipe_reports_the_flow_through_it`, `the_flow_chevrons_move_with_the_phase`,
   `no_flow_draws_no_chevron`, `reduced_motion_freezes_the_chevron`, and a recorded clip in
   the pull request.
+
+### 10b — Pneumatic symbol conformance
+
+The reference palette was raised, captured and zoomed. The audit of the feed elements and
+actuators found these corrections; the sources are already fixed in `3cb5d14`.
+
+- **Source and compressor**: triangle apex **up**, connection at the top. Done; the test that
+  enforced the old orientation was corrected.
+- **Filter**: the reference filter is a diamond with the element as a **dashed line on the
+  vertical diagonal** and a **bowl/drain** below the lower vertex for the manual-drain file.
+  Our diamond has neither; add the element and the drain, and keep the plain filter without
+  the drain stem.
+- **Lubricator**: the reference puts the oil drop/arrow on the vertical diagonal; compare and
+  correct the file.
+- **Single-acting cylinder**: the reference draws the return **spring outside the barrel**;
+  ours draws it inside. Move it out in the renderer and the file, then regenerate.
+- **Missing feed elements**: reservoir (rounded tank), separator, cooler and dryer, each a
+  file with its review, added to the supply family in the reference order.
+- **Missing actuators**: pneumatic motor, rotary actuator, and the multi-position/cushion
+  cylinders the palette groups under *Cilindros de uso frecuente*.
+- **Menu distribution**: the sidebar group order mirrors the reference: Elementos de
+  alimentación, Actuadores, Cilindros de uso frecuente, Válvulas, Válvulas configurables,
+  Accionamiento mecánico/manual/electromagnético. The catalog has `category`; the sidebar
+  sorts by it, so add the missing categories or map them without inventing a fourth region.
+- **Evidence**: one review per corrected or new symbol with the reference capture named, the
+  catalog lint, the drawing tests, and the full gate.
+
+The installed `.ct` symbol files are compiled data and cannot be read as definitions; the
+running palette is the readable reference. Do not guess a symbol from a binary blob.
 
 ### 10 — Counter relay
 

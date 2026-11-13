@@ -95,7 +95,12 @@ does not animate, and that is the reference's signature. The specification and t
 are in [ui-ux.md](ui-ux.md) and [work-queue.md](work-queue.md); it needs the solver's signed
 flow per hose, not a pressure-gradient guess.
 
-## Next entry: 10, the counter relay
+## Next entries: 10a and 10b, the owner's order
+
+The owner ordered the reference's animations and **all pneumatic symbology** before the
+counter. 10a is the hose flow; 10b is the pneumatic symbol conformance pass. The sources are
+already corrected (apex up); filter, spring, missing feed elements and actuators are the next
+files. The detail is in [work-queue.md](work-queue.md).
 
 The latch is done; the next entry counts pulses.
 
