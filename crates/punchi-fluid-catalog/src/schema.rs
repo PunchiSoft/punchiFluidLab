@@ -99,6 +99,8 @@ pub enum Kinematics {
     None,
     /// Piston travelling along the horizontal axis of the symbol box.
     LinearActuator,
+    /// The movable bar of a contact, drawn open or closed by the renderer (ADR 0018).
+    Contact,
 }
 
 /// Kind of line, with its own pattern in the drawing.

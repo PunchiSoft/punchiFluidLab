@@ -339,6 +339,9 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
         m_pressedValveIndex = index;
         m_session->pressValveAt(index);
         event->accept();
+    } else if (index >= 0 && m_session->toggleContactAt(index)) {
+        // A contact is a switch: one click closes it, the next opens it (ADR 0018).
+        event->accept();
     }
 }
 

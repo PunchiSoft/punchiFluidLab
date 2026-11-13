@@ -560,6 +560,10 @@ pub struct PfSession {
     /// Samples of every bound recorder, by placement identity. A run artefact: the
     /// document stores the source, never the samples (ADR 0015).
     charts: std::collections::HashMap<u64, Chart>,
+    /// Whether each contact is closed, by placement identity. A run state, like a valve
+    /// position: the file says how the contact starts, the user clicks it, a reopened
+    /// document starts at rest (ADR 0018).
+    contacts: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -652,6 +656,7 @@ impl PfSession {
             preview_points: Vec::new(),
             preview_text: Vec::new(),
             charts: std::collections::HashMap::new(),
+            contacts: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -975,6 +980,7 @@ impl PfSession {
             }
         }
         self.ensure_charts();
+        self.apply_control();
     }
 
     /// Builds the sample ring of every bound recorder, keeping what a rebuild can keep.
@@ -1079,6 +1085,106 @@ impl PfSession {
         self.charts = charts;
     }
 
+    /// Whether the contact at `index` is closed, starting from what its file declares.
+    fn contact_closed_at(&mut self, index: usize) -> Option<bool> {
+        let placement = self.document.placements().get(index)?;
+        let id = placement.id();
+        if let Some(closed) = self.contacts.get(&id) {
+            return Some(*closed);
+        }
+        let definition = self.catalog.get(&placement.catalog_id)?;
+        let punchi_fluid_catalog::Behaviour::Contact { normally_closed } = definition.behaviour
+        else {
+            return None;
+        };
+        self.contacts.insert(id, normally_closed);
+        Some(normally_closed)
+    }
+
+    /// Closes or opens a contact, and lets the control circuit follow.
+    fn toggle_contact(&mut self, index: usize) -> i32 {
+        let Some(closed) = self.contact_closed_at(index) else {
+            return self.fail("that component is not a contact");
+        };
+        let Some(placement) = self.document.placements().get(index) else {
+            return self.fail("that component is not in the document");
+        };
+        let id = placement.id();
+        self.contacts.insert(id, !closed);
+        self.apply_control();
+        PF_OK
+    }
+
+    /// Energises the control circuit and positions the solenoid valves.
+    ///
+    /// The net is boolean: a rail marks its positive terminal live, liveness travels through
+    /// wires and closed contacts, and a solenoid valve whose terminal is live sits in its
+    /// actuated position. No voltage, no current, no short circuit (ADR 0018).
+    fn apply_control(&mut self) {
+        let circuit = self.document.active_circuit();
+        // The states are read first: reading one may write the map, which cannot happen
+        // while the document is borrowed by a loop.
+        let mut closed: Vec<usize> = Vec::new();
+        let candidates: Vec<usize> = self
+            .document
+            .placements()
+            .iter()
+            .enumerate()
+            .filter(|(_, placement)| placement.circuit == circuit)
+            .map(|(index, _)| index)
+            .collect();
+        for index in candidates {
+            if self.contact_closed_at(index).unwrap_or(false) {
+                closed.push(index);
+            }
+        }
+        let net = control_net(&self.document, &self.catalog, circuit, &closed);
+        let live = net.energised();
+        // A solenoid valve follows its coil.
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            if placement.circuit != circuit {
+                continue;
+            }
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            let punchi_fluid_catalog::Behaviour::Valve {
+                default_position, ..
+            } = &definition.behaviour
+            else {
+                continue;
+            };
+            if definition.actuator.map(|actuator| actuator.kind)
+                != Some(punchi_fluid_catalog::ActuatorKind::Solenoid)
+            {
+                continue;
+            }
+            let Some(coil) = definition
+                .port
+                .iter()
+                .find(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
+            else {
+                continue;
+            };
+            let Some(node) = net.node_of(index, &coil.id) else {
+                continue;
+            };
+            let position = if live[node] {
+                1 - *default_position
+            } else {
+                *default_position
+            };
+            // The setter names the valve; the getter names the part it belongs to.
+            let Some(valve) = self.placement_valve.get(index).copied().flatten() else {
+                continue;
+            };
+            if let Some(system) = self.system.as_mut() {
+                system.set_valve_position_at(valve, position);
+            }
+        }
+    }
+
+    /// Builds the frame the front end draws.    /// Builds the frame the front end draws.
     fn build_frame(&mut self, width_mm: f32, height_mm: f32, scale: f32) {
         self.width_mm = width_mm.max(1.0);
         self.height_mm = height_mm.max(1.0);
@@ -1101,6 +1207,7 @@ impl PfSession {
             selected,
             selected_pipe,
             charts,
+            contacts,
             ..
         } = self;
 
@@ -1112,6 +1219,7 @@ impl PfSession {
             placement_part,
             circuit,
             charts,
+            contacts,
         );
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
@@ -2946,6 +3054,7 @@ impl PfSession {
             &self.placement_part,
             circuit,
             &self.charts,
+            &self.contacts,
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
         let mut page = punchi_fluid_export::Page {
@@ -4438,6 +4547,46 @@ pub unsafe extern "C" fn pf_session_space_selection(session: *mut PfSession, axi
     })
 }
 
+/// Closes or opens the contact at one placement, as the click does.
+///
+/// The state belongs to the run: a reopened document starts with its contacts at rest
+/// (ADR 0018). The control circuit follows at once, so a solenoid valve moves with the
+/// click and not on the next frame.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_toggle_contact(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.toggle_contact(index as usize)
+    })
+}
+
+/// Whether the contact at one placement is closed: `1`, `0`, or a negative error when the
+/// component is not a contact.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_contact_closed(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        match session.contact_closed_at(index as usize) {
+            Some(closed) => i32::from(closed),
+            None => PF_ERR_MODEL,
+        }
+    })
+}
+
 /// The line class of one pipe: `0` working, `1` pilot, `2` drain, or a negative error.
 ///
 /// # Safety
@@ -4725,6 +4874,7 @@ fn scene<'a>(
     placement_part: &[Option<usize>],
     circuit: u32,
     charts: &'a std::collections::HashMap<u64, Chart>,
+    contacts: &std::collections::HashMap<u64, bool>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
@@ -4761,6 +4911,7 @@ fn scene<'a>(
                 )
             }),
             series: chart_series(placement.id(), charts),
+            contact_closed: contact_closed(placement, contacts),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
         });
@@ -4823,6 +4974,142 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
         }),
         _ => None,
     }
+}
+
+/// The electrical terminals of one circuit and the edges between them.
+///
+/// The net is what makes the control circuit a model instead of a drawing: terminals are
+/// nodes, a wire and a closed contact are edges, and a rail marks its positive terminal as a
+/// source (ADR 0018).
+struct ControlNet {
+    /// Terminal of each node: the placement index and the port id.
+    nodes: Vec<(usize, String)>,
+    /// Neighbours of each node.
+    adjacency: Vec<Vec<usize>>,
+    /// Nodes a rail energises.
+    seeds: Vec<usize>,
+}
+
+impl ControlNet {
+    fn node_of(&self, index: usize, port: &str) -> Option<usize> {
+        self.nodes
+            .iter()
+            .position(|(candidate, id)| *candidate == index && id == port)
+    }
+
+    /// Which nodes are live: the seeds, then everything they reach.
+    fn energised(&self) -> Vec<bool> {
+        let mut live = vec![false; self.nodes.len()];
+        let mut queue = self.seeds.clone();
+        for seed in &self.seeds {
+            live[*seed] = true;
+        }
+        while let Some(node) = queue.pop() {
+            for next in &self.adjacency[node] {
+                if !live[*next] {
+                    live[*next] = true;
+                    queue.push(*next);
+                }
+            }
+        }
+        live
+    }
+}
+
+/// Builds the net of one circuit, with the contacts that are closed.
+fn control_net(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    closed_contacts: &[usize],
+) -> ControlNet {
+    let mut nodes: Vec<(usize, String)> = Vec::new();
+    let mut seeds: Vec<usize> = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        for port in &definition.port {
+            if port.role != punchi_fluid_catalog::PortRole::Electrical {
+                continue;
+            }
+            let node = nodes.len();
+            nodes.push((index, port.id.clone()));
+            if matches!(
+                definition.behaviour,
+                punchi_fluid_catalog::Behaviour::ElectricalSupply { .. }
+            ) && port.id == "L"
+            {
+                seeds.push(node);
+            }
+        }
+    }
+    let count = nodes.len();
+    let mut net = ControlNet {
+        nodes,
+        adjacency: vec![Vec::new(); count],
+        seeds,
+    };
+    let node_of = |index: usize, port: &str| {
+        net.nodes
+            .iter()
+            .position(|(candidate, id)| *candidate == index && id == port)
+    };
+    // Wires join the terminals they connect.
+    for connection in document.connections() {
+        if connection.circuit != circuit {
+            continue;
+        }
+        let (Some(from), Some(to)) = (
+            document.index_of(connection.from.placement),
+            document.index_of(connection.to.placement),
+        ) else {
+            continue;
+        };
+        if let (Some(a), Some(b)) = (
+            node_of(from, &connection.from.port),
+            node_of(to, &connection.to.port),
+        ) {
+            net.adjacency[a].push(b);
+            net.adjacency[b].push(a);
+        }
+    }
+    // A closed contact joins its own two terminals.
+    for index in closed_contacts {
+        let Some(placement) = document.placements().get(*index) else {
+            continue;
+        };
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        let terminals: Vec<&str> = definition
+            .port
+            .iter()
+            .filter(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
+            .map(|port| port.id.as_str())
+            .collect();
+        if let [first, second] = terminals[..]
+            && let (Some(a), Some(b)) = (node_of(*index, first), node_of(*index, second))
+        {
+            net.adjacency[a].push(b);
+            net.adjacency[b].push(a);
+        }
+    }
+    net
+}
+
+/// Whether a contact on the sheet is closed, when the definition is one.
+///
+/// A state nobody has clicked yet starts at what the file declares, so the sheet opens with
+/// the contact in its rest position and the drawing needs no default of its own.
+fn contact_closed(
+    placement: &punchi_fluid_doc::Placement,
+    contacts: &std::collections::HashMap<u64, bool>,
+) -> Option<bool> {
+    contacts.get(&placement.id()).copied()
 }
 
 /// What a bound recorder charts, as its newest sample and its unit.

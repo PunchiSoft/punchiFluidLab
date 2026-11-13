@@ -274,6 +274,13 @@ int32_t pf_session_redo(PfSession *session);
 int32_t pf_session_can_undo(const PfSession *session);
 int32_t pf_session_can_redo(const PfSession *session);
 
+/* ---- electrical control ---- */
+
+/* Closes or opens the contact at one placement; the coil follows at once. */
+int32_t pf_session_toggle_contact(PfSession *session, uint32_t index);
+/* 1 closed, 0 open, or a negative error when the component is not a contact. */
+int32_t pf_session_contact_closed(PfSession *session, uint32_t index);
+
 /* ---- recorders ---- */
 
 /* One quantity a recorder can chart, and the placement it belongs to. */

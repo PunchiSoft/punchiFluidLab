@@ -29,6 +29,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0015](0015-a-recorder-samples-a-named-quantity.md) | A recorder is a component that samples a named quantity | accepted | 2026-11-12 |
 | [0016](0016-a-termination-is-a-component.md) | A termination is a component: a plug closes, a silencer vents | accepted | 2026-11-12 |
 | [0017](0017-the-electrical-circuit-is-a-second-domain.md) | The electrical control circuit is a second domain | accepted | 2026-11-13 |
+| [0018](0018-the-control-circuit-is-a-boolean-net.md) | The control circuit is a boolean net, not a voltage | accepted | 2026-11-13 |
 
 ## When a decision needs an ADR
 

@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### El pulsador mueve la válvula — 2026-11-13
+
+Con la biblioteca eléctrica sola, el pulsador era un dibujo: se cableaba el raíl al pulsador
+y el pulsador a la bobina, y no pasaba nada. Ahora el circuito de mando funciona.
+
+- **La red de control es booleana** ([ADR 0018](docs/adr/0018-the-control-circuit-is-a-boolean-net.md)):
+  la fuente marca vivo su positivo, la línea se propaga por cables y **contactos cerrados**, y
+  una **válvula de solenoide** queda accionada mientras su bobina está viva. Sin tensión, sin
+  corriente y sin cortocircuito: un modelo que el estudiante puede comprobar a mano.
+- **El contacto se pulsa con un clic** y la válvula se mueve en el acto; el estado es del
+  ensayo, no del documento, así que un circuito reabierto empieza con el pulsador en reposo.
+- **La barra del contacto la dibuja el renderizador**: arriba cuando está abierto, sobre los
+  terminales cuando está cerrado, con la misma regla que mueve un pistón.
+- **Válvula 3/2 de solenoide** como archivo nuevo: el mismo cuerpo 3/2, las espiras al lado
+  opuesto al muelle y el terminal de bobina donde llega el circuito de mando.
+- **Evidencia**: `a_contact_energises_the_solenoid_it_is_wired_to` (raíl, pulsador y bobina,
+  con la válvula siguiendo en ambos sentidos), la prueba del dibujo abierto/cerrado, nueve
+  pasos `--selftest` `control: …` y la revisión del símbolo.
+
 ### La biblioteca eléctrica empieza — 2026-11-13
 
 Un esquema neumático es medio mecanismo: la válvula la mueve un solenoide y el solenoide un
