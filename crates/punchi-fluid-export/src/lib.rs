@@ -13,6 +13,7 @@ pub mod parts;
 pub mod pdf;
 pub mod png;
 pub mod sheet;
+pub mod svg;
 
 use std::path::Path;
 
@@ -24,6 +25,7 @@ use thiserror::Error;
 pub use page::{Margins, Orientation, Page, PaperSize, TitleBlock};
 pub use parts::{PartRow, PartsList};
 pub use pdf::{PdfSurface, assemble};
+pub use svg::SvgSurface;
 
 /// Why an export did not happen.
 #[derive(Debug, Error)]
@@ -115,6 +117,34 @@ pub fn render_pdf_with(
     sheet::draw(&mut surface, page, block);
     draw(&mut surface, inner);
     Ok(assemble(&surface))
+}
+
+/// The same page, as an SVG document.
+///
+/// Vector like the PDF, and text a program can read: the same calls produce the same file,
+/// with no identifier and no date beyond the one the title block carries.
+///
+/// # Errors
+///
+/// Returns [`ExportError::PageTooLarge`] when the sheet exceeds the writer's limit and
+/// [`ExportError::EmptyContent`] when the margins leave no room.
+pub fn render_svg_with(
+    page: &Page,
+    block: &TitleBlock,
+    draw: impl FnOnce(&mut dyn Surface, Rect),
+) -> Result<String, ExportError> {
+    let (width_mm, height_mm) = page.size_mm();
+    if width_mm * height_mm > pdf::MAX_PAGE_MM2 {
+        return Err(ExportError::PageTooLarge {
+            width_mm,
+            height_mm,
+        });
+    }
+    let inner = drawing_area(page, block)?;
+    let mut surface = svg::SvgSurface::new(page.rect());
+    sheet::draw(&mut surface, page, block);
+    draw(&mut surface, inner);
+    Ok(svg::assemble(&surface))
 }
 
 /// The same page, as a raster at `dpi`.

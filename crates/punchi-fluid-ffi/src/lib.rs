@@ -2726,6 +2726,9 @@ pub const PF_EXPORT_PNG: u32 = 0;
 /// A PDF page.
 pub const PF_EXPORT_PDF: u32 = 1;
 
+/// The page as an SVG document, in millimetres.
+pub const PF_EXPORT_SVG: u32 = 2;
+
 /// How many papers the export offers, so a front end can build its list from here.
 #[unsafe(no_mangle)]
 pub const extern "C" fn pf_export_paper_count() -> u32 {
@@ -2874,6 +2877,8 @@ pub unsafe extern "C" fn pf_session_export(
         let written = match kind {
             PF_EXPORT_PDF => punchi_fluid_export::render_pdf_with(&page, &block, draw)
                 .and_then(|bytes| write_atomically(path, "pdf", &bytes)),
+            PF_EXPORT_SVG => punchi_fluid_export::render_svg_with(&page, &block, draw)
+                .and_then(|text| write_atomically(path, "svg", text.as_bytes())),
             _ => punchi_fluid_export::render_png_with(&page, &block, dpi.max(72.0), draw)
                 .and_then(|bytes| write_atomically(path, "png", &bytes)),
         };

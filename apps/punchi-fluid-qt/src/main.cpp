@@ -270,9 +270,11 @@ int main(int argc, char *argv[])
                     return 2;
                 }
             }
-            const bool pdf = exportPath.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive);
+            const int kind = exportPath.endsWith(QLatin1String(".svg"), Qt::CaseInsensitive)
+                ? 2
+                : (exportPath.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive) ? 1 : 0);
             const qreal dpi = dpiArg.isEmpty() ? 300.0 : dpiArg.toDouble();
-            exported = session->exportTo(exportPath, pdf, paper,
+            exported = session->exportTo(exportPath, kind, paper,
                                          arguments.contains(QStringLiteral("--landscape")), dpi)
                 && exported;
         }
@@ -1552,6 +1554,24 @@ int main(int argc, char *argv[])
                 restored = restored && componentRect(index) == before[index];
             }
             check(restored, QStringLiteral("spacing: one undo puts them back"));
+        });
+
+        // The sheet leaves as a vector page too: the same drawing, readable as text and
+        // measured in millimetres.
+        steps->push_back([state, check] {
+            const QString path = QDir::tempPath() + QStringLiteral("/punchi-vector.svg");
+            check(state->session->exportTo(path, 2, state->session->defaultPaper(), false, 300.0),
+                  QStringLiteral("export: the sheet leaves as SVG"));
+            QFile file(path);
+            const bool opened = file.open(QIODevice::ReadOnly);
+            const QString svg = opened ? QString::fromUtf8(file.readAll()) : QString();
+            check(svg.startsWith(QStringLiteral("<?xml")) && svg.contains(QStringLiteral("<svg")),
+                  QStringLiteral("export: it is an SVG document"));
+            check(svg.contains(QStringLiteral("viewBox=\"0 0 210.0 297.0\"")),
+                  QStringLiteral("export: with the paper in millimetres"));
+            check(svg.contains(QStringLiteral("lista de piezas")),
+                  QStringLiteral("export: and the parts list as text"));
+            QFile::remove(path);
         });
 
         // A pipe's class is a property of the pipe: the selected hose tilts its dashes, the

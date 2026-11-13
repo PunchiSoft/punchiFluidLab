@@ -48,6 +48,11 @@ The page carries the frame, the title block, a legend of line classes and port n
 — while any symbol review is open — the note `symbols not yet verified against ISO 1219-1`.
 Two exports of the same circuit produce the same bytes.
 
+**Archivo ▸ Exportar** offers three files: PDF for printing, PNG for a slide and **SVG** for
+a drawing that stays vector. The SVG is the same page — frame, block, parts list and circuit
+— measured in millimetres, its text readable and its lines editable, and two exports of the
+same sheet are byte for byte the same file.
+
 The sheet also carries a **parts list** in a column above the title block: one row per
 definition with how many of it, its catalog name and the designations of the group. The
 column takes its width from the drawing, so a long list shrinks the diagram instead of

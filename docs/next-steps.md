@@ -33,6 +33,7 @@ file is the execution order.
 | Flow meter | **implemented** — [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver test against the hand calculation, the ABI reading drawn on the sheet, `--selftest`, symbol review |
 | Strip chart | **implemented** — [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md) | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
 | Pipe classes | **implemented** — format 6 | the format migration test, the ABI class test, the `--selftest` steps |
+| SVG export | **implemented** | the vector fixture, the PDF/SVG parity test, the ABI test |
 
 The repository is initialised and the baseline is committed; `main` carries the Qt
 front end, and since 2026-11-12 nothing is committed there: every change travels on a
@@ -62,7 +63,8 @@ changed lines outside generated files, it is two phases.
 | **P3.2 — blind plugs and silencers** ✅ delivered | `feat/blind-plugs-and-silencers` | a plug that caps a port and a silencer that vents an exhaust through its conductance, per [ADR 0016](adr/0016-a-termination-is-a-component.md) | solver, check, catalog and `--selftest` evidence, two symbol reviews |
 | **P3.3 — pipe classes** ✅ delivered | `feat/pipe-classes` | working, pilot and drain lines chosen per hose, in format 6 | format migration test, ABI test, `--selftest` |
 | **P4.1 — the parts list** ✅ delivered | `feat/parts-list` | a parts list on the printed page, grouped by definition, with quantities and designations | export tests, the ABI export test and a rendered A4 |
-| **P4.2 — SVG and the export panel** | `feat/svg-and-export-panel` | the drawing as SVG, then margins, custom size and PNG resolution | vector fixture, panel tests |
+| **P4.2 — SVG** ✅ delivered | `feat/svg-export` | the sheet as a vector document beside PDF and PNG, in millimetres and as text | a vector fixture, the PDF/SVG text parity test, the ABI test, `--selftest` |
+| **P4.3 — the export panel** | `feat/export-panel` | margins, custom paper size, PNG resolution and a parts-list toggle | panel tests, `--selftest` |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 
