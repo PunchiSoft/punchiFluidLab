@@ -13,13 +13,18 @@
 > exactamente eso, todavía no está. Si algo no existe, se dice; si está a medias, se dice
 > qué parte falta.
 
-![La ventana de Punchi Fluid Lab en un escritorio oscuro: la cinta con los comandos de edición, el catálogo de componentes a la izquierda, una válvula 3/2 en reposo alimentando un cilindro de simple efecto sobre la hoja, y la barra de estado con 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-dark.png)
+![La ventana de Punchi Fluid Lab en un escritorio oscuro: la cinta, el catálogo de componentes a la izquierda con la fuente eléctrica de 24 V al principio de la lista, y el circuito de arranque sobre la hoja — el compresor abajo a la izquierda con su círculo de conexión, la unidad de mantenimiento a su lado, la válvula 3/2 al centro-derecha y el cilindro encima, con la barra de estado marcando 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-dark.png)
 
 *La ventana tal como está hoy: cinta, catálogo, hoja y barra de estado, con la paleta oscura
-del escritorio. El circuito es una válvula 3/2 en reposo alimentando un cilindro de simple
-efecto; no hay nada en marcha, así que los tubos conservan la tinta neutra y la barra de
-estado marca `0,00 bar`. La interfaz está en español — [i18n/README.md](i18n/README.md) es el
-plan para los demás idiomas.*
+del escritorio. El circuito es la hoja con la que abre el programa: un compresor alimenta la
+unidad de mantenimiento, la unidad alimenta una válvula 3/2 en reposo y la válvula alimenta un
+cilindro de simple efecto. Cada puerto lleva su círculo de conexión, y no hay nada en marcha,
+así que los tubos conservan la tinta neutra y la barra de estado marca `0,00 bar`. La
+interfaz está en español — [i18n/README.md](i18n/README.md) es el plan para los demás
+idiomas.*
+
+▶ **[Verlo funcionar](assets/screenshots/run.mp4)** — catorce segundos de la hoja, la válvula
+accionada y el cilindro moviéndose (MP4, sin sonido).
 
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
 licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
