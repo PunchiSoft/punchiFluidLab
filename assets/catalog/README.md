@@ -278,6 +278,14 @@ end = "extended"             # `extended` or `retracted`
 normally_closed = false      # closed while the roller is free
 ```
 
+```toml
+[behaviour]
+type = "pressure_switch"     # two electrical terminals and one working port
+threshold_bar = 3.0          # gauge bar; a vacuum switch uses a negative value
+above = true                 # `false` closes below the threshold
+normally_closed = false      # closed at rest
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -318,6 +326,12 @@ terminals, an `end` and the usual `normally_closed`. The cylinder is chosen in t
 and stored as the placement source with the `position` quantity, so the file never hardcodes
 an identity; the contact closes at 98 % of the stroke, and the design check reads its rest
 state because no run has happened yet.
+
+A **pressure switch** reads its own working port
+([ADR 0024](../docs/adr/0024-a-pressure-switch-reads-its-own-port.md)): the threshold is in
+gauge bar, `above = true` closes at or over it, and `above = false` closes below it, which is
+a vacuum switch with a negative threshold. No source is needed — the port is the line — and
+the design check reads the rest state.
 
 ```toml
 [behaviour]

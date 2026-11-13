@@ -29,6 +29,9 @@ pub(crate) fn moving_bar(
         punchi_fluid_catalog::Behaviour::Contact { normally_closed }
         | punchi_fluid_catalog::Behaviour::LimitSwitch {
             normally_closed, ..
+        }
+        | punchi_fluid_catalog::Behaviour::PressureSwitch {
+            normally_closed, ..
         } => {
             let closed = placed.contact_closed.unwrap_or(*normally_closed);
             let inner = placed.box_rect();

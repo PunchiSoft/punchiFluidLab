@@ -550,6 +550,19 @@ pub enum Behaviour {
         #[serde(default)]
         normally_closed: bool,
     },
+    /// A pressure or vacuum switch: a contact that follows the pressure at its own port
+    /// (ADR 0024).
+    PressureSwitch {
+        /// Pressure that closes the contact, gauge bar.
+        threshold_bar: f64,
+        /// `true` when the contact closes above the threshold; `false` below it, which is
+        /// what a vacuum switch does.
+        #[serde(default = "default_true")]
+        above: bool,
+        /// `true` when the contact is closed at rest.
+        #[serde(default)]
+        normally_closed: bool,
+    },
     /// A relay: a coil whose state closes its own contact (ADR 0019).
     ///
     /// The file names the two pairs, because a relay has four electrical terminals and the
@@ -581,6 +594,11 @@ pub enum Behaviour {
     Junction,
 }
 
+/// Default of a switch that closes above its threshold.
+const fn default_true() -> bool {
+    true
+}
+
 /// Default window of a strip chart, seconds.
 const fn default_span_s() -> f64 {
     60.0
@@ -608,6 +626,7 @@ impl Behaviour {
             Self::ElectricalSupply { .. } => "electrical_supply",
             Self::Contact { .. } => "contact",
             Self::LimitSwitch { .. } => "limit_switch",
+            Self::PressureSwitch { .. } => "pressure_switch",
             Self::Relay { .. } => "relay",
             Self::Lamp => "lamp",
             Self::Buzzer => "buzzer",

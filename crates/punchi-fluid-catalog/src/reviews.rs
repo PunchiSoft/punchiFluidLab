@@ -119,6 +119,14 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.limit_switch.retracted.md"),
     ),
     (
+        "electrical.pressure_switch",
+        include_str!("../../../assets/symbols/review/electrical.pressure_switch.md"),
+    ),
+    (
+        "electrical.vacuum_switch",
+        include_str!("../../../assets/symbols/review/electrical.vacuum_switch.md"),
+    ),
+    (
         "valve.3_2.solenoid",
         include_str!("../../../assets/symbols/review/valve.3_2.solenoid.md"),
     ),

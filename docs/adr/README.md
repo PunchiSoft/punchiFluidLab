@@ -35,6 +35,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0021](0021-an-indicator-reads-the-net.md) | An indicator reads the net, it does not drive it | accepted | 2026-11-13 |
 | [0022](0022-an-audible-indicator-owns-its-sound.md) | An audible indicator owns its sound path | accepted | 2026-11-13 |
 | [0023](0023-a-limit-switch-follows-a-cylinder-end.md) | A limit switch follows a cylinder end | accepted | 2026-11-13 |
+| [0024](0024-a-pressure-switch-reads-its-own-port.md) | A pressure switch reads its own port | accepted | 2026-11-13 |
 
 ## When a decision needs an ADR
 

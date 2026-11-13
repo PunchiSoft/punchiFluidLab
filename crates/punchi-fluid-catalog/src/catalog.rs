@@ -268,6 +268,9 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             ..
         } => check_relay(definition, path, coil, contact, *kind, *delay_s),
         Behaviour::Lamp | Behaviour::Buzzer => check_indicator(definition, path),
+        Behaviour::PressureSwitch { threshold_bar, .. } => {
+            check_pressure_switch(definition, path, *threshold_bar)
+        }
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -488,6 +491,37 @@ fn check_indicator(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         return Err(invalid(
             path,
             "an indicator needs exactly one electrical terminal",
+        ));
+    }
+    Ok(())
+}
+
+/// A pressure switch reads one line and switches two terminals.
+fn check_pressure_switch(
+    definition: &ComponentDefinition,
+    path: &Path,
+    threshold_bar: f64,
+) -> Result<(), CatalogError> {
+    let electrical = definition
+        .port
+        .iter()
+        .filter(|port| port.role == PortRole::Electrical)
+        .count();
+    let working = definition
+        .port
+        .iter()
+        .filter(|port| port.role == PortRole::Working)
+        .count();
+    if electrical != 2 || working != 1 || definition.port.len() != 3 {
+        return Err(invalid(
+            path,
+            "a pressure switch needs two electrical terminals and one working port",
+        ));
+    }
+    if !threshold_bar.is_finite() || !(-1.0..=100.0).contains(&threshold_bar) {
+        return Err(invalid(
+            path,
+            "a pressure switch threshold must be between -1 and 100 bar",
         ));
     }
     Ok(())

@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Presostato y vacuostato: la línea también decide — 2026-11-13
+
+Una secuencia no solo mira dónde está el vástago: mira si el depósito se ha cargado, si la
+pinza ha agarrado, si la ventosa ha hecho vacío. El presostato es el contacto que responde
+desde la línea en la que está enroscado.
+
+- **Dos terminales y un puerto de trabajo**: `threshold_bar` en bar de presión relativa,
+  `above = true` cierra al llegar al umbral y `above = false` cierra por debajo, que es el
+  vacuostato con un umbral negativo ([ADR 0024](docs/adr/0024-a-pressure-switch-reads-its-own-port.md)).
+- **Sin binding**: lee su propio puerto con `Network::port_pressure`; no hay fuente que
+  elegir ni identidad que guardar, porque el puerto es la línea.
+- **El estado es del ensayo**: la comprobación de diseño lee el reposo; cada `advance` lee la
+  presión y vuelve a asentar la red.
+- **La barra la dibuja el renderizador**; el círculo sensor, el vástago y el enlace a trazos
+  están en el archivo.
+- **Evidencia**: `a_pressure_switch_follows_its_line_up_and_down` (sube con la válvula
+  accionada y baja al descargar), las dos revisiones de símbolo y el lint.
+
 ### El final de carrera: la secuencia sabe dónde está el vástago — 2026-11-13
 
 Una secuencia no solo necesita manos, bobinas y tiempo: necesita saber dónde está la máquina.

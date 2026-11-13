@@ -47,7 +47,7 @@ that proves it.
 | # | Capability | Commit | Evidence |
 |---|---|---|---|
 | 6 | Limit switch at a cylinder end (done in run 1) | #57 | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
-| 7 | Pressure and vacuum switches | _(next)_ | a rising and a falling line |
+| 7 | Pressure and vacuum switches | `feat(catalog): read a line with a pressure switch` | `a_pressure_switch_follows_its_line_up_and_down`, the two symbol reviews |
 
 ## Decisions taken in this run
 
@@ -84,22 +84,21 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 7, the pressure and vacuum switches
+## Next entry: 8, the manual switches
 
-The limit switch is done; the next entry reads the other side of the model.
+The pressure switch is done; the next entry is catalog work on the contact the run already
+has.
 
-- **Schema**: `Behaviour::PressureSwitch { threshold_bar, vacuum, normally_closed }`, one
-  pneumatic port (working) and two electrical terminals. A vacuum switch is the same part
-  with `vacuum = true` and a threshold below atmosphere.
-- **No binding needed**: the switch reads the pressure at its own port, so the model asks the
-  network for that part instead of following another placement.
-- **Model**: cached `pressure_switches` like the limit switches; `advance_control` reads the
-  port pressure from the network, compares it with the threshold and settles the contact.
-  The design check reads the rest state.
-- **Catalog**: two files (pressure and vacuum) with a gauge body and a contact; the renderer
-  adds the bar.
-- **Evidence**: an ABI test that charges a line past the threshold and steps until the switch
-  closes, plus the falling side; the symbol reviews; the catalog lint.
+- **Files, not code**: a maintained switch, a selector, a mushroom with a latching
+  normally-closed contact, and a normally-closed push button. All reuse `Behaviour::Contact`
+  with `normally_closed`; the difference is the symbol and the name.
+- **Maintained means the click keeps the state**, which is what the existing
+  `pf_session_toggle_contact` already does. A true momentary press/release is a separate
+  gesture and does not belong in this slice.
+- **Catalog**: one file per part, with hand-drawn geometry and a review each; the NC contact
+  proves the `normally_closed` field through the lint and the check.
+- **Evidence**: the catalog lint for every file, a review per file, and an ABI test that a
+  normally-closed contact lights its lamp at rest and opens on click.
 
 ## How to continue after a reset
 

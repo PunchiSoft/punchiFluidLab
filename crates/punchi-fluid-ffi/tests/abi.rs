@@ -3002,3 +3002,70 @@ fn a_limit_switch_closes_at_the_end_of_its_cylinder() {
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
+
+#[test]
+fn a_pressure_switch_follows_its_line_up_and_down() {
+    let session = session();
+    // The seeded valve's working line 2 feeds the cylinder; the switch reads the same line,
+    // so it sees the pressure the student would measure there.
+    let rail = catalog_index(session, "electrical.supply");
+    let switch = catalog_index(session, "electrical.pressure_switch");
+    let lamp = catalog_index(session, "electrical.lamp");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let switch = unsafe { pf_session_place_component(session, switch, 70.0, 80.0) };
+    let lamp = unsafe { pf_session_place_component(session, lamp, 120.0, 80.0) };
+    assert!(rail >= 0 && switch >= 0 && lamp >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let switch = u32::try_from(switch).unwrap_or_default();
+    let lamp = u32::try_from(lamp).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let three = CString::new("3").unwrap_or_default();
+    let four = CString::new("4").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, 1, two.as_ptr(), switch, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), switch, three.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, switch, four.as_ptr(), lamp, one.as_ptr()) },
+        PF_OK
+    );
+
+    // At rest the line is at atmosphere, below the three-bar threshold.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 0);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_press_component_valve(session, 1) },
+        PF_OK
+    );
+    for _ in 0..500 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 1);
+
+    // Exhausted, the line falls below the threshold and the contact opens again.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_release_component_valve(session, 1) },
+        PF_OK
+    );
+    for _ in 0..500 {
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 0);
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
