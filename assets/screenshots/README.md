@@ -4,8 +4,7 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-dark.png` | The window on a dark desktop, on the sheet the program opens with: compressor, service unit, 3/2 valve and cylinder, every port with its connection circle |
-| `window-light.png` | The same window on a light desktop, taken in the same run |
+| `window-light.png` | The window on a light desktop, on the sheet the program opens with: compressor, service unit, 3/2 valve and cylinder, every port with its connection circle |
 | `run.mp4` | Fourteen seconds of the same sheet in motion: the valve actuated, the cylinder travelling and the hoses coloured by pressure |
 
 ## Origin and licence
@@ -21,13 +20,20 @@ GPL-3.0-or-later.
 # A clean profile, so no safety copy or recent list appears in the frame.
 mkdir -p /tmp/punchi-capture
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --grab /tmp/window-dark.png
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --grab /tmp/window-light.png
 ```
 
-The video is a screen recording of the window, transcoded to MP4 with the same content:
+The capture in this folder is the maintainer's own screenshot of the window, with its
+decorations, on a light desktop; a headless grab has no frame and is not a substitute for it
+in the README.
+
+The video follows what a repository can serve cheaply, as GitHub recommends for clips:
+**MP4/H.264**, **30 frames per second**, `yuv420p`, `faststart` so it starts before it is fully
+downloaded, no audio track, and **under 1 MB** — it is 208 KB for fourteen seconds.
 
 ```bash
-ffmpeg -i recording.webm -c:v libx264 -crf 30 -preset slow -pix_fmt yuv420p \
+ffmpeg -i recording.webm -vf "fps=30,scale=1280:-2:flags=lanczos" \
+  -c:v libx264 -profile:v high -level 4.0 -crf 26 -preset slow -pix_fmt yuv420p \
   -movflags +faststart -an assets/screenshots/run.mp4
 ```
 

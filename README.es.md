@@ -13,9 +13,9 @@
 > exactamente eso, todavía no está. Si algo no existe, se dice; si está a medias, se dice
 > qué parte falta.
 
-![La ventana de Punchi Fluid Lab en un escritorio oscuro: la cinta, el catálogo de componentes a la izquierda con la fuente eléctrica de 24 V al principio de la lista, y el circuito de arranque sobre la hoja — el compresor abajo a la izquierda con su círculo de conexión, la unidad de mantenimiento a su lado, la válvula 3/2 al centro-derecha y el cilindro encima, con la barra de estado marcando 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-dark.png)
+![La ventana de Punchi Fluid Lab en un escritorio claro: la cinta, el catálogo de componentes a la izquierda y el circuito de arranque sobre la hoja — el compresor abajo a la izquierda con su círculo de conexión, la unidad de mantenimiento a su lado, la válvula 3/2 al centro-derecha y el cilindro encima, con la barra de estado marcando 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-light.png)
 
-*La ventana tal como está hoy: cinta, catálogo, hoja y barra de estado, con la paleta oscura
+*La ventana tal como está hoy: cinta, catálogo, hoja y barra de estado, siguiendo la paleta
 del escritorio. El circuito es la hoja con la que abre el programa: un compresor alimenta la
 unidad de mantenimiento, la unidad alimenta una válvula 3/2 en reposo y la válvula alimenta un
 cilindro de simple efecto. Cada puerto lleva su círculo de conexión, y no hay nada en marcha,
