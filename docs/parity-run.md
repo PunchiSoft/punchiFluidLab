@@ -1,6 +1,8 @@
 # The parity run: continuity note
 
-Status: **active**, branch `feat/parity`. This file is the memory of the run. After a context
+Status: **run 2 active**, branch `feat/parity-2`. Run 1 was delivered as
+[#57](https://github.com/PunchiSoft/punchiFluidLab/pull/57) in `6def1d2`. This file is the
+memory of the run. After a context
 reset, a compaction or a new session, read this file first, then
 [work-queue.md](work-queue.md), then `git log --oneline main..HEAD`.
 
@@ -14,6 +16,8 @@ The owner chose delivery option **c** on 2026-11-13: *one long branch, one commi
 capability, one pull request at the end*. That is the whole permission. It does **not**
 include merging: the owner merges, the agent never does.
 
+Run 2 was authorized the same way on 2026-11-13, after the owner merged run 1 (#57).
+
 ## Where things are
 
 | Thing | File |
@@ -24,7 +28,7 @@ include merging: the owner merges, the agent never does.
 | The sheet format | [reference/sheet-format.md](reference/sheet-format.md) |
 | The loop and its gotchas | [.agents/skills/parity-run](../.agents/skills/parity-run/SKILL.md) |
 
-## Progress log
+## Progress log — run 1 (delivered as #57)
 
 One line per commit, newest last. Each entry names the capability, the commit and the test
 that proves it.
@@ -37,7 +41,13 @@ that proves it.
 | 3 | Timers TON and TOF, counted by the step | `feat(catalog): count TON and TOF timers with the step` | `a_timer_declares_a_bounded_delay_and_an_instant_relay_does_not`, `a_ton_contact_closes_after_its_delay`, `a_tof_contact_opens_after_its_delay` |
 | 4 | Indicator lamp | `feat(catalog): let a lamp read the control line` | `a_lamp_lights_while_its_line_is_live`, `a_lamp_shows_its_state_as_rays_not_only_colour`, the symbol review |
 | 5 | Buzzer with a continuous sound | `feat(audio): loop the buzzer while its line is live` | `a_buzzer_sounds_while_its_line_is_live`, `--check-sounds`, the symbol review |
-| 6 | Limit switch at a cylinder end | `feat(catalog): follow a cylinder end with a limit switch` | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
+
+## Progress log — run 2
+
+| # | Capability | Commit | Evidence |
+|---|---|---|---|
+| 6 | Limit switch at a cylinder end (done in run 1) | #57 | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
+| 7 | Pressure and vacuum switches | _(next)_ | a rising and a falling line |
 
 ## Decisions taken in this run
 
@@ -95,7 +105,7 @@ The limit switch is done; the next entry reads the other side of the model.
 
 1. `git status --short` must be clean; if not, the previous capability was interrupted: read
    `git diff` and finish it before anything else.
-2. `git switch feat/parity` and `git --no-pager log --oneline main..HEAD` — one commit per
+2. `git switch feat/parity-2` and `git --no-pager log --oneline main..HEAD` — one commit per
    capability, in queue order.
 3. Open [work-queue.md](work-queue.md): take the first `ready` entry.
 4. Follow the loop in the [parity-run skill](../.agents/skills/parity-run/SKILL.md): implement,
