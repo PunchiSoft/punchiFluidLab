@@ -95,6 +95,22 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/electrical.relay.md"),
     ),
     (
+        "electrical.contact.nc",
+        include_str!("../../../assets/symbols/review/electrical.contact.nc.md"),
+    ),
+    (
+        "electrical.switch.maintained",
+        include_str!("../../../assets/symbols/review/electrical.switch.maintained.md"),
+    ),
+    (
+        "electrical.switch.selector",
+        include_str!("../../../assets/symbols/review/electrical.switch.selector.md"),
+    ),
+    (
+        "electrical.button.mushroom",
+        include_str!("../../../assets/symbols/review/electrical.button.mushroom.md"),
+    ),
+    (
         "electrical.timer.ton",
         include_str!("../../../assets/symbols/review/electrical.timer.ton.md"),
     ),

@@ -3069,3 +3069,47 @@ fn a_pressure_switch_follows_its_line_up_and_down() {
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
+
+#[test]
+fn a_normally_closed_contact_opens_when_clicked() {
+    let session = session();
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact.nc");
+    let lamp = catalog_index(session, "electrical.lamp");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let button = unsafe { pf_session_place_component(session, button, 70.0, 20.0) };
+    let lamp = unsafe { pf_session_place_component(session, lamp, 120.0, 20.0) };
+    assert!(rail >= 0 && button >= 0 && lamp >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let lamp = u32::try_from(lamp).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), button, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, button, two.as_ptr(), lamp, one.as_ptr()) },
+        PF_OK
+    );
+
+    // Normally closed: the lamp is lit before anyone touches it.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_indicator_active(session, lamp) }, 1);
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}

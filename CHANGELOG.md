@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La familia manual: el panel de mando — 2026-11-13
+
+Un panel no es un solo pulsador: la seta debe abrir al golpearla y quedarse abierta, el
+selector debe quedarse donde se gira, y un pulsador cerrado en reposo es la mitad que el otro
+pulsador no cubre.
+
+- **Cuatro archivos, un comportamiento**: interruptor mantenido, selector, seta con
+  `normally_closed = true` y pulsador NC. Todos son `contact`; el clic mantiene el estado y
+  el reposo lo declara el archivo.
+- **La seta es un contacto NC enclavado**: abre al pulsarla y no vuelve hasta el clic
+  siguiente, que es lo que un paro de emergencia debe hacer.
+- **La comprobación y el dibujo leen el reposo NC**: un contacto cerrado en reposo conduce
+  desde el primer fotograma, sin que nadie lo toque.
+- **Evidencia**: `a_normally_closed_contact_opens_when_clicked`, las cuatro revisiones de
+  símbolo y el lint del catálogo.
+
 ### Presostato y vacuostato: la línea también decide — 2026-11-13
 
 Una secuencia no solo mira dónde está el vástago: mira si el depósito se ha cargado, si la

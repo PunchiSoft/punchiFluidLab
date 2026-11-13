@@ -125,7 +125,7 @@ fn write_review_images(catalog: &Catalog) {
                         _ => None,
                     },
                     series: None,
-                    contact_closed: Some(false),
+                    contact_closed: None,
                     orientation: punchi_fluid_draw::Orientation::NONE,
                     designation: None,
                 };

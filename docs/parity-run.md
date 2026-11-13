@@ -48,6 +48,7 @@ that proves it.
 |---|---|---|---|
 | 6 | Limit switch at a cylinder end (done in run 1) | #57 | `a_limit_switch_closes_at_the_end_of_its_cylinder`, the two symbol reviews |
 | 7 | Pressure and vacuum switches | `feat(catalog): read a line with a pressure switch` | `a_pressure_switch_follows_its_line_up_and_down`, the two symbol reviews |
+| 8 | Manual family: maintained, selector, mushroom, NC button | `feat(catalog): add the manual switch family` | `a_normally_closed_contact_opens_when_clicked`, the four symbol reviews |
 
 ## Decisions taken in this run
 
@@ -84,21 +85,20 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
-## Next entry: 8, the manual switches
+## Next entry: 9, the latching relay
 
-The pressure switch is done; the next entry is catalog work on the contact the run already
-has.
+The manual family is done; the next entry needs a second coil on the part that already has
+one.
 
-- **Files, not code**: a maintained switch, a selector, a mushroom with a latching
-  normally-closed contact, and a normally-closed push button. All reuse `Behaviour::Contact`
-  with `normally_closed`; the difference is the symbol and the name.
-- **Maintained means the click keeps the state**, which is what the existing
-  `pf_session_toggle_contact` already does. A true momentary press/release is a separate
-  gesture and does not belong in this slice.
-- **Catalog**: one file per part, with hand-drawn geometry and a review each; the NC contact
-  proves the `normally_closed` field through the lint and the check.
-- **Evidence**: the catalog lint for every file, a review per file, and an ABI test that a
-  normally-closed contact lights its lamp at rest and opens on click.
+- **Schema**: add an optional `reset = ["A1", "A2"]` pair to `Behaviour::Relay`; a latching
+  relay has two coils and the same contact, and the plain relay keeps working with the field
+  absent.
+- **Model**: the set coil energises the contact, the reset coil de-energises it, and neither
+  coil live holds the last state. The state is a run artefact like the relay's.
+- **Catalog**: one file per coil family (`set`/`reset` terminals) with the latch mark; the
+  bar is the renderer's.
+- **Evidence**: a set pulse, release with the contact still closed, a reset pulse and the
+  contact open, plus the symbol review and the lint.
 
 ## How to continue after a reset
 

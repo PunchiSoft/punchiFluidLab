@@ -81,6 +81,22 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/electrical.contact.toml"),
     ),
     (
+        "electrical.contact.nc.toml",
+        include_str!("../../../assets/catalog/electrical.contact.nc.toml"),
+    ),
+    (
+        "electrical.switch.maintained.toml",
+        include_str!("../../../assets/catalog/electrical.switch.maintained.toml"),
+    ),
+    (
+        "electrical.switch.selector.toml",
+        include_str!("../../../assets/catalog/electrical.switch.selector.toml"),
+    ),
+    (
+        "electrical.button.mushroom.toml",
+        include_str!("../../../assets/catalog/electrical.button.mushroom.toml"),
+    ),
+    (
         "electrical.relay.toml",
         include_str!("../../../assets/catalog/electrical.relay.toml"),
     ),

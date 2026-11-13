@@ -539,7 +539,7 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 - **Edición incompleta**: propiedades de resumen, accionamiento, posición inicial, ángulo,
   fugas y amortiguamiento. Separación igual, cuatro alineaciones y las nueve comprobaciones
   ya están; la novena es el cortocircuito del raíl, no la etiqueta del encoder.
-- **La biblioteca eléctrica tiene su primera porción, la red de control, el relé, los temporizadores TON/TOF, la lámpara, el zumbador, el final de carrera y los presostatos**; faltan las setas y el selector mantenido, el contador, el encoder, y también la biblioteca digital, GRAFCET y el material didáctico propio.
+- **La biblioteca eléctrica tiene su primera porción, la red de control, el relé, los temporizadores TON/TOF, la lámpara, el zumbador, el final de carrera, los presostatos y la familia manual**; faltan el relé enclavado, el contador, el encoder, y también la biblioteca digital, GRAFCET y el material didáctico propio.
 - **Sin hidráulica, sin traducciones (i18n), sin empaquetado (AppImage/Flatpak) y sin
   publicación firmada.**
 - **El clic no se ha probado con un clic real**: no hay herramientas de inyección en la

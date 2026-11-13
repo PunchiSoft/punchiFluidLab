@@ -300,6 +300,11 @@ positive terminal live, propagates it through wires and closed contacts, and set
 to its actuated position while its coil is live. There is no voltage and no current: the
 circuit is a boolean net.
 
+The **manual family** is one behaviour and several files: the push button, a normally-closed
+button, a maintained switch, a selector and a mushroom. They differ in the actuator and the
+rest state (`normally_closed`), not in the model; a click toggles the contact and a maintained
+part keeps the state it was left in.
+
 A **relay** names its coil pair and its contact pair
 ([ADR 0019](../docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)). The coil is energised when
 exactly one of its terminals is live; the contact joins its pair while the coil is energised
