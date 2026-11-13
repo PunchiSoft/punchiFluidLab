@@ -61,7 +61,8 @@ changed lines outside generated files, it is two phases.
 | **P3.1 — even spacing** ✅ delivered | `feat/even-spacing` | Repartir horizontal and vertical, equal gaps between symbol boxes, one undo | doc, ABI and `--selftest` evidence |
 | **P3.2 — blind plugs and silencers** ✅ delivered | `feat/blind-plugs-and-silencers` | a plug that caps a port and a silencer that vents an exhaust through its conductance, per [ADR 0016](adr/0016-a-termination-is-a-component.md) | solver, check, catalog and `--selftest` evidence, two symbol reviews |
 | **P3.3 — pipe classes** ✅ delivered | `feat/pipe-classes` | working, pilot and drain lines chosen per hose, in format 6 | format migration test, ABI test, `--selftest` |
-| **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
+| **P4.1 — the parts list** ✅ delivered | `feat/parts-list` | a parts list on the printed page, grouped by definition, with quantities and designations | export tests, the ABI export test and a rendered A4 |
+| **P4.2 — SVG and the export panel** | `feat/svg-and-export-panel` | the drawing as SVG, then margins, custom size and PNG resolution | vector fixture, panel tests |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET | ADR each, per-library tests |
 

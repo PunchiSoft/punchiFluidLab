@@ -48,6 +48,11 @@ The page carries the frame, the title block, a legend of line classes and port n
 — while any symbol review is open — the note `symbols not yet verified against ISO 1219-1`.
 Two exports of the same circuit produce the same bytes.
 
+The sheet also carries a **parts list** in a column above the title block: one row per
+definition with how many of it, its catalog name and the designations of the group. The
+column takes its width from the drawing, so a long list shrinks the diagram instead of
+overlapping it.
+
 The title block takes the **name of the file** you write, the active circuit's name in the
 project field, and the date of the day the window runs. A drawing larger than the area the
 frame leaves free is scaled down to fit; the scale is recorded in the sheet field of the

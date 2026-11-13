@@ -2835,6 +2835,7 @@ pub unsafe extern "C" fn pf_session_export(
             } else {
                 punchi_fluid_export::Orientation::Landscape
             },
+            parts: Some(parts_list(&session.document, &session.catalog, circuit)),
             ..punchi_fluid_export::Page::a4(block.clone())
         };
         let Ok(area) = punchi_fluid_export::drawing_area(&page, &block) else {
@@ -2881,6 +2882,25 @@ pub unsafe extern "C" fn pf_session_export(
             Err(cause) => session.fail(&cause.to_string()),
         }
     })
+}
+
+/// The parts list of one circuit: what it holds, grouped by definition.
+fn parts_list(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+) -> punchi_fluid_export::PartsList {
+    let placements = document
+        .placements()
+        .iter()
+        .filter(|placement| placement.circuit == circuit)
+        .map(|placement| {
+            (
+                placement.catalog_id.as_str(),
+                placement.designation.as_deref(),
+            )
+        });
+    punchi_fluid_export::PartsList::group(catalog, placements)
 }
 
 /// The title block for an export: the file name, the date and the circuit in view.
