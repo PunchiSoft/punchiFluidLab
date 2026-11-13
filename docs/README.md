@@ -17,6 +17,7 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 | want to draw your first circuit | [guides/first-circuit.md](guides/first-circuit.md) → [guides/export-a-drawing.md](guides/export-a-drawing.md) |
 | are opening the repository for the first time | [README](../README.md) → [architecture.md](architecture.md) → [CONTRIBUTING](../CONTRIBUTING.md) |
 | are resuming work with no context | [retomar.md](retomar.md) (Spanish) → [next-steps.md](next-steps.md) |
+| are continuing or resuming a parity run | [parity-run.md](parity-run.md) → [work-queue.md](work-queue.md) → `git log --oneline main..HEAD` |
 | are about to write code | [next-steps.md](next-steps.md) → [capabilities.md](capabilities.md) → the relevant [skill](../.agents/skills/README.md) |
 | are planning a capability | [capabilities.md](capabilities.md) and [capability-plan](../.agents/skills/capability-plan/SKILL.md) |
 | are changing a symbol | [symbology.md](symbology.md) and [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md) |
@@ -55,6 +56,8 @@ A document that is not simply current carries a status line under its title:
 | Document | Kind | Status | What it is |
 |---|---|---|---|
 | [retomar.md](retomar.md) | process | internal | The owner's continuity note, in Spanish: state, history, verification, decisions and the prompt to continue |
+| [parity-run.md](parity-run.md) | process | internal | The parity run's continuity note: branch, progress log, decisions and how to continue after a reset |
+| [work-queue.md](work-queue.md) | process | current | The parity run's queue: one entry per capability, its state and its acceptance test |
 | [next-steps.md](next-steps.md) | process | current | The work order: where the project stands, the next phase, the files and the tests |
 | [capabilities.md](capabilities.md) | process | current | The coverage ledger: what a student must be able to do, its state and its evidence |
 | [plan.md](plan.md) | process | current | The milestones and their acceptance criteria, with the status of each |

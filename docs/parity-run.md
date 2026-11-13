@@ -1,0 +1,82 @@
+# The parity run: continuity note
+
+Status: **active**, branch `feat/parity`. This file is the memory of the run. After a context
+reset, a compaction or a new session, read this file first, then
+[work-queue.md](work-queue.md), then `git log --oneline main..HEAD`.
+
+It is written for the agent that continues the work, not for the public README. The
+authority for what a capability *is* stays in [capabilities.md](capabilities.md); the queue
+says what comes next; this file says where the run stands and what was decided.
+
+## The authorization
+
+The owner chose delivery option **c** on 2026-11-13: *one long branch, one commit per
+capability, one pull request at the end*. That is the whole permission. It does **not**
+include merging: the owner merges, the agent never does.
+
+## Where things are
+
+| Thing | File |
+|---|---|
+| Order, scope and acceptance of each capability | [work-queue.md](work-queue.md) |
+| What a capability is, its state and its evidence | [capabilities.md](capabilities.md) |
+| The control circuit: library and model | [adr/0017](adr/0017-the-electrical-circuit-is-a-second-domain.md), [adr/0018](adr/0018-the-control-circuit-is-a-boolean-net.md) |
+| The sheet format | [reference/sheet-format.md](reference/sheet-format.md) |
+| The loop and its gotchas | [.agents/skills/parity-run](../.agents/skills/parity-run/SKILL.md) |
+
+## Progress log
+
+One line per commit, newest last. Each entry names the capability, the commit and the test
+that proves it.
+
+| # | Capability | Commit | Evidence |
+|---|---|---|---|
+| — | Queue, skill and this note | _(this commit)_ | `scripts-dev/check-docs.sh` |
+
+## Decisions taken in this run
+
+Recorded so a later session does not reopen them:
+
+1. **The ninth check fault is the short circuit of the control rail**, not the reference's
+   "labels that do not match". Our control circuit is wired: a coil and its contact are joined
+   by a wire, and a label is a name drawn under the symbol. The reference couples them by name
+   because its model needs to; ours does not, so the label fault is **not applicable** and the
+   ninth fault is the one that exists under our rules: the live rail and its return in the same
+   net through wires and closed contacts.
+2. **A relay is a coil plus a contact on the same boolean net**: the contact is an edge that
+   exists only while the coil is live. No delay unless the file declares one.
+3. **Timers follow IEC 61131-3**: `TON` (on-delay) and `TOF` (off-delay), implemented as a
+   bounded count of steps, never a sleep, and tested with a fixed step count.
+4. **Labels are drawn under the symbol** (already true) and never carry electrical meaning.
+5. **The LED/lamp, the limit switch and the encoder are separate capabilities**, each with its
+   own file and test, not one generic "output".
+
+## Open questions for the owner
+
+- **Hydraulics** is announced by the product and does not exist: it needs its own ADR and
+  phase (fluid properties, incompressible network, hydraulic symbols). It is not a slice.
+- **The 300 dpi review** needs a second reader's signature; the run cannot produce it.
+- **Remembering the export panel's settings** per user is a small improvement, not yet
+  scheduled.
+
+## How to continue after a reset
+
+1. `git status --short` must be clean; if not, the previous capability was interrupted: read
+   `git diff` and finish it before anything else.
+2. `git switch feat/parity` and `git --no-pager log --oneline main..HEAD` — one commit per
+   capability, in queue order.
+3. Open [work-queue.md](work-queue.md): take the first `ready` entry.
+4. Follow the loop in the [parity-run skill](../.agents/skills/parity-run/SKILL.md): implement,
+   test, document, gate, one commit, update the queue and this table.
+5. Do not open a pull request until the queue is empty or only `blocked` entries remain.
+
+## Gotchas that already cost time
+
+- `scripts-dev/check.sh` runs the window when the build is configured: a QML icon that does not
+  exist fails `--check-qml` even with Rust green.
+- The architecture check fails a source file over 800 lines; move tests into `#[path]` modules.
+- Clippy denies `unwrap`, `expect`, `panic!` and `too_many_lines` in production code; extract a
+  helper rather than adding an `allow`.
+- `check-docs.sh` requires every ADR and every document to be linked from its index.
+- The changelog is Spanish, the rest is English; a doc-only pull request runs `check-docs.sh`
+  and skips the window in CI.
