@@ -513,6 +513,63 @@ mod tests {
     }
 
     #[test]
+    fn every_port_carries_its_connection_circle() {
+        // The small open circle is the convention that tells a reader where a hose
+        // attaches, so it belongs to every port of every symbol — and it is drawn filled
+        // with the paper colour, which is what hides the end of the hose behind it.
+        let catalog = Catalog::builtin();
+        let rect = Rect::from_center_size(Pt::new(60.0, 60.0), 34.0, 34.0);
+        let definition = catalog
+            .get("valve.3_2.spring_return")
+            .expect("the valve exists");
+        let placed = [Placed {
+            index: 0,
+            catalog_id: definition.id.as_str(),
+            rect,
+            extension: 0.0,
+            valve_position: 0,
+            reading: None,
+            series: None,
+            orientation: Orientation::NONE,
+            designation: None,
+        }];
+        let mut surface = Recording::default();
+        draw_placed(
+            &mut surface,
+            &placed,
+            &[],
+            None,
+            &catalog,
+            &Ink::print(),
+            &[],
+        );
+        let ink = Ink::print();
+        for port in &definition.port {
+            let point = port_point(rect, Orientation::NONE, definition, &port.id)
+                .expect("the port has a point");
+            let found = surface.calls().iter().any(|call| match call {
+                Call::Circle {
+                    centre,
+                    fill,
+                    stroke,
+                    ..
+                } => {
+                    (centre.x - point.x).abs() < 0.01
+                        && (centre.y - point.y).abs() < 0.01
+                        && *fill == Some(ink.background)
+                        && stroke.is_some()
+                }
+                _ => false,
+            });
+            assert!(
+                found,
+                "port {} has no connection circle at {point:?}",
+                port.id
+            );
+        }
+    }
+
+    #[test]
     fn a_reading_carries_the_unit_of_its_instrument() {
         // The drawing owns the unit and the precision, so every device prints the same
         // number and the front end cannot invent a second format.

@@ -417,3 +417,45 @@ fn missing_directory_is_not_an_error() {
     assert!(catalog.problems().is_empty());
     assert!(!catalog.is_empty());
 }
+
+#[test]
+fn a_source_triangle_points_at_its_connection() {
+    // A supply delivers through the point of its triangle, and the port sits on that point.
+    // A triangle standing on its base reads as a source that delivers upwards, away from
+    // the hose: the owner caught exactly that on the sheet.
+    let catalog = Catalog::builtin();
+    for id in ["supply.network", "supply.compressor"] {
+        let definition = catalog.get(id).expect("the built-in supply exists");
+        let port = definition.port.first().expect("a supply has a port");
+        let triangle = definition
+            .symbol
+            .iter()
+            .find(|primitive| matches!(primitive.kind, PrimitiveKind::Polygon))
+            .expect("the supply draws a triangle");
+        // The apex is the vertex furthest from the base's midpoint on the vertical axis.
+        let ys: Vec<f64> = triangle
+            .points
+            .chunks(2)
+            .filter_map(|pair| pair.get(1).copied())
+            .collect();
+        let apex = ys
+            .iter()
+            .copied()
+            .reduce(f64::max)
+            .expect("the triangle has points");
+        let apex_y = ys
+            .iter()
+            .copied()
+            .find(|value| (value - apex).abs() < f64::EPSILON)
+            .unwrap_or(apex);
+        assert!(
+            (apex_y - port.position[1]).abs() < 0.35,
+            "{id}: the apex is at {apex_y:.2} and the port at {:.2}",
+            port.position[1]
+        );
+        assert!(
+            apex_y > 0.5,
+            "{id}: the apex must be at the bottom, on the stem, not at the top"
+        );
+    }
+}
