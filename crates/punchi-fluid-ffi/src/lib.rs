@@ -50,7 +50,7 @@ use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
 use punchi_fluid_draw::placed::{
-    Pipe, PipeEnd, Placed, Reading, draw_placed, port_point, route_offset,
+    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point, route_between,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -1328,11 +1328,10 @@ impl PfSession {
             if connection.circuit != circuit {
                 continue;
             }
-            let Some((start, end)) = pipe_points(&self.document, &self.catalog, index) else {
+            let Some(route) = pipe_route(&self.document, &self.catalog, index) else {
                 continue;
             };
-            let distance =
-                distance_to_path(point, &route_offset(start, end, connection.offset_mm()));
+            let distance = distance_to_path(point, &route);
             if distance <= tolerance && best.is_none_or(|(closest, _)| distance < closest) {
                 best = Some((distance, index));
             }
@@ -1350,6 +1349,11 @@ impl PfSession {
         let Some((start, end)) = pipe_points(&self.document, &self.catalog, index) else {
             return self.fail("that pipe does not exist");
         };
+        if pipe_is_elbow(&self.document, &self.catalog, index) {
+            // One bend has no middle segment: the route is already the shortest orthogonal
+            // path between the two edges, and a drag has nothing to move.
+            return self.fail("this hose has one bend and no segment to drag");
+        }
         let horizontal = (end.x - start.x).abs() >= (end.y - start.y).abs();
         let offset = if horizontal {
             point.x - f32::midpoint(start.x, end.x)
@@ -4493,16 +4497,13 @@ fn draw_selected_pipe(
     ink: &Ink,
     index: usize,
 ) {
-    let Some(connection) = document.connections().get(index) else {
+    if document.connections().get(index).is_none() {
+        return;
+    }
+    let Some(route) = pipe_route(document, catalog, index) else {
         return;
     };
-    let Some((start, end)) = pipe_points(document, catalog, index) else {
-        return;
-    };
-    surface.line(
-        &route_offset(start, end, connection.offset_mm()),
-        Stroke::new(2.4, ink.accent),
-    );
+    surface.line(&route, Stroke::new(2.4, ink.accent));
 }
 
 /// Spanish name of a category, because the inspector is interface copy.
@@ -4781,6 +4782,58 @@ fn hose_pressure(network: Option<&Network>, component: Option<usize>, id: &str) 
 ///
 /// A pipe whose components or ports cannot be found is not drawable and has no geometry:
 /// the caller skips it rather than drawing a line to nowhere.
+/// `true` when the two ports leave on perpendicular edges, so the route has one bend.
+fn pipe_is_elbow(document: &Document, catalog: &Catalog, index: usize) -> bool {
+    let Some(connection) = document.connections().get(index) else {
+        return false;
+    };
+    let edges = (
+        document
+            .index_of(connection.from.placement)
+            .and_then(|slot| document.placements().get(slot))
+            .and_then(|placement| catalog.get(&placement.catalog_id))
+            .map(|definition| port_edge(definition, &connection.from.port)),
+        document
+            .index_of(connection.to.placement)
+            .and_then(|slot| document.placements().get(slot))
+            .and_then(|placement| catalog.get(&placement.catalog_id))
+            .map(|definition| port_edge(definition, &connection.to.port)),
+    );
+    matches!(edges, (Some(from), Some(to)) if from.horizontal() != to.horizontal())
+}
+
+/// The route of one pipe, from the edges its two ports sit on.
+fn pipe_route(document: &Document, catalog: &Catalog, index: usize) -> Option<Vec<Pt>> {
+    let connection = document.connections().get(index)?;
+    let from = document
+        .placements()
+        .get(document.index_of(connection.from.placement)?)?;
+    let to = document
+        .placements()
+        .get(document.index_of(connection.to.placement)?)?;
+    let from_definition = catalog.get(&from.catalog_id)?;
+    let to_definition = catalog.get(&to.catalog_id)?;
+    let start = port_point(
+        from.rect(),
+        from.orientation,
+        from_definition,
+        &connection.from.port,
+    )?;
+    let end = port_point(
+        to.rect(),
+        to.orientation,
+        to_definition,
+        &connection.to.port,
+    )?;
+    Some(route_between(
+        start,
+        port_edge(from_definition, &connection.from.port),
+        end,
+        port_edge(to_definition, &connection.to.port),
+        connection.offset_mm(),
+    ))
+}
+
 fn pipe_points(document: &Document, catalog: &Catalog, index: usize) -> Option<(Pt, Pt)> {
     let connection = document.connections().get(index)?;
     let from = document

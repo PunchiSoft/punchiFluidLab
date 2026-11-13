@@ -936,13 +936,13 @@ fn a_sheet_saves_and_opens_with_its_edits_and_routes() {
     );
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_route_pipe(session, 0, 40.0, 70.0) },
+        unsafe { pf_session_route_pipe(session, 2, 40.0, 20.0) },
         PF_OK
     );
     let mut routed = 0.0_f32;
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut routed) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut routed) },
         PF_OK
     );
     // SAFETY: live session and a NUL-terminated path.
@@ -968,7 +968,7 @@ fn a_sheet_saves_and_opens_with_its_edits_and_routes() {
     let mut offset = 0.0_f32;
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut offset) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut offset) },
         PF_OK
     );
     assert!(
@@ -999,7 +999,7 @@ fn a_pipe_segment_can_be_dragged_and_undo_puts_it_back() {
     let mut offset = f32::NAN;
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut offset) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut offset) },
         PF_OK
     );
     assert!(
@@ -1010,12 +1010,12 @@ fn a_pipe_segment_can_be_dragged_and_undo_puts_it_back() {
     // Drag the middle segment well away from where it was.
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_route_pipe(session, 0, 40.0, 70.0) },
+        unsafe { pf_session_route_pipe(session, 2, 40.0, 20.0) },
         PF_OK
     );
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut offset) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut offset) },
         PF_OK
     );
     assert!(offset.abs() > 1e-6, "the drag has to move the segment");
@@ -1025,7 +1025,7 @@ fn a_pipe_segment_can_be_dragged_and_undo_puts_it_back() {
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut offset) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut offset) },
         PF_OK
     );
     assert!(offset.abs() < 1e-6);
@@ -1033,7 +1033,7 @@ fn a_pipe_segment_can_be_dragged_and_undo_puts_it_back() {
     assert_eq!(unsafe { pf_session_redo(session) }, PF_OK);
     // SAFETY: live session and a writable float.
     assert_eq!(
-        unsafe { pf_session_pipe_offset(session, 0, &raw mut offset) },
+        unsafe { pf_session_pipe_offset(session, 2, &raw mut offset) },
         PF_OK
     );
     assert!(offset.abs() > 1e-6);
