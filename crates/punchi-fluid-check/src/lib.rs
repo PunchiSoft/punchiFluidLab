@@ -50,6 +50,8 @@ pub enum FindingKind {
     DuplicateDesignation,
     /// A pipe joins two circuits.
     PipeAcrossCircuits,
+    /// A pipe joins two terminals of different domains.
+    MismatchedConnection,
 }
 
 impl FindingKind {
@@ -64,6 +66,7 @@ impl FindingKind {
             Self::OpenConnection => "open_connection",
             Self::DuplicateDesignation => "duplicate_designation",
             Self::PipeAcrossCircuits => "pipe_across_circuits",
+            Self::MismatchedConnection => "mismatched_connection",
         }
     }
 
@@ -78,6 +81,7 @@ impl FindingKind {
             Self::OpenConnection => "una conexión neumática queda abierta",
             Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
             Self::PipeAcrossCircuits => "un tubo une dos circuitos",
+            Self::MismatchedConnection => "una conexión une dos terminales que no encajan",
         }
     }
 }
@@ -173,10 +177,79 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
 
     findings.extend(open_connections(document, catalog, circuit));
     findings.extend(pipes_across_circuits(document, catalog));
+    findings.extend(mismatched_connections(document, catalog, circuit));
 
     findings.sort_by(|a, b| {
         (a.kind as u8, a.component, a.pipe).cmp(&(b.kind as u8, b.component, b.pipe))
     });
+    findings
+}
+
+/// The domain a port belongs to: the rules that decide what may be wired to it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Domain {
+    /// Air or fluid: supply, working or exhaust.
+    Pneumatic,
+    /// A terminal of the control circuit.
+    Electrical,
+    /// A rod, a shaft or another mechanical link.
+    Mechanical,
+}
+
+impl Domain {
+    fn of(role: PortRole) -> Self {
+        match role {
+            PortRole::Electrical => Self::Electrical,
+            PortRole::Mechanical => Self::Mechanical,
+            PortRole::Supply | PortRole::Working | PortRole::Exhaust => Self::Pneumatic,
+        }
+    }
+}
+
+/// Fault 5's second half: a connection whose two ends do not fit each other.
+///
+/// The reference calls it "conexiones superpuestas y que no encajan", and the part that does
+/// not fit is a line between two domains: a pneumatic hose on an electrical terminal, or a
+/// wire on a port that carries air. It is a mistake the model cannot forgive — the network
+/// would treat a terminal as a volume — so the check points at the pipe before it is run.
+fn mismatched_connections(document: &Document, catalog: &Catalog, circuit: u32) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, connection) in document.connections().iter().enumerate() {
+        if connection.circuit != circuit {
+            continue;
+        }
+        let role = |placement_id: u64, port: &str| {
+            document
+                .index_of(placement_id)
+                .and_then(|slot| document.placements().get(slot))
+                .and_then(|placement| catalog.get(&placement.catalog_id))
+                .and_then(|definition| {
+                    definition
+                        .port
+                        .iter()
+                        .find(|candidate| candidate.id == port)
+                        .map(|port| port.role)
+                })
+        };
+        let (Some(from), Some(to)) = (
+            role(connection.from.placement, &connection.from.port),
+            role(connection.to.placement, &connection.to.port),
+        ) else {
+            continue;
+        };
+        if Domain::of(from) == Domain::of(to) {
+            continue;
+        }
+        let at = pipe_path(document, catalog, index)
+            .and_then(|path| path.first().copied())
+            .unwrap_or_default();
+        findings.push(Finding {
+            kind: FindingKind::MismatchedConnection,
+            at,
+            component: None,
+            pipe: Some(index),
+        });
+    }
     findings
 }
 

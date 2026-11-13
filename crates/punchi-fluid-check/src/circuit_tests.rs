@@ -144,3 +144,102 @@ mod electrical_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod connection_tests {
+    use super::*;
+    use punchi_fluid_doc::Placement;
+
+    fn catalog() -> Catalog {
+        Catalog::builtin()
+    }
+
+    fn sheet() -> Rect {
+        Rect::from_min_size(Pt::new(0.0, 0.0), 200.0, 130.0)
+    }
+
+    #[test]
+    fn a_hose_on_an_electrical_terminal_is_the_eighth_fault() {
+        // Fault 5's second half: the two ends do not fit. The network would treat the
+        // terminal as a volume, so the check has to point at the pipe first.
+        let mut document = Document::new();
+        let supply = document.place(Placement::new(
+            "supply.compressor",
+            Pt::new(30.0, 30.0),
+            30.0,
+            16.0,
+        ));
+        let supply = document.placements()[supply].id();
+        let contact = document.place(Placement::new(
+            "electrical.contact",
+            Pt::new(90.0, 30.0),
+            20.0,
+            12.0,
+        ));
+        let contact_id = document.placements()[contact].id();
+        assert!(document.connect(
+            punchi_fluid_doc::Endpoint::new(supply, "1"),
+            punchi_fluid_doc::Endpoint::new(contact_id, "1"),
+        ));
+
+        let findings = check(&document, &catalog(), sheet(), 0);
+        let mismatched = findings
+            .iter()
+            .find(|finding| finding.kind == FindingKind::MismatchedConnection)
+            .expect("the mixed connection is reported");
+        assert!(mismatched.pipe.is_some());
+    }
+
+    #[test]
+    fn a_wire_between_two_terminals_and_a_hose_between_ports_are_not_faults() {
+        let mut document = Document::new();
+        let rail = document.place(Placement::new(
+            "electrical.supply",
+            Pt::new(30.0, 30.0),
+            30.0,
+            16.0,
+        ));
+        let rail = document.placements()[rail].id();
+        let contact = document.place(Placement::new(
+            "electrical.contact",
+            Pt::new(90.0, 30.0),
+            20.0,
+            12.0,
+        ));
+        let contact_id = document.placements()[contact].id();
+        assert!(document.connect(
+            punchi_fluid_doc::Endpoint::new(rail, "L"),
+            punchi_fluid_doc::Endpoint::new(contact_id, "1"),
+        ));
+        let supply = document.place(Placement::new(
+            "supply.compressor",
+            Pt::new(30.0, 80.0),
+            30.0,
+            16.0,
+        ));
+        let supply = document.placements()[supply].id();
+        let valve = document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(90.0, 80.0),
+            30.0,
+            16.0,
+        ));
+        let valve = document.placements()[valve].id();
+        assert!(document.connect(
+            punchi_fluid_doc::Endpoint::new(supply, "1"),
+            punchi_fluid_doc::Endpoint::new(valve, "1"),
+        ));
+
+        let findings = check(&document, &catalog(), sheet(), 0);
+        assert!(
+            !findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::MismatchedConnection),
+            "a wire and a hose were called mismatched: {:?}",
+            findings
+                .iter()
+                .map(|finding| finding.kind)
+                .collect::<Vec<_>>()
+        );
+    }
+}
