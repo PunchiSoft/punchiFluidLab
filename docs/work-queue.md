@@ -36,6 +36,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 7 | Pressure switch and vacuum switch | done | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
 | 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | done | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
 | 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
+| 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | ready | a hose shows the model's signed flow as travelling chevrons while the simulation runs, none at zero flow, reversed with the flow, frozen by reduced motion, and an ABI/drawing test at two phases |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
 | 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
 | 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
@@ -55,6 +56,29 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 This is the work order a session follows without asking. Each entry names the layer it
 touches, the decision it may need and the test that proves it. An entry that grows beyond
 its slice is split, and the split is written here before the code.
+
+### 10a — Running animations: flow in the hoses
+
+The owner ordered the reference's animations replicated, and the reference's signature is
+the circuit in motion. This entry runs before 10.
+
+- **Decision first**: an ADR, *the sheet animates the model, not a decoration*. The chevrons
+  follow the mass flow the solver computed for that hose; a pressure difference alone is not
+  flow, and a dead-end line with a pressure difference must stay still.
+- **Solver**: `Edge` gains `pipe: Option<usize>` and the network keeps `pipe_flow`, filled
+  where the edge flow is already computed; `Network::pipe_flow_l_min(index)` exposes it.
+  Test: a known restriction at a known pressure difference, compared with the orifice
+  calculation.
+- **ABI**: `Pipe` carries `flow_l_min` with sign and `phase_s`; `scene` fills them from the
+  network time, so the drawing never reads the solver.
+- **Drawing**: `draw_pipe` draws travelling chevrons along the existing route when the flow
+  is above a threshold; speed follows `|flow|`, direction follows the sign, zero draws none.
+  The phase is a scalar; no allocation per frame. Reduced motion freezes one static arrow.
+- **Window**: starting resets the phase, pausing freezes it, reset clears it; the transport
+  already drives the redraw.
+- **Evidence**: `a_pipe_reports_the_flow_through_it`, `the_flow_chevrons_move_with_the_phase`,
+  `no_flow_draws_no_chevron`, `reduced_motion_freezes_the_chevron`, and a recorded clip in
+  the pull request.
 
 ### 10 — Counter relay
 
@@ -171,7 +195,7 @@ For every entry in order:
 5. `./scripts-dev/check.sh`; green before the commit. A red gate is fixed on the branch.
 6. Commit once with `-s`, push, and update this file and the continuity note in that same
    commit (amend the message if the hash is not known yet).
-7. Take the next `ready` entry. Do not open the pull request yet.
+7. Take the next `ready` entry, with 10a before 10. Do not open the pull request yet.
 
 **After a context reset** the repository is the memory: read
 [parity-run.md](parity-run.md), this file and `git log --oneline main..HEAD`; the first

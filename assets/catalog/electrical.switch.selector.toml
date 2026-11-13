@@ -45,10 +45,10 @@ line_class = "electrical"
 # The actuator above the gap. The bar is drawn by the renderer from the run state.
 [[symbol]]
 kind = "line"
-points = [0.5, 0.32, 0.5, 0.18]
+points = [0.5, 0.32, 0.60, 0.16]
 line_class = "working"
 
 [[symbol]]
 kind = "circle"
-points = [0.5, 0.16, 0.07]
+points = [0.62, 0.14, 0.05]
 line_class = "working"

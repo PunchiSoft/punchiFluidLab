@@ -86,6 +86,15 @@ Recorded so a later session does not reopen them:
 - **Remembering the export panel's settings** per user is a small improvement, not yet
   scheduled.
 
+## Owner order: the animations come first
+
+On 2026-11-13 the owner ordered the reference's animations replicated as part of the parity,
+not as a later polish. Entry **10a, running animations**, runs before the counter: the sheet
+already moves the piston, the spool and the contact blades, but the flow in the hoses still
+does not animate, and that is the reference's signature. The specification and the evidence
+are in [ui-ux.md](ui-ux.md) and [work-queue.md](work-queue.md); it needs the solver's signed
+flow per hose, not a pressure-gradient guess.
+
 ## Next entry: 10, the counter relay
 
 The latch is done; the next entry counts pulses.
