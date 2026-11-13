@@ -328,6 +328,47 @@ mod short_circuit_tests {
     }
 
     #[test]
+    fn a_relay_that_closes_across_the_rail_is_a_short() {
+        // The relay's own settle step has to run in the check: its contact is not clicked,
+        // and it closes only because the coil is across the rail.
+        let mut document = Document::new();
+        let supply = document.place(Placement::new(
+            "electrical.supply",
+            Pt::new(30.0, 30.0),
+            30.0,
+            16.0,
+        ));
+        let supply_id = document.placements()[supply].id();
+        let relay = document.place(Placement::new(
+            "electrical.relay",
+            Pt::new(90.0, 30.0),
+            30.0,
+            16.0,
+        ));
+        let relay_id = document.placements()[relay].id();
+        for (from, to) in [
+            ((supply_id, "L"), (relay_id, "A1")),
+            ((relay_id, "A2"), (supply_id, "N")),
+            ((supply_id, "L"), (relay_id, "11")),
+            ((relay_id, "14"), (supply_id, "N")),
+        ] {
+            assert!(document.connect(Endpoint::new(from.0, from.1), Endpoint::new(to.0, to.1)));
+        }
+
+        let findings = check(&document, &catalog(), sheet(), 0);
+        assert!(
+            findings
+                .iter()
+                .any(|finding| finding.kind == FindingKind::ShortCircuit),
+            "the settled relay contact was not read: {:?}",
+            findings
+                .iter()
+                .map(|finding| finding.kind)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
     fn an_open_contact_in_the_path_is_a_gap_not_a_short() {
         let mut document = Document::new();
         let (_, supply_id, contact_id) = rail_and_contact(&mut document);

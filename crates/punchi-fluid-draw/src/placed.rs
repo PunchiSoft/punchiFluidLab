@@ -118,6 +118,49 @@ impl Placed<'_> {
     }
 }
 
+/// Draws the moving bar of a contact or a relay from the state the run reports.
+///
+/// The bar is the same idea for both parts: the file holds one symbol and the sheet shows
+/// two, because the state belongs to the run and not to the document. A relay's bar is drawn
+/// between the gap its file leaves at x = 0.72, and tilts away from the moving terminal when
+/// it rests (ADR 0019).
+fn draw_moving_bar(
+    surface: &mut dyn Surface,
+    placed: &Placed<'_>,
+    definition: &ComponentDefinition,
+    ink: &Ink,
+) {
+    match &definition.behaviour {
+        punchi_fluid_catalog::Behaviour::Contact { normally_closed } => {
+            let closed = placed.contact_closed.unwrap_or(*normally_closed);
+            let inner = placed.box_rect();
+            let y = if closed { 0.5 } else { 0.32 };
+            surface.line(
+                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
+                Stroke::new(symbol::LINE, ink.line),
+            );
+        }
+        punchi_fluid_catalog::Behaviour::Relay {
+            normally_closed, ..
+        } => {
+            let closed = placed.contact_closed.unwrap_or(*normally_closed);
+            let inner = placed.box_rect();
+            let fixed = symbol::at(inner, 0.72, 0.30);
+            let moving = symbol::at(inner, 0.72, 0.70);
+            let end = if closed {
+                moving
+            } else {
+                Pt::new(
+                    moving.x + inner.width() * 0.10,
+                    moving.y - inner.height() * 0.12,
+                )
+            };
+            surface.line(&[fixed, end], Stroke::new(symbol::LINE, ink.line));
+        }
+        _ => {}
+    }
+}
+
 /// The trace of a recorder inside its own box.
 ///
 /// At most [`SERIES_POINTS`] vertices, so a minute of samples costs one polyline and no
@@ -255,20 +298,8 @@ pub fn draw_placed(
         if placed.series.is_some() {
             draw_series(surface, placed, ink);
         }
-        if let Some(definition) = catalog.get(placed.catalog_id)
-            && let punchi_fluid_catalog::Behaviour::Contact { normally_closed } =
-                definition.behaviour
-        {
-            // The bar is the moving part: above the gap when the contact is open, across it
-            // when it is closed. The state is the run's, so the file holds one symbol and
-            // the sheet shows two (ADR 0018).
-            let closed = placed.contact_closed.unwrap_or(normally_closed);
-            let inner = placed.box_rect();
-            let y = if closed { 0.5 } else { 0.32 };
-            surface.line(
-                &[symbol::at(inner, 0.30, y), symbol::at(inner, 0.70, y)],
-                Stroke::new(symbol::LINE, ink.line),
-            );
+        if let Some(definition) = catalog.get(placed.catalog_id) {
+            draw_moving_bar(surface, placed, definition, ink);
         }
     }
 

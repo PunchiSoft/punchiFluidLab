@@ -258,6 +258,7 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
         Behaviour::Recorder { span_s, rate_hz } => check_recorder(path, *span_s, *rate_hz),
         Behaviour::ElectricalSupply { voltage_v } => check_electrical_supply(path, *voltage_v),
         Behaviour::Contact { .. } => check_contact(definition, path),
+        Behaviour::Relay { coil, contact, .. } => check_relay(definition, path, coil, contact),
         Behaviour::Silencer { conductance } => {
             if !conductance.is_finite() || *conductance <= 0.0 {
                 return Err(invalid(path, "silencer conductance must be positive"));
@@ -410,6 +411,50 @@ fn check_contact(definition: &ComponentDefinition, path: &Path) -> Result<(), Ca
             path,
             "a contact needs exactly two electrical terminals",
         ));
+    }
+    Ok(())
+}
+
+/// A relay names two coil terminals and two contact terminals, and nothing else.
+///
+/// The pair a terminal belongs to is behaviour: a coil and a contact share the same role,
+/// so the file has to say which is which instead of the code guessing from a port number.
+fn check_relay(
+    definition: &ComponentDefinition,
+    path: &Path,
+    coil: &[String; 2],
+    contact: &[String; 2],
+) -> Result<(), CatalogError> {
+    if coil[0] == coil[1] || contact[0] == contact[1] {
+        return Err(invalid(
+            path,
+            "a relay coil and its contact each need two distinct terminals",
+        ));
+    }
+    if definition.port.len() != 4 {
+        return Err(invalid(
+            path,
+            "a relay needs exactly four electrical terminals",
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for id in coil.iter().chain(contact.iter()) {
+        let electrical = definition
+            .port
+            .iter()
+            .any(|port| port.id == *id && port.role == PortRole::Electrical);
+        if !electrical {
+            return Err(invalid(
+                path,
+                &format!("relay terminal `{id}` is missing or is not electrical"),
+            ));
+        }
+        if !seen.insert(id.as_str()) {
+            return Err(invalid(
+                path,
+                &format!("relay terminal `{id}` is used twice"),
+            ));
+        }
     }
     Ok(())
 }

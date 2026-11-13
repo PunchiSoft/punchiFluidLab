@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Relay: a coil that closes its own contact in the control circuit.
+#
+# Four terminals in two pairs. The coil is a load of the net that feeds it, and the contact
+# is a switch in another net: while the coil is live the contact closes, and when the coil
+# rests the contact returns to the state the file declares (ADR 0019).
+#
+# The symbol is drawn from the general convention for a relay: the coil as a rectangle with
+# A1 and A2, the contact as a gap with its two terminals, and a dashed mechanical link that
+# says the coil moves the contact. The contact bar is drawn by the renderer, like the bar of
+# a push button, because its state is the run's and not the file's.
+
+schema = 3
+id = "electrical.relay"
+name = "Relay"
+name_es = "Relé"
+category = "sensor"
+summary = "Closes its contact while the coil is live."
+
+[[port]]
+id = "A1"
+role = "electrical"
+position = [0.0, 0.30]
+
+[[port]]
+id = "A2"
+role = "electrical"
+position = [0.0, 0.70]
+
+[[port]]
+id = "11"
+role = "electrical"
+position = [1.0, 0.30]
+
+[[port]]
+id = "14"
+role = "electrical"
+position = [1.0, 0.70]
+
+[behaviour]
+type = "relay"
+coil = ["A1", "A2"]
+contact = ["11", "14"]
+
+# The coil: a rectangle between its two stems.
+[[symbol]]
+kind = "rect"
+points = [0.08, 0.30, 0.14, 0.40]
+line_class = "working"
+
+# Stems from the coil terminals to the rectangle.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.30, 0.08, 0.30]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.70, 0.08, 0.70]
+line_class = "electrical"
+
+# The mechanical link between the coil and the contact. A dashed line is the convention for
+# a link that is neither fluid nor wire; the class supplies the dash pattern, but this is not
+# a drain and the review says so.
+[[symbol]]
+kind = "line"
+points = [0.22, 0.50, 0.72, 0.50]
+line_class = "drain"
+
+# The contact terminals and the gap the bar closes. The renderer draws the bar between
+# (0.72, 0.30) and (0.72, 0.70), at rest or across the gap.
+[[symbol]]
+kind = "line"
+points = [0.72, 0.30, 1.0, 0.30]
+line_class = "electrical"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.70, 1.0, 0.70]
+line_class = "electrical"

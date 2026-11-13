@@ -564,6 +564,10 @@ pub struct PfSession {
     /// position: the file says how the contact starts, the user clicks it, a reopened
     /// document starts at rest (ADR 0018).
     contacts: std::collections::HashMap<u64, bool>,
+    /// Whether each relay contact is closed, by placement identity. Derived from the net
+    /// on every control pass, never clicked: a relay moves because its coil is live
+    /// (ADR 0019).
+    relays: std::collections::HashMap<u64, bool>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -657,6 +661,7 @@ impl PfSession {
             preview_text: Vec::new(),
             charts: std::collections::HashMap::new(),
             contacts: std::collections::HashMap::new(),
+            relays: std::collections::HashMap::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -1122,9 +1127,23 @@ impl PfSession {
     /// actuated position. No voltage, no current, no short circuit (ADR 0018).
     fn apply_control(&mut self) {
         let circuit = self.document.active_circuit();
+        let user_closed = self.closed_user_contacts(circuit);
+        let relays = self.relay_bindings(circuit);
+        let state = settle_relays(
+            &self.document,
+            &self.catalog,
+            circuit,
+            &user_closed,
+            &relays,
+        );
+        self.publish_relay_state(&relays, &state);
+        self.position_solenoids(circuit, &user_closed, &relays, &state);
+    }
+
+    /// The clicked contacts that are closed, as the terminal pairs the net joins.
+    fn closed_user_contacts(&mut self, circuit: u32) -> Vec<(usize, String, String)> {
         // The states are read first: reading one may write the map, which cannot happen
         // while the document is borrowed by a loop.
-        let mut closed: Vec<usize> = Vec::new();
         let candidates: Vec<usize> = self
             .document
             .placements()
@@ -1133,14 +1152,72 @@ impl PfSession {
             .filter(|(_, placement)| placement.circuit == circuit)
             .map(|(index, _)| index)
             .collect();
+        let mut closed = Vec::new();
         for index in candidates {
-            if self.contact_closed_at(index).unwrap_or(false) {
-                closed.push(index);
+            if !self.contact_closed_at(index).unwrap_or(false) {
+                continue;
+            }
+            let Some(placement) = self.document.placements().get(index) else {
+                continue;
+            };
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            if let Some((a, b)) = contact_pair(definition) {
+                closed.push((index, a, b));
             }
         }
-        let net = control_net(&self.document, &self.catalog, circuit, &closed);
+        closed
+    }
+
+    /// The relays of one circuit, in document order.
+    fn relay_bindings(&self, circuit: u32) -> Vec<RelayBinding> {
+        let mut relays = Vec::new();
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            if placement.circuit != circuit {
+                continue;
+            }
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            if let Behaviour::Relay {
+                coil,
+                contact,
+                normally_closed,
+            } = &definition.behaviour
+            {
+                relays.push((index, coil.clone(), contact.clone(), *normally_closed));
+            }
+        }
+        relays
+    }
+
+    /// Keeps the settled state for the frame; a relay is never clicked by hand.
+    fn publish_relay_state(&mut self, relays: &[RelayBinding], state: &[bool]) {
+        let mut settled = Vec::with_capacity(relays.len());
+        for ((index, _, _, _), closed) in relays.iter().zip(state) {
+            if let Some(placement) = self.document.placements().get(*index) {
+                settled.push((placement.id(), *closed));
+            }
+        }
+        self.relays = settled.into_iter().collect();
+    }
+
+    /// A solenoid valve follows its coil in the net the relays settled on.
+    fn position_solenoids(
+        &mut self,
+        circuit: u32,
+        user_closed: &[(usize, String, String)],
+        relays: &[RelayBinding],
+        state: &[bool],
+    ) {
+        let net = control_net(
+            &self.document,
+            &self.catalog,
+            circuit,
+            &closed_pairs(user_closed, relays, state),
+        );
         let live = net.energised();
-        // A solenoid valve follows its coil.
         for (index, placement) in self.document.placements().iter().enumerate() {
             if placement.circuit != circuit {
                 continue;
@@ -1208,6 +1285,7 @@ impl PfSession {
             selected_pipe,
             charts,
             contacts,
+            relays,
             ..
         } = self;
 
@@ -1219,7 +1297,7 @@ impl PfSession {
             placement_part,
             circuit,
             charts,
-            contacts,
+            ContactStates { contacts, relays },
         );
         // The boxes the hit test and the pipes use are the document's, not a layout the
         // front end guessed.
@@ -2220,6 +2298,19 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             });
             text.push_str("Circuito eléctrico: se dibuja, todavía no se simula\n");
         }
+        Behaviour::Relay {
+            coil,
+            contact,
+            normally_closed,
+        } => {
+            let _ = writeln!(text, "Bobina: {}–{}", coil[0], coil[1]);
+            let _ = writeln!(text, "Contacto: {}–{}", contact[0], contact[1]);
+            text.push_str(if *normally_closed {
+                "Contacto cerrado en reposo\n"
+            } else {
+                "Contacto abierto en reposo\n"
+            });
+        }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
 }
@@ -3054,7 +3145,10 @@ impl PfSession {
             &self.placement_part,
             circuit,
             &self.charts,
-            &self.contacts,
+            ContactStates {
+                contacts: &self.contacts,
+                relays: &self.relays,
+            },
         );
         let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
         let mut page = punchi_fluid_export::Page {
@@ -4097,6 +4191,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::Recorder { .. }
             | Behaviour::ElectricalSupply { .. }
             | Behaviour::Contact { .. }
+            | Behaviour::Relay { .. }
             | Behaviour::Plug
             | Behaviour::Junction => {}
         }
@@ -4857,9 +4952,18 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::Recorder { .. }
         | Behaviour::ElectricalSupply { .. }
         | Behaviour::Contact { .. }
+        | Behaviour::Relay { .. }
         | Behaviour::Plug
         | Behaviour::Junction => {}
     }
+}
+
+/// The run state a frame reads for its moving contacts: the clicked buttons and the relays
+/// the net settled on.
+#[derive(Clone, Copy)]
+struct ContactStates<'a> {
+    contacts: &'a std::collections::HashMap<u64, bool>,
+    relays: &'a std::collections::HashMap<u64, bool>,
 }
 
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for
@@ -4874,7 +4978,7 @@ fn scene<'a>(
     placement_part: &[Option<usize>],
     circuit: u32,
     charts: &'a std::collections::HashMap<u64, Chart>,
-    contacts: &std::collections::HashMap<u64, bool>,
+    states: ContactStates<'_>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
@@ -4911,7 +5015,7 @@ fn scene<'a>(
                 )
             }),
             series: chart_series(placement.id(), charts),
-            contact_closed: contact_closed(placement, contacts),
+            contact_closed: contact_closed(placement, states.contacts, states.relays),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
         });
@@ -4976,6 +5080,9 @@ fn layout_of(placed: &[Placed<'_>]) -> Option<Layout> {
     }
 }
 
+/// A relay in the control pass: placement index, coil pair, contact pair and rest state.
+type RelayBinding = (usize, [String; 2], [String; 2], bool);
+
 /// The electrical terminals of one circuit and the edges between them.
 ///
 /// The net is what makes the control circuit a model instead of a drawing: terminals are
@@ -5021,7 +5128,7 @@ fn control_net(
     document: &Document,
     catalog: &Catalog,
     circuit: u32,
-    closed_contacts: &[usize],
+    closed: &[(usize, String, String)],
 ) -> ControlNet {
     let mut nodes: Vec<(usize, String)> = Vec::new();
     let mut seeds: Vec<usize> = Vec::new();
@@ -5077,23 +5184,9 @@ fn control_net(
             net.adjacency[b].push(a);
         }
     }
-    // A closed contact joins its own two terminals.
-    for index in closed_contacts {
-        let Some(placement) = document.placements().get(*index) else {
-            continue;
-        };
-        let Some(definition) = catalog.get(&placement.catalog_id) else {
-            continue;
-        };
-        let terminals: Vec<&str> = definition
-            .port
-            .iter()
-            .filter(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
-            .map(|port| port.id.as_str())
-            .collect();
-        if let [first, second] = terminals[..]
-            && let (Some(a), Some(b)) = (node_of(*index, first), node_of(*index, second))
-        {
+    // Every closed contact joins its own two terminals.
+    for (index, from, to) in closed {
+        if let (Some(a), Some(b)) = (node_of(*index, from), node_of(*index, to)) {
             net.adjacency[a].push(b);
             net.adjacency[b].push(a);
         }
@@ -5101,15 +5194,105 @@ fn control_net(
     net
 }
 
+/// Rebuilds the net until every relay agrees with the coil that feeds it.
+///
+/// A relay contact is not clicked: it follows its coil, and a coil that follows a contact
+/// can take more than one pass to settle. The loop is bounded by the number of relays, so a
+/// circuit that oscillates still stops.
+fn settle_relays(
+    document: &Document,
+    catalog: &Catalog,
+    circuit: u32,
+    user_closed: &[(usize, String, String)],
+    relays: &[RelayBinding],
+) -> Vec<bool> {
+    let mut state: Vec<bool> = relays
+        .iter()
+        .map(|(_, _, _, normally_closed)| *normally_closed)
+        .collect();
+    let bound = relays.len().saturating_mul(2).saturating_add(2);
+    for _ in 0..=bound {
+        let net = control_net(
+            document,
+            catalog,
+            circuit,
+            &closed_pairs(user_closed, relays, &state),
+        );
+        let live = net.energised();
+        let settled: Vec<bool> = relays
+            .iter()
+            .map(|(index, coil, _, normally_closed)| {
+                let (Some(a), Some(b)) =
+                    (net.node_of(*index, &coil[0]), net.node_of(*index, &coil[1]))
+                else {
+                    return *normally_closed;
+                };
+                let energised = live[a] != live[b];
+                if *normally_closed {
+                    !energised
+                } else {
+                    energised
+                }
+            })
+            .collect();
+        if settled == state {
+            break;
+        }
+        state = settled;
+    }
+    state
+}
+
+/// The two terminals a contact or a relay contact joins, when the file says so.
+///
+/// A push button has exactly two electrical terminals; a relay has four and names its
+/// contact pair in the behaviour, because its coil terminals share the same role.
+fn contact_pair(
+    definition: &punchi_fluid_catalog::ComponentDefinition,
+) -> Option<(String, String)> {
+    match &definition.behaviour {
+        Behaviour::Contact { .. } => {
+            let mut terminals = definition
+                .port
+                .iter()
+                .filter(|port| port.role == punchi_fluid_catalog::PortRole::Electrical)
+                .map(|port| port.id.clone());
+            Some((terminals.next()?, terminals.next()?))
+        }
+        Behaviour::Relay { contact, .. } => Some((contact[0].clone(), contact[1].clone())),
+        _ => None,
+    }
+}
+
+/// The pairs the net treats as closed: the clicked contacts and the relays that settled.
+fn closed_pairs(
+    user_closed: &[(usize, String, String)],
+    relays: &[(usize, [String; 2], [String; 2], bool)],
+    state: &[bool],
+) -> Vec<(usize, String, String)> {
+    let mut closed = user_closed.to_vec();
+    for ((index, _, contact, _), on) in relays.iter().zip(state) {
+        if *on {
+            closed.push((*index, contact[0].clone(), contact[1].clone()));
+        }
+    }
+    closed
+}
+
 /// Whether a contact on the sheet is closed, when the definition is one.
 ///
 /// A state nobody has clicked yet starts at what the file declares, so the sheet opens with
-/// the contact in its rest position and the drawing needs no default of its own.
+/// the contact in its rest position and the drawing needs no default of its own. A relay's
+/// state is the net's, not the user's, and it lives in its own map.
 fn contact_closed(
     placement: &punchi_fluid_doc::Placement,
     contacts: &std::collections::HashMap<u64, bool>,
+    relays: &std::collections::HashMap<u64, bool>,
 ) -> Option<bool> {
-    contacts.get(&placement.id()).copied()
+    contacts
+        .get(&placement.id())
+        .or_else(|| relays.get(&placement.id()))
+        .copied()
 }
 
 /// What a bound recorder charts, as its newest sample and its unit.

@@ -539,6 +539,19 @@ pub enum Behaviour {
         #[serde(default)]
         normally_closed: bool,
     },
+    /// A relay: a coil whose state closes its own contact (ADR 0019).
+    ///
+    /// The file names the two pairs, because a relay has four electrical terminals and the
+    /// pair a terminal belongs to is behaviour, not geometry.
+    Relay {
+        /// The two coil terminals, positive side first.
+        coil: [String; 2],
+        /// The two contact terminals, in the order the contact joins them.
+        contact: [String; 2],
+        /// `true` when the contact is closed with the coil at rest.
+        #[serde(default)]
+        normally_closed: bool,
+    },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -573,6 +586,7 @@ impl Behaviour {
             Self::Silencer { .. } => "silencer",
             Self::ElectricalSupply { .. } => "electrical_supply",
             Self::Contact { .. } => "contact",
+            Self::Relay { .. } => "relay",
             Self::Junction => "junction",
         }
     }

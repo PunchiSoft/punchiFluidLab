@@ -251,6 +251,14 @@ voltage_v = 24.0             # the rail the control circuit hangs from
 type = "contact"             # two electrical terminals; `normally_closed = true` is another file
 ```
 
+```toml
+[behaviour]
+type = "relay"               # four electrical terminals in two named pairs
+coil = ["A1", "A2"]          # the terminals the net feeds
+contact = ["11", "14"]       # the terminals the contact joins
+normally_closed = false      # the contact at rest; a changeover is another file
+```
+
 The electrical control circuit is a **second domain in the same document**
 ([ADR 0017](../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md) and
 [ADR 0018](../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)). Its terminals declare
@@ -264,6 +272,13 @@ open or closed, and a click toggles it. A **solenoid valve** declares
 positive terminal live, propagates it through wires and closed contacts, and sets the valve
 to its actuated position while its coil is live. There is no voltage and no current: the
 circuit is a boolean net.
+
+A **relay** names its coil pair and its contact pair
+([ADR 0019](../docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)). The coil is energised when
+exactly one of its terminals is live; the contact joins its pair while the coil is energised
+(or while it rests, with `normally_closed = true`). The net settles in bounded passes, so a
+relay may feed another relay or its own coil, and the contact bar is drawn by the renderer
+from the state the run settled on. The relay has no delay: a timer is a different file.
 
 ```toml
 [behaviour]

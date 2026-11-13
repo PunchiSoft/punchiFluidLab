@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### El relé: una bobina que cierra su contacto — 2026-11-13
+
+Un circuito de mando que solo puede conmutar una mano no puede encadenar dos líneas. El relé
+es la pieza que deja que una señal mueva otra, y la primera realimentación de la red: su
+contacto puede alimentar la bobina de otro relé, o la suya propia.
+
+- **Un archivo, dos parejas**: `coil = ["A1", "A2"]` y `contact = ["11", "14"]` nombradas por
+  el propio relé, porque los cuatro terminales comparten el rol eléctrico
+  ([ADR 0019](docs/adr/0019-a-relay-is-a-coil-and-a-contact.md)).
+- **La bobina se energiza cuando exactamente uno de sus terminales está vivo**, que es la
+  sombra booleana de una diferencia de potencial; el contacto es una arista mientras la
+  bobina está energizada (o mientras descansa, si el archivo lo declara cerrado).
+- **La red se asienta en pasadas acotadas** (`2 · relés + 2`): un relé puede alimentar a otro
+  o a sí mismo, y el circuito termina igualmente. La comprobación eléctrica usa el mismo
+  asentamiento, así que un cortocircuito a través de un contacto de relé también se ve.
+- **El estado es del ensayo**, no del documento: no se guarda y un relé no se pulsa con el
+  ratón; su contacto se mueve porque su bobina está viva.
+- **La barra la dibuja el renderizador**, como la del pulsador, y el enlace mecánico va a
+  trazos.
+- **Evidencia**: `a_relay_names_two_coil_and_two_contact_terminals`,
+  `a_relay_closes_its_contact_while_its_coil_is_live` (raíl, pulsador, relé y válvula de
+  solenoide), la revisión del símbolo y el lint del catálogo.
+
 ### La novena comprobación: el raíl en cortocircuito — 2026-11-13
 
 La referencia cierra sus nueve comprobaciones con una etiqueta que no coincide, porque allí un

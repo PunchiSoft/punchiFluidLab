@@ -494,3 +494,60 @@ type = "contact"
         catalog.problems()
     );
 }
+
+#[test]
+fn a_relay_names_two_coil_and_two_contact_terminals() {
+    let valid = r#"
+schema = 3
+id = "electrical.relay.test"
+name = "Relay"
+category = "sensor"
+[[port]]
+id = "A1"
+role = "electrical"
+position = [0.0, 0.30]
+[[port]]
+id = "A2"
+role = "electrical"
+position = [0.0, 0.70]
+[[port]]
+id = "11"
+role = "electrical"
+position = [1.0, 0.30]
+[[port]]
+id = "14"
+role = "electrical"
+position = [1.0, 0.70]
+[behaviour]
+type = "relay"
+coil = ["A1", "A2"]
+contact = ["11", "14"]
+"#;
+    let dir = tempfile::tempdir().expect("temp dir");
+    write(dir.path(), "relay.toml", valid);
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(
+        catalog.get("electrical.relay.test").is_some(),
+        "{:?}",
+        catalog.problems()
+    );
+
+    // A terminal used by both pairs would make the net ambiguous about what the coil
+    // closes, so the file is refused instead of guessed.
+    let overlapping = valid.replace("contact = [\"11\", \"14\"]", "contact = [\"11\", \"A1\"]");
+    let dir = tempfile::tempdir().expect("temp dir");
+    write(dir.path(), "relay.toml", &overlapping);
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(
+        catalog.get("electrical.relay.test").is_none(),
+        "a relay may not share a terminal between coil and contact"
+    );
+    assert!(
+        catalog
+            .problems()
+            .iter()
+            .any(|problem| problem.to_string().contains("used twice")),
+        "{:?}",
+        catalog.problems()
+    );
+}

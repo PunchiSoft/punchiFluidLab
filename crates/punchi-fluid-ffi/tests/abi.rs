@@ -2595,3 +2595,87 @@ fn a_contact_energises_the_solenoid_it_is_wired_to() {
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
+
+#[test]
+fn a_relay_closes_its_contact_while_its_coil_is_live() {
+    let session = session();
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact");
+    let relay = catalog_index(session, "electrical.relay");
+    let valve = catalog_index(session, "valve.3_2.solenoid");
+    // SAFETY: live session.
+    let rail = unsafe { pf_session_place_component(session, rail, 20.0, 20.0) };
+    let button = unsafe { pf_session_place_component(session, button, 70.0, 20.0) };
+    let relay = unsafe { pf_session_place_component(session, relay, 120.0, 20.0) };
+    let valve = unsafe { pf_session_place_component(session, valve, 170.0, 20.0) };
+    assert!(rail >= 0 && button >= 0 && relay >= 0 && valve >= 0);
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let relay = u32::try_from(relay).unwrap_or_default();
+    let valve = u32::try_from(valve).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let n = CString::new("N").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let two = CString::new("2").unwrap_or_default();
+    let a1 = CString::new("A1").unwrap_or_default();
+    let a2 = CString::new("A2").unwrap_or_default();
+    let eleven = CString::new("11").unwrap_or_default();
+    let fourteen = CString::new("14").unwrap_or_default();
+    let coil = CString::new("Y1").unwrap_or_default();
+
+    // The rail feeds the button; the button feeds the coil and the relay's own contact;
+    // the contact feeds the solenoid. The relay is in the middle of its own net.
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), button, one.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, button, two.as_ptr(), relay, a1.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, button, two.as_ptr(), relay, eleven.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, relay, a2.as_ptr(), rail, n.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, relay, fourteen.as_ptr(), valve, coil.as_ptr()) },
+        PF_OK
+    );
+
+    // At rest the button is open, the coil is dead and the contact is a gap.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+
+    // Pressed, the coil sees one live terminal and the contact closes the solenoid's line.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        1
+    );
+
+    // Released, the coil rests and the contact opens again: no state is held by the relay.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_toggle_contact(session, button) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_component_valve_position(session, valve) },
+        0
+    );
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}

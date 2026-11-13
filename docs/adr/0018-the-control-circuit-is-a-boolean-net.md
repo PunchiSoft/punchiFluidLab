@@ -35,9 +35,13 @@ The control circuit is a **boolean net**:
 - **The drawing shows the state.** A contact's movable bar is drawn by the renderer — the
   same rule that lets a cylinder's piston move — so the sheet shows an open gap or a closed
   bridge without the file carrying two symbols.
-- **The check stays out of it.** No open-terminal fault and no short-circuit fault: the
-  reference's mismatched-connection fault needs the rest of the electrical library, and a
-  check that guesses is worse than no check.
+- **The check stays out of it.** No open-terminal fault and no short-circuit fault at the
+  time of this decision: the reference's mismatched-connection fault needed the rest of the
+  electrical library, and a check that guesses is worse than no check.
+
+  **Amendment (2026-11-13):** the design check now reports a short circuit of the rail as the
+  ninth fault, with the mismatched connection as the eighth. The net described here did not
+  change: the check reads it, and the model still has no current.
 
 ## Consequences
 

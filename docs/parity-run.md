@@ -33,6 +33,7 @@ that proves it.
 |---|---|---|---|
 | — | Queue, skill and this note | `a19850c` | `scripts-dev/check-docs.sh` |
 | 1 | Ninth fault: the short circuit of the rail, and the ledger corrected | `feat(check): short circuit of the rail` | `short_circuit_tests::*`, the CLI reference and the reconciled ledger |
+| 2 | Relay: a coil that closes a contact | `feat(catalog): a relay closes its contact from its coil` | `a_relay_names_two_coil_and_two_contact_terminals`, `a_relay_closes_its_contact_while_its_coil_is_live`, the symbol review |
 
 ## Decisions taken in this run
 
@@ -44,13 +45,19 @@ Recorded so a later session does not reopen them:
    because its model needs to; ours does not, so the label fault is **not applicable** and the
    ninth fault is the one that exists under our rules: the live rail and its return in the same
    net through wires and closed contacts.
-2. **A relay is a coil plus a contact on the same boolean net**: the contact is an edge that
-   exists only while the coil is live. No delay unless the file declares one.
+2. **A relay is a coil plus a contact on the same boolean net, in one file**: the coil is
+   energised when exactly one of its two terminals is live, and the net settles in bounded
+   passes so a relay can feed another or itself. No delay: a timer is a separate part.
 3. **Timers follow IEC 61131-3**: `TON` (on-delay) and `TOF` (off-delay), implemented as a
    bounded count of steps, never a sleep, and tested with a fixed step count.
 4. **Labels are drawn under the symbol** (already true) and never carry electrical meaning.
 5. **The LED/lamp, the limit switch and the encoder are separate capabilities**, each with its
    own file and test, not one generic "output".
+6. **The reference is a guide to behaviour, not to appearance.** The owner supplied captures
+   and a recording of the reference on 2026-11-13; the ribbon, the animations, the Rust
+   workspace and the drawing are ours and stay. No symbol, icon, name or file from that
+   program enters the repository: the palette is read as a checklist of components, and every
+   symbol is drawn by hand against IEC 60617.
 
 ## Open questions for the owner
 

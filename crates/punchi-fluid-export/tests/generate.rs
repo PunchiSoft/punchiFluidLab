@@ -55,7 +55,14 @@ fn write_a_sample_sheet_on_request() {
 /// Same drawing code as the sheet, at a size a reader can check a numeral in: 60 × 45 mm
 /// at 200 dpi is 472 × 354 px, and the symbol is drawn at half stroke.
 fn write_review_images(catalog: &Catalog) {
+    // One symbol at a time when a review only needs its own images; the whole catalog
+    // otherwise.
+    let only =
+        std::env::var_os("PUNCHI_FLUID_REVIEW_ID").map(|id| id.to_string_lossy().into_owned());
     for definition in catalog.iter() {
+        if only.as_deref().is_some_and(|id| id != definition.id) {
+            continue;
+        }
         for (theme, ink, background) in [
             ("light", Ink::print(), Colour::WHITE),
             (
@@ -90,7 +97,30 @@ fn write_review_images(catalog: &Catalog) {
                 inner_width,
                 inner_height,
             );
-            punchi_fluid_draw::draw_component(&mut surface, inner, definition, 0, 0.5, &ink);
+            // A contact and a relay have a moving bar the renderer draws from the run
+            // state; the review image shows it at rest, not only the file's static part.
+            let moving = matches!(
+                definition.behaviour,
+                punchi_fluid_catalog::Behaviour::Contact { .. }
+                    | punchi_fluid_catalog::Behaviour::Relay { .. }
+            );
+            if moving {
+                let placed = punchi_fluid_draw::Placed {
+                    index: 0,
+                    catalog_id: &definition.id,
+                    rect: inner,
+                    extension: 0.0,
+                    valve_position: 0,
+                    reading: None,
+                    series: None,
+                    contact_closed: Some(false),
+                    orientation: punchi_fluid_draw::Orientation::NONE,
+                    designation: None,
+                };
+                punchi_fluid_draw::draw_placed(&mut surface, &[placed], &[], catalog, &ink, &[]);
+            } else {
+                punchi_fluid_draw::draw_component(&mut surface, inner, definition, 0, 0.5, &ink);
+            }
             let bytes = surface.encode().expect("encodes");
             let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../assets/symbols/review")

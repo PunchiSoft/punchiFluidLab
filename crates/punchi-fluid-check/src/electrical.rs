@@ -66,6 +66,22 @@ pub(crate) fn short_circuits(document: &Document, catalog: &Catalog, circuit: u3
     findings
 }
 
+/// The two terminals a contact or a relay contact joins, when the file says so.
+fn pair(definition: &punchi_fluid_catalog::ComponentDefinition) -> Option<(String, String)> {
+    match &definition.behaviour {
+        Behaviour::Contact { .. } => {
+            let mut terminals = definition
+                .port
+                .iter()
+                .filter(|port| port.role == PortRole::Electrical)
+                .map(|port| port.id.clone());
+            Some((terminals.next()?, terminals.next()?))
+        }
+        Behaviour::Relay { contact, .. } => Some((contact[0].clone(), contact[1].clone())),
+        _ => None,
+    }
+}
+
 /// A terminal of the control net: the placement it belongs to and its port.
 #[derive(Debug, PartialEq, Eq)]
 struct Terminal {
@@ -73,19 +89,36 @@ struct Terminal {
     port: String,
 }
 
+/// A relay as the check sees it: the two coil nodes, the two contact nodes, and the state
+/// the contact starts in.
+#[derive(Debug, Clone, Copy)]
+struct Relay {
+    coil: (usize, usize),
+    contact: (usize, usize),
+    normally_closed: bool,
+}
+
 /// The control net of one circuit: terminals joined by wires and closed contacts.
 ///
 /// The graph is small and short-lived — one per checked circuit — so it is built on demand
 /// rather than kept as a cache. A contact that starts open is a gap: a button held down at
-/// the moment of the check does not count as a short until the run says so.
+/// the moment of the check does not count as a short until the run says so. A relay contact
+/// is not clicked; it settles from its coil, in a loop bounded by the number of relays.
 #[derive(Debug, Default)]
 struct ControlNet {
     terminals: Vec<Terminal>,
+    /// Wires and normally-closed contacts: the edges that do not depend on the run.
+    base: Vec<(usize, usize)>,
+    /// Relays whose contact follows a coil.
+    relays: Vec<Relay>,
+    /// Nodes a rail energises.
+    seeds: Vec<usize>,
+    /// Edges of the state the relays settled on.
     edges: Vec<Vec<usize>>,
 }
 
 impl ControlNet {
-    /// Builds the net from the document: every wire, and every normally-closed contact.
+    /// Builds the net from the document and lets the relays settle.
     fn of(document: &Document, catalog: &Catalog, circuit: u32) -> Self {
         let mut net = Self::default();
         for connection in document.connections() {
@@ -94,7 +127,7 @@ impl ControlNet {
             }
             let a = net.node(connection.from.placement, &connection.from.port);
             let b = net.node(connection.to.placement, &connection.to.port);
-            net.join(a, b);
+            net.base.push((a, b));
         }
         for placement in document.placements() {
             if placement.circuit != circuit {
@@ -103,24 +136,111 @@ impl ControlNet {
             let Some(definition) = catalog.get(&placement.catalog_id) else {
                 continue;
             };
-            let Behaviour::Contact { normally_closed } = definition.behaviour else {
-                continue;
-            };
-            if !normally_closed {
-                continue;
-            }
-            let mut terminals = definition
-                .port
-                .iter()
-                .filter(|port| port.role == PortRole::Electrical)
-                .map(|port| port.id.as_str());
-            if let (Some(first), Some(second)) = (terminals.next(), terminals.next()) {
-                let a = net.node(placement.id(), first);
-                let b = net.node(placement.id(), second);
-                net.join(a, b);
+            match &definition.behaviour {
+                Behaviour::Contact { normally_closed } => {
+                    if *normally_closed && let Some((first, second)) = pair(definition) {
+                        let a = net.node(placement.id(), &first);
+                        let b = net.node(placement.id(), &second);
+                        net.base.push((a, b));
+                    }
+                }
+                Behaviour::Relay {
+                    coil,
+                    contact,
+                    normally_closed,
+                } => {
+                    let a = net.node(placement.id(), &coil[0]);
+                    let b = net.node(placement.id(), &coil[1]);
+                    let c = net.node(placement.id(), &contact[0]);
+                    let d = net.node(placement.id(), &contact[1]);
+                    net.relays.push(Relay {
+                        coil: (a, b),
+                        contact: (c, d),
+                        normally_closed: *normally_closed,
+                    });
+                }
+                _ => {}
             }
         }
+        // A rail marks its positive terminal live; the return is not a source.
+        for placement in document.placements() {
+            if placement.circuit != circuit {
+                continue;
+            }
+            let Some(definition) = catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            if matches!(definition.behaviour, Behaviour::ElectricalSupply { .. })
+                && let Some(node) = net.index_of(placement.id(), "L")
+            {
+                net.seeds.push(node);
+            }
+        }
+        net.settle();
         net
+    }
+
+    /// Rebuilds the edges until every relay agrees with the coil that feeds it.
+    fn settle(&mut self) {
+        let relays = self.relays.clone();
+        let mut state: Vec<bool> = relays.iter().map(|relay| relay.normally_closed).collect();
+        let bound = relays.len().saturating_mul(2).saturating_add(2);
+        for _ in 0..=bound {
+            self.rebuild(&state);
+            let live = self.energised();
+            let next: Vec<bool> = relays
+                .iter()
+                .map(|relay| {
+                    let energised = live[relay.coil.0] != live[relay.coil.1];
+                    if relay.normally_closed {
+                        !energised
+                    } else {
+                        energised
+                    }
+                })
+                .collect();
+            if next == state {
+                return;
+            }
+            state = next;
+        }
+        self.rebuild(&state);
+    }
+
+    /// Builds the edges for one relay state.
+    fn rebuild(&mut self, state: &[bool]) {
+        self.edges = vec![Vec::new(); self.terminals.len()];
+        for (a, b) in self.base.clone() {
+            self.join(a, b);
+        }
+        let joins: Vec<(usize, usize)> = self
+            .relays
+            .iter()
+            .zip(state)
+            .filter(|(_, closed)| **closed)
+            .map(|(relay, _)| (relay.contact.0, relay.contact.1))
+            .collect();
+        for (a, b) in joins {
+            self.join(a, b);
+        }
+    }
+
+    /// Which nodes are live: the seeds, then everything they reach.
+    fn energised(&self) -> Vec<bool> {
+        let mut live = vec![false; self.terminals.len()];
+        let mut pending = self.seeds.clone();
+        for seed in &self.seeds {
+            live[*seed] = true;
+        }
+        while let Some(node) = pending.pop() {
+            for next in &self.edges[node] {
+                if !live[*next] {
+                    live[*next] = true;
+                    pending.push(*next);
+                }
+            }
+        }
+        live
     }
 
     /// The node of a terminal, adding it the first time it is seen.
@@ -132,7 +252,6 @@ impl ControlNet {
             placement,
             port: port.to_owned(),
         });
-        self.edges.push(Vec::new());
         self.terminals.len() - 1
     }
 
