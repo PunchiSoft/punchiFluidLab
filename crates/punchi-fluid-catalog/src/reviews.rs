@@ -23,6 +23,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/supply.compressor.md"),
     ),
     (
+        "supply.compressor_adjustable",
+        include_str!("../../../assets/symbols/review/supply.compressor_adjustable.md"),
+    ),
+    (
         "supply.network",
         include_str!("../../../assets/symbols/review/supply.network.md"),
     ),

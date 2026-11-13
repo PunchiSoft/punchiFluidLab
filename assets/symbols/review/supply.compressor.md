@@ -26,14 +26,16 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The triangle stands on its base line inside the circle | pass | equilateral, base 0.364 of the box, height 0.33 |
 | The delivery leaves the top through a stem ending in a connection circle | pass | stem above the circle, open circle at the port |
 | The triangle inside the circle points up, to its delivery | pass | apex up, the air leaves through the point |
-| The connection circle marks the port | pass | drawn by the renderer at port 1, not by the file |
+| The connection circle marks the port | pass | drawn by the renderer at ports 1 and 2 |
+| The bottom intake mark is drawn, as the reference does | pass | the stem and circle, declared as a mark, not a port |
 | Legible at palette size | pass | `catalog-dark.png` |
 
 ## What is still open
 
 - 300 dpi render and a second reader's signature.
 - The compressor is modelled as a constant-pressure source: the real machine's delivery curve
-  is not modelled.
+  is not modelled. The bottom circle is the reference's intake/condensate mark; this model
+  has one supply port, so it is drawn but not connected.
 
 ## Images
 
