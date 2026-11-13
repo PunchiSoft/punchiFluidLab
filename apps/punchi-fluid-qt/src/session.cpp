@@ -1132,10 +1132,7 @@ void FluidSession::writeAutosave()
     const QString directory = QFileInfo(path).absolutePath();
     QDir().mkpath(directory);
     const QByteArray encoded = path.toUtf8();
-    if (pf_session_autosave(m_session, encoded.constData()) == PF_OK) {
-        m_recoveryOffered = true;
-        emit documentChanged();
-    }
+    pf_session_autosave(m_session, encoded.constData());
 }
 
 void FluidSession::autosave()
