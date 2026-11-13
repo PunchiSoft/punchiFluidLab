@@ -1554,6 +1554,39 @@ int main(int argc, char *argv[])
             check(restored, QStringLiteral("spacing: one undo puts them back"));
         });
 
+        // The two terminations are files like everything else: they are placed, inspected
+        // and removed, and the inspector says what they do.
+        steps->push_back([state, check] {
+            int plug = -1;
+            int silencer = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                const QString id = row.value(QStringLiteral("id")).toString();
+                if (id == QStringLiteral("plug.blind")) {
+                    plug = row.value(QStringLiteral("index")).toInt();
+                }
+                if (id == QStringLiteral("silencer.pneumatic")) {
+                    silencer = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(plug >= 0 && silencer >= 0,
+                  QStringLiteral("terminations: the catalog offers both"));
+            const int plug_index = plug >= 0 ? state->session->placeComponent(plug, 40.0, 60.0) : -1;
+            const int silencer_index =
+                silencer >= 0 ? state->session->placeComponent(silencer, 80.0, 60.0) : -1;
+            check(plug_index >= 0 && silencer_index >= 0,
+                  QStringLiteral("terminations: they can be placed"));
+            state->session->inspectComponent(plug_index);
+            check(state->session->inspectorText().contains(QStringLiteral("Cierra el puerto")),
+                  QStringLiteral("terminations: the plug says it closes the port"));
+            state->session->inspectComponent(silencer_index);
+            check(state->session->inspectorText().contains(QStringLiteral("Ventila el escape")),
+                  QStringLiteral("terminations: the silencer says it vents the exhaust"));
+            state->session->removeComponent(silencer_index);
+            state->session->removeComponent(plug_index);
+        });
+
         // A recorder is an empty frame until it is bound: the inspector lists what the
         // circuit can report, and the sheet draws what it sampled.
         steps->push_back([state, check] {

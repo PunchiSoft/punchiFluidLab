@@ -514,6 +514,13 @@ pub enum Behaviour {
         #[serde(default = "default_rate_hz")]
         rate_hz: f64,
     },
+    /// A blind plug: one port, closed (ADR 0016).
+    Plug,
+    /// A silencer: one exhaust port that vents to atmosphere through a restriction.
+    Silencer {
+        /// Sonic conductance to atmosphere, `m³ / (s · Pa)`.
+        conductance: f64,
+    },
     /// A junction: hoses meet here and the component adds nothing of its own.
     ///
     /// It has no volume, no restriction and no force, so the solver treats every port as
@@ -544,6 +551,8 @@ impl Behaviour {
             Self::Throttle { .. } => "throttle",
             Self::FlowMeter { .. } => "flow_meter",
             Self::Recorder { .. } => "recorder",
+            Self::Plug => "plug",
+            Self::Silencer { .. } => "silencer",
             Self::Junction => "junction",
         }
     }

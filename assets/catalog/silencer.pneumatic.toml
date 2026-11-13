@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Pneumatic silencer, fitted to an exhaust port.
+#
+# The exhaust leaves through this restriction to atmosphere, which is why a cylinder with a
+# silencer on its exhaust retracts more slowly than one that vents through an open port.
+# The acoustic part is not modelled: the conductance is the whole of what the file says
+# (ADR 0016), and the review says so.
+#
+# The cone with two relief lines is our drawing of the air leaving: the port arrives from
+# the left and the cone widens away from it. The body is a solid working line, like every
+# other component: the class describes the line, not the thing fitted to it.
+
+schema = 3
+id = "silencer.pneumatic"
+name = "Silencer"
+name_es = "Silenciador"
+category = "accessory"
+summary = "Vents an exhaust to atmosphere through a restriction."
+
+[[port]]
+id = "1"
+role = "exhaust"
+position = [0.0, 0.5]
+
+[behaviour]
+type = "silencer"
+conductance = 4.0e-10
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.30, 0.5]
+line_class = "working"
+
+# The cone: the air widens as it leaves.
+[[symbol]]
+kind = "polygon"
+points = [0.30, 0.24, 0.30, 0.76, 0.78, 0.5]
+line_class = "working"
+
+# Two relief lines across the mouth, which is what tells a silencer from a plain nozzle.
+[[symbol]]
+kind = "line"
+points = [0.50, 0.30, 0.50, 0.70]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.64, 0.38, 0.64, 0.62]
+line_class = "working"

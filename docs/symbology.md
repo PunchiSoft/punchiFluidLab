@@ -214,6 +214,21 @@ checked and reads nothing.
   review stays `pending` until a second reader checks it
   ([review](../assets/symbols/review/)).
 
+### Terminations
+
+- A **blind plug** is a **stub that ends in the blocking bar**, the same mark a valve draws
+  for a closed way: a reader learns one shape for "closed" and finds it everywhere. It has
+  one port, on the side the hose arrives, and no stub on the far side because nothing
+  leaves.
+- A **silencer** is a **cone that widens away from its port**, with two relief lines across
+  its mouth: the air spreads as it leaves, and the relief lines are what tell it apart from
+  a plain nozzle. It sits on an **exhaust** port and nowhere else. Its body is a solid
+  working line like any component's; the class describes lines, not the things fitted to
+  them.
+- **Neither symbol claims a property the model does not have.** The plug is the closed
+  port, not a valve; the silencer's file states a conductance and the review states that
+  the noise is not modelled.
+
 ### Circuit diagrams (Part 2/3)
 
 - Components are grouped and numbered, and the diagram carries an identification

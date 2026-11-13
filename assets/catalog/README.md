@@ -224,6 +224,24 @@ the curve is the model's, never a primitive of the file
 
 ```toml
 [behaviour]
+type = "plug"                # no fields: it closes the port it is fitted to
+```
+
+```toml
+[behaviour]
+type = "silencer"
+conductance = 4.0e-10        # restriction to atmosphere, m³ / (s · Pa)
+```
+
+A **blind plug** caps a working port so the line ends there on purpose; the network keeps
+the port's node and adds nothing else, and the check stops reporting the port as open. A
+**silencer** is fitted to an **exhaust** port and vents it to atmosphere through its
+conductance, so a narrow one really slows the cylinder it serves. The acoustic part is not
+modelled and the file does not pretend otherwise
+([ADR 0016](../docs/adr/0016-a-termination-is-a-component.md)).
+
+```toml
+[behaviour]
 type = "junction"            # no fields: it adds nothing to the network
 ```
 

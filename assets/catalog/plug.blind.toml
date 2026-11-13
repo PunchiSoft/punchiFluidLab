@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Blind plug: caps a port so the line ends there on purpose.
+#
+# It adds no physics of its own: the port is closed, and the network keeps the port's node
+# with nothing leaving it. Attaching one is what turns "this port is open" into "this port
+# is capped", and the check accepts it because the port is connected (ADR 0016).
+#
+# The symbol is a short stub ending in the blocking bar, the same mark a valve uses for a
+# closed port, so a reader recognises "closed" before reading the description.
+
+schema = 3
+id = "plug.blind"
+name = "Blind plug"
+name_es = "Tapón ciego"
+category = "accessory"
+summary = "Closes the port it is fitted to."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.0, 0.5]
+
+[behaviour]
+type = "plug"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.62, 0.5]
+line_class = "working"
+
+# The bar across the end is our marking of a closed port, the same shape the valve lint
+# draws for a blocked way.
+[[symbol]]
+kind = "line"
+points = [0.62, 0.22, 0.62, 0.78]
+line_class = "working"
+stroke = 1.4

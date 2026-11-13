@@ -24,7 +24,7 @@ file is the execution order.
 | Canvas: catalog-driven symbols, click on the valve, live readouts | **implemented** | `--selftest`, screenshots |
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | `--check-theme`, `--check-icons`, `--selftest`, light/dark screenshots |
 | Export PNG/PDF from the window and headless | **implemented** — [plan.md](plan.md) M2 | PDF, raster and caller-drawing tests; `--export`; the gate writes a PDF and an Oficio PNG |
-| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 15 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
+| ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 17 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
 | Editor: document, undo, pipes, T, re-route, per-instance properties, copy, turn, reflect, multi-selection, align, designations | **implemented** — [capabilities.md](capabilities.md) F1 | doc/ABI/`--selftest`, per row in the ledger |
 | The sheet is the network the solver runs | **implemented** — [capabilities.md](capabilities.md) F2 | network tests, the 5/2 + double-acting ABI circuit, pipe colour |
 | Save and open a sheet | **implemented** — [adr/0007](adr/0007-the-sheet-format-in-the-abi.md) | format tests, ABI round trip, `--selftest` |
@@ -58,7 +58,7 @@ changed lines outside generated files, it is two phases.
 | **P2.1 — the flow meter** ✅ delivered | `feat/flow-meter` | a meter in the line that reads the gas through it in normal litres per minute, per [ADR 0014](adr/0014-a-flow-meter-is-a-restriction-that-reports.md) | solver, ABI and drawing tests, the `--selftest` steps, the symbol review |
 | **P2.2 — the strip chart** ✅ delivered | `feat/strip-chart` | a recorder component that charts a chosen quantity over 60 s with a bounded window, per [ADR 0015](adr/0015-a-recorder-samples-a-named-quantity.md); the force meter is `not planned` until a mechanical domain exists | the ring test, the ABI bind/chart test, the `--selftest` steps, symbol review |
 | **P3.1 — even spacing** ✅ delivered | `feat/even-spacing` | Repartir horizontal and vertical, equal gaps between symbol boxes, one undo | doc, ABI and `--selftest` evidence |
-| **P3.2 — blind plugs and silencers** | `feat/blind-plugs-and-silencers` | a blind plug that closes a port and a silencer on an exhaust, as catalog files | catalog tests, symbol review |
+| **P3.2 — blind plugs and silencers** ✅ delivered | `feat/blind-plugs-and-silencers` | a plug that caps a port and a silencer that vents an exhaust through its conductance, per [ADR 0016](adr/0016-a-termination-is-a-component.md) | solver, check, catalog and `--selftest` evidence, two symbol reviews |
 | **P3.3 — pipe classes** | `feat/pipe-classes` | working, pilot and drain lines chosen per pipe | format test, `--selftest` |
 | **P4 — the sheet as a document** | `feat/parts-list` | parts list and title-block legend, then SVG | export tests, PNG/PDF fixtures |
 | **P5 — the electrical library, first slice** | `feat/electrical-supply-and-switch` | an electrical supply and a switch as files, one `behaviour` variant, ADR | ADR, catalog tests, a circuit that shows the switch acting on a valve |

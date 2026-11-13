@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### Tapón ciego y silenciador — 2026-11-12
+
+Un esquema tiene que poder decir dos cosas que una manguera no dice: que un puerto está
+**cerrado a propósito** y que un escape **respira por un silenciador**.
+
+- **Tapón ciego** (`behaviour = "plug"`): un puerto, sin física propia. Cierra la línea y la
+  comprobación deja de llamar «abierta» a esa conexión, que era un fallo que el estudiante
+  no podía resolver.
+- **Silenciador** (`behaviour = "silencer"`): un puerto de escape y una conductancia al
+  ambiente. Ahora el escape pasa por esa restricción, así que un silenciador estrecho frena
+  de verdad el retorno del cilindro. El ruido **no** se modela, y el archivo y su revisión
+  lo dicen.
+- **Los dos son archivos** ([ADR 0016](docs/adr/0016-a-termination-is-a-component.md)), con
+  símbolo dibujado a mano y revisión: el tapón reutiliza la barra de puerto cerrado de las
+  válvulas; el silenciador es un cono con dos líneas de alivio.
+- **Evidencia**: la prueba del escape restringido, la del cilindro que queda retenido con el
+  escape tapado, la de la comprobación que acepta el puerto tapado, las pruebas de catálogo
+  y cuatro pasos `--selftest`.
+
 ### Repartir los objetos con huecos iguales — 2026-11-12
 
 Un esquema dibujado a mano se reconoce por su ritmo: dos símbolos separados marcan la

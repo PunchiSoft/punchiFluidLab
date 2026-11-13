@@ -47,7 +47,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Exportación | **desde la ventana y sin ventana**: Archivo ▸ Exportar escribe PDF o PNG (300 dpi) de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Deuda: no hay panel de márgenes, tamaño personalizado ni resolución |
 | Comprobación | 7 de las 9 faltas, cada una señalada en el dibujo; las otras 2 necesitan el tubo cuyos extremos no encajan y la biblioteca eléctrica con su encoder (F6) |
 | Instrumentos | manómetro (`behaviour = "gauge"`): lee la presión de su puerto y no toca la física; **caudalímetro** (`behaviour = "flow_meter"`): restricción en la línea que informa del gas que la atraviesa, en litros normales por minuto; **registrador** (`behaviour = "recorder"`): componente sin puertos que dibuja una magnitud elegida durante 60 s; el dinamómetro queda `not planned` hasta que exista un dominio mecánico |
-| Símbolos | lint de 8 reglas; **15 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
+| Símbolos | lint de 8 reglas; **17 símbolos** con revisión visual y capturas claro/oscuro, todos en `pending-300dpi`; la revisión a 300 dpi sigue pendiente |
 
 **Valor de réplica, con honestidad:** la *base de edición y simulación* está muy cerca
 (la hoja se dibuja, se conecta, se gira, se simula y se guarda), pero del manual completo
@@ -127,11 +127,11 @@ especificación de lo que sigue.
 | Caudalímetro | **hecho** | `flow.meter`, restricción ISO 6358 en la línea que informa del caudal en litros normales por minuto; pruebas de solver, ABI y dibujo, pasos `--selftest` y revisión del símbolo |
 | Registrador | **hecho** | `chart.recorder`, componente sin puertos con ventana de 60 s y 10 muestras/s; fuente elegida en el inspector, guardada en el formato 5; prueba del anillo y del ABI, pasos `--selftest` y revisión del símbolo |
 | Exportación PNG/PDF desde la ventana y sin ventana | **hecho** | pruebas de PDF, ráster, dibujo del llamador y fecha/escala por el ABI; `--export`; el gate escribe un PDF y un PNG en Oficio. Deuda: panel de márgenes, tamaño personalizado y resolución |
-| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 15 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
+| Conformidad ISO 1219 de los símbolos | **mitad estructural hecha, mitad visual revisada, 300 dpi pendiente** | 8 reglas de lint con una prueba cada una, 17 revisiones con capturas claro/oscuro, prueba de la carpeta de revisión |
 | Instrumentos y ejecución hasta cambio | **hecho** | manómetro, caudalímetro, registrador de 60 s y «Hasta cambio»; el dinamómetro queda `not planned` con la razón escrita |
 
-**Total de pruebas: 276** — `core` 7, `catalog` 36, `file` 25, `solver` 36, `doc` 38,
-`draw` 41, `check` 11, `export` 40, `ffi` 37, `cli` 5.
+**Total de pruebas: 280** — `core` 7, `catalog` 37, `file` 25, `solver` 38, `doc` 38,
+`draw` 41, `check` 12, `export` 40, `ffi` 37, `cli` 5.
 `./scripts-dev/test.sh` en verde con cada binario bajo su tope de memoria, `clippy -D
 warnings` limpio y `cargo fmt --check` limpio.
 
@@ -299,7 +299,7 @@ actúa; clic en el cilindro o el suministro no) y capturas reales con `spectacle
 
 ```bash
 # 1. La puerta completa
-./scripts-dev/check.sh          # esperado: exit 0, 276 pruebas de Cargo + --selftest, 0 warnings
+./scripts-dev/check.sh          # esperado: exit 0, 280 pruebas de Cargo + --selftest, 0 warnings
 
 # 2. Conteo por paquete
 for c in core catalog file solver doc draw check export ffi cli; do
@@ -389,7 +389,7 @@ Norma aplicable, verificada contra el catálogo de ISO: **ISO 1219-1:2012** (sí
 **ISO 1219-2:2012** (esquemas de circuito) e **ISO 1219-3:2016** (módulos de símbolos).
 Contrato completo y lista de revisión: [symbology.md](symbology.md).
 
-Lo que exige y **cómo está hoy** en los 15 símbolos de fábrica:
+Lo que exige y **cómo está hoy** en los 17 símbolos de fábrica:
 
 | Requisito | Estado |
 |---|---|
@@ -402,7 +402,7 @@ Lo que exige y **cómo está hoy** en los 15 símbolos de fábrica:
 | Legibilidad a 300 dpi | **pendiente** de la revisión a 300 dpi |
 | Puntos de unión en cruces de tres líneas | **hecho**: al soltar un tubo sobre otro nace un `junction.tee`, que se dibuja como punto relleno (ADR 0006); un cruce de cuatro no se ofrece |
 
-Las 15 revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
+Las 17 revisiones están en `assets/symbols/review/` con `status: pending-300dpi`:
 una prueba falla si un componente de fábrica no tiene revisión, si no dice su estado o
 si le falta la captura clara u oscura. Mientras digan `pending-300dpi`, la exportación
 lleva la nota «symbols not yet verified against ISO 1219-1».
@@ -448,13 +448,14 @@ eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 |---|---|
 | **M1** | **hecho** en Qt Quick: cinta, barra lateral, barra de estado, tema del escritorio, iconos Breeze y `--selftest` |
 | **M2** | **hecho**: `punchi-fluid-draw`, `punchi-fluid-export`, hojas A5–A0/Letter/Legal/Oficio, bloque de identificación, leyenda, PNG y PDF desde la ventana y sin ella, fecha del día y escala para encajar. Deuda: panel de márgenes, tamaño personalizado y resolución |
-| **M1.5** | `symbol lint` (8 reglas) y 15 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
+| **M1.5** | `symbol lint` (8 reglas) y 17 revisiones visuales; **la revisión a 300 dpi sigue abierta** |
 | **M3** | **hecho**: `punchi-fluid-doc`, comandos, deshacer acotado y formato v3 con `id` de catálogo |
 | **M4** | **hecho**: conexiones y solver de red; **prueba de modularidad: una 5/2 que funciona solo como archivo** |
 | **P1.8** | **hecho**: un documento con varios circuitos, selector, añadir/renombrar y la novena falta (tubo entre circuitos) |
 | **P2.1** | **hecho**: caudalímetro en la línea, con su lectura en litros normales por minuto |
 | **P2.2** | **hecho**: registrador de 60 s con fuente elegida; dinamómetro `not planned` (necesita dominio mecánico) |
 | **P3.1** | **hecho**: repartir con huecos iguales entre cajas, horizontal y vertical, en un solo deshacer |
+| **P3.2** | **hecho**: tapón ciego y silenciador como archivos, con el escape restringido de verdad |
 | **M5** | **hecho**: manómetro, caudalímetro, registrador y «Hasta cambio»; el dinamómetro queda `not planned` |
 | **M6** | **no empezado**: i18n con Fluent, AppImage/Flatpak, release firmado |
 
@@ -525,7 +526,7 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 - **Deuda de la exportación**: no hay panel de márgenes, tamaño personalizado ni resolución
   del PNG. La fecha es la del día, el dibujo se escala para encajar y `Ctrl+Shift+E` abre
   el diálogo. La lista de piezas y la leyenda completa siguen pendientes.
-- **La revisión a 300 dpi de los 15 símbolos sigue abierta**: por eso el documento lleva
+- **La revisión a 300 dpi de los 17 símbolos sigue abierta**: por eso el documento lleva
   la nota «symbols not yet verified against ISO 1219-1».
 - **El proyecto existe** desde P1.8: varios circuitos por documento, selector, añadir/renombrar y la novena falta. El título de la hoja no es editable; el proyecto no tiene lista de piezas por circuito.
 - **Instrumentos**: manómetro, caudalímetro, registrador de 60 s y «Hasta cambio». El

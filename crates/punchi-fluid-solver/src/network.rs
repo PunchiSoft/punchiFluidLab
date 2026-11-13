@@ -114,6 +114,13 @@ pub enum PartBehaviour {
     /// A recorder: no ports and nothing to simulate. It is a part so the document can hold
     /// it, and the session samples its source outside the network (ADR 0015).
     Recorder,
+    /// A blind plug: the port is closed, so the part adds nothing (ADR 0016).
+    Plug,
+    /// A silencer: the exhaust leaves through a restriction to atmosphere.
+    Silencer {
+        /// Sonic conductance to atmosphere, `m³ / (s · Pa)`.
+        conductance: f64,
+    },
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -187,6 +194,10 @@ impl NetworkPart {
                 conductance: *conductance,
             },
             Behaviour::Recorder { .. } => PartBehaviour::Recorder,
+            Behaviour::Plug => PartBehaviour::Plug,
+            Behaviour::Silencer { conductance } => PartBehaviour::Silencer {
+                conductance: *conductance,
+            },
             Behaviour::Junction => PartBehaviour::Junction,
         };
         Ok(Self {
@@ -399,6 +410,7 @@ impl Network {
         restriction_edges(parts, &port_node, &mut edges);
         append_pipes(&mut edges, pipes, &port_node);
         close_open_exhausts(parts, &mut nodes, &port_node, &edges, atmosphere_pa);
+        silencer_edges(parts, &mut nodes, &port_node, &mut edges, atmosphere_pa);
         let (pistons, piston_parts) = chambers(
             parts,
             &mut nodes,
@@ -1097,6 +1109,48 @@ fn close_open_exhausts(
     }
 }
 
+/// A silencer vents its port to atmosphere through the restriction its file declares.
+///
+/// The port keeps its own node — the air still crosses the hose — and the edge is what the
+/// silencer adds, so a narrow one really slows the exhaust it is fitted to (ADR 0016).
+fn silencer_edges(
+    parts: &[NetworkPart],
+    nodes: &mut Vec<Node>,
+    port_node: &[HashMap<&str, usize>],
+    edges: &mut Vec<Edge>,
+    atmosphere_pa: f64,
+) {
+    for (index, part) in parts.iter().enumerate() {
+        let PartBehaviour::Silencer { conductance } = part.behaviour else {
+            continue;
+        };
+        let Some(port) = part.ports.first() else {
+            continue;
+        };
+        let Some(&node) = port_node[index].get(port.id.as_str()) else {
+            continue;
+        };
+        let atmosphere = nodes.len();
+        nodes.push(Node {
+            mass: atmosphere_pa * PORT_VOLUME
+                / (AIR_SPECIFIC_GAS_CONSTANT * punchi_fluid_core::Temperature::STANDARD.kelvin()),
+            volume: PORT_VOLUME,
+            reservoir: Some(Reservoir {
+                pressure_pa: atmosphere_pa,
+                kind: ReservoirKind::Atmosphere,
+            }),
+        });
+        edges.push(Edge {
+            a: node,
+            b: atmosphere,
+            conductance,
+            valve: None,
+            mask: u64::MAX,
+            part: None,
+        });
+    }
+}
+
 /// Each working port becomes a chamber. One chamber is a single-acting cylinder; two are
 /// the extend and retract chambers of a double-acting one, in port order.
 fn chambers(
@@ -1629,6 +1683,93 @@ mod tests {
             "throttled {} mm should lag direct {} mm",
             throttled.position() * 1000.0,
             direct.position() * 1000.0
+        );
+    }
+
+    #[test]
+    fn a_silencer_slows_the_exhaust_it_is_fitted_to() {
+        // The valve vents its working line through port 3: an open port breathes at the
+        // port's conductance, a silencer at the narrower one its file declares, so the rod
+        // comes back later. That difference is the whole reason a silencer is a component.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "silencer.pneumatic"),
+        ];
+        let direct_pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let silenced_pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
+        ];
+        let mut direct =
+            Network::build(&parts, &direct_pipes).expect("builds without the silencer");
+        let mut silenced = Network::build(&parts, &silenced_pipes).expect("builds with it");
+        for network in [&mut direct, &mut silenced] {
+            network.press_valve();
+            for _ in 0..80 {
+                network.advance(0.016).expect("accepted");
+            }
+            network.release_valve();
+            // Forty frames is 0.64 s: long enough for the open exhaust to let the spring
+            // start the rod back, short enough that a restricted one is still holding it.
+            for _ in 0..40 {
+                network.advance(0.016).expect("accepted");
+            }
+        }
+        let stroke = direct.cylinder().expect("a cylinder").stroke;
+        assert!(
+            direct.position() < stroke * 0.95,
+            "the open exhaust did not let the rod return: {:.1} mm",
+            direct.position() * 1000.0
+        );
+        assert!(
+            silenced.position() > direct.position(),
+            "silenced {:.1} mm should lag direct {:.1} mm",
+            silenced.position() * 1000.0,
+            direct.position() * 1000.0
+        );
+    }
+
+    #[test]
+    fn a_blind_plug_traps_the_air_and_so_holds_the_rod() {
+        // A capped exhaust is not an open one: the cylinder can no longer vent, so it stays
+        // where the pressure left it. This is what the plug means, and it is why the model
+        // has no physics for it beyond closing the line.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "plug.blind"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes).expect("the plug builds");
+        network.press_valve();
+        for _ in 0..80 {
+            network.advance(0.016).expect("accepted");
+        }
+        let stroke = network.cylinder().expect("a cylinder").stroke;
+        let extended = network.position();
+        assert!(extended > stroke * 0.5, "the rod did not extend");
+        network.release_valve();
+        for _ in 0..40 {
+            network.advance(0.016).expect("accepted");
+        }
+        assert!(
+            (network.position() - extended).abs() < stroke * 0.05,
+            "the capped cylinder moved from {:.1} mm to {:.1} mm",
+            extended * 1000.0,
+            network.position() * 1000.0
         );
     }
 

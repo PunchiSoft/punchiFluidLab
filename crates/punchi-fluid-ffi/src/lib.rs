@@ -2068,6 +2068,14 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
             let _ = writeln!(text, "Conductancia: {conductance:.2e} m³/(s·Pa)");
             text.push_str("Lee el caudal que lo atraviesa\n");
         }
+        Behaviour::Silencer { conductance } => {
+            let _ = writeln!(
+                text,
+                "Conductancia al ambiente: {conductance:.2e} m³/(s·Pa)"
+            );
+            text.push_str("Ventila el escape sin modelar el ruido\n");
+        }
+        Behaviour::Plug => text.push_str("Cierra el puerto al que se conecta\n"),
         Behaviour::Recorder { span_s, rate_hz } => {
             let _ = writeln!(text, "Ventana: {span_s:.0} s a {rate_hz:.0} muestras/s");
             text.push_str("Elige qué registra en la lista de fuentes\n");
@@ -3792,7 +3800,8 @@ pub unsafe extern "C" fn pf_session_component_edits(
                     .and_then(|position| position.connection.first())
                     .map_or(0.0, |connection| connection.conductance);
             }
-            Behaviour::Throttle { conductance } => {
+            // A throttle and a silencer are both restrictions: one field, one meaning.
+            Behaviour::Throttle { conductance } | Behaviour::Silencer { conductance } => {
                 set.mask = PF_EDIT_CONDUCTANCE;
                 set.conductance = *conductance;
             }
@@ -3812,6 +3821,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             Behaviour::Gauge { .. }
             | Behaviour::FlowMeter { .. }
             | Behaviour::Recorder { .. }
+            | Behaviour::Plug
             | Behaviour::Junction => {}
         }
         // SAFETY: the caller promised a writable structure.
@@ -4447,7 +4457,8 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
                 }
             }
         }
-        Behaviour::Throttle { conductance } => {
+        // A throttle and a silencer are both restrictions, so the same override feeds both.
+        Behaviour::Throttle { conductance } | Behaviour::Silencer { conductance } => {
             if let Some(value) = edits.conductance {
                 *conductance = value;
             }
@@ -4475,6 +4486,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         Behaviour::Gauge { .. }
         | Behaviour::FlowMeter { .. }
         | Behaviour::Recorder { .. }
+        | Behaviour::Plug
         | Behaviour::Junction => {}
     }
 }
