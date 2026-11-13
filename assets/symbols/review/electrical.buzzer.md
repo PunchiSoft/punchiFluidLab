@@ -26,9 +26,9 @@ trace of another program's symbol or sound.
 
 | Requirement | Result | Evidence |
 |---|---|---|
-| The body and the sound waves are readable | pass | `electrical.buzzer-light.png` |
+| The semicircle, the baseline and the arrow are readable | pass | `electrical.buzzer-light.png` |
 | The state is a word, not only a colour | pass | `sonando` / `en silencio` |
-| The waves stay clear of the state word | pass | the image above |
+| The arrow stays clear of the state word | pass | the image above |
 | The class says what the line is | pass | dotted stem for the wire |
 | Legible at 300 dpi | **not checked** | needs the maintainer's reader |
 

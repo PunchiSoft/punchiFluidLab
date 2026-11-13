@@ -8,7 +8,7 @@
 ## Provenance
 
 Hand-written geometry in `assets/catalog/electrical.contact.nc.toml`: two electrical terminals with the gap
-the renderer bridges, and the actuator its name promises. The bar is drawn from the run
+the renderer bridges, and the actuator its name promises. The blade is drawn from the run
 state, and `normally_closed = true` is the rest state the file declares. No third-party
 asset and no trace of another program's symbol.
 
@@ -26,7 +26,7 @@ asset and no trace of another program's symbol.
 | Requirement | Result | Evidence |
 |---|---|---|
 | The actuator distinguishes this part from the others | pass | `electrical.contact.nc-light.png` |
-| The rest state matches `normally_closed` | pass | the bar at rest |
+| The rest state matches `normally_closed` | pass | the blade at rest |
 | The class says what each line is | pass | dotted stems for the wires |
 | Legible at 300 dpi | **not checked** | needs the maintainer's reader |
 

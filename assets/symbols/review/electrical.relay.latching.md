@@ -8,7 +8,7 @@
 ## Provenance
 
 Hand-written geometry in `assets/catalog/electrical.relay.latching.toml`: two coil
-rectangles, four coil terminals, one contact and two dashed links. The **bar** is drawn by
+rectangles, four coil terminals, one contact and two dashed links. The **blade** is drawn by
 the renderer from the latched state (ADR 0025). No third-party asset and no trace of another
 program's symbol.
 

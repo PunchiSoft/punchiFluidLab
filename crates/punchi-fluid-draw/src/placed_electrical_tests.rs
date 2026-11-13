@@ -120,11 +120,11 @@ fn a_pneumatic_hose_keeps_its_own_class() {
 
 #[test]
 fn a_contact_shows_whether_it_is_open_or_closed() {
-    // The bar is the moving part: above the gap when open, across it when closed. The file
-    // holds one symbol and the run shows two states (ADR 0018).
+    // The blade is the moving part: lifted at an angle when open, lying across the gap when
+    // closed. The file holds one symbol and the run shows two states (ADR 0018).
     let catalog = Catalog::builtin();
     let rect = Rect::from_center_size(Pt::new(50.0, 50.0), 24.0, 24.0);
-    let bar_of = |closed: Option<bool>| {
+    let blade_of = |closed: Option<bool>| {
         let placed = [Placed {
             index: 0,
             catalog_id: "electrical.contact",
@@ -139,7 +139,8 @@ fn a_contact_shows_whether_it_is_open_or_closed() {
         }];
         let mut surface = Recording::default();
         draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
-        // The bar is the horizontal line nearest the middle, between the two terminals.
+        // The blade starts at the fixed contact, a third of the way into the box, and is the
+        // only long line that starts there; the stems start at the box edge.
         surface
             .calls()
             .iter()
@@ -148,22 +149,26 @@ fn a_contact_shows_whether_it_is_open_or_closed() {
                 _ => None,
             })
             .filter(|points| {
-                (points[0].x - rect.min.x).abs() < 12.0 && (points[1].x - points[0].x).abs() > 5.0
+                let start = points[0].x - rect.min.x;
+                (start - rect.width() * 0.30).abs() < 1.0 && (points[1].x - points[0].x).abs() > 5.0
             })
-            .map(|points| points[0].y)
+            .map(|points| (points[0].y, points[1].y))
             .next()
             .unwrap_or_default()
     };
-    let open = bar_of(Some(false));
-    let closed = bar_of(Some(true));
+    let open = blade_of(Some(false));
+    let closed = blade_of(Some(true));
     let middle = rect.center().y;
     assert!(
-        open < middle - 1.0,
-        "the open bar sits above the gap: {open:.1} against {middle:.1}"
+        open.1 < middle - 1.0,
+        "the open blade is lifted above the gap: {:.1} against {middle:.1}",
+        open.1
     );
     assert!(
-        (closed - middle).abs() < 1.0,
-        "the closed bar bridges the terminals: {closed:.1} against {middle:.1}"
+        (closed.0 - middle).abs() < 1.0 && (closed.1 - middle).abs() < 1.0,
+        "the closed blade lies across the terminals: {:.1}..{:.1} against {middle:.1}",
+        closed.0,
+        closed.1
     );
 }
 

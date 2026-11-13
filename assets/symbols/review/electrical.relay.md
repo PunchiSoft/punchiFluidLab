@@ -28,7 +28,7 @@ program's symbol.
 | Requirement | Result | Evidence |
 |---|---|---|
 | The coil is drawn apart from the contact | pass | `electrical.relay-light.png` |
-| A visible gap at rest, with the bar tilted away | pass | `electrical.relay-light.png` |
+| A visible gap at rest, with the blade tilted away | pass | `electrical.relay-light.png` |
 | The mechanical link is dashed, not a wire | pass | the dashes between coil and contact |
 | The terminals are named in the file, not in code | pass | A1, A2, 11, 14 |
 | The class says what each line is | pass | dotted stems for the wires |
@@ -38,7 +38,7 @@ program's symbol.
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
   "not verified" note.
-- The bar is drawn for **both** the rest state and the live state; the image shows the rest
+- The blade is drawn for **both** the rest state and the live state; the image shows the rest
   state. The live state is proven by the ABI test
   `a_relay_closes_its_contact_while_its_coil_is_live`, which moves a solenoid valve through
   the relay's contact.

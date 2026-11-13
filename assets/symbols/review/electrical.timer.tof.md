@@ -29,7 +29,7 @@ another program's symbol.
 |---|---|---|
 | The coil, the contact and the link are readable | pass | `electrical.timer.tof-light.png` |
 | The clock face marks the delay, not a second coil | pass | the circle on the coil |
-| A visible gap at rest, with the bar tilted away | pass | `electrical.timer.tof-light.png` |
+| A visible gap at rest, with the blade tilted away | pass | `electrical.timer.tof-light.png` |
 | The terminals are named in the file, not in code | pass | A1, A2, 11, 14 |
 | The class says what each line is | pass | dotted stems for the wires |
 | Legible at 300 dpi | **not checked** | needs the maintainer's reader |
