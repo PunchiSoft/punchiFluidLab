@@ -95,10 +95,9 @@ does not animate, and that is the reference's signature. The specification and t
 are in [ui-ux.md](ui-ux.md) and [work-queue.md](work-queue.md); it needs the solver's signed
 flow per hose, not a pressure-gradient guess.
 
-## Next entries: 10a and 10b, the owner's order
+## Next entries: the pneumatic base first (10a, 10b, 10c)
 
-The owner ordered the reference's animations and **all pneumatic symbology** before the
-counter. 10a is the hose flow; 10b is the pneumatic symbol conformance pass. The sources are
+The owner ordered the **pneumatic base** first, in symbology and behaviour, before the counter and the digital library. 10a is the hose flow; 10b is the pneumatic symbol conformance pass; 10c is the valve configuration dialog and the conditional coil labels (`Y1` is a user mark, not a fixed numeral). The sources are
 already corrected (apex up); filter, spring, missing feed elements and actuators are the next
 files. The detail is in [work-queue.md](work-queue.md).
 

@@ -38,6 +38,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
 | 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | ready | a hose shows the model's signed flow as travelling chevrons while the simulation runs, none at zero flow, reversed with the flow, frozen by reduced motion, and an ABI/drawing test at two phases |
 | 10b | **Pneumatic symbol conformance against the reference palette** (owner order, runs with 10a) | doing | every pneumatic symbol and its menu family matches the reference: source apex up, filter element and drain, spring outside the barrel, reservoir/separator/cooler/dryer/motor/rotary/multi-position present, with a review and a lint per file |
+| 10c | **Valve configuration dialog and conditional coil labels** (owner order) | ready | double-click a valve opens the reference dialog: left/right actuation (spring, detent, external supply, pneumatic spring, muscle, mechanical, pneumatic/electrical), reversible body, initial position, nominal flow, reflect, preview; double-click a solenoid opens the connection-label dialog with `Marca` (`Y1`); only an electrical terminal can carry a coil label; labels are per placement and saved |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
 | 11 | Digital library: AND, OR and NOT as files | ready | three files sharing one behaviour variant (ADR); the boolean net computes their output; a truth-table test per gate |
 | 12 | Digital: RS latch and edge detection | ready | a latch holds its output between pulses; a rising edge fires once per press; two tests |
@@ -109,6 +110,27 @@ actuators found these corrections; the sources are already fixed in `3cb5d14`.
 
 The installed `.ct` symbol files are compiled data and cannot be read as definitions; the
 running palette is the readable reference. Do not guess a symbol from a binary blob.
+
+### 10c — Valve configuration dialog and conditional coil labels
+
+The owner supplied the reference dialog. It is part of the pneumatic base, not a later UI
+polish.
+
+- **Double-click a valve body** opens *Configurar válvula*: left and right actuation
+  (spring return, detent, external supply, pneumatic spring, muscle, mechanical,
+  pneumatic/electrical), component name, reversible body, initial position, standard
+  nominal flow in l/min, reflect horizontal/vertical and a live preview.
+- **Double-click a solenoid** opens *Conexión de válvula*: a `Marca` field (`Y1`, `Y2`, …)
+  and the matching electrical component preview. The label is **per placement**, saved, and
+  printed near the coil only when the user sets it; it is not a fixed port numeral.
+- **Only an electrical terminal can carry a coil connection.** The actuation dropdown
+  offers the coil only for the electrical family; a mechanical or pneumatic actuator does
+  not get a `Marca` field.
+- **Model**: actuation and initial position become per-placement overrides with one undo;
+  the coil label is a new document field, so the format version bumps with a migration.
+- **Evidence**: the ABI test that sets a label and reopens it, the drawing test that the
+  label follows the placement and not the port id, the dialog's `--selftest` steps, and the
+  reference captures in the review.
 
 ### 10 — Counter relay
 
