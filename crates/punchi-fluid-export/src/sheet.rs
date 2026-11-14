@@ -18,9 +18,6 @@ const FRAME: f32 = 0.7;
 const LABEL: f32 = 2.2;
 /// Cap height of a field value.
 const VALUE: f32 = 3.0;
-/// How far a centring mark runs beyond the frame, in millimetres (ISO 5457 recommends 10).
-const CENTRING_MM: f32 = 10.0;
-
 /// Draws the frame, the centring marks, the title block and the legend of the page.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     let content = page.content_rect();
@@ -90,8 +87,9 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
 }
 
 /// The four centring marks of ISO 5457: at the ends of the symmetry axes of the paper, a
-/// line from the frame outward and a small arrow at the paper edge. The form is free; the
-/// line is the recommended part.
+/// line from the frame across the border to the paper edge and a small arrow. The form is
+/// free; the line is the recommended part, and spanning the whole border keeps the 20 mm
+/// filing margin looking like the other three sides instead of leaving a gap on the left.
 fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
     let paper = page.rect();
     let content = page.content_rect();
@@ -109,44 +107,52 @@ fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
         surface.line(&[from, to], stroke);
         surface.polygon(&[tip, base[0], base[1]], Some(Colour::BLACK), None);
     };
-    let top = (content.min.y - CENTRING_MM).max(paper.min.y);
-    if top < content.min.y - 0.5 {
-        let tip = Pt::new(cx, (top + 3.0).min(content.min.y));
+    if content.min.y > paper.min.y + 0.5 {
+        let tip = Pt::new(cx, (paper.min.y + 3.0).min(content.min.y));
         mark(
             Pt::new(cx, content.min.y),
-            Pt::new(cx, top),
+            Pt::new(cx, paper.min.y),
             tip,
-            [Pt::new(cx - 1.5, top), Pt::new(cx + 1.5, top)],
+            [
+                Pt::new(cx - 1.5, paper.min.y),
+                Pt::new(cx + 1.5, paper.min.y),
+            ],
         );
     }
-    let bottom = (content.max.y + CENTRING_MM).min(paper.max.y);
-    if bottom > content.max.y + 0.5 {
-        let tip = Pt::new(cx, (bottom - 3.0).max(content.max.y));
+    if content.max.y < paper.max.y - 0.5 {
+        let tip = Pt::new(cx, (paper.max.y - 3.0).max(content.max.y));
         mark(
             Pt::new(cx, content.max.y),
-            Pt::new(cx, bottom),
+            Pt::new(cx, paper.max.y),
             tip,
-            [Pt::new(cx - 1.5, bottom), Pt::new(cx + 1.5, bottom)],
+            [
+                Pt::new(cx - 1.5, paper.max.y),
+                Pt::new(cx + 1.5, paper.max.y),
+            ],
         );
     }
-    let left = (content.min.x - CENTRING_MM).max(paper.min.x);
-    if left < content.min.x - 0.5 {
-        let tip = Pt::new((left + 3.0).min(content.min.x), cy);
+    if content.min.x > paper.min.x + 0.5 {
+        let tip = Pt::new((paper.min.x + 3.0).min(content.min.x), cy);
         mark(
             Pt::new(content.min.x, cy),
-            Pt::new(left, cy),
+            Pt::new(paper.min.x, cy),
             tip,
-            [Pt::new(left, cy - 1.5), Pt::new(left, cy + 1.5)],
+            [
+                Pt::new(paper.min.x, cy - 1.5),
+                Pt::new(paper.min.x, cy + 1.5),
+            ],
         );
     }
-    let right = (content.max.x + CENTRING_MM).min(paper.max.x);
-    if right > content.max.x + 0.5 {
-        let tip = Pt::new((right - 3.0).max(content.max.x), cy);
+    if content.max.x < paper.max.x - 0.5 {
+        let tip = Pt::new((paper.max.x - 3.0).max(content.max.x), cy);
         mark(
             Pt::new(content.max.x, cy),
-            Pt::new(right, cy),
+            Pt::new(paper.max.x, cy),
             tip,
-            [Pt::new(right, cy - 1.5), Pt::new(right, cy + 1.5)],
+            [
+                Pt::new(paper.max.x, cy - 1.5),
+                Pt::new(paper.max.x, cy + 1.5),
+            ],
         );
     }
 }

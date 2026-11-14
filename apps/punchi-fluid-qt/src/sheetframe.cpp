@@ -57,14 +57,16 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
     if (left > 0.0 || top > 0.0 || right < sheetWidth || bottom < sheetHeight) {
         QColor frameInk = edge;
         frameInk.setAlphaF(0.8F);
-        painter->setPen(QPen(frameInk, 1.0));
+        painter->setPen(QPen(frameInk, std::max<qreal>(1.0, 0.7 * fit.pixelsPerMm)));
         painter->drawRect(QRectF(fit.originX + left * fit.pixelsPerMm,
                                  fit.originY + top * fit.pixelsPerMm,
                                  (right - left) * fit.pixelsPerMm,
                                  (bottom - top) * fit.pixelsPerMm));
 
-        // ISO 5457 centring marks: a line from the frame outwards and a small arrow at the
-        // paper edge. The form is free; the line is the recommended part.
+        // ISO 5457 centring marks: a line from the frame across the border to the paper
+        // edge, with a small arrow. The form is free; the line is the recommended part and
+        // spanning the whole border keeps the left filing margin and the other three sides
+        // looking the same instead of leaving a gap on the left.
         const qreal scale = fit.pixelsPerMm;
         const qreal paperLeft = fit.originX;
         const qreal paperTop = fit.originY;
@@ -76,40 +78,35 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
         const qreal frameBottom = paperTop + bottom * scale;
         const qreal middleX = (paperLeft + paperRight) * 0.5;
         const qreal middleY = (paperTop + paperBottom) * 0.5;
-        const qreal reach = 10.0 * scale;
         const qreal arrow = 3.0 * scale;
         const qreal half = 1.5 * scale;
         painter->setBrush(frameInk);
         const auto triangle = [painter](QPointF tip, QPointF leftBase, QPointF rightBase) {
             painter->drawPolygon(QPolygonF { tip, leftBase, rightBase });
         };
-        const qreal topOuter = std::max(paperTop, frameTop - reach);
-        if (topOuter < frameTop - 0.5) {
-            painter->drawLine(QPointF(middleX, frameTop), QPointF(middleX, topOuter));
-            triangle(QPointF(middleX, std::min(topOuter + arrow, frameTop)),
-                     QPointF(middleX - half, topOuter),
-                     QPointF(middleX + half, topOuter));
+        if (frameTop > paperTop + 0.5) {
+            painter->drawLine(QPointF(middleX, frameTop), QPointF(middleX, paperTop));
+            triangle(QPointF(middleX, std::min(paperTop + arrow, frameTop)),
+                     QPointF(middleX - half, paperTop),
+                     QPointF(middleX + half, paperTop));
         }
-        const qreal bottomOuter = std::min(paperBottom, frameBottom + reach);
-        if (bottomOuter > frameBottom + 0.5) {
-            painter->drawLine(QPointF(middleX, frameBottom), QPointF(middleX, bottomOuter));
-            triangle(QPointF(middleX, std::max(bottomOuter - arrow, frameBottom)),
-                     QPointF(middleX - half, bottomOuter),
-                     QPointF(middleX + half, bottomOuter));
+        if (frameBottom < paperBottom - 0.5) {
+            painter->drawLine(QPointF(middleX, frameBottom), QPointF(middleX, paperBottom));
+            triangle(QPointF(middleX, std::max(paperBottom - arrow, frameBottom)),
+                     QPointF(middleX - half, paperBottom),
+                     QPointF(middleX + half, paperBottom));
         }
-        const qreal leftOuter = std::max(paperLeft, frameLeft - reach);
-        if (leftOuter < frameLeft - 0.5) {
-            painter->drawLine(QPointF(frameLeft, middleY), QPointF(leftOuter, middleY));
-            triangle(QPointF(std::min(leftOuter + arrow, frameLeft), middleY),
-                     QPointF(leftOuter, middleY - half),
-                     QPointF(leftOuter, middleY + half));
+        if (frameLeft > paperLeft + 0.5) {
+            painter->drawLine(QPointF(frameLeft, middleY), QPointF(paperLeft, middleY));
+            triangle(QPointF(std::min(paperLeft + arrow, frameLeft), middleY),
+                     QPointF(paperLeft, middleY - half),
+                     QPointF(paperLeft, middleY + half));
         }
-        const qreal rightOuter = std::min(paperRight, frameRight + reach);
-        if (rightOuter > frameRight + 0.5) {
-            painter->drawLine(QPointF(frameRight, middleY), QPointF(rightOuter, middleY));
-            triangle(QPointF(std::max(rightOuter - arrow, frameRight), middleY),
-                     QPointF(rightOuter, middleY - half),
-                     QPointF(rightOuter, middleY + half));
+        if (frameRight < paperRight - 0.5) {
+            painter->drawLine(QPointF(frameRight, middleY), QPointF(paperRight, middleY));
+            triangle(QPointF(std::max(paperRight - arrow, frameRight), middleY),
+                     QPointF(paperRight, middleY - half),
+                     QPointF(paperRight, middleY + half));
         }
     }
     painter->restore();
