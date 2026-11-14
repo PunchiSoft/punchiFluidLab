@@ -60,7 +60,8 @@ use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
 use punchi_fluid_draw::placed::{
-    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point, route_between_boxes,
+    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point,
+    route_between_boxes_avoiding,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -6671,12 +6672,10 @@ fn pipe_is_elbow(document: &Document, catalog: &Catalog, index: usize) -> bool {
 /// The route of one pipe, from the edges its two ports sit on.
 fn pipe_route(document: &Document, catalog: &Catalog, index: usize) -> Option<Vec<Pt>> {
     let connection = document.connections().get(index)?;
-    let from = document
-        .placements()
-        .get(document.index_of(connection.from.placement)?)?;
-    let to = document
-        .placements()
-        .get(document.index_of(connection.to.placement)?)?;
+    let from_index = document.index_of(connection.from.placement)?;
+    let to_index = document.index_of(connection.to.placement)?;
+    let from = document.placements().get(from_index)?;
+    let to = document.placements().get(to_index)?;
     let from_definition = catalog.get(&from.catalog_id)?;
     let to_definition = catalog.get(&to.catalog_id)?;
     let start = port_point(
@@ -6691,13 +6690,16 @@ fn pipe_route(document: &Document, catalog: &Catalog, index: usize) -> Option<Ve
         to_definition,
         &connection.to.port,
     )?;
-    Some(route_between_boxes(
+    let boxes: Vec<Rect> = document.placements().iter().map(Placement::rect).collect();
+    Some(route_between_boxes_avoiding(
         start,
         port_edge(from_definition, &connection.from.port),
         from.rect(),
         end,
         port_edge(to_definition, &connection.to.port),
         to.rect(),
+        &boxes,
+        [from_index, to_index],
         connection.offset_mm(),
     ))
 }

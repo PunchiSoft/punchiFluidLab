@@ -4,10 +4,10 @@
 //! The path a hose takes between two ports.
 //!
 //! A hose is orthogonal, leaves and enters each port along its edge, and keeps clear of
-//! the symbols it joins. The plain route is an L or a Z; when that would cross one of the
-//! two boxes, [`route_between_boxes`] searches a small visibility grid around them for a
-//! path that goes round instead. The check and the drawing both call this one function, so
-//! what is inspected is what is printed.
+//! the symbols it joins and of the symbols between them. The plain route is an L or a Z;
+//! when that would cross a box, [`route_between_boxes_avoiding`] searches a small visibility
+//! grid around the boxes for a path that goes round instead. The check and the drawing both
+//! call this one function, so what is inspected is what is printed.
 
 use crate::placed::PortEdge;
 use crate::surface::{Pt, Rect};
@@ -23,6 +23,12 @@ const CLEARANCE_MM: f32 = 2.0;
 /// A bend is worth eight millimetres: enough to prefer a clean L over a staircase of almost
 /// the same length, small enough never to take a detour through the sheet to avoid one.
 const BEND_COST_MM: f32 = 8.0;
+
+/// How many times the route is recomputed with the extra boxes it hit.
+const MAX_PASSES: usize = 3;
+
+/// Most extra component boxes a route goes round before the check takes over.
+const MAX_OBSTACLES: usize = 6;
 
 /// Tolerance for two coordinates being the same point or line, in millimetres.
 const EPS: f32 = 1e-3;
@@ -94,12 +100,12 @@ pub fn route_offset(start: Pt, end: Pt, offset: f32) -> Vec<Pt> {
     }
 }
 
-/// The route that keeps both symbols clear.
+/// The route that keeps the symbols it joins clear, and the ones in between.
 ///
 /// A hose between perpendicular edges used to take its bend at the departure's height, so a
 /// port on the side of a unit and a port on the top of the compressor beside it produced a
 /// line straight through the compressor. This route leaves the departure edge, goes round
-/// both boxes with the largest clearance that fits, and only then enters the arrival edge.
+/// the boxes with the largest clearance that fits, and only then enters the arrival edge.
 ///
 /// The clearance is tried from [`CLEARANCE_MM`] down to zero: two symbols placed a millimetre
 /// apart still leave a real gap, and using it is better than crossing a body. A stored
@@ -116,19 +122,111 @@ pub fn route_between_boxes(
     end_box: Rect,
     offset: f32,
 ) -> Vec<Pt> {
+    route_between_boxes_avoiding(
+        start,
+        start_edge,
+        start_box,
+        end,
+        end_edge,
+        end_box,
+        &[],
+        [usize::MAX; 2],
+        offset,
+    )
+}
+
+/// The route that also keeps clear of every box in `obstacles`.
+///
+/// The two endpoint boxes are passed separately; `endpoints` are their positions in
+/// `obstacles`, so a caller can hand over the whole circuit once and skip the two ends.
+///
+/// The extra boxes are not all searched at once: the route is computed, the boxes it enters
+/// are added, and it is computed again, at most [`MAX_PASSES`] times and with at most
+/// [`MAX_OBSTACLES`] extras. The normal route pays nothing extra; the search only grows when
+/// a component really sits on the way. If no path fits even then, the plain shape is drawn
+/// and the check reports the crossing.
+#[must_use]
+#[allow(clippy::too_many_arguments)]
+pub fn route_between_boxes_avoiding(
+    start: Pt,
+    start_edge: PortEdge,
+    start_box: Rect,
+    end: Pt,
+    end_edge: PortEdge,
+    end_box: Rect,
+    obstacles: &[Rect],
+    endpoints: [usize; 2],
+    offset: f32,
+) -> Vec<Pt> {
     if offset.abs() > 0.01 && start_edge.horizontal() == end_edge.horizontal() {
         return route_between(start, start_edge, end, end_edge, offset);
     }
+    let mut extras: Vec<Rect> = Vec::new();
+    let mut route = route_boxes(
+        start, start_edge, start_box, end, end_edge, end_box, &extras,
+    );
+    for _ in 0..MAX_PASSES {
+        let mut added = false;
+        for (index, box_) in obstacles.iter().enumerate() {
+            if endpoints.contains(&index) || extras.contains(box_) {
+                continue;
+            }
+            if path_hits(&route, *box_) {
+                extras.push(*box_);
+                added = true;
+                if extras.len() >= MAX_OBSTACLES {
+                    break;
+                }
+            }
+        }
+        if !added {
+            break;
+        }
+        route = route_boxes(
+            start, start_edge, start_box, end, end_edge, end_box, &extras,
+        );
+    }
+    route
+}
+
+/// The route around the endpoint boxes plus `extras`, trying each clearance in turn.
+fn route_boxes(
+    start: Pt,
+    start_edge: PortEdge,
+    start_box: Rect,
+    end: Pt,
+    end_edge: PortEdge,
+    end_box: Rect,
+    extras: &[Rect],
+) -> Vec<Pt> {
     for clearance in [CLEARANCE_MM, 1.0, 0.2, 0.0] {
         if let Some(path) = route_around(
-            start, start_edge, start_box, end, end_edge, end_box, clearance,
+            start, start_edge, start_box, end, end_edge, end_box, extras, clearance,
         ) {
             return path;
         }
     }
-    // Two boxes that overlap: there is no clean path. The plain shape is still drawn, and
-    // the check reports both the overlap and the crossing.
+    // Overlapping boxes or a port enclosed by another: no clean path. The plain shape is
+    // still drawn, and the check reports both the overlap and the crossing.
     route_between(start, start_edge, end, end_edge, 0.0)
+}
+
+/// `true` when the path enters the interior of the box, ignoring half a millimetre at the edge.
+fn path_hits(path: &[Pt], rect: Rect) -> bool {
+    let inner = shrink(rect, 0.5);
+    if inner.min.x >= inner.max.x || inner.min.y >= inner.max.y {
+        return false;
+    }
+    path.windows(2)
+        .any(|pair| segment_hits(pair[0], pair[1], inner))
+}
+
+/// The box reduced by `by` millimetres on every side.
+fn shrink(rect: Rect, by: f32) -> Rect {
+    Rect::from_corners(
+        Pt::new(rect.min.x + by, rect.min.y + by),
+        Pt::new(rect.max.x - by, rect.max.y - by),
+    )
 }
 
 /// The point where a hose leaves its box on the way out: on the box edge plus the clearance.
@@ -195,7 +293,8 @@ fn coordinate_index(values: &[f32], value: f32) -> Option<usize> {
         .position(|candidate| (candidate - value).abs() < 0.01)
 }
 
-/// A path around the two boxes, or `None` when the clearance leaves no room.
+/// A path around the blocked boxes, or `None` when the clearance leaves no room.
+#[allow(clippy::too_many_arguments)]
 fn route_around(
     start: Pt,
     start_edge: PortEdge,
@@ -203,12 +302,15 @@ fn route_around(
     end: Pt,
     end_edge: PortEdge,
     end_box: Rect,
+    extras: &[Rect],
     clearance: f32,
 ) -> Option<Vec<Pt>> {
     let start_stub = stub(start, start_edge, start_box, clearance);
     let end_stub = stub(end, end_edge, end_box, clearance);
-    let blocked_a = grow(start_box, clearance);
-    let blocked_b = grow(end_box, clearance);
+    let mut blocked = Vec::with_capacity(extras.len() + 2);
+    blocked.push(grow(start_box, clearance));
+    blocked.push(grow(end_box, clearance));
+    blocked.extend(extras.iter().map(|rect| grow(*rect, clearance)));
 
     let mut xs = Vec::new();
     let mut ys = Vec::new();
@@ -216,7 +318,7 @@ fn route_around(
         add_coordinate(&mut xs, point.x);
         add_coordinate(&mut ys, point.y);
     }
-    for rect in [blocked_a, blocked_b] {
+    for rect in &blocked {
         add_coordinate(&mut xs, rect.min.x);
         add_coordinate(&mut xs, rect.max.x);
         add_coordinate(&mut ys, rect.min.y);
@@ -230,7 +332,7 @@ fn route_around(
     let valid: Vec<bool> = (0..count)
         .map(|index| {
             let at = point(index);
-            !strictly_inside(at, blocked_a) && !strictly_inside(at, blocked_b)
+            !blocked.iter().any(|rect| strictly_inside(at, *rect))
         })
         .collect();
     let start_node =
@@ -240,7 +342,7 @@ fn route_around(
     if !valid[start_node] || !valid[end_node] {
         return None;
     }
-    let chain = shortest_path(&xs, &ys, &valid, blocked_a, blocked_b, start_node, end_node)?;
+    let chain = shortest_path(&xs, &ys, &valid, &blocked, start_node, end_node)?;
     let mut points = Vec::with_capacity(chain.len() + 2);
     points.push(start);
     points.extend(chain.into_iter().map(point));
@@ -248,16 +350,41 @@ fn route_around(
     Some(simplify(points))
 }
 
+/// One state in the search heap, ordered so the cheapest is popped first.
+#[derive(PartialEq)]
+struct HeapEntry {
+    cost: f32,
+    state: usize,
+}
+
+impl Eq for HeapEntry {}
+
+impl PartialOrd for HeapEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for HeapEntry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other
+            .cost
+            .total_cmp(&self.cost)
+            .then_with(|| other.state.cmp(&self.state))
+    }
+}
+
 /// The shortest orthogonal node chain between two grid nodes, bends included in the cost.
 fn shortest_path(
     xs: &[f32],
     ys: &[f32],
     valid: &[bool],
-    blocked_a: Rect,
-    blocked_b: Rect,
+    blocked: &[Rect],
     start_node: usize,
     end_node: usize,
 ) -> Option<Vec<usize>> {
+    use std::collections::BinaryHeap;
+
     let point = |index: usize| Pt::new(xs[index / ys.len()], ys[index % ys.len()]);
     let count = xs.len() * ys.len();
     // Direction 0 is "not moving yet"; 1..=4 are east, west, south and north.
@@ -266,14 +393,16 @@ fn shortest_path(
     let mut previous: Vec<Option<usize>> = vec![None; states];
     let mut visited = vec![false; states];
     best[start_node * 5] = 0.0;
+    let mut heap = BinaryHeap::new();
+    heap.push(HeapEntry {
+        cost: 0.0,
+        state: start_node * 5,
+    });
     let mut end_state = None;
-    loop {
-        let current = (0..states)
-            .filter(|state| !visited[*state] && best[*state].is_finite())
-            .min_by(|left, right| best[*left].total_cmp(&best[*right]));
-        let Some(state) = current else {
-            break;
-        };
+    while let Some(HeapEntry { cost, state }) = heap.pop() {
+        if visited[state] || cost > best[state] {
+            continue;
+        }
         visited[state] = true;
         let node_index = state / 5;
         if node_index == end_node {
@@ -304,7 +433,7 @@ fn shortest_path(
             }
             let from = point(node_index);
             let to = point(next_node);
-            if segment_hits(from, to, blocked_a) || segment_hits(from, to, blocked_b) {
+            if blocked.iter().any(|rect| segment_hits(from, to, *rect)) {
                 continue;
             }
             let length = (from.x - to.x).abs() + (from.y - to.y).abs();
@@ -314,10 +443,14 @@ fn shortest_path(
                 0.0
             };
             let next_state = next_node * 5 + next_direction;
-            let cost = best[state] + length + bend;
-            if cost < best[next_state] {
-                best[next_state] = cost;
+            let next_cost = best[state] + length + bend;
+            if next_cost < best[next_state] {
+                best[next_state] = next_cost;
                 previous[next_state] = Some(state);
+                heap.push(HeapEntry {
+                    cost: next_cost,
+                    state: next_state,
+                });
             }
         }
     }

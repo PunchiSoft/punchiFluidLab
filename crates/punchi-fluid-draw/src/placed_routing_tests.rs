@@ -98,7 +98,7 @@ fn crosses_inside(start: Pt, end: Pt, rect: Rect) -> bool {
 
 /// The automatic route keeps both boxes clear; the leads from a port inside a rounded
 /// symbol to its edge are the only segments allowed to touch it.
-fn assert_clear(points: &[Pt], boxes: [Rect; 2]) {
+fn assert_clear(points: &[Pt], boxes: &[Rect]) {
     for pair in points.windows(2) {
         assert!(
             (pair[0].x - pair[1].x).abs() < 1e-6 || (pair[0].y - pair[1].y).abs() < 1e-6,
@@ -109,7 +109,7 @@ fn assert_clear(points: &[Pt], boxes: [Rect; 2]) {
         return;
     }
     for pair in points[1..points.len() - 1].windows(2) {
-        for rect in boxes {
+        for &rect in boxes {
             assert!(
                 !crosses_inside(pair[0], pair[1], rect),
                 "the hose goes through {rect:?}: {points:?}"
@@ -141,7 +141,7 @@ fn a_hose_goes_round_the_symbols_it_joins() {
         points[last].y > points[last - 1].y,
         "the hose enters the top edge from above"
     );
-    assert_clear(&points, [start_box, end_box]);
+    assert_clear(&points, &[start_box, end_box]);
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn the_compressor_hose_goes_over_the_compressor() {
         points.iter().any(|point| point.y < compressor.min.y),
         "the hose goes above the compressor: {points:?}"
     );
-    assert_clear(&points, [unit, compressor]);
+    assert_clear(&points, &[unit, compressor]);
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn a_perpendicular_hose_ignores_an_offset_and_still_goes_round() {
         points.iter().any(|point| point.y < compressor.min.y),
         "the hose still goes above the compressor: {points:?}"
     );
-    assert_clear(&points, [unit, compressor]);
+    assert_clear(&points, &[unit, compressor]);
 }
 
 #[test]
@@ -204,7 +204,54 @@ fn a_tight_gap_still_gets_a_route_around() {
         compressor,
         0.0,
     );
-    assert_clear(&points, [unit, compressor]);
+    assert_clear(&points, &[unit, compressor]);
+}
+
+#[test]
+fn a_third_component_on_the_way_is_also_avoided() {
+    let start = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+    let end = Rect::from_min_size(Pt::new(0.0, 80.0), 20.0, 20.0);
+    let middle = Rect::from_min_size(Pt::new(0.0, 45.0), 20.0, 10.0);
+    let boxes = [start, middle, end];
+    let points = route_between_boxes_avoiding(
+        Pt::new(10.0, 20.0),
+        PortEdge::Bottom,
+        start,
+        Pt::new(10.0, 80.0),
+        PortEdge::Top,
+        end,
+        &boxes,
+        [0, 2],
+        0.0,
+    );
+    assert!(
+        points
+            .iter()
+            .any(|point| point.x < middle.min.x || point.x > middle.max.x),
+        "the hose goes round the middle box: {points:?}"
+    );
+    assert_clear(&points, &boxes);
+}
+
+#[test]
+fn two_components_on_the_way_are_both_avoided() {
+    let start = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+    let end = Rect::from_min_size(Pt::new(0.0, 100.0), 20.0, 20.0);
+    let first = Rect::from_min_size(Pt::new(0.0, 35.0), 20.0, 10.0);
+    let second = Rect::from_min_size(Pt::new(0.0, 60.0), 20.0, 10.0);
+    let boxes = [start, first, second, end];
+    let points = route_between_boxes_avoiding(
+        Pt::new(10.0, 20.0),
+        PortEdge::Bottom,
+        start,
+        Pt::new(10.0, 100.0),
+        PortEdge::Top,
+        end,
+        &boxes,
+        [0, 3],
+        0.0,
+    );
+    assert_clear(&points, &boxes);
 }
 
 #[test]

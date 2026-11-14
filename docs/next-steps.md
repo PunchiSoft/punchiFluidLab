@@ -25,7 +25,7 @@ file is the execution order.
 | Canvas: zoom at the pointer, bounded pan, magnification readout | **implemented** | the nine `--selftest` steps `view: …` |
 | Canvas: the sheet is the paper, A4 default, ISO 5457 frame | **implemented** — [ADR 0026](adr/0026-the-sheet-is-the-paper.md) | format 7 migration, doc, ABI and `--selftest` `sheet: …` steps |
 | Editing: straighten a hose by snapping its port | **implemented** | the ABI magnet tests and the `--selftest` `magnet: …` steps |
-| Editing: a hose keeps the symbols it joins clear | **implemented** | the routing tests and the check test for its own ends |
+| Editing: a hose keeps the symbols it joins and the ones in between clear | **implemented** | the incremental routing tests, the check test and the bounded-search design |
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | `--check-theme`, `--check-icons`, `--selftest`, light/dark screenshots |
 | Export PNG/PDF from the window and headless | **implemented** — [plan.md](plan.md) M2 | PDF, raster and caller-drawing tests; `--export`; the gate writes a PDF and an Oficio PNG |
 | ISO 1219 conformance | **structural half implemented, visual half reviewed** — [symbology.md](symbology.md) | lint rules with a test each, 17 review files with light/dark screenshots, review-folder test; 300 dpi review still open |
@@ -76,6 +76,7 @@ changed lines outside generated files, it is two phases.
 | **P1.10 — the sheet is the paper** ✅ delivered | `feat/sheet-is-the-paper` | the document owns the paper, the orientation and the ISO 5457 frame, A4 by default; the canvas, the check and the print follow it and an older file reads as an unframed A4, per [ADR 0026](adr/0026-the-sheet-is-the-paper.md) | format 7 and its migration, doc and ABI tests, the nine `--selftest` steps `sheet: …` |
 | **P1.11 — straighten a hose by snapping its port** ✅ delivered | `feat/port-magnet` | dragging a component pulls its wired port onto the other end's axis, off the 10 mm grid; `Alt+A` and Alinear ▸ Puertos do the same for the selected hose, one undo | the two ABI tests and the two `--selftest` steps `magnet: …` |
 | **P1.12 — a hose keeps its symbols clear** ✅ delivered | `feat/hose-routing` | an orthogonal route that leaves and enters along the port edges and goes round both endpoint boxes; the check measures the drawn route (port edges and offset) and includes the hose's own ends, with only the port lead ignored | the routing tests, the two check tests and the example no longer crossing its compressor |
+| **P1.13 — a hose goes round the components in between** ✅ delivered | `feat/hose-anticollision` | the route adds the boxes it hits and recomputes, at most three passes and six extras; the check still reports a layout with no path and a dragged crossing | the draw tests with one and two components on the way and the check test for the automatic route |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET; the order and the remaining electrical entries are in [work-queue.md](work-queue.md) | ADR each, per-library tests |
 
 All nine check faults are covered now: designation unlocked one, the cross-circuit pipe came

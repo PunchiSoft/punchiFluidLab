@@ -188,11 +188,11 @@ pub fn draw_placed(
     ink: &Ink,
     selected: &[usize],
 ) {
+    // One box per placement, built once: the router needs them all to skip the symbols a
+    // hose does not join. One vector per frame, not one per pipe.
+    let boxes: Vec<Rect> = placements.iter().map(|placed| placed.rect).collect();
     for pipe in pipes {
-        draw_pipe(surface, placements, pipe, catalog, ink);
-    }
-    for pipe in pipes {
-        draw_pipe(surface, placements, pipe, catalog, ink);
+        draw_pipe(surface, placements, &boxes, pipe, catalog, ink);
     }
     // Every placement is drawn from the document and its own state: a cylinder with the
     // extension the network reports for it, a valve with its own position. There is no
@@ -310,6 +310,7 @@ pub fn port_point(
 fn draw_pipe(
     surface: &mut dyn Surface,
     placements: &[Placed<'_>],
+    boxes: &[Rect],
     pipe: &Pipe<'_>,
     catalog: &Catalog,
     ink: &Ink,
@@ -332,13 +333,15 @@ fn draw_pipe(
         return;
     };
 
-    let points = route_between_boxes(
+    let points = route_between_boxes_avoiding(
         start,
         port_edge(from_definition, pipe.from.port),
         from.rect,
         end,
         port_edge(to_definition, pipe.to.port),
         to.rect,
+        boxes,
+        [pipe.from.placement, pipe.to.placement],
         pipe.offset_mm,
     );
     // The neutral ink at atmosphere, the working colour at supply pressure. The status
@@ -433,7 +436,9 @@ fn is_electrical(
     )
 }
 
-pub use crate::route::{route, route_between, route_between_boxes, route_offset};
+pub use crate::route::{
+    route, route_between, route_between_boxes, route_between_boxes_avoiding, route_offset,
+};
 
 /// Mixes two colours; `amount` is clamped to `0..=1`.
 fn blend(from: Colour, to: Colour, amount: f32) -> Colour {
