@@ -123,7 +123,7 @@ someone to miss a function.
 | Model, catalog of definition files, versioned format, CLI | done |
 | Drawing in millimetres, `Surface`, PNG/PDF | done |
 | Export from the window and without one | done: the date comes from the caller and the drawing is fitted to the page |
-| Window: ribbon, palette, sheet, status, theme, transport | done |
+| Window: ribbon, palette, sheet, status, theme, Simular tab | done: the transport, the speed and the state are the **Simular** tab, with large commands like Nuevo, Abrir and Guardar |
 | Editing: place, move, delete, undo/redo, connect port to port | done |
 | Editing: select/delete and re-route a pipe, T junctions | done |
 | Editing: straighten a hose by snapping its port | done: the drag magnet and `Alt+A`; a one-bend hose is refused |
