@@ -241,6 +241,11 @@ schematic simulator lives by, and the one the reference tool uses:
   An older file opens as an unframed A4 so its drawing does not move. A custom size is a
   print override for this one file, and a sheet per circuit is not there yet
   ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
+- **A hose keeps clear of the symbols it joins.** The automatic route leaves and enters
+  along the port edge and goes round both boxes with a 2 mm clearance, so a side port and a
+  top port no longer draw a line through the body between them. The check measures exactly
+  that route — port edges and the dragged offset included — and reports a hose that crosses
+  any component, its own ends included; only the short port lead is ignored.
 - **Zoom and pan are view state.** `Ctrl` and the wheel magnify about the pointer in the
   buttons' quarter steps, between 0.4× and 6×; a plain wheel pans and `Shift` swaps the
   axis; the middle button drags the sheet; the arrow keys pan from the keyboard, and

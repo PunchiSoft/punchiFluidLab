@@ -1321,9 +1321,10 @@ fn a_hose_between_parallel_ports_straightens_and_a_bent_one_is_refused() {
     let cylinder = component_with(session, "cylinder.");
     let valve_port = port_of(session, valve, "2");
     let cylinder_port = port_of(session, cylinder, "1");
-    let mid_y = f32::midpoint(valve_port.1, cylinder_port.1);
+    // The hose starts at the valve's top port; asking there finds it whatever bends the
+    // route takes around the symbols.
     // SAFETY: live session.
-    let pipe = unsafe { pf_session_pipe_at(session, valve_port.0, mid_y, 2.0) };
+    let pipe = unsafe { pf_session_pipe_at(session, valve_port.0, valve_port.1, 2.0) };
     assert!(pipe >= 0, "the hose is under the point");
     // SAFETY: live session.
     assert_eq!(
@@ -1346,11 +1347,9 @@ fn a_hose_between_parallel_ports_straightens_and_a_bent_one_is_refused() {
     // A hose between a top port and a side port has a bend by construction; moving one
     // component cannot make it straight, so the command refuses instead of guessing.
     let supply = component_with(session, "supply.");
-    let preparation = component_with(session, "preparation.");
     let supply_port = port_of(session, supply, "1");
-    let preparation_port = port_of(session, preparation, "1");
     // SAFETY: live session.
-    let bent = unsafe { pf_session_pipe_at(session, supply_port.0, preparation_port.1, 2.0) };
+    let bent = unsafe { pf_session_pipe_at(session, supply_port.0, supply_port.1, 2.0) };
     assert!(bent >= 0, "the one-bend hose is under the point");
     // SAFETY: live session.
     assert_eq!(
@@ -2270,17 +2269,9 @@ fn a_flow_meter_reads_the_line_it_is_connected_to() {
         unsafe { pf_session_port_point(session, 1, valve_port.as_ptr(), from.as_mut_ptr()) },
         PF_OK
     );
-    let mut to = [0.0_f32; 2];
-    // SAFETY: live session and a writable pair.
-    assert_eq!(
-        unsafe { pf_session_port_point(session, 2, one.as_ptr(), to.as_mut_ptr()) },
-        PF_OK
-    );
-    // The route of a hose is a Z: its vertical segment runs through the middle of the
-    // chord, which is the point `pf_session_pipe_at` is given here.
-    let middle = (f32::midpoint(from[0], to[0]), f32::midpoint(from[1], to[1]));
-    // SAFETY: live session.
-    let hose = unsafe { pf_session_pipe_at(session, middle.0, middle.1, 1.0) };
+    // The hose starts at the valve's port; asking there finds it whatever bends the route
+    // takes around the symbols.
+    let hose = unsafe { pf_session_pipe_at(session, from[0], from[1], 2.0) };
     assert!(hose >= 0, "the valve-to-cylinder hose was not found");
     // SAFETY: live session and an index the hit test just returned.
     assert_eq!(unsafe { pf_session_select_pipe(session, hose) }, PF_OK);

@@ -56,7 +56,7 @@ The nine findings this build knows, in the order the report uses:
 |---|---|
 | `outside_sheet` | un componente se sale de la hoja |
 | `overlapping_components` | dos componentes se solapan |
-| `pipe_through_component` | un tubo cruza un componente que no es su extremo |
+| `pipe_through_component` | un tubo cruza un componente |
 | `overlapping_pipes` | dos tubos se superponen |
 | `open_connection` | una conexión neumática queda abierta |
 | `duplicate_designation` | dos cilindros llevan la misma designación |

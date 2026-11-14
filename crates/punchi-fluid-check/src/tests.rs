@@ -181,7 +181,7 @@ fn components_side_by_side_do_not_overlap() {
 }
 
 #[test]
-fn a_pipe_through_a_third_component_is_reported() {
+fn a_dragged_pipe_through_a_third_component_is_reported() {
     let mut document = Document::new();
     let supply = place(&mut document, "supply.compressor", 30.0, 60.0);
     let valve = place(&mut document, "valve.3_2.spring_return", 150.0, 60.0);
@@ -191,12 +191,40 @@ fn a_pipe_through_a_third_component_is_reported() {
         document.connect(Endpoint::new(supply, "1"), Endpoint::new(valve, "1")),
         "the pipe must exist for the check to have anything to look at"
     );
+    // The automatic route goes round the throttle now; a stored offset is the user's own
+    // drag, and a drag that leaves the hose over the body is still a fault.
+    assert!(document.route_to(0, 0.1), "the middle segment can be moved");
     let findings = check(&document, &catalog(), sheet(), 0);
     assert!(
         findings
             .iter()
             .any(|finding| finding.kind == FindingKind::PipeThroughComponent),
         "{findings:?}"
+    );
+}
+
+#[test]
+fn a_dragged_hose_through_its_own_end_is_reported() {
+    let mut document = Document::new();
+    let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 100.0);
+    let cylinder = place(&mut document, "cylinder.single_acting_20_100", 90.0, 40.0);
+    assert!(
+        document.connect(Endpoint::new(valve, "2"), Endpoint::new(cylinder, "1")),
+        "the hose must exist"
+    );
+    // Move the jog into the cylinder's body: the hose now crosses the component it ends on,
+    // which the old check skipped because it was one of the ends.
+    assert!(
+        document.route_to(0, -30.0),
+        "the middle segment can be moved"
+    );
+    let cylinder_index = document.index_of(cylinder);
+    let findings = check(&document, &catalog(), sheet(), 0);
+    assert!(
+        findings.iter().any(|finding| {
+            finding.kind == FindingKind::PipeThroughComponent && finding.component == cylinder_index
+        }),
+        "the hose crosses its own end: {findings:?}"
     );
 }
 

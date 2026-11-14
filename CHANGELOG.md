@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### La manguera rodea el símbolo y la comprobación mide lo que se dibuja — 2026-11-14
+
+Una manguera que sale de un puerto lateral y entra por el superior de un compresor dibujaba
+una línea por encima del cuerpo: el trazado tomaba el codo a la altura de la salida. Ahora la
+ruta sale por el eje del puerto, rodea las dos cajas del símbolo con 2 mm de holgura y entra
+por el eje del otro puerto.
+
+- **Ruta que reserva el espacio**: un pequeño grafo ortogonal alrededor de las dos cajas elige
+  el camino más corto con menos codos; si no hay paso, conserva la forma simple y la
+  comprobación lo delata.
+- **La comprobación ve la misma ruta**: usa los bordes de los puertos y el desplazamiento
+  arrastrado, no un segundo cálculo. «Un tubo cruza un componente» incluye ahora los propios
+  extremos de la manguera; solo se perdona el tramo corto del puerto al borde del símbolo.
+- **El arrastre se respeta**: un desplazamiento guardado por el usuario conserva su forma, y
+  si cruza un cuerpo se informa como falta.
+- **Evidencia**: `a_hose_goes_round_the_symbols_it_joins`,
+  `the_compressor_hose_goes_over_the_compressor`, `aligned_boxes_keep_a_straight_hose`,
+  `a_dragged_offset_still_takes_its_own_shape`,
+  `a_dragged_pipe_through_a_third_component_is_reported` y
+  `a_dragged_hose_through_its_own_end_is_reported`; la puerta completa queda en 345 pruebas,
+  `--check-qml` 0 problemas y `--selftest` 0 fallos.
+- **Siguiente**: una manguera que atraviesa un tercer componente sigue cruzada por la ruta
+  automática; la comprobación la informa, y considerar todas las cajas es el paso que queda.
+
 ### El imán de puertos: la manguera se endereza al arrastrar — 2026-11-13
 
 Dos puertos en el mismo eje solo forman una línea recta si la otra coordenada coincide, y la

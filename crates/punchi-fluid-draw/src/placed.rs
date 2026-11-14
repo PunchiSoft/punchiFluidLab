@@ -332,11 +332,13 @@ fn draw_pipe(
         return;
     };
 
-    let points = route_between(
+    let points = route_between_boxes(
         start,
         port_edge(from_definition, pipe.from.port),
+        from.rect,
         end,
         port_edge(to_definition, pipe.to.port),
+        to.rect,
         pipe.offset_mm,
     );
     // The neutral ink at atmosphere, the working colour at supply pressure. The status
@@ -431,69 +433,7 @@ fn is_electrical(
     )
 }
 
-/// The route between two ports, leaving each one along its own edge.
-///
-/// Two ports on perpendicular edges are joined with **one bend**: a hose leaving a unit
-/// horizontally and entering a valve from below turns once. The old router always drew a Z,
-/// which is what made a connection look like a staircase when the two ports were not
-/// aligned. Two ports on the same axis keep the Z, because an orthogonal route between them
-/// needs the jog; there the `offset` is what the user drags.
-#[must_use]
-pub fn route_between(
-    start: Pt,
-    start_edge: PortEdge,
-    end: Pt,
-    end_edge: PortEdge,
-    offset: f32,
-) -> Vec<Pt> {
-    match (start_edge.horizontal(), end_edge.horizontal()) {
-        (true, false) => {
-            // Out horizontally, then straight into the end's edge.
-            if (end.x - start.x).abs() < 0.5 {
-                return vec![start, end];
-            }
-            vec![start, Pt::new(end.x, start.y), end]
-        }
-        (false, true) => {
-            if (end.y - start.y).abs() < 0.5 {
-                return vec![start, end];
-            }
-            vec![start, Pt::new(start.x, end.y), end]
-        }
-        // Parallel edges: the Z of two jogs, displaced by the drag.
-        _ => route_offset(start, end, offset),
-    }
-}
-
-/// The polyline between two points: straight, or an elbow with one jog.
-#[must_use]
-pub fn route(start: Pt, end: Pt) -> Vec<Pt> {
-    route_offset(start, end, 0.0)
-}
-
-/// The polyline with its middle segment displaced by `offset` millimetres.
-///
-/// The offset applies along the axis the elbow jogs in: horizontally when the ports are
-/// mostly side by side, vertically when they are mostly one above the other. That keeps
-/// the stored value meaningful after a component moves, and it is the segment a user
-/// drags in the reference.
-#[must_use]
-pub fn route_offset(start: Pt, end: Pt, offset: f32) -> Vec<Pt> {
-    let horizontal = (end.x - start.x).abs() >= (end.y - start.y).abs();
-    if horizontal && (end.y - start.y).abs() < 0.5 {
-        return vec![start, end];
-    }
-    if !horizontal && (end.x - start.x).abs() < 0.5 {
-        return vec![start, end];
-    }
-    if horizontal {
-        let middle = f32::midpoint(start.x, end.x) + offset;
-        vec![start, Pt::new(middle, start.y), Pt::new(middle, end.y), end]
-    } else {
-        let middle = f32::midpoint(start.y, end.y) + offset;
-        vec![start, Pt::new(start.x, middle), Pt::new(end.x, middle), end]
-    }
-}
+pub use crate::route::{route, route_between, route_between_boxes, route_offset};
 
 /// Mixes two colours; `amount` is clamped to `0..=1`.
 fn blend(from: Colour, to: Colour, amount: f32) -> Colour {
