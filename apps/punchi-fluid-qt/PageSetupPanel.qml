@@ -135,6 +135,10 @@ Rectangle {
             OrientationControl {
                 session: panel.session
             }
+
+            GridControl {
+                session: panel.session
+            }
         }
 
         Row {
@@ -171,6 +175,7 @@ Rectangle {
                 // to the fields below.
                 MarginGallery {
                     id: marginGallery
+                    objectName: "panelMarginGallery"
                     session: panel.session
                     onCustomRequested: Qt.callLater(function () {
                         marginFields.forceActiveFocus();

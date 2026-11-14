@@ -11,13 +11,13 @@ Images of the running application, used by the README and by pull request review
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
-| `disposicion-light.png` | The **Disposición** tab on a light desktop: the **Página** group with the Tamaño combo and the orientation, the **Márgenes** gallery, the **Cuadrícula** group (Visible, 10 mm step) and the **Configurar página** command |
-| `disposicion-dark.png` | The same tab on a dark desktop, to check the controls, the marked orientation and the grid in both themes |
-| `paper-sizes-light.png` | The **Tamaño** list open: every paper with its proportions, its normalised name, the common name in parentheses and the measure in centimetres; A4 marked |
-| `grid-5-light.png` | The Disposición tab with a **5 mm** grid: the fine ruling and a heavier line every 25 mm |
-| `grid-20-light.png` | The same tab with a **20 mm** grid: the coarse ruling and a heavier line every 100 mm |
-| `margin-presets-light.png` | The **Márgenes** gallery open: Normal (ISO 5457 / NCh 13.Of93), Estrecho, Amplio and Márgenes personalizados…, each with its preview, its shaded margin band and its four values |
-| `page-setup-light.png` | The **Configurar página** panel on a light desktop: size, orientation, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
+| `archivo-page-setup-light.png` | The **Archivo** tab on a light desktop: Documento, Circuito, one **Configurar página** group in reference order (Márgenes, Orientación, Tamaño and the small page launcher), then **Recientes** as a dropdown |
+| `archivo-page-setup-dark.png` | The same tab on a dark desktop, to check the page symbols, the margin dropdown, launcher and orientation in both themes |
+| `paper-sizes-light.png` | The **Tamaño** list open in Archivo: every paper with its proportions, canonical name, common name in parentheses and measure in centimetres; A4 marked |
+| `grid-5-light.png` | The Configurar página panel with a **5 mm** grid: its grid control, the fine ruling and a heavier line every 25 mm |
+| `grid-20-light.png` | The same panel with a **20 mm** grid: the coarse ruling and a heavier line every 100 mm |
+| `margin-presets-light.png` | The **Márgenes** dropdown open directly from Archivo: Normal (ISO 5457 / NCh 13.Of93), Estrecho, Amplio and Márgenes personalizados…, each with its preview, shaded margin band and four values |
+| `page-setup-light.png` | The **Configurar página** panel on a light desktop: size, the orientation dropdown, the grid, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
 | `page-setup-dark.png` | The same panel on a dark desktop, to check the preview, the profile control and the fields in both themes |
 | `title-block-light.png` | The **docked Cajetín editor** open on a light desktop, industrial model: the content combo, four position miniatures, the twelve guide fields and the 170 × 45 mm block drawn on the sheet beside it |
 | `title-block-dark.png` | The same editor on a dark desktop, to check the fields, the derived sheet number and the block in both themes |
@@ -51,16 +51,16 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
 # The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 4 --block --block-model 2 \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \
   --grab /tmp/title-block-light.png
 # The Cajetín tab itself.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 4 \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 \
   --grab /tmp/title-block-tab-light.png
 # Portrait, to show the third position in the combo.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a4-portrait.pfluid \
-  --tab 4 --block --block-model 2 --grab /tmp/title-block-portrait-light.png
+  --tab 3 --block --block-model 2 --grab /tmp/title-block-portrait-light.png
 # The A3 sheet with its reference zones: open a saved A3 document first.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a3.pfluid \
@@ -74,14 +74,14 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --license --grab /tmp/license-light.png
 # The Disposición tab, light and dark.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --grab /tmp/disposicion-light.png
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 0 --grab /tmp/archivo-page-setup-light.png
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 3 --grab /tmp/disposicion-dark.png
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 0 --grab /tmp/archivo-page-setup-dark.png
 # The grid at two steps, for the density comparison.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --grid-step 5 --grab /tmp/grid-5-light.png
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --page-setup --grid-step 5 --grab /tmp/grid-5-light.png
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
-  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --grid-step 20 --grab /tmp/grid-20-light.png
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --page-setup --grid-step 20 --grab /tmp/grid-20-light.png
 # The paper list and the margin gallery, opened for the capture.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --paper-list --grab /tmp/paper-sizes-light.png

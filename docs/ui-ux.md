@@ -24,7 +24,7 @@ the protagonist: no dialog in front of it unless the user opened it.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ Archivo  Editar  Ver  Disposición  Cajetín  Simular    Acerca de  Licencia     │ tabs
+│ Archivo  Editar  Ver  Cajetín  Simular                 Acerca de  Licencia     │ tabs
 ├───────────────────────────────────────────────────────────────────────────────┤
 │ ▤ Nuevo  ▤ Abrir │ ▤ Guardar │ ⤓ PNG PDF │ ▶ ⏭ ⟲ │ ⧉       0.25x  Estado    │ groups
 ├──────────────────────┬────────────────────────────────────────────────────────┤
@@ -49,7 +49,7 @@ a popup about the program, never a command of the circuit, so no command exists 
 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
-`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1100 px wide the ribbon collapses into a
+`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1240 px wide the ribbon collapses into a
 single menu button (a ribbon needs width to work).
 
 ### 1. Ribbon (top)
@@ -78,7 +78,7 @@ selectable like Archivo, Editar and Ver.
   says so in one line. A grey button that teaches nothing is worse than a missing one.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
   pause and on keyboard focus, and the same string is the accessible description.
-- Below 1100 px the body folds away: the tabs stay, and one **Menú** button opens the
+- Below 1240 px the body folds away: the tabs stay, and one **Menú** button opens the
   commands of the open tab. A ribbon without width is a maze.
 - **The two help links are text at the right end of the tab row**, with the same weight
   as the tabs: **Acerca de** opens a popup with the name, the core's version, "versión en
@@ -95,10 +95,9 @@ a second, short table beside it, because they are not commands of a tab.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; the **Configurar página** group with one large button that opens the detailed sheet editor; and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original, the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
-| **Disposición** | **Página** with the **Tamaño** combo (the paper's proportions, its normalised name and the common name in parentheses, plus **Personalizado…**), and **Orientación** (Vertical, Apaisado); **Márgenes** with the gallery **Normal (ISO 5457 / NCh 13.Of93)**, **Estrecho**, **Amplio** and **Márgenes personalizados…**, each with a preview of the frame and its four values; **Cuadrícula** with Visible/Oculta and the step (5, 10, 20 or 25 mm, a heavier line every five steps); **Configurar página** opens the detailed editor. The size and margin lists mark what is in force, and each document choice is one undo; the grid is view state, never printed and never undone |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio, Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha or en pausa, with `t`); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
@@ -108,7 +107,7 @@ needs a pointer or a tab switch; the tab is where the commands are found. The sp
 is marked and the state is a word, never colour alone.
 
 **The Cajetín tab and its docked editor edit one circuit while the sheet stays visible.**
-The ribbon has six tabs — Archivo, Editar, Ver, **Disposición**, **Cajetín**, Simular.
+The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular.
 **Cajetín** groups
 **Contenido** (Escolar, Técnico, Industrial, Sin cajetín; the current one marked),
 **Posición** (top right, bottom right; portrait adds the full bottom band; marked, disabled
@@ -142,8 +141,9 @@ actuator. The floating captions of the old example are gone from the editable sh
 component carries its designation, and the values live in the inspector and the status bar.
 
 **The sheet and the print are configured in two places.** Paper, orientation and margins
-are the **document's sheet**, edited in the **Disposición** tab and in **Configurar
-página**; a custom size is saved with the document, not kept for one print. The page panel
+are the **document's sheet**, edited in the **Configurar página** panel opened from
+Archivo; the panel owns the margin gallery, the four numeric margins, the custom size and
+the grid. A custom size is saved with the document, not kept for one print. The page panel
 applies every change at once and each change is one undo, so it has no Aceptar. The export
 panel keeps only the raster resolution and the parts list. The export dialog then asks for
 the file, and a setting that leaves no room for the drawing is refused with a message
@@ -272,16 +272,18 @@ schematic simulator lives by, and the one the reference tool uses:
   cylinder parameters are still read-only; the ledger in
   [capabilities.md](capabilities.md) names them.
 
-- Infinite scrollable surface with a configurable grid: 5, 10 (the default), 20 or 25 mm,
+- Infinite scrollable surface with a configurable grid. The **Configurar página** panel
+  offers 5, 10 (the default), 20 or 25 mm,
   with a heavier line every five steps. The step is a **view setting** shared by the ruling
   and the snap, so the lines never lie about where a component will land; it is never
   printed and never enters the undo history. The grid is a *guide*, not a background
   pattern to be proud of.
 - **The sheet is the paper.** A new document opens on **A4 landscape** with the ISO 5457
-  frame (20 mm on the filing edge, 10 mm on the other three); **Configurar página** returns
-  to A4 portrait with the same frame. The **Disposición** tab offers A0–A5, Letter, Legal,
-  Oficio and a custom size, the orientation and the margin presets, and **Configurar
-  página** edits the four margins in millimetres. The paper, the turn and the margins are
+  frame (20 mm on the filing edge, 10 mm on the other three); the **Configurar página**
+  panel returns to A4 portrait with the same frame. The **Disposición** dropdown in the
+  Archivo group offers A0–A5, Letter, Legal, Oficio and a custom size; the panel adds the
+  orientation, the margin profiles, the four numeric margins and the grid. The paper, the
+  turn and the margins are
   the document's, saved in format 7 and drawn by the canvas, measured by the check and
   printed. An older file opens as an unframed A4 so its drawing does not move. The common
   names (`Letter (Carta)`, `Legal (Oficio)`, `Oficio chileno (Folio)`) are a display alias

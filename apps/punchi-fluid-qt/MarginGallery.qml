@@ -14,6 +14,12 @@ Item {
 
     property FluidSession session
     property bool openOnCreate: false
+    /// The reference ribbon uses a large page symbol over its label; the panel uses a
+    /// compact labelled combo instead.
+    property bool ribbonMode: false
+    /// A narrower button for the compact Archivo ribbon; the open gallery remains wide.
+    property real controlWidth: 160
+    property real labelWidth: 116
     /// The last row asks for the four numeric fields; the window focuses them.
     signal customRequested()
 
@@ -83,14 +89,15 @@ Item {
         onTriggered: openPopup()
     }
 
-    implicitWidth: column.implicitWidth
-    implicitHeight: column.implicitHeight
+    implicitWidth: ribbonMode ? ribbonButton.width : column.implicitWidth
+    implicitHeight: ribbonMode ? ribbonButton.height : column.implicitHeight
 
     Column {
         id: column
         spacing: 2
 
         Text {
+            visible: !margins.ribbonMode
             text: qsTr("Márgenes")
             color: session.muted
             font.pixelSize: 10
@@ -98,7 +105,8 @@ Item {
 
         Rectangle {
             id: button
-            width: Math.max(160, headerRow.implicitWidth + 16)
+            visible: !margins.ribbonMode
+            width: Math.max(margins.controlWidth, headerRow.implicitWidth + 16)
             height: 26
             radius: 4
             color: pointer.containsMouse || popup.opened ? session.panel : "transparent"
@@ -132,7 +140,7 @@ Item {
                 }
 
                 Text {
-                    width: 116
+                    width: margins.labelWidth
                     anchors.verticalCenter: parent.verticalCenter
                     text: currentLabel()
                     color: session.foreground
@@ -162,11 +170,79 @@ Item {
         }
     }
 
+    Rectangle {
+        id: ribbonButton
+        visible: margins.ribbonMode
+        width: 72
+        height: 66
+        radius: 4
+        color: ribbonPointer.containsMouse || popup.opened || activeFocus
+               ? session.panel : "transparent"
+        border.width: activeFocus ? 1 : 0
+        border.color: session.accent
+        activeFocusOnTab: true
+
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Márgenes: %1").arg(currentLabel())
+        Accessible.description: qsTr("abre la galería de perfiles de margen")
+        Accessible.onPressAction: popup.opened ? popup.close() : popup.open()
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 2
+
+            PaperPreview {
+                anchors.horizontalCenter: parent.horizontalCenter
+                session: margins.session
+                paperWidthMm: session.sheetPaperWidthMm
+                paperHeightMm: session.sheetPaperHeightMm
+                landscape: false
+                marginTop: session.sheetMarginTop
+                marginRight: session.sheetMarginRight
+                marginBottom: session.sheetMarginBottom
+                marginLeft: session.sheetMarginLeft
+                showMargins: true
+                filledPage: true
+                maxWidth: 24
+                maxHeight: 32
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Márgenes")
+                color: session.foreground
+                font.pixelSize: 10
+            }
+        }
+
+        Text {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: 4
+            anchors.bottomMargin: 3
+            text: "▾"
+            color: session.muted
+            font.pixelSize: 8
+        }
+
+        MouseArea {
+            id: ribbonPointer
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: popup.opened ? popup.close() : popup.open()
+        }
+
+        Keys.onSpacePressed: popup.opened ? popup.close() : popup.open()
+        Keys.onReturnPressed: popup.opened ? popup.close() : popup.open()
+        Keys.onEnterPressed: popup.opened ? popup.close() : popup.open()
+    }
+
     Popup {
         id: popup
-        parent: button
+        parent: margins.ribbonMode ? ribbonButton : button
         x: 0
-        y: button.height + 4
+        y: parent.height + 4
         width: 370
         height: Math.min(260, list.contentHeight + 12)
         padding: 6
@@ -229,7 +305,7 @@ Item {
                         session: margins.session
                         paperWidthMm: session.sheetPaperWidthMm
                         paperHeightMm: session.sheetPaperHeightMm
-                        landscape: session.sheetLandscape
+                        landscape: false
                         marginTop: row.modelData.custom === true
                                    ? session.sheetMarginTop : row.modelData.top
                         marginRight: row.modelData.custom === true

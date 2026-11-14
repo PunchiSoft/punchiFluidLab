@@ -21,6 +21,8 @@ Item {
     property real marginBottom: 0
     property real marginLeft: 0
     property bool showMargins: false
+    /// White page against the ribbon, so a tiny symbol still reads as a sheet.
+    property bool filledPage: false
     property real maxWidth: 42
     property real maxHeight: 52
 
@@ -35,7 +37,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 1
-        color: preview.session ? preview.session.background : "transparent"
+        color: preview.session
+               ? (preview.filledPage ? preview.session.panel : preview.session.background)
+               : "transparent"
         border.width: 1
         border.color: preview.session ? preview.session.muted : "transparent"
     }
