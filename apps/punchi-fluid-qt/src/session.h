@@ -75,7 +75,7 @@ class FluidSession : public QObject
     Q_PROPERTY(QString blockSheet READ blockSheet NOTIFY blockChanged)
     /// 0 top right, 1 bottom right, 2 bottom full width, 3 no block.
     Q_PROPERTY(int blockPreset READ blockPreset NOTIFY blockChanged)
-    /// 0 escolar, 1 técnico, 2 industrial.
+    /// 0 school, 1 technical, 2 industrial.
     Q_PROPERTY(int blockModel READ blockModel NOTIFY blockChanged)
     /// `true` when a field was shown or hidden away from the model's set.
     Q_PROPERTY(bool blockCustomized READ blockCustomized NOTIFY blockChanged)

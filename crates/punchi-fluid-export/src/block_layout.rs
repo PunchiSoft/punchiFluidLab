@@ -80,7 +80,7 @@ const fn stored(field: TitleField, width: f32) -> CellSpec {
 /// The rows of one content model on the 180 mm template, at the A3 height.
 fn model_rows(model: ContentModel) -> (Vec<RowSpec>, f32) {
     match model {
-        ContentModel::Escolar => (
+        ContentModel::School => (
             vec![
                 RowSpec {
                     height: 14.0,
@@ -100,7 +100,7 @@ fn model_rows(model: ContentModel) -> (Vec<RowSpec>, f32) {
             ],
             35.0,
         ),
-        ContentModel::Tecnico => (
+        ContentModel::Technical => (
             vec![
                 RowSpec {
                     height: 12.0,
@@ -178,9 +178,9 @@ pub fn model_size_mm(paper: PaperSize, model: ContentModel) -> (f32, f32) {
     let large = is_large_sheet(paper);
     let width = if large { 180.0 } else { 170.0 };
     let height = match (model, large) {
-        (ContentModel::Escolar, false) => 35.0,
-        (ContentModel::Escolar, true) | (ContentModel::Tecnico, false) => 40.0,
-        (ContentModel::Tecnico, true) => 50.0,
+        (ContentModel::School, false) => 35.0,
+        (ContentModel::School, true) | (ContentModel::Technical, false) => 40.0,
+        (ContentModel::Technical, true) => 50.0,
         (ContentModel::Industrial, true) => 65.0,
         (ContentModel::Industrial, false) => 45.0,
     };
@@ -245,8 +245,8 @@ mod tests {
     #[test]
     fn each_model_has_its_paper_size() {
         for (model, a4, a3) in [
-            (ContentModel::Escolar, (170.0, 35.0), (180.0, 40.0)),
-            (ContentModel::Tecnico, (170.0, 40.0), (180.0, 50.0)),
+            (ContentModel::School, (170.0, 35.0), (180.0, 40.0)),
+            (ContentModel::Technical, (170.0, 40.0), (180.0, 50.0)),
             (ContentModel::Industrial, (170.0, 45.0), (180.0, 65.0)),
         ] {
             let (w4, h4) = size(PaperSize::A4, model);
@@ -285,9 +285,9 @@ mod tests {
     }
 
     #[test]
-    fn an_escolar_block_carries_the_sheet_and_only_its_fields() {
+    fn a_school_block_carries_the_sheet_and_only_its_fields() {
         let mut block = TitleBlock::default();
-        block.set_model(ContentModel::Escolar);
+        block.set_model(ContentModel::School);
         let layout = layout(&block, PaperSize::A4);
         let fields: Vec<BlockField> = layout
             .rows

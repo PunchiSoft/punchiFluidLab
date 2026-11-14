@@ -17,7 +17,7 @@ title block.
 > A3 and larger**, the guide's template, and **170 × 45 mm industrial on A4 and A5**, fitted
 > so the block is not too large and leaves 10 mm at the left of A4's portrait drawing space.
 > The school and technical models are shorter. Each circuit stores **twelve editable
-> fields**, a **content model** and its **per-field visibility** (format 11), and edits them
+> fields**, a **content model** and its **per-field visibility** (format 12), and edits them
 > from the **Cajetín** ribbon tab and its docked editor, one undo per change. The sheet
 > number `n/N` is derived from the project and is not stored.
 
@@ -148,7 +148,7 @@ cannot hold it; it never crosses the bottom rule.
 | Normas aplicadas | `norms` | empty | Representation and symbology standards actually used |
 | Hoja | derived | `1/1` | `n` is the circuit position, `N` the number of circuits; never stored |
 
-The twelve stored fields travel per circuit in format 11, with the content model and the
+The twelve stored fields travel per circuit in format 12, with the content model and the
 visible field set. An older format 9 block reads as the industrial model with every field
 shown; a format 8 block also gains the empty project and equipment, the `S/E` scale and no
 norms.

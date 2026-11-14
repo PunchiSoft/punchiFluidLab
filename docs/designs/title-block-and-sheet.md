@@ -1,7 +1,7 @@
 # Design: the sheet and its title block
 
 Status: `current`. Written with the Elephant-Goldfish Model before the change was
-accepted; the code lives in `feat/title-block-editor`.
+accepted.
 
 ## Overview
 
@@ -94,7 +94,7 @@ undo entry and marks the document modified.
 - `punchi-fluid-core::title_block`: `TitleBlock` with twelve fields, `ContentModel`,
   `FieldSet`, `BlockPosition` and the `S/E` default; `TitleField` names are the file/ABI keys.
 - `punchi-fluid-file::block` and `sheet`: stored model and visibility, position and model
-  validation, format 11 with migration from 10 (and the earlier formats behind it).
+  validation, format 12 with migration from 11 (and the earlier formats behind it).
 - `punchi-fluid-doc`: one block per circuit, `set_block` as one undo entry.
 - `punchi-fluid-export::block_layout`: one row/cell resolver for the three models, with
   hidden cells collapsing and empty rows shortening the block; A4 industrial 170 × 45,

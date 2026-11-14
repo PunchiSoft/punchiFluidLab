@@ -73,9 +73,9 @@ QString blockFieldLabel(uint32_t field)
 /// The fields of one content model, in print order.
 void modelFields(int model, const uint32_t **fields, int *count)
 {
-    static const uint32_t escolar[] = { PF_BLOCK_OWNER, PF_BLOCK_TITLE, PF_BLOCK_PREPARED,
-                                        PF_BLOCK_DATE };
-    static const uint32_t tecnico[] = {
+    static const uint32_t school[] = { PF_BLOCK_OWNER, PF_BLOCK_TITLE, PF_BLOCK_PREPARED,
+                                       PF_BLOCK_DATE };
+    static const uint32_t technical[] = {
         PF_BLOCK_OWNER,   PF_BLOCK_TITLE,  PF_BLOCK_NUMBER, PF_BLOCK_REVISION,
         PF_BLOCK_DATE,    PF_BLOCK_PREPARED, PF_BLOCK_CHECKED, PF_BLOCK_APPROVED,
         PF_BLOCK_NORMS
@@ -86,13 +86,13 @@ void modelFields(int model, const uint32_t **fields, int *count)
         PF_BLOCK_CHECKED, PF_BLOCK_APPROVED, PF_BLOCK_SCALE,   PF_BLOCK_NORMS
     };
     switch (model) {
-    case PF_BLOCK_MODEL_ESCOLAR:
-        *fields = escolar;
-        *count = static_cast<int>(std::size(escolar));
+    case PF_BLOCK_MODEL_SCHOOL:
+        *fields = school;
+        *count = static_cast<int>(std::size(school));
         break;
-    case PF_BLOCK_MODEL_TECNICO:
-        *fields = tecnico;
-        *count = static_cast<int>(std::size(tecnico));
+    case PF_BLOCK_MODEL_TECHNICAL:
+        *fields = technical;
+        *count = static_cast<int>(std::size(technical));
         break;
     default:
         *fields = industrial;

@@ -257,7 +257,7 @@ fn a_version_nine_sheet_gains_the_industrial_model() {
     // Format 9 already had the twelve fields but no model or visibility.
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 11", "\"format\": 9")
+        .replace("\"format\": 12", "\"format\": 9")
         .replace("\"model\": \"industrial\",", "");
     let read = Sheet::parse(&json).expect("a version 9 sheet reads");
     assert_eq!(read.format, SHEET_VERSION);
@@ -266,9 +266,30 @@ fn a_version_nine_sheet_gains_the_industrial_model() {
 }
 
 #[test]
+fn a_version_eleven_sheet_reads_its_retired_model_names() {
+    // Format 11 named the two shorter models in Spanish; the reader renames them and
+    // saving writes the English name, so no file keeps the old token.
+    for (retired, current) in [("escolar", "school"), ("tecnico", "technical")] {
+        let json = sheet()
+            .to_json()
+            .expect("valid")
+            .replace("\"format\": 12", "\"format\": 11")
+            .replace(
+                "\"model\": \"industrial\",",
+                &format!("\"model\": \"{retired}\","),
+            );
+        let read = Sheet::parse(&json).expect("a format 11 sheet reads");
+        assert_eq!(read.format, SHEET_VERSION);
+        assert_eq!(read.circuits[0].block.model, current);
+        let saved = read.to_json().expect("valid");
+        assert!(saved.contains(&format!("\"model\": \"{current}\"")));
+    }
+}
+
+#[test]
 fn the_content_model_and_visibility_round_trip() {
     let mut source = sheet();
-    source.circuits[0].block.model = String::from("escolar");
+    source.circuits[0].block.model = String::from("school");
     source.circuits[0].block.visible = Some(vec![
         String::from("owner"),
         String::from("title"),
@@ -278,9 +299,9 @@ fn the_content_model_and_visibility_round_trip() {
     let read = Sheet::parse(&saved).expect("reads");
     assert_eq!(read.circuits[0].block, source.circuits[0].block);
 
-    source.circuits[0].block.model = String::from("mecanico");
+    source.circuits[0].block.model = String::from("mechanical");
     assert!(source.validate().is_err(), "an unknown model is refused");
-    source.circuits[0].block.model = String::from("escolar");
+    source.circuits[0].block.model = String::from("school");
     source.circuits[0].block.visible = Some(vec![String::from("material")]);
     assert!(source.validate().is_err(), "an unknown field is refused");
 }
@@ -345,7 +366,7 @@ fn the_block_position_is_checked_and_round_trips() {
 fn a_version_ten_sheet_maps_the_old_positions_and_gains_the_note() {
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 11", "\"format\": 10")
+        .replace("\"format\": 12", "\"format\": 10")
         .replace("\"position\": \"bottom-right\"", "\"position\": \"left\"");
     let read = Sheet::parse(&json).expect("a version 10 sheet reads");
     assert_eq!(read.circuits[0].block.position, "bottom-right");

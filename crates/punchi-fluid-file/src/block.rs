@@ -56,7 +56,8 @@ pub struct StoredBlock {
     /// Free note for the editor; not printed yet.
     #[serde(default)]
     pub remark: String,
-    /// Content model: `escolar` (default `industrial`), `tecnico` or `industrial`.
+    /// Content model: `school`, `technical` or `industrial`; format 11 wrote the first two
+    /// in Spanish and the reader renames them.
     #[serde(default = "default_model")]
     pub model: String,
     /// Hidden fields, when the user customized the model; absent means the model's set.
