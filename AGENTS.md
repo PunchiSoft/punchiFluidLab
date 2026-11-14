@@ -68,7 +68,7 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 
 | Crate | Owns | Never contains |
 |---|---|---|
-| `crates/punchi-fluid-core` | components, ports, connections, units | numerics, files, widgets |
+| `crates/punchi-fluid-core` | components, ports, connections, units, paper and the sheet frame | numerics, files, widgets |
 | `crates/punchi-fluid-catalog` | component definition files: schema, validation, loading | physics, widgets |
 | `crates/punchi-fluid-solver` | lumped-parameter model, orifice flow, integration | editing, UI |
 | `crates/punchi-fluid-file` | versioned documents: the sheet format and its migrations | physics |
@@ -82,9 +82,11 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 
 Dependency direction: `core` is the base; `catalog` and `file` depend on it and on no
 other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
-`core` and `solver`; `doc` on `draw`; `check` on `catalog`, `doc` and `draw` (it reads
+`core` and `solver`; `doc` on `core` and `draw` (the sheet is a domain value the document
+stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
-`catalog`, `draw` and `solver`; `ffi` on all of the above, `export` included, because the
+`core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
+page reads them from `core`); `ffi` on all of the above, `export` included, because the
 window speaks only the ABI and the ABI is the one place that holds both the document and the
 page it is printed on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
 `solver`, because it runs the same check and the same model without a window. Nothing in

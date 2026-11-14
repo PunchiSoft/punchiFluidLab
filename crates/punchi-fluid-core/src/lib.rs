@@ -11,10 +11,12 @@
 
 pub mod component;
 pub mod network;
+pub mod paper;
 pub mod units;
 
 pub use component::{Component, ComponentKind, Port, PortId, PortKind};
 pub use network::{Circuit, Connection, NodeId};
+pub use paper::{Margins, Orientation, PaperSize, Sheet};
 pub use units::{Pressure, Temperature, Volume};
 
 /// Everything that can go wrong while building a domain object.

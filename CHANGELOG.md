@@ -6,6 +6,38 @@ publicación.
 
 ## Unreleased
 
+### La hoja es el papel que se imprime — 2026-11-13
+
+El lienzo deja de ser un rectángulo lógico de 200 × 130 mm y pasa a ser la hoja: A4 vertical
+con el marco de ISO 5457 por defecto, y A0–A5, Letter, Legal y Oficio desde la cinta. Lo que
+se dibuja, lo que se comprueba y lo que se imprime son la misma hoja.
+
+- **El papel vive en el documento**: `Sheet` en `punchi-fluid-core`, guardado con el formato
+  7, con la orientación y los cuatro márgenes. Elegir papel, girarlo o mover un margen es un
+  cambio con deshacer, y el archivo lo conserva ([ADR 0026](docs/adr/0026-the-sheet-is-the-paper.md)).
+- **El lienzo dibuja la hoja**: encaja el papel en la ventana, dibuja su borde y el marco, y
+  la cuadrícula se queda dentro del espacio de dibujo.
+- **La comprobación mide el marco**: «fuera de la hoja» es ahora fuera del espacio que deja
+  el marco, el mismo rectángulo que se ve y que se imprime.
+- **La exportación usa la hoja del documento**: el tamaño personalizado del panel queda como
+  excepción de una impresión, con la resolución y la lista de piezas.
+- **Los archivos anteriores no se mueven**: un formato 6 se lee como A4 sin marco, que es el
+  área en la que se dibujó; nada pasa a estar «fuera» por abrirlo con esta versión.
+- **El ejemplo se compone para A4 vertical**: el cuadrado de cada símbolo ocupa 0,17 del
+  ancho, no 0,20, para que las cuatro cajas entren y se puedan repartir con huecos positivos.
+- **Evidencia**: `a_new_document_is_a_framed_a4_and_one_undo_restores_it`,
+  `a_version_six_sheet_reads_as_an_unframed_a4`,
+  `the_sheet_keeps_its_paper_orientation_and_margins_in_the_file`,
+  `a_sheet_whose_frame_leaves_no_drawing_space_is_refused`, las pruebas del ABI
+  `the_sheet_is_a4_and_a_paper_change_is_one_undo`,
+  `the_check_measures_the_document_sheet_and_not_a_fixed_area` y
+  `the_sheet_survives_a_save_and_an_open`, y los nueve pasos `sheet: …` de `--selftest`; la
+  puerta completa queda en 338 pruebas, `--check-qml` 0 problemas y `--selftest` 0 fallos.
+
+**Siguiente**: el tamaño personalizado como hoja de trabajo, una hoja por circuito, el cuadro
+de rotulación en el lienzo y la escala elegida por el usuario. El marco de ISO 5457 todavía no
+dibuja las marcas de centrado ni la cuadrícula de zonas.
+
 ### El zoom responde a la rueda y la hoja se desplaza — 2026-11-13
 
 Ctrl y la rueda acercan la hoja allí donde está el puntero, que es el gesto que la mano

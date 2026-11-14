@@ -13,19 +13,19 @@
     reason = "the point of the test is to call the unsafe C entry points"
 )]
 
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr, CString, c_char};
 use std::ptr;
 
 use punchi_fluid::{
     PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL,
     PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE,
-    PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PfAbi,
-    PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
-    PfSession, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
-    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_build_frame,
-    pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_chart_candidate,
-    pf_session_chart_candidate_count, pf_session_chart_source, pf_session_check,
-    pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
+    PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE,
+    PF_SHEET_CUSTOM_PAPER, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions,
+    PfFrame, PfInk, PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_session_active_circuit,
+    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
+    pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
+    pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
     pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
     pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
     pf_session_component_rect, pf_session_component_valve_position,
@@ -48,9 +48,9 @@ use punchi_fluid::{
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
     pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
-    pf_session_space_selection, pf_session_telemetry, pf_session_toggle_contact,
-    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_spring_return,
+    pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_telemetry,
+    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_valve_rect, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -103,6 +103,7 @@ fn abi_sizes_match_the_types_they_describe() {
     assert_eq!(abi.frame_size as usize, size_of::<PfFrame>());
     assert_eq!(abi.ink_size as usize, size_of::<PfInk>());
     assert_eq!(abi.point_size as usize, size_of::<PfPoint>());
+    assert_eq!(abi.sheet_size as usize, size_of::<PfSheet>());
 }
 
 #[test]
@@ -152,7 +153,7 @@ fn the_frame_carries_the_drawing_and_a_text_run() {
     let session = session();
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
-    let code = unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) };
+    let code = unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) };
     assert_eq!(code, PF_OK);
     assert!(
         frame.calls_len > 10,
@@ -188,20 +189,174 @@ fn the_hit_test_uses_the_layout_of_the_last_frame() {
     let session = session();
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
-    unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) };
+    unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) };
 
-    // The valve sits at 62 % of the width and 52 % of the height of the fixed layout.
+    // The valve's own box is where the hit test must answer, whatever paper the document
+    // uses; the front end asks for that box to draw its hover ring.
+    let mut rect = [0.0_f32; 4];
+    // SAFETY: live session and a writable rectangle.
+    assert_eq!(
+        unsafe { pf_session_valve_rect(session, rect.as_mut_ptr()) },
+        PF_OK
+    );
+    let centre_x = f32::midpoint(rect[0], rect[2]);
+    let centre_y = f32::midpoint(rect[1], rect[3]);
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_hit_valve(session, 200.0 * 0.62, 130.0 * 0.52) },
+        unsafe { pf_session_hit_valve(session, centre_x, centre_y) },
         1
     );
-    // The supply box is elsewhere, so a click there must not reach the valve.
+    // The paper's top-left corner is nowhere near the valve.
     // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_hit_valve(session, 1.0, 1.0) }, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_sheet_is_a4_and_a_paper_change_is_one_undo() {
+    let session = session();
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    assert_eq!(sheet.paper, 1, "A4 is the default paper");
+    assert_eq!(sheet.landscape, 0);
+    assert_eq!((sheet.width_mm, sheet.height_mm), (210.0, 297.0));
+    // ISO 5457: 20 mm on the filing edge and 10 mm on the other three.
+    assert_eq!((sheet.margin_left, sheet.margin_top), (20.0, 10.0));
+    assert_eq!((sheet.margin_right, sheet.margin_bottom), (10.0, 10.0));
+
+    let a3_landscape = PfSheet {
+        paper: 2,
+        landscape: 1,
+        ..sheet
+    };
+    // SAFETY: live session and a readable record.
     assert_eq!(
-        unsafe { pf_session_hit_valve(session, 200.0 * 0.13, 130.0 * 0.20) },
-        0
+        unsafe { pf_session_set_sheet(session, &raw const a3_landscape) },
+        PF_OK
     );
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 1);
+    let mut frame = PfFrame::default();
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        PF_OK
+    );
+    assert_eq!(
+        (frame.width_mm, frame.height_mm),
+        (420.0, 297.0),
+        "the drawing area is the paper, turned"
+    );
+    // One undo returns the sheet the document started on.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    assert_eq!((sheet.paper, sheet.landscape), (1, 0));
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_check_measures_the_document_sheet_and_not_a_fixed_area() {
+    let session = session();
+    // The supply box is placed so it straddles the ISO frame: inside a bare A4, outside
+    // the 20/10 drawing space.
+    // SAFETY: live session.
+    assert!(unsafe { pf_session_place_component(session, 0, 20.0, 20.0) } >= 0);
+    let mut text = [0 as c_char; 8192];
+    // SAFETY: live session and a writable buffer.
+    let code = unsafe {
+        pf_session_check(
+            session,
+            text.as_mut_ptr(),
+            u32::try_from(text.len()).unwrap_or(u32::MAX),
+        )
+    };
+    assert!(code > 0, "the check always returns its findings");
+    // SAFETY: the call above wrote a NUL-terminated report.
+    let report = unsafe { CStr::from_ptr(text.as_ptr()) }
+        .to_string_lossy()
+        .into_owned();
+    assert!(
+        report.contains("se sale de la hoja"),
+        "the frame is the drawing space: {report}"
+    );
+
+    // A larger sheet with no frame contains the same box, so the finding goes away. The
+    // check follows the document, not a constant somewhere else.
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    let unframed = PfSheet {
+        paper: PF_SHEET_CUSTOM_PAPER,
+        width_mm: 500.0,
+        height_mm: 500.0,
+        margin_top: 0.0,
+        margin_right: 0.0,
+        margin_bottom: 0.0,
+        margin_left: 0.0,
+        ..sheet
+    };
+    // SAFETY: live session and a readable record.
+    assert_eq!(
+        unsafe { pf_session_set_sheet(session, &raw const unframed) },
+        PF_OK
+    );
+    // SAFETY: live session and a writable buffer.
+    let code = unsafe {
+        pf_session_check(
+            session,
+            text.as_mut_ptr(),
+            u32::try_from(text.len()).unwrap_or(u32::MAX),
+        )
+    };
+    assert!(code >= 0, "the check ran");
+    // SAFETY: the call above wrote a NUL-terminated report.
+    let report = unsafe { CStr::from_ptr(text.as_ptr()) }
+        .to_string_lossy()
+        .into_owned();
+    assert!(
+        !report.contains("se sale de la hoja"),
+        "the box is inside the new sheet: {report}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_sheet_survives_a_save_and_an_open() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let session = session();
+    let mut wanted = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut wanted) }, PF_OK);
+    wanted.paper = 2;
+    wanted.landscape = 1;
+    wanted.width_mm = 297.0;
+    wanted.height_mm = 420.0;
+    wanted.margin_top = 5.0;
+    wanted.margin_right = 6.0;
+    wanted.margin_bottom = 7.0;
+    wanted.margin_left = 8.0;
+    // SAFETY: live session and a readable record.
+    assert_eq!(
+        unsafe { pf_session_set_sheet(session, &raw const wanted) },
+        PF_OK
+    );
+
+    let path = directory.path().join("hoja.pfluid");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).expect("no NUL in a path");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(session, encoded.as_ptr()) }, PF_OK);
+
+    let mut read = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut read) }, PF_OK);
+    assert_eq!(read, wanted, "the file carries the sheet");
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -393,7 +548,7 @@ fn a_component_dropped_on_the_sheet_can_be_moved_and_undone() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output. Seeding happens on the first frame.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: live session.
@@ -779,7 +934,7 @@ fn a_pressure_gauge_reads_the_line_it_is_connected_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.
@@ -1472,7 +1627,7 @@ fn lining_up_the_selection_moves_it_onto_the_component_furthest_out() {
     assert_eq!(unsafe { pf_session_select_all(session) }, 5);
     let lefts = |session: *mut PfSession| {
         let mut out = Vec::new();
-        for index in 0..4_u32 {
+        for index in 0..5_u32 {
             let mut bounds = [0.0_f32; 4];
             // SAFETY: live session and four writable floats.
             assert_eq!(
@@ -2032,7 +2187,7 @@ fn a_flow_meter_reads_the_line_it_is_connected_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.
@@ -2151,7 +2306,7 @@ fn a_recorder_charts_the_quantity_it_is_bound_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 200.0, 130.0, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.

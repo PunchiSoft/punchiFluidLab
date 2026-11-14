@@ -13,6 +13,7 @@
 //! name. When it overflows the oldest entry is dropped, so the oldest states cannot be
 //! reached again — the behaviour every editor has.
 
+use punchi_fluid_core::paper::Sheet;
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 
@@ -491,6 +492,11 @@ enum Change {
         from: String,
         to: String,
     },
+    /// The sheet the drawing lives on: paper, orientation and frame.
+    SheetChanged {
+        from: Sheet,
+        to: Sheet,
+    },
     /// Several changes that are one edit to the user.
     ///
     /// Splicing a junction into a pipe removes one, places a component and draws three, and
@@ -506,6 +512,8 @@ pub struct Document {
     connections: Vec<Connection>,
     circuits: Vec<Circuit>,
     active: u32,
+    /// The paper, its orientation and its frame. Every circuit of the project shares it.
+    sheet: Sheet,
     next_id: u64,
     undo: Vec<Change>,
     redo: Vec<Change>,
@@ -521,6 +529,7 @@ impl Default for Document {
             connections: Vec::new(),
             circuits: vec![Circuit::new(0, "Circuito 1")],
             active: 0,
+            sheet: Sheet::a4(),
             next_id: 0,
             undo: Vec::new(),
             redo: Vec::new(),
@@ -566,6 +575,42 @@ impl Document {
             return false;
         }
         self.active = id;
+        true
+    }
+
+    /// The paper, orientation and frame the project is drawn on.
+    #[must_use]
+    pub const fn sheet(&self) -> Sheet {
+        self.sheet
+    }
+
+    /// Replaces the sheet as one undoable change.
+    ///
+    /// A sheet that cannot exist is refused, not clamped: a margin larger than the paper
+    /// leaves nothing to draw, and refusing here leaves the caller somewhere to say so.
+    /// Choosing the same sheet again is not an edit and records nothing.
+    pub fn set_sheet(&mut self, sheet: Sheet) -> bool {
+        if !sheet.is_valid() {
+            return false;
+        }
+        if sheet == self.sheet {
+            return true;
+        }
+        let from = self.sheet;
+        self.sheet = sheet;
+        self.record(Change::SheetChanged { from, to: sheet });
+        true
+    }
+
+    /// Sets the sheet as the starting state of a document read from a file.
+    ///
+    /// Not an edit: it does not enter the history, so opening a file cannot be undone into
+    /// the previous document's paper.
+    pub fn seed_sheet(&mut self, sheet: Sheet) -> bool {
+        if !sheet.is_valid() {
+            return false;
+        }
+        self.sheet = sheet;
         true
     }
 
@@ -1468,6 +1513,9 @@ impl Document {
                     circuit.title.clone_from(to);
                 }
             }
+            Change::SheetChanged { to, .. } => {
+                self.sheet = *to;
+            }
         }
     }
 
@@ -1550,6 +1598,9 @@ impl Document {
                 if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
                     circuit.title.clone_from(from);
                 }
+            }
+            Change::SheetChanged { from, .. } => {
+                self.sheet = *from;
             }
         }
     }
@@ -2131,6 +2182,54 @@ mod tests {
             Some("above")
         );
         assert_eq!(document.hit(Pt::new(200.0, 200.0), 0.0), None);
+    }
+
+    #[test]
+    fn a_new_document_is_a_framed_a4_and_one_undo_restores_it() {
+        use punchi_fluid_core::paper::{Margins, Orientation, PaperSize};
+        let mut document = Document::new();
+        assert_eq!(document.sheet().paper, PaperSize::A4);
+        assert_eq!(document.sheet().orientation, Orientation::Portrait);
+        assert_eq!(document.sheet().margins, Margins::iso5457());
+
+        let a3 = Sheet {
+            paper: PaperSize::A3,
+            orientation: Orientation::Landscape,
+            margins: Margins::unframed(),
+        };
+        let before = document.revision();
+        assert!(document.set_sheet(a3));
+        assert_eq!(document.sheet(), a3);
+        assert!(document.revision() > before, "the sheet is a change");
+        assert!(document.undo());
+        assert_eq!(document.sheet().paper, PaperSize::A4);
+        assert!(document.redo());
+        assert_eq!(document.sheet(), a3);
+    }
+
+    #[test]
+    fn choosing_the_same_sheet_is_not_an_edit_and_an_impossible_one_is_refused() {
+        use punchi_fluid_core::paper::{Margins, PaperSize};
+        let mut document = Document::new();
+        let before = document.revision();
+        assert!(document.set_sheet(document.sheet()));
+        assert_eq!(document.revision(), before);
+        assert!(!document.can_undo());
+
+        // A frame wider than the paper leaves nothing to draw, so the sheet is refused and
+        // the document keeps the one it had.
+        let impossible = Sheet {
+            paper: PaperSize::A5,
+            orientation: document.sheet().orientation,
+            margins: Margins {
+                left: 100.0,
+                right: 100.0,
+                ..Margins::unframed()
+            },
+        };
+        assert!(!document.set_sheet(impossible));
+        assert_eq!(document.sheet().paper, PaperSize::A4);
+        assert_eq!(document.revision(), before);
     }
 }
 

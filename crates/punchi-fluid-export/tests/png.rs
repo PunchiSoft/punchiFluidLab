@@ -68,15 +68,20 @@ fn the_margin_band_holds_no_ink() {
 
     let scale = dpi / 25.4;
     // The frame is stroked *on* the content boundary, so half its width falls outside
-    // it. The margin that must be white is the paper up to that stroke.
+    // it. The margin that must be white is the paper up to that stroke. The four sides
+    // differ under ISO 5457, so each band is measured against its own margin.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let band = ((page.margins.left * scale).floor() as u32).saturating_sub(4);
+    let side = |mm: f32| ((mm * scale).floor() as u32).saturating_sub(4);
+    let left = side(page.margins.left);
+    let right = side(page.margins.right);
+    let top = side(page.margins.top);
+    let bottom = side(page.margins.bottom);
     let pixmap = surface.pixmap();
     let mut darkest = 255_u8;
     for y in 0..pixmap.height() {
         for x in 0..pixmap.width() {
             let outside =
-                x < band || y < band || x >= pixmap.width() - band || y >= pixmap.height() - band;
+                x < left || y < top || x >= pixmap.width() - right || y >= pixmap.height() - bottom;
             if !outside {
                 continue;
             }

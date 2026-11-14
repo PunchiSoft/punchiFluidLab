@@ -6,7 +6,6 @@
 #include <QDate>
 #include <QDir>
 #include <QFileInfo>
-#include <QLocale>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -746,13 +745,18 @@ bool FluidSession::exportWithOptions(const QVariantMap &options)
     const QByteArray date = QDate::currentDate().toString(Qt::ISODate).toUtf8();
     const QVariantList margins = options.value(QStringLiteral("margins")).toList();
     const auto margin = [&margins](int index) -> float {
-        return margins.size() > index ? margins.at(index).toFloat() : 18.0F;
+        // The ISO 5457 frame: 20 mm on the filing edge (left) and 10 mm elsewhere.
+        if (margins.size() > index) {
+            return margins.at(index).toFloat();
+        }
+        return index == 3 ? 20.0F : 10.0F;
     };
     PfExportOptions settings {};
     const int kind = options.value(QStringLiteral("kind"), 1).toInt();
     settings.kind = kind == 0 ? PF_EXPORT_PNG : (kind == 2 ? PF_EXPORT_SVG : PF_EXPORT_PDF);
-    settings.paper = static_cast<uint32_t>(
-        qMax(options.value(QStringLiteral("paper"), 1).toInt(), 0));
+    // The sheet is the paper: the print follows the document unless the panel asks for a
+    // custom size for this one file.
+    settings.paper = PF_EXPORT_DOCUMENT_PAPER;
     if (options.value(QStringLiteral("custom_paper")).toBool()) {
         settings.paper = PF_EXPORT_CUSTOM_PAPER;
         settings.width_mm = options.value(QStringLiteral("width")).toFloat();
@@ -822,18 +826,6 @@ QStringList FluidSession::paperNames()
         }
     }
     return names;
-}
-
-int FluidSession::defaultPaper()
-{
-    // Oficio is the paper a reader in Chile has in the printer, and the one this project is
-    // developed against; elsewhere A4 is the safe answer. The panel lists both, so the default
-    // is a starting point and not a decision.
-    const bool chile = QLocale::system().territory() == QLocale::Chile;
-    const QString wanted = chile ? QStringLiteral("Oficio") : QStringLiteral("A4");
-    const QStringList names = paperNames();
-    const int at = names.indexOf(wanted);
-    return at < 0 ? 0 : at;
 }
 
 bool FluidSession::saveTo(const QString &path)
@@ -1243,18 +1235,50 @@ void FluidSession::refreshSelection()
     emit documentChanged();
 }
 
+bool FluidSession::refreshSheet()
+{
+    if (!m_session) {
+        return false;
+    }
+    PfSheet sheet {};
+    if (pf_session_sheet(m_session, &sheet) != PF_OK) {
+        return false;
+    }
+    const bool changed = sheet.paper != m_sheet.paper || sheet.landscape != m_sheet.landscape
+        || sheet.width_mm != m_sheet.width_mm || sheet.height_mm != m_sheet.height_mm
+        || sheet.margin_top != m_sheet.margin_top || sheet.margin_right != m_sheet.margin_right
+        || sheet.margin_bottom != m_sheet.margin_bottom
+        || sheet.margin_left != m_sheet.margin_left;
+    m_sheet = sheet;
+    m_sheetWidthMm = sheet.landscape != 0 ? sheet.height_mm : sheet.width_mm;
+    m_sheetHeightMm = sheet.landscape != 0 ? sheet.width_mm : sheet.height_mm;
+    if (sheet.paper == PF_SHEET_CUSTOM_PAPER) {
+        m_sheetPaperName = QStringLiteral("Personalizado");
+    } else {
+        char label[64] = {};
+        m_sheetPaperName = pf_export_paper_name(sheet.paper, label, sizeof label) == PF_OK
+            ? QString::fromUtf8(label)
+            : QString();
+    }
+    if (changed) {
+        emit sheetChanged();
+    }
+    return changed;
+}
+
 void FluidSession::refreshDocument()
 {
     if (!m_session) {
         return;
     }
+    const bool sheetChanged = refreshSheet();
     const int count = static_cast<int>(pf_session_component_count(m_session));
     const int selected = pf_session_selected(m_session);
     const bool canUndo = pf_session_can_undo(m_session) == 1;
     const bool canRedo = pf_session_can_redo(m_session) == 1;
     const bool modified = pf_session_is_modified(m_session) == 1;
     if (count == m_componentCount && selected == m_selected && canUndo == m_canUndo
-        && canRedo == m_canRedo && modified == m_modified) {
+        && canRedo == m_canRedo && modified == m_modified && !sheetChanged) {
         return;
     }
     m_componentCount = count;
@@ -1655,6 +1679,91 @@ void FluidSession::zoomReset()
 void FluidSession::toggleGrid()
 {
     setGrid(!m_grid);
+}
+
+int FluidSession::sheetPaper() const
+{
+    // A custom sheet has no index in the paper list; -1 says so to the interface.
+    return m_sheet.paper == PF_SHEET_CUSTOM_PAPER ? -1 : static_cast<int>(m_sheet.paper);
+}
+
+void FluidSession::setSheetPaper(int index)
+{
+    if (index < 0) {
+        return;
+    }
+    PfSheet next = m_sheet;
+    next.paper = static_cast<uint32_t>(index);
+    applySheet(next);
+}
+
+void FluidSession::setSheetLandscape(bool landscape)
+{
+    PfSheet next = m_sheet;
+    next.landscape = landscape ? 1U : 0U;
+    applySheet(next);
+}
+
+void FluidSession::toggleSheetLandscape()
+{
+    setSheetLandscape(!sheetLandscape());
+}
+
+void FluidSession::setSheetMargin(int side, double mm)
+{
+    if (mm < 0.0) {
+        return;
+    }
+    PfSheet next = m_sheet;
+    const auto value = static_cast<float>(mm);
+    switch (side) {
+    case 0:
+        next.margin_top = value;
+        break;
+    case 1:
+        next.margin_right = value;
+        break;
+    case 2:
+        next.margin_bottom = value;
+        break;
+    case 3:
+        next.margin_left = value;
+        break;
+    default:
+        return;
+    }
+    applySheet(next);
+}
+
+void FluidSession::resetSheet()
+{
+    PfSheet next = m_sheet;
+    const int a4 = paperNames().indexOf(QStringLiteral("A4"));
+    next.paper = static_cast<uint32_t>(a4 < 0 ? 0 : a4);
+    next.landscape = 0;
+    // ISO 5457: 10 mm on three sides and 20 mm on the filing edge.
+    next.margin_top = 10.0F;
+    next.margin_right = 10.0F;
+    next.margin_bottom = 10.0F;
+    next.margin_left = 20.0F;
+    applySheet(next);
+}
+
+void FluidSession::applySheet(const PfSheet &sheet)
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_set_sheet(m_session, &sheet) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo cambiar la hoja");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit changed();
 }
 
 void FluidSession::undo()

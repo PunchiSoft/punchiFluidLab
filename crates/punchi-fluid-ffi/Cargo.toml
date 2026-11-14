@@ -16,6 +16,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [dependencies]
 punchi-fluid-catalog = { workspace = true }
 punchi-fluid-check = { workspace = true }
+punchi-fluid-core = { workspace = true }
 punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
 punchi-fluid-export = { workspace = true }

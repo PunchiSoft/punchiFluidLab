@@ -33,7 +33,8 @@ The two formats are described in [the sheet format](sheet-format.md) and in the 
 ### `check <file> [--json] [--strict]`
 
 Reads a sheet, builds the same document the window would, runs the design check against the
-built-in catalog and the editor's logical sheet (200 × 130 mm), and prints the findings.
+built-in catalog and the sheet's drawing space (the paper inside the saved frame, A4 with
+the ISO 5457 frame by default), and prints the findings.
 
 ```bash
 punchi-fluid-cli check circuito.pfluid

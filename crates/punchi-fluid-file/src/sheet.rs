@@ -14,14 +14,18 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::paper::StoredSheet;
+
 /// Format version written by this build.
 ///
 /// 2 added the orientation of a placement — the quarter turns and the mirror. 3 added the
 /// designation, the name the user gives a component. 4 made a file a project of circuits.
-/// 5 added the source of a recorder, and 6 the line class of a pipe. An older file reads
-/// because every addition has an obvious default: an unturned symbol, an unnamed component,
-/// one circuit, an unbound recorder and a working line.
-pub const SHEET_VERSION: u32 = 6;
+/// 5 added the source of a recorder, and 6 the line class of a pipe. 7 added the sheet: the
+/// paper, its orientation and its frame. An older file reads because every addition has an
+/// obvious default: an unturned symbol, an unnamed component, one circuit, an unbound
+/// recorder, a working line, and an unframed A4 that is exactly the area the older release
+/// drew on.
+pub const SHEET_VERSION: u32 = 7;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -198,6 +202,9 @@ pub struct Sheet {
     /// Project title shown in the window.
     #[serde(default)]
     pub title: String,
+    /// Paper, orientation and frame; absent in a file written before format 7.
+    #[serde(default)]
+    pub sheet: StoredSheet,
     /// Circuits in selector order. Format 1–3 reads as one circuit.
     #[serde(default)]
     pub circuits: Vec<StoredCircuit>,
@@ -248,6 +255,7 @@ impl Sheet {
         Self {
             format: SHEET_VERSION,
             title: title.into(),
+            sheet: StoredSheet::a4(),
             circuits: vec![StoredCircuit {
                 id: 0,
                 title: String::from("Circuito 1"),
@@ -271,6 +279,7 @@ impl Sheet {
                 supported: SHEET_VERSION,
             });
         }
+        self.sheet.resolve().map_err(SheetError::Invalid)?;
         if self.circuits.len() > MAX_CIRCUITS {
             return Err(SheetError::Invalid(format!(
                 "{} circuits, at most {MAX_CIRCUITS}",
@@ -527,8 +536,25 @@ impl Sheet {
             self.active = 0;
         }
         // 4 → 5: an unbound recorder, which is the `None` the field already defaults to.
+        // 6 → 7: the sheet. An older file was drawn on a bare 200 × 130 mm rectangle, so it
+        // reads as an unframed A4: the rectangle sits inside the paper and no component
+        // becomes "outside the frame" just by opening the file in a newer build.
+        if self.format < 7 {
+            self.sheet = StoredSheet::default();
+        }
         self.format = SHEET_VERSION;
         Ok(())
+    }
+
+    /// The sheet this document is drawn on, as the domain stores it.
+    ///
+    /// A validated file always resolves; the legacy A4 is the fallback for a value that
+    /// somehow reached here unchecked, so the caller never has to guess a size.
+    #[must_use]
+    pub fn paper_sheet(&self) -> punchi_fluid_core::paper::Sheet {
+        self.sheet
+            .resolve()
+            .unwrap_or_else(|_| punchi_fluid_core::paper::Sheet::legacy())
     }
 
     /// Serialises the sheet, validating it first.

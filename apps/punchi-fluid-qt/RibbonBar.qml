@@ -65,29 +65,35 @@ Rectangle {
                     ])
                 },
                 {
-                    // The paper the sheet will be printed on. The list is the export's, so the
-                    // panel cannot offer a size the writer does not know; the one in use is
-                    // marked, because a list of nine without a mark is a guess.
+                    // The sheet the drawing lives on. The list is the export's, so the
+                    // sidebar cannot offer a size the writer does not know; the one in use
+                    // is marked, because a list of nine without a mark is a guess. Choosing
+                    // one changes the document, the canvas and the print together.
                     title: qsTr("Hoja"),
                     items: session.paperNames().map(function (name, index) {
                         return {
                             id: "paper-" + index,
                             label: name,
                             icon: "x-office-document",
-                            hint: qsTr("exportar en %1").arg(name),
-                            current: window.exportPaper === index
+                            hint: qsTr("dibujar en %1").arg(name),
+                            current: session.sheetPaper === index
                         };
                     }).concat([{
                         id: "paper-landscape",
                         label: qsTr("Apaisado"),
                         icon: "object-rotate-right",
                         hint: qsTr("la hoja girada; el dibujo es el mismo"),
-                        current: window.exportLandscape
+                        current: session.sheetLandscape
+                    }, {
+                        id: "paper-a4",
+                        label: qsTr("A4 normal"),
+                        icon: "zoom-original",
+                        hint: qsTr("vuelve al A4 vertical con el marco ISO 5457")
                     }, {
                         id: "export-panel",
                         label: qsTr("Márgenes, tamaño y lista…"),
                         icon: "document-export",
-                        hint: qsTr("lo que la hoja lleva al imprimirse")
+                        hint: qsTr("el marco de la hoja y lo que se imprime")
                     }])
                 },
                 {
@@ -214,15 +220,19 @@ Rectangle {
             window.openRenameCircuit();
             return;
         }
+        if (id === "paper-landscape") {
+            session.toggleSheetLandscape();
+            return;
+        }
+        if (id === "paper-a4") {
+            session.resetSheet();
+            return;
+        }
         if (id.indexOf("paper-") === 0) {
             const index = parseInt(id.slice(6), 10);
             if (!isNaN(index)) {
-                window.exportPaper = index;
+                session.setSheetPaper(index);
             }
-            return;
-        }
-        if (id === "paper-landscape") {
-            window.exportLandscape = !window.exportLandscape;
             return;
         }
         if (id === "restart") {

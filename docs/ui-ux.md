@@ -84,7 +84,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape, and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the full panel (margins, custom size, PNG resolution) is still open — [capabilities.md](capabilities.md) F5 says so |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape (which set the document's sheet), and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 
@@ -103,10 +103,12 @@ cylinder top right, so the air reads left to right along the bottom and rises to
 actuator. The floating captions of the old example are gone from the editable sheet: a
 component carries its designation, and the values live in the inspector and the status bar.
 
-**The export panel says what the page carries, not what the document is.** Paper (named or
-custom, in millimetres), four margins, the raster resolution and the parts list live in the
-panel; the export dialog then asks only for the file. A setting that leaves no room for the
-drawing is refused with a message instead of printing an empty page.
+**The export panel says what the sheet carries.** Paper, orientation and margins are the
+**document's sheet**, the one the canvas draws; the panel edits them through the session,
+and a custom size is a print override for one file. The raster resolution and the parts
+list belong to the export. The export dialog then asks only for the file, and a setting
+that leaves no room for the drawing is refused with a message instead of printing an empty
+page.
 
 **Conducto acts on the selected hose.** A pilot line and a drain line differ by their
 pattern before anyone reads a label, so the class is a property of the pipe, the drawing
@@ -232,17 +234,20 @@ schematic simulator lives by, and the one the reference tool uses:
 
 - Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
   The grid is a *guide*, not a background pattern to be proud of.
-- **Today the sheet is a fixed 200 × 130 mm logical area**, the one the check and the
-  export measure against; it is not yet an ISO 216 paper. Making the sheet the paper the
-  drawing is printed on is the next change, and [capabilities.md](capabilities.md) records
-  it as the gap of the zoom row rather than pretending the two already agree.
+- **The sheet is the paper.** A new document opens on A4 portrait with the ISO 5457 frame
+  (20 mm on the filing edge, 10 mm on the other three); the ribbon's **Hoja** group offers
+  A0–A5, Letter, Legal and Oficio and landscape, and the panel sets the four margins. The
+  same paper is saved in the file, drawn by the canvas, measured by the check and printed.
+  An older file opens as an unframed A4 so its drawing does not move. A custom size is a
+  print override for this one file, and a sheet per circuit is not there yet
+  ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
 - **Zoom and pan are view state.** `Ctrl` and the wheel magnify about the pointer in the
   buttons' quarter steps, between 0.4× and 6×; a plain wheel pans and `Shift` swaps the
   axis; the middle button drags the sheet; the arrow keys pan from the keyboard, and
-  `Ctrl+0` returns to 1:1 and drops the pan. The pan stops when the sheet's edge meets the
-  frame, so a flick never leaves the reader looking at an empty background, and the status
-  bar prints the magnification. None of it is a document change, so none of it enters the
-  undo history.
+  `Ctrl+0` returns to 1:1 and drops the pan. Above 1:1 the sheet can move until only a
+  sliver remains in view, so a zoom at the pointer never throws it away; at 1:1 it stays
+  centred. The status bar prints the magnification and the paper's name and size. None of
+  it is a document change, so none of it enters the undo history.
 - Two modes, visibly different:
   - **Edición** (default): select, move, connect, delete. Grid snapping on.
   - **Simulación**: the model runs; clicking a valve actuates it, dragging a
@@ -265,9 +270,9 @@ last message. It is the place for "saved", "3 files skipped", "export written to
 …". No message that requires a click to disappear. It ends on the right with the sound
 toggle, which is a command like the others: a label, the desktop's own icon and `Ctrl+M`.
 
-**Today** the bar shows pressure, stroke, velocity, simulated time, one hint or error
-line, and the sound toggle. The air consumed, the definition count and the mode text are
-the target, not in the bar yet.
+**Today** the bar shows pressure, stroke, velocity, simulated time, the magnification, the
+paper's name and size, one hint or error line, and the sound toggle. The air consumed, the
+definition count and the mode text are the target, not in the bar yet.
 
 ## Visual language
 

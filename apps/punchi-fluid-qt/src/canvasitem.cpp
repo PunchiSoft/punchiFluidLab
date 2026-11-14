@@ -86,45 +86,61 @@ void SchematicItem::paint(QPainter *painter)
     if (!m_session || !m_session->handle()) {
         return;
     }
+    const QSizeF sheet = sheetSizeMm();
+    const qreal sheetWidth = sheet.width();
+    const qreal sheetHeight = sheet.height();
+    const qreal left = m_session->sheetMarginLeft();
+    const qreal top = m_session->sheetMarginTop();
+    const qreal right = sheetWidth - m_session->sheetMarginRight();
+    const qreal bottom = sheetHeight - m_session->sheetMarginBottom();
     const Fit placement = this->placement();
     PfFrame frame {};
-    const int32_t code = pf_session_build_frame(m_session->handle(), kLogicalWidth, kLogicalHeight,
-                                                static_cast<float>(placement.pixelsPerMm), &frame);
+    const int32_t code = pf_session_build_frame(
+        m_session->handle(), static_cast<float>(placement.pixelsPerMm), &frame);
     if (code != PF_OK) {
         return;
     }
     if (m_session->grid()) {
         const Fit fit = placement;
         // The grid is the drawing's own millimetre ruling, so a component lines up with it
-        // instead of floating. Drawn first and faint: it is a guide, never a mark on the
-        // document.
+        // instead of floating. It stops at the frame, because the margin is paper, not
+        // drawing space. Drawn first and faint: it is a guide, never a mark on the document.
         QColor line = m_session->tokens().inkMuted;
         line.setAlphaF(0.22F);
         painter->save();
         painter->setPen(QPen(line, 1.0));
-        for (double x = kGridMm; x < kLogicalWidth; x += kGridMm) {
+        for (double x = left + kGridMm; x < right; x += kGridMm) {
             const qreal px = fit.originX + x * fit.pixelsPerMm;
-            painter->drawLine(QPointF(px, fit.originY),
-                              QPointF(px, fit.originY + kLogicalHeight * fit.pixelsPerMm));
+            painter->drawLine(QPointF(px, fit.originY + top * fit.pixelsPerMm),
+                              QPointF(px, fit.originY + bottom * fit.pixelsPerMm));
         }
-        for (double y = kGridMm; y < kLogicalHeight; y += kGridMm) {
+        for (double y = top + kGridMm; y < bottom; y += kGridMm) {
             const qreal py = fit.originY + y * fit.pixelsPerMm;
-            painter->drawLine(QPointF(fit.originX, py),
-                              QPointF(fit.originX + kLogicalWidth * fit.pixelsPerMm, py));
+            painter->drawLine(QPointF(fit.originX + left * fit.pixelsPerMm, py),
+                              QPointF(fit.originX + right * fit.pixelsPerMm, py));
         }
         painter->restore();
     }
     {
-        // The edge of the sheet. Without it "outside the sheet" is a finding the user cannot
-        // see, and a circuit that overflows looks no different from one that fits.
+        // The edge of the paper, and the ISO 5457 frame inside it. Without them "outside
+        // the sheet" is a finding the user cannot see.
         const Fit fit = placement;
         QColor edge = m_session->tokens().inkMuted;
         edge.setAlphaF(0.55F);
         painter->save();
         painter->setPen(QPen(edge, 1.0));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRect(QRectF(fit.originX, fit.originY, kLogicalWidth * fit.pixelsPerMm,
-                                 kLogicalHeight * fit.pixelsPerMm));
+        painter->drawRect(QRectF(fit.originX, fit.originY, sheetWidth * fit.pixelsPerMm,
+                                 sheetHeight * fit.pixelsPerMm));
+        if (left > 0.0 || top > 0.0 || right < sheetWidth || bottom < sheetHeight) {
+            QColor frameInk = edge;
+            frameInk.setAlphaF(0.8F);
+            painter->setPen(QPen(frameInk, 1.0));
+            painter->drawRect(QRectF(fit.originX + left * fit.pixelsPerMm,
+                                     fit.originY + top * fit.pixelsPerMm,
+                                     (right - left) * fit.pixelsPerMm,
+                                     (bottom - top) * fit.pixelsPerMm));
+        }
         painter->restore();
     }
     replayFrame(painter, frame, placement);
@@ -225,25 +241,37 @@ Fit SchematicItem::placement() const
 
 Fit SchematicItem::centredPlacement(double zoom) const
 {
-    const Fit fitted = fitArea(width(), height(), kLogicalWidth, kLogicalHeight);
+    const QSizeF sheet = sheetSizeMm();
+    const Fit fitted = fitArea(width(), height(), sheet.width(), sheet.height());
     // Zoom keeps the middle of the sheet in the middle of the item, so magnifying does not
     // throw the circuit off screen; the pan is what moves it afterwards.
     const qreal scale = fitted.pixelsPerMm * zoom;
-    return Fit { scale, (width() - kLogicalWidth * scale) * 0.5,
-                 (height() - kLogicalHeight * scale) * 0.5 };
+    return Fit { scale, (width() - sheet.width() * scale) * 0.5,
+                 (height() - sheet.height() * scale) * 0.5 };
 }
 
 QPointF SchematicItem::limitedPan(const Fit &centred) const
 {
-    // A sheet larger than the viewport may be dragged until its edge meets the frame; one
-    // smaller than the viewport has nothing to reveal, so it stays centred. Without the
-    // bound a fast wheel leaves the reader looking at empty background.
-    const qreal slackX =
-        std::max<qreal>(0.0, (kLogicalWidth * centred.pixelsPerMm - width()) * 0.5);
-    const qreal slackY =
-        std::max<qreal>(0.0, (kLogicalHeight * centred.pixelsPerMm - height()) * 0.5);
-    return QPointF(std::clamp(m_pan.x(), -slackX, slackX),
-                   std::clamp(m_pan.y(), -slackY, slackY));
+    // At 1:1 the sheet fits, so it stays centred: there is nothing to reveal and a fitted
+    // sheet that could be pushed aside is a sheet the reader can lose. Above 1:1 the sheet
+    // may be moved until only a sliver of it remains in view, which is wide enough to keep
+    // a zoom anchored at the pointer without ever losing the drawing completely.
+    if (!m_session || m_session->zoom() <= 1.0) {
+        return QPointF();
+    }
+    const QSizeF sheet = sheetSizeMm();
+    const qreal limitX = (width() + sheet.width() * centred.pixelsPerMm) * 0.5;
+    const qreal limitY = (height() + sheet.height() * centred.pixelsPerMm) * 0.5;
+    return QPointF(std::clamp(m_pan.x(), -limitX, limitX),
+                   std::clamp(m_pan.y(), -limitY, limitY));
+}
+
+QSizeF SchematicItem::sheetSizeMm() const
+{
+    if (!m_session) {
+        return QSizeF(210.0, 297.0);
+    }
+    return QSizeF(m_session->sheetWidthMm(), m_session->sheetHeightMm());
 }
 
 bool SchematicItem::onValve(const QPointF &position) const

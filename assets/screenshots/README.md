@@ -4,7 +4,8 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-light.png` | The window on a light desktop, on the sheet the program opens with: compressor, service unit, 3/2 valve and cylinder, every port with its connection circle |
+| `window-light.png` | The window on a light desktop, on the A4 sheet the program opens with: the ISO 5457 frame, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, and the status bar reading `A4 · 210 × 297 mm` |
+| `window-dark.png` | The same window on a dark desktop, to check the paper edge and the frame in both themes |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
 | `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 924 KB), because GitHub does not play a repository video inside a page |
@@ -24,11 +25,15 @@ GPL-3.0-or-later.
 mkdir -p /tmp/punchi-capture
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --grab /tmp/window-light.png
+# The magnified pair, at the zoom the review is about.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
 ```
 
-The capture in this folder is the maintainer's own screenshot of the window, with its
-decorations, on a light desktop; a headless grab has no frame and is not a substitute for it
-in the README.
+The still captures in this folder are taken from the window itself with `--grab`, so they
+show the content without window decorations. A decorated capture is still the maintainer's
+preferred hero image; when one is taken it replaces `window-light.png` and this paragraph
+says so.
 
 The video follows what a repository can serve cheaply, as GitHub recommends for clips:
 **MP4/H.264**, **30 frames per second**, `yuv420p`, `faststart` so it starts before it is fully

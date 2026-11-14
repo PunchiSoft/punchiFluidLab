@@ -4,11 +4,14 @@
 //! Tests for the saved sheet and its migrations.
 
 use super::*;
+use crate::paper::{StoredMargins, StoredPaper, StoredSheet};
+use punchi_fluid_core::paper::{Margins, Orientation, PaperSize};
 
 fn sheet() -> Sheet {
     Sheet {
         format: SHEET_VERSION,
         title: String::from("Prueba"),
+        sheet: StoredSheet::a4(),
         circuits: vec![StoredCircuit {
             id: 0,
             title: String::from("Circuito 1"),
@@ -133,7 +136,7 @@ fn a_version_two_sheet_still_reads_and_gains_an_unnamed_component() {
     assert_eq!(sheet.placement[0].quarter_turns, 1);
     assert!(sheet.placement[0].mirrored);
     assert_eq!(sheet.placement[0].designation, None);
-    assert!(sheet.to_json().expect("valid").contains(r#""format": 6"#));
+    assert!(sheet.to_json().expect("valid").contains(r#""format": 7"#));
 }
 
 #[test]
@@ -171,7 +174,7 @@ fn a_version_one_sheet_still_reads_and_gains_an_unturned_orientation() {
     assert!(!sheet.placement[0].mirrored);
     // Saving it writes the format this build understands, with the fields it added.
     let saved = sheet.to_json().expect("valid");
-    assert!(saved.contains(r#""format": 6"#), "{saved}");
+    assert!(saved.contains(r#""format": 7"#), "{saved}");
     assert_eq!(sheet.placement[0].designation, None, "and no name either");
 }
 
@@ -190,4 +193,85 @@ fn a_sheet_is_written_atomically_and_read_back() {
     sheet.write(&path).expect("writes");
     assert!(!path.with_extension("pfluid.tmp").exists());
     assert_eq!(Sheet::read(&path).expect("reads"), sheet);
+}
+
+#[test]
+fn a_version_six_sheet_reads_as_an_unframed_a4() {
+    // A format 6 file was drawn on a bare 200 × 130 mm area: it reads as A4 with no frame,
+    // so every placement it holds is still inside the drawing space.
+    let text = r#"{
+          "format": 6,
+          "title": "Viejo",
+          "circuits": [{"id": 0, "title": "Viejo"}],
+          "placement": [
+            {"id": 1, "catalog": "supply.compressor", "x": 190.0, "y": 125.0,
+             "width": 20.0, "height": 20.0}
+          ],
+          "pipe": []
+        }"#;
+    let sheet = Sheet::parse(text).expect("a version 6 sheet reads");
+    assert_eq!(sheet.format, SHEET_VERSION);
+    assert_eq!(sheet.sheet.paper, StoredPaper::A4);
+    assert!(!sheet.sheet.landscape);
+    assert_eq!(
+        sheet.sheet.margins,
+        StoredMargins::from(Margins::unframed())
+    );
+    let paper = sheet.paper_sheet();
+    assert_eq!(paper.size_mm(), (210.0, 297.0));
+    assert_eq!(paper.margins, Margins::unframed());
+}
+
+#[test]
+fn the_sheet_keeps_its_paper_orientation_and_margins_in_the_file() {
+    let mut sheet = sheet();
+    sheet.sheet = StoredSheet {
+        paper: StoredPaper::A3,
+        landscape: true,
+        margins: StoredMargins {
+            top: 5.0,
+            right: 6.0,
+            bottom: 7.0,
+            left: 8.0,
+        },
+    };
+    let saved = sheet.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(read.sheet, sheet.sheet);
+    let paper = read.paper_sheet();
+    assert_eq!(paper.paper, PaperSize::A3);
+    assert_eq!(paper.orientation, Orientation::Landscape);
+    assert_eq!(paper.size_mm(), (420.0, 297.0));
+    assert_eq!(
+        paper.margins,
+        Margins {
+            top: 5.0,
+            right: 6.0,
+            bottom: 7.0,
+            left: 8.0,
+        }
+    );
+    assert!(saved.contains(r#""paper": "a3""#), "{saved}");
+    assert!(saved.contains(r#""landscape": true"#), "{saved}");
+}
+
+#[test]
+fn a_sheet_whose_frame_leaves_no_drawing_space_is_refused() {
+    let mut sheet = sheet();
+    sheet.sheet.margins = StoredMargins {
+        top: 10.0,
+        right: 10.0,
+        bottom: 10.0,
+        left: 1_000.0,
+    };
+    assert!(
+        sheet.validate().is_err(),
+        "the frame leaves nothing to draw"
+    );
+    sheet.sheet.margins = StoredMargins::from(Margins::iso5457());
+    sheet.sheet.paper = StoredPaper::Custom {
+        width_mm: 10.0,
+        height_mm: 10.0,
+    };
+    assert!(sheet.validate().is_err(), "a paper outside the bounds");
 }

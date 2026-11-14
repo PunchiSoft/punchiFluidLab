@@ -22,8 +22,8 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0008](0008-a-gauge-is-a-behaviour.md) | A pressure gauge is a behaviour, not a draw-time decoration | accepted | 2026-11-06 |
 | [0009](0009-identity-and-standards.md) | The project stands on its mission and the standards | accepted; amends the naming of 0001 and 0005 | 2026-11-07 |
 | [0010](0010-the-check-reads-geometry-from-the-drawing.md) | The design check reads port geometry from the drawing crate | accepted | 2026-11-07 |
-| [0011](0011-the-check-is-a-public-command.md) | The circuit check is a public command with a versioned contract | accepted | 2026-11-07 |
-| [0012](0012-the-paper-a-drawing-is-printed-on.md) | The paper a drawing is printed on | accepted | 2026-11-07 |
+| [0011](0011-the-check-is-a-public-command.md) | The circuit check is a public command with a versioned contract | accepted; the measured area amended by [0026](0026-the-sheet-is-the-paper.md) | 2026-11-07 |
+| [0012](0012-the-paper-a-drawing-is-printed-on.md) | The paper a drawing is printed on | accepted in part; the "preference" consequence superseded by [0026](0026-the-sheet-is-the-paper.md) | 2026-11-07 |
 | [0013](0013-a-project-is-one-document.md) | A project is one document with several circuits | accepted | 2026-11-12 |
 | [0014](0014-a-flow-meter-is-a-restriction-that-reports.md) | A flow meter is an inline restriction that reports its flow | accepted | 2026-11-12 |
 | [0015](0015-a-recorder-samples-a-named-quantity.md) | A recorder is a component that samples a named quantity | accepted | 2026-11-12 |
@@ -37,6 +37,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0023](0023-a-limit-switch-follows-a-cylinder-end.md) | A limit switch follows a cylinder end | accepted | 2026-11-13 |
 | [0024](0024-a-pressure-switch-reads-its-own-port.md) | A pressure switch reads its own port | accepted | 2026-11-13 |
 | [0025](0025-a-latching-relay-holds-its-last-pulse.md) | A latching relay holds its last pulse | accepted | 2026-11-13 |
+| [0026](0026-the-sheet-is-the-paper.md) | The sheet is the paper the drawing is printed on | accepted | 2026-11-13 |
 
 ## When a decision needs an ADR
 
