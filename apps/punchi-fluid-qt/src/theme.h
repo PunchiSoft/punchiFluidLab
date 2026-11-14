@@ -22,6 +22,9 @@ struct ThemeTokens {
     QColor accent;
     QColor supply;
     QColor work;
+    /// The drawing grid: the muted ink at the two opacities the sheet uses.
+    QColor gridMinor;
+    QColor gridMajor;
 };
 
 /// Builds the tokens from a palette, blending the two greys the palette does not name.

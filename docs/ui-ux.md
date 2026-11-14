@@ -24,7 +24,7 @@ the protagonist: no dialog in front of it unless the user opened it.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ Archivo  Editar  Ver  Cajetín  Simular                 Acerca de  Licencia     │ tabs
+│ Archivo  Editar  Ver  Disposición  Cajetín  Simular    Acerca de  Licencia     │ tabs
 ├───────────────────────────────────────────────────────────────────────────────┤
 │ ▤ Nuevo  ▤ Abrir │ ▤ Guardar │ ⤓ PNG PDF │ ▶ ⏭ ⟲ │ ⧉       0.25x  Estado    │ groups
 ├──────────────────────┬────────────────────────────────────────────────────────┤
@@ -95,9 +95,10 @@ a second, short table beside it, because they are not commands of a tab.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; the **Hoja** group with the nine named papers and landscape (which set the document's sheet); and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; the **Configurar página** group with one large button that opens the detailed sheet editor; and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
-| **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
+| **Ver** | Aumentar, Disminuir, Tamaño original, the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
+| **Disposición** | **Página** with the **Tamaño** combo (the paper's proportions, its normalised name and the common name in parentheses, plus **Personalizado…**), and **Orientación** (Vertical, Apaisado); **Márgenes** with the gallery **Normal (ISO 5457 / NCh 13.Of93)**, **Estrecho**, **Amplio** and **Márgenes personalizados…**, each with a preview of the frame and its four values; **Cuadrícula** with Visible/Oculta and the step (5, 10, 20 or 25 mm, a heavier line every five steps); **Configurar página** opens the detailed editor. The size and margin lists mark what is in force, and each document choice is one undo; the grid is view state, never printed and never undone |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio, Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha or en pausa, with `t`); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
@@ -107,7 +108,8 @@ needs a pointer or a tab switch; the tab is where the commands are found. The sp
 is marked and the state is a word, never colour alone.
 
 **The Cajetín tab and its docked editor edit one circuit while the sheet stays visible.**
-The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular. **Cajetín** groups
+The ribbon has six tabs — Archivo, Editar, Ver, **Disposición**, **Cajetín**, Simular.
+**Cajetín** groups
 **Contenido** (Escolar, Técnico, Industrial, Sin cajetín; the current one marked),
 **Posición** (top right, bottom right; portrait adds the full bottom band; marked, disabled
 under Sin cajetín) and **Datos** (Editar datos…; Restablecer when the block is
@@ -139,12 +141,13 @@ cylinder top right, so the air reads left to right along the bottom and rises to
 actuator. The floating captions of the old example are gone from the editable sheet: a
 component carries its designation, and the values live in the inspector and the status bar.
 
-**The export panel says what the sheet carries.** Paper, orientation and margins are the
-**document's sheet**, the one the canvas draws; the panel edits them through the session,
-and a custom size is a print override for one file. The raster resolution and the parts
-list belong to the export. The export dialog then asks only for the file, and a setting
-that leaves no room for the drawing is refused with a message instead of printing an empty
-page.
+**The sheet and the print are configured in two places.** Paper, orientation and margins
+are the **document's sheet**, edited in the **Disposición** tab and in **Configurar
+página**; a custom size is saved with the document, not kept for one print. The page panel
+applies every change at once and each change is one undo, so it has no Aceptar. The export
+panel keeps only the raster resolution and the parts list. The export dialog then asks for
+the file, and a setting that leaves no room for the drawing is refused with a message
+instead of printing an empty page.
 
 **Conducto acts on the selected hose.** A pilot line and a drain line differ by their
 pattern before anyone reads a label, so the class is a property of the pipe, the drawing
@@ -227,7 +230,7 @@ not in the window yet.
 - A connection is refused, never silently dropped, when it would join a port to itself,
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.
-- **Drag from the sidebar to the sheet** creates a component, snapped to the 10 mm grid.
+- **Drag from the sidebar to the sheet** creates a component, snapped to the grid step (10 mm by default).
   The component being carried is drawn with its own symbol while it moves, so the drop
   is not a leap of faith. A component dropped before the first frame is kept: the
   starting circuit is added around it, never in its place.
@@ -269,15 +272,20 @@ schematic simulator lives by, and the one the reference tool uses:
   cylinder parameters are still read-only; the ledger in
   [capabilities.md](capabilities.md) names them.
 
-- Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
-  The grid is a *guide*, not a background pattern to be proud of.
+- Infinite scrollable surface with a configurable grid: 5, 10 (the default), 20 or 25 mm,
+  with a heavier line every five steps. The step is a **view setting** shared by the ruling
+  and the snap, so the lines never lie about where a component will land; it is never
+  printed and never enters the undo history. The grid is a *guide*, not a background
+  pattern to be proud of.
 - **The sheet is the paper.** A new document opens on **A4 landscape** with the ISO 5457
-  frame (20 mm on the filing edge, 10 mm on the other three); `A4 normal` returns to
-  portrait, and the ribbon's **Hoja** group offers A0–A5, Letter, Legal and Oficio, the
-  orientation and the four margins in the panel. The same paper is saved in the file, drawn
-  by the canvas, measured by the check and printed.
-  An older file opens as an unframed A4 so its drawing does not move. A custom size is a
-  print override for this one file, and a sheet per circuit is not there yet
+  frame (20 mm on the filing edge, 10 mm on the other three); **Configurar página** returns
+  to A4 portrait with the same frame. The **Disposición** tab offers A0–A5, Letter, Legal,
+  Oficio and a custom size, the orientation and the margin presets, and **Configurar
+  página** edits the four margins in millimetres. The paper, the turn and the margins are
+  the document's, saved in format 7 and drawn by the canvas, measured by the check and
+  printed. An older file opens as an unframed A4 so its drawing does not move. The common
+  names (`Letter (Carta)`, `Legal (Oficio)`, `Oficio chileno (Folio)`) are a display alias
+  only; the file keeps `letter`, `legal` and `oficio`. A sheet per circuit is not there yet
   ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
 - **The frame carries the four centring marks** at the midpoints of the sheet, a 0.7 mm
   line outward and a small arrow, and the **reference zones** of ISO 5457 / NCh 13.Of93
@@ -310,10 +318,10 @@ schematic simulator lives by, and the one the reference tool uses:
   the cursor and shows a tooltip (never moves anything: a hover that changes the
   document is a known UX trap).
 - Pipes are orthogonal; the route is stored as a list of waypoints so it survives a
-  move. Ports snap with a magnet radius derived from `grid_unit`.
+  move. Ports snap with a magnet radius derived from the grid step.
 - **A hose straightens when its component is dragged near the other end.** Two ports on the
-  same axis make a straight run only when their other coordinate matches, and the 10 mm grid
-  cannot reach every offset (the starting circuit has 8.02 mm). Within 6 mm the dragged port
+  same axis make a straight run only when their other coordinate matches, and the grid
+  cannot reach every offset (the starting circuit has 8.02 mm). Within half a grid step plus 1 mm (6 mm on the default 10 mm grid) the dragged port
   pulls onto the axis, off the grid, and `Alt+A` / **Alinear ▸ Puertos** does the same for the
   selected hose. A hose between perpendicular edges is refused, not guessed.
 - Pressurised lines change colour with pressure; the state is never colour-only,
@@ -342,7 +350,7 @@ definition count and the mode text are the target, not in the bar yet.
 | `danger`, `warning`, `ok` | `[Colors:Window] ForegroundNegative/Neutral/Positive` |
 | `work_line` | derived from `ok` by pressure ratio, not a new hue |
 | flow arrow on a line | same ink as the line; it carries the direction, never the state |
-| `grid_minor`, `grid_major` | `text_muted` at 8 % and 16 % opacity |
+| `grid_minor`, `grid_major` | `text_muted` at 22 % and 34 % opacity |
 | spacing | `grid_unit` (18 px in Breeze) and its multiples |
 | typography | `[General] font` family and point size; one scale ×1, ×1.15, ×1.3 |
 

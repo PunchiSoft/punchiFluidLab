@@ -22,10 +22,17 @@ Rectangle {
     /// The help links open popups the window owns, like the file dialogs.
     signal helpCommand(string command)
 
+    /// The page controls ask the window for the detailed sheet editor. `section` is
+    /// `page`, `size` or `margins`, and only decides which field takes the focus.
+    signal pageSetupRequested(string section)
+
     /// Below this width a ribbon is worse than a menu, so it folds away.
     readonly property bool collapsed: width < 1100
     property int current: 1
     property bool menuOpen: false
+    /// Capture and review hooks: open a list as soon as its control exists.
+    property bool paperListRequested: false
+    property bool marginListRequested: false
 
     color: session.background
     // The collapsed menu hangs below the tab row, over the sheet. Without a plane of its
@@ -46,7 +53,8 @@ Rectangle {
                         { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un circuito"), big: true },
                         { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
                         { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") },
-                        { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+Shift+E · el plano en la hoja que elijas, PDF o PNG"), big: true }
+                        { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+Shift+E · el plano en la hoja que elijas, PDF o PNG"), big: true },
+                        { id: "export-panel", label: qsTr("Opciones…"), icon: "document-properties", hint: qsTr("dpi, lista de piezas y formato de la exportación") }
                     ]
                 },
                 {
@@ -69,36 +77,13 @@ Rectangle {
                     ])
                 },
                 {
-                    // The sheet the drawing lives on. The list is the export's, so the
-                    // sidebar cannot offer a size the writer does not know; the one in use
-                    // is marked, because a list of nine without a mark is a guess. Choosing
-                    // one changes the document, the canvas and the print together.
-                    title: qsTr("Hoja"),
-                    items: session.paperNames().map(function (name, index) {
-                        return {
-                            id: "paper-" + index,
-                            label: name,
-                            icon: "x-office-document",
-                            hint: qsTr("dibujar en %1").arg(name),
-                            current: session.sheetPaper === index
-                        };
-                    }).concat([{
-                        id: "paper-landscape",
-                        label: qsTr("Apaisado"),
-                        icon: "object-rotate-right",
-                        hint: qsTr("la hoja girada; el dibujo es el mismo"),
-                        current: session.sheetLandscape
-                    }, {
-                        id: "paper-a4",
-                        label: qsTr("A4 normal"),
-                        icon: "zoom-original",
-                        hint: qsTr("vuelve al A4 vertical con el marco ISO 5457")
-                    }, {
-                        id: "export-panel",
-                        label: qsTr("Márgenes, tamaño y lista…"),
-                        icon: "document-export",
-                        hint: qsTr("el marco de la hoja y lo que se imprime")
-                    }])
+                    // The sheet is configured in one place, and this is its shortcut. The
+                    // nine size buttons are gone: the size lives in the Disposición tab,
+                    // where it has room for the paper's proportions and its common name.
+                    title: qsTr("Configurar página"),
+                    items: [
+                        { id: "page-setup-file", label: qsTr("Configurar página"), icon: "document-properties", hint: qsTr("tamaño, orientación y márgenes de la hoja"), big: true }
+                    ]
                 },
                 {
                     // The documents the program already knows, so a circuit reopened a
@@ -197,7 +182,6 @@ Rectangle {
                         { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("Ctrl+rueda · acerca la hoja") },
                         { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("Ctrl+rueda · aleja la hoja") },
                         { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") },
-                        { id: "grid", label: qsTr("Cuadrícula"), icon: "view-grid", hint: session.grid ? qsTr("Visible · pulsa para ocultar") : qsTr("Oculta · pulsa para mostrar") }
                     ]
                 },
                 {
@@ -207,6 +191,33 @@ Rectangle {
                     ]
                 },
                 { title: qsTr("Contraste"), note: session.contrastSummary }
+            ]
+        },
+        {
+            // The page group a layout tab owns in a word processor: size, orientation and
+            // the margin presets, with the detailed editor one click away. The controls
+            // are custom because a list with paper proportions and a margin gallery is not
+            // a ribbon button; the collapsed menu still flattens them into commands.
+            name: qsTr("Disposición"),
+            groups: [
+                {
+                    title: qsTr("Página"),
+                    custom: "page"
+                },
+                {
+                    title: qsTr("Márgenes"),
+                    custom: "margins"
+                },
+                {
+                    title: qsTr("Cuadrícula"),
+                    custom: "grid"
+                },
+                {
+                    title: qsTr("Configurar página"),
+                    items: [
+                        { id: "page-setup-layout", label: qsTr("Configurar página"), icon: "document-properties", hint: qsTr("el editor detallado de la hoja"), big: true }
+                    ]
+                }
             ]
         },
         {
@@ -287,6 +298,91 @@ Rectangle {
 
     implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
 
+    /// The paper choices as commands, for the collapsed menu and the self test. They are
+    /// rebuilt on every read so the mark follows the sheet instead of a frozen snapshot.
+    function paperActions() {
+        const out = session.papers().map(function (paper, index) {
+            return {
+                id: "paper-" + index,
+                label: paper.label,
+                icon: "x-office-document",
+                hint: paper.label + " · " + paper.size,
+                current: session.sheetPaper === index
+            };
+        });
+        out.push({
+            id: "paper-custom",
+            label: qsTr("Personalizado…"),
+            icon: "document-properties",
+            hint: qsTr("ancho y alto de la hoja, guardados en el documento"),
+            current: session.sheetPaper < 0
+        });
+        return out;
+    }
+
+    function orientationActions() {
+        return [
+            { id: "orientation-portrait", label: qsTr("Vertical"), icon: "x-office-document", hint: qsTr("la hoja más alta que ancha"), current: !session.sheetLandscape },
+            { id: "orientation-landscape", label: qsTr("Apaisado"), icon: "object-rotate-right", hint: qsTr("la hoja girada; el dibujo es el mismo"), current: session.sheetLandscape }
+        ];
+    }
+
+    function marginActions() {
+        const out = session.marginPresets().map(function (preset, index) {
+            return {
+                id: "margin-" + index,
+                label: preset.label,
+                icon: "x-office-document",
+                hint: preset.detail,
+                current: session.sheetMarginPreset === index
+            };
+        });
+        out.push({
+            id: "margin-custom",
+            label: qsTr("Personalizado…"),
+            icon: "document-properties",
+            hint: qsTr("los cuatro márgenes, en milímetros"),
+            current: session.sheetMarginPreset < 0
+        });
+        return out;
+    }
+
+    function gridActions() {
+        const out = [
+            {
+                id: "grid-toggle",
+                label: session.grid ? qsTr("Ocultar cuadrícula") : qsTr("Mostrar cuadrícula"),
+                icon: "view-grid",
+                hint: qsTr("la cuadrícula es una guía; no se imprime"),
+                current: session.grid
+            }
+        ];
+        [5, 10, 20, 25].forEach(function (mm) {
+            out.push({
+                id: "grid-step-" + mm,
+                label: qsTr("Cuadrícula de %1 mm").arg(mm),
+                icon: "view-grid",
+                hint: qsTr("paso de la cuadrícula y del imán"),
+                current: Math.abs(session.gridStepMm - mm) < 0.01
+            });
+        });
+        return out;
+    }
+
+    /// The commands of one group, whether it draws buttons or a custom control.
+    function groupActions(group) {
+        if (group.custom === "page") {
+            return paperActions().concat(orientationActions());
+        }
+        if (group.custom === "margins") {
+            return marginActions();
+        }
+        if (group.custom === "grid") {
+            return gridActions();
+        }
+        return group.items || [];
+    }
+
     function invoke(id) {
         if (id.indexOf("circuit:") === 0) {
             session.selectCircuit(parseInt(id.slice(8), 10));
@@ -300,18 +396,53 @@ Rectangle {
             window.openRenameCircuit();
             return;
         }
-        if (id === "paper-landscape") {
-            session.toggleSheetLandscape();
+        if (id === "paper-custom") {
+            pageSetupRequested("size");
             return;
         }
-        if (id === "paper-a4") {
-            session.resetSheet();
+        if (id === "margin-custom") {
+            pageSetupRequested("margins");
+            return;
+        }
+        if (id === "page-setup-file" || id === "page-setup-layout") {
+            pageSetupRequested("page");
+            return;
+        }
+        if (id === "export-panel") {
+            window.exportPanelOpen = true;
+            window.pageSetupOpen = false;
+            return;
+        }
+        if (id === "grid-toggle") {
+            session.toggleGrid();
+            return;
+        }
+        if (id.indexOf("grid-step-") === 0) {
+            const mm = parseFloat(id.slice(10));
+            if (!isNaN(mm)) {
+                session.gridStepMm = mm;
+            }
+            return;
+        }
+        if (id === "orientation-portrait") {
+            session.setSheetLandscape(false);
+            return;
+        }
+        if (id === "orientation-landscape") {
+            session.setSheetLandscape(true);
             return;
         }
         if (id.indexOf("paper-") === 0) {
             const index = parseInt(id.slice(6), 10);
             if (!isNaN(index)) {
                 session.setSheetPaper(index);
+            }
+            return;
+        }
+        if (id.indexOf("margin-") === 0) {
+            const index = parseInt(id.slice(7), 10);
+            if (!isNaN(index)) {
+                session.applyMarginPreset(index);
             }
             return;
         }
@@ -407,8 +538,6 @@ Rectangle {
             session.zoomOut();
         } else if (id === "zoom-reset") {
             session.zoomReset();
-        } else if (id === "grid") {
-            session.toggleGrid();
         } else if (id.indexOf("speed-") === 0) {
             const value = parseFloat(id.slice(6));
             if (!isNaN(value)) {
@@ -427,7 +556,7 @@ Rectangle {
             current = t;
             const groups = tabs[t].groups || [];
             for (let g = 0; g < groups.length; ++g) {
-                const items = groups[g].items || [];
+                const items = groupActions(groups[g]);
                 for (let i = 0; i < items.length; ++i) {
                     invoke(items[i].id);
                 }
@@ -449,7 +578,7 @@ Rectangle {
         const out = [];
         const groups = ribbon.tabs[ribbon.current].groups;
         for (let g = 0; g < groups.length; ++g) {
-            const items = groups[g].items || [];
+            const items = groupActions(groups[g]);
             for (let i = 0; i < items.length; ++i) {
                 out.push(items[i]);
             }
@@ -580,6 +709,16 @@ Rectangle {
                     session: ribbon.session
                     title: modelData.title
 
+                    // A group whose control is a combo or a gallery. The item is a child of
+                    // the group's Row, so the group measures itself around it.
+                    Loader {
+                        visible: !!modelData.custom
+                        sourceComponent: modelData.custom === "page" ? pageControls
+                                       : modelData.custom === "margins" ? marginControls
+                                       : modelData.custom === "grid" ? gridControls
+                                       : null
+                    }
+
                     Repeater {
                         model: modelData.items || []
 
@@ -672,5 +811,37 @@ Rectangle {
         width: parent.width
         height: 1
         color: session.panel
+    }
+
+    Component {
+        id: pageControls
+
+        PageControls {
+            objectName: "pageControls"
+            session: ribbon.session
+            openOnCreate: ribbon.paperListRequested
+            onPageSetupRequested: function (section) {
+                ribbon.pageSetupRequested(section);
+            }
+        }
+    }
+
+    Component {
+        id: gridControls
+
+        GridControl {
+            session: ribbon.session
+        }
+    }
+
+    Component {
+        id: marginControls
+
+        MarginGallery {
+            objectName: "marginGallery"
+            session: ribbon.session
+            openOnCreate: ribbon.marginListRequested
+            onCustomRequested: ribbon.pageSetupRequested("margins")
+        }
     }
 }
