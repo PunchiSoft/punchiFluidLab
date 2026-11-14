@@ -705,7 +705,7 @@ impl PfSession {
             clipboard: Vec::new(),
             selected_pipe: None,
             seeded: false,
-            grid_step_mm: 10.0,
+            grid_step_mm: 5.0,
             saved_revision: Some(0),
             recent_path: None,
             recent: RecentList::new(),

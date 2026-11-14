@@ -331,7 +331,7 @@ fn the_grid_step_is_a_view_setting_and_the_snap_follows_it() {
         PF_OK
     );
     assert!(
-        (step - 10.0).abs() < 0.001,
+        (step - 5.0).abs() < 0.001,
         "the grid starts at the documented step"
     );
 

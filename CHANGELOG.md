@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La cuadrícula arranca en 5 mm y se apaga con un ojo — 2026-11-14
+
+La cuadrícula nace ahora en **5 mm**, el paso que el owner ve mejor para el dibujo, y el
+panel la muestra con un **ojo**: abierto cuando la guía se ve, tachado cuando está oculta.
+
+- El paso por defecto pasa de 10 a **5 mm** en el núcleo y en la ventana; el imán que
+  coloca los componentes sigue el mismo paso (medio paso más un milímetro: **3,5 mm**).
+- El control de **Cuadrícula** del panel tiene un icono de ojo visible (`view-visible` /
+  `view-hidden`) y el texto Visible/Oculta, además del desplegable 5/10/20/25 mm.
+- El paso sigue siendo estado de vista: no se guarda, no se imprime y no entra en el
+  historial.
+- **Evidencia**: `the_grid_step_is_a_view_setting_and_the_snap_follows_it` actualizado al
+  valor por defecto, los pasos `view: the grid step …` de `--selftest`, `--check-qml` sin
+  problemas y las capturas del panel con el ojo y de la cuadrícula a 5 y 20 mm.
+
 ### La simulación se puede cancelar y el puntero deja de parpadear — 2026-11-14
 
 **Hasta cambio** era un bucle síncrono de hasta 250 cuadros en el hilo de la interfaz: durante

@@ -231,7 +231,7 @@ not in the window yet.
 - A connection is refused, never silently dropped, when it would join a port to itself,
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.
-- **Drag from the sidebar to the sheet** creates a component, snapped to the grid step (10 mm by default).
+- **Drag from the sidebar to the sheet** creates a component, snapped to the grid step (5 mm by default).
   The component being carried is drawn with its own symbol while it moves, so the drop
   is not a leap of faith. A component dropped before the first frame is kept: the
   starting circuit is added around it, never in its place.
@@ -274,7 +274,7 @@ schematic simulator lives by, and the one the reference tool uses:
   [capabilities.md](capabilities.md) names them.
 
 - Infinite scrollable surface with a configurable grid. The **Configurar página** panel
-  offers 5, 10 (the default), 20 or 25 mm,
+  offers 5 (the default), 10, 20 or 25 mm,
   with a heavier line every five steps. The step is a **view setting** shared by the ruling
   and the snap, so the lines never lie about where a component will land; it is never
   printed and never enters the undo history. The grid is a *guide*, not a background
@@ -324,7 +324,7 @@ schematic simulator lives by, and the one the reference tool uses:
   move. Ports snap with a magnet radius derived from the grid step.
 - **A hose straightens when its component is dragged near the other end.** Two ports on the
   same axis make a straight run only when their other coordinate matches, and the grid
-  cannot reach every offset (the starting circuit has 8.02 mm). Within half a grid step plus 1 mm (6 mm on the default 10 mm grid) the dragged port
+  cannot reach every offset (the starting circuit has 8.02 mm). Within half a grid step plus 1 mm (3.5 mm on the default 5 mm grid) the dragged port
   pulls onto the axis, off the grid, and `Alt+A` / **Alinear ▸ Puertos** does the same for the
   selected hose. A hose between perpendicular edges is refused, not guessed.
 - Pressurised lines change colour with pressure; the state is never colour-only,

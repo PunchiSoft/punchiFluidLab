@@ -40,7 +40,7 @@ Item {
 
             Rectangle {
                 id: toggle
-                width: 74
+                width: 92
                 height: 26
                 radius: 4
                 color: pointer.containsMouse || session.grid ? session.panel : "transparent"
@@ -49,16 +49,32 @@ Item {
                 activeFocusOnTab: true
 
                 Accessible.role: Accessible.CheckBox
-                Accessible.name: qsTr("Cuadrícula")
+                Accessible.name: session.grid ? qsTr("Cuadrícula visible")
+                                              : qsTr("Cuadrícula oculta")
                 Accessible.description: qsTr("muestra u oculta la guía; no se imprime")
                 Accessible.checked: session.grid
                 Accessible.onPressAction: session.toggleGrid()
 
-                Text {
+                Row {
                     anchors.centerIn: parent
-                    text: session.grid ? qsTr("Visible") : qsTr("Oculta")
-                    color: session.foreground
-                    font.pixelSize: 10
+                    spacing: 5
+
+                    Image {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 14
+                        height: 14
+                        sourceSize.width: 14
+                        sourceSize.height: 14
+                        source: session.grid ? "image://theme/view-visible?tone=foreground"
+                                             : "image://theme/view-hidden?tone=muted"
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: session.grid ? qsTr("Visible") : qsTr("Oculta")
+                        color: session.foreground
+                        font.pixelSize: 10
+                    }
                 }
 
                 MouseArea {
@@ -158,7 +174,7 @@ Item {
                         return i;
                     }
                 }
-                return 1;
+                return 0;
             }
 
             delegate: Rectangle {

@@ -1191,11 +1191,11 @@ int main(int argc, char *argv[])
             check(state->session->grid() != grid,
                   QStringLiteral("view: the grid toggles"));
             state->session->toggleGrid();
-            state->session->setGridStepMm(5.0);
-            check(std::abs(state->session->gridStepMm() - 5.0) < 0.01,
+            state->session->setGridStepMm(20.0);
+            check(std::abs(state->session->gridStepMm() - 20.0) < 0.01,
                   QStringLiteral("view: the grid step changes"));
-            state->session->setGridStepMm(10.0);
-            check(std::abs(state->session->gridStepMm() - 10.0) < 0.01
+            state->session->setGridStepMm(5.0);
+            check(std::abs(state->session->gridStepMm() - 5.0) < 0.01
                       && state->session->canUndo() == undoes,
                   QStringLiteral("view: the grid step is a view setting"));
             check(state->session->canUndo() == undoes,
