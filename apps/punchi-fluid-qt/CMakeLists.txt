@@ -56,13 +56,24 @@ qt_add_qml_module(punchi-fluid
     URI PunchiFluid
     VERSION 1.0
     QML_FILES
+        HelpLink.qml
         Main.qml
+        PanelButton.qml
         RibbonBar.qml
         RibbonButton.qml
         RibbonGroup.qml
         Sidebar.qml
         SoundFeedback.qml
         StatusBar.qml
+)
+
+# The licence travels inside the binary too: the About popup shows the whole GPL text, and
+# a copy installed without the repository still carries the licence it is distributed
+# under. The alias is `/LICENSE`, which `FluidSession::licenseText` reads once.
+qt_add_resources(punchi-fluid "license"
+    PREFIX "/"
+    BASE "${REPO_ROOT}"
+    FILES "${REPO_ROOT}/LICENSE"
 )
 
 # The two event samples travel inside the binary, the way the catalog does, so an

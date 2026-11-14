@@ -24,9 +24,9 @@ the protagonist: no dialog in front of it unless the user opened it.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ Archivo   Editar   Ver   Simular   Ayuda                                       │ menu bar
+│ Archivo  Editar  Ver  Cajetín  Simular                 Acerca de  Licencia     │ tabs
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ ▤ Nuevo  ▤ Abrir │ ▤ Guardar │ ⤓ PNG PDF │ ▶ ⏭ ⟲ │ ⧉      0.25x  Simulación │ toolbar
+│ ▤ Nuevo  ▤ Abrir │ ▤ Guardar │ ⤓ PNG PDF │ ▶ ⏭ ⟲ │ ⧉       0.25x  Estado    │ groups
 ├──────────────────────┬────────────────────────────────────────────────────────┤
 │ 🔍 Buscar…           │                                                        │
 │ ▾ Alimentación       │                                                        │
@@ -43,14 +43,12 @@ the protagonist: no dialog in front of it unless the user opened it.
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The menu bar is window chrome, not a fourth region: it carries the same `Action`
-values the toolbar does, so no command exists twice. Its order follows the desktop
-(File, Edit, View, Simulate, Help) and it ends with the help menu, whose last entry
-opens the about window.
+The tab row is window chrome, not a fourth region: **Acerca de** and **Licencia** sit at
+its right end as text, not as tabs, and they stay there when the ribbon folds. They open
+a popup about the program, never a command of the circuit, so no command exists twice.
 
-Fixed sizes come from the theme, never from literals: the menu bar is one `row_height`,
-the toolbar is `1.4 × row_height` with its icon and label sizes as tokens of their own,
-the sidebar
+Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
+the ribbon's icon and label sizes are tokens of their own, the sidebar
 `18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1100 px wide the ribbon collapses into a
 single menu button (a ribbon needs width to work).
 
@@ -82,9 +80,18 @@ selectable like Archivo, Editar and Ver.
   pause and on keyboard focus, and the same string is the accessible description.
 - Below 1100 px the body folds away: the tabs stay, and one **Menú** button opens the
   commands of the open tab. A ribbon without width is a maze.
+- **The two help links are text at the right end of the tab row**, with the same weight
+  as the tabs: **Acerca de** opens a popup with the name, the core's version, "versión en
+  desarrollo, sin publicar", a one-line description, the repository and the issue tracker,
+  the copyright with the full licence and the author. **Licencia** opens a popup with the
+  GPL summary and the complete text, which is compiled into the binary. The repository and
+  issue links open the desktop's browser on an explicit click; the program itself never
+  fetches anything. Both popups close with **Cerrar**, `Esc` or a click outside, and
+  opening one never changes the document.
 
 The list of commands lives in one table in `RibbonBar.qml`; the expanded groups and the
-collapsed menu are generated from it, so they cannot drift apart.
+collapsed menu are generated from it, so they cannot drift apart. The two help links are
+a second, short table beside it, because they are not commands of a tab.
 
 | Tab | Contents |
 |---|---|
