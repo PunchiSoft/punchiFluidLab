@@ -856,11 +856,13 @@ int main(int argc, char *argv[])
                      Qt::ShiftModifier);
         });
         steps->push_back([state, sendWith] {
-            sendWith(QEvent::MouseMove, state->routeScene + QPointF(20.0, 0.0), Qt::NoButton,
+            // 60 px, not 20: the gesture starts after 3 mm of sheet movement, and the
+            // landscape sheet is scaled differently from the old portrait default.
+            sendWith(QEvent::MouseMove, state->routeScene + QPointF(60.0, 0.0), Qt::NoButton,
                      Qt::LeftButton, Qt::ShiftModifier);
         });
         steps->push_back([state, sendWith, check] {
-            sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(20.0, 0.0),
+            sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(60.0, 0.0),
                      Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
                   QStringLiteral("editing: Shift-drag copies"));
