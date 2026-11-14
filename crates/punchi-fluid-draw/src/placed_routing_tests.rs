@@ -168,6 +168,46 @@ fn the_compressor_hose_goes_over_the_compressor() {
 }
 
 #[test]
+fn a_perpendicular_hose_ignores_an_offset_and_still_goes_round() {
+    // A perpendicular pair has no middle segment to drag. An offset left over from another
+    // arrangement must not turn the route back into the one-bend crossing.
+    let unit = Rect::from_corners(Pt::new(73.1, 221.84), Pt::new(103.7, 252.44));
+    let compressor = Rect::from_corners(Pt::new(28.1, 221.84), Pt::new(58.7, 252.44));
+    let points = route_between_boxes(
+        Pt::new(74.94, 237.14),
+        PortEdge::Left,
+        unit,
+        Pt::new(43.4, 223.68),
+        PortEdge::Top,
+        compressor,
+        5.0,
+    );
+    assert!(
+        points.iter().any(|point| point.y < compressor.min.y),
+        "the hose still goes above the compressor: {points:?}"
+    );
+    assert_clear(&points, [unit, compressor]);
+}
+
+#[test]
+fn a_tight_gap_still_gets_a_route_around() {
+    // The owner moved the service unit until it almost touched the compressor. The 2 mm
+    // clearance no longer fits; the route uses the real gap rather than crossing the body.
+    let compressor = Rect::from_corners(Pt::new(28.1, 221.84), Pt::new(58.7, 252.44));
+    let unit = Rect::from_corners(Pt::new(59.7, 221.84), Pt::new(90.3, 252.44));
+    let points = route_between_boxes(
+        Pt::new(59.7, 237.14),
+        PortEdge::Left,
+        unit,
+        Pt::new(43.4, 223.68),
+        PortEdge::Top,
+        compressor,
+        0.0,
+    );
+    assert_clear(&points, [unit, compressor]);
+}
+
+#[test]
 fn aligned_boxes_keep_a_straight_hose() {
     let top = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
     let bottom = Rect::from_min_size(Pt::new(0.0, 60.0), 20.0, 20.0);

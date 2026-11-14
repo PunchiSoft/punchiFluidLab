@@ -99,11 +99,13 @@ pub fn route_offset(start: Pt, end: Pt, offset: f32) -> Vec<Pt> {
 /// A hose between perpendicular edges used to take its bend at the departure's height, so a
 /// port on the side of a unit and a port on the top of the compressor beside it produced a
 /// line straight through the compressor. This route leaves the departure edge, goes round
-/// both boxes with [`CLEARANCE_MM`] to spare, and only then enters the arrival edge.
+/// both boxes with the largest clearance that fits, and only then enters the arrival edge.
 ///
-/// A stored `offset` is the user's own drag: the route keeps that shape, because the user
-/// moved the jog on purpose. The check still measures it, so a dragged hose that crosses a
-/// symbol is reported.
+/// The clearance is tried from [`CLEARANCE_MM`] down to zero: two symbols placed a millimetre
+/// apart still leave a real gap, and using it is better than crossing a body. A stored
+/// `offset` is the user's own drag and keeps that shape for a pair of parallel edges; a
+/// perpendicular pair has no middle segment, so its offset is ignored rather than allowed to
+/// turn the route back into the crossing one.
 #[must_use]
 pub fn route_between_boxes(
     start: Pt,
@@ -114,14 +116,19 @@ pub fn route_between_boxes(
     end_box: Rect,
     offset: f32,
 ) -> Vec<Pt> {
-    if offset.abs() > 0.01 {
+    if offset.abs() > 0.01 && start_edge.horizontal() == end_edge.horizontal() {
         return route_between(start, start_edge, end, end_edge, offset);
     }
-    route_around(start, start_edge, start_box, end, end_edge, end_box).unwrap_or_else(|| {
-        // Two boxes that overlap, or a port enclosed by the other: there is no clean path.
-        // The plain shape is still drawn, and the check reports the crossing.
-        route_between(start, start_edge, end, end_edge, 0.0)
-    })
+    for clearance in [CLEARANCE_MM, 1.0, 0.2, 0.0] {
+        if let Some(path) = route_around(
+            start, start_edge, start_box, end, end_edge, end_box, clearance,
+        ) {
+            return path;
+        }
+    }
+    // Two boxes that overlap: there is no clean path. The plain shape is still drawn, and
+    // the check reports both the overlap and the crossing.
+    route_between(start, start_edge, end, end_edge, 0.0)
 }
 
 /// The point where a hose leaves its box on the way out: on the box edge plus the clearance.
@@ -188,7 +195,7 @@ fn coordinate_index(values: &[f32], value: f32) -> Option<usize> {
         .position(|candidate| (candidate - value).abs() < 0.01)
 }
 
-/// A path around the two boxes, or `None` when their clearance leaves no room.
+/// A path around the two boxes, or `None` when the clearance leaves no room.
 fn route_around(
     start: Pt,
     start_edge: PortEdge,
@@ -196,11 +203,12 @@ fn route_around(
     end: Pt,
     end_edge: PortEdge,
     end_box: Rect,
+    clearance: f32,
 ) -> Option<Vec<Pt>> {
-    let start_stub = stub(start, start_edge, start_box, CLEARANCE_MM);
-    let end_stub = stub(end, end_edge, end_box, CLEARANCE_MM);
-    let blocked_a = grow(start_box, CLEARANCE_MM);
-    let blocked_b = grow(end_box, CLEARANCE_MM);
+    let start_stub = stub(start, start_edge, start_box, clearance);
+    let end_stub = stub(end, end_edge, end_box, clearance);
+    let blocked_a = grow(start_box, clearance);
+    let blocked_b = grow(end_box, clearance);
 
     let mut xs = Vec::new();
     let mut ys = Vec::new();
