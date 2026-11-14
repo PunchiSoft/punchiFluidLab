@@ -250,6 +250,17 @@ pass.
 - One branch per change, one thing per commit, squash-merged by the owner, and the branch
   deleted afterwards. A sub-branch created from another feature branch is an exception and
   needs a stated reason.
+- **One active branch at a time.** While a branch holds unmerged work, including a pull
+  request still open, do not start a parallel branch for an unrelated change: finish it,
+  merge it, or set it aside with explicit owner authorization. Parallel branches drift and
+  produce structural conflicts.
+- **Ask before committing.** Before staging or pushing, ask the owner to confirm that the
+  change matches the request and the expected result, and wait for the answer. A request to
+  commit does not replace that confirmation unless the exact change was already reviewed.
+- **Verify the merge.** After opening or updating the pull request, read its `state` and
+  `mergedAt`. While it is not merged, tell the owner and ask them to merge it before
+  starting or continuing further work. After the merge, return to updated `main`,
+  fast-forward it, and ask whether to delete the merged branch locally and on the remote.
 - **Only the project owner authorizes and merges a pull request into `main`.** The agent
   opens the pull request, answers the review and stops; it never runs `gh pr merge`, never
   enables auto-merge, never approves on its own behalf and never pushes to `main`, however
