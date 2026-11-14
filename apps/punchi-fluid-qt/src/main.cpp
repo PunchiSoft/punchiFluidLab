@@ -849,24 +849,19 @@ int main(int argc, char *argv[])
                   QStringLiteral("editing: undoing the copy removes it"));
             state->components = before;
         });
-        steps->push_back([state, sendWith, toScene, valveCentre] {
-            // The point that the earlier valve clicks already prove is on the valve, so the
-            // gesture does not depend on a component rect that a stale frame could move.
+        steps->push_back([state, sendWith, toScene, valveCentre, check] {
+            // Press, drag and release in one step. Three timer steps are three chances for
+            // the window to be busy between them, and a drag whose press and move are not
+            // read in order is a drag that never happened. The pipe drag uses the same rule.
             PfFrame frame {};
             pf_session_build_frame(state->session->handle(), 4.0F, &frame);
-            state->routeScene = toScene(valveCentre());
-            sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
+            const QPointF start = toScene(valveCentre());
+            const QPointF end = start + QPointF(60.0, 0.0);
+            sendWith(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
-        });
-        steps->push_back([state, sendWith] {
-            // 60 px, not 20: the gesture starts after 3 mm of sheet movement, and the
-            // landscape sheet is scaled differently from the old portrait default.
-            sendWith(QEvent::MouseMove, state->routeScene + QPointF(60.0, 0.0), Qt::NoButton,
-                     Qt::LeftButton, Qt::ShiftModifier);
-        });
-        steps->push_back([state, sendWith, check] {
-            sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(60.0, 0.0),
-                     Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+            sendWith(QEvent::MouseMove, end, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+            sendWith(QEvent::MouseButtonRelease, end, Qt::LeftButton, Qt::NoButton,
+                     Qt::ShiftModifier);
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
                   QStringLiteral("editing: Shift-drag copies"));
             state->session->undo();
