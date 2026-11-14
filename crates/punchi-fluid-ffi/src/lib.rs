@@ -60,7 +60,7 @@ use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
 use punchi_fluid_draw::placed::{
-    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point, route_between,
+    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point, route_between_boxes,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -6691,11 +6691,13 @@ fn pipe_route(document: &Document, catalog: &Catalog, index: usize) -> Option<Ve
         to_definition,
         &connection.to.port,
     )?;
-    Some(route_between(
+    Some(route_between_boxes(
         start,
         port_edge(from_definition, &connection.from.port),
+        from.rect(),
         end,
         port_edge(to_definition, &connection.to.port),
+        to.rect(),
         connection.offset_mm(),
     ))
 }

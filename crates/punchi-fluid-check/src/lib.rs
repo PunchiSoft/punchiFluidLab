@@ -9,7 +9,7 @@
 //!
 //! - a component outside the sheet;
 //! - two components whose boxes overlap;
-//! - a pipe crossing a component it does not belong to;
+//! - a pipe crossing a component, including one of its own ends;
 //! - two pipes running over each other;
 //! - a pneumatic port left with nothing attached to it.
 //!
@@ -28,7 +28,7 @@
 
 use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
-use punchi_fluid_draw::placed::{port_point, route};
+use punchi_fluid_draw::placed::{port_edge, port_point, route_between_boxes};
 use punchi_fluid_draw::surface::{Pt, Rect};
 
 use electrical::short_circuits;
@@ -40,7 +40,7 @@ pub enum FindingKind {
     OutsideSheet,
     /// Two component boxes overlap.
     OverlappingComponents,
-    /// A pipe crosses a component that is not one of its ends.
+    /// A pipe crosses a component, including one of its own ends.
     PipeThroughComponent,
     /// Two pipes run over each other.
     OverlappingPipes,
@@ -79,7 +79,7 @@ impl FindingKind {
         match self {
             Self::OutsideSheet => "un componente se sale de la hoja",
             Self::OverlappingComponents => "dos componentes se solapan",
-            Self::PipeThroughComponent => "un tubo cruza un componente que no es su extremo",
+            Self::PipeThroughComponent => "un tubo cruza un componente",
             Self::OverlappingPipes => "dos tubos se superponen",
             Self::OpenConnection => "una conexión neumática queda abierta",
             Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
@@ -130,16 +130,34 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
         if connection.circuit != circuit {
             continue;
         }
+        let Some((start, start_edge, _, end, end_edge, _)) = pipe_ends(document, catalog, index)
+        else {
+            continue;
+        };
         let Some(path) = pipe_path(document, catalog, index) else {
             continue;
         };
-        let ends = [connection.from.placement, connection.to.placement];
         for (component, placement) in document.placements().iter().enumerate() {
-            if placement.circuit != circuit || ends.contains(&placement.id()) {
+            if placement.circuit != circuit {
                 continue;
             }
             let rect = placement.rect();
-            if let Some(at) = crosses(&path, rect) {
+            let shrunk = shrink(rect, PORT_EDGE_MM);
+            if shrunk.min.x >= shrunk.max.x || shrunk.min.y >= shrunk.max.y {
+                continue;
+            }
+            // A hose starts at a port that may sit just inside the symbol; that lead is not
+            // a crossing. Everything after it is. The same at the arrival.
+            let crossing = if placement.id() == connection.from.placement {
+                let trimmed = without_lead(&path, rect, start, start_edge, true);
+                crosses(&trimmed, shrunk)
+            } else if placement.id() == connection.to.placement {
+                let trimmed = without_lead(&path, rect, end, end_edge, false);
+                crosses(&trimmed, shrunk)
+            } else {
+                crosses(&path, shrunk)
+            };
+            if let Some(at) = crossing {
                 findings.push(Finding {
                     kind: FindingKind::PipeThroughComponent,
                     at,
@@ -467,6 +485,33 @@ fn must_be_wired(definition: &ComponentDefinition, role: PortRole) -> bool {
 #[must_use]
 pub fn pipe_path(document: &Document, catalog: &Catalog, index: usize) -> Option<Vec<Pt>> {
     let connection = document.connections().get(index)?;
+    let (start, start_edge, from_rect, end, end_edge, to_rect) =
+        pipe_ends(document, catalog, index)?;
+    Some(route_between_boxes(
+        start,
+        start_edge,
+        from_rect,
+        end,
+        end_edge,
+        to_rect,
+        connection.offset_mm(),
+    ))
+}
+
+/// The two ports of a pipe, their edges and their boxes.
+fn pipe_ends(
+    document: &Document,
+    catalog: &Catalog,
+    index: usize,
+) -> Option<(
+    Pt,
+    punchi_fluid_draw::placed::PortEdge,
+    Rect,
+    Pt,
+    punchi_fluid_draw::placed::PortEdge,
+    Rect,
+)> {
+    let connection = document.connections().get(index)?;
     let from_index = document.index_of(connection.from.placement)?;
     let to_index = document.index_of(connection.to.placement)?;
     let from = document.placements().get(from_index)?;
@@ -485,7 +530,14 @@ pub fn pipe_path(document: &Document, catalog: &Catalog, index: usize) -> Option
         to_definition,
         &connection.to.port,
     )?;
-    Some(route(start, end))
+    Some((
+        start,
+        port_edge(from_definition, &connection.from.port),
+        from.rect(),
+        end,
+        port_edge(to_definition, &connection.to.port),
+        to.rect(),
+    ))
 }
 
 fn contains_rect(outer: Rect, inner: Rect) -> bool {
@@ -514,6 +566,108 @@ fn intersect(a: Rect, b: Rect) -> Option<Rect> {
     } else {
         None
     }
+}
+
+/// The tolerance, in millimetres, by which a component box is shrunk before a hose is
+/// said to cross it.
+///
+/// The port sits on or just inside the box, and the lead from the port to the edge belongs
+/// to the symbol. Shrinking by half a millimetre ignores that boundary and still catches a
+/// hose that enters the interior.
+const PORT_EDGE_MM: f32 = 0.5;
+
+/// How far beyond the symbol edge the port lead is ignored when a hose is checked against
+/// its own end, in millimetres.
+///
+/// The port can sit a little inside a rounded symbol; the short lead to the edge belongs to
+/// the symbol and is not a crossing. A hose that enters the body further in still is.
+const PORT_LEAD_MM: f32 = 3.0;
+
+/// The path without the port lead at the start or the end.
+///
+/// The lead is the distance from the port to the box edge plus [`PORT_LEAD_MM`], cut along
+/// the polyline so a crossing after it is still measured.
+fn without_lead(
+    path: &[Pt],
+    rect: Rect,
+    port: Pt,
+    edge: punchi_fluid_draw::placed::PortEdge,
+    from_start: bool,
+) -> Vec<Pt> {
+    use punchi_fluid_draw::placed::PortEdge;
+    let inset = match edge {
+        PortEdge::Left => port.x - rect.min.x,
+        PortEdge::Right => rect.max.x - port.x,
+        PortEdge::Top => port.y - rect.min.y,
+        PortEdge::Bottom => rect.max.y - port.y,
+    }
+    .max(0.0);
+    let distance = inset + PORT_LEAD_MM;
+    if from_start {
+        trim_start(path, distance)
+    } else {
+        trim_end(path, distance)
+    }
+}
+
+/// The polyline from the point `distance` millimetres along it.
+fn trim_start(path: &[Pt], distance: f32) -> Vec<Pt> {
+    if path.len() < 2 || distance <= 0.0 {
+        return path.to_vec();
+    }
+    let mut left = distance;
+    for (index, pair) in path.windows(2).enumerate() {
+        let length = (pair[1].x - pair[0].x).abs() + (pair[1].y - pair[0].y).abs();
+        if left >= length {
+            left -= length;
+            continue;
+        }
+        let t = if length > 0.0 { left / length } else { 0.0 };
+        let cut = Pt::new(
+            pair[0].x + (pair[1].x - pair[0].x) * t,
+            pair[0].y + (pair[1].y - pair[0].y) * t,
+        );
+        let mut out = vec![cut];
+        out.extend_from_slice(&path[index + 1..]);
+        return out;
+    }
+    Vec::new()
+}
+
+/// The polyline up to the point `distance` millimetres from its end.
+fn trim_end(path: &[Pt], distance: f32) -> Vec<Pt> {
+    if path.len() < 2 || distance <= 0.0 {
+        return path.to_vec();
+    }
+    let mut left = distance;
+    for (index, pair) in path.windows(2).enumerate().rev() {
+        let length = (pair[1].x - pair[0].x).abs() + (pair[1].y - pair[0].y).abs();
+        if left >= length {
+            left -= length;
+            continue;
+        }
+        let t = if length > 0.0 {
+            1.0 - left / length
+        } else {
+            0.0
+        };
+        let cut = Pt::new(
+            pair[0].x + (pair[1].x - pair[0].x) * t,
+            pair[0].y + (pair[1].y - pair[0].y) * t,
+        );
+        let mut out = path[..=index].to_vec();
+        out.push(cut);
+        return out;
+    }
+    Vec::new()
+}
+
+/// The box reduced by `by` millimetres on every side.
+fn shrink(rect: Rect, by: f32) -> Rect {
+    Rect::from_corners(
+        Pt::new(rect.min.x + by, rect.min.y + by),
+        Pt::new(rect.max.x - by, rect.max.y - by),
+    )
 }
 
 /// Where a polyline enters a rectangle, if it does.

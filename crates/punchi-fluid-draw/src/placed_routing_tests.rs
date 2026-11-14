@@ -71,3 +71,133 @@ fn a_port_reads_the_edge_it_sits_on() {
     assert_eq!(port_edge(unit, "1"), PortEdge::Left);
     assert_eq!(port_edge(unit, "2"), PortEdge::Right);
 }
+
+/// `true` when a segment runs through the inside of the box, not just along its edge.
+fn crosses_inside(start: Pt, end: Pt, rect: Rect) -> bool {
+    let inset = 0.5;
+    let left = rect.min.x + inset;
+    let right = rect.max.x - inset;
+    let top = rect.min.y + inset;
+    let bottom = rect.max.y - inset;
+    if left >= right || top >= bottom {
+        return false;
+    }
+    let length = (end.x - start.x).hypot(end.y - start.y);
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let steps = (length / 0.25).ceil().max(1.0) as u32;
+    (1..=steps).any(|step| {
+        #[allow(clippy::cast_precision_loss)]
+        let t = step as f32 / steps as f32;
+        let point = Pt::new(
+            start.x + (end.x - start.x) * t,
+            start.y + (end.y - start.y) * t,
+        );
+        point.x > left && point.x < right && point.y > top && point.y < bottom
+    })
+}
+
+/// The automatic route keeps both boxes clear; the leads from a port inside a rounded
+/// symbol to its edge are the only segments allowed to touch it.
+fn assert_clear(points: &[Pt], boxes: [Rect; 2]) {
+    for pair in points.windows(2) {
+        assert!(
+            (pair[0].x - pair[1].x).abs() < 1e-6 || (pair[0].y - pair[1].y).abs() < 1e-6,
+            "a diagonal segment in {points:?}"
+        );
+    }
+    if points.len() <= 3 {
+        return;
+    }
+    for pair in points[1..points.len() - 1].windows(2) {
+        for rect in boxes {
+            assert!(
+                !crosses_inside(pair[0], pair[1], rect),
+                "the hose goes through {rect:?}: {points:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_hose_goes_round_the_symbols_it_joins() {
+    let start_box = Rect::from_min_size(Pt::new(0.0, 0.0), 30.0, 30.0);
+    let end_box = Rect::from_min_size(Pt::new(10.0, 40.0), 30.0, 30.0);
+    let points = route_between_boxes(
+        Pt::new(30.0, 15.0),
+        PortEdge::Right,
+        start_box,
+        Pt::new(25.0, 40.0),
+        PortEdge::Top,
+        end_box,
+        0.0,
+    );
+    assert!(points.len() > 3, "the bend needs a detour: {points:?}");
+    assert!(
+        points[1].x > points[0].x,
+        "the hose leaves the right edge outwards"
+    );
+    let last = points.len() - 1;
+    assert!(
+        points[last].y > points[last - 1].y,
+        "the hose enters the top edge from above"
+    );
+    assert_clear(&points, [start_box, end_box]);
+}
+
+#[test]
+fn the_compressor_hose_goes_over_the_compressor() {
+    // The real geometry: the service unit's left port is inside its box and the compressor's
+    // top port is just below its top edge. The old one-bend route cut through the compressor
+    // at the departure's height.
+    let unit = Rect::from_corners(Pt::new(73.1, 221.84), Pt::new(103.7, 252.44));
+    let compressor = Rect::from_corners(Pt::new(28.1, 221.84), Pt::new(58.7, 252.44));
+    let points = route_between_boxes(
+        Pt::new(74.94, 237.14),
+        PortEdge::Left,
+        unit,
+        Pt::new(43.4, 223.68),
+        PortEdge::Top,
+        compressor,
+        0.0,
+    );
+    assert!(
+        points.iter().any(|point| point.y < compressor.min.y),
+        "the hose goes above the compressor: {points:?}"
+    );
+    assert_clear(&points, [unit, compressor]);
+}
+
+#[test]
+fn aligned_boxes_keep_a_straight_hose() {
+    let top = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+    let bottom = Rect::from_min_size(Pt::new(0.0, 60.0), 20.0, 20.0);
+    let points = route_between_boxes(
+        Pt::new(10.0, 20.0),
+        PortEdge::Bottom,
+        top,
+        Pt::new(10.0, 60.0),
+        PortEdge::Top,
+        bottom,
+        0.0,
+    );
+    assert_eq!(points, vec![Pt::new(10.0, 20.0), Pt::new(10.0, 60.0)]);
+}
+
+#[test]
+fn a_dragged_offset_still_takes_its_own_shape() {
+    // The user moved the jog on purpose, so the box-aware router keeps the stored shape; the
+    // check is the one that reports a crossing it creates.
+    let top = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+    let bottom = Rect::from_min_size(Pt::new(0.0, 60.0), 20.0, 20.0);
+    let points = route_between_boxes(
+        Pt::new(10.0, 20.0),
+        PortEdge::Bottom,
+        top,
+        Pt::new(30.0, 60.0),
+        PortEdge::Top,
+        bottom,
+        5.0,
+    );
+    assert_eq!(points.len(), 4, "{points:?}");
+    assert!((points[1].y - 45.0).abs() < 1e-6, "the middle moved to 45");
+}
