@@ -52,7 +52,7 @@ Fixed sizes come from the theme, never from literals: the menu bar is one `row_h
 the toolbar is `1.4 × row_height` with its icon and label sizes as tokens of their own,
 the sidebar
 `18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1100 px wide the ribbon collapses into a
-single menu button plus the simulation transport (a ribbon needs width to work).
+single menu button (a ribbon needs width to work).
 
 ### 1. Ribbon (top)
 
@@ -62,22 +62,26 @@ user's theme and rasterises it; a machine with no such icon gets the label alone
 native application does. See [ADR 0004](adr/0004-icons-from-the-desktop.md).
 
 The toolbar is a **ribbon**: a tab row, then the commands of the open tab in labelled
-groups with a hair line between them, and the transport pinned to the right of the tabs
-so running the model never needs a tab switch.
+groups with a hair line between them. The simulation transport is the **Simular** tab,
+selectable like Archivo, Editar and Ver.
 
 - A **large** command draws an icon over its label, the way a native ribbon draws the
   primary actions; a **small** command draws the icon beside the label. Group names sit
   underneath, which is what makes the row readable instead of a guessing game.
-- **No command appears twice.** The transport owns start, pause, step and reset and is
-  always visible; a tab does not repeat them. The Simular tab carries what the transport
-  does not — the mode and the speed. There is no separate "animate" action: being in
-  simulation mode *is* the animation, and its commands are the transport's.
+- The **Simular** commands are **large commands**, icon over label and 62 px tall, the
+  same presentation as Nuevo, Abrir and Guardar: the six transport actions and the three
+  speeds are what the hand goes to while a model runs, so they are not small menu rows. The
+  speed in force is marked on its button.
+- **No command appears twice.** The **Simular** tab owns start, pause, step, hasta cambio,
+  stop, reset, the speed and the mode; no other tab repeats them. There is no separate
+  "animate" action: being in simulation mode *is* the animation, and its commands are the
+  transport's.
 - A command that does not exist yet is **not on screen**. A tab whose work has not landed
   says so in one line. A grey button that teaches nothing is worse than a missing one.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
   pause and on keyboard focus, and the same string is the accessible description.
-- Below 1100 px the body folds away: the tabs and the transport stay, and one **Menú**
-  button opens the commands of the open tab. A ribbon without width is a maze.
+- Below 1100 px the body folds away: the tabs stay, and one **Menú** button opens the
+  commands of the open tab. A ribbon without width is a maze.
 
 The list of commands lives in one table in `RibbonBar.qml`; the expanded groups and the
 collapsed menu are generated from it, so they cannot drift apart.
@@ -87,11 +91,12 @@ collapsed menu are generated from it, so they cannot drift apart.
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape (which set the document's sheet), and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
+| **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio, Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha or en pausa, with `t`); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
 
-The transport (`▶ ⏸ ⏭ ⏹ ⟲` — start, pause, step, stop, reset, with the speed beside them)
-is always visible to the right of the tabs: running the model is the most frequent action
-and must never need a tab switch.
+The transport is the **Simular** tab. The shortcuts stay, so running the model still never
+needs a pointer or a tab switch; the tab is where the commands are found. The speed chosen
+is marked and the state is a word, never colour alone.
 
 **The properties panel edits one instance, and its first field is its name.** The
 designation is text, not a number: it is the field that ends up under the symbol and in the
@@ -136,7 +141,8 @@ title carries `•` while there is work that is not in the file — a character,
 because a title bar has no other channel.
 
 **The transport changes the mode; there is no mode button.** This is how the reference
-behaves, and the reason the tabs are three and not four:
+behaves, and the reason the commands live in the **Simular** tab and not in a separate
+"mode" button:
 
 | Command | What it does to the mode |
 |---|---|

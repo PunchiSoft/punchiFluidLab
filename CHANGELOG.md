@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La simulación es una cinta y sus mandos son baldosas — 2026-11-14
+
+La simulación vivía fija a la derecha de las pestañas, fuera del alcance de Archivo,
+Editar y Ver. Ahora es la pestaña **Simular**, elegible como las demás.
+
+- **Reúne lo que estaba suelto**: Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio,
+  Detener (F5), Restablecer (Ctrl+R), la velocidad 0,25× / 1× / 2× y el estado —edición,
+  en marcha o en pausa, con `t`—. Los atajos no cambian: correr el modelo sigue sin exigir
+  un puntero ni un cambio de pestaña.
+- **Los mandos son baldosas grandes**, icono sobre etiqueta, igual que Nuevo, Abrir y
+  Guardar: son lo primero que mira quien simula. La velocidad en vigor queda marcada en su
+  baldosa y el estado es una palabra, nunca solo color. Por debajo de 1100 px el botón
+  **Menú** lista los mismos mandos.
+- **Evidencia**: `--check-qml` sin problemas, `--selftest` sin fallos, y las capturas
+  `simular-light.png` / `simular-dark.png` con la pestaña abierta.
+
 ### Las marcas de centrado cruzan el margen y la escala queda documentada — 2026-11-14
 
 La marca de la izquierda quedaba corta: el margen de archivo es de 20 mm y la línea solo

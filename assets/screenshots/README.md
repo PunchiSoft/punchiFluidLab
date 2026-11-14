@@ -8,6 +8,8 @@ Images of the running application, used by the README and by pull request review
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge and the frame in both themes |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
+| `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
+| `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 924 KB), because GitHub does not play a repository video inside a page |
 | `run.mp4` | The clip at 4× playback: 44 seconds of the sheet in motion in 11, the valve actuated, the cylinder travelling and the hoses coloured by pressure |
 

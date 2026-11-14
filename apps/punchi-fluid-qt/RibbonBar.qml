@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The ribbon: tabs on top, the commands of the open tab in labelled groups underneath, and
-// the transport pinned to the right so running the model never needs a tab switch.
+// The ribbon: tabs on top, the commands of the open tab in labelled groups underneath.
+// The simulation transport is the Simular tab, like Archivo, Editar and Ver.
 //
 // The tabs are the four register of docs/ui-ux.md. A tab whose commands do not exist yet
 // says so in one line instead of showing buttons that do nothing, and a command that is
@@ -205,6 +205,31 @@ Rectangle {
                 { title: qsTr("Contraste"), note: session.contrastSummary }
             ]
         },
+        {
+            name: qsTr("Simular"),
+            groups: [
+                {
+                    title: qsTr("Transporte"),
+                    items: [
+                        { id: "start", label: qsTr("Iniciar"), icon: "media-playback-start", hint: session.running ? qsTr("ya está en marcha") : qsTr("F9 · anima el modelo"), enabled: !session.running, big: true },
+                        { id: "pause", label: qsTr("Pausa"), icon: "media-playback-pause", hint: session.editing ? qsTr("F8 · entra en simulación sin arrancar") : (session.running ? qsTr("F8 · detiene donde está") : qsTr("ya está en pausa")), enabled: session.running || session.editing, big: true },
+                        { id: "step", label: qsTr("Paso"), icon: "media-seek-forward", hint: qsTr("F10 · un cuadro y se queda en pausa"), enabled: !session.editing, big: true },
+                        { id: "until-change", label: qsTr("Hasta cambio"), icon: "media-skip-forward", hint: qsTr("avanza hasta que el vástago llegue a un tope o una válvula cambie"), enabled: !session.editing, big: true },
+                        { id: "stop", label: qsTr("Detener"), icon: "media-playback-stop", hint: session.editing ? qsTr("ya está en modo edición") : qsTr("F5 · vuelve al modo edición"), enabled: !session.editing, big: true },
+                        { id: "reset", label: qsTr("Restablecer"), icon: "view-refresh", hint: qsTr("Ctrl+R · vuelve a t = 0"), enabled: !session.editing, big: true }
+                    ]
+                },
+                {
+                    title: qsTr("Velocidad"),
+                    items: [
+                        { id: "speed-0.25", label: "0,25×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 0.25) < 0.001, big: true },
+                        { id: "speed-1", label: "1×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 1.0) < 0.001, big: true },
+                        { id: "speed-2", label: "2×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 2.0) < 0.001, big: true }
+                    ]
+                },
+                { title: qsTr("Estado"), note: session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa")) + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2)) }
+            ]
+        },
 
     ]
 
@@ -309,6 +334,11 @@ Rectangle {
             session.zoomReset();
         } else if (id === "grid") {
             session.toggleGrid();
+        } else if (id.indexOf("speed-") === 0) {
+            const value = parseFloat(id.slice(6));
+            if (!isNaN(value)) {
+                session.speed = value;
+            }
         }
     }
 
@@ -317,8 +347,6 @@ Rectangle {
     /// A `TypeError` in an `onTriggered` handler is invisible until the button is pressed;
     /// this is the only way to press them all without a pointer.
     function selfTest() {
-        const transport = ["start", "pause", "step", "until-change", "stop", "reset", "zoom-in", "zoom-out",
-                           "zoom-reset", "grid"];
         for (let t = 0; t < tabs.length; ++t) {
             const groups = tabs[t].groups || [];
             for (let g = 0; g < groups.length; ++g) {
@@ -327,9 +355,6 @@ Rectangle {
                     invoke(items[i].id);
                 }
             }
-        }
-        for (let i = 0; i < transport.length; ++i) {
-            invoke(transport[i]);
         }
     }
 
@@ -422,123 +447,6 @@ Rectangle {
             onTriggered: ribbon.menuOpen = !ribbon.menuOpen
         }
 
-        // ---- transport, always visible ---------------------------------------
-        // Start, pause, step, reset: the four commands of a simulation transport. Start and
-        // pause are each available only in the state where they mean something, and the
-        // hint says why when they are not — a grey button is only acceptable when it
-        // explains itself.
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
-
-            // Start, pause, step, stop, reset: the transport of the reference, and the only
-            // thing that changes the mode. There is no "edit" button because leaving the
-            // simulation *is* stopping it.
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Iniciar")
-                iconName: "media-playback-start"
-                hint: session.running ? qsTr("ya está en marcha") : qsTr("F9 · anima el modelo")
-                large: false
-                tone: session.running ? "muted" : "accent"
-                available: !session.running
-                onTriggered: ribbon.invoke("start")
-            }
-
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Pausa")
-                iconName: "media-playback-pause"
-                hint: session.editing
-                      ? qsTr("F8 · entra en simulación sin arrancar")
-                      : (session.running ? qsTr("F8 · detiene donde está") : qsTr("ya está en pausa"))
-                large: false
-                available: session.running || session.editing
-                onTriggered: ribbon.invoke("pause")
-            }
-
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Paso")
-                iconName: "media-seek-forward"
-                hint: qsTr("F10 · un cuadro de %1 s y se queda en pausa")
-                      .arg((session.frameSeconds * session.speed).toFixed(3))
-                large: false
-                available: !session.editing
-                onTriggered: ribbon.invoke("step")
-            }
-
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Hasta cambio")
-                iconName: "media-skip-forward"
-                hint: qsTr("avanza hasta que el vástago llegue a un tope o una válvula cambie")
-                large: false
-                available: !session.editing
-                onTriggered: ribbon.invoke("until-change")
-            }
-
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Detener")
-                iconName: "media-playback-stop"
-                hint: session.editing ? qsTr("ya está en modo edición") : qsTr("F5 · vuelve al modo edición")
-                large: false
-                available: !session.editing
-                onTriggered: ribbon.invoke("stop")
-            }
-
-            RibbonButton {
-                session: ribbon.session
-                label: qsTr("Restablecer")
-                iconName: "view-refresh"
-                hint: qsTr("Ctrl+R · vuelve a t = 0")
-                large: false
-                available: !session.editing
-                onTriggered: ribbon.invoke("reset")
-            }
-
-            Rectangle {
-                width: 1
-                height: 18
-                anchors.verticalCenter: parent.verticalCenter
-                color: session.panel
-            }
-
-            Repeater {
-                model: [0.25, 1.0, 2.0]
-
-                delegate: RibbonButton {
-                    required property real modelData
-                    session: ribbon.session
-                    label: (modelData === 0.25 ? "0,25" : modelData.toFixed(0)) + "×"
-                    hint: qsTr("velocidad de simulación")
-                    large: false
-                    tone: Math.abs(session.speed - modelData) < 0.001 ? "accent" : "muted"
-                    onTriggered: session.speed = modelData
-                }
-            }
-
-            Rectangle {
-                width: 1
-                height: 18
-                anchors.verticalCenter: parent.verticalCenter
-                color: session.panel
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                rightPadding: 4
-                text: session.editing
-                      ? qsTr("edición")
-                      : (session.running ? qsTr("en marcha") : qsTr("en pausa"))
-                        + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2))
-                color: session.muted
-                font.pixelSize: 11
-            }
-        }
     }
 
     // ---- body ---------------------------------------------------------------
