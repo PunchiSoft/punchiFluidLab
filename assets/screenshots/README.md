@@ -6,6 +6,10 @@ Images of the running application, used by the README and by pull request review
 |---|---|
 | `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
+| `catalog-open-light.png` | The catalog open on a light desktop, with its **Catálogo** header and the two-pane hide control; the sheet keeps its column |
+| `catalog-open-dark.png` | The same open catalog on a dark desktop, to check the header and the control in both themes |
+| `catalog-closed-light.png` | The catalog folded to its **24 px rail**: the same control stays on the edge and the sheet uses the recovered width |
+| `catalog-closed-dark.png` | The same folded catalog on a dark desktop, to check the rail and the edge line in both themes |
 | `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
@@ -49,6 +53,18 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The catalog open and folded to its rail, light and dark; the rail is 24 px, so the
+# same control stays a target and the sheet takes the rest.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --grab /tmp/catalog-open-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --grab /tmp/catalog-open-dark.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --catalog-closed \
+  --grab /tmp/catalog-closed-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --catalog-closed \
+  --grab /tmp/catalog-closed-dark.png
 # The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \
