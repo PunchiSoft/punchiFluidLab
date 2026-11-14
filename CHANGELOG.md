@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Las marcas de centrado cruzan el margen y la escala queda documentada — 2026-11-14
+
+La marca de la izquierda quedaba corta: el margen de archivo es de 20 mm y la línea solo
+recorría 10, así que parecía un hueco frente a las otras tres. Ahora la línea cruza todo el
+borde hasta el papel en los cuatro lados, con la flecha en el borde, y el marco del lienzo
+usa el grosor de 0,7 mm de ISO 5457.
+
+- **Las cuatro marcas son simétricas en el papel** y recorren el margen completo; la forma
+  sigue siendo libre, como permite ISO 5457.
+- **La escala no es un campo del cajetín**: ISO 5455 fija las escalas 1:1, 1:2, 1:5, 1:10…
+  para un dibujo que representa un objeto, pero un esquema neumático **no está a escala**
+  (IEC 61082-1, ISO 1219-2). Si un circuito no cabe en A4, la respuesta es una hoja mayor
+  —A3/A2— o símbolos menores, no una escala en el bloque. El ajuste de la exportación al
+  papel es una comodidad de reproducción y no se escribe.
+- **Evidencia**: `the_sheet_draws_frame_block_and_legend` (cuatro flechas),
+  `the_margin_band_holds_no_ink` (la marca es la única tinta del margen) y la captura; la
+  puerta completa queda en 350 pruebas, `--check-qml` 0 y `--selftest` 0.
+
 ### El flujo de entrega pide confirmación y comprueba el merge — 2026-11-14
 
 El flujo de pull request ya tenía rama desde `main`, puerta verde y merge del owner; le

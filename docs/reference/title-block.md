@@ -47,7 +47,7 @@ layout, not the standard.
 | Borders | 20 mm on the left edge, including the frame (filing margin); 10 mm on the other three |
 | Frame | Continuous line, 0.7 mm wide, around the drawing space |
 | Title block position | A0–A3: bottom right of the drawing space. A4: the shorter, lower part. The drawing reads in the direction of the block |
-| Centring marks | Four, at the ends of the two symmetry axes of the trimmed sheet, symmetry tolerance 1 mm. **The form is free.** Recommended: continuous lines 0.7 mm wide, starting at the grid reference border and extending 10 mm beyond the frame |
+| Centring marks | Four, at the ends of the two symmetry axes of the trimmed sheet, symmetry tolerance 1 mm. **The form is free.** Recommended: continuous lines 0.7 mm wide, starting at the grid reference border and extending 10 mm beyond the frame. This project draws the line from the frame across the whole border to the paper edge: the form is free, and it keeps the 20 mm filing margin from looking like a gap next to the other three sides |
 | Grid reference system | Optional: 50 mm fields with letters and numerals, 3.5 mm high, 0.35 mm lines |
 | Trimming marks | Optional: two overlapping 10 mm × 5 mm rectangles in the four corners |
 
@@ -94,12 +94,27 @@ schematic. It is not a claim that ISO 7200 or IEC 61082-1 mandates these cells i
   sheet above; owner, title and document number below. The height is our layout.
 - **Frame**: 20 mm left and 10 mm elsewhere, 0.7 mm line, as ISO 5457.
 - **Centring marks**: at the midpoints of the four sides, a 0.7 mm line from the frame
-  outward, with a small triangle at the paper edge. ISO 5457 allows the form.
+  across the border to the paper edge, with a small triangle at the edge. ISO 5457 allows
+  the form.
 - **Parts list**: above the block, sharing its width, so the bottom band reads as one block
   of information.
 - **Drawing area**: the content inside the frame, minus the block and the parts list.
 - **No scale, no material, no unit, no projection symbol.** The drawing is a diagram, not a
   part; adding those fields would promise a scale the schematic does not have.
+
+### The scale: ISO 5455
+
+There is a standard for scales: **ISO 5455** recommends 1:1, 1:2, 1:5, 1:10, 1:20, 1:50,
+1:100, 1:200, 1:500 and 1:1000, with 2:1, 5:1 and 10:1 for enlargements. It applies to a
+drawing that represents a real object at a ratio.
+
+A **schematic is not one of those drawings**. IEC 61082-1 and ISO 1219-2 describe a diagram
+whose symbols have standard shapes and readable sizes; it is not a reduced photograph of the
+machine. That is why the block has no scale field. If a circuit is too large for A4, the
+standard answer is a **larger ISO sheet** — A3 or A2, chosen in the ribbon — or smaller
+symbols in the definition, not a scale written in the block. The export may fit the drawing
+to the drawing space for reproduction; that fit is a print convenience, not a drawing scale,
+and it is not recorded.
 
 ## What is still open
 
@@ -122,6 +137,8 @@ schematic. It is not a claim that ISO 7200 or IEC 61082-1 mandates these cells i
 - ISO 5457:1999/Amd 1:2010, orientation of A4.
 - IEC 61082-1:2014, *Preparation of documents used in electrotechnology — Part 1: Rules*,
   for the control/electrical diagram convention and the absence of a drawing scale.
+- ISO 5455:1979, *Technical drawings — Scales*, for the recommended scales that a schematic
+  does not use.
 - ISO 1219-2:2012, *Fluid power systems and components — Graphical symbols and circuit
   diagrams — Part 2: Circuit diagrams*, for the pneumatic diagram itself.
 
