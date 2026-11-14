@@ -106,6 +106,8 @@ void modelFields(int model, const uint32_t **fields, int *count)
 FluidSession::FluidSession(QObject *parent)
     : QObject(parent)
 {
+    connect(&m_untilChangeTimer, &QTimer::timeout, this, &FluidSession::advanceUntilChange);
+    m_untilChangeTimer.setInterval(0);
     m_session = pf_session_new(nullptr);
     if (!m_session) {
         m_error = QStringLiteral("the core refused to create a session");
@@ -190,29 +192,53 @@ void FluidSession::stepForward()
     advanceInternal(kFrameSeconds * m_speed, true);
 }
 
-bool FluidSession::runUntilChange()
+void FluidSession::runUntilChange()
 {
     if (!m_session) {
-        return false;
+        return;
     }
+    // The fast-forward is one frame per event-loop turn, not a blocking loop: the window
+    // keeps answering the pointer, the menus and Detener while the model advances.
+    cancelUntilChange();
     startSimulation();
     setRunning(false);
-    const int valve = valvePosition();
-    const double stroke = m_telemetry.stroke_m * 1000.0;
-    const int frames = static_cast<int>(4.0 / kFrameSeconds);
-    for (int frame = 0; frame < frames; ++frame) {
-        advanceInternal(kFrameSeconds, false);
-        if (!m_error.isEmpty()) {
-            return false;
-        }
-        if (valvePosition() != valve) {
-            return true;
-        }
-        if (stroke > 0.0 && positionMm() >= stroke - 1e-3) {
-            return true;
-        }
+    m_untilChange = true;
+    m_untilChangeFrames = 0;
+    m_untilChangeStartValve = valvePosition();
+    m_untilChangeStroke = m_telemetry.stroke_m * 1000.0;
+    emit untilChangeChanged();
+    m_untilChangeTimer.start();
+}
+
+void FluidSession::advanceUntilChange()
+{
+    if (!m_untilChange || !m_session) {
+        cancelUntilChange();
+        return;
     }
-    return false;
+    advanceInternal(kFrameSeconds, false);
+    ++m_untilChangeFrames;
+    const bool changed = valvePosition() != m_untilChangeStartValve
+        || (m_untilChangeStroke > 0.0 && positionMm() >= m_untilChangeStroke - 1e-3);
+    const bool exhausted = m_untilChangeFrames >= static_cast<int>(4.0 / kFrameSeconds);
+    if (changed || !m_error.isEmpty() || exhausted) {
+        const bool reached = changed && m_error.isEmpty();
+        m_untilChange = false;
+        m_untilChangeTimer.stop();
+        emit untilChangeChanged();
+        emit untilChangeFinished(reached);
+    }
+}
+
+void FluidSession::cancelUntilChange()
+{
+    if (!m_untilChange) {
+        return;
+    }
+    m_untilChange = false;
+    m_untilChangeTimer.stop();
+    emit untilChangeChanged();
+    emit untilChangeFinished(false);
 }
 
 void FluidSession::advance(double dt)
@@ -237,6 +263,7 @@ void FluidSession::startSimulation()
     if (!m_session) {
         return;
     }
+    cancelUntilChange();
     const bool wasEditing = m_editing;
     m_editing = false;
     m_steadyFrames = 0;
@@ -258,6 +285,7 @@ void FluidSession::pauseSimulation()
     }
     // From editing this is the way in: the simulation becomes active without starting,
     // so the components can be looked at before the model moves.
+    cancelUntilChange();
     const bool wasEditing = m_editing;
     m_editing = false;
     setRunning(false);
@@ -272,6 +300,7 @@ void FluidSession::stopSimulation()
     if (!m_session) {
         return;
     }
+    cancelUntilChange();
     setRunning(false);
     if (!m_editing) {
         m_editing = true;
@@ -647,6 +676,7 @@ void FluidSession::restart()
     if (!m_session) {
         return;
     }
+    cancelUntilChange();
     m_steadyFrames = 0;
     // A restarted model has no history: it is back at t = 0, so no arrival has happened yet
     // and none of the bookkeeping from before the restart may suppress the first impact.
@@ -947,6 +977,7 @@ bool FluidSession::openFrom(const QString &path)
     m_error.clear();
     refreshRecent();
     m_selected = -1;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;
@@ -1038,6 +1069,7 @@ bool FluidSession::selectCircuit(int id)
     m_error.clear();
     m_selected = -1;
     m_inspectorOpen = false;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;
@@ -1071,6 +1103,7 @@ int FluidSession::addCircuit()
     m_error.clear();
     m_selected = -1;
     m_inspectorOpen = false;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;
@@ -1403,6 +1436,7 @@ bool FluidSession::openRecent(int slot)
     }
     m_error.clear();
     m_selected = -1;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;
@@ -1476,6 +1510,7 @@ bool FluidSession::recoverAutosave()
     m_currentPath.clear();
     m_recoveryOffered = false;
     m_selected = -1;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;
@@ -1541,6 +1576,7 @@ void FluidSession::newDocument()
     pf_session_new_document(m_session);
     m_currentPath.clear();
     m_selected = -1;
+    cancelUntilChange();
     m_editing = true;
     m_running = false;
     m_settled = false;

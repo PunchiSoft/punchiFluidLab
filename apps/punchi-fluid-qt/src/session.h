@@ -6,6 +6,7 @@
 #include <QColor>
 #include <cmath>
 #include <QObject>
+#include <QTimer>
 #include <QPalette>
 #include <QQmlEngine>
 #include <QString>
@@ -272,11 +273,12 @@ public:
 
     /// Runs until the state changes: a piston reaches an end or a valve moves.
     ///
-    /// The reference documents this as a transport mode (§3.2). It computes the run at
-    /// once instead of animating it, and leaves the transport paused at the frame where
-    /// the change happened. Returns `false` when four simulated seconds pass with no
-    /// change.
-    Q_INVOKABLE bool runUntilChange();
+    /// The reference documents this as a transport mode (§3.2). It advances one frame per
+    /// event-loop turn instead of blocking the window, and leaves the transport paused at
+    /// the frame where the change happened. `untilChangeFinished` says whether a change
+    /// was reached or the four simulated seconds ran out; `stopSimulation` cancels it.
+    Q_INVOKABLE void runUntilChange();
+    Q_PROPERTY(bool untilChangeRunning READ untilChangeRunning NOTIFY untilChangeChanged)
 
     /// `true` when the last frames left the state unchanged: the sheet loop can stop.
     ///
@@ -284,6 +286,7 @@ public:
     /// for ever, and on a 144 Hz panel the compositor then recomposites every frame —
     /// which is how an idle simulator ends up looking like a busy GPU.
     bool settled() const { return m_settled; }
+    bool untilChangeRunning() const { return m_untilChange; }
 
     QVariantList catalog() const { return m_catalog; }
     QString contrastSummary() const { return describe(m_contrast); }
@@ -511,6 +514,8 @@ signals:
     void catalogChanged();
     void settledChanged();
     void runningChanged();
+    void untilChangeChanged();
+    void untilChangeFinished(bool changed);
     void speedChanged();
 
     /// The valve moved: the spool has actually changed position, not merely been pressed.
@@ -559,6 +564,9 @@ private:
     /// One block field of the active circuit, or an empty string when there is none.
     QString blockField(uint32_t field) const;
 
+    void advanceUntilChange();
+    void cancelUntilChange();
+
     /// The paper's name as the page controls show it: the common name in parentheses.
     QString paperDisplayLabel(const QString &name) const;
 
@@ -600,6 +608,11 @@ private:
     Contrast m_contrast;
     bool m_settled = false;
     bool m_running = false;
+    QTimer m_untilChangeTimer;
+    bool m_untilChange = false;
+    int m_untilChangeFrames = 0;
+    int m_untilChangeStartValve = 0;
+    double m_untilChangeStroke = 0.0;
     bool m_buzzerActive = false;
     double m_speed = 1.0;
     int m_steadyFrames = 0;

@@ -39,6 +39,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <QTimer>
+#include <QEventLoop>
 #include <QVector>
 
 #include <algorithm>
@@ -1140,7 +1141,18 @@ int main(int argc, char *argv[])
         steps->push_back([state, check] {
             state->session->restart();
             state->session->pressValve();
-            const bool changed = state->session->runUntilChange();
+            bool changed = false;
+            // The fast-forward runs on the event loop now; wait for its signal so the
+            // selftest still asserts the final state instead of the frame it started on.
+            QEventLoop loop;
+            QObject::connect(state->session, &FluidSession::untilChangeFinished, &loop,
+                             [&changed, &loop](bool reached) {
+                                 changed = reached;
+                                 loop.quit();
+                             });
+            QTimer::singleShot(5000, &loop, &QEventLoop::quit);
+            state->session->runUntilChange();
+            loop.exec();
             check(changed, QStringLiteral("transport: run until change stops"));
             check(state->session->positionMm() > 99.0,
                   QStringLiteral("transport: it stops at the stop"));
@@ -1148,6 +1160,18 @@ int main(int argc, char *argv[])
                   QStringLiteral("transport: it stays paused"));
             state->session->releaseValve();
             state->session->stopSimulation();
+        });
+
+        // Detener must cancel a fast-forward while it is running, not after it ends.
+        steps->push_back([state, check] {
+            state->session->startSimulation();
+            state->session->runUntilChange();
+            check(state->session->untilChangeRunning(),
+                  QStringLiteral("transport: the fast-forward reports it is running"));
+            state->session->stopSimulation();
+            check(!state->session->untilChangeRunning() && !state->session->running()
+                      && state->session->editing(),
+                  QStringLiteral("transport: Detener cancels the fast-forward"));
         });
 
         // The view: zoom and the grid change what the sheet looks like, never the document.

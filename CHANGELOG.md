@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### La simulación se puede cancelar y el puntero deja de parpadear — 2026-11-14
+
+**Hasta cambio** era un bucle síncrono de hasta 250 cuadros en el hilo de la interfaz: durante
+ese rato la ventana no atendía ni el botón **Detener** ni `F5`, y el escritorio mostraba el
+cursor de espera. Ahora avanza un cuadro por vuelta del bucle de eventos y se cancela al
+instante con **Detener** o **Pausa**.
+
+- `runUntilChange` ya no bloquea: arranca un `QTimer` que avanza un cuadro, comprueba el
+  cambio o el límite de cuatro segundos y termina solo. El estado sigue siendo «en pausa»
+  en el cuadro donde cambió.
+- **Detener** y **Pausa** cancelan el avance; **Iniciar** también lo cancela y arranca el
+  modo normal. La barra de estado muestra «hasta cambio» mientras dura.
+- El cursor sobre la válvula ya no pide un repintado en cada transición: el parpadeo del
+  puntero era el cursor de espera de la ventana bloqueada.
+- **Evidencia**: los pasos `transport: the fast-forward reports it is running` y
+  `transport: Detener cancels the fast-forward` de `--selftest`, la puerta completa y
+  `--check-qml` sin problemas.
+
 ### La configuración de página sigue el orden de la referencia — 2026-11-14
 
 La primera corrección había dejado el tamaño visible, pero sin el desplegable de perfiles de
