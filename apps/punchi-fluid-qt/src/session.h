@@ -136,6 +136,14 @@ class FluidSession : public QObject
     Q_PROPERTY(QColor foreground READ foreground NOTIFY changed)
     Q_PROPERTY(QColor muted READ muted NOTIFY changed)
     Q_PROPERTY(QColor accent READ accent NOTIFY changed)
+    Q_PROPERTY(QColor surfaceRaised READ surfaceRaised NOTIFY changed)
+    Q_PROPERTY(QColor surfaceSunken READ surfaceSunken NOTIFY changed)
+    Q_PROPERTY(QColor accentSoft READ accentSoft NOTIFY changed)
+    Q_PROPERTY(QColor line READ line NOTIFY changed)
+    Q_PROPERTY(QColor lineStrong READ lineStrong NOTIFY changed)
+    Q_PROPERTY(QColor shadow READ shadow NOTIFY changed)
+    Q_PROPERTY(int unit READ unit NOTIFY changed)
+    Q_PROPERTY(int motionMs READ motionMs NOTIFY changed)
 
 public:
     explicit FluidSession(QObject *parent = nullptr);
@@ -298,6 +306,16 @@ public:
     QColor foreground() const { return m_tokens.ink; }
     QColor muted() const { return m_tokens.inkMuted; }
     QColor accent() const { return m_tokens.accent; }
+    QColor surfaceRaised() const { return m_tokens.surfaceRaised; }
+    QColor surfaceSunken() const { return m_tokens.surfaceSunken; }
+    QColor accentSoft() const { return m_tokens.accentSoft; }
+    QColor line() const { return m_tokens.line; }
+    QColor lineStrong() const { return m_tokens.lineStrong; }
+    QColor shadow() const { return m_tokens.shadow; }
+    /// The spacing unit the panels and the ribbon use, from the desktop font.
+    int unit() const { return m_tokens.unit; }
+    /// The duration of a panel or ribbon change; `0` under reduced motion.
+    int motionMs() const { return m_tokens.motionMs; }
 
     /// Advances the model and republishes the telemetry.
     Q_INVOKABLE void advance(double dt);
