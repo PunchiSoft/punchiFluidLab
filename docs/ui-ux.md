@@ -99,7 +99,7 @@ a second, short table beside it, because they are not commands of a tab.
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original, the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
-| **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio, Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha or en pausa, with `t`); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
+| **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
 
 The transport is the **Simular** tab. The shortcuts stay, so running the model still never
@@ -183,7 +183,8 @@ behaves, and the reason the commands live in the **Simular** tab and not in a se
 | **Iniciar** (F9) | enters simulation and starts |
 | **Pausa** (F8) | stays in simulation and stops; from editing it *enters* simulation without starting, so settings can be looked at first |
 | **Paso** (F10) | one frame, then paused |
-| **Detener** (F5) | leaves simulation and returns to editing |
+| **Detener** (F5) | leaves simulation and returns to editing; during **Hasta cambio** it cancels the fast-forward immediately |
+| **Hasta cambio** | advances one frame per event-loop turn until the first piston end or valve change; Pausa and Detener cancel it, and the window never stops answering the pointer |
 | **Restablecer** (Ctrl+R) | back to `t = 0` |
 
 A separate "Editar" button would be a second way to say what **Detener** already says, and

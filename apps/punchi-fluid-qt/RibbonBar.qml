@@ -227,11 +227,11 @@ Rectangle {
                 {
                     title: qsTr("Transporte"),
                     items: [
-                        { id: "start", label: qsTr("Iniciar"), icon: "media-playback-start", hint: session.running ? qsTr("ya está en marcha") : qsTr("F9 · anima el modelo"), enabled: !session.running, big: true },
-                        { id: "pause", label: qsTr("Pausa"), icon: "media-playback-pause", hint: session.editing ? qsTr("F8 · entra en simulación sin arrancar") : (session.running ? qsTr("F8 · detiene donde está") : qsTr("ya está en pausa")), enabled: session.running || session.editing, big: true },
-                        { id: "step", label: qsTr("Paso"), icon: "media-seek-forward", hint: qsTr("F10 · un cuadro y se queda en pausa"), enabled: !session.editing, big: true },
-                        { id: "until-change", label: qsTr("Hasta cambio"), icon: "media-skip-forward", hint: qsTr("avanza hasta que el vástago llegue a un tope o una válvula cambie"), enabled: !session.editing, big: true },
-                        { id: "stop", label: qsTr("Detener"), icon: "media-playback-stop", hint: session.editing ? qsTr("ya está en modo edición") : qsTr("F5 · vuelve al modo edición"), enabled: !session.editing, big: true },
+                        { id: "start", label: qsTr("Iniciar"), icon: "media-playback-start", hint: session.running ? qsTr("ya está en marcha") : qsTr("F9 · anima el modelo"), enabled: !session.running && !session.untilChangeRunning, big: true },
+                        { id: "pause", label: qsTr("Pausa"), icon: "media-playback-pause", hint: session.editing ? qsTr("F8 · entra en simulación sin arrancar") : (session.running ? qsTr("F8 · detiene donde está") : (session.untilChangeRunning ? qsTr("F8 · cancela el avance") : qsTr("ya está en pausa"))), enabled: session.running || session.editing || session.untilChangeRunning, big: true },
+                        { id: "step", label: qsTr("Paso"), icon: "media-seek-forward", hint: qsTr("F10 · un cuadro y se queda en pausa"), enabled: !session.editing && !session.untilChangeRunning, big: true },
+                        { id: "until-change", label: qsTr("Hasta cambio"), icon: "media-skip-forward", hint: qsTr("avanza hasta que el vástago llegue a un tope o una válvula cambie"), enabled: !session.editing && !session.untilChangeRunning, big: true },
+                        { id: "stop", label: qsTr("Detener"), icon: "media-playback-stop", hint: session.editing ? qsTr("ya está en modo edición") : qsTr("F5 · vuelve al modo edición o cancela el avance"), enabled: !session.editing, big: true },
                         { id: "reset", label: qsTr("Restablecer"), icon: "view-refresh", hint: qsTr("Ctrl+R · vuelve a t = 0"), enabled: !session.editing, big: true }
                     ]
                 },
@@ -243,7 +243,7 @@ Rectangle {
                         { id: "speed-2", label: "2×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 2.0) < 0.001, big: true }
                     ]
                 },
-                { title: qsTr("Estado"), note: session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa")) + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2)) }
+                { title: qsTr("Estado"), note: session.untilChangeRunning ? qsTr("hasta cambio") : (session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa"))) }
             ]
         },
 

@@ -735,7 +735,6 @@ void SchematicItem::hoverMoveEvent(QHoverEvent *event)
         } else {
             unsetCursor();
         }
-        update();
     }
     event->accept();
 }
