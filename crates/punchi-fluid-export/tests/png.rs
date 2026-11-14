@@ -51,6 +51,7 @@ fn a3_landscape_at_300_dpi_produces_a_4961_by_3508_png() {
 }
 
 #[test]
+#[allow(clippy::cast_precision_loss)]
 fn the_margin_band_holds_no_ink() {
     let catalog = Catalog::builtin();
     let block = punchi_fluid_export::block_with_review_state("A circuit", "2026-11-06");
@@ -77,12 +78,20 @@ fn the_margin_band_holds_no_ink() {
     let top = side(page.margins.top);
     let bottom = side(page.margins.bottom);
     let pixmap = surface.pixmap();
+    let mark_x = pixmap.width() as f32 * 0.5;
+    let mark_y = pixmap.height() as f32 * 0.5;
+    // ISO 5457 puts the centring marks in the margin, at the middle of each side: that ink
+    // is intended, everything else in the band must be white.
+    let clear = 3.0 * scale;
     let mut darkest = 255_u8;
     for y in 0..pixmap.height() {
         for x in 0..pixmap.width() {
             let outside =
                 x < left || y < top || x >= pixmap.width() - right || y >= pixmap.height() - bottom;
             if !outside {
+                continue;
+            }
+            if (x as f32 - mark_x).abs() < clear || (y as f32 - mark_y).abs() < clear {
                 continue;
             }
             if let Some(pixel) = pixmap.pixel(x, y) {

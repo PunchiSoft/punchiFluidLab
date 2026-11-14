@@ -24,6 +24,8 @@ file is the execution order.
 | Canvas: catalog-driven symbols, click on the valve, live readouts | **implemented** | `--selftest`, screenshots |
 | Canvas: zoom at the pointer, bounded pan, magnification readout | **implemented** | the nine `--selftest` steps `view: …` |
 | Canvas: the sheet is the paper, A4 default, ISO 5457 frame | **implemented** — [ADR 0026](adr/0026-the-sheet-is-the-paper.md) | format 7 migration, doc, ABI and `--selftest` `sheet: …` steps |
+| Sheet: centring marks and the title-block reference | **implemented** | the export and canvas tests, the capture, and `docs/reference/title-block.md` |
+| Sheet: control-diagram title block and its editor | **next** | the reference page and the capability row name the fields, the 180 mm block, format 8 and the panel; no scale, material, unit or projection |
 | Editing: straighten a hose by snapping its port | **implemented** | the ABI magnet tests and the `--selftest` `magnet: …` steps |
 | Editing: a hose keeps the symbols it joins and the ones in between clear | **implemented** | the incremental routing tests, the check test and the bounded-search design |
 | Shell: ribbon, sidebar, status bar, theme | **implemented** — [ui-ux.md](ui-ux.md) | `--check-theme`, `--check-icons`, `--selftest`, light/dark screenshots |
@@ -77,6 +79,8 @@ changed lines outside generated files, it is two phases.
 | **P1.11 — straighten a hose by snapping its port** ✅ delivered | `feat/port-magnet` | dragging a component pulls its wired port onto the other end's axis, off the 10 mm grid; `Alt+A` and Alinear ▸ Puertos do the same for the selected hose, one undo | the two ABI tests and the two `--selftest` steps `magnet: …` |
 | **P1.12 — a hose keeps its symbols clear** ✅ delivered | `feat/hose-routing` | an orthogonal route that leaves and enters along the port edges and goes round both endpoint boxes; the check measures the drawn route (port edges and offset) and includes the hose's own ends, with only the port lead ignored | the routing tests, the two check tests and the example no longer crossing its compressor |
 | **P1.13 — a hose goes round the components in between** ✅ delivered | `feat/hose-anticollision` | the route adds the boxes it hits and recomputes, at most three passes and six extras; the check still reports a layout with no path and a dragged crossing | the draw tests with one and two components on the way and the check test for the automatic route |
+| **P1.14 — frame and centring marks, and the title-block reference** ✅ delivered | `feat/title-block` | the ISO 5457 frame is 0.7 mm and the four centring marks are drawn on the canvas and in the export; the ISO 7200 review and the 180 mm layout are in `docs/reference/title-block.md` | the export mark test, the canvas capture and the reference page |
+| **P1.15 — the control-diagram title block and its editor** | `feat/title-block-editor` | the 180 mm two-band block on the canvas and in the export, the fields per circuit, format 8 with migration, and the panel by blocks; no scale, material, unit or projection, because a schematic is not to scale | the format, doc and ABI tests, the `--selftest` panel steps, and light/dark captures |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET; the order and the remaining electrical entries are in [work-queue.md](work-queue.md) | ADR each, per-library tests |
 
 All nine check faults are covered now: designation unlocked one, the cross-circuit pipe came

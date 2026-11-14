@@ -4,7 +4,7 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-light.png` | The window on a light desktop, on the A4 sheet the program opens with: the ISO 5457 frame, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, and the status bar reading `A4 · 210 × 297 mm` |
+| `window-light.png` | The window on a light desktop, on the A4 sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, and the status bar reading `A4 · 210 × 297 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge and the frame in both themes |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |

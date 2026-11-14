@@ -22,6 +22,7 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 | are planning a capability | [capabilities.md](capabilities.md) and [capability-plan](../.agents/skills/capability-plan/SKILL.md) |
 | are changing a symbol | [symbology.md](symbology.md) and [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md) |
 | are changing the interface | [ui-ux.md](ui-ux.md) |
+| are changing the sheet frame or the title block | [reference/title-block.md](reference/title-block.md) and [ADR 0026](adr/0026-the-sheet-is-the-paper.md) |
 | are reviewing a change | [capabilities.md](capabilities.md), the phase in [next-steps.md](next-steps.md), and the ADR it touches |
 | want to know why the system is shaped this way | [architecture.md](architecture.md) and the [ADR index](adr/README.md) |
 
@@ -35,7 +36,7 @@ small and a deep tree makes a link harder to write, not easier to find.
 |---|---|---|
 | Tutorial | Teach by doing, for a reader who has never used the program | [guides/first-circuit.md](guides/first-circuit.md) |
 | How-to | Solve one task | [guides/export-a-drawing.md](guides/export-a-drawing.md), [guides/troubleshooting.md](guides/troubleshooting.md) |
-| Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
+| Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [reference/title-block.md](reference/title-block.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
 | Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
 | Decision | Record one choice and its consequences | [adr/](adr/README.md) |
