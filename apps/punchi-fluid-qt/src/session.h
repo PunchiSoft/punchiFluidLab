@@ -46,6 +46,16 @@ class FluidSession : public QObject
     Q_PROPERTY(int selectionCount READ selectionCount NOTIFY documentChanged)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
+    /// The sheet the document is drawn on: the same paper the export prints.
+    Q_PROPERTY(int sheetPaper READ sheetPaper NOTIFY sheetChanged)
+    Q_PROPERTY(bool sheetLandscape READ sheetLandscape NOTIFY sheetChanged)
+    Q_PROPERTY(QString sheetPaperName READ sheetPaperName NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetWidthMm READ sheetWidthMm NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetHeightMm READ sheetHeightMm NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetMarginTop READ sheetMarginTop NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetMarginRight READ sheetMarginRight NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetMarginBottom READ sheetMarginBottom NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetMarginLeft READ sheetMarginLeft NOTIFY sheetChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(bool inspectorOpen READ inspectorOpen NOTIFY inspectorChanged)
@@ -148,8 +158,6 @@ public:
                               qreal dpi);
     /// The papers the export offers, in the order the panel lists them.
     Q_INVOKABLE QStringList paperNames();
-    /// The index of the paper to offer first: A4, or Oficio where the system says so.
-    Q_INVOKABLE int defaultPaper();
     /// The documents opened or saved recently, newest first: `path` and `name`.
     QVariantList recent() const { return m_recent; }
     /// Opens one of them by its place in the list.
@@ -330,6 +338,26 @@ public:
     Q_INVOKABLE void zoomReset();
     Q_INVOKABLE void toggleGrid();
 
+    /// The sheet, as the document stores it. `sheetPaper` is the index the paper list
+    /// uses, or `-1` for a custom size; the margins are the ISO 5457 frame by default.
+    int sheetPaper() const;
+    bool sheetLandscape() const { return m_sheet.landscape != 0; }
+    QString sheetPaperName() const { return m_sheetPaperName; }
+    double sheetWidthMm() const { return m_sheetWidthMm; }
+    double sheetHeightMm() const { return m_sheetHeightMm; }
+    double sheetMarginTop() const { return m_sheet.margin_top; }
+    double sheetMarginRight() const { return m_sheet.margin_right; }
+    double sheetMarginBottom() const { return m_sheet.margin_bottom; }
+    double sheetMarginLeft() const { return m_sheet.margin_left; }
+    /// One undoable document change each: the paper, the orientation or one margin.
+    Q_INVOKABLE void setSheetPaper(int index);
+    Q_INVOKABLE void setSheetLandscape(bool landscape);
+    Q_INVOKABLE void toggleSheetLandscape();
+    /// `side` is 0 top, 1 right, 2 bottom, 3 left, as the export panel reads them.
+    Q_INVOKABLE void setSheetMargin(int side, double mm);
+    /// Back to the A4 with the ISO 5457 frame a new document starts on.
+    Q_INVOKABLE void resetSheet();
+
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
 
@@ -374,6 +402,7 @@ public:
 signals:
     void changed();
     void viewChanged();
+    void sheetChanged();
     void documentChanged();
     void recentChanged();
     void modeChanged();
@@ -411,6 +440,10 @@ private:
     void refreshBuzzer();
     /// Republishes what the document reports, after any change to it.
     void refreshDocument();
+    /// Re-reads the sheet from the core; `true` when it changed.
+    bool refreshSheet();
+    /// Applies a sheet, keeping the cached copy in step with what the core stored.
+    void applySheet(const PfSheet &sheet);
     /// Where the list of remembered documents lives, beside the safety copy.
     QString recentPath() const;
     /// Re-reads the list from the core into what the ribbon shows.
@@ -441,6 +474,11 @@ private:
     bool m_inspectorOpen = false;
     double m_zoom = 1.0;
     bool m_grid = true;
+    /// The sheet as the core reported it, and the label and size the interface reads.
+    PfSheet m_sheet {};
+    QString m_sheetPaperName;
+    double m_sheetWidthMm = 210.0;
+    double m_sheetHeightMm = 297.0;
     bool m_checkOpen = false;
     QString m_checkReport;
     int m_checkCount = 0;

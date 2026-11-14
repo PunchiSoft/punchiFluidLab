@@ -1,6 +1,7 @@
 # 0011 — The circuit check is a public command with a versioned contract
 
-- **Status:** accepted
+- **Status:** accepted; amended by [0026](0026-the-sheet-is-the-paper.md), which makes the
+  measured area the document's sheet
 - **Date:** 2026-11-07
 
 ## Context
@@ -46,7 +47,8 @@ library directly.
   mappings that must agree is a drift risk: the test `the_window_and_the_command_see_the_same_circuit`
   pins the one property that matters — the same file yields the same faults — and the mapping
   moves into `punchi-fluid-doc` when a third caller appears.
-- The sheet area the check uses is the editor's logical area (200 × 130 mm), so "outside the
-  sheet" means the same in both.
+- The sheet area the check uses is the document's sheet: the drawing space inside the ISO
+  5457 frame, so "outside the sheet" means the same in the window, the command and the
+  printed page ([ADR 0026](0026-the-sheet-is-the-paper.md)).
 - A future `--catalog <dir>` is not part of this decision: the command uses the built-in
   catalog, which is what a submission is expected to need.

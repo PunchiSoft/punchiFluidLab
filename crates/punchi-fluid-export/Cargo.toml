@@ -11,6 +11,7 @@ description = "Standard sheets, title block and the PDF writer"
 
 [dependencies]
 punchi-fluid-catalog = { workspace = true }
+punchi-fluid-core = { workspace = true }
 punchi-fluid-draw = { workspace = true }
 punchi-fluid-solver = { workspace = true }
 thiserror = { workspace = true }

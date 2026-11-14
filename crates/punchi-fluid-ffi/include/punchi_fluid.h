@@ -19,7 +19,7 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 5u
+#define PF_ABI_VERSION 6u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -115,6 +115,22 @@ typedef struct PfFrame {
     float height_mm;
 } PfFrame;
 
+/* The sheet a document is drawn on. `paper` indexes the list
+ * pf_export_paper_name reports; PF_SHEET_CUSTOM_PAPER uses width_mm and
+ * height_mm. The four margins are the frame around the drawing space. */
+typedef struct PfSheet {
+    uint32_t paper;
+    uint32_t landscape;
+    float width_mm;
+    float height_mm;
+    float margin_top;
+    float margin_right;
+    float margin_bottom;
+    float margin_left;
+} PfSheet;
+
+#define PF_SHEET_CUSTOM_PAPER 0xFFFFFFFFu
+
 typedef struct PfAbi {
     uint32_t version;
     uint32_t call_size;
@@ -122,6 +138,7 @@ typedef struct PfAbi {
     uint32_t frame_size;
     uint32_t ink_size;
     uint32_t point_size;
+    uint32_t sheet_size;
 } PfAbi;
 
 /* Which fields of PfEditSet are meaningful. */
@@ -175,12 +192,12 @@ int32_t pf_session_valve_spring_return(const PfSession *session);
 int32_t pf_session_restart(PfSession *session);
 
 /*
- * Rebuilds the frame for an area in millimetres. The pointers in `out` borrow the
- * session and stay valid until the next call to this function or to
- * pf_session_free(). Replays are cheap: one loop, no allocation.
+ * Rebuilds the frame for the document's sheet. The paper decides the area, so the
+ * window, the check and the printed page cannot measure different sheets. The
+ * pointers in `out` borrow the session and stay valid until the next call to this
+ * function or to pf_session_free(). Replays are cheap: one loop, no allocation.
  */
-int32_t pf_session_build_frame(PfSession *session, float width_mm, float height_mm,
-                               float pixels_per_mm, PfFrame *out);
+int32_t pf_session_build_frame(PfSession *session, float pixels_per_mm, PfFrame *out);
 
 /* `1` when the point falls on the valve of the last built frame. */
 int32_t pf_session_hit_valve(const PfSession *session, float x_mm, float y_mm);
@@ -229,6 +246,11 @@ int32_t pf_session_mirror_selected(PfSession *session);
 int32_t pf_session_component_orientation(const PfSession *session, uint32_t index, uint32_t *out);
 /* Starts a new document and seeds the worked example. */
 int32_t pf_session_new_document(PfSession *session);
+
+/* The sheet: paper, orientation and frame. Reading it never fails; setting it is one
+ * undoable change, refused when the frame would leave no drawing space. */
+int32_t pf_session_sheet(const PfSession *session, PfSheet *out);
+int32_t pf_session_set_sheet(PfSession *session, const PfSheet *sheet);
 
 /* The circuits of the project and the one the sheet shows. */
 uint32_t pf_session_circuit_count(const PfSession *session);
@@ -403,6 +425,8 @@ typedef struct {
 } PfExportOptions;
 
 #define PF_EXPORT_CUSTOM_PAPER 0xFFFFFFFFu
+/* The document's sheet, paper, orientation and margins: what the canvas shows. */
+#define PF_EXPORT_DOCUMENT_PAPER 0xFFFFFFFEu
 #define PF_EXPORT_LANDSCAPE 1u
 #define PF_EXPORT_PARTS_LIST 2u
 

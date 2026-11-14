@@ -284,6 +284,7 @@ dependencies = [
 name = "punchi-fluid-doc"
 version = "0.1.0"
 dependencies = [
+ "punchi-fluid-core",
  "punchi-fluid-draw",
 ]
 
@@ -303,6 +304,7 @@ dependencies = [
  "ab_glyph",
  "fontdb",
  "punchi-fluid-catalog",
+ "punchi-fluid-core",
  "punchi-fluid-draw",
  "punchi-fluid-solver",
  "thiserror",
@@ -315,6 +317,7 @@ version = "0.1.0"
 dependencies = [
  "punchi-fluid-catalog",
  "punchi-fluid-check",
+ "punchi-fluid-core",
  "punchi-fluid-doc",
  "punchi-fluid-draw",
  "punchi-fluid-export",

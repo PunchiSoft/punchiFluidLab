@@ -1,6 +1,8 @@
 # 0012 — The paper a drawing is printed on
 
-- **Status:** accepted
+- **Status:** accepted in part; the "paper is a preference, not a document property"
+  consequence is superseded by [0026](0026-the-sheet-is-the-paper.md), and the sizes and
+  the rest of the rules remain
 - **Date:** 2026-11-07
 
 ## Context

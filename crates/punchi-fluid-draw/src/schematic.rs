@@ -42,7 +42,10 @@ pub struct Layout {
 /// canvas or a thumbnail does not produce a smudge.
 #[must_use]
 pub fn layout(area: Rect) -> Option<Layout> {
-    let square = (area.height() * 0.26).min(area.width() * 0.20);
+    // The width fraction is what keeps the four boxes inside a portrait sheet: three
+    // squares plus the cylinder's 2.2 make 5.2 squares across, and a wider one would push
+    // the valve into the cylinder or the row past the frame.
+    let square = (area.height() * 0.26).min(area.width() * 0.17);
     if square < 8.0 {
         return None;
     }
@@ -417,6 +420,40 @@ mod tests {
     fn a_small_area_produces_no_layout() {
         assert!(layout(Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0)).is_none());
         assert!(layout(Rect::from_min_size(Pt::new(0.0, 0.0), 180.0, 120.0)).is_some());
+    }
+
+    #[test]
+    fn the_four_boxes_fit_side_by_side_in_the_area() {
+        // A4 portrait at the ISO 5457 frame is the new default: 170 × 267 mm. The boxes
+        // must fit across it, or the starting circuit cannot be spread without overlapping
+        // and the "outside the sheet" check would fire on the example itself.
+        for (width, height) in [
+            (170.0, 267.0),
+            (200.0, 130.0),
+            (180.0, 120.0),
+            (277.0, 190.0),
+        ] {
+            let area = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
+            let placed = layout(area).expect("the area is big enough");
+            let boxes = [
+                placed.supply,
+                placed.preparation,
+                placed.valve,
+                placed.cylinder,
+            ];
+            for rect in boxes {
+                assert!(
+                    area.contains(rect.min) && area.contains(rect.max),
+                    "a box leaves a {width} × {height} area: {rect:?}"
+                );
+            }
+            let across: f32 = boxes.iter().map(|rect| rect.width()).sum();
+            assert!(
+                across < area.width(),
+                "the boxes need {across} mm across a {} mm area",
+                area.width()
+            );
+        }
     }
 
     #[test]

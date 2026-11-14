@@ -22,9 +22,10 @@ use punchi_fluid_draw::{Ink, Pt, Rect, Surface};
 use punchi_fluid_solver::network::Network;
 use thiserror::Error;
 
-pub use page::{Margins, Orientation, Page, PaperSize, TitleBlock};
+pub use page::{Page, TitleBlock};
 pub use parts::{PartRow, PartsList};
 pub use pdf::{PdfSurface, assemble};
+pub use punchi_fluid_core::{Margins, Orientation, PaperSize, Sheet};
 pub use svg::SvgSurface;
 
 /// Why an export did not happen.

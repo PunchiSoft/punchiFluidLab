@@ -39,6 +39,9 @@ use std::path::{Path, PathBuf};
 
 use punchi_fluid_catalog::{Behaviour, Catalog};
 use punchi_fluid_check::check;
+use punchi_fluid_core::paper::{
+    Margins as PaperMargins, Orientation as PaperOrientation, PaperSize, Sheet as PaperSheet,
+};
 
 /// The junction the splice inserts, and the box it is placed in.
 ///
@@ -55,6 +58,7 @@ use punchi_fluid_draw::placed::{
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Layout, Orientation, dashes};
+use punchi_fluid_file::paper::StoredSheet;
 use punchi_fluid_file::recent::RecentList;
 use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
 use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
@@ -271,6 +275,31 @@ pub struct PfFrame {
     pub height_mm: f32,
 }
 
+/// The sheet a document is drawn on, as the front end reads and writes it.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct PfSheet {
+    /// Index into the paper list, or [`PF_SHEET_CUSTOM_PAPER`].
+    pub paper: u32,
+    /// `1` when the paper is turned on its side.
+    pub landscape: u32,
+    /// Width of a custom sheet, millimetres; ignored for a named paper.
+    pub width_mm: f32,
+    /// Height of a custom sheet, millimetres; ignored for a named paper.
+    pub height_mm: f32,
+    /// Frame margin at the top, millimetres.
+    pub margin_top: f32,
+    /// Frame margin on the right, millimetres.
+    pub margin_right: f32,
+    /// Frame margin at the bottom, millimetres.
+    pub margin_bottom: f32,
+    /// Frame margin on the left, millimetres.
+    pub margin_left: f32,
+}
+
+/// The `paper` value that means "the size in `width_mm` and `height_mm`".
+pub const PF_SHEET_CUSTOM_PAPER: u32 = u32::MAX;
+
 /// One quantity a recorder can chart, and the placement it belongs to.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -334,10 +363,12 @@ pub struct PfAbi {
     pub ink_size: u32,
     /// `sizeof(PfPoint)`.
     pub point_size: u32,
+    /// `sizeof(PfSheet)`.
+    pub sheet_size: u32,
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 5;
+pub const PF_ABI_VERSION: u32 = 6;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -669,8 +700,8 @@ impl PfSession {
             recent_path: None,
             recent: RecentList::new(),
             error: CString::default(),
-            width_mm: 200.0,
-            height_mm: 130.0,
+            width_mm: 210.0,
+            height_mm: 297.0,
             scale: 1.0,
             catalog_order: Vec::new(),
             catalog_items: Vec::new(),
@@ -702,11 +733,80 @@ impl PfSession {
             return;
         }
         self.seeded = true;
-        let area = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
+        // The layout goes inside the frame the sheet leaves free, not on the raw paper: a
+        // component in the margin is outside the drawing space from the first frame.
+        let area = self.content_rect();
         self.seed_document(area);
         // The document is now the circuit: the model is built from it, never from a
         // hardcoded three-component list.
         self.rebuild_model();
+    }
+
+    /// The drawing space the ISO 5457 frame leaves free, in millimetres.
+    fn content_rect(&self) -> Rect {
+        let sheet = self.document.sheet();
+        let (width, height) = sheet.size_mm();
+        let margins = sheet.margins;
+        let inner_width = (width - margins.left - margins.right).max(1.0);
+        let inner_height = (height - margins.top - margins.bottom).max(1.0);
+        Rect::from_min_size(
+            Pt::new(margins.left, margins.top),
+            inner_width,
+            inner_height,
+        )
+    }
+
+    /// The sheet as the front end reads it.
+    fn pf_sheet(&self) -> PfSheet {
+        let sheet = self.document.sheet();
+        let (width, height) = sheet.paper.size_mm();
+        PfSheet {
+            paper: sheet
+                .paper
+                .index()
+                .map_or(PF_SHEET_CUSTOM_PAPER, |index| index as u32),
+            landscape: u32::from(sheet.orientation.is_landscape()),
+            width_mm: width,
+            height_mm: height,
+            margin_top: sheet.margins.top,
+            margin_right: sheet.margins.right,
+            margin_bottom: sheet.margins.bottom,
+            margin_left: sheet.margins.left,
+        }
+    }
+
+    /// Applies a sheet from the front end, refusing one that cannot exist.
+    fn apply_sheet(&mut self, sheet: PfSheet) -> i32 {
+        let paper = if sheet.paper == PF_SHEET_CUSTOM_PAPER {
+            match PaperSize::custom(sheet.width_mm, sheet.height_mm) {
+                Some(paper) => paper,
+                None => return self.fail("the custom paper is outside the bounds"),
+            }
+        } else {
+            match PaperSize::ALL.get(sheet.paper as usize) {
+                Some(paper) => *paper,
+                None => return self.fail("no such paper"),
+            }
+        };
+        let candidate = PaperSheet {
+            paper,
+            orientation: if sheet.landscape == 0 {
+                PaperOrientation::Portrait
+            } else {
+                PaperOrientation::Landscape
+            },
+            margins: PaperMargins {
+                top: sheet.margin_top,
+                right: sheet.margin_right,
+                bottom: sheet.margin_bottom,
+                left: sheet.margin_left,
+            },
+        };
+        if !self.document.set_sheet(candidate) {
+            return self.fail("the frame leaves no drawing space");
+        }
+        self.error = CString::default();
+        PF_OK
     }
 
     /// The sidebar mirrors the catalog, so the list it shows comes from here.
@@ -1523,10 +1623,13 @@ impl PfSession {
         self.position_solenoids(circuit);
     }
 
-    /// Builds the frame the front end draws.    /// Builds the frame the front end draws.
-    fn build_frame(&mut self, width_mm: f32, height_mm: f32, scale: f32) {
-        self.width_mm = width_mm.max(1.0);
-        self.height_mm = height_mm.max(1.0);
+    /// Builds the frame the front end draws.
+    fn build_frame(&mut self, scale: f32) {
+        // The sheet decides the area, so the window and the check cannot disagree about
+        // where the paper ends.
+        let (width, height) = self.document.sheet().size_mm();
+        self.width_mm = width.max(1.0);
+        self.height_mm = height.max(1.0);
         self.scale = scale.max(0.01);
         self.calls.clear();
         self.points.clear();
@@ -1667,6 +1770,7 @@ impl PfSession {
         Sheet {
             format: punchi_fluid_file::sheet::SHEET_VERSION,
             title: String::from("Circuito"),
+            sheet: StoredSheet::from(self.document.sheet()),
             circuits,
             placement,
             pipe,
@@ -1724,6 +1828,9 @@ impl PfSession {
         if !document.set_project(circuits, active) {
             return Err(String::from("the project has no usable circuit"));
         }
+        // The sheet is part of the file: a drawing opened on A3 stays on A3, and a file
+        // written before the paper existed opens on the unframed A4 its geometry expects.
+        document.seed_sheet(sheet.paper_sheet());
         document.seed(placements);
         for pipe in &sheet.pipe {
             if !document.seed_connect(
@@ -1748,6 +1855,9 @@ impl PfSession {
             );
         }
         self.document = document;
+        let (width, height) = self.document.sheet().size_mm();
+        self.width_mm = width;
+        self.height_mm = height;
         self.seeded = true;
         self.saved_revision = Some(self.document.revision());
         self.select_only(None);
@@ -1761,11 +1871,12 @@ impl PfSession {
     /// Recomputed on demand rather than cached: a check is a handful of comparisons, and a
     /// cached list is a list that goes stale behind an edit.
     fn findings(&self) -> Vec<punchi_fluid_check::Finding> {
-        let sheet = Rect::from_min_size(Pt::new(0.0, 0.0), self.width_mm, self.height_mm);
+        // The drawing space, not the last frame's size: the sheet is what the document
+        // says, whether or not the window has painted since it changed.
         check(
             &self.document,
             &self.catalog,
-            sheet,
+            self.content_rect(),
             self.document.active_circuit(),
         )
     }
@@ -2078,6 +2189,7 @@ pub unsafe extern "C" fn pf_abi(out: *mut PfAbi) -> i32 {
             frame_size: std::mem::size_of::<PfFrame>() as u32,
             ink_size: std::mem::size_of::<PfInk>() as u32,
             point_size: std::mem::size_of::<PfPoint>() as u32,
+            sheet_size: std::mem::size_of::<PfSheet>() as u32,
         };
         PF_OK
     })
@@ -2647,7 +2759,10 @@ pub unsafe extern "C" fn pf_session_describe_valve(
     })
 }
 
-/// Rebuilds the frame for an area of `width_mm` × `height_mm`, at `pixels_per_mm`.
+/// Rebuilds the frame for the document's sheet, at `pixels_per_mm`.
+///
+/// The paper is the document's: the front end does not pass an area, so the window, the
+/// check and the printed page cannot measure different sheets.
 ///
 /// The pointers in `out` borrow the session: they stay valid until the next call to this
 /// function or to [`pf_session_free`]. The function allocates only when the drawing grew.
@@ -2658,8 +2773,6 @@ pub unsafe extern "C" fn pf_session_describe_valve(
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pf_session_build_frame(
     session: *mut PfSession,
-    width_mm: f32,
-    height_mm: f32,
     pixels_per_mm: f32,
     out: *mut PfFrame,
 ) -> i32 {
@@ -2669,7 +2782,7 @@ pub unsafe extern "C" fn pf_session_build_frame(
         else {
             return PF_ERR_NULL;
         };
-        session.build_frame(width_mm, height_mm, pixels_per_mm);
+        session.build_frame(pixels_per_mm);
         *out = PfFrame {
             calls: session.calls.as_ptr(),
             calls_len: session.calls.len() as u32,
@@ -2905,11 +3018,61 @@ pub unsafe extern "C" fn pf_session_new_document(session: *mut PfSession) -> i32
             return PF_ERR_NULL;
         };
         session.document = Document::new();
+        let (width, height) = session.document.sheet().size_mm();
+        session.width_mm = width;
+        session.height_mm = height;
         session.seeded = false;
         session.select_only(None);
         session.ensure_seeded();
         session.error = CString::default();
         PF_OK
+    })
+}
+
+/// The sheet the document is drawn on: paper, orientation and frame.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_sheet(session: *const PfSession, out: *mut PfSheet) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let (Some(session), Some(out)) =
+            (unsafe { borrow_shared(session) }, unsafe { out.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        *out = session.pf_sheet();
+        PF_OK
+    })
+}
+
+/// Replaces the sheet as one undoable document change.
+///
+/// The paper is either an index into the list [`pf_export_paper_name`] fills, or
+/// [`PF_SHEET_CUSTOM_PAPER`] with `width_mm` and `height_mm`. A sheet that leaves no
+/// drawing space is refused and the document keeps the one it had.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `sheet` null or readable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_sheet(
+    session: *mut PfSession,
+    sheet: *const PfSheet,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if sheet.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a readable structure.
+        let sheet = unsafe { sheet.read() };
+        session.apply_sheet(sheet)
     })
 }
 
@@ -3301,6 +3464,9 @@ pub struct PfExportOptions {
 /// The `paper` value that means "the size in `width_mm` and `height_mm`".
 pub const PF_EXPORT_CUSTOM_PAPER: u32 = u32::MAX;
 
+/// The `paper` value that means "the document's sheet", paper, orientation and margins.
+pub const PF_EXPORT_DOCUMENT_PAPER: u32 = u32::MAX - 1;
+
 /// Turns the sheet on its side.
 pub const PF_EXPORT_LANDSCAPE: u32 = 1;
 
@@ -3315,10 +3481,10 @@ impl Default for PfExportOptions {
             paper: 1,
             flags: PF_EXPORT_PARTS_LIST,
             dpi: 300.0,
-            margin_top: 18.0,
-            margin_right: 18.0,
-            margin_bottom: 18.0,
-            margin_left: 18.0,
+            margin_top: 10.0,
+            margin_right: 10.0,
+            margin_bottom: 10.0,
+            margin_left: 20.0,
             width_mm: 210.0,
             height_mm: 297.0,
         }
@@ -3394,6 +3560,44 @@ pub unsafe extern "C" fn pf_session_export_with(
 }
 
 impl PfSession {
+    /// Paper, orientation and margins for one export.
+    ///
+    /// The document's sheet is the default; a named paper, a custom size or the landscape
+    /// flag are one-file overrides. A frame that leaves no drawing space is refused here,
+    /// before the writer allocates anything.
+    fn page_sheet(
+        &self,
+        options: &PfExportOptions,
+    ) -> Result<(PaperSize, PaperOrientation, PaperMargins), &'static str> {
+        if options.paper == PF_EXPORT_DOCUMENT_PAPER {
+            let sheet = self.document.sheet();
+            return Ok((sheet.paper, sheet.orientation, sheet.margins));
+        }
+        let paper = if options.paper == PF_EXPORT_CUSTOM_PAPER {
+            PaperSize::custom(options.width_mm, options.height_mm)
+                .ok_or("the custom paper is outside the bounds the export accepts")?
+        } else {
+            *PaperSize::ALL
+                .get(options.paper as usize)
+                .ok_or("no such paper")?
+        };
+        let margins = PaperMargins {
+            top: options.margin_top,
+            right: options.margin_right,
+            bottom: options.margin_bottom,
+            left: options.margin_left,
+        };
+        if !margins.is_valid() {
+            return Err("the margins must be zero or positive");
+        }
+        let orientation = if options.flags & PF_EXPORT_LANDSCAPE == 0 {
+            PaperOrientation::Portrait
+        } else {
+            PaperOrientation::Landscape
+        };
+        Ok((paper, orientation, margins))
+    }
+
     /// Composes and writes one page, from the panel's settings.
     fn export_page(&mut self, target: &str, date: &str, options: &PfExportOptions) -> i32 {
         let kind = options.kind;
@@ -3403,28 +3607,10 @@ impl PfSession {
         if date.is_empty() || date.len() > 32 || date.chars().any(char::is_control) {
             return self.fail("the export date is empty or invalid");
         }
-        let paper = if options.paper == PF_EXPORT_CUSTOM_PAPER {
-            match punchi_fluid_export::PaperSize::custom(options.width_mm, options.height_mm) {
-                Some(paper) => paper,
-                None => {
-                    return self.fail("the custom paper is outside the bounds the export accepts");
-                }
-            }
-        } else {
-            match punchi_fluid_export::PaperSize::ALL.get(options.paper as usize) {
-                Some(paper) => *paper,
-                None => return self.fail("no such paper"),
-            }
+        let (paper, orientation, margins) = match self.page_sheet(options) {
+            Ok(page) => page,
+            Err(message) => return self.fail(message),
         };
-        let margins = punchi_fluid_export::Margins {
-            top: options.margin_top,
-            right: options.margin_right,
-            bottom: options.margin_bottom,
-            left: options.margin_left,
-        };
-        if !margins.is_valid() {
-            return self.fail("the margins must be zero or positive");
-        }
         // A printed page has to be identifiable after the fact, and the sheet has no name of
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing, and the name of the circuit in view.
@@ -3447,11 +3633,7 @@ impl PfSession {
         let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
         let mut page = punchi_fluid_export::Page {
             paper,
-            orientation: if options.flags & PF_EXPORT_LANDSCAPE == 0 {
-                punchi_fluid_export::Orientation::Portrait
-            } else {
-                punchi_fluid_export::Orientation::Landscape
-            },
+            orientation,
             margins,
             parts: if options.flags & PF_EXPORT_PARTS_LIST == 0 {
                 None

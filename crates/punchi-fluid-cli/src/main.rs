@@ -16,10 +16,6 @@ use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{Pt, Rect};
 use punchi_fluid_file::sheet::Sheet;
 
-/// Sheet the check measures against, in millimetres: the editor's logical area, so
-/// "outside the sheet" means the same in the window and in a pipeline.
-const SHEET_MM: (f32, f32) = (200.0, 130.0);
-
 /// Version of the JSON the `check` command prints.
 const CHECK_JSON_VERSION: u32 = 1;
 
@@ -123,7 +119,16 @@ fn check(arguments: &[String]) -> ExitCode {
         Err(error) => return report_error(path, &error, json),
     };
     let catalog = Catalog::builtin();
-    let area = Rect::from_min_size(Pt::new(0.0, 0.0), SHEET_MM.0, SHEET_MM.1);
+    // The sheet is the document's paper: a circuit checked headlessly is measured against
+    // the same frame the window draws.
+    let paper = document.sheet();
+    let (width, height) = paper.size_mm();
+    let margins = paper.margins;
+    let area = Rect::from_min_size(
+        Pt::new(margins.left, margins.top),
+        (width - margins.left - margins.right).max(1.0),
+        (height - margins.top - margins.bottom).max(1.0),
+    );
     let findings = punchi_fluid_check::check(&document, &catalog, area, document.active_circuit());
 
     if json {
@@ -209,6 +214,7 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
     if !document.set_project(circuits, active) {
         return Err(String::from("the project has no usable circuit"));
     }
+    document.seed_sheet(sheet.paper_sheet());
     document.seed(placements);
     for pipe in &sheet.pipe {
         if !document.seed_connect(

@@ -59,7 +59,7 @@ fn a_project_keeps_two_circuits_and_a_pipe_between_them() {
     let text = sheet.to_json().expect("valid");
     let parsed = Sheet::parse(&text).expect("parses");
     assert_eq!(parsed, sheet);
-    assert_eq!(parsed.format, 6);
+    assert_eq!(parsed.format, 7);
     assert_eq!(parsed.circuits.len(), 2);
     assert_eq!(parsed.placement[1].circuit, 1);
     assert_eq!(parsed.pipe[0].circuit, 1);
@@ -77,7 +77,7 @@ fn a_version_three_sheet_reads_as_one_circuit() {
           "pipe": []
         }"#;
     let sheet = Sheet::parse(text).expect("a version 3 sheet reads");
-    assert_eq!(sheet.format, 6);
+    assert_eq!(sheet.format, 7);
     assert_eq!(sheet.circuits.len(), 1);
     assert_eq!(sheet.circuits[0].id, 0);
     assert_eq!(sheet.placement[0].circuit, 0);
@@ -105,7 +105,7 @@ fn a_version_four_project_keeps_its_circuits_and_has_unbound_recorders() {
           "active": 7
         }"#;
     let sheet = Sheet::parse(text).expect("a version 4 project reads");
-    assert_eq!(sheet.format, 6);
+    assert_eq!(sheet.format, 7);
     assert_eq!(sheet.circuits.len(), 2);
     assert_eq!(sheet.placement[1].circuit, 7, "the second circuit survives");
     assert_eq!(sheet.active, 7);
@@ -201,7 +201,7 @@ fn a_version_five_project_reads_its_pipes_as_working_lines() {
       "active": 0
     }"#;
     let sheet = Sheet::parse(text).expect("a version 5 project reads");
-    assert_eq!(sheet.format, 6);
+    assert_eq!(sheet.format, 7);
     assert_eq!(sheet.pipe[0].class, StoredClass::Working);
     let saved = sheet.to_json().expect("valid");
     assert!(

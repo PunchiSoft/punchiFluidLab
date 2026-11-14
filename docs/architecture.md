@@ -49,14 +49,14 @@ fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked 
 
 | Crate | Owns | Never contains | Depends on |
 |---|---|---|---|
-| `punchi-fluid-core` | components, ports, connections, typed units, the legacy v1 model | numerics, files, widgets | — |
+| `punchi-fluid-core` | components, ports, connections, typed units, paper and the sheet frame, the legacy v1 model | numerics, files, widgets | — |
 | `punchi-fluid-catalog` | the definition schema, validation, loading, lint, compiled reviews | physics, widgets | `core` |
 | `punchi-fluid-file` | the versioned sheet format, atomic write, migrations, recent list | physics, drawing | `core` |
 | `punchi-fluid-solver` | ISO 6358 orifice flow, the network of volumes, the cylinder model | editing, drawing, files | `core`, `catalog` |
-| `punchi-fluid-doc` | the edited document: placements, pipes, commands, bounded undo | physics, drawing, files | `draw` |
+| `punchi-fluid-doc` | the edited document: placements, pipes, commands, bounded undo, the sheet | physics, drawing, files | `core`, `draw` |
 | `punchi-fluid-draw` | ISO 1219 symbols, sheet geometry, the `Surface` trait, hit-testing geometry | windows, files, fonts, solving | `core`, `catalog`, `solver` |
 | `punchi-fluid-check` | the design faults a sheet can have before it is run | physics, drawing, UI | `catalog`, `doc`, `draw` |
-| `punchi-fluid-export` | page geometry, frame, title block, legend, PNG and PDF writers | physics, widgets | `catalog`, `draw`, `solver` |
+| `punchi-fluid-export` | page geometry, frame, title block, legend, PNG and PDF writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-ffi` | the C ABI: one session, one frame, hit tests, layout, export | logic of its own | all of the above |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `core`, `file`, `solver`, `catalog`, `check`, `doc`, `draw` |
 

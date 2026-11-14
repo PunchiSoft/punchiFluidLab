@@ -58,6 +58,16 @@ Rectangle {
             color: session.muted
             font.pixelSize: 13
         }
+        // Which paper the drawing is on, and its size in millimetres. Without it the sheet
+        // is an unnamed rectangle and the frame has no measurement to trust.
+        Text {
+            text: qsTr("%1 · %2 × %3 mm")
+                      .arg(session.sheetPaperName)
+                      .arg(Math.round(session.sheetWidthMm))
+                      .arg(Math.round(session.sheetHeightMm))
+            color: session.muted
+            font.pixelSize: 13
+        }
     }
 
     Text {

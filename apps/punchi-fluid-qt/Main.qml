@@ -89,29 +89,23 @@ Window {
         id: session
     }
 
-    // The export starts on the paper this machine actually prints on: Oficio where the system
-    // says Chile, A4 anywhere else. It is a starting point, not a decision — the panel lists the
-    // whole set.
-    Component.onCompleted: window.exportPaper = session.defaultPaper()
+    // The paper and the frame are the document's sheet: the ribbon picks them and the canvas,
+    // the check and the print all follow. The panel keeps only what belongs to one print.
+    Component.onCompleted: {
+        window.exportWidthMm = Math.round(session.sheetWidthMm);
+        window.exportHeightMm = Math.round(session.sheetHeightMm);
+    }
 
     /// Which catalog entry is being dragged out of the palette, and where the pointer is.
     /// A plain property rather than a Qt drag-and-drop session: one code path for the
     /// pointer and for anything that drives the window.
-    /// The paper the export panel offers, and how the sheet is turned.
-    property int exportPaper: 1
-    property bool exportLandscape: false
     /// The raster resolution. 300 dpi is what a printed sheet needs; the vector page has none.
     property int exportDpi: 300
-    /// What the printed page carries beyond the drawing: the sheet, its margins and whether
-    /// the parts list is printed. The panel edits these; the export reads them.
+    /// A custom size for this one print; the working sheet stays the document's paper.
     property bool exportPanelOpen: false
     property bool exportCustomPaper: false
     property int exportWidthMm: 210
     property int exportHeightMm: 297
-    property int exportMarginTop: 18
-    property int exportMarginRight: 18
-    property int exportMarginBottom: 18
-    property int exportMarginLeft: 18
     property bool exportPartsList: true
 
     /// The options the export dialog hands to the session, in one map.
@@ -119,14 +113,13 @@ Window {
         return {
             path: path,
             kind: kind,
-            paper: window.exportPaper,
             custom_paper: window.exportCustomPaper,
             width: window.exportWidthMm,
             height: window.exportHeightMm,
-            landscape: window.exportLandscape,
+            landscape: session.sheetLandscape,
             dpi: window.exportDpi,
-            margins: [window.exportMarginTop, window.exportMarginRight,
-                      window.exportMarginBottom, window.exportMarginLeft],
+            margins: [session.sheetMarginTop, session.sheetMarginRight,
+                      session.sheetMarginBottom, session.sheetMarginLeft],
             parts_list: window.exportPartsList
         };
     }
@@ -606,9 +599,9 @@ Window {
                     }
                 }
 
-                // What the printed sheet carries: the paper, its margins, the raster
-                // resolution and the parts list. The export dialog reads these; the panel
-                // never writes the document.
+                // The sheet's frame, the raster resolution and the parts list. The paper and
+                // the margins are the document's, so the panel edits them through the session;
+                // only the custom print size and the raster settings belong to one export.
                 Rectangle {
                     visible: window.exportPanelOpen
                     anchors.centerIn: parent
@@ -630,21 +623,31 @@ Window {
 
                         Text {
                             width: parent.width
-                            text: qsTr("Lo que la hoja lleva")
+                            text: qsTr("La hoja y lo que lleva")
                             color: session.foreground
                             font.pixelSize: 13
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: qsTr("%1 · %2 × %3 mm")
+                                      .arg(session.sheetPaperName)
+                                      .arg(Math.round(session.sheetWidthMm))
+                                      .arg(Math.round(session.sheetHeightMm))
+                            color: session.muted
+                            font.pixelSize: 11
                         }
 
                         Row {
                             spacing: 8
                             Text {
-                                text: qsTr("Papel")
+                                text: qsTr("Tamaño personalizado")
                                 color: session.muted
                                 font.pixelSize: 11
                                 width: 150
                             }
                             Rectangle {
-                                width: 90
+                                width: 200
                                 height: 26
                                 radius: 4
                                 color: window.exportCustomPaper ? session.accent : "transparent"
@@ -652,7 +655,7 @@ Window {
                                 border.color: session.muted
                                 Text {
                                     anchors.centerIn: parent
-                                    text: qsTr("Personalizado")
+                                    text: qsTr("solo para esta impresión")
                                     color: session.foreground
                                     font.pixelSize: 11
                                 }
@@ -710,26 +713,28 @@ Window {
                                 width: 150
                             }
                             Repeater {
-                                model: [
-                                    { key: "top", value: window.exportMarginTop },
-                                    { key: "right", value: window.exportMarginRight },
-                                    { key: "bottom", value: window.exportMarginBottom },
-                                    { key: "left", value: window.exportMarginLeft }
-                                ]
+                                // A fixed model: the field binds to the session value and
+                                // writes it only when the edit finishes, so typing a margin
+                                // does not rebuild the row or record a change per keystroke.
+                                model: 4
                                 delegate: TextInput {
                                     width: 40
                                     height: 26
                                     verticalAlignment: TextInput.AlignVCenter
-                                    text: String(modelData.value)
+                                    text: index === 0 ? String(session.sheetMarginTop)
+                                        : index === 1 ? String(session.sheetMarginRight)
+                                        : index === 2 ? String(session.sheetMarginBottom)
+                                        : String(session.sheetMarginLeft)
                                     color: session.foreground
                                     font.pixelSize: 11
                                     inputMethodHints: Qt.ImhFormattedNumbersOnly
-                                    onTextChanged: {
-                                        const parsed = parseInt(text, 10) || 0;
-                                        if (modelData.key === "top") window.exportMarginTop = parsed;
-                                        if (modelData.key === "right") window.exportMarginRight = parsed;
-                                        if (modelData.key === "bottom") window.exportMarginBottom = parsed;
-                                        if (modelData.key === "left") window.exportMarginLeft = parsed;
+                                    // 0 top, 1 right, 2 bottom, 3 left, the order the
+                                    // session and the ABI use.
+                                    onEditingFinished: {
+                                        const parsed = parseInt(text, 10);
+                                        if (!isNaN(parsed)) {
+                                            session.setSheetMargin(index, parsed);
+                                        }
                                     }
                                 }
                             }

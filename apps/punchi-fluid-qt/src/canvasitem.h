@@ -5,6 +5,7 @@
 
 #include <QPointF>
 #include <QPointer>
+#include <QSizeF>
 #include <QString>
 #include <QQmlEngine>
 #include <QQuickPaintedItem>
@@ -71,9 +72,9 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    /// The logical drawing area in millimetres, the same one the egui canvas used.
-    static constexpr float kLogicalWidth = 200.0F;
-    static constexpr float kLogicalHeight = 130.0F;
+    /// The paper the document is drawn on, in millimetres: the session's sheet, or A4 when
+    /// there is no session yet.
+    [[nodiscard]] QSizeF sheetSizeMm() const;
 
     /// `true` when the point falls on the valve, in millimetres of the drawing.
     [[nodiscard]] bool onValve(const QPointF &position) const;

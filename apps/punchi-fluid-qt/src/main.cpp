@@ -263,7 +263,8 @@ int main(int argc, char *argv[])
         const QString dpiArg = value(QStringLiteral("--dpi"));
         bool exported = true;
         for (FluidSession *session : sessions()) {
-            int paper = session->defaultPaper();
+            int paper = qMax(session->sheetPaper(), 0);
+            bool landscape = session->sheetLandscape();
             if (!paperArg.isEmpty()) {
                 bool ok = false;
                 paper = paperArg.toInt(&ok);
@@ -272,13 +273,29 @@ int main(int argc, char *argv[])
                     return 2;
                 }
             }
+            if (arguments.contains(QStringLiteral("--landscape"))) {
+                landscape = true;
+            }
             const int kind = exportPath.endsWith(QLatin1String(".svg"), Qt::CaseInsensitive)
                 ? 2
                 : (exportPath.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive) ? 1 : 0);
             const qreal dpi = dpiArg.isEmpty() ? 300.0 : dpiArg.toDouble();
-            exported = session->exportTo(exportPath, kind, paper,
-                                         arguments.contains(QStringLiteral("--landscape")), dpi)
-                && exported;
+            if (paperArg.isEmpty()) {
+                // No paper asked for: the document's sheet decides, exactly as on screen.
+                QVariantMap options;
+                options.insert(QStringLiteral("path"), exportPath);
+                options.insert(QStringLiteral("kind"), kind);
+                options.insert(QStringLiteral("custom_paper"), false);
+                options.insert(QStringLiteral("landscape"), landscape);
+                options.insert(QStringLiteral("dpi"), dpi);
+                options.insert(QStringLiteral("margins"),
+                               QVariantList { session->sheetMarginTop(), session->sheetMarginRight(),
+                                              session->sheetMarginBottom(), session->sheetMarginLeft() });
+                options.insert(QStringLiteral("parts_list"), true);
+                exported = session->exportWithOptions(options) && exported;
+            } else {
+                exported = session->exportTo(exportPath, kind, paper, landscape, dpi) && exported;
+            }
         }
         std::fprintf(stderr, "%s: %s\n", exported ? "exported" : "export failed",
                      qUtf8Printable(exportPath));
@@ -889,13 +906,20 @@ int main(int argc, char *argv[])
             state->session->stopSimulation();
         });
 
-        // A rubber band over the whole sheet marks every component, and Delete takes the
-        // group away as one change.
+        // A rubber band over the whole drawing space marks every component, and Delete takes
+        // the group away as one change. The band follows the sheet's frame, so a paper
+        // change moves it with the paper instead of leaving components outside it.
         steps->push_back([state, check, send, sendWith, toScene] {
             state->session->stopSimulation();
             state->session->select(-1);
-            const QPointF from = toScene(QPointF(2.0, 2.0));
-            const QPointF to = toScene(QPointF(198.0, 128.0));
+            const double left = state->session->sheetMarginLeft();
+            const double top = state->session->sheetMarginTop();
+            const double right =
+                state->session->sheetWidthMm() - state->session->sheetMarginRight();
+            const double bottom =
+                state->session->sheetHeightMm() - state->session->sheetMarginBottom();
+            const QPointF from = toScene(QPointF(left + 1.0, top + 1.0));
+            const QPointF to = toScene(QPointF(right - 1.0, bottom - 1.0));
             send(QEvent::MouseButtonPress, from, Qt::LeftButton, Qt::LeftButton);
             sendWith(QEvent::MouseMove, to, Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
             send(QEvent::MouseButtonRelease, to, Qt::LeftButton, Qt::NoButton);
@@ -1538,7 +1562,7 @@ int main(int argc, char *argv[])
                 PfFrame frame {};
                 int readings = 0;
                 bool positive = false;
-                if (pf_session_build_frame(state->session->handle(), 200.0, 130.0, 4.0, &frame)
+                if (pf_session_build_frame(state->session->handle(), 4.0, &frame)
                     == PF_OK) {
                     for (uint32_t i = 0; i < frame.calls_len; ++i) {
                         const PfCall &call = frame.calls[i];
@@ -1615,7 +1639,8 @@ int main(int argc, char *argv[])
         // measured in millimetres.
         steps->push_back([state, check] {
             const QString path = QDir::tempPath() + QStringLiteral("/punchi-vector.svg");
-            check(state->session->exportTo(path, 2, state->session->defaultPaper(), false, 300.0),
+            check(state->session->exportTo(path, 2, qMax(state->session->sheetPaper(), 0), false,
+                                           300.0),
                   QStringLiteral("export: the sheet leaves as SVG"));
             QFile file(path);
             const bool opened = file.open(QIODevice::ReadOnly);
@@ -1684,7 +1709,6 @@ int main(int argc, char *argv[])
             QVariantMap options;
             options.insert(QStringLiteral("path"), path);
             options.insert(QStringLiteral("kind"), 2);
-            options.insert(QStringLiteral("paper"), state->session->defaultPaper());
             options.insert(QStringLiteral("custom_paper"), true);
             options.insert(QStringLiteral("width"), 90);
             options.insert(QStringLiteral("height"), 60);
@@ -1802,7 +1826,7 @@ int main(int argc, char *argv[])
             }
             PfFrame frame {};
             bool charted = false;
-            if (pf_session_build_frame(state->session->handle(), 200.0, 130.0, 4.0, &frame)
+            if (pf_session_build_frame(state->session->handle(), 4.0, &frame)
                 == PF_OK) {
                 for (uint32_t i = 0; i < frame.calls_len; ++i) {
                     const PfCall &call = frame.calls[i];
@@ -1895,6 +1919,46 @@ int main(int argc, char *argv[])
             check(qFuzzyCompare(state->session->zoom(), 1.0)
                       && (under - QPointF(150.0, 30.0)).manhattanLength() < 0.5,
                   QStringLiteral("view: Ctrl+0 returns to 1:1 and drops the pan"));
+        });
+
+        // The sheet is the paper: choosing A3 changes the document, the canvas and the
+        // check together, and every choice is one undo.
+        steps->push_back([state, check] {
+            state->session->resetSheet();
+            check(state->session->sheetPaper() == 1 && !state->session->sheetLandscape(),
+                  QStringLiteral("sheet: a new document is A4 portrait"));
+            check(std::abs(state->session->sheetWidthMm() - 210.0) < 0.01
+                      && std::abs(state->session->sheetHeightMm() - 297.0) < 0.01,
+                  QStringLiteral("sheet: A4 is 210 x 297 mm"));
+            check(std::abs(state->session->sheetMarginLeft() - 20.0) < 0.01
+                      && std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
+                  QStringLiteral("sheet: the frame is the ISO 5457 one"));
+            state->session->setSheetPaper(2);
+        });
+        steps->push_back([state, check] {
+            check(std::abs(state->session->sheetWidthMm() - 297.0) < 0.01
+                      && std::abs(state->session->sheetHeightMm() - 420.0) < 0.01,
+                  QStringLiteral("sheet: A3 is 297 x 420 mm"));
+            state->session->toggleSheetLandscape();
+        });
+        steps->push_back([state, check] {
+            check(std::abs(state->session->sheetWidthMm() - 420.0) < 0.01
+                      && std::abs(state->session->sheetHeightMm() - 297.0) < 0.01,
+                  QStringLiteral("sheet: landscape swaps the sides"));
+            state->session->undo();
+            state->session->undo();
+        });
+        steps->push_back([state, check] {
+            check(state->session->sheetPaper() == 1 && !state->session->sheetLandscape(),
+                  QStringLiteral("sheet: one undo per change returns the A4"));
+            state->session->setSheetMargin(0, 15.0);
+        });
+        steps->push_back([state, check] {
+            check(std::abs(state->session->sheetMarginTop() - 15.0) < 0.01,
+                  QStringLiteral("sheet: a frame margin is a document change"));
+            state->session->undo();
+            check(std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
+                  QStringLiteral("sheet: undo returns the ISO margin"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {
