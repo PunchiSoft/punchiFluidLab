@@ -26,10 +26,19 @@ Item {
     /// The two accessible names of the control, so the title can be a sentence.
     property string hideName: qsTr("Ocultar el panel")
     property string showName: qsTr("Mostrar el panel")
+    /// Auto-hide is opt-in: a dwell on the rail opens the panel, and leaving it closes it.
+    property bool autoHide: false
+    /// A dialog or a catalog drag suspends auto-hide while it lasts.
+    property bool autoHideBlocked: false
+    property bool hovered: false
+    property bool manualHide: false
+    readonly property int autoHideOpenMs: 350
+    readonly property int autoHideCloseMs: 800
 
     default property alias content: contentHolder.data
 
     signal toggleRequested()
+    signal autoHideRequested(bool open)
 
     width: available ? (open ? panelWidth : railWidth) : 0
     Behavior on width {
@@ -114,5 +123,101 @@ Item {
             NumberAnimation { duration: dock.session ? dock.session.motionMs : 180 }
         }
         onActivated: dock.toggleRequested()
+    }
+
+    // The pointer over the rail or the panel: the same item covers both, so the edge is the
+    // handle. A HoverHandler does not swallow clicks the way a MouseArea would.
+    HoverHandler {
+        id: hover
+        onHoveredChanged: dock.hovered = hovered
+    }
+
+    Timer {
+        id: showTimer
+        interval: dock.autoHideOpenMs
+        repeat: false
+        onTriggered: {
+            if (dock.autoHide && !dock.open && !dock.manualHide && !dock.autoHideBlocked
+                && dock.available) {
+                dock.autoHideRequested(true);
+            }
+        }
+    }
+
+    Timer {
+        id: hideTimer
+        interval: dock.autoHideCloseMs
+        repeat: false
+        onTriggered: {
+            // A panel with the keyboard inside it, or a dialog on top, is never taken away.
+            if (dock.autoHide && dock.open && !dock.autoHideBlocked && !dock.focusInside()) {
+                dock.autoHideRequested(false);
+            }
+        }
+    }
+
+    onHoveredChanged: {
+        showTimer.stop();
+        hideTimer.stop();
+        if (hovered) {
+            if (!open && !manualHide && autoHide && !autoHideBlocked) {
+                showTimer.start();
+            }
+        } else {
+            // Leaving the rail clears a manual hide, so the next visit opens it again.
+            manualHide = false;
+            if (open && autoHide && !autoHideBlocked) {
+                hideTimer.start();
+            }
+        }
+    }
+
+    onOpenChanged: {
+        showTimer.stop();
+        hideTimer.stop();
+        if (open) {
+            manualHide = false;
+            if (autoHide && !hovered && !autoHideBlocked) {
+                hideTimer.start();
+            }
+        } else {
+            // Hiding from the control while the pointer is on it must not reopen at once.
+            manualHide = hovered;
+        }
+    }
+
+    onAutoHideChanged: {
+        if (!autoHide) {
+            showTimer.stop();
+            hideTimer.stop();
+            manualHide = false;
+        } else if (open && !hovered && !autoHideBlocked) {
+            hideTimer.start();
+        } else if (!open && hovered && !manualHide && !autoHideBlocked) {
+            showTimer.start();
+        }
+    }
+
+    onAutoHideBlockedChanged: {
+        if (autoHideBlocked) {
+            showTimer.stop();
+            hideTimer.stop();
+        } else if (autoHide && open && !hovered) {
+            hideTimer.start();
+        } else if (autoHide && !open && hovered && !manualHide) {
+            showTimer.start();
+        }
+    }
+
+    /// `true` when the keyboard focus is anywhere inside this panel.
+    function focusInside() {
+        let item = dock.Window.window ? dock.Window.window.activeFocusItem : null;
+        while (item) {
+            if (item === dock) {
+                return true;
+            }
+            item = item.parent;
+        }
+        return false;
     }
 }

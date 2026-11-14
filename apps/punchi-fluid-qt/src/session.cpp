@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -813,6 +814,18 @@ void FluidSession::loadTheme()
         return;
     }
     applyPalette(QGuiApplication::palette());
+}
+
+QVariant FluidSession::viewSetting(const QString &key, const QVariant &fallback) const
+{
+    QSettings settings;
+    return settings.value(QStringLiteral("view/") + key, fallback);
+}
+
+void FluidSession::setViewSetting(const QString &key, const QVariant &value)
+{
+    QSettings settings;
+    settings.setValue(QStringLiteral("view/") + key, value);
 }
 
 void FluidSession::applyPalette(const QPalette &palette)

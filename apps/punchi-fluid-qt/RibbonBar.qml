@@ -20,6 +20,8 @@ Rectangle {
     /// The right dock's view state and whether it has content to show.
     property bool rightDockOpen: true
     property bool rightDockAvailable: true
+    /// The opt-in auto-hide, so the Ver command can show whether it is on.
+    property bool panelAutoHide: false
 
     /// The Archivo commands that need a file dialog, which belongs to the window.
     signal fileCommand(string command)
@@ -177,13 +179,20 @@ Rectangle {
                     items: [
                         { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("Ctrl+rueda · acerca la hoja") },
                         { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("Ctrl+rueda · aleja la hoja") },
-                        { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") },
-                        // The catalog is chrome, and hiding it is view state: the command
-                        // says which way it will go and marks the panel as open.
+                        { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") }
+                    ]
+                },
+                {
+                    // Hiding a panel is view state: each command says which way it will go,
+                    // and the panel it controls is marked while it is open.
+                    title: qsTr("Paneles"),
+                    items: [
                         { id: "catalog", label: qsTr("Catálogo"), icon: "view-list-details", hint: ribbon.catalogOpen ? qsTr("Ctrl+B · oculta la barra del catálogo") : qsTr("Ctrl+B · muestra la barra del catálogo"), current: ribbon.catalogOpen, panel: true },
                         // The right dock holds the properties and the title block; the
                         // command is only available while one of them is open.
-                        { id: "right-dock", label: qsTr("Propiedades"), icon: "document-properties", hint: ribbon.rightDockOpen ? qsTr("Ctrl+J · oculta el panel derecho") : qsTr("Ctrl+J · muestra el panel derecho"), current: ribbon.rightDockOpen && ribbon.rightDockAvailable, enabled: ribbon.rightDockAvailable, panel: true }
+                        { id: "right-dock", label: qsTr("Propiedades"), icon: "document-properties", hint: ribbon.rightDockOpen ? qsTr("Ctrl+J · oculta el panel derecho") : qsTr("Ctrl+J · muestra el panel derecho"), current: ribbon.rightDockOpen && ribbon.rightDockAvailable, enabled: ribbon.rightDockAvailable, panel: true },
+                        { id: "auto-hide", label: qsTr("Ocultar al salir"), icon: "view-restore", hint: ribbon.panelAutoHide ? qsTr("activado · el panel vuelve al pasar por el borde") : qsTr("apagado · el panel se queda abierto"), current: ribbon.panelAutoHide, panel: true },
+                        { id: "reset-view", label: qsTr("Restablecer vista"), icon: "edit-reset", hint: qsTr("paneles, zoom y desplazamiento a su estado inicial") }
                     ]
                 },
                 {
@@ -365,6 +374,14 @@ Rectangle {
         }
         if (id === "right-dock") {
             ribbon.panelCommand("right-dock");
+            return;
+        }
+        if (id === "auto-hide") {
+            ribbon.panelCommand("auto-hide");
+            return;
+        }
+        if (id === "reset-view") {
+            ribbon.panelCommand("reset-view");
             return;
         }
         if (id.indexOf("circuit:") === 0) {

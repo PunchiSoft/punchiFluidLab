@@ -149,6 +149,44 @@ Window {
     property bool rightDockOpen: true
     readonly property bool rightDockHasContent: session.inspectorOpen || window.titleBlockOpen
     onTitleBlockOpenChanged: if (titleBlockOpen) rightDockOpen = true
+    /// Auto-hide is opt-in; the panels remember it and their own visibility.
+    property bool panelAutoHide: false
+    readonly property bool panelAutoHideBlocked: window.dragCatalog >= 0
+        || window.pageSetupOpen || window.exportPanelOpen || window.renameCircuitOpen
+        || window.aboutOpen || window.licenseOpen || window.pendingCommand.length > 0
+        || openDialog.visible || saveDialog.visible || exportDialog.visible
+    property bool viewStateReady: false
+
+    onCatalogOpenChanged: if (viewStateReady) {
+                              session.setViewSetting("panel/catalogOpen", catalogOpen);
+                          }
+    onCatalogWidthChanged: if (viewStateReady) {
+                               session.setViewSetting("panel/catalogWidth", catalogWidth);
+                           }
+    onRightDockOpenChanged: if (viewStateReady) {
+                                session.setViewSetting("panel/rightDockOpen", rightDockOpen);
+                            }
+    onPanelAutoHideChanged: if (viewStateReady) {
+                                 session.setViewSetting("panel/autoHide", panelAutoHide);
+                             }
+
+    Component.onCompleted: {
+        // View state only: the document is untouched by which panel was open last time.
+        window.catalogOpen = session.viewSetting("panel/catalogOpen", true);
+        window.catalogWidth = session.viewSetting("panel/catalogWidth", 248);
+        window.rightDockOpen = session.viewSetting("panel/rightDockOpen", true);
+        window.panelAutoHide = session.viewSetting("panel/autoHide", false);
+        window.viewStateReady = true;
+    }
+
+    /// Panels back to their opening state, and the sheet back to 1:1 with no pan.
+    function resetView() {
+        window.catalogOpen = true;
+        window.catalogWidth = 248;
+        window.rightDockOpen = true;
+        window.panelAutoHide = false;
+        session.zoomReset();
+    }
 
     function openPageSetup(section) {
         window.exportPanelOpen = false;
@@ -556,11 +594,16 @@ Window {
             catalogOpen: window.catalogOpen
             rightDockOpen: window.rightDockOpen
             rightDockAvailable: window.rightDockHasContent
+            panelAutoHide: window.panelAutoHide
             onPanelCommand: function (command) {
                 if (command === "catalog") {
                     window.catalogOpen = !window.catalogOpen;
                 } else if (command === "right-dock" && window.rightDockHasContent) {
                     window.rightDockOpen = !window.rightDockOpen;
+                } else if (command === "auto-hide") {
+                    window.panelAutoHide = !window.panelAutoHide;
+                } else if (command === "reset-view") {
+                    window.resetView();
                 }
             }
         }
@@ -579,7 +622,12 @@ Window {
                 open: window.catalogOpen
                 panelWidth: window.catalogWidth
                 height: parent.height
+                autoHide: window.panelAutoHide
+                autoHideBlocked: window.panelAutoHideBlocked
                 onToggleRequested: window.catalogOpen = !window.catalogOpen
+                onAutoHideRequested: function (open) {
+                    window.catalogOpen = open;
+                }
 
                 Sidebar {
                     id: sidebar
@@ -1106,7 +1154,12 @@ Window {
                 panelWidth: 360
                 sideRight: true
                 height: parent.height
+                autoHide: window.panelAutoHide
+                autoHideBlocked: window.panelAutoHideBlocked
                 onToggleRequested: window.rightDockOpen = !window.rightDockOpen
+                onAutoHideRequested: function (open) {
+                    window.rightDockOpen = open;
+                }
 
                 Flickable {
                     anchors.fill: parent

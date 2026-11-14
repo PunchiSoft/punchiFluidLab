@@ -22,6 +22,7 @@
 //! --menu               open the collapsed ribbon menu, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
+//! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
 //! --paper-list         open the paper list on the Disposición tab
 //! --margin-list        open the margin gallery on the Disposición tab
@@ -40,6 +41,7 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QSettings>
 #include <QTimer>
 #include <QEventLoop>
 #include <QVector>
@@ -108,6 +110,22 @@ int main(int argc, char *argv[])
     app.setOrganizationName(QStringLiteral("PunchiSoft"));
 
     const QStringList arguments = app.arguments();
+    // A capture or a self test must not overwrite the panel state and the auto-hide flag
+    // the user chose for their own session. Automated runs get a settings file of their
+    // own, keyed by the process, so one run cannot inherit the previous one either.
+    const bool automatedRun =
+        arguments.contains(QStringLiteral("--selftest"))
+        || arguments.contains(QStringLiteral("--check-qml"))
+        || arguments.contains(QStringLiteral("--grab"))
+        || arguments.contains(QStringLiteral("--export"))
+        || arguments.contains(QStringLiteral("--probe"))
+        || arguments.contains(QStringLiteral("--report-paints"));
+    if (automatedRun) {
+        QSettings::setDefaultFormat(QSettings::IniFormat);
+        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
+                           QDir::tempPath() + QStringLiteral("/punchi-fluid-lab-settings-")
+                               + QString::number(QCoreApplication::applicationPid()));
+    }
     const auto value = [&arguments](const QString &flag) {
         const int index = arguments.indexOf(flag);
         return (index >= 0 && index + 1 < arguments.size()) ? arguments.at(index + 1) : QString();
@@ -583,6 +601,13 @@ int main(int argc, char *argv[])
         for (QObject *root : engine.rootObjects()) {
             if (root->property("rightDockOpen").isValid()) {
                 root->setProperty("rightDockOpen", false);
+            }
+        }
+    }
+    if (arguments.contains(QStringLiteral("--auto-hide"))) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("panelAutoHide").isValid()) {
+                root->setProperty("panelAutoHide", true);
             }
         }
     }
@@ -2479,6 +2504,8 @@ int main(int argc, char *argv[])
             const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
             check(!state->window->property("catalogOpen").toBool() && width <= 30.0,
                   QStringLiteral("panels: Ctrl+B folds it to the rail"));
+            check(!state->session->viewSetting(QStringLiteral("panel/catalogOpen"), true).toBool(),
+                  QStringLiteral("panels: the catalog state is remembered"));
             const int paints = state->sheet->paintCount() - state->panelPaints;
             std::fprintf(stderr, "selftest: the fold painted %d frame(s)\n", paints);
             check(paints <= 40, QStringLiteral("panels: the fold is a handful of frames"));
@@ -2545,6 +2572,71 @@ int main(int argc, char *argv[])
             const bool blockOpen = state->window->property("titleBlockOpen").toBool();
             check(blockOpen || width <= 1.0,
                   QStringLiteral("panels: the right dock yields when it has no content"));
+        });
+
+        // Auto-hide is opt-in and remembered. Leaving the rail hides the panel, a dwell on
+        // the rail brings it back, and a manual hide does not reopen under the pointer.
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            QMetaObject::invokeMethod(ribbon, "invoke",
+                                      Q_ARG(QVariant, QStringLiteral("auto-hide")));
+            check(state->window->property("panelAutoHide").toBool(),
+                  QStringLiteral("panels: auto-hide is opt-in"));
+            check(state->session->viewSetting(QStringLiteral("panel/autoHide"), false).toBool(),
+                  QStringLiteral("panels: the auto-hide flag is remembered"));
+            state->window->setProperty("catalogOpen", true);
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            if (dock != nullptr) {
+                dock->setProperty("hovered", false);
+            }
+        });
+        steps->push_back([] {});
+        steps->push_back([] {});
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            check(!state->window->property("catalogOpen").toBool(),
+                  QStringLiteral("panels: leaving the rail hides it"));
+            if (dock != nullptr) {
+                dock->setProperty("hovered", true);
+            }
+        });
+        steps->push_back([] {});
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(state->window->property("catalogOpen").toBool() && width > 200.0,
+                  QStringLiteral("panels: the edge opens it after the dwell"));
+            state->window->setProperty("catalogOpen", false);
+        });
+        steps->push_back([] {});
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            check(!state->window->property("catalogOpen").toBool(),
+                  QStringLiteral("panels: a manual hide stays closed under the pointer"));
+            if (dock != nullptr) {
+                dock->setProperty("hovered", false);
+            }
+        });
+
+        // Restablecer vista puts the panels, the zoom and the pan back and turns the opt-in
+        // auto-hide off, so a remembered state is never a trap.
+        steps->push_back([state, check] {
+            state->session->setZoom(1.5);
+            state->window->setProperty("rightDockOpen", false);
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            QMetaObject::invokeMethod(ribbon, "invoke",
+                                      Q_ARG(QVariant, QStringLiteral("reset-view")));
+            check(state->window->property("catalogOpen").toBool()
+                      && state->window->property("rightDockOpen").toBool(),
+                  QStringLiteral("panels: reset view opens the panels"));
+            check(!state->window->property("panelAutoHide").toBool(),
+                  QStringLiteral("panels: reset view turns auto-hide off"));
+            check(std::abs(state->session->zoom() - 1.0) < 1e-9,
+                  QStringLiteral("panels: reset view returns to 1:1"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {
