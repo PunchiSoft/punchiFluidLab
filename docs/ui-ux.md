@@ -1,10 +1,12 @@
 # Interface design
 
-Status: **the three regions exist; parts of the spec are still open.** The sidebar groups,
-search and footer, the full export panel and the missing status readings are target, not
-current window; each region says what is there today. The document stays the
-specification: a change to a region starts here. The font item under *Still open* is the
-only open item of the theme layer itself.
+Status: **the three regions exist; parts of the spec are still open.** The sidebar tiles,
+groups, search and footer, the panels that hide, the ribbon's depth and icon family, the
+workspace frame and the adaptive shell are target, not current window; each section says
+what is there today. The staged order of that work is
+[interface-plan.md](interface-plan.md). The document stays the specification: a change to
+a region starts here. The font item under *Still open* is the only open item of the theme
+layer itself.
 
 Verified against this machine on 2026-11-06: Plasma 6.7.5 on Wayland, `kdeglobals`
 with `[Colors:Window] BackgroundNormal=36,36,36` and
@@ -50,14 +52,19 @@ a popup about the program, never a command of the circuit, so no command exists 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
 `18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1240 px wide the ribbon collapses into a
-single menu button (a ribbon needs width to work).
+single menu button (a ribbon needs width to work). **Today** the window applies that one
+breakpoint and keeps the catalog at 248 px and the right panels at 360 px; the three modes
+of *The window adapts* below are target ([interface-plan.md](interface-plan.md) stage 6).
 
 ### 1. Ribbon (top)
 
-The icons are the **desktop's own**: each action names a freedesktop icon
-(`document-new`, `edit-undo`, `media-playback-start`), `QIcon::fromTheme` finds it in the
-user's theme and rasterises it; a machine with no such icon gets the label alone, as a
-native application does. See [ADR 0004](adr/0004-icons-from-the-desktop.md).
+The icons are the **desktop's own** everywhere except the ribbon: each action names a
+freedesktop icon (`document-new`, `edit-undo`, `media-playback-start`), `QIcon::fromTheme`
+finds it in the user's theme and rasterises it; a machine with no such icon gets the label
+alone, as a native application does. The ribbon's commands use the project's own line
+family instead, so one command looks the same on every desktop
+([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)); the family falls back to the
+desktop's symbol and then to the label. See [ADR 0004](adr/0004-icons-from-the-desktop.md).
 
 The toolbar is a **ribbon**: a tab row, then the commands of the open tab in labelled
 groups with a hair line between them. The simulation transport is the **Simular** tab,
@@ -214,16 +221,22 @@ The sidebar is generated from the catalog, so it is exactly as complete as
 file adds an entry; deleting the file removes it; `disabled = true` hides it.
 
 **Today** the sidebar is a flat list of that catalog, each row drawn with its own symbol;
-a click selects and a drag places. The collapsible category groups, the search box and
-the footer with the catalog folder and the skipped-file count below are the target and are
-not in the window yet.
+a click selects and a drag places. The header with the count and the search, the
+collapsible category groups, the tiles and the footer with the catalog folder and the
+skipped-file count below are the target and are not in the window yet
+([interface-plan.md](interface-plan.md) stage 4).
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
-  `accessory`, `sensor`), collapsible, state remembered per user.
-- The thumbnail of each entry is **the symbol of its own definition**, drawn by the
+  `accessory`, `sensor`), collapsible, in a stable order, state remembered per user.
+- The sidebar is **a palette of tiles**, two per row: the symbol, the name on two lines
+  and the `id` beneath. The header carries the title, the number of entries and the search
+  field; the footer names the folder in use and the skipped files.
+- The thumbnail of each tile is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - Search filters by `name`, `id` and a few synonyms; `Ctrl+F` focuses it; typing
   selects the first match and `Enter` starts placing it.
+- The sidebar is `18 × grid_unit` wide by default and resizable between its minimum and a
+  third of the window; the width is remembered as view state, not saved in the document.
 - **A pipe is drawn port to port**: press on a port (the pointer turns into a crosshair
   over one), drag, release on another port. The pipe being drawn is a dashed line in the
   accent colour, so the gesture is never invisible; a release that does not land on a port
@@ -246,6 +259,58 @@ not in the window yet.
 
 Instruments (manometer, flow meter, force meter) are catalog entries like the rest;
 their behaviour is a `behaviour` variant, not a special case in the sidebar.
+
+### 2.1 Panels: view state, not document state
+
+The catalog on the left and the right dock (the properties of one component and the title
+block's editor) are **panels**, and a panel is chrome: it can be hidden, widened or
+narrowed, and none of that changes the circuit. The page setup and the export editor are
+**invoked editors** for now: they open centered, they close, and moving them to the right
+dock is a later decision (stage 6 of [interface-plan.md](interface-plan.md)).
+
+- A panel has a **header** with its title and its hide control, and a **rail** at the edge
+  while it is closed, so a hidden panel always has a handle and never becomes a mode the
+  user cannot find.
+- The hide control is a **project glyph** of two rectangles with the side that folds
+  marked. The desktop icon themes have no panel glyph, and a label alone is not a control.
+- Hiding and showing is **animated** with the theme's `motionMs`; with reduced motion it is
+  instant. The content is clipped, and the sheet takes the width in the same gesture.
+- **Auto-hide is off by default.** When the user enables it in **Ver**, a dwell of about
+  350 ms on the rail opens the panel and about 800 ms without the pointer closes it; a
+  return cancels the timer. It never hides while a catalog drag is in progress, while the
+  keyboard focus is inside the panel, or while a dialog is open.
+- **Every panel action has a keyboard path**: `Ctrl+B` for the catalog and `Ctrl+J` for the
+  right dock, besides the commands in **Ver**. Each control exposes its name and its state
+  to the accessibility layer, and the state is a word, not a colour.
+- **Width and visibility are remembered** across sessions. **Ver ▸ Restablecer vista**
+  returns the panels, the zoom and the pan to their defaults. The state is never saved in
+  the document and never enters the undo history.
+
+**Today** none of this is in the window: the catalog is fixed, the properties float as a
+card and the title block is a fixed column
+([interface-plan.md](interface-plan.md) stages 2a and 2b).
+
+### 2.2 The window adapts
+
+The shell chooses one of three modes from the room it has, and the sheet keeps a minimum
+before a panel is allowed to cover it:
+
+| Mode | When | Ribbon | Catalog | Right dock |
+|---|---|---|---|---|
+| **Ancha** | the sheet, the catalog and the dock fit at their preferred widths | full | docked | docked |
+| **Media** | the preferred widths no longer fit but the minimums do | full | docked, narrower | docked, narrower |
+| **Compacta** | the minimums do not fit (about 1240 px and below today) | tabs and **Menú**; optionally minimized | rail | overlay drawer with its handle |
+
+- The minimums are content measurements, not magic numbers: the sheet keeps 480 px, the
+  catalog 220 px and the right dock 300 px.
+- **The ribbon can be minimized** by the user or by the compact mode: the tab row stays and
+  the open tab's groups appear as a panel under it, closing after a command or `Esc`. The
+  minimized state is remembered.
+- Heights come from the font and the spacing unit, not from 34, 62 or 84: a desktop font
+  larger than the default must not clip the ribbon.
+- The window opens at 1280 px and remembers its geometry. The minimum is 900 × 600.
+- **Today** only the ribbon breakpoint exists; the modes, the drawer and the minimized
+  ribbon are target ([interface-plan.md](interface-plan.md) stage 6).
 
 ### 3. The sheet
 
@@ -348,14 +413,18 @@ definition count and the mode text are the target, not in the bar yet.
 | Token | Source |
 |---|---|
 | `surface`, `surface_alt`, `surface_raised` | `[Colors:Window]` / `[Colors:View]` / `[Colors:Button]` |
+| `line`, `line_strong` | `text_muted` blended towards the surface and measured; a line that carries meaning reaches 3:1 |
+| `shadow` | the ink at low alpha, drawn once behind the paper, never a per-frame blur |
 | `text`, `text_muted`, `text_disabled` | `[Colors:Window] ForegroundNormal/Inactive` |
 | `accent`, `accent_hover` | `[Colors:Selection] BackgroundNormal` (49,91,239 here) |
 | `danger`, `warning`, `ok` | `[Colors:Window] ForegroundNegative/Neutral/Positive` |
 | `work_line` | derived from `ok` by pressure ratio, not a new hue |
 | flow arrow on a line | same ink as the line; it carries the direction, never the state |
 | `grid_minor`, `grid_major` | `text_muted` at 22 % and 34 % opacity |
-| spacing | `grid_unit` (18 px in Breeze) and its multiples |
+| spacing | `grid_unit` (18 px in Breeze) and its multiples, with `unit` for the panel margins |
 | typography | `[General] font` family and point size; one scale ×1, ×1.15, ×1.3 |
+| motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change |
+| icons | the ribbon's own line family, one ink; the rest of the window the desktop theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)) |
 
 A single semantic layer, `apps/punchi-fluid-qt/src/theme.cpp`, converts the palette into
 `ThemeTokens` once per theme change and pushes them into the drawing as `PfInk`. Widgets
@@ -379,8 +448,10 @@ disappears on its own window colour.
    and 55 %, then measured; the palette names neither.
 4. Font: `[General] font` reaches Qt through the platform plugin; the drawing asks only
    for a cap height, so a font change needs no layout change.
-5. Icons: `QIcon::fromTheme`, which reads the same Breeze theme. Icons are only for
-   actions; components are shown by their own symbol, drawn by `punchi-fluid-draw`.
+5. Icons: `QIcon::fromTheme`, which reads the same Breeze theme, for the whole window
+   except the ribbon, whose commands use the project's line family
+   ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)). Icons are only for actions;
+   components are shown by their own symbol, drawn by `punchi-fluid-draw`.
 6. HiDPI: Qt scales logical pixels; the drawing is in millimetres and the replay applies
    one scale, so a scale change needs no layout change.
 7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): the platform plugin supplies
@@ -399,8 +470,12 @@ disappears on its own window colour.
   `Ctrl+Z`/`Ctrl+Y` undo and redo, `Space` starts and stops the simulation, `F1` opens
   shortcuts.
 - State never communicated by colour alone.
+- **Panels**: the hide control and the edge rail are reachable with `Tab`, expose their
+  name and their state, and hiding a panel never leaves the focus inside it. Auto-hide is
+  off by default, and a panel that is hidden still has its handle and its shortcut.
 - Reduced motion: `[KDE] AnimationDurationFactor = 0` disables every animation; the
-  piston still shows its position, it just does not ease.
+  piston still shows its position, it just does not ease, and a panel opens or closes
+  without the width animation.
 - Targets ≥ 24 × 24 px; the canvas is exempt because it is a drawing surface, and it
   has keyboard alternatives for everything it does.
 
@@ -467,7 +542,14 @@ translator must be able to reorder the sentence.
 - **No modal for the normal path.** Export, save and settings are panels.
 - **No hover that changes state.** It was a real bug in the sibling project: cards
   slid under the pointer and selected themselves in a loop.
-- **No separate icon set for components.** The symbol is the icon.
+- **No auto-hide by default.** A panel that hides itself during a demonstration is a
+  setting the user turns on, never a surprise.
+- **No hidden panel without a handle.** If a panel can hide, its rail and its command stay
+  visible and reachable.
+- **No separate icon set for components.** The symbol is the icon. The ribbon's own line
+  family is chrome and never stands for a component.
+- **No invented colour for depth.** The planes, the lines and the shadow come from the
+  desktop palette; a ribbon with a brand colour of its own is not this project.
 - **No colour without a number.** Every colour-coded value also has its value.
 - **No hidden mode.** Edit and simulation look different and are named in the status
   bar.
@@ -475,6 +557,9 @@ translator must be able to reorder the sentence.
 ## Still open
 
 - The font family from `[General] font` is read and stored, not loaded; text size is.
+- Whether the page setup and the export editor move from the center to the right dock is
+  decided after the adaptive modes are measured
+  ([interface-plan.md](interface-plan.md) stage 6).
 - UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
   `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 
