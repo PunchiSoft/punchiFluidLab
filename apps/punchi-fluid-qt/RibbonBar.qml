@@ -17,6 +17,9 @@ Rectangle {
     property FluidSession session
     /// The catalog's view state, so the Ver command can say what it will do.
     property bool catalogOpen: true
+    /// The right dock's view state and whether it has content to show.
+    property bool rightDockOpen: true
+    property bool rightDockAvailable: true
 
     /// The Archivo commands that need a file dialog, which belongs to the window.
     signal fileCommand(string command)
@@ -177,7 +180,10 @@ Rectangle {
                         { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") },
                         // The catalog is chrome, and hiding it is view state: the command
                         // says which way it will go and marks the panel as open.
-                        { id: "catalog", label: qsTr("Catálogo"), icon: "view-list-details", hint: ribbon.catalogOpen ? qsTr("Ctrl+B · oculta la barra del catálogo") : qsTr("Ctrl+B · muestra la barra del catálogo"), current: ribbon.catalogOpen, panel: true }
+                        { id: "catalog", label: qsTr("Catálogo"), icon: "view-list-details", hint: ribbon.catalogOpen ? qsTr("Ctrl+B · oculta la barra del catálogo") : qsTr("Ctrl+B · muestra la barra del catálogo"), current: ribbon.catalogOpen, panel: true },
+                        // The right dock holds the properties and the title block; the
+                        // command is only available while one of them is open.
+                        { id: "right-dock", label: qsTr("Propiedades"), icon: "document-properties", hint: ribbon.rightDockOpen ? qsTr("Ctrl+J · oculta el panel derecho") : qsTr("Ctrl+J · muestra el panel derecho"), current: ribbon.rightDockOpen && ribbon.rightDockAvailable, enabled: ribbon.rightDockAvailable, panel: true }
                     ]
                 },
                 {
@@ -355,6 +361,10 @@ Rectangle {
     function invoke(id) {
         if (id === "catalog") {
             ribbon.panelCommand("catalog");
+            return;
+        }
+        if (id === "right-dock") {
+            ribbon.panelCommand("right-dock");
             return;
         }
         if (id.indexOf("circuit:") === 0) {

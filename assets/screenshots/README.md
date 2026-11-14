@@ -10,6 +10,11 @@ Images of the running application, used by the README and by pull request review
 | `catalog-open-dark.png` | The same open catalog on a dark desktop, to check the header and the control in both themes |
 | `catalog-closed-light.png` | The catalog folded to its **24 px rail**: the same control stays on the edge and the sheet uses the recovered width |
 | `catalog-closed-dark.png` | The same folded catalog on a dark desktop, to check the rail and the edge line in both themes |
+| `right-dock-inspector-light.png` | The **right dock** with the properties of the selected valve: category, ports, positions, actuation, spring and the editable designation and conductance |
+| `right-dock-inspector-dark.png` | The same properties dock on a dark desktop, to check the fields and the control in both themes |
+| `right-dock-block-light.png` | The right dock with the **title-block editor**: content and position combos, the twelve guide fields and the derived sheet number |
+| `right-dock-both-light.png` | Both sections sharing the dock, separated by a line: properties above and title block below, scrolling as one column |
+| `right-dock-folded-dark.png` | The right dock folded to its **24 px rail**, the same control on the edge and the sheet using the recovered width |
 | `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
@@ -65,6 +70,23 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme dark --catalog-closed \
   --grab /tmp/catalog-closed-dark.png
+# The right dock: properties, title block, both, and folded. --inspect opens the valve,
+# --block the title-block editor and --right-dock-closed folds the dock to its rail.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --inspect \
+  --grab /tmp/right-dock-inspector-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --inspect \
+  --grab /tmp/right-dock-inspector-dark.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block \
+  --grab /tmp/right-dock-block-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --inspect --tab 3 --block \
+  --grab /tmp/right-dock-both-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --inspect --right-dock-closed \
+  --grab /tmp/right-dock-folded-dark.png
 # The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \

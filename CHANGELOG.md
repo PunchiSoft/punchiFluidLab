@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Las propiedades y el cajetín comparten el panel derecho — 2026-11-14
+
+El inspector flotante y la columna fija del cajetín se unifican en un solo **panel
+derecho**: la hoja conserva su columna, las dos secciones se apilan y se desplazan juntas,
+y el panel se pliega a un raíl de 24 px como el catálogo.
+
+- El panel aparece cuando se abre una propiedad o **Editar datos…**; **Ver ▸ Propiedades**
+  y `Ctrl+J` lo pliegan y lo devuelven. Si estaba oculto, abrir una propiedad lo trae de
+  vuelta.
+- Cuando no tiene contenido, cede todo el ancho a la hoja. **Cerrar** cierra una sección y
+  deja la otra; el panel solo desaparece cuando no queda ninguna.
+- Es estado de vista: no entra en el historial, no marca el documento y no se guarda en el
+  archivo.
+- **Evidencia**: los pasos `panels: the right dock starts without content`, `panels: the
+  inspector fills the right dock`, `panels: the right dock shows the properties`, `panels:
+  Ctrl+J folds the right dock`, `panels: folding the right dock is not a document change`,
+  `panels: Ctrl+J brings the right dock back` y `panels: the right dock yields when it has
+  no content` de `--selftest`, `--check-qml` con 0 problemas, `./scripts-dev/check.sh`
+  verde y las capturas del panel con propiedades, cajetín, ambos y plegado.
+
 ### El catálogo se pliega a un raíl — 2026-11-14
 
 La barra del catálogo deja de tener un ancho fijo: se oculta y vuelve con el control de su

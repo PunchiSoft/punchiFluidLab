@@ -21,6 +21,7 @@
 //! --tab N              open one ribbon tab, for a capture
 //! --menu               open the collapsed ribbon menu, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
+//! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --page-setup         open the page-setup panel, for a capture of it
 //! --paper-list         open the paper list on the Disposición tab
 //! --margin-list        open the margin gallery on the Disposición tab
@@ -577,6 +578,14 @@ int main(int argc, char *argv[])
             session->inspectValve();
         }
     }
+    if (arguments.contains(QStringLiteral("--right-dock-closed"))) {
+        // After the inspector opens, so the fold is what the capture shows.
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("rightDockOpen").isValid()) {
+                root->setProperty("rightDockOpen", false);
+            }
+        }
+    }
     if (arguments.contains(QStringLiteral("--pause"))) {
         for (FluidSession *session : sessions()) {
             session->pauseSimulation();
@@ -745,6 +754,17 @@ int main(int argc, char *argv[])
         steps->push_back([state, check, send] {
             send(QEvent::MouseButtonRelease, state->valveScene, Qt::LeftButton, Qt::NoButton);
         });
+        // The click opens the properties, which now dock instead of floating: the sheet
+        // narrows, so the point recorded for the valve is no longer valid. Close the dock
+        // and recompute it before the transport steps use it.
+        steps->push_back([state, check] {
+            check(state->session->inspectorOpen(),
+                  QStringLiteral("editing: the valve click opens the properties"));
+            state->session->closeInspector();
+        });
+        steps->push_back([state, valveCentre, toScene] {
+            state->valveScene = toScene(valveCentre());
+        });
         steps->push_back([state, check] {
             std::fprintf(stderr, "selftest: editing, valve %d and %.2f bar\n",
                          state->session->valvePosition(), state->session->pressureBar());
@@ -819,13 +839,16 @@ int main(int argc, char *argv[])
         steps->push_back([state, check, send] {
             send(QEvent::MouseButtonRelease, state->valveScene, Qt::LeftButton, Qt::NoButton);
         });
-        steps->push_back([state, check, send, componentRect] {
+        steps->push_back([state, check, send, componentRect, toScene, valveCentre] {
             state->valveIndex = state->session->selected();
             check(state->valveIndex >= 0, QStringLiteral("editing: a click selects"));
             check(state->session->inspectorOpen(), QStringLiteral("editing: the inspector opens"));
             if (state->valveIndex >= 0) {
                 state->valveX = componentRect(state->valveIndex).x();
             }
+            // The properties opened in the right dock and the sheet narrowed, so the point
+            // recorded before the click is no longer where the valve is drawn.
+            state->valveScene = toScene(valveCentre());
             send(QEvent::MouseButtonPress, state->valveScene, Qt::LeftButton, Qt::LeftButton);
         });
         steps->push_back([state, send] {
@@ -2471,6 +2494,57 @@ int main(int argc, char *argv[])
             const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
             check(state->window->property("catalogOpen").toBool() && width > 200.0,
                   QStringLiteral("panels: Ctrl+B brings it back"));
+        });
+
+        // The right dock holds the properties and the title block. It appears when one of
+        // them opens, folds to the rail with Ctrl+J, and yields its width when it has
+        // nothing to show. None of it is a document change.
+        steps->push_back([state, check] {
+            state->session->closeInspector();
+            check(!state->window->property("rightDockHasContent").toBool(),
+                  QStringLiteral("panels: the right dock starts without content"));
+            state->session->inspectComponent(2);
+            check(state->window->property("rightDockHasContent").toBool(),
+                  QStringLiteral("panels: the inspector fills the right dock"));
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("rightDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(dock != nullptr && width > 300.0,
+                  QStringLiteral("panels: the right dock shows the properties"));
+            state->panelModified = state->session->modified();
+            state->panelCanUndo = state->session->canUndo();
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_J, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("rightDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(!state->window->property("rightDockOpen").toBool() && width <= 30.0,
+                  QStringLiteral("panels: Ctrl+J folds the right dock"));
+            check(state->session->modified() == state->panelModified
+                      && state->session->canUndo() == state->panelCanUndo,
+                  QStringLiteral("panels: folding the right dock is not a document change"));
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_J, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("rightDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(state->window->property("rightDockOpen").toBool() && width > 300.0,
+                  QStringLiteral("panels: Ctrl+J brings the right dock back"));
+            state->session->closeInspector();
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("rightDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            const bool blockOpen = state->window->property("titleBlockOpen").toBool();
+            check(blockOpen || width <= 1.0,
+                  QStringLiteral("panels: the right dock yields when it has no content"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {
