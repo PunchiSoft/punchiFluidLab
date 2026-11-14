@@ -206,7 +206,7 @@ aparte.
 **Estado honesto:** las regiones, los tokens, el mapa de teclado y el panel de ayuda
 están hechos. Los iconos simbólicos de Breeze todavía no se cargan (los botones usan
 texto), la *familia* tipográfica del escritorio se lee pero no se carga (el tamaño sí)
-y los textos de la interfaz siguen literales hasta el pase a Fluent de M6.
+y los textos de la interfaz siguen literales hasta el pase a los catálogos de Qt de M6.
 
 La especificación completa —regiones, mapa de teclado, requisitos de contraste y lo
 que el diseño rechaza— está en [docs/ui-ux.md](docs/ui-ux.md). Los hitos con sus

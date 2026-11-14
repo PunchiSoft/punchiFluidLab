@@ -211,7 +211,7 @@ fails a test. Components use their own symbol, never a separate icon set.
 **Honest status:** the regions, the tokens, the keyboard map and the help panel are
 implemented. Breeze symbolic icons are not loaded yet (action buttons are text), the
 desktop font *family* is read but not loaded (size is), and the UI strings are still
-literals until the Fluent pass in M6.
+literals until the Qt translation pass in M6.
 
 The full specification — regions, keyboard map, contrast requirements, what the design
 refuses — is in [docs/ui-ux.md](docs/ui-ux.md). The milestones with their acceptance

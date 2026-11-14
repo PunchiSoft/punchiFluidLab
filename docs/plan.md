@@ -190,7 +190,9 @@ Manometer, flow meter, force meter, and a strip chart of pressure and position.
 
 **Status:** not started.
 
-- `i18n/` with Fluent, English and Spanish complete, no string concatenation.
+- `i18n/` with Qt catalogs (`.ts` compiled to `.qm`), English and Spanish complete, no
+  string concatenation; the Rust core returns keys, never sentences
+  ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 - AppImage and Flatpak manifests, desktop entry, AppStream metadata, Breeze icon in
   hicolor sizes.
 - Signed release with checksums; `cargo-deny` and `cargo-audit` clean.
