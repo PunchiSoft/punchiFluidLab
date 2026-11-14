@@ -241,6 +241,10 @@ schematic simulator lives by, and the one the reference tool uses:
   An older file opens as an unframed A4 so its drawing does not move. A custom size is a
   print override for this one file, and a sheet per circuit is not there yet
   ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
+- **The frame carries the four centring marks** at the midpoints of the sheet, a 0.7 mm
+  line outward and a small arrow. The title block and its editable blocks are the next
+  change; [reference/title-block.md](reference/title-block.md) records the ISO 7200 fields
+  and the 180 mm two-band layout before they land.
 - **A hose keeps clear of the symbols it joins and the ones in between.** The automatic
   route leaves and enters along the port edge and goes round the endpoint boxes with the
   largest clearance that fits (up to 2 mm). A third component on the way is added to the

@@ -12,20 +12,20 @@ use crate::page::{Page, TitleBlock};
 
 /// Width of the frame and the block rules, in millimetres.
 const RULE: f32 = 0.35;
+/// Width of the frame line and the centring marks, in millimetres (ISO 5457).
+const FRAME: f32 = 0.7;
 /// Cap height of a field label.
 const LABEL: f32 = 2.2;
 /// Cap height of a field value.
 const VALUE: f32 = 3.0;
+/// How far a centring mark runs beyond the frame, in millimetres (ISO 5457 recommends 10).
+const CENTRING_MM: f32 = 10.0;
 
-/// Draws the frame, the title block and the legend of the page.
+/// Draws the frame, the centring marks, the title block and the legend of the page.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     let content = page.content_rect();
-    surface.rect(
-        content,
-        0.0,
-        None,
-        Some(Stroke::new(RULE * 1.6, Colour::BLACK)),
-    );
+    surface.rect(content, 0.0, None, Some(Stroke::new(FRAME, Colour::BLACK)));
+    draw_centring_marks(surface, page);
 
     let title = page.title_rect();
     surface.rect(title, 0.0, None, Some(Stroke::new(RULE, Colour::BLACK)));
@@ -87,6 +87,68 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
 
     draw_legend(surface, page);
     draw_parts(surface, page);
+}
+
+/// The four centring marks of ISO 5457: at the ends of the symmetry axes of the paper, a
+/// line from the frame outward and a small arrow at the paper edge. The form is free; the
+/// line is the recommended part.
+fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
+    let paper = page.rect();
+    let content = page.content_rect();
+    if content.is_empty() {
+        return;
+    }
+    let cx = f32::midpoint(paper.min.x, paper.max.x);
+    let cy = f32::midpoint(paper.min.y, paper.max.y);
+    let stroke = Stroke::new(FRAME, Colour::BLACK);
+    let mut mark = |from: Pt, to: Pt, tip: Pt, base: [Pt; 2]| {
+        let (dx, dy) = from.to(to);
+        if dx.hypot(dy) < 0.5 {
+            return;
+        }
+        surface.line(&[from, to], stroke);
+        surface.polygon(&[tip, base[0], base[1]], Some(Colour::BLACK), None);
+    };
+    let top = (content.min.y - CENTRING_MM).max(paper.min.y);
+    if top < content.min.y - 0.5 {
+        let tip = Pt::new(cx, (top + 3.0).min(content.min.y));
+        mark(
+            Pt::new(cx, content.min.y),
+            Pt::new(cx, top),
+            tip,
+            [Pt::new(cx - 1.5, top), Pt::new(cx + 1.5, top)],
+        );
+    }
+    let bottom = (content.max.y + CENTRING_MM).min(paper.max.y);
+    if bottom > content.max.y + 0.5 {
+        let tip = Pt::new(cx, (bottom - 3.0).max(content.max.y));
+        mark(
+            Pt::new(cx, content.max.y),
+            Pt::new(cx, bottom),
+            tip,
+            [Pt::new(cx - 1.5, bottom), Pt::new(cx + 1.5, bottom)],
+        );
+    }
+    let left = (content.min.x - CENTRING_MM).max(paper.min.x);
+    if left < content.min.x - 0.5 {
+        let tip = Pt::new((left + 3.0).min(content.min.x), cy);
+        mark(
+            Pt::new(content.min.x, cy),
+            Pt::new(left, cy),
+            tip,
+            [Pt::new(left, cy - 1.5), Pt::new(left, cy + 1.5)],
+        );
+    }
+    let right = (content.max.x + CENTRING_MM).min(paper.max.x);
+    if right > content.max.x + 0.5 {
+        let tip = Pt::new((right - 3.0).max(content.max.x), cy);
+        mark(
+            Pt::new(content.max.x, cy),
+            Pt::new(right, cy),
+            tip,
+            [Pt::new(right, cy - 1.5), Pt::new(right, cy + 1.5)],
+        );
+    }
 }
 
 /// The parts list, in its own column above the block.
@@ -234,6 +296,13 @@ mod tests {
         assert!(texts.contains(&"title"));
         assert!(texts.iter().any(|text| text.contains("1 supply")));
         assert!(texts.contains(&"working"));
+        // The four centring marks are the only filled triangles on the sheet.
+        let triangles = recording
+            .calls()
+            .iter()
+            .filter(|call| matches!(call, punchi_fluid_draw::Call::Polygon { .. }))
+            .count();
+        assert_eq!(triangles, 4, "one centring arrow on each side");
     }
 
     #[test]

@@ -36,6 +36,7 @@ qt_add_executable(punchi-fluid
     src/session.cpp
     src/session.h
     src/canvasitem.cpp
+    src/sheetframe.cpp
     src/canvasitem.h
     src/previewitem.cpp
     src/previewitem.h

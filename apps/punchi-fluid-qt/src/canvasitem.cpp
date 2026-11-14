@@ -4,6 +4,7 @@
 #include "canvasitem.h"
 
 #include "replay.h"
+#include "sheetframe.h"
 
 #include <QCursor>
 #include <QDateTime>
@@ -24,8 +25,6 @@
 namespace {
 /// How close, in millimetres of the sheet, a press must be to a port to mean it.
 constexpr double kPortToleranceMm = 2.5;
-/// Ruling of the sheet's grid, in millimetres.
-constexpr double kGridMm = 10.0;
 /// Pixels one wheel notch pans, and pixels one arrow key pans. Enough to feel like a
 /// scroll and little enough that a port stays under the eye.
 constexpr double kPanPerNotch = 48.0;
@@ -87,12 +86,6 @@ void SchematicItem::paint(QPainter *painter)
         return;
     }
     const QSizeF sheet = sheetSizeMm();
-    const qreal sheetWidth = sheet.width();
-    const qreal sheetHeight = sheet.height();
-    const qreal left = m_session->sheetMarginLeft();
-    const qreal top = m_session->sheetMarginTop();
-    const qreal right = sheetWidth - m_session->sheetMarginRight();
-    const qreal bottom = sheetHeight - m_session->sheetMarginBottom();
     const Fit placement = this->placement();
     PfFrame frame {};
     const int32_t code = pf_session_build_frame(
@@ -100,49 +93,7 @@ void SchematicItem::paint(QPainter *painter)
     if (code != PF_OK) {
         return;
     }
-    if (m_session->grid()) {
-        const Fit fit = placement;
-        // The grid is the drawing's own millimetre ruling, so a component lines up with it
-        // instead of floating. It stops at the frame, because the margin is paper, not
-        // drawing space. Drawn first and faint: it is a guide, never a mark on the document.
-        QColor line = m_session->tokens().inkMuted;
-        line.setAlphaF(0.22F);
-        painter->save();
-        painter->setPen(QPen(line, 1.0));
-        for (double x = left + kGridMm; x < right; x += kGridMm) {
-            const qreal px = fit.originX + x * fit.pixelsPerMm;
-            painter->drawLine(QPointF(px, fit.originY + top * fit.pixelsPerMm),
-                              QPointF(px, fit.originY + bottom * fit.pixelsPerMm));
-        }
-        for (double y = top + kGridMm; y < bottom; y += kGridMm) {
-            const qreal py = fit.originY + y * fit.pixelsPerMm;
-            painter->drawLine(QPointF(fit.originX + left * fit.pixelsPerMm, py),
-                              QPointF(fit.originX + right * fit.pixelsPerMm, py));
-        }
-        painter->restore();
-    }
-    {
-        // The edge of the paper, and the ISO 5457 frame inside it. Without them "outside
-        // the sheet" is a finding the user cannot see.
-        const Fit fit = placement;
-        QColor edge = m_session->tokens().inkMuted;
-        edge.setAlphaF(0.55F);
-        painter->save();
-        painter->setPen(QPen(edge, 1.0));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(QRectF(fit.originX, fit.originY, sheetWidth * fit.pixelsPerMm,
-                                 sheetHeight * fit.pixelsPerMm));
-        if (left > 0.0 || top > 0.0 || right < sheetWidth || bottom < sheetHeight) {
-            QColor frameInk = edge;
-            frameInk.setAlphaF(0.8F);
-            painter->setPen(QPen(frameInk, 1.0));
-            painter->drawRect(QRectF(fit.originX + left * fit.pixelsPerMm,
-                                     fit.originY + top * fit.pixelsPerMm,
-                                     (right - left) * fit.pixelsPerMm,
-                                     (bottom - top) * fit.pixelsPerMm));
-        }
-        painter->restore();
-    }
+    drawSheetFrame(painter, *m_session, placement, sheet.width(), sheet.height());
     replayFrame(painter, frame, placement);
 
     if (m_connecting >= 0 && m_session) {
