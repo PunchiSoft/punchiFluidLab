@@ -551,9 +551,9 @@ void SchematicItem::mouseMoveEvent(QMouseEvent *event)
             m_session->moveSelection(target.x() - centre.x(), target.y() - centre.y());
         }
     } else {
-        // Live movement while dragging: the document coalesces the moves into one undo
-        // entry, so a drag costs one Ctrl+Z, not one per pixel.
-        m_session->moveComponent(m_dragging, sheet.x() - m_dragOffset.x(),
+        // Live movement while dragging: one undo entry, not one per pixel. The drag, not
+        // the plain move, lets a wired port pull the component onto the other end's axis.
+        m_session->dragComponent(m_dragging, sheet.x() - m_dragOffset.x(),
                                  sheet.y() - m_dragOffset.y());
     }
     update();

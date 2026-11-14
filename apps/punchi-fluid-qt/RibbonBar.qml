@@ -148,7 +148,10 @@ Rectangle {
                         { id: "align-left", label: qsTr("Izquierda"), icon: "align-horizontal-left", hint: qsTr("sobre el objeto más a la izquierda"), enabled: session.selectionCount > 1 },
                         { id: "align-right", label: qsTr("Derecha"), icon: "align-horizontal-right", hint: qsTr("sobre el objeto más a la derecha"), enabled: session.selectionCount > 1 },
                         { id: "align-top", label: qsTr("Arriba"), icon: "align-vertical-top", hint: qsTr("sobre el objeto más alto"), enabled: session.selectionCount > 1 },
-                        { id: "align-bottom", label: qsTr("Abajo"), icon: "align-vertical-bottom", hint: qsTr("sobre el objeto más bajo"), enabled: session.selectionCount > 1 }
+                        { id: "align-bottom", label: qsTr("Abajo"), icon: "align-vertical-bottom", hint: qsTr("sobre el objeto más bajo"), enabled: session.selectionCount > 1 },
+                        // A hose between two ports on the same axis is straight only when
+                        // the other coordinate matches; this moves one end onto it.
+                        { id: "align-ports", label: qsTr("Puertos"), icon: "align-horizontal-center", hint: qsTr("mueve el otro extremo para dejar la manguera recta · Alt+A"), enabled: session.selectedPipe >= 0 }
                     ]
                 },
                 {
@@ -266,6 +269,8 @@ Rectangle {
             session.alignSelection(2);
         } else if (id === "align-bottom") {
             session.alignSelection(3);
+        } else if (id === "align-ports") {
+            session.straightenSelectedPipe();
         } else if (id === "pipe-working") {
             session.setPipeClass(0);
         } else if (id === "pipe-pilot") {

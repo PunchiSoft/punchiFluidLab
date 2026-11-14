@@ -230,6 +230,13 @@ int32_t pf_session_align_selection(PfSession *session, uint32_t edge);
 /* Spreads the selection with equal gaps: axis 0 across, 1 down. One undoable change. */
 int32_t pf_session_space_selection(PfSession *session, uint32_t axis);
 int32_t pf_session_move_component(PfSession *session, uint32_t index, float x_mm, float y_mm);
+/* Moves a placement as a drag: the 10 mm grid first, then a wired port within 6 mm snaps
+ * onto the other end's axis, so a hose between parallel edges becomes a straight run. The
+ * move is one undo entry. */
+int32_t pf_session_drag_component(PfSession *session, uint32_t index, float x_mm, float y_mm);
+/* Moves one end of a hose onto the other's axis, as one undo. Refused when the two ports
+ * leave along different axes, because that hose has a bend by construction. */
+int32_t pf_session_straighten_pipe(PfSession *session, uint32_t index);
 int32_t pf_session_remove_component(PfSession *session, uint32_t index);
 /* One-slot clipboard: copy the selected component, paste it, or copy in place. */
 int32_t pf_session_copy_selected(PfSession *session);

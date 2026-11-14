@@ -295,6 +295,12 @@ Window {
         sequence: "Alt+M"
         onActivated: session.mirrorSelected()
     }
+    // The keyboard path for the port magnet: a hose between two ports on the same axis is
+    // straight once the other coordinate matches, and this moves one end onto it.
+    Shortcut {
+        sequence: "Alt+A"
+        onActivated: session.straightenSelectedPipe()
+    }
     Shortcut {
         sequence: "Ctrl+M"
         onActivated: window.muted = !window.muted

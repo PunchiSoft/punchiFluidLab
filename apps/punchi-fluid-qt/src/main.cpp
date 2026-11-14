@@ -1961,6 +1961,87 @@ int main(int argc, char *argv[])
                   QStringLiteral("sheet: undo returns the ISO margin"));
         });
 
+        // The port magnet: a hose between two ports on the same axis becomes straight when
+        // the dragged component's port comes within reach, even though the grid could never
+        // land on the 8.02 mm offset. Then the same move from the keyboard.
+        steps->push_back([state, check, send, toScene, componentRect] {
+            auto componentNamed = [state](const QString &prefix) {
+                const uint32_t count = pf_session_component_count(state->session->handle());
+                for (uint32_t index = 0; index < count; ++index) {
+                    char id[128] = {};
+                    if (pf_session_component_id(state->session->handle(), index, id, sizeof id) >= 0
+                        && QString::fromUtf8(id).startsWith(prefix)) {
+                        return static_cast<int>(index);
+                    }
+                }
+                return -1;
+            };
+            const int valve = componentNamed(QStringLiteral("valve."));
+            const int cylinder = componentNamed(QStringLiteral("cylinder."));
+            check(valve >= 0 && cylinder >= 0,
+                  QStringLiteral("magnet: the example has a valve and a cylinder"));
+            if (valve < 0 || cylinder < 0) {
+                return;
+            }
+            QPointF valvePort;
+            QPointF cylinderPort;
+            check(state->session->portPoint(valve, QStringLiteral("2"), &valvePort)
+                      && state->session->portPoint(cylinder, QStringLiteral("1"), &cylinderPort),
+                  QStringLiteral("magnet: both ports are found"));
+            const QPointF centre = componentRect(cylinder).center();
+            const QPointF target(
+                valvePort.x() - (cylinderPort.x() - centre.x()) + 2.0, centre.y());
+            send(QEvent::MouseButtonPress, toScene(centre), Qt::LeftButton, Qt::LeftButton);
+            send(QEvent::MouseMove, toScene(target), Qt::NoButton, Qt::LeftButton);
+            send(QEvent::MouseButtonRelease, toScene(target), Qt::LeftButton, Qt::NoButton);
+            QPointF moved;
+            state->session->portPoint(cylinder, QStringLiteral("1"), &moved);
+            std::fprintf(stderr, "selftest: magnet port x %.2f against %.2f\n", moved.x(),
+                         valvePort.x());
+            check(std::abs(moved.x() - valvePort.x()) < 0.05,
+                  QStringLiteral("magnet: the dragged port lands on the other end's axis"));
+            state->session->undo();
+        });
+        steps->push_back([state, check] {
+            int valve = -1;
+            int cylinder = -1;
+            const uint32_t count = pf_session_component_count(state->session->handle());
+            for (uint32_t index = 0; index < count; ++index) {
+                char id[128] = {};
+                if (pf_session_component_id(state->session->handle(), index, id, sizeof id) < 0) {
+                    continue;
+                }
+                const QString text = QString::fromUtf8(id);
+                if (valve < 0 && text.startsWith(QStringLiteral("valve."))) {
+                    valve = static_cast<int>(index);
+                }
+                if (cylinder < 0 && text.startsWith(QStringLiteral("cylinder."))) {
+                    cylinder = static_cast<int>(index);
+                }
+            }
+            QPointF valvePort;
+            QPointF cylinderPort;
+            if (valve < 0 || cylinder < 0
+                || !state->session->portPoint(valve, QStringLiteral("2"), &valvePort)
+                || !state->session->portPoint(cylinder, QStringLiteral("1"), &cylinderPort)) {
+                check(false, QStringLiteral("magnet: the hose can be selected"));
+                return;
+            }
+            const double mid = (valvePort.y() + cylinderPort.y()) * 0.5;
+            const int pipe = state->session->pipeAt(valvePort.x(), mid, 2.0);
+            check(pipe >= 0, QStringLiteral("magnet: the hose is under the point"));
+            if (pipe < 0) {
+                return;
+            }
+            state->session->selectPipe(pipe);
+            state->session->straightenSelectedPipe();
+            QPointF moved;
+            state->session->portPoint(cylinder, QStringLiteral("1"), &moved);
+            check(std::abs(moved.x() - valvePort.x()) < 0.05,
+                  QStringLiteral("magnet: Alt+A straightens the selected hose"));
+            state->session->undo();
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);
