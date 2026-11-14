@@ -849,14 +849,12 @@ int main(int argc, char *argv[])
                   QStringLiteral("editing: undoing the copy removes it"));
             state->components = before;
         });
-        steps->push_back([state, sendWith, toScene, componentRect] {
-            // The rect comes from the last built layout; after a paper or block change the
-            // window may not have painted yet, and a stale layout maps the press to the
-            // wrong point. Build one frame first, then read the box.
+        steps->push_back([state, sendWith, toScene, valveCentre] {
+            // The point that the earlier valve clicks already prove is on the valve, so the
+            // gesture does not depend on a component rect that a stale frame could move.
             PfFrame frame {};
             pf_session_build_frame(state->session->handle(), 4.0F, &frame);
-            const QRectF box = componentRect(state->valveIndex);
-            state->routeScene = toScene(box.center());
+            state->routeScene = toScene(valveCentre());
             sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
         });
