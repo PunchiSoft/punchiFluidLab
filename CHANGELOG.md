@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### Acerca de y Licencia, en la cinta y con el texto completo — 2026-11-14
+
+La fila de pestañas no decía cómo se llama el programa ni con qué licencia viaja. Ahora
+lo dice, sin añadir una pestaña más.
+
+- **Dos enlaces de texto a la derecha de las pestañas**: **Acerca de** y **Licencia**,
+  con el peso de Archivo, Editar, Ver, Cajetín y Simular, y visibles también cuando la
+  cinta se pliega en el botón Menú. No son pestañas ni mandos del circuito.
+- **Acerca de** reúne el nombre, la versión del núcleo, «versión en desarrollo, sin
+  publicar», una línea de qué es, el repositorio, el enlace para informar de un problema,
+  el copyright con la GPL-3.0-or-later y la autoría de PunchiSoft. Los dos enlaces abren
+  el navegador del escritorio **solo al pulsarlos**: la aplicación no hace red ni lanza
+  nada por su cuenta. Es la única excepción a la regla de no lanzar procesos, y está
+  acotada a dos URL fijas.
+- **Licencia** muestra el resumen y el **texto completo de la GPL**, compilado en el
+  binario con `qt_add_resources` desde `LICENSE`: una copia instalada sin el repositorio
+  sigue llevando la licencia que la cubre. La versión de Acerca de sale de `pf_version()`,
+  no de una constante escrita en QML.
+- **Cierre**: Cerrar, `Esc` o un clic fuera. Abrir cualquiera de los dos no cambia el
+  documento ni entra en el historial.
+- **Evidencia**: `--check-qml` sin problemas, los pasos `help: …` en `--selftest` (la
+  versión mostrada es la del núcleo y la licencia es la GPL completa) y las capturas
+  `about-light.png`, `about-dark.png` y `license-light.png`.
+
 ### El cajetín y la hoja siguen las guías chilenas — 2026-11-14
 
 La hoja se identifica como un esquema de control y sigue las dos guías técnicas chilenas

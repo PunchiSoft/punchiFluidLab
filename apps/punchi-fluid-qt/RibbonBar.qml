@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // The ribbon: tabs on top, the commands of the open tab in labelled groups underneath.
-// The simulation transport is the Simular tab, like Archivo, Editar and Ver.
+// The simulation transport is the Simular tab, like Archivo, Editar, Ver and Cajetín.
+// The two help links sit at the right end of the tab row, as text, and are not tabs.
 //
-// The tabs are the four register of docs/ui-ux.md. A tab whose commands do not exist yet
+// The tabs are the five register of docs/ui-ux.md. A tab whose commands do not exist yet
 // says so in one line instead of showing buttons that do nothing, and a command that is
 // not implemented is not on screen at all.
 
@@ -17,6 +18,9 @@ Rectangle {
 
     /// The Archivo commands that need a file dialog, which belongs to the window.
     signal fileCommand(string command)
+
+    /// The help links open popups the window owns, like the file dialogs.
+    signal helpCommand(string command)
 
     /// Below this width a ribbon is worse than a menu, so it folds away.
     readonly property bool collapsed: width < 1100
@@ -273,6 +277,14 @@ Rectangle {
 
     ]
 
+    // The help links of the tab row, in reading order. They are not tabs and they have no
+    // group: they open a popup about the program itself, which is window chrome and not a
+    // command of the circuit. Keeping them in one table makes selfTest press them too.
+    readonly property var helpLinks: [
+        { id: "about", label: qsTr("Acerca de"), hint: qsTr("nombre, versión, licencia y autoría") },
+        { id: "license", label: qsTr("Licencia"), hint: qsTr("el texto completo de la GPL") }
+    ]
+
     implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
 
     function invoke(id) {
@@ -320,6 +332,10 @@ Rectangle {
         }
         if (id === "block-reset") {
             session.resetBlockVisibility();
+            return;
+        }
+        if (id === "about" || id === "license") {
+            ribbon.helpCommand(id);
             return;
         }
         if (id === "restart") {
@@ -420,6 +436,11 @@ Rectangle {
             // proves every tab still has one action list and no tab is empty.
             flatActions();
         }
+        // The help links are window chrome, not tab commands, but a broken handler fails
+        // here as well.
+        for (let h = 0; h < helpLinks.length; ++h) {
+            invoke(helpLinks[h].id);
+        }
         current = before;
     }
 
@@ -512,6 +533,28 @@ Rectangle {
             onTriggered: ribbon.menuOpen = !ribbon.menuOpen
         }
 
+        // The help links are text, not buttons: the tab row is chrome, and two framed
+        // buttons would read as two more tabs. They stay at the right when the ribbon
+        // folds, so About and Licence never need a tab switch.
+        Row {
+            id: helpRow
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
+
+            Repeater {
+                model: ribbon.helpLinks
+
+                delegate: HelpLink {
+                    required property var modelData
+                    session: ribbon.session
+                    label: modelData.label
+                    hint: modelData.hint
+                    onTriggered: ribbon.invoke(modelData.id)
+                }
+            }
+        }
     }
 
     // ---- body ---------------------------------------------------------------

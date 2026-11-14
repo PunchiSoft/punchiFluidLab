@@ -98,6 +98,12 @@ class FluidSession : public QObject
     Q_PROPERTY(QString currentPath READ currentPath NOTIFY documentChanged)
     Q_PROPERTY(bool modified READ modified NOTIFY documentChanged)
     Q_PROPERTY(QString title READ title NOTIFY documentChanged)
+    /// The core's version, which is the workspace's: the About popup cannot name a build
+    /// the binary is not.
+    Q_PROPERTY(QString coreVersion READ coreVersion CONSTANT)
+    /// The GPL text compiled into the binary by CMake, so an installed copy still carries
+    /// the licence it is distributed under.
+    Q_PROPERTY(QString licenseText READ licenseText CONSTANT)
     Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
     Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
     Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
@@ -145,6 +151,8 @@ public:
     bool modified() const { return m_modified; }
     /// The window title: the file name, and a mark when there is unsaved work.
     QString title() const;
+    QString coreVersion() const;
+    QString licenseText() const;
     /// `true` when a safety copy from a previous run is waiting to be recovered.
     bool recoveryOffered() const { return m_recoveryOffered; }
     /// Where the safety copy lives: one file per user, beside the application data.
@@ -523,6 +531,8 @@ private:
     PfTelemetry m_telemetry {};
     QString m_error;
     QString m_currentPath;
+    /// Read once from the `:/LICENSE` resource, the first time the Licence popup opens.
+    mutable QString m_licenseText;
     bool m_modified = false;
     bool m_recoveryOffered = false;
     bool m_closeConfirmed = false;

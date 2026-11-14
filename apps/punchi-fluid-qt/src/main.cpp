@@ -16,6 +16,8 @@
 //! --selftest           replay every sheet gesture with real events; exits 1 on failure
 //! --block              open the title-block editor, for a capture of it
 //! --block-model N      0 escolar, 1 técnico, 2 industrial, for a capture
+//! --about              open the About popup, for a capture of it
+//! --license            open the Licence popup, for a capture of it
 //! --probe              print the numbers the status bar shows, then exit 1
 //! --open <file>        open a saved sheet before anything else
 //! --save <file>        save the sheet and exit 0/1, without a window
@@ -245,6 +247,16 @@ int main(int argc, char *argv[])
         for (QObject *root : engine.rootObjects()) {
             if (root->property("titleBlockOpen").isValid()) {
                 root->setProperty("titleBlockOpen", true);
+            }
+        }
+    }
+
+    if (arguments.contains(QStringLiteral("--about"))
+        || arguments.contains(QStringLiteral("--license"))) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("aboutOpen").isValid()) {
+                root->setProperty("aboutOpen", arguments.contains(QStringLiteral("--about")));
+                root->setProperty("licenseOpen", arguments.contains(QStringLiteral("--license")));
             }
         }
     }
@@ -2206,6 +2218,53 @@ int main(int argc, char *argv[])
             check(std::abs(moved.x() - valvePort.x()) < 0.05,
                   QStringLiteral("magnet: Alt+A straightens the selected hose"));
             state->session->undo();
+        });
+
+        // The two help links are text in the tab row, not tabs. Opening each popup proves
+        // the link reaches the window, that the version on screen is the core's own and
+        // that the licence page is the GPL text compiled into the binary, not a file the
+        // machine happens to have.
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            if (ribbon == nullptr) {
+                check(false, QStringLiteral("help: the ribbon is in the scene"));
+                return;
+            }
+            QMetaObject::invokeMethod(ribbon, "invoke", Q_ARG(QVariant, QStringLiteral("about")));
+            check(state->window->property("aboutOpen").toBool()
+                      && !state->window->property("licenseOpen").toBool(),
+                  QStringLiteral("help: Acerca de opens its popup"));
+        });
+        steps->push_back([state, check] {
+            QObject *about = state->window->findChild<QObject *>(QStringLiteral("aboutPanel"));
+            QObject *version = state->window->findChild<QObject *>(QStringLiteral("aboutVersion"));
+            const QString shown = version != nullptr ? version->property("text").toString()
+                                                     : QString();
+            std::fprintf(stderr, "selftest: about version \"%s\"\n", qUtf8Printable(shown));
+            check(about != nullptr && about->property("visible").toBool(),
+                  QStringLiteral("help: the About popup is on screen"));
+            check(shown == QString::fromUtf8(pf_version()) && !shown.isEmpty(),
+                  QStringLiteral("help: the version is the core's own"));
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            QMetaObject::invokeMethod(ribbon, "invoke",
+                                      Q_ARG(QVariant, QStringLiteral("license")));
+            QObject *page = state->window->findChild<QObject *>(QStringLiteral("licenseText"));
+            const QString text = page != nullptr ? page->property("text").toString() : QString();
+            check(state->window->property("licenseOpen").toBool()
+                      && !state->window->property("aboutOpen").toBool(),
+                  QStringLiteral("help: Licencia opens its popup"));
+            check(text.contains(QStringLiteral("GNU GENERAL PUBLIC LICENSE"))
+                      && text.contains(QStringLiteral("Version 3")),
+                  QStringLiteral("help: the licence is the full GPL text"));
+        });
+        steps->push_back([state, check] {
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+            check(!state->window->property("aboutOpen").toBool()
+                      && !state->window->property("licenseOpen").toBool(),
+                  QStringLiteral("help: Escape closes the help popups"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {

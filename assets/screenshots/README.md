@@ -4,8 +4,8 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, and the status bar reading `A4 · 297 × 210 mm` |
-| `window-dark.png` | The same window on a dark desktop, to check the paper edge and the frame in both themes |
+| `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
+| `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
 | `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
@@ -15,6 +15,9 @@ Images of the running application, used by the README and by pull request review
 | `title-block-dark.png` | The same editor on a dark desktop, to check the fields, the derived sheet number and the block in both themes |
 | `title-block-escolar-light.png` | The docked editor with the **Escolar** model, showing the shorter field set, the **Nota:** box with its placeholder and the compact block |
 | `title-block-zoom-light.png` | The A4 industrial block at **2×** from `window-light.png`: the 5 mm title and the 3.5 mm values sit inside their rows, and the title does not touch the Nº de plano row |
+| `about-light.png` | The **Acerca de** popup on a light desktop: the name and the core's version, the unreleased note, the repository and issue links, the copyright with **Leer la licencia**, the author and **Cerrar** |
+| `about-dark.png` | The same popup on a dark desktop, to check the links and the panel in both themes |
+| `license-light.png` | The **Licencia** popup: the GPL summary and the start of the full text that travels inside the binary |
 | `cajetin-tab-light.png` | The **Cajetín** ribbon tab open on a light desktop: the Contenido summary, the positions and the Datos group |
 | `cajetin-portrait-light.png` | The docked editor on **A4 portrait**, with the content and position combos and the three positions the portrait sheet offers |
 | `cajetin-landscape-light.png` | The same editor on **A4 landscape**, with the two corner positions the landscape sheet offers |
@@ -54,7 +57,18 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a3.pfluid \
   --grab /tmp/a3-reference-zones-light.png
+# The two help popups.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --about --grab /tmp/about-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --about --grab /tmp/about-dark.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --license --grab /tmp/license-light.png
 ```
+
+`plano-a3.pfluid` and `plano-a4-portrait.pfluid` are written with
+`--save`, then their `sheet.paper` or `sheet.landscape` field is set to the sheet the
+capture is about: the format is the program's own and the drawing stays the opening one.
 
 The still captures in this folder are taken from the window itself with `--grab`, so they
 show the content without window decorations. A decorated capture is still the maintainer's

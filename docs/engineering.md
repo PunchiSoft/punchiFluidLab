@@ -121,7 +121,11 @@ to leak but local content — and nothing may leave the machine.
 | Font or icon path tricks | read-only access, resolved under `XDG_DATA_DIRS`, no following of symlinks outside the icon roots |
 
 Also: no `unsafe` (workspace lint), no shell-outs, no `eval`, no plugin loading of
-native code. Anything that changes this list needs an ADR and a security review.
+native code. The one exception is deliberate and bounded: the two fixed links in the
+About popup ask the desktop to open the repository or its issue tracker in the user's
+browser **when the user clicks them**. The program runs no command of its own, never
+takes a URL from a file and never makes a network request. Anything that changes this
+list needs an ADR and a security review.
 
 ### Failure behaviour
 

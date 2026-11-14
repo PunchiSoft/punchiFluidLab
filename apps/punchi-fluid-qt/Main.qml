@@ -41,6 +41,28 @@ Window {
     property bool renameCircuitOpen: false
     property string renameCircuitText: ""
 
+    /// The help popups. They belong to the window, not to the document: opening one never
+    /// changes the circuit and never enters the history.
+    property bool aboutOpen: false
+    property bool licenseOpen: false
+    readonly property string repositoryUrl: "https://github.com/PunchiSoft/punchiFluidLab"
+    readonly property string issuesUrl: repositoryUrl + "/issues"
+
+    function openAbout() {
+        window.licenseOpen = false;
+        window.aboutOpen = true;
+    }
+
+    function openLicense() {
+        window.aboutOpen = false;
+        window.licenseOpen = true;
+    }
+
+    function closeHelp() {
+        window.aboutOpen = false;
+        window.licenseOpen = false;
+    }
+
     function activeCircuitName() {
         const circuits = session.circuits;
         for (let index = 0; index < circuits.length; ++index) {
@@ -332,6 +354,7 @@ Window {
         onActivated: {
             window.dragCatalog = -1;
             window.renameCircuitOpen = false;
+            window.closeHelp();
             session.closeInspector();
         }
     }
@@ -492,6 +515,13 @@ Window {
                     exportDialog.open();
                 } else {
                     saveCommand();
+                }
+            }
+            onHelpCommand: function (command) {
+                if (command === "about") {
+                    window.openAbout();
+                } else if (command === "license") {
+                    window.openLicense();
                 }
             }
         }
@@ -1632,6 +1662,303 @@ Window {
                   : session.editing
                     ? qsTr("Modo edición: un clic sobre la válvula abre sus propiedades · F9 inicia la simulación")
                     : qsTr("Mantén pulsada la válvula para accionarla · F8 pausa · F5 detiene · Ctrl+M silencia")
+        }
+    }
+
+    // A help popup swallows the click that lands outside it, so a stray press cannot edit
+    // the sheet behind while the user is reading. It is transparent: the sheet is not
+    // dimmed, because this is a reference, not a warning.
+    MouseArea {
+        visible: window.aboutOpen || window.licenseOpen
+        anchors.fill: parent
+        z: 55
+        onClicked: window.closeHelp()
+    }
+
+    // About: who wrote the program, which version this is, where the repository lives and
+    // under which licence it travels. The version comes from the core, so the popup cannot
+    // name a build the binary is not.
+    Rectangle {
+        id: aboutPopup
+        objectName: "aboutPanel"
+        visible: window.aboutOpen
+        anchors.centerIn: parent
+        width: Math.min(560, parent.width - 48)
+        height: aboutColumn.implicitHeight + 36
+        radius: 8
+        color: session.panel
+        border.width: 1
+        border.color: session.accent
+        z: 60
+
+        Accessible.role: Accessible.Dialog
+        Accessible.name: qsTr("Acerca de")
+
+        Column {
+            id: aboutColumn
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 18
+            spacing: 8
+
+            Text {
+                width: parent.width
+                text: qsTr("Acerca de")
+                color: session.foreground
+                font.pixelSize: 16
+                font.bold: true
+            }
+
+            Row {
+                spacing: 8
+
+                Text {
+                    text: "Punchi Fluid Lab"
+                    color: session.foreground
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    objectName: "aboutVersion"
+                    text: session.coreVersion
+                    color: session.muted
+                    font.pixelSize: 14
+                }
+            }
+
+            Text {
+                width: parent.width
+                text: qsTr("Versión en desarrollo, sin publicar")
+                color: session.muted
+                font.pixelSize: 11
+            }
+
+            Text {
+                width: parent.width
+                text: qsTr("Simulador de circuitos neumáticos e hidráulicos. Libre y abierto, para que un estudiante sin licencia y sin presupuesto pueda aprender la materia.")
+                color: session.foreground
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+            }
+
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    text: qsTr("Sitio web")
+                    color: session.foreground
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+
+                HelpLink {
+                    session: session
+                    label: window.repositoryUrl
+                    tone: "foreground"
+                    underlined: true
+                    hint: qsTr("abre el repositorio en el navegador")
+                    onTriggered: Qt.openUrlExternally(window.repositoryUrl)
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    text: qsTr("Ayuda")
+                    color: session.foreground
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+
+                HelpLink {
+                    session: session
+                    label: qsTr("Informar de un problema")
+                    tone: "foreground"
+                    underlined: true
+                    hint: qsTr("abre las incidencias del repositorio en el navegador")
+                    onTriggered: Qt.openUrlExternally(window.issuesUrl)
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    text: qsTr("Copyright")
+                    color: session.foreground
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+
+                Row {
+                    spacing: 12
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("© 2026 PunchiSoft · GPL-3.0-or-later")
+                        color: session.foreground
+                        font.pixelSize: 11
+                    }
+
+                    PanelButton {
+                        session: session
+                        label: qsTr("Leer la licencia")
+                        primary: true
+                        onTriggered: window.openLicense()
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    text: qsTr("Autoría")
+                    color: session.foreground
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+
+                Text {
+                    text: "PunchiSoft"
+                    color: session.foreground
+                    font.pixelSize: 11
+                }
+            }
+
+            Text {
+                width: parent.width
+                text: qsTr("Hecho para la comunidad, para que aprender neumática e hidráulica no dependa de una licencia comercial.")
+                color: session.muted
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
+            }
+
+            Item {
+                width: parent.width
+                height: closeAbout.height
+
+                PanelButton {
+                    id: closeAbout
+                    anchors.right: parent.right
+                    session: session
+                    label: qsTr("Cerrar")
+                    focus: window.aboutOpen
+                    onTriggered: window.closeHelp()
+                }
+            }
+        }
+    }
+
+    // The licence: the summary a reader needs and the whole GPL text, which travels inside
+    // the binary instead of depending on a file next to it. The link is not in the About
+    // panel's text on purpose: the program never fetches anything, it only opens the
+    // desktop's browser when the user presses one of the two links above.
+    Rectangle {
+        id: licensePopup
+        objectName: "licensePanel"
+        visible: window.licenseOpen
+        anchors.centerIn: parent
+        width: Math.min(680, parent.width - 48)
+        height: Math.min(560, parent.height - 48)
+        radius: 8
+        color: session.panel
+        border.width: 1
+        border.color: session.accent
+        z: 60
+
+        Accessible.role: Accessible.Dialog
+        Accessible.name: qsTr("Licencia")
+
+        Column {
+            id: licenseColumn
+            anchors.fill: parent
+            anchors.margins: 18
+            spacing: 8
+
+            Text {
+                id: licenseTitle
+                width: parent.width
+                text: qsTr("Licencia")
+                color: session.foreground
+                font.pixelSize: 16
+                font.bold: true
+            }
+
+            Text {
+                id: licenseSummary
+                width: parent.width
+                text: qsTr("Punchi Fluid Lab se distribuye bajo la GNU General Public License, versión 3 o posterior (GPL-3.0-or-later). Es software libre: puedes redistribuirlo y modificarlo bajo sus términos. Se ofrece SIN GARANTÍA.")
+                color: session.foreground
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                id: licenseHint
+                width: parent.width
+                text: qsTr("Texto completo, desplazable:")
+                color: session.muted
+                font.pixelSize: 11
+            }
+
+            Rectangle {
+                id: licenseBox
+                width: parent.width
+                height: Math.max(120, licenseColumn.height - licenseTitle.height
+                                      - licenseSummary.height - licenseHint.height
+                                      - licenseClose.height - 4 * licenseColumn.spacing)
+                color: session.background
+                border.width: 1
+                border.color: session.muted
+
+                Flickable {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    contentWidth: width
+                    contentHeight: licenseTextItem.implicitHeight
+                    clip: true
+
+                    TextEdit {
+                        id: licenseTextItem
+                        objectName: "licenseText"
+                        width: parent.width
+                        text: session.licenseText
+                        readOnly: true
+                        selectByMouse: true
+                        wrapMode: TextEdit.Wrap
+                        color: session.foreground
+                        selectionColor: session.accent
+                        selectedTextColor: session.panel
+                        // The GPL is preformatted; a fixed-pitch face keeps its
+                        // indentation readable. "monospace" is resolved by the platform,
+                        // so no font file enters the repository.
+                        font.family: "monospace"
+                        font.pixelSize: 11
+                    }
+                }
+            }
+
+            Item {
+                id: licenseCloseRow
+                width: parent.width
+                height: licenseClose.height
+
+                PanelButton {
+                    id: licenseClose
+                    anchors.right: parent.right
+                    session: session
+                    label: qsTr("Cerrar")
+                    focus: window.licenseOpen
+                    onTriggered: window.closeHelp()
+                }
+            }
         }
     }
 

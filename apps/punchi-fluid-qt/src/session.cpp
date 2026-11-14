@@ -5,6 +5,7 @@
 
 #include <QDate>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QHash>
 #include <QStandardPaths>
@@ -969,6 +970,28 @@ QString FluidSession::title() const
     // tint alone would be invisible in a screenshot or to a colour-blind reader.
     return m_modified ? QStringLiteral("• %1 — Punchi Fluid Lab").arg(name)
                       : QStringLiteral("%1 — Punchi Fluid Lab").arg(name);
+}
+
+QString FluidSession::coreVersion() const
+{
+    return QString::fromUtf8(pf_version());
+}
+
+QString FluidSession::licenseText() const
+{
+    if (!m_licenseText.isEmpty()) {
+        return m_licenseText;
+    }
+    QFile file(QStringLiteral(":/LICENSE"));
+    if (file.open(QIODevice::ReadOnly)) {
+        m_licenseText = QString::fromUtf8(file.readAll());
+    }
+    if (m_licenseText.isEmpty()) {
+        // The resource is compiled in, so an empty read is a broken build rather than a
+        // missing file on this machine. Say so instead of opening a blank page.
+        m_licenseText = QStringLiteral("No se pudo leer el texto de la licencia.");
+    }
+    return m_licenseText;
 }
 
 QVariantList FluidSession::circuits() const
