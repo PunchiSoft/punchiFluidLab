@@ -1314,6 +1314,35 @@ void FluidSession::moveComponent(int index, double xMm, double yMm)
     emit changed();
 }
 
+void FluidSession::dragComponent(int index, double xMm, double yMm)
+{
+    if (!m_session || index < 0) {
+        return;
+    }
+    pf_session_drag_component(m_session, static_cast<uint32_t>(index), static_cast<float>(xMm),
+                              static_cast<float>(yMm));
+    refreshDocument();
+    emit changed();
+}
+
+void FluidSession::straightenSelectedPipe()
+{
+    const int pipe = selectedPipe();
+    if (!m_session || pipe < 0) {
+        return;
+    }
+    if (pf_session_straighten_pipe(m_session, static_cast<uint32_t>(pipe)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo enderezar la manguera");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit changed();
+}
+
 void FluidSession::routePipe(int index, double xMm, double yMm)
 {
     if (!m_session || index < 0) {

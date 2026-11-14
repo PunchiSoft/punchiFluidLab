@@ -31,9 +31,9 @@ use punchi_fluid::{
     pf_session_component_rect, pf_session_component_valve_position,
     pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
     pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
-    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
-    pf_session_hit_component, pf_session_hit_valve, pf_session_indicator_active,
+    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
+    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_indicator_active,
     pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
     pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
     pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
@@ -48,9 +48,10 @@ use punchi_fluid::{
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
     pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
-    pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_telemetry,
-    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_rect, pf_session_valve_spring_return,
+    pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_straighten_pipe,
+    pf_session_telemetry, pf_session_toggle_contact, pf_session_toggle_select,
+    pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -89,6 +90,47 @@ fn catalog_index(session: *mut PfSession, wanted: &str) -> u32 {
     }
     assert!(found.is_some(), "the catalog has no `{wanted}`");
     found.unwrap_or_default()
+}
+
+/// Index of the first placed component whose catalog id starts with `prefix`.
+fn component_with(session: *mut PfSession, prefix: &str) -> u32 {
+    let count = unsafe { pf_session_component_count(session) };
+    for index in 0..count {
+        let mut id = [0 as c_char; 128];
+        // SAFETY: live session and a writable buffer.
+        if unsafe { pf_session_component_id(session, index, id.as_mut_ptr(), 128) } < 0 {
+            continue;
+        }
+        // SAFETY: the call above wrote a NUL-terminated id.
+        let text = unsafe { CStr::from_ptr(id.as_ptr()) }.to_string_lossy();
+        if text.starts_with(prefix) {
+            return index;
+        }
+    }
+    u32::MAX
+}
+
+/// The box of a placement as `x0 y0 x1 y1`, in millimetres.
+fn component_box(session: *mut PfSession, index: u32) -> [f32; 4] {
+    let mut out = [0.0_f32; 4];
+    // SAFETY: live session and four writable floats.
+    assert_eq!(
+        unsafe { pf_session_component_rect(session, index, out.as_mut_ptr()) },
+        PF_OK
+    );
+    out
+}
+
+/// The point of one port of a placement, in millimetres.
+fn port_of(session: *mut PfSession, index: u32, port: &str) -> (f32, f32) {
+    let id = CString::new(port).unwrap_or_default();
+    let mut out = [0.0_f32; 2];
+    // SAFETY: live session and two writable floats.
+    assert_eq!(
+        unsafe { pf_session_port_point(session, index, id.as_ptr(), out.as_mut_ptr()) },
+        PF_OK
+    );
+    (out[0], out[1])
 }
 
 #[test]
@@ -1205,6 +1247,114 @@ fn a_pipe_segment_can_be_dragged_and_undo_puts_it_back() {
     // SAFETY: live session.
     assert_eq!(
         unsafe { pf_session_route_pipe(session, 99, 10.0, 10.0) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn dragging_a_component_pulls_its_port_onto_the_other_end() {
+    let session = session();
+    let valve = component_with(session, "valve.");
+    let cylinder = component_with(session, "cylinder.");
+    assert!(
+        valve < u32::MAX && cylinder < u32::MAX,
+        "the example has both"
+    );
+    let valve_port = port_of(session, valve, "2");
+    let cylinder_port = port_of(session, cylinder, "1");
+    let bounds = component_box(session, cylinder);
+    let centre = (
+        f32::midpoint(bounds[0], bounds[2]),
+        f32::midpoint(bounds[1], bounds[3]),
+    );
+    // The port sits at an offset from the centre, so aim the centre so the port would be
+    // two millimetres from the valve's axis. The grid then moves it up to five more; the
+    // magnet is six, and the offset is 8.02 mm, which no 10 mm grid position reaches.
+    let offset_x = cylinder_port.0 - centre.0;
+    let target_x = valve_port.0 - offset_x + 2.0;
+
+    // The plain move is the control: the grid alone leaves the hose bent.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_move_component(session, cylinder, target_x, centre.1) },
+        PF_OK
+    );
+    let grid_port = port_of(session, cylinder, "1");
+    assert!(
+        (grid_port.0 - valve_port.0).abs() > 0.5,
+        "the grid alone should not straighten the hose"
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+
+    // The drag snaps the port onto the other end's axis, off the grid.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_drag_component(session, cylinder, target_x, centre.1) },
+        PF_OK
+    );
+    let moved = port_of(session, cylinder, "1");
+    assert!(
+        (moved.0 - valve_port.0).abs() < 0.01,
+        "the port is {:.2}, the other end is {:.2}",
+        moved.0,
+        valve_port.0
+    );
+    // One undo returns the component to where it was.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let restored = component_box(session, cylinder);
+    assert!(
+        (f32::midpoint(restored[0], restored[2]) - centre.0).abs() < 0.01,
+        "the drag is one undo"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_hose_between_parallel_ports_straightens_and_a_bent_one_is_refused() {
+    let session = session();
+    let valve = component_with(session, "valve.");
+    let cylinder = component_with(session, "cylinder.");
+    let valve_port = port_of(session, valve, "2");
+    let cylinder_port = port_of(session, cylinder, "1");
+    let mid_y = f32::midpoint(valve_port.1, cylinder_port.1);
+    // SAFETY: live session.
+    let pipe = unsafe { pf_session_pipe_at(session, valve_port.0, mid_y, 2.0) };
+    assert!(pipe >= 0, "the hose is under the point");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_straighten_pipe(session, u32::try_from(pipe).unwrap_or(0)) },
+        PF_OK
+    );
+    let after = port_of(session, cylinder, "1");
+    assert!(
+        (after.0 - valve_port.0).abs() < 0.01,
+        "the hose is straight: {:.2} against {:.2}",
+        after.0,
+        valve_port.0
+    );
+    // One undo takes the component back.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let restored = port_of(session, cylinder, "1");
+    assert!((restored.0 - cylinder_port.0).abs() < 0.01);
+
+    // A hose between a top port and a side port has a bend by construction; moving one
+    // component cannot make it straight, so the command refuses instead of guessing.
+    let supply = component_with(session, "supply.");
+    let preparation = component_with(session, "preparation.");
+    let supply_port = port_of(session, supply, "1");
+    let preparation_port = port_of(session, preparation, "1");
+    // SAFETY: live session.
+    let bent = unsafe { pf_session_pipe_at(session, supply_port.0, preparation_port.1, 2.0) };
+    assert!(bent >= 0, "the one-bend hose is under the point");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_straighten_pipe(session, u32::try_from(bent).unwrap_or(0)) },
         PF_ERR_MODEL
     );
     // SAFETY: the session is still alive.

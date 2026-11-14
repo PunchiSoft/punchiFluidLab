@@ -85,7 +85,7 @@ collapsed menu are generated from it, so they cannot drift apart.
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape (which set the document's sheet), and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
-| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 
 
@@ -258,6 +258,11 @@ schematic simulator lives by, and the one the reference tool uses:
   document is a known UX trap).
 - Pipes are orthogonal; the route is stored as a list of waypoints so it survives a
   move. Ports snap with a magnet radius derived from `grid_unit`.
+- **A hose straightens when its component is dragged near the other end.** Two ports on the
+  same axis make a straight run only when their other coordinate matches, and the 10 mm grid
+  cannot reach every offset (the starting circuit has 8.02 mm). Within 6 mm the dragged port
+  pulls onto the axis, off the grid, and `Alt+A` / **Alinear ▸ Puertos** does the same for the
+  selected hose. A hose between perpendicular edges is refused, not guessed.
 - Pressurised lines change colour with pressure; the state is never colour-only,
   because the valve symbol also shows its spool position and the status bar prints
   the number.

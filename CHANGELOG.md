@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### El imán de puertos: la manguera se endereza al arrastrar — 2026-11-13
+
+Dos puertos en el mismo eje solo forman una línea recta si la otra coordenada coincide, y la
+rejilla de 10 mm no llega a todas las diferencias: la válvula y el cilindro del circuito de
+arranque están a 8,02 mm. Arrastrar el componente ahora lo resuelve.
+
+- **Imán al arrastrar**: si la manguera sale y entra por el mismo eje, el puerto que queda a
+  menos de 6 mm se pega al eje del otro extremo, fuera de la rejilla; el movimiento sigue
+  siendo un solo deshacer.
+- **Teclado**: `Alt+A` y **Alinear ▸ Puertos** mueven un extremo de la manguera seleccionada
+  hasta dejar los dos puertos alineados. Una manguera con codo entre ejes perpendiculares se
+  rechaza en vez de adivinar.
+- **Evidencia**: `dragging_a_component_pulls_its_port_onto_the_other_end`,
+  `a_hose_between_parallel_ports_straightens_and_a_bent_one_is_refused`, los pasos
+  `magnet: …` de `--selftest` y la puerta completa (340 pruebas, `--check-qml` 0 problemas y
+  `--selftest` 0 fallos).
+- **Pendiente**: una manguera puede cruzar el símbolo del extremo cuando los puertos están en
+  ejes perpendiculares —el compresor del ejemplo—; el enrutado tiene que reservar ese espacio y
+  la comprobación medir la misma ruta que se dibuja. Queda anotado como hueco en
+  `docs/capabilities.md`.
+
 ### La hoja es el papel que se imprime — 2026-11-13
 
 El lienzo deja de ser un rectángulo lógico de 200 × 130 mm y pasa a ser la hoja: A4 vertical

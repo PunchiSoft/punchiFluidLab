@@ -49,6 +49,13 @@ use punchi_fluid_core::paper::{
 /// hit and selected, not to take up room on the sheet.
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
+
+/// Largest distance, in millimetres, a dragged port jumps to the port it is wired to.
+///
+/// The move grid is 10 mm, so the nearest grid position to an alignment is at most 5 mm
+/// away; 6 mm catches it. A larger radius would fight the grid and make a component
+/// impossible to place near another port without snapping to it.
+const PORT_MAGNET_MM: f32 = 6.0;
 use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
@@ -1930,6 +1937,160 @@ impl PfSession {
             // The point is already where the segment is: not an error, and not an edit.
             PF_OK
         }
+    }
+
+    /// Moves one placement as a drag: the grid first, then the connected port.
+    fn move_with_magnet(&mut self, index: usize, centre: Pt) -> bool {
+        let grid = Pt::new(snap(centre.x, 10.0), snap(centre.y, 10.0));
+        let target = self.magnet_centre(index, grid);
+        self.document.move_to(index, target)
+    }
+
+    /// The centre a dragged placement takes once its wired ports are considered.
+    ///
+    /// Only a hose whose two ports leave along the same axis can be straight, so only those
+    /// connections pull. The nearest one wins; the correction is applied after the grid
+    /// snap, which is what lets an off-grid port alignment be reached at all.
+    fn magnet_centre(&self, index: usize, centre: Pt) -> Pt {
+        let Some(placement) = self.document.placements().get(index) else {
+            return centre;
+        };
+        let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+            return centre;
+        };
+        let delta = Pt::new(centre.x - placement.centre.x, centre.y - placement.centre.y);
+        let mut best: Option<(f32, Pt)> = None;
+        for connection in self.document.connections() {
+            let (mine, other_id, other_port) = if connection.from.placement == placement.id() {
+                (
+                    &connection.from.port,
+                    connection.to.placement,
+                    &connection.to.port,
+                )
+            } else if connection.to.placement == placement.id() {
+                (
+                    &connection.to.port,
+                    connection.from.placement,
+                    &connection.from.port,
+                )
+            } else {
+                continue;
+            };
+            let Some(other_index) = self.document.index_of(other_id) else {
+                continue;
+            };
+            let Some(other) = self.document.placements().get(other_index) else {
+                continue;
+            };
+            if other.circuit != placement.circuit {
+                continue;
+            }
+            let Some(other_definition) = self.catalog.get(&other.catalog_id) else {
+                continue;
+            };
+            let (Some(mine_now), Some(other_at)) = (
+                port_point(placement.rect(), placement.orientation, definition, mine),
+                port_point(
+                    other.rect(),
+                    other.orientation,
+                    other_definition,
+                    other_port,
+                ),
+            ) else {
+                continue;
+            };
+            let mine_edge = port_edge(definition, mine);
+            let other_edge = port_edge(other_definition, other_port);
+            if mine_edge.horizontal() != other_edge.horizontal() {
+                // A hose between perpendicular edges has one bend; there is no straight run
+                // to snap onto.
+                continue;
+            }
+            let mine_at = Pt::new(mine_now.x + delta.x, mine_now.y + delta.y);
+            let (from, to, along_x) = if mine_edge.horizontal() {
+                (mine_at.y, other_at.y, false)
+            } else {
+                (mine_at.x, other_at.x, true)
+            };
+            let correction = to - from;
+            if correction.abs() > PORT_MAGNET_MM {
+                continue;
+            }
+            if best.is_none_or(|(distance, _)| correction.abs() < distance) {
+                let target = if along_x {
+                    Pt::new(centre.x + correction, centre.y)
+                } else {
+                    Pt::new(centre.x, centre.y + correction)
+                };
+                best = Some((correction.abs(), target));
+            }
+        }
+        best.map_or(centre, |(_, target)| target)
+    }
+
+    /// Moves one end of a hose onto the other's axis, as one undoable change.
+    fn straighten_pipe(&mut self, index: usize) -> i32 {
+        let Some(connection) = self.document.connections().get(index).cloned() else {
+            return self.fail("that hose does not exist");
+        };
+        let Some(from_index) = self.document.index_of(connection.from.placement) else {
+            return self.fail("that hose does not exist");
+        };
+        let Some(to_index) = self.document.index_of(connection.to.placement) else {
+            return self.fail("that hose does not exist");
+        };
+        let (Some(from), Some(to)) = (
+            self.document.placements().get(from_index),
+            self.document.placements().get(to_index),
+        ) else {
+            return self.fail("that hose does not exist");
+        };
+        let (Some(from_definition), Some(to_definition)) = (
+            self.catalog.get(&from.catalog_id),
+            self.catalog.get(&to.catalog_id),
+        ) else {
+            return self.fail("the hose's components are not in the catalog");
+        };
+        let (Some(start), Some(end)) = (
+            port_point(
+                from.rect(),
+                from.orientation,
+                from_definition,
+                &connection.from.port,
+            ),
+            port_point(
+                to.rect(),
+                to.orientation,
+                to_definition,
+                &connection.to.port,
+            ),
+        ) else {
+            return self.fail("the hose's ports are not on their symbols");
+        };
+        let from_edge = port_edge(from_definition, &connection.from.port);
+        let to_edge = port_edge(to_definition, &connection.to.port);
+        if from_edge.horizontal() != to_edge.horizontal() {
+            return self.fail("this hose has a bend, so it cannot be straight");
+        }
+        let centre = to.centre;
+        let (correction, along_x) = if from_edge.horizontal() {
+            (start.y - end.y, false)
+        } else {
+            (start.x - end.x, true)
+        };
+        if correction.abs() < 0.01 {
+            return PF_OK;
+        }
+        let target = if along_x {
+            Pt::new(centre.x + correction, centre.y)
+        } else {
+            Pt::new(centre.x, centre.y + correction)
+        };
+        if !self.document.move_to(to_index, target) {
+            return self.fail("the component cannot move");
+        }
+        self.error = CString::default();
+        PF_OK
     }
 
     /// The port nearest to `point`, if any is close enough to be meant.
@@ -4818,6 +4979,58 @@ pub unsafe extern "C" fn pf_session_move_component(
         } else {
             PF_ERR_MODEL
         }
+    })
+}
+
+/// Moves a placement while dragging: the grid first, then the connected port.
+///
+/// A hose between two ports on the same axis is a straight line only when the other
+/// coordinate matches. The grid cannot always reach that coordinate — the starting circuit
+/// has an 8.02 mm offset and the grid step is 10 mm — so the nearest dragged port within
+/// [`PORT_MAGNET_MM`] pulls the component onto the other end's axis. The move is still one
+/// undo entry.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_drag_component(
+    session: *mut PfSession,
+    index: u32,
+    x_mm: f32,
+    y_mm: f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if session.move_with_magnet(index as usize, Pt::new(x_mm, y_mm)) {
+            PF_OK
+        } else {
+            PF_ERR_MODEL
+        }
+    })
+}
+
+/// Straightens the selected hose by moving one end's component onto the other's axis.
+///
+/// The keyboard path for the magnet: the ports must leave along the same axis (both
+/// horizontal or both vertical), which is when a straight hose is possible. A one-bend hose
+/// between perpendicular edges is refused instead of moved to a place that cannot be
+/// straight.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_straighten_pipe(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.straighten_pipe(index as usize)
     })
 }
 

@@ -258,6 +258,11 @@ public:
     /// Places a catalog entry at a point of the sheet, snapped by the core.
     Q_INVOKABLE int placeComponent(int catalogIndex, double xMm, double yMm);
     Q_INVOKABLE void moveComponent(int index, double xMm, double yMm);
+    /// The same, as a drag: the core's grid first and then a wired port pulls onto the
+    /// other end's axis, so a hose between parallel edges becomes a straight run.
+    Q_INVOKABLE void dragComponent(int index, double xMm, double yMm);
+    /// Moves one end of the selected hose onto the other's axis, in one undo.
+    Q_INVOKABLE void straightenSelectedPipe();
     Q_INVOKABLE void removeComponent(int index);
     Q_INVOKABLE void removeSelected();
     /// Keeps the selected component for a later paste.
