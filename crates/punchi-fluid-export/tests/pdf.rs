@@ -149,6 +149,9 @@ fn an_open_review_keeps_the_unverified_note_in_the_file() {
 fn a_page_with_no_room_left_is_refused_before_writing() {
     let page = Page {
         paper: punchi_fluid_export::PaperSize::A5,
+        // A5 portrait is 148 mm wide; 80 + 80 mm of margins leave nothing. The program's
+        // default is landscape, so the test asks for the portrait sheet it is about.
+        orientation: punchi_fluid_export::Orientation::Portrait,
         margins: punchi_fluid_export::Margins {
             top: 20.0,
             bottom: 20.0,

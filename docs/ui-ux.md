@@ -88,15 +88,39 @@ collapsed menu are generated from it, so they cannot drift apart.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG), the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar, the **Hoja** group with the nine named papers and landscape (which set the document's sheet), and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; the **Hoja** group with the nine named papers and landscape (which set the document's sheet); and Recientes (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel adds the margins and the custom print size — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | Aumentar, Disminuir, Tamaño original and Cuadrícula (10 mm), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
+| **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio, Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha or en pausa, with `t`); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
 
 The transport is the **Simular** tab. The shortcuts stay, so running the model still never
 needs a pointer or a tab switch; the tab is where the commands are found. The speed chosen
 is marked and the state is a word, never colour alone.
+
+**The Cajetín tab and its docked editor edit one circuit while the sheet stays visible.**
+The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular. **Cajetín** groups
+**Contenido** (Escolar, Técnico, Industrial, Sin cajetín; the current one marked),
+**Posición** (top right, bottom right; portrait adds the full bottom band; marked, disabled
+under Sin cajetín) and **Datos** (Editar datos…; Restablecer when the block is
+personalized). Choosing a model or position is one undo, and choosing content after Sin
+cajetín brings the block back in the standard position in the same undo.
+
+**Editar datos…** opens a **docked panel on the right**, not a modal: the sheet's column
+shrinks and the live sheet remains visible. Its labelled **content combo** (Técnico,
+Escolar, Industrial, Sin cajetín), the labelled **position combo** with its miniature
+delegates, and the field rows follow the same content model. The position options follow
+the sheet orientation; the content options are always the four. The **Nota:** box is
+multi-line, keeps its text while the block is hidden and is not printed yet. Only the model's fields are shown, label and input on
+one row, in print order, with the derived sheet `n/N` read-only. **Personalizar** reveals a
+show/hide switch per field; hiding keeps the value, collapses its cell and marks the block
+**Personalizado**, and **Restablecer modelo** restores the model's set. There is no Save:
+every change is one undo and marks the document modified. There is **no material, unit or
+projection**; the scale starts at **`S/E`** and stays editable. The industrial block is
+180 × 65 mm on A3 and larger and 170 × 45 mm on A4 and A5; the school and technical models
+are shorter. Labels elide rather than clip, the value fits inside its cell, and the live
+layout reserves the band and clamps a component dropped or moved under it.
 
 **The properties panel edits one instance, and its first field is its name.** The
 designation is text, not a number: it is the field that ends up under the symbol and in the
@@ -240,18 +264,22 @@ schematic simulator lives by, and the one the reference tool uses:
 
 - Infinite scrollable surface with a light grid (10 mm) and a heavier one (50 mm).
   The grid is a *guide*, not a background pattern to be proud of.
-- **The sheet is the paper.** A new document opens on A4 portrait with the ISO 5457 frame
-  (20 mm on the filing edge, 10 mm on the other three); the ribbon's **Hoja** group offers
-  A0–A5, Letter, Legal and Oficio and landscape, and the panel sets the four margins. The
-  same paper is saved in the file, drawn by the canvas, measured by the check and printed.
+- **The sheet is the paper.** A new document opens on **A4 landscape** with the ISO 5457
+  frame (20 mm on the filing edge, 10 mm on the other three); `A4 normal` returns to
+  portrait, and the ribbon's **Hoja** group offers A0–A5, Letter, Legal and Oficio, the
+  orientation and the four margins in the panel. The same paper is saved in the file, drawn
+  by the canvas, measured by the check and printed.
   An older file opens as an unframed A4 so its drawing does not move. A custom size is a
   print override for this one file, and a sheet per circuit is not there yet
   ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
 - **The frame carries the four centring marks** at the midpoints of the sheet, a 0.7 mm
-  line outward and a small arrow. The title block and its editable blocks are the next
-  change; [reference/title-block.md](reference/title-block.md) records the **control-diagram**
-  block (IEC 61082-1 with ISO 7200 fields) and the 180 mm two-band layout before it lands.
-  A schematic is not to scale, so the block has no scale, material, unit or projection.
+  line outward and a small arrow, and the **reference zones** of ISO 5457 / NCh 13.Of93
+  from A3 upwards: 50 mm fields, numerals down the left and right bands, letters across the
+  top and bottom, 3.5 mm characters and 0.35 mm rules, all inside the margin bands. A4
+  stays clean. [reference/title-block.md](reference/title-block.md) records the sheet and
+  the **control-diagram** block (industrial 180 × 65 mm on A3, 170 × 45 mm on A4; school and
+  technical shorter; IEC 61082-1 with ISO 7200 fields, scale `S/E`).
+  A schematic is not to scale, so the block has no material, unit or projection.
 - **A hose keeps clear of the symbols it joins and the ones in between.** The automatic
   route leaves and enters along the port edge and goes round the endpoint boxes with the
   largest clearance that fits (up to 2 mm). A third component on the way is added to the

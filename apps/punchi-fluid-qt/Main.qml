@@ -6,6 +6,7 @@
 // read, so there is no literal here either.
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Dialogs
 import PunchiFluid
 
@@ -21,7 +22,15 @@ Window {
 
     /// Silence is a property of the window, not of a button: the status bar draws it and
     /// the feedback obeys it.
-    property bool muted: false
+    /// Automated runs never make noise: a capture, a selftest or a check would otherwise
+    /// play the model over and over on the machine that is testing it.
+    readonly property bool automatedRun: {
+        const args = Qt.application.arguments;
+        return args.indexOf("--mute") >= 0 || args.indexOf("--grab") >= 0
+            || args.indexOf("--selftest") >= 0 || args.indexOf("--check-qml") >= 0
+            || args.indexOf("--check-sounds") >= 0 || args.indexOf("--export") >= 0;
+    }
+    property bool muted: automatedRun
 
     /// What the confirmation is about when it opens: `new`, `open` or `close`. A pending
     /// path is kept so "Guardar y abrir" knows which file it was going to open.
@@ -103,6 +112,77 @@ Window {
     property int exportDpi: 300
     /// A custom size for this one print; the working sheet stays the document's paper.
     property bool exportPanelOpen: false
+    property bool titleBlockOpen: false
+    property bool blockCustomizing: false
+
+    /// Heights of the real rows of one content model, for the position miniatures.
+    function blockPreviewRows(model) {
+        if (model === 0) {
+            return [14, 21];
+        }
+        if (model === 1) {
+            return [12, 14, 14];
+        }
+        return [14, 15, 12, 12, 12];
+    }
+
+    /// Positions the guide offers on this sheet. Portrait adds the full bottom band;
+    /// landscape keeps the two corners.
+    function positionOptions() {
+        if (session.sheetLandscape) {
+            return [
+                { label: qsTr("Esquina superior derecha"), preset: 0 },
+                { label: qsTr("Esquina inferior derecha"), preset: 1 }
+            ];
+        }
+        return [
+            { label: qsTr("Esquina superior derecha"), preset: 0 },
+            { label: qsTr("Esquina inferior derecha"), preset: 1 },
+            { label: qsTr("Abajo centrado de lado a lado"), preset: 2 }
+        ];
+    }
+
+    /// Index of the current preset in the options offered for this orientation.
+    function positionIndex() {
+        const options = positionOptions();
+        for (let index = 0; index < options.length; ++index) {
+            if (options[index].preset === session.blockPreset) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// The block flesh height on the current paper: 45/40/35 mm on A4, 65/50/40 on A3+.
+    function blockPreviewHeight(model) {
+        const large = Math.min(session.sheetWidthMm, session.sheetHeightMm) >= 297.0 - 0.01;
+        if (model === 0) {
+            return large ? 40 : 35;
+        }
+        if (model === 1) {
+            return large ? 50 : 40;
+        }
+        return large ? 65 : 45;
+    }
+
+    /// One block field by name, so the panel can bind a TextInput without nine switches.
+    function blockValue(key) {
+        switch (key) {
+        case "owner": return session.blockOwner;
+        case "project": return session.blockProject;
+        case "equipment": return session.blockEquipment;
+        case "title": return session.blockTitle;
+        case "number": return session.blockNumber;
+        case "revision": return session.blockRevision;
+        case "date": return session.blockDate;
+        case "prepared": return session.blockPrepared;
+        case "checked": return session.blockChecked;
+        case "approved": return session.blockApproved;
+        case "scale": return session.blockScale;
+        case "norms": return session.blockNorms;
+        default: return "";
+        }
+    }
     property bool exportCustomPaper: false
     property int exportWidthMm: 210
     property int exportHeightMm: 297
@@ -428,7 +508,9 @@ Window {
             }
 
             Rectangle {
-                width: parent.width - sidebar.width
+                // The block editor docks beside the sheet, not over it: opening it gives the
+                // editor real room and the sheet keeps the rest of the window.
+                width: parent.width - sidebar.width - (window.titleBlockOpen ? 360 : 0)
                 height: parent.height
                 color: session.background
 
@@ -839,6 +921,7 @@ Window {
                     }
                 }
 
+
                 // The circuit name is the one the selector and the printed title block use.                // The circuit name is the one the selector and the printed title block use.
                 // It is text, not a number, and the core refuses an empty or control-laden
                 // one rather than storing a name nothing can draw.
@@ -1207,6 +1290,333 @@ Window {
                     font.pixelSize: 16
                 }
             }
+
+            // The docked title-block editor. It takes its own column so the sheet stays
+            // visible while the fields change; every edit is one undo entry.
+            Rectangle {
+                id: blockDock
+                visible: window.titleBlockOpen
+                width: 360
+                height: parent.height
+                color: session.panel
+                border.width: 1
+                border.color: session.muted
+
+                Flickable {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    contentHeight: blockColumn.implicitHeight
+                    clip: true
+
+                    Column {
+                        id: blockColumn
+                        width: parent.width
+                        spacing: 10
+
+                        Row {
+                            width: parent.width
+                            spacing: 8
+
+                            Text {
+                                width: parent.width - 76
+                                text: qsTr("Cajetín del circuito")
+                                color: session.foreground
+                                font.pixelSize: 13
+                                elide: Text.ElideRight
+                            }
+
+                            Rectangle {
+                                width: 68
+                                height: 24
+                                radius: 4
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Cerrar")
+                                    color: session.foreground
+                                    font.pixelSize: 10
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.titleBlockOpen = false
+                                }
+                            }
+                        }
+
+                        // Content and position: two labelled combo boxes. The content
+                        // order is the owner's (Técnico, Escolar, Industrial, Sin cajetín);
+                        // the positions follow the sheet orientation.
+                        Row {
+                            width: parent.width
+                            spacing: 8
+
+                            Column {
+                                width: (parent.width - 8) / 2
+                                spacing: 2
+
+                                Text {
+                                    text: qsTr("Contenido")
+                                    color: session.muted
+                                    font.pixelSize: 10
+                                }
+
+                                ComboBox {
+                                    id: modelCombo
+                                    width: parent.width
+                                    model: [qsTr("Técnico"), qsTr("Escolar"),
+                                            qsTr("Industrial"), qsTr("Sin cajetín")]
+                                    currentIndex: session.blockPreset === 3
+                                                  ? 3
+                                                  : (session.blockModel === 1 ? 0
+                                                     : (session.blockModel === 0 ? 1 : 2))
+                                    font.pixelSize: 11
+                                    Accessible.name: qsTr("Contenido del cajetín")
+                                    onActivated: function(index) {
+                                        if (index === 3) {
+                                            session.setBlockPreset(3);
+                                        } else {
+                                            session.setBlockModel(index === 0 ? 1
+                                                                              : (index === 1 ? 0 : 2));
+                                        }
+                                    }
+                                }
+                            }
+
+                            Column {
+                                width: (parent.width - 8) / 2
+                                spacing: 2
+
+                                Text {
+                                    text: qsTr("Posición")
+                                    color: session.muted
+                                    font.pixelSize: 10
+                                }
+
+                                ComboBox {
+                                    id: positionCombo
+                                    width: parent.width
+                                    enabled: session.blockPreset !== 3
+                                    model: window.positionOptions()
+                                    textRole: "label"
+                                    currentIndex: window.positionIndex()
+                                    font.pixelSize: 11
+                                    Accessible.name: qsTr("Posición del cajetín")
+                                    delegate: ItemDelegate {
+                                        width: positionCombo.width
+                                        contentItem: Row {
+                                            spacing: 8
+                                            BlockThumb {
+                                                width: 54
+                                                height: 34
+                                                preset: modelData.preset
+                                                model: session.blockModel
+                                            }
+                                            Text {
+                                                text: modelData.label
+                                                color: session.foreground
+                                                font.pixelSize: 10
+                                                elide: Text.ElideRight
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                        }
+                                    }
+                                    onActivated: function(index) {
+                                        if (index >= 0) {
+                                            session.setBlockPreset(model[index].preset);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: session.blockCustomized ? qsTr("Personalizado") : qsTr("Modelo del cajetín")
+                            color: session.blockCustomized ? session.accent : session.muted
+                            font.pixelSize: 10
+                        }
+
+                        Row {
+                            width: parent.width
+                            spacing: 8
+
+                            Rectangle {
+                                width: 118
+                                height: 26
+                                radius: 4
+                                color: window.blockCustomizing ? session.accent : "transparent"
+                                border.width: 1
+                                border.color: session.muted
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Personalizar")
+                                    color: session.foreground
+                                    font.pixelSize: 10
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.blockCustomizing = !window.blockCustomizing
+                                }
+                            }
+
+                            Rectangle {
+                                width: 118
+                                height: 26
+                                radius: 4
+                                visible: session.blockCustomized
+                                color: "transparent"
+                                border.width: 1
+                                border.color: session.muted
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Restablecer modelo")
+                                    color: session.foreground
+                                    font.pixelSize: 10
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: session.resetBlockVisibility()
+                                }
+                            }
+                        }
+
+                        // Only the model's fields, in print order. Personalizar reveals a
+                        // switch per field; hiding keeps the typed value.
+                        Repeater {
+                            model: session.blockFields
+
+                            delegate: Column {
+                                required property var modelData
+                                width: parent.width
+                                spacing: 2
+                                visible: window.blockCustomizing || modelData.visible
+
+                                Row {
+                                    width: parent.width
+                                    spacing: 6
+
+                                    Text {
+                                        width: 120
+                                        text: modelData.label
+                                        color: session.muted
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width - (window.blockCustomizing ? 174 : 128)
+                                        height: 26
+                                        color: session.background
+                                        border.width: 1
+                                        border.color: session.muted
+
+                                        TextInput {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 5
+                                            anchors.rightMargin: 5
+                                            verticalAlignment: TextInput.AlignVCenter
+                                            text: modelData.value
+                                            color: session.foreground
+                                            font.pixelSize: 11
+                                            selectByMouse: true
+                                            Accessible.name: modelData.label
+                                            onEditingFinished: session.setBlockField(modelData.key, text)
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 42
+                                        height: 26
+                                        visible: window.blockCustomizing
+                                        radius: 3
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: modelData.visible ? session.accent : session.muted
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.visible ? qsTr("Sí") : qsTr("No")
+                                            color: session.foreground
+                                            font.pixelSize: 10
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: session.setBlockFieldVisible(modelData.field,
+                                                                                    !modelData.visible)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // The free note. It is stored with the block but not printed yet;
+                        // the opposite-corner placement is the next change.
+                        Column {
+                            width: parent.width
+                            spacing: 3
+
+                            Text {
+                                text: qsTr("Nota:")
+                                color: session.foreground
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+
+                            TextArea {
+                                id: remarkArea
+                                width: parent.width
+                                height: 78
+                                placeholderText: qsTr("escriba aquí su nota.")
+                                text: session.blockRemark
+                                wrapMode: TextArea.Wrap
+                                color: session.foreground
+                                placeholderTextColor: session.muted
+                                font.pixelSize: 11
+                                selectByMouse: true
+                                Accessible.name: qsTr("Nota del cajetín")
+                                background: Rectangle {
+                                    color: session.background
+                                    border.width: 1
+                                    border.color: session.muted
+                                }
+                                onActiveFocusChanged: {
+                                    if (!activeFocus) {
+                                        session.setBlockRemark(text);
+                                    }
+                                }
+                            }
+                        }
+
+                        Row {
+                            width: parent.width
+                            spacing: 6
+
+                            Text {
+                                width: 120
+                                text: qsTr("Hoja")
+                                color: session.muted
+                                font.pixelSize: 10
+                            }
+
+                            Text {
+                                height: 26
+                                verticalAlignment: Text.AlignVCenter
+                                text: session.blockSheet
+                                color: session.foreground
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         StatusBar {
@@ -1222,6 +1632,53 @@ Window {
                   : session.editing
                     ? qsTr("Modo edición: un clic sobre la válvula abre sus propiedades · F9 inicia la simulación")
                     : qsTr("Mantén pulsada la válvula para accionarla · F8 pausa · F5 detiene · Ctrl+M silencia")
+        }
+    }
+
+    // The miniature in the position combo: a sheet with the block at its real corner and
+    // the model's real row count. It is the same information as the position label, so a
+    // reader who cannot see the drawing can still read the text.
+    component BlockThumb: Item {
+        id: thumb
+        property int preset: 0
+        property int model: 2
+
+        Rectangle {
+            anchors.fill: parent
+            color: session.background
+            border.width: 1
+            border.color: session.muted
+        }
+
+        Rectangle {
+            visible: thumb.preset !== 3
+            width: thumb.preset === 2
+                   ? thumb.width - 6
+                   : Math.round(thumb.width * 0.62)
+            height: Math.max(4, width * window.blockPreviewHeight(thumb.model) / 170)
+            x: thumb.preset === 2 ? 3 : thumb.width - width - 3
+            y: thumb.preset === 0 ? 3 : thumb.height - height - 3
+            color: session.background
+            border.width: 1
+            border.color: session.muted
+
+            Column {
+                anchors.fill: parent
+
+                Repeater {
+                    model: window.blockPreviewRows(thumb.model)
+
+                    delegate: Rectangle {
+                        required property var modelData
+                        width: parent.width
+                        height: parent.height * modelData
+                             / (window.blockPreviewHeight(thumb.model) + 0.001)
+                        color: "transparent"
+                        border.width: 0.5
+                        border.color: session.muted
+                    }
+                }
+            }
         }
     }
 }

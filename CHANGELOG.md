@@ -6,6 +6,75 @@ publicación.
 
 ## Unreleased
 
+### El cajetín y la hoja siguen las guías chilenas — 2026-11-14
+
+La hoja se identifica como un esquema de control y sigue las dos guías técnicas chilenas
+que aportó el owner: el cajetín de **NCh 14.Of93 (ISO 7200)**, la hoja de **NCh 13.Of93
+(ISO 5457)**, la escritura de **NCh 15 (ISO 3098)** y la escala de **NCh 1471 (ISO 5455)**.
+El programa abre ahora en **A4 horizontal**.
+
+- **El cajetín tiene cinco filas**: Empresa / propietario, Proyecto / instalación y
+  Equipo / sistema; Título; Nº de plano, Revisión, Hoja, Fecha y Escala; Dibujado, Revisado
+  y Aprobado; Normas aplicadas. El industrial mide **180 × 65 mm en A3 y mayores** y
+  **170 × 45 mm en A4 y A5**, porque la guía propone el tamaño grande para una plantilla A3
+  y pide ajustarlo al espacio; en A4 deja los 10 mm a la izquierda que el owner quería. Los
+  modelos **Escolar** (170 × 35 / 180 × 40) y **Técnico** (170 × 40 / 180 × 50) son más
+  cortos.
+- **Tres modelos de contenido y Sin cajetín**, en un **combo box** con Técnico, Escolar,
+  Industrial y Sin cajetín: el modelo elige los campos por omisión, **Personalizar** oculta
+  o muestra cada uno sin perder el valor y **Restablecer modelo** vuelve al conjunto del
+  modelo. Doce campos editables por circuito —empresa, proyecto, equipo, título, número,
+  revisión, fecha, dibujado, revisado, aprobado, escala y normas— más la hoja `n/N`
+  derivada. La **escala empieza en `S/E`** («sin escala») y sigue siendo editable; no hay
+  material, unidad ni proyección. Los campos, el modelo y la visibilidad viven en el
+  **formato 11**, y el **ABI sube a 10** con el modelo, la visibilidad, las posiciones y la
+  nota; un archivo anterior se abre como industrial con todos los campos.
+- **Alturas de texto de ISO 3098**: 5 mm para título y empresa, 3,5 mm para los valores y
+  2,5 mm para los rótulos, cada una dentro de su celda; si la fila escalada no cabe, el
+  valor baja un paso antes de cruzar la regla inferior. El cajetín es opcional y se coloca
+  con dos combos, contenido y posición; las miniaturas de la posición reflejan el modelo y
+  la orientación de la hoja.
+- **Zonas de referencia desde A3**: los campos de 50 mm con números en los lados y letras
+  arriba y abajo, a 3,5 mm y con reglas de 0,35 mm, siempre dentro de los márgenes; A4
+  queda limpia. Las dibujan el lienzo y la exportación.
+- **El lienzo reserva la banda del cajetín**: la sesión viva descuenta la altura resuelta
+  (45 mm industrial en A4, 65 mm en A3, menos en los modelos cortos) antes de sembrar el
+  ejemplo, encajar el dibujo y medir el espacio del chequeo;
+  una colocación o un movimiento que caiga bajo el cajetín se sube hasta el borde de la
+  banda, así que ningún símbolo queda oculto. Las zonas de referencia siguen en los
+  márgenes y no reducen el área de dibujo.
+- **Posiciones y nota**: el cajetín puede ir en la **esquina superior derecha**, la
+  **inferior derecha** o **abajo centrado de lado a lado**; el combo de posición ofrece las
+  tres en vertical y las dos esquinas en horizontal, con miniaturas de las filas reales.
+  **Sin cajetín** sigue en el combo de contenido y deshabilita la posición. La **Nota** es
+  un texto multilínea con el marcador «escriba aquí su nota.», se guarda con el cajetín y
+  todavía **no se imprime**; la colocación en la esquina opuesta es el próximo cambio.
+- **La hoja abre en A4 horizontal** (ISO 5457:1999/Amd 1:2010 permite ambas); `A4 normal`
+  vuelve a vertical y la orientación se guarda en el archivo. Los márgenes siguen siendo
+  20 mm en el borde de archivo y 10 mm en los otros tres, con marco de 0,7 mm y las cuatro
+  marcas de centrado.
+- **El editor** es un panel **acoplado a la derecha**, no un modal: la hoja sigue visible y
+  se encoge para dejarle sitio. Se abre desde la nueva pestaña **Cajetín** (contenido,
+  posición y datos) con **Editar datos…** (el botón dice **Añadir cajetín** cuando no hay
+  ninguno); una edición es una entrada de deshacer y marca el documento como modificado.
+- **Las pruebas y capturas no suenan**: `--grab`, `--selftest`, `--check-qml`,
+  `--check-sounds`, `--export` y `--mute` arrancan en silencio, para que ejecutar la app
+  durante el desarrollo no dispare el modelo una y otra vez en el equipo de quien prueba.
+- **Pendiente y anotado**: una imagen de logo, las longitudes exactas de ISO 7200 (cada
+  campo se limita a 120 caracteres y se recorta con `...`), reservar la banda del cajetín en
+  el espacio de dibujo del lienzo y las marcas de recorte opcionales.
+- **Evidencia**: la migración y los límites del formato, la ida y vuelta por la ABI con
+  deshacer y los valores por omisión, las pruebas de geometría 170 × 45 / 180 × 65 y de
+  cada modelo, la de que cada texto queda dentro de su celda, las de zonas de referencia (A3
+  sí, A4 no), `the_seeded_example_stays_clear_of_the_block_on_a4_and_a3`,
+  `every_position_is_geometrically_sound_in_both_orientations`,
+  `the_remark_round_trips_and_allows_line_breaks`, los pasos `--selftest` de modelos,
+  visibilidad, posiciones y nota, y las capturas `window-light.png` /
+  `window-dark.png`, `title-block-light.png` / `title-block-dark.png`,
+  `title-block-escolar-light.png`, `title-block-zoom-light.png`,
+  `cajetin-tab-light.png`, `cajetin-portrait-light.png`, `cajetin-landscape-light.png` y
+  `a3-reference-zones-light.png`.
+
 ### La simulación es una cinta y sus mandos son baldosas — 2026-11-14
 
 La simulación vivía fija a la derecha de las pestañas, fuera del alcance de Archivo,

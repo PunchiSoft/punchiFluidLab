@@ -52,8 +52,8 @@ fn the_sheet_becomes_a_vector_document() {
     assert!(svg.starts_with("<?xml"), "an XML header");
     assert!(svg.contains("<svg"), "the document element");
     assert!(
-        svg.contains("viewBox=\"0 0 210.0 297.0\""),
-        "A4 in millimetres"
+        svg.contains("viewBox=\"0 0 297.0 210.0\""),
+        "A4 landscape in millimetres"
     );
     assert!(svg.contains("lista de piezas"), "the parts list is text");
     assert!(svg.contains("Cilindro"), "with the catalog name");
@@ -134,7 +134,7 @@ fn the_drawing_stays_inside_the_sheet() {
                     .and_then(|number| number.parse().ok())
                     .unwrap_or_default();
                 assert!(
-                    (-0.5..=210.5).contains(&value),
+                    (-0.5..=297.5).contains(&value),
                     "x is out of the paper: {line}"
                 );
             }

@@ -54,6 +54,9 @@ fn the_caller_sheet_keeps_the_paper_it_was_given() {
     let block = TitleBlock::new("A circuit", "2026-11-07");
     let page = Page {
         paper: PaperSize::Oficio,
+        // This test is about the paper the caller gave, so it asks for portrait explicitly:
+        // the program's own default is A4 landscape.
+        orientation: punchi_fluid_export::Orientation::Portrait,
         ..Page::a4(block.clone())
     };
     let pdf = render_pdf_with(&page, &block, draw_a_cylinder).expect("the page renders");

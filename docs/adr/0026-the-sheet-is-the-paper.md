@@ -27,8 +27,11 @@ and nothing about the page setup is copied from a third-party product.
   re-exports them so its API does not change for a caller. A sheet is a physical
   measurement, like a pressure, and it has one definition.
 - **The document stores one sheet.** `Document` gains a `sheet`, defaulting to A4
-  portrait with the ISO 5457 frame. Choosing a paper, an orientation or a margin is one
+  landscape with the ISO 5457 frame. Choosing a paper, an orientation or a margin is one
   undoable document change, because it changes what fits and it is saved.
+  *(Amended 2026-11-14: the original default was A4 portrait; ISO 5457:1999/Amd 1:2010
+  allows both orientations, the owner chose landscape as the opening sheet, and `A4 normal`
+  returns to portrait.)*
 - **The file carries it.** Format 7 stores the paper, the orientation and the four
   margins. A file written before format 7 reads as an **unframed A4**: its geometry was
   drawn on a bare 200 × 130 mm area, so no component becomes "outside the frame" just by

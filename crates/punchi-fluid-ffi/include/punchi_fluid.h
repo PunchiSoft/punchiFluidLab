@@ -19,7 +19,7 @@ extern "C" {
 #define PF_ERR_MODEL -2
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 6u
+#define PF_ABI_VERSION 10u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -270,6 +270,77 @@ int32_t pf_session_select_circuit(PfSession *session, uint32_t id);
 /* Adds an empty circuit and makes it active; returns its identity or a negative error. */
 int32_t pf_session_add_circuit(PfSession *session, const char *title);
 int32_t pf_session_rename_circuit(PfSession *session, uint32_t id, const char *title);
+
+/* The control-diagram title block of a circuit. The twelve fields are indexed in the order
+ * the paper reads; the sheet number n/N is derived from the project and is not stored.
+ * Reading copies into the caller's buffer and returns the length, or a negative error. */
+#define PF_BLOCK_OWNER 0u
+#define PF_BLOCK_PROJECT 1u
+#define PF_BLOCK_EQUIPMENT 2u
+#define PF_BLOCK_TITLE 3u
+#define PF_BLOCK_NUMBER 4u
+#define PF_BLOCK_REVISION 5u
+#define PF_BLOCK_DATE 6u
+#define PF_BLOCK_PREPARED 7u
+#define PF_BLOCK_CHECKED 8u
+#define PF_BLOCK_APPROVED 9u
+#define PF_BLOCK_SCALE 10u
+#define PF_BLOCK_NORMS 11u
+#define PF_BLOCK_FIELD_COUNT 12u
+/* The derived sheet number in a block layout, alongside the stored field indices. */
+#define PF_BLOCK_FIELD_SHEET 12u
+
+/* Content models. The last chip, "Sin cajetín", is PF_BLOCK_NONE on the position. */
+#define PF_BLOCK_MODEL_ESCOLAR 0u
+#define PF_BLOCK_MODEL_TECNICO 1u
+#define PF_BLOCK_MODEL_INDUSTRIAL 2u
+#define PF_BLOCK_MODEL_COUNT 3u
+
+typedef struct PfBlockCell {
+    uint32_t field;   /* PF_BLOCK_* or PF_BLOCK_FIELD_SHEET */
+    float width_mm;
+} PfBlockCell;
+
+typedef struct PfBlockRow {
+    float height_mm;
+    uint32_t cells_at;
+    uint32_t cells_len;
+} PfBlockRow;
+
+typedef struct PfBlockLayout {
+    float width_mm;
+    float height_mm;
+    const PfBlockRow *rows;
+    uint32_t rows_len;
+    const PfBlockCell *cells;
+    uint32_t cells_len;
+} PfBlockLayout;
+
+int32_t pf_session_block(const PfSession *session, uint32_t id, uint32_t field, char *out,
+                         uint32_t capacity);
+/* One undoable change; an empty value clears the field. */
+int32_t pf_session_set_block(PfSession *session, uint32_t id, uint32_t field, const char *text);
+/* The free note, not printed yet; line breaks are kept. */
+int32_t pf_session_block_remark(const PfSession *session, uint32_t id, char *out,
+                                uint32_t capacity);
+int32_t pf_session_set_block_remark(PfSession *session, uint32_t id, const char *text);
+/* Content model and per-field visibility; every set is one undoable change. */
+int32_t pf_session_block_model(const PfSession *session);
+int32_t pf_session_set_block_model(PfSession *session, uint32_t model);
+int32_t pf_session_block_visible(const PfSession *session, uint32_t id, uint32_t field);
+int32_t pf_session_set_block_visible(PfSession *session, uint32_t id, uint32_t field,
+                                     uint32_t visible);
+int32_t pf_session_block_customized(const PfSession *session);
+int32_t pf_session_reset_block_visibility(PfSession *session);
+/* Rows and cells of the active block, borrowed until the next call. */
+int32_t pf_session_block_layout(PfSession *session, PfBlockLayout *out);
+/* Where the block sits: top right, bottom right, bottom edge full width, or none. */
+#define PF_BLOCK_TOP_RIGHT 0u
+#define PF_BLOCK_BOTTOM_RIGHT 1u
+#define PF_BLOCK_BOTTOM_FULL 2u
+#define PF_BLOCK_NONE 3u
+int32_t pf_session_block_preset(const PfSession *session);
+int32_t pf_session_set_block_preset(PfSession *session, uint32_t preset);
 /* Saves the sheet atomically, and opens one, replacing the document. */
 int32_t pf_session_save(PfSession *session, const char *path);
 int32_t pf_session_open(PfSession *session, const char *path);

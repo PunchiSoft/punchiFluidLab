@@ -40,6 +40,7 @@ small and a deep tree makes a link harder to write, not easier to find.
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
 | Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
 | Decision | Record one choice and its consequences | [adr/](adr/README.md) |
+| Design | A specification written and reviewed before the code (EGM) | [designs/](designs/README.md) |
 
 ## Status
 
@@ -56,6 +57,7 @@ A document that is not simply current carries a status line under its title:
 
 | Document | Kind | Status | What it is |
 |---|---|---|---|
+| [designs/title-block-and-sheet.md](designs/title-block-and-sheet.md) | design | current | The EGM design for the sheet, the A4 landscape default, the title block and its positions, and the reference zones |
 | [retomar.md](retomar.md) | process | internal | The owner's continuity note, in Spanish: state, history, verification, decisions and the prompt to continue |
 | [parity-run.md](parity-run.md) | process | internal | The parity run's continuity note: branch, progress log, decisions and how to continue after a reset |
 | [work-queue.md](work-queue.md) | process | current | The parity run's queue: one entry per capability, its state and its acceptance test |

@@ -29,12 +29,12 @@ fn header_size(bytes: &[u8]) -> (u32, u32) {
 }
 
 #[test]
-fn a4_at_300_dpi_produces_a_2480_by_3508_png() {
+fn a4_landscape_at_300_dpi_produces_a_3508_by_2480_png() {
     let catalog = Catalog::builtin();
     let block = TitleBlock::new("A circuit", "2026-11-06");
     let bytes = render_png(&Page::a4(block.clone()), &block, &system(), &catalog, 300.0)
         .expect("the page renders");
-    assert_eq!(header_size(&bytes), (2480, 3508));
+    assert_eq!(header_size(&bytes), (3508, 2480));
 }
 
 #[test]

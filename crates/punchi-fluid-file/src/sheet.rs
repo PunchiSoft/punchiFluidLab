@@ -21,11 +21,16 @@ use crate::paper::StoredSheet;
 /// 2 added the orientation of a placement — the quarter turns and the mirror. 3 added the
 /// designation, the name the user gives a component. 4 made a file a project of circuits.
 /// 5 added the source of a recorder, and 6 the line class of a pipe. 7 added the sheet: the
-/// paper, its orientation and its frame. An older file reads because every addition has an
-/// obvious default: an unturned symbol, an unnamed component, one circuit, an unbound
-/// recorder, a working line, and an unframed A4 that is exactly the area the older release
-/// drew on.
-pub const SHEET_VERSION: u32 = 7;
+/// paper, its orientation and its frame. 8 added the control-diagram title block of each
+/// circuit, 9 gave that block the project, equipment, scale and norms of the Chilean guide,
+/// 10 added its content model and per-field visibility, and 11 moved the positions to
+/// top-right/bottom-right/bottom-full and added the free note. An older file reads because
+/// every addition has an obvious default: an unturned symbol, an unnamed component, one
+/// circuit, an unbound recorder, a working line, an unframed A4 that is exactly the area
+/// the older release drew on, and a block whose title is the circuit title, whose revision
+/// is `A`, whose scale is `S/E`, whose model is the full industrial block and whose note is
+/// empty.
+pub const SHEET_VERSION: u32 = 11;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -63,9 +68,14 @@ pub const MAX_DESIGNATION: usize = 40;
 pub struct StoredCircuit {
     /// Identity a placement or a pipe names.
     pub id: u32,
-    /// Name shown in the selector and the title block.
+    /// Name shown in the selector.
     pub title: String,
+    /// Control-diagram block of this circuit; absent before format 8.
+    #[serde(default)]
+    pub block: StoredBlock,
 }
+
+pub use crate::block::{MAX_BLOCK_FIELD, StoredBlock};
 
 /// What a recorder charts: another placement and one of its quantities.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -259,6 +269,10 @@ impl Sheet {
             circuits: vec![StoredCircuit {
                 id: 0,
                 title: String::from("Circuito 1"),
+                block: StoredBlock {
+                    title: String::from("Circuito 1"),
+                    ..StoredBlock::default()
+                },
             }],
             placement: Vec::new(),
             pipe: Vec::new(),
@@ -305,6 +319,7 @@ impl Sheet {
                 )));
             }
         }
+        Self::validate_blocks(&self.circuits)?;
         if self.format >= 4 {
             if self.circuits.is_empty() {
                 return Err(SheetError::Invalid(String::from(
@@ -363,6 +378,72 @@ impl Sheet {
                 return Err(SheetError::Invalid(String::from(
                     "a pipe is routed more than a metre from the automatic elbow",
                 )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Checks every stored field of every control block.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SheetError::Invalid`] for the first field that is untrimmed, too long or
+    /// carries a control character.
+    fn validate_blocks(circuits: &[StoredCircuit]) -> Result<(), SheetError> {
+        for circuit in circuits {
+            if !matches!(
+                circuit.block.position.as_str(),
+                "top-right" | "bottom-right" | "bottom-full" | "none"
+            ) {
+                return Err(SheetError::Invalid(String::from(
+                    "a title block names an unknown position",
+                )));
+            }
+            if circuit.block.remark.trim() != circuit.block.remark
+                || circuit.block.remark.chars().count() > punchi_fluid_core::title_block::MAX_REMARK
+                || circuit.block.remark.chars().any(|character| {
+                    character.is_control() && !matches!(character, '\n' | '\r' | '\t')
+                })
+            {
+                return Err(SheetError::Invalid(String::from(
+                    "the title block of a circuit has an unusable remark",
+                )));
+            }
+            if !matches!(
+                circuit.block.model.as_str(),
+                "escolar" | "tecnico" | "industrial"
+            ) {
+                return Err(SheetError::Invalid(String::from(
+                    "a title block names an unknown content model",
+                )));
+            }
+            if let Some(visible) = &circuit.block.visible {
+                if visible.len() > punchi_fluid_core::TitleField::ALL.len() {
+                    return Err(SheetError::Invalid(String::from(
+                        "a title block shows too many fields",
+                    )));
+                }
+                let mut seen = Vec::with_capacity(visible.len());
+                for name in visible {
+                    if punchi_fluid_core::TitleField::from_name(name).is_none()
+                        || seen.contains(name)
+                    {
+                        return Err(SheetError::Invalid(String::from(
+                            "a title block names an unknown or repeated visible field",
+                        )));
+                    }
+                    seen.push(name.clone());
+                }
+            }
+            for (name, value) in circuit.block.fields() {
+                if value.trim() != value
+                    || value.chars().count() > MAX_BLOCK_FIELD
+                    || value.chars().any(char::is_control)
+                {
+                    return Err(SheetError::Invalid(format!(
+                        "the title block of a circuit has an unusable {name}"
+                    )));
+                }
             }
         }
         Ok(())
@@ -525,6 +606,10 @@ impl Sheet {
                 self.circuits = vec![StoredCircuit {
                     id: 0,
                     title: String::from("Circuito 1"),
+                    block: StoredBlock {
+                        title: String::from("Circuito 1"),
+                        ..StoredBlock::default()
+                    },
                 }];
             }
             for placement in &mut self.placement {
@@ -541,6 +626,37 @@ impl Sheet {
         // becomes "outside the frame" just by opening the file in a newer build.
         if self.format < 7 {
             self.sheet = StoredSheet::default();
+        }
+        // 7 → 8: the control block. An older circuit had no block, so its title field is
+        // the circuit title and the revision the one this build starts at.
+        if self.format < 8 {
+            for circuit in &mut self.circuits {
+                if circuit.block.title.is_empty() {
+                    circuit.block.title.clone_from(&circuit.title);
+                }
+            }
+        }
+        // 8 → 9: the project, equipment, scale and norms of the block. Serde has already
+        // given an absent field its default, so a format 8 block reads as the same block
+        // with an empty project and equipment, a `S/E` scale and no norms.
+        if self.format < 9 {
+            for circuit in &mut self.circuits {
+                if circuit.block.scale.is_empty() {
+                    circuit.block.scale = String::from("S/E");
+                }
+            }
+        }
+        // 9 → 10: the content model and per-field visibility. Serde gives an absent model
+        // `industrial` and an absent visibility list that model's full field set, so an
+        // older block keeps printing every field it used to print.
+        // 10 → 11: the new positions and the free note. `right` and the retired `left` read
+        // as bottom right; `full` reads as the bottom band; the note starts empty.
+        if self.format < 11 {
+            for circuit in &mut self.circuits {
+                punchi_fluid_core::BlockPosition::from_name(&circuit.block.position)
+                    .as_str()
+                    .clone_into(&mut circuit.block.position);
+            }
         }
         self.format = SHEET_VERSION;
         Ok(())

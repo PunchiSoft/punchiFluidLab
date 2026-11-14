@@ -376,7 +376,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 6;
+pub const PF_ABI_VERSION: u32 = 10;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -626,6 +626,10 @@ pub struct PfSession {
     /// Whether each latching relay is set, by placement identity. The set and reset coils
     /// change it; neither live holds it.
     latches: std::collections::HashMap<u64, bool>,
+    /// Resolved title-block rows, borrowed by the canvas for one frame.
+    block_rows: Vec<PfBlockRow>,
+    /// Resolved title-block cells, parallel to `block_rows`.
+    block_cells: Vec<PfBlockCell>,
 }
 
 impl std::fmt::Debug for PfSession {
@@ -708,8 +712,8 @@ impl PfSession {
             recent_path: None,
             recent: RecentList::new(),
             error: CString::default(),
-            width_mm: 210.0,
-            height_mm: 297.0,
+            width_mm: 297.0,
+            height_mm: 210.0,
             scale: 1.0,
             catalog_order: Vec::new(),
             catalog_items: Vec::new(),
@@ -727,6 +731,8 @@ impl PfSession {
             limits: std::collections::HashMap::new(),
             pressures: std::collections::HashMap::new(),
             latches: std::collections::HashMap::new(),
+            block_rows: Vec::new(),
+            block_cells: Vec::new(),
         };
         session.build_catalog();
         // Seeded now, not on the first frame: a front end may place or connect before it
@@ -750,18 +756,99 @@ impl PfSession {
         self.rebuild_model();
     }
 
-    /// The drawing space the ISO 5457 frame leaves free, in millimetres.
+    /// The drawing space the ISO 5457 frame leaves free, minus the title-block band.
+    ///
+    /// The export reserves the same band through [`punchi_fluid_export::Page`], and the
+    /// canvas must not lay the circuit under a block that will hide it. The resolved block
+    /// height (45 mm of industrial A4, 65 mm of A3, less for a school model or a collapsed
+    /// row) is subtracted from the bottom; the width is left as the sheet gives it, because
+    /// the block may sit on the right, on the left or across the full lower band. With no
+    /// block the whole frame is drawing space.
     fn content_rect(&self) -> Rect {
         let sheet = self.document.sheet();
         let (width, height) = sheet.size_mm();
         let margins = sheet.margins;
         let inner_width = (width - margins.left - margins.right).max(1.0);
-        let inner_height = (height - margins.top - margins.bottom).max(1.0);
-        Rect::from_min_size(
-            Pt::new(margins.left, margins.top),
-            inner_width,
-            inner_height,
-        )
+        let mut top = margins.top;
+        let mut inner_height = (height - margins.top - margins.bottom).max(1.0);
+        let id = self.document.active_circuit();
+        let position = self
+            .document
+            .block(id)
+            .map_or(punchi_fluid_core::BlockPosition::BottomRight, |block| {
+                block.position
+            });
+        if position != punchi_fluid_core::BlockPosition::None
+            && let Some(block) = self.document.block(id)
+        {
+            let layout = punchi_fluid_export::block_layout::layout(block, sheet.paper);
+            inner_height = (inner_height - layout.height).max(1.0);
+            if position == punchi_fluid_core::BlockPosition::TopRight {
+                top += layout.height;
+            }
+        }
+        Rect::from_min_size(Pt::new(margins.left, top), inner_width, inner_height)
+    }
+
+    /// The active block position, or `None` when there is no block.
+    fn block_position(&self) -> Option<punchi_fluid_core::BlockPosition> {
+        let id = self.document.active_circuit();
+        let block = self.document.block(id)?;
+        if block.position == punchi_fluid_core::BlockPosition::None {
+            return None;
+        }
+        Some(block.position)
+    }
+
+    /// Keeps a box of `height` clear of the reserved block band.
+    ///
+    /// A drop or a move can ask for a point under a bottom block or over a top-right one;
+    /// the placement moves to the band's inner edge instead of disappearing behind it. Only
+    /// the vertical centre moves, so the user's horizontal choice is untouched.
+    fn clear_of_block(&self, centre: Pt, height: f32) -> Pt {
+        let Some(position) = self.block_position() else {
+            return centre;
+        };
+        let area = self.content_rect();
+        let half = height.max(0.0) * 0.5;
+        if position == punchi_fluid_core::BlockPosition::TopRight {
+            let top = area.min.y + half;
+            if centre.y < top {
+                Pt::new(centre.x, top)
+            } else {
+                centre
+            }
+        } else {
+            let bottom = area.max.y - half;
+            if centre.y > bottom {
+                Pt::new(centre.x, bottom)
+            } else {
+                centre
+            }
+        }
+    }
+
+    /// Shifts a whole pasted group when its edge would enter the block band.
+    fn paste_clear_of_block(&self, copies: &[Placement], down: f32) -> f32 {
+        let Some(position) = self.block_position() else {
+            return down;
+        };
+        let area = self.content_rect();
+        if position == punchi_fluid_core::BlockPosition::TopRight {
+            let highest = copies
+                .iter()
+                .map(|copy| copy.rect().min.y)
+                .fold(f32::MAX, f32::min);
+            let extra = area.min.y - (highest + down);
+            if extra > 0.0 { down + extra } else { down }
+        } else {
+            let lowest = copies
+                .iter()
+                .map(|copy| copy.rect().max.y)
+                .fold(f32::MIN, f32::max);
+            let extra = area.max.y - (lowest + down);
+            if extra < 0.0 { down + extra } else { down }
+        }
     }
 
     /// The sheet as the front end reads it.
@@ -1064,7 +1151,8 @@ impl PfSession {
         let Some(anchor) = copies.first() else {
             return PF_ERR_MODEL;
         };
-        let (dx, dy) = (centre.x - anchor.centre.x, centre.y - anchor.centre.y);
+        let dx = centre.x - anchor.centre.x;
+        let dy = self.paste_clear_of_block(copies, centre.y - anchor.centre.y);
         let indices: Vec<usize> = copies
             .iter()
             .map(|copy| {
@@ -1773,6 +1861,7 @@ impl PfSession {
             .map(|circuit| punchi_fluid_file::sheet::StoredCircuit {
                 id: circuit.id,
                 title: circuit.title.clone(),
+                block: punchi_fluid_file::sheet::StoredBlock::from_block(&circuit.block),
             })
             .collect();
         Sheet {
@@ -1822,7 +1911,11 @@ impl PfSession {
         let mut circuits: Vec<Circuit> = sheet
             .circuits
             .iter()
-            .map(|circuit| Circuit::new(circuit.id, circuit.title.clone()))
+            .map(|stored| {
+                let mut circuit = Circuit::new(stored.id, stored.title.clone());
+                circuit.block = stored.block.to_block(&stored.title);
+                circuit
+            })
             .collect();
         if circuits.is_empty() {
             circuits.push(Circuit::new(0, "Circuito 1"));
@@ -1944,6 +2037,12 @@ impl PfSession {
     fn move_with_magnet(&mut self, index: usize, centre: Pt) -> bool {
         let grid = Pt::new(snap(centre.x, 10.0), snap(centre.y, 10.0));
         let target = self.magnet_centre(index, grid);
+        let height = self
+            .document
+            .placements()
+            .get(index)
+            .map_or(0.0, |placement| placement.height);
+        let target = self.clear_of_block(target, height);
         self.document.move_to(index, target)
     }
 
@@ -3155,12 +3254,10 @@ pub unsafe extern "C" fn pf_session_place_component(
             return session.fail("the catalog entry disappeared");
         };
         let (width, height) = default_size(category_code(definition.category));
-        let index = session.document.place(punchi_fluid_doc::Placement::new(
-            id,
-            Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)),
-            width,
-            height,
-        ));
+        let centre = session.clear_of_block(Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)), height);
+        let index = session
+            .document
+            .place(punchi_fluid_doc::Placement::new(id, centre, width, height));
         session.select_only(Some(index));
         session.rebuild_model();
         i32::try_from(index).unwrap_or(PF_ERR_MODEL)
@@ -3401,6 +3498,540 @@ pub unsafe extern "C" fn pf_session_rename_circuit(
     })
 }
 
+/// Field indices of the control-diagram block, in the order the paper reads.
+pub const PF_BLOCK_OWNER: u32 = 0;
+/// Field index of the project or installation.
+pub const PF_BLOCK_PROJECT: u32 = 1;
+/// Field index of the equipment or system.
+pub const PF_BLOCK_EQUIPMENT: u32 = 2;
+/// Field index of the document title.
+pub const PF_BLOCK_TITLE: u32 = 3;
+/// Field index of the document number.
+pub const PF_BLOCK_NUMBER: u32 = 4;
+/// Field index of the revision index.
+pub const PF_BLOCK_REVISION: u32 = 5;
+/// Field index of the date of issue.
+pub const PF_BLOCK_DATE: u32 = 6;
+/// Field index of the preparer.
+pub const PF_BLOCK_PREPARED: u32 = 7;
+/// Field index of the checker.
+pub const PF_BLOCK_CHECKED: u32 = 8;
+/// Field index of the approver.
+pub const PF_BLOCK_APPROVED: u32 = 9;
+/// Field index of the scale, `S/E` when the schematic is not to scale.
+pub const PF_BLOCK_SCALE: u32 = 10;
+/// Field index of the standards the drawing follows.
+pub const PF_BLOCK_NORMS: u32 = 11;
+/// Number of editable block fields.
+pub const PF_BLOCK_FIELD_COUNT: u32 = 12;
+/// Field index of the derived sheet number in a block layout.
+pub const PF_BLOCK_FIELD_SHEET: u32 = 12;
+
+/// Content model: the compact school block.
+pub const PF_BLOCK_MODEL_ESCOLAR: u32 = 0;
+/// Content model: the school fields plus number, revision, checker, approver and norms.
+pub const PF_BLOCK_MODEL_TECNICO: u32 = 1;
+/// Content model: every field, including project, equipment and scale.
+pub const PF_BLOCK_MODEL_INDUSTRIAL: u32 = 2;
+/// Number of content models.
+pub const PF_BLOCK_MODEL_COUNT: u32 = 3;
+
+/// One cell of the resolved block layout.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PfBlockCell {
+    /// A `PF_BLOCK_*` field index, or [`PF_BLOCK_FIELD_SHEET`].
+    pub field: u32,
+    /// Width in millimetres of the block.
+    pub width_mm: f32,
+}
+
+/// One row of the resolved block layout.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PfBlockRow {
+    /// Height in millimetres.
+    pub height_mm: f32,
+    /// First cell in [`PfBlockLayout::cells`].
+    pub cells_at: u32,
+    /// Number of cells.
+    pub cells_len: u32,
+}
+
+/// The block layout borrowed from the session for one frame.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PfBlockLayout {
+    /// Width of the block in millimetres.
+    pub width_mm: f32,
+    /// Height of the block in millimetres.
+    pub height_mm: f32,
+    /// Rows, top to bottom.
+    pub rows: *const PfBlockRow,
+    /// Number of rows.
+    pub rows_len: u32,
+    /// Cells, row-major.
+    pub cells: *const PfBlockCell,
+    /// Number of cells.
+    pub cells_len: u32,
+}
+
+/// Block preset: top right of the drawing space.
+pub const PF_BLOCK_TOP_RIGHT: u32 = 0;
+/// Block preset: bottom right, the standard position.
+pub const PF_BLOCK_BOTTOM_RIGHT: u32 = 1;
+/// Block preset: bottom edge, centred and edge to edge.
+pub const PF_BLOCK_BOTTOM_FULL: u32 = 2;
+/// Block preset: no block on the sheet; the fields are kept.
+pub const PF_BLOCK_NONE: u32 = 3;
+
+/// Copies the value of one block field of a circuit into `out`.
+///
+/// Returns the number of bytes written (without the terminator), or a negative error. The
+/// sheet number, `n/N`, is derived from the project and is not one of these fields.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, `out` must be null or point to
+/// `capacity` writable bytes, and `capacity` must be the size of that buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block(
+    session: *const PfSession,
+    id: u32,
+    field: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(field) = punchi_fluid_core::TitleField::ALL.get(field as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = block.field(*field).as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Sets one block field of a circuit, as one undoable change.
+///
+/// The text is trimmed and bounded by the core; an empty value clears the field. Returns a
+/// negative error when the field index, the circuit or the text is not usable.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `text` a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_block(
+    session: *mut PfSession,
+    id: u32,
+    field: u32,
+    text: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(field) = punchi_fluid_core::TitleField::ALL.get(field as usize) else {
+            return session.fail("unknown title-block field");
+        };
+        if text.is_null() {
+            return session.fail("the title-block text is empty");
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() else {
+            return session.fail("the title-block text is not UTF-8");
+        };
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        if !block.set(*field, text) {
+            return session.fail("the title-block text has a control character");
+        }
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Where the block of the circuit in view sits, as one of the `PF_BLOCK_*` presets.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_preset(session: *const PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let id = session.document.active_circuit();
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        i32::try_from(block.position as u32).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Moves the block of the circuit in view, or hides it, as one undoable change.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_block_preset(session: *mut PfSession, preset: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let position = match preset {
+            PF_BLOCK_TOP_RIGHT => punchi_fluid_core::BlockPosition::TopRight,
+            PF_BLOCK_BOTTOM_RIGHT => punchi_fluid_core::BlockPosition::BottomRight,
+            PF_BLOCK_BOTTOM_FULL => punchi_fluid_core::BlockPosition::BottomFull,
+            PF_BLOCK_NONE => punchi_fluid_core::BlockPosition::None,
+            _ => return session.fail("unknown title-block preset"),
+        };
+        let id = session.document.active_circuit();
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        block.position = position;
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Copies the free note of a circuit's block into `out`; newlines are kept.
+///
+/// Returns the number of bytes written (without the terminator), or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, `out` must be null or point to
+/// `capacity` writable bytes, and `capacity` must be the size of that buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_remark(
+    session: *const PfSession,
+    id: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = block.remark.as_bytes();
+        let capacity = capacity as usize;
+        if capacity == 0 || bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        target[..bytes.len()].copy_from_slice(bytes);
+        target[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Sets the free note of a circuit's block, as one undoable change.
+///
+/// Line breaks are accepted; other control characters are refused. An empty text clears it.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `text` a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_block_remark(
+    session: *mut PfSession,
+    id: u32,
+    text: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if text.is_null() {
+            return session.fail("the remark is empty");
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() else {
+            return session.fail("the remark is not UTF-8");
+        };
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        if !block.set_remark(text) {
+            return session.fail("the remark has a control character");
+        }
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// The content model of the active circuit's block, as one of the `PF_BLOCK_MODEL_*`.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_model(session: *const PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let id = session.document.active_circuit();
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        let index = punchi_fluid_core::ContentModel::ALL
+            .iter()
+            .position(|model| *model == block.model);
+        i32::try_from(index.unwrap_or(2)).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Switches the active circuit's block to a content model, restoring its field set.
+///
+/// The values are kept; only what the sheet prints changes. One undo per call.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_block_model(session: *mut PfSession, model: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let model = match model {
+            PF_BLOCK_MODEL_ESCOLAR => punchi_fluid_core::ContentModel::Escolar,
+            PF_BLOCK_MODEL_TECNICO => punchi_fluid_core::ContentModel::Tecnico,
+            PF_BLOCK_MODEL_INDUSTRIAL => punchi_fluid_core::ContentModel::Industrial,
+            _ => return session.fail("unknown content model"),
+        };
+        let id = session.document.active_circuit();
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        block.set_model(model);
+        // Choosing content after "Sin cajetín" brings the block back in the standard
+        // position, as one undo entry; the position commands then refine it.
+        if block.position == punchi_fluid_core::BlockPosition::None {
+            block.position = punchi_fluid_core::BlockPosition::BottomRight;
+        }
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// `1` when one stored field is visible in the block, `0` when hidden or on error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_visible(
+    session: *const PfSession,
+    id: u32,
+    field: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(field) = punchi_fluid_core::TitleField::ALL.get(field as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        i32::from(block.visible.contains(*field))
+    })
+}
+
+/// Shows or hides one stored field, as one undoable change. The value is kept.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_block_visible(
+    session: *mut PfSession,
+    id: u32,
+    field: u32,
+    visible: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(field) = punchi_fluid_core::TitleField::ALL.get(field as usize) else {
+            return session.fail("unknown title-block field");
+        };
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        block.set_visible(*field, visible != 0);
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// `1` when the block's visible fields differ from its model's default set.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_customized(session: *const PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let id = session.document.active_circuit();
+        let Some(block) = session.document.block(id) else {
+            return PF_ERR_MODEL;
+        };
+        i32::from(block.is_customized())
+    })
+}
+
+/// Restores the active circuit's block to its model's default field set.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_reset_block_visibility(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let id = session.document.active_circuit();
+        let Some(mut block) = session.document.block(id).cloned() else {
+            return session.fail("no such circuit");
+        };
+        block.reset_visibility();
+        if !session.document.set_block(id, block) {
+            return session.fail("no such circuit");
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// The resolved rows and cells of the active circuit's block, borrowed from the session.
+///
+/// The pointers stay valid until the next call. A field index is one of the `PF_BLOCK_*`
+/// fields, or [`PF_BLOCK_FIELD_SHEET`] for the derived sheet.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must point to a writable
+/// [`PfBlockLayout`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_block_layout(
+    session: *mut PfSession,
+    out: *mut PfBlockLayout,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let id = session.document.active_circuit();
+        let Some(block) = session.document.block(id).cloned() else {
+            return PF_ERR_MODEL;
+        };
+        let layout =
+            punchi_fluid_export::block_layout::layout(&block, session.document.sheet().paper);
+        session.block_rows.clear();
+        session.block_cells.clear();
+        for row in &layout.rows {
+            let at = session.block_cells.len() as u32;
+            for cell in &row.cells {
+                let field = match cell.field {
+                    punchi_fluid_export::block_layout::BlockField::Stored(field) => {
+                        u32::from(field.index())
+                    }
+                    punchi_fluid_export::block_layout::BlockField::Sheet => PF_BLOCK_FIELD_SHEET,
+                };
+                session.block_cells.push(PfBlockCell {
+                    field,
+                    width_mm: cell.width,
+                });
+            }
+            session.block_rows.push(PfBlockRow {
+                height_mm: row.height,
+                cells_at: at,
+                cells_len: u32::try_from(row.cells.len()).unwrap_or(0),
+            });
+        }
+        // SAFETY: the caller promised a writable record; the pointers borrow the session.
+        unsafe {
+            out.write(PfBlockLayout {
+                width_mm: layout.width,
+                height_mm: layout.height,
+                rows: session.block_rows.as_ptr(),
+                rows_len: u32::try_from(session.block_rows.len()).unwrap_or(0),
+                cells: session.block_cells.as_ptr(),
+                cells_len: u32::try_from(session.block_cells.len()).unwrap_or(0),
+            });
+        }
+        PF_OK
+    })
+}
+
 /// Keeps the selected component for a later paste.
 ///
 /// The clipboard is one placement, because the editor selects one at a time; the
@@ -3504,9 +4135,12 @@ pub unsafe extern "C" fn pf_session_duplicate_component(
         let Some(source) = session.document.placements().get(index as usize) else {
             return session.fail("that component does not exist");
         };
-        let centre = Pt::new(
-            snap(source.centre.x + right_mm, 10.0),
-            snap(source.centre.y + down_mm, 10.0),
+        let centre = session.clear_of_block(
+            Pt::new(
+                snap(source.centre.x + right_mm, 10.0),
+                snap(source.centre.y + down_mm, 10.0),
+            ),
+            source.height,
         );
         let Some(copy) = session.document.duplicate(index as usize, Some(centre)) else {
             return session.fail("that component does not exist");
@@ -3776,7 +4410,7 @@ impl PfSession {
         // A printed page has to be identifiable after the fact, and the sheet has no name of
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing, and the name of the circuit in view.
-        let mut block = export_block(&self.document, target, date);
+        let block = export_block(&self.document, target, date);
         self.ensure_seeded();
         let circuit = self.document.active_circuit();
         let (placed, pipes) = scene(
@@ -3804,19 +4438,11 @@ impl PfSession {
             },
             ..punchi_fluid_export::Page::a4(block.clone())
         };
-        let Ok(area) = punchi_fluid_export::drawing_area(&page, &block) else {
+        if punchi_fluid_export::drawing_area(&page, &block).is_err() {
             return self.fail("the page leaves no room for the drawing");
-        };
-        let scale = bounds.map_or(1.0, |bounds| {
-            punchi_fluid_draw::surface::fit_scale(bounds, area)
-        });
-        block.scale = Some(if scale < 0.999 {
-            format!("1:{:.0}", 1.0 / scale)
-        } else {
-            String::from("1:1")
-        });
-        // Keep the page's own copy in step; the renderer takes the block explicitly, but a
-        // caller that reads the page must see the same scale.
+        }
+        // The renderer takes the block explicitly; keep the page's own copy in step so a
+        // caller that reads the page sees the same fields.
         page.title_block = Some(block.clone());
         let draw = |surface: &mut dyn punchi_fluid_draw::Surface, area: punchi_fluid_draw::Rect| {
             let Some(bounds) = bounds else {
@@ -3870,20 +4496,39 @@ fn parts_list(
     punchi_fluid_export::PartsList::group(catalog, placements)
 }
 
-/// The title block for an export: the file name, the date and the circuit in view.
+/// The title block for an export: the circuit's own fields, with the defaults the paper
+/// still needs — the circuit title, the file stem and the caller's date.
 fn export_block(document: &Document, target: &str, date: &str) -> punchi_fluid_export::TitleBlock {
-    // The sheet has no name of its own, so the block takes the name of the file being
-    // written, which is what the user called the drawing.
-    let title = std::path::Path::new(target).file_stem().map_or_else(
+    let active = document.active_circuit();
+    let circuits = document.circuits();
+    let position = circuits
+        .iter()
+        .position(|circuit| circuit.id == active)
+        .unwrap_or(0);
+    let total = circuits.len().max(1);
+    let circuit = circuits.get(position);
+    let mut block = circuit
+        .map(|circuit| circuit.block.clone())
+        .unwrap_or_default();
+    // The sheet has no name of its own, so a block without a title or a number takes the
+    // circuit title and the name of the file being written.
+    let stem = std::path::Path::new(target).file_stem().map_or_else(
         || String::from("Circuit"),
         |stem| stem.to_string_lossy().into_owned(),
     );
-    let mut block = punchi_fluid_export::block_with_review_state(&title, date);
-    block.project = document
-        .circuits()
-        .iter()
-        .find(|circuit| circuit.id == document.active_circuit())
-        .map_or_else(String::new, |circuit| circuit.title.clone());
+    if block.title.is_empty() {
+        block.title = circuit.map_or_else(|| stem.clone(), |circuit| circuit.title.clone());
+    }
+    if block.number.is_empty() {
+        block.number = stem;
+    }
+    if block.date.is_empty() {
+        date.clone_into(&mut block.date);
+    }
+    block.sheet = format!("{}/{total}", position + 1);
+    if let Some(note) = punchi_fluid_export::unverified_note() {
+        block.note = Some(note);
+    }
     block
 }
 
@@ -4972,10 +5617,16 @@ pub unsafe extern "C" fn pf_session_move_component(
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        if session
+        let Some(height) = session
             .document
-            .move_to(index as usize, Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)))
-        {
+            .placements()
+            .get(index as usize)
+            .map(|placement| placement.height)
+        else {
+            return PF_ERR_MODEL;
+        };
+        let centre = session.clear_of_block(Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)), height);
+        if session.document.move_to(index as usize, centre) {
             PF_OK
         } else {
             PF_ERR_MODEL
@@ -5286,8 +5937,9 @@ pub unsafe extern "C" fn pf_session_move_selection(
             .selected
             .iter()
             .filter_map(|index| {
-                let centre = session.document.placements().get(*index)?.centre;
-                Some((*index, Pt::new(centre.x + right_mm, centre.y + down_mm)))
+                let placement = session.document.placements().get(*index)?;
+                let centre = Pt::new(placement.centre.x + right_mm, placement.centre.y + down_mm);
+                Some((*index, session.clear_of_block(centre, placement.height)))
             })
             .collect();
         if session.document.move_many(&moves) {
@@ -7190,6 +7842,49 @@ pub unsafe extern "C" fn pf_session_check(
         target[bytes.len()] = 0;
         i32::try_from(findings.len()).unwrap_or(PF_ERR_MODEL)
     })
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+
+    /// Seeds the worked example on `paper` and proves no box enters the block band.
+    fn seeded_example_stays_clear(paper: PaperSize, orientation: PaperOrientation) {
+        let mut session = PfSession::new(None);
+        // A fresh document on the paper under test, so the seed lays out the reduced space
+        // instead of the A4 one the constructor already used.
+        session.document = Document::new();
+        let sheet = PaperSheet {
+            paper,
+            orientation,
+            margins: PaperMargins::iso5457(),
+        };
+        assert!(session.document.set_sheet(sheet));
+        session.seeded = false;
+        session.ensure_seeded();
+
+        let area = session.content_rect();
+        assert!(
+            !area.is_empty(),
+            "{}: the drawing space exists",
+            paper.label()
+        );
+        for placement in session.document.placements() {
+            let rect = placement.rect();
+            assert!(
+                rect.max.y <= area.max.y + 0.01,
+                "{}: {} enters the block band: {rect:?} against {area:?}",
+                paper.label(),
+                placement.catalog_id
+            );
+        }
+    }
+
+    #[test]
+    fn the_seeded_example_stays_clear_of_the_block_on_a4_and_a3() {
+        seeded_example_stays_clear(PaperSize::A4, PaperOrientation::Landscape);
+        seeded_example_stays_clear(PaperSize::A3, PaperOrientation::Landscape);
+    }
 }
 
 #[cfg(test)]

@@ -56,6 +56,31 @@ class FluidSession : public QObject
     Q_PROPERTY(double sheetMarginRight READ sheetMarginRight NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginBottom READ sheetMarginBottom NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginLeft READ sheetMarginLeft NOTIFY sheetChanged)
+    /// The control-diagram block of the active circuit, printed on the sheet.
+    Q_PROPERTY(QString blockOwner READ blockOwner NOTIFY blockChanged)
+    Q_PROPERTY(QString blockProject READ blockProject NOTIFY blockChanged)
+    Q_PROPERTY(QString blockEquipment READ blockEquipment NOTIFY blockChanged)
+    Q_PROPERTY(QString blockTitle READ blockTitle NOTIFY blockChanged)
+    Q_PROPERTY(QString blockNumber READ blockNumber NOTIFY blockChanged)
+    Q_PROPERTY(QString blockRevision READ blockRevision NOTIFY blockChanged)
+    Q_PROPERTY(QString blockDate READ blockDate NOTIFY blockChanged)
+    Q_PROPERTY(QString blockPrepared READ blockPrepared NOTIFY blockChanged)
+    Q_PROPERTY(QString blockChecked READ blockChecked NOTIFY blockChanged)
+    Q_PROPERTY(QString blockApproved READ blockApproved NOTIFY blockChanged)
+    Q_PROPERTY(QString blockScale READ blockScale NOTIFY blockChanged)
+    Q_PROPERTY(QString blockNorms READ blockNorms NOTIFY blockChanged)
+    /// The free note, not printed yet.
+    Q_PROPERTY(QString blockRemark READ blockRemark NOTIFY blockChanged)
+    /// The derived `n/N` of the circuit in view, never stored.
+    Q_PROPERTY(QString blockSheet READ blockSheet NOTIFY blockChanged)
+    /// 0 top right, 1 bottom right, 2 bottom full width, 3 no block.
+    Q_PROPERTY(int blockPreset READ blockPreset NOTIFY blockChanged)
+    /// 0 escolar, 1 técnico, 2 industrial.
+    Q_PROPERTY(int blockModel READ blockModel NOTIFY blockChanged)
+    /// `true` when a field was shown or hidden away from the model's set.
+    Q_PROPERTY(bool blockCustomized READ blockCustomized NOTIFY blockChanged)
+    /// The model's fields in print order, with label, value and visibility.
+    Q_PROPERTY(QVariantList blockFields READ blockFields NOTIFY blockChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(bool inspectorOpen READ inspectorOpen NOTIFY inspectorChanged)
@@ -164,6 +189,35 @@ public:
     Q_INVOKABLE bool selectCircuit(int id);
     Q_INVOKABLE int addCircuit();
     Q_INVOKABLE bool renameCircuit(int id, const QString &title);
+    /// Writes one field of the active circuit's block: `owner`, `project`, `equipment`,
+    /// `title`, `number`, `revision`, `date`, `prepared`, `checked`, `approved`, `scale`
+    /// or `norms`. One undo per call.
+    Q_INVOKABLE void setBlockField(const QString &field, const QString &value);
+    QString blockOwner() const { return blockField(PF_BLOCK_OWNER); }
+    QString blockProject() const { return blockField(PF_BLOCK_PROJECT); }
+    QString blockEquipment() const { return blockField(PF_BLOCK_EQUIPMENT); }
+    QString blockTitle() const { return blockField(PF_BLOCK_TITLE); }
+    QString blockNumber() const { return blockField(PF_BLOCK_NUMBER); }
+    QString blockRevision() const { return blockField(PF_BLOCK_REVISION); }
+    QString blockDate() const { return blockField(PF_BLOCK_DATE); }
+    QString blockPrepared() const { return blockField(PF_BLOCK_PREPARED); }
+    QString blockChecked() const { return blockField(PF_BLOCK_CHECKED); }
+    QString blockApproved() const { return blockField(PF_BLOCK_APPROVED); }
+    QString blockScale() const { return blockField(PF_BLOCK_SCALE); }
+    QString blockNorms() const { return blockField(PF_BLOCK_NORMS); }
+    QString blockRemark() const;
+    Q_INVOKABLE void setBlockRemark(const QString &text);
+    QString blockSheet() const;
+    int blockPreset() const;
+    Q_INVOKABLE void setBlockPreset(int preset);
+    int blockModel() const;
+    bool blockCustomized() const;
+    QVariantList blockFields() const;
+    /// Switches content model; it restores the model's field set, keeping every value.
+    Q_INVOKABLE void setBlockModel(int model);
+    /// Shows or hides one field; the value stays.
+    Q_INVOKABLE void setBlockFieldVisible(int field, bool visible);
+    Q_INVOKABLE void resetBlockVisibility();
     Q_INVOKABLE QVariantList circuits() const;
     Q_INVOKABLE int activeCircuit() const;
     Q_INVOKABLE bool openRecent(int slot);
@@ -360,7 +414,8 @@ public:
     Q_INVOKABLE void toggleSheetLandscape();
     /// `side` is 0 top, 1 right, 2 bottom, 3 left, as the export panel reads them.
     Q_INVOKABLE void setSheetMargin(int side, double mm);
-    /// Back to the A4 with the ISO 5457 frame a new document starts on.
+    /// A4 normal: portrait with the ISO 5457 frame, one command away from the opening
+    /// landscape sheet.
     Q_INVOKABLE void resetSheet();
 
     Q_INVOKABLE void undo();
@@ -406,6 +461,7 @@ public:
 
 signals:
     void changed();
+    void blockChanged();
     void viewChanged();
     void sheetChanged();
     void documentChanged();
@@ -459,6 +515,9 @@ private:
     void refreshSelection();
     void advanceInternal(double dt, bool forced);
     void readCatalog();
+
+    /// One block field of the active circuit, or an empty string when there is none.
+    QString blockField(uint32_t field) const;
 
     PfSession *m_session = nullptr;
     PfTelemetry m_telemetry {};

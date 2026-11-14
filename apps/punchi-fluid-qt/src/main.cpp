@@ -14,6 +14,8 @@
 //! --check-icons        resolve the ribbon's icons and print what the theme returned
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
 //! --selftest           replay every sheet gesture with real events; exits 1 on failure
+//! --block              open the title-block editor, for a capture of it
+//! --block-model N      0 escolar, 1 técnico, 2 industrial, for a capture
 //! --probe              print the numbers the status bar shows, then exit 1
 //! --open <file>        open a saved sheet before anything else
 //! --save <file>        save the sheet and exit 0/1, without a window
@@ -239,6 +241,14 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (arguments.contains(QStringLiteral("--block"))) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("titleBlockOpen").isValid()) {
+                root->setProperty("titleBlockOpen", true);
+            }
+        }
+    }
+
     const auto sessions = [&engine]() {
         QList<FluidSession *> found;
         for (QObject *root : engine.rootObjects()) {
@@ -246,6 +256,20 @@ int main(int argc, char *argv[])
         }
         return found;
     };
+
+    // For the capture of a content model, before any frame is grabbed.
+    const QString blockModel = value(QStringLiteral("--block-model"));
+    if (!blockModel.isEmpty()) {
+        bool ok = false;
+        const int model = blockModel.toInt(&ok);
+        if (!ok || model < 0 || model > 2) {
+            std::fprintf(stderr, "--block-model takes 0, 1 or 2\n");
+            return 2;
+        }
+        for (FluidSession *session : sessions()) {
+            session->setBlockModel(model);
+        }
+    }
 
     const QString openPath = value(QStringLiteral("--open"));
     if (!openPath.isEmpty()) {
@@ -825,19 +849,26 @@ int main(int argc, char *argv[])
                   QStringLiteral("editing: undoing the copy removes it"));
             state->components = before;
         });
-        steps->push_back([state, sendWith, toScene, componentRect] {
-            const QRectF box = componentRect(state->valveIndex);
-            state->routeScene = toScene(box.center());
-            sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
+        steps->push_back([state, sendWith, toScene, valveCentre, check] {
+            // Press, drag and release in one step. Three timer steps are three chances for
+            // the window to be busy between them, and a drag whose press and move are not
+            // read in order is a drag that never happened. The pipe drag uses the same rule.
+            // The docked editor, if open, takes the right side of the window and the valve
+            // can sit under it. Closed and laid out again, the whole sheet is back.
+            state->window->setProperty("titleBlockOpen", false);
+            // An earlier click opens the properties inspector on the right; while it is
+            // open it covers the valve's point and the press never reaches the sheet.
+            state->session->closeInspector();
+            QCoreApplication::processEvents();
+            PfFrame frame {};
+            pf_session_build_frame(state->session->handle(), 4.0F, &frame);
+            const QPointF start = toScene(valveCentre());
+            const QPointF end = start + QPointF(60.0, 0.0);
+            sendWith(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
-        });
-        steps->push_back([state, sendWith] {
-            sendWith(QEvent::MouseMove, state->routeScene + QPointF(20.0, 0.0), Qt::NoButton,
-                     Qt::LeftButton, Qt::ShiftModifier);
-        });
-        steps->push_back([state, sendWith, check] {
-            sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(20.0, 0.0),
-                     Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+            sendWith(QEvent::MouseMove, end, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+            sendWith(QEvent::MouseButtonRelease, end, Qt::LeftButton, Qt::NoButton,
+                     Qt::ShiftModifier);
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
                   QStringLiteral("editing: Shift-drag copies"));
             state->session->undo();
@@ -1092,8 +1123,10 @@ int main(int argc, char *argv[])
         // A hose is re-routed by dragging its middle segment. The press selects it and the
         // drag moves it; one undo restores the route, because one gesture is one edit.
         steps->push_back([state, check, send, toScene] {
-            for (double x = 10.0; x <= 190.0 && state->routePipe < 0; x += 4.0) {
-                for (double y = 10.0; y <= 120.0; y += 4.0) {
+            const double sheetWidth = state->session->sheetWidthMm();
+            const double sheetHeight = state->session->sheetHeightMm();
+            for (double x = 10.0; x <= sheetWidth - 10.0 && state->routePipe < 0; x += 4.0) {
+                for (double y = 10.0; y <= sheetHeight - 10.0; y += 4.0) {
                     int portIndex = -1;
                     QString port;
                     if (state->session->componentAt(x, y) >= 0
@@ -1106,11 +1139,20 @@ int main(int argc, char *argv[])
                     }
                     // Only a hose with two jogs has a segment to drag: one bend is
                     // already the shortest orthogonal route. Ask the core by trying the
-                    // drag on a scratch edit and taking it back at once.
+                    // drag on a scratch edit and taking it back at once; a point that
+                    // leaves the route where it was must not undo the previous edit.
+                    float scratch = 0.0F;
+                    pf_session_pipe_offset(state->session->handle(),
+                                           static_cast<uint32_t>(hit), &scratch);
                     if (pf_session_route_pipe(state->session->handle(),
                                               static_cast<uint32_t>(hit), x, y)
                         == PF_OK) {
-                        state->session->undo();
+                        float after = 0.0F;
+                        pf_session_pipe_offset(state->session->handle(),
+                                               static_cast<uint32_t>(hit), &after);
+                        if (std::abs(after - scratch) > 0.001F) {
+                            state->session->undo();
+                        }
                         state->routePipe = hit;
                         state->routeScene = toScene(QPointF(x, y));
                         break;
@@ -1123,14 +1165,15 @@ int main(int argc, char *argv[])
             pf_session_pipe_offset(state->session->handle(),
                                    static_cast<uint32_t>(state->routePipe), &offset);
             state->routeOffset = offset;
+
             send(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton);
         });
         steps->push_back([state, send] {
-            send(QEvent::MouseMove, state->routeScene + QPointF(18.0, 18.0), Qt::NoButton,
+            send(QEvent::MouseMove, state->routeScene + QPointF(60.0, 30.0), Qt::NoButton,
                  Qt::LeftButton);
         });
         steps->push_back([state, check, send] {
-            send(QEvent::MouseButtonRelease, state->routeScene + QPointF(18.0, 18.0),
+            send(QEvent::MouseButtonRelease, state->routeScene + QPointF(60.0, 30.0),
                  Qt::LeftButton, Qt::NoButton);
             float offset = 0.0F;
             pf_session_pipe_offset(state->session->handle(),
@@ -1173,8 +1216,10 @@ int main(int argc, char *argv[])
             QPointF onPipe;
             bool found = false;
             qreal bestClearance = -1.0;
-            for (double x = 10.0; x < 190.0; x += 2.0) {
-                for (double y = 10.0; y < 125.0; y += 2.0) {
+            const double sheetWidth = state->session->sheetWidthMm();
+            const double sheetHeight = state->session->sheetHeightMm();
+            for (double x = 10.0; x < sheetWidth - 10.0; x += 2.0) {
+                for (double y = 10.0; y < sheetHeight - 10.0; y += 2.0) {
                     int portIndex = -1;
                     QString port;
                     // Away from every port, or the release would be read as an ordinary
@@ -1710,8 +1755,9 @@ int main(int argc, char *argv[])
             options.insert(QStringLiteral("path"), path);
             options.insert(QStringLiteral("kind"), 2);
             options.insert(QStringLiteral("custom_paper"), true);
-            options.insert(QStringLiteral("width"), 90);
-            options.insert(QStringLiteral("height"), 60);
+            // Large enough for the 170 × 55 mm block and still a little drawing space.
+            options.insert(QStringLiteral("width"), 120);
+            options.insert(QStringLiteral("height"), 90);
             options.insert(QStringLiteral("landscape"), false);
             options.insert(QStringLiteral("dpi"), 300);
             options.insert(QStringLiteral("parts_list"), false);
@@ -1722,11 +1768,104 @@ int main(int argc, char *argv[])
             QFile file(path);
             const bool opened = file.open(QIODevice::ReadOnly);
             const QString svg = opened ? QString::fromUtf8(file.readAll()) : QString();
-            check(svg.contains(QStringLiteral("viewBox=\"0 0 90.0 60.0\"")),
+            check(svg.contains(QStringLiteral("viewBox=\"0 0 120.0 90.0\"")),
                   QStringLiteral("export panel: the custom paper reaches the page"));
             check(!svg.contains(QStringLiteral("lista de piezas")),
                   QStringLiteral("export panel: the list can be left off"));
             QFile::remove(path);
+        });
+
+        // The title block is per circuit and one edit is one undo; the sheet number is the
+        // circuit's place in the project, not a stored field.
+        steps->push_back([state, check] {
+            const QString circuit = QString::number(state->session->activeCircuit());
+            check(state->session->blockTitle() == QStringLiteral("Circuito 1"),
+                  QStringLiteral("title block: a new circuit starts with its own title"));
+            const QVariantList circuits = state->session->circuits();
+            check(state->session->blockSheet()
+                      == QStringLiteral("1/%1").arg(circuits.size()),
+                  QStringLiteral("title block: the sheet number is derived from the project"));
+            state->session->setBlockField(QStringLiteral("owner"),
+                                          QStringLiteral("Curso de Neumática"));
+            state->session->setBlockField(QStringLiteral("number"),
+                                          QStringLiteral("PF-2026-07"));
+            check(state->session->blockOwner() == QStringLiteral("Curso de Neumática"),
+                  QStringLiteral("title block: the owner is read back"));
+            check(state->session->blockNumber() == QStringLiteral("PF-2026-07"),
+                  QStringLiteral("title block: the document number is read back"));
+            check(state->session->modified(),
+                  QStringLiteral("title block: an edited field marks the document"));
+            state->session->undo();
+            check(state->session->blockNumber().isEmpty(),
+                  QStringLiteral("title block: one undo takes the last field back"));
+            check(state->session->blockOwner() == QStringLiteral("Curso de Neumática"),
+                  QStringLiteral("title block: the previous field stays"));
+            state->session->setBlockField(QStringLiteral("owner"), QString());
+            state->session->setBlockField(QStringLiteral("number"), QString());
+            check(circuit == QString::number(state->session->activeCircuit()),
+                  QStringLiteral("title block: editing stays on the circuit in view"));
+        });
+
+        // The rest of the guide fields travel the same path, and the preset moves the block
+        // without losing them.
+        steps->push_back([state, check] {
+            check(state->session->blockScale() == QStringLiteral("S/E"),
+                  QStringLiteral("title block: the scale starts at S/E"));
+            check(state->session->blockProject().isEmpty(),
+                  QStringLiteral("title block: the project starts empty"));
+            state->session->setBlockField(QStringLiteral("project"),
+                                          QStringLiteral("Línea 2"));
+            state->session->setBlockField(QStringLiteral("equipment"),
+                                          QStringLiteral("Prensa 4"));
+            state->session->setBlockField(QStringLiteral("norms"),
+                                          QStringLiteral("NCh 14 · NCh 1768/1"));
+            check(state->session->blockProject() == QStringLiteral("Línea 2")
+                      && state->session->blockEquipment() == QStringLiteral("Prensa 4"),
+                  QStringLiteral("title block: the guide fields are read back"));
+            check(state->session->blockNorms() == QStringLiteral("NCh 14 · NCh 1768/1"),
+                  QStringLiteral("title block: the norms are read back"));
+            state->session->undo();
+            check(state->session->blockNorms().isEmpty(),
+                  QStringLiteral("title block: one undo takes the norms back"));
+            check(state->session->blockEquipment() == QStringLiteral("Prensa 4"),
+                  QStringLiteral("title block: the previous field stays"));
+            state->session->setBlockPreset(0);
+            check(state->session->blockPreset() == 0,
+                  QStringLiteral("title block: the preset moves the block to the top"));
+            state->session->undo();
+            check(state->session->blockPreset() == 1,
+                  QStringLiteral("title block: one undo returns the block"));
+            state->session->setBlockField(QStringLiteral("scale"), QStringLiteral("1:50"));
+            check(state->session->blockScale() == QStringLiteral("1:50"),
+                  QStringLiteral("title block: the scale is editable"));
+            state->session->setBlockField(QStringLiteral("scale"), QStringLiteral("S/E"));
+            state->session->setBlockField(QStringLiteral("project"), QString());
+            state->session->setBlockField(QStringLiteral("equipment"), QString());
+        });
+
+        // Content models: the same values print in fewer rows, and Personalizar hides one
+        // field without losing what was typed.
+        steps->push_back([state, check] {
+            check(state->session->blockModel() == 2 && !state->session->blockCustomized(),
+                  QStringLiteral("title block: the industrial model starts"));
+            state->session->setBlockModel(0);
+            check(state->session->blockModel() == 0 && state->session->blockFields().size() == 4,
+                  QStringLiteral("title block: escolar keeps four fields"));
+            check(state->session->blockPreset() == 1,
+                  QStringLiteral("title block: choosing content shows the block"));
+            state->session->setBlockFieldVisible(PF_BLOCK_TITLE, false);
+            check(state->session->blockCustomized(),
+                  QStringLiteral("title block: hiding a field personalizes the model"));
+            check(state->session->blockTitle() == QStringLiteral("Circuito 1"),
+                  QStringLiteral("title block: a hidden field keeps its value"));
+            state->session->resetBlockVisibility();
+            check(!state->session->blockCustomized(),
+                  QStringLiteral("title block: Restablecer returns the model"));
+            state->session->setBlockPreset(3);
+            state->session->setBlockModel(1);
+            check(state->session->blockPreset() == 1 && state->session->blockModel() == 1,
+                  QStringLiteral("title block: choosing a model brings the block back"));
+            state->session->setBlockModel(2);
         });
 
         // A pipe's class is a property of the pipe: the selected hose tilts its dashes, the
@@ -1924,21 +2063,30 @@ int main(int argc, char *argv[])
         // The sheet is the paper: choosing A3 changes the document, the canvas and the
         // check together, and every choice is one undo.
         steps->push_back([state, check] {
-            state->session->resetSheet();
-            check(state->session->sheetPaper() == 1 && !state->session->sheetLandscape(),
-                  QStringLiteral("sheet: a new document is A4 portrait"));
-            check(std::abs(state->session->sheetWidthMm() - 210.0) < 0.01
-                      && std::abs(state->session->sheetHeightMm() - 297.0) < 0.01,
-                  QStringLiteral("sheet: A4 is 210 x 297 mm"));
+            // Nothing changed the sheet before this step: this is the opening document.
+            check(state->session->sheetPaper() == 1 && state->session->sheetLandscape(),
+                  QStringLiteral("sheet: the document opens A4 landscape"));
+            check(std::abs(state->session->sheetWidthMm() - 297.0) < 0.01
+                      && std::abs(state->session->sheetHeightMm() - 210.0) < 0.01,
+                  QStringLiteral("sheet: A4 landscape is 297 x 210 mm"));
             check(std::abs(state->session->sheetMarginLeft() - 20.0) < 0.01
                       && std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
                   QStringLiteral("sheet: the frame is the ISO 5457 one"));
+            // A4 normal is still portrait, one click away from the opening sheet.
+            state->session->resetSheet();
+        });
+        steps->push_back([state, check] {
+            check(state->session->sheetPaper() == 1 && !state->session->sheetLandscape(),
+                  QStringLiteral("sheet: A4 normal returns to portrait"));
+            check(std::abs(state->session->sheetWidthMm() - 210.0) < 0.01
+                      && std::abs(state->session->sheetHeightMm() - 297.0) < 0.01,
+                  QStringLiteral("sheet: A4 portrait is 210 x 297 mm"));
             state->session->setSheetPaper(2);
         });
         steps->push_back([state, check] {
             check(std::abs(state->session->sheetWidthMm() - 297.0) < 0.01
                       && std::abs(state->session->sheetHeightMm() - 420.0) < 0.01,
-                  QStringLiteral("sheet: A3 is 297 x 420 mm"));
+                  QStringLiteral("sheet: A3 keeps the portrait orientation"));
             state->session->toggleSheetLandscape();
         });
         steps->push_back([state, check] {
@@ -1947,10 +2095,11 @@ int main(int argc, char *argv[])
                   QStringLiteral("sheet: landscape swaps the sides"));
             state->session->undo();
             state->session->undo();
+            state->session->undo();
         });
         steps->push_back([state, check] {
-            check(state->session->sheetPaper() == 1 && !state->session->sheetLandscape(),
-                  QStringLiteral("sheet: one undo per change returns the A4"));
+            check(state->session->sheetPaper() == 1 && state->session->sheetLandscape(),
+                  QStringLiteral("sheet: undo returns the opening A4 landscape"));
             state->session->setSheetMargin(0, 15.0);
         });
         steps->push_back([state, check] {
@@ -1959,6 +2108,23 @@ int main(int argc, char *argv[])
             state->session->undo();
             check(std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
                   QStringLiteral("sheet: undo returns the ISO margin"));
+        });
+
+        // The live layout reserves the same band the export does: no example box may sit
+        // under the block, where the canvas would paint over it.
+        steps->push_back([state, check, componentRect] {
+            PfBlockLayout block {};
+            const bool hasBlock =
+                state->session->blockPreset() != 3
+                && pf_session_block_layout(state->session->handle(), &block) == PF_OK;
+            const double bandTop = state->session->sheetHeightMm()
+                - state->session->sheetMarginBottom() - block.height_mm;
+            bool clear = true;
+            for (int index = 0; index < state->session->componentCount(); ++index) {
+                clear = clear && componentRect(index).bottom() <= bandTop + 0.01;
+            }
+            check(!hasBlock || clear,
+                  QStringLiteral("title block: the example stays clear of the block band"));
         });
 
         // The port magnet: a hose between two ports on the same axis becomes straight when

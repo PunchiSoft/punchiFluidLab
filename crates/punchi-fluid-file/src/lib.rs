@@ -10,6 +10,7 @@
 //! deliberately separate from [`punchi_fluid_core`]: the domain can evolve
 //! without breaking files a user already has.
 
+pub mod block;
 pub mod paper;
 pub mod recent;
 pub mod sheet;
