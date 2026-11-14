@@ -14,9 +14,6 @@
 #include <cmath>
 
 namespace {
-/// Ruling of the sheet's grid, in millimetres.
-constexpr double kGridMm = 10.0;
-
 /// The Spanish label of one block field, shared by every model.
 QString blockLabel(uint32_t field)
 {
@@ -69,21 +66,68 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
 
     if (session.grid()) {
         // The grid is the drawing's own millimetre ruling, so a component lines up with it
-        // instead of floating. It stops at the frame, because the margin is paper, not
-        // drawing space. Drawn first and faint: it is a guide, never a mark on the document.
-        QColor line = session.tokens().inkMuted;
-        line.setAlphaF(0.22F);
-        painter->save();
-        painter->setPen(QPen(line, 1.0));
-        for (double x = left + kGridMm; x < right; x += kGridMm) {
-            const qreal px = fit.originX + x * fit.pixelsPerMm;
-            painter->drawLine(QPointF(px, fit.originY + top * fit.pixelsPerMm),
-                              QPointF(px, fit.originY + bottom * fit.pixelsPerMm));
+        // instead of floating. The lines are at multiples of the step from the paper's
+        // top-left corner, the same origin the snap uses; starting at the frame edge would
+        // offset them by a margin that is not a multiple of the step. It stops at the
+        // frame, because the margin is paper, not drawing space. Drawn first and faint: it
+        // is a guide, never a mark on the document.
+        const double step = session.gridStepMm();
+        const double major = step * 5.0;
+        const QColor minor = session.tokens().gridMinor;
+        const QColor majorInk = session.tokens().gridMajor;
+
+        // Only the lines the viewport can show, and only when a line is at least six
+        // pixels from the next: a 5 mm ruling on A0 or at a distant zoom would otherwise
+        // ask QPainter for tens of thousands of invisible lines on every frame.
+        const QRectF visible = painter->clipBoundingRect();
+        const qreal scale = std::max<qreal>(fit.pixelsPerMm, 1.0e-9);
+        double xFrom = left;
+        double xTo = right;
+        double yFrom = top;
+        double yTo = bottom;
+        if (visible.isValid() && visible.width() > 0.0 && visible.height() > 0.0) {
+            xFrom = std::max(left, (visible.left() - fit.originX) / scale);
+            xTo = std::min(right, (visible.right() - fit.originX) / scale);
+            yFrom = std::max(top, (visible.top() - fit.originY) / scale);
+            yTo = std::min(bottom, (visible.bottom() - fit.originY) / scale);
+            if (xTo < xFrom || yTo < yFrom) {
+                xFrom = left;
+                xTo = right;
+                yFrom = top;
+                yTo = bottom;
+            }
         }
-        for (double y = top + kGridMm; y < bottom; y += kGridMm) {
-            const qreal py = fit.originY + y * fit.pixelsPerMm;
-            painter->drawLine(QPointF(fit.originX + left * fit.pixelsPerMm, py),
-                              QPointF(fit.originX + right * fit.pixelsPerMm, py));
+
+        const auto first_line = [](double from, double spacing) {
+            return std::ceil(from / spacing) * spacing;
+        };
+
+        painter->save();
+        if (step * fit.pixelsPerMm >= 6.0) {
+            painter->setPen(QPen(minor, 1.0));
+            for (double x = first_line(xFrom, step); x <= xTo; x += step) {
+                const qreal px = fit.originX + x * fit.pixelsPerMm;
+                painter->drawLine(QPointF(px, fit.originY + top * fit.pixelsPerMm),
+                                  QPointF(px, fit.originY + bottom * fit.pixelsPerMm));
+            }
+            for (double y = first_line(yFrom, step); y <= yTo; y += step) {
+                const qreal py = fit.originY + y * fit.pixelsPerMm;
+                painter->drawLine(QPointF(fit.originX + left * fit.pixelsPerMm, py),
+                                  QPointF(fit.originX + right * fit.pixelsPerMm, py));
+            }
+        }
+        if (major * fit.pixelsPerMm >= 6.0) {
+            painter->setPen(QPen(majorInk, 1.0));
+            for (double x = first_line(xFrom, major); x <= xTo; x += major) {
+                const qreal px = fit.originX + x * fit.pixelsPerMm;
+                painter->drawLine(QPointF(px, fit.originY + top * fit.pixelsPerMm),
+                                  QPointF(px, fit.originY + bottom * fit.pixelsPerMm));
+            }
+            for (double y = first_line(yFrom, major); y <= yTo; y += major) {
+                const qreal py = fit.originY + y * fit.pixelsPerMm;
+                painter->drawLine(QPointF(fit.originX + left * fit.pixelsPerMm, py),
+                                  QPointF(fit.originX + right * fit.pixelsPerMm, py));
+            }
         }
         painter->restore();
     }

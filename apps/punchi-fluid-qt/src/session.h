@@ -46,16 +46,28 @@ class FluidSession : public QObject
     Q_PROPERTY(int selectionCount READ selectionCount NOTIFY documentChanged)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
+    /// The grid step in millimetres, shared by the ruling and the snap.
+    Q_PROPERTY(double gridStepMm READ gridStepMm WRITE setGridStepMm NOTIFY viewChanged)
     /// The sheet the document is drawn on: the same paper the export prints.
     Q_PROPERTY(int sheetPaper READ sheetPaper NOTIFY sheetChanged)
     Q_PROPERTY(bool sheetLandscape READ sheetLandscape NOTIFY sheetChanged)
     Q_PROPERTY(QString sheetPaperName READ sheetPaperName NOTIFY sheetChanged)
+    /// The paper's name with the common name in parentheses, for the page controls.
+    Q_PROPERTY(QString sheetPaperDisplay READ sheetPaperDisplay NOTIFY sheetChanged)
     Q_PROPERTY(double sheetWidthMm READ sheetWidthMm NOTIFY sheetChanged)
     Q_PROPERTY(double sheetHeightMm READ sheetHeightMm NOTIFY sheetChanged)
+    /// The paper's own sides, before the orientation turns them.
+    Q_PROPERTY(double sheetPaperWidthMm READ sheetPaperWidthMm NOTIFY sheetChanged)
+    Q_PROPERTY(double sheetPaperHeightMm READ sheetPaperHeightMm NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginTop READ sheetMarginTop NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginRight READ sheetMarginRight NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginBottom READ sheetMarginBottom NOTIFY sheetChanged)
     Q_PROPERTY(double sheetMarginLeft READ sheetMarginLeft NOTIFY sheetChanged)
+    /// Index of the matching margin preset, or `-1` when the four margins are custom.
+    Q_PROPERTY(int sheetMarginPreset READ sheetMarginPreset NOTIFY sheetChanged)
+    /// The bounds the core enforces on a custom paper, in millimetres.
+    Q_PROPERTY(double paperMinMm READ paperMinMm CONSTANT)
+    Q_PROPERTY(double paperMaxMm READ paperMaxMm CONSTANT)
     /// The control-diagram block of the active circuit, printed on the sheet.
     Q_PROPERTY(QString blockOwner READ blockOwner NOTIFY blockChanged)
     Q_PROPERTY(QString blockProject READ blockProject NOTIFY blockChanged)
@@ -400,6 +412,8 @@ public:
     void setZoom(double zoom);
     bool grid() const { return m_grid; }
     void setGrid(bool on);
+    double gridStepMm() const { return m_gridStepMm; }
+    void setGridStepMm(double mm);
     Q_INVOKABLE void zoomIn();
     Q_INVOKABLE void zoomOut();
     Q_INVOKABLE void zoomReset();
@@ -410,20 +424,38 @@ public:
     int sheetPaper() const;
     bool sheetLandscape() const { return m_sheet.landscape != 0; }
     QString sheetPaperName() const { return m_sheetPaperName; }
+    QString sheetPaperDisplay() const;
     double sheetWidthMm() const { return m_sheetWidthMm; }
     double sheetHeightMm() const { return m_sheetHeightMm; }
+    double sheetPaperWidthMm() const { return m_sheet.width_mm; }
+    double sheetPaperHeightMm() const { return m_sheet.height_mm; }
     double sheetMarginTop() const { return m_sheet.margin_top; }
     double sheetMarginRight() const { return m_sheet.margin_right; }
     double sheetMarginBottom() const { return m_sheet.margin_bottom; }
     double sheetMarginLeft() const { return m_sheet.margin_left; }
+    int sheetMarginPreset() const;
+    double paperMinMm() const;
+    double paperMaxMm() const;
+
+    /// The papers the page controls list, in the order the core keeps them.
+    Q_INVOKABLE QVariantList papers() const;
+    /// The margin presets: the ISO frame, the narrow and the wide one.
+    Q_INVOKABLE QVariantList marginPresets() const;
+    /// One measurement in centimetres with a comma, as the interface shows it.
+    Q_INVOKABLE QString formatPaperMeasure(double mm) const;
+    /// A paper's sides in centimetres: `21 × 29,7 cm`.
+    Q_INVOKABLE QString formatPaperSize(double widthMm, double heightMm) const;
+
     /// One undoable document change each: the paper, the orientation or one margin.
     Q_INVOKABLE void setSheetPaper(int index);
+    Q_INVOKABLE void setSheetCustomPaper(double widthMm, double heightMm);
     Q_INVOKABLE void setSheetLandscape(bool landscape);
     Q_INVOKABLE void toggleSheetLandscape();
-    /// `side` is 0 top, 1 right, 2 bottom, 3 left, as the export panel reads them.
+    /// `side` is 0 top, 1 right, 2 bottom, 3 left, as the page panel reads them.
     Q_INVOKABLE void setSheetMargin(int side, double mm);
-    /// A4 normal: portrait with the ISO 5457 frame, one command away from the opening
-    /// landscape sheet.
+    /// Applies the four margins of one preset as a single undoable change.
+    Q_INVOKABLE void applyMarginPreset(int index);
+    /// A4 portrait with the ISO 5457 frame, one command away from the opening sheet.
     Q_INVOKABLE void resetSheet();
 
     Q_INVOKABLE void undo();
@@ -527,6 +559,9 @@ private:
     /// One block field of the active circuit, or an empty string when there is none.
     QString blockField(uint32_t field) const;
 
+    /// The paper's name as the page controls show it: the common name in parentheses.
+    QString paperDisplayLabel(const QString &name) const;
+
     PfSession *m_session = nullptr;
     PfTelemetry m_telemetry {};
     QString m_error;
@@ -548,6 +583,7 @@ private:
     bool m_inspectorOpen = false;
     double m_zoom = 1.0;
     bool m_grid = true;
+    double m_gridStepMm = 10.0;
     /// The sheet as the core reported it, and the label and size the interface reads.
     PfSheet m_sheet {};
     QString m_sheetPaperName;
