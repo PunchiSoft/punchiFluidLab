@@ -15,18 +15,23 @@ para el cajetín. Las dos cosas están ahora.
   5457; las **cuatro marcas de centrado** van en los ejes de simetría, con una línea hacia
   fuera y una pequeña flecha, en el lienzo y en el PDF/PNG/SVG.
 - **Referencia del cajetín** en [docs/reference/title-block.md](docs/reference/title-block.md):
-  qué fija ISO 5457 (marco, bordes, posición, marcas) y qué fija ISO 7200 (campos, nombres,
-  contenido y longitud), con la tabla de campos de este proyecto, el ancho de 180 mm, las dos
-  bandas y lo que queda abierto.
+  qué fija ISO 5457 (marco, bordes, posición, marcas), qué fija ISO 7200 (campos, nombres,
+  contenido y longitud) y por qué un esquema neumático usa el cajetín de **diagramas
+  eléctricos/de control** (IEC 61082-1), no el de una pieza mecánica: **sin escala, sin
+  material, sin unidad y sin símbolo de proyección**. La tabla de campos, el ancho de 180 mm,
+  las dos bandas y lo que queda abierto están en la página.
 - **La norma no impone una cuadrícula única**: fija los campos y el sitio; la disposición es
   de la empresa. El documento lo dice para no presentar una plantilla como si fuera la norma.
+- **El bloque visible deja de imprimir la escala**: el ajuste de una página grande al papel
+  es una comodidad de impresión, no una escala del esquema.
 - **Evidencia**: `the_sheet_draws_frame_block_and_legend` (cuatro flechas),
   `the_margin_band_holds_no_ink` (las marcas son la única tinta del margen) y la captura del
   lienzo; la puerta completa queda en 350 pruebas, `--check-qml` 0 problemas y `--selftest`
   0 fallos.
 
-**Siguiente**: el cajetín de 180 mm con los campos de la imagen, guardado por circuito en el
-formato 8 y editable por bloques; el editor es la rama que sigue.
+**Siguiente**: el cajetín de 180 mm para diagramas de control, con los campos de la norma y
+sin escala ni material, guardado por circuito en el formato 8 y editable por bloques; el
+editor es la rama que sigue.
 
 ### La manguera rodea también los componentes que encuentra — 2026-11-14
 

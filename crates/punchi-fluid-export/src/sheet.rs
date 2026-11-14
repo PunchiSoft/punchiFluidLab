@@ -60,19 +60,19 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
         );
     };
 
-    field(surface, 0, "title", &block.title);
-    field(surface, 1, "project", &block.project);
+    field(surface, 0, "Título", &block.title);
+    field(surface, 1, "Proyecto / circuito", &block.project);
     field(
         surface,
         2,
-        "revision / date",
+        "Revisión / fecha",
         &format!("{} · {}", block.revision, block.date),
     );
-    let sheet = match &block.scale {
-        Some(scale) => format!("1/1 · {} · {scale}", page.paper.label()),
-        None => format!("1/1 · {}", page.paper.label()),
-    };
-    field(surface, 3, "sheet", &sheet);
+    // A diagram is not to scale: the sheet count is the only page field here. The export
+    // may fit a large drawing onto the paper, but that fit is not a drawing scale and is
+    // not written in the block.
+    let sheet = format!("1/1 · {}", page.paper.label());
+    field(surface, 3, "Hoja", &sheet);
 
     if let Some(note) = &block.note {
         // Inside the frame, never in the margin: the margin band belongs to the paper.
@@ -293,7 +293,7 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert!(texts.contains(&"title"));
+        assert!(texts.contains(&"Título"));
         assert!(texts.iter().any(|text| text.contains("1 supply")));
         assert!(texts.contains(&"working"));
         // The four centring marks are the only filled triangles on the sheet.
