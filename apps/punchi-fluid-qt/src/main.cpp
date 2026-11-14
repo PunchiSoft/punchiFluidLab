@@ -859,7 +859,15 @@ int main(int argc, char *argv[])
             QCoreApplication::processEvents();
             PfFrame frame {};
             pf_session_build_frame(state->session->handle(), 4.0F, &frame);
-            const QPointF start = toScene(valveCentre());
+            const QPointF mm = valveCentre();
+            const int hit = pf_session_hit_component(state->session->handle(),
+                                                     static_cast<float>(mm.x()),
+                                                     static_cast<float>(mm.y()));
+            const QPointF start = toScene(mm);
+            std::fprintf(stderr,
+                         "selftest: shift diag window %dx%d sheet %.0fx%.0f mm %.1f,%.1f hit %d scene %.1f,%.1f\n",
+                         state->window->width(), state->window->height(), state->sheet->width(),
+                         state->sheet->height(), mm.x(), mm.y(), hit, start.x(), start.y());
             const QPointF end = start + QPointF(60.0, 0.0);
             sendWith(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
