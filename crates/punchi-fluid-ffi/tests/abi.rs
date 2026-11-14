@@ -18,7 +18,7 @@ use std::ptr;
 
 use punchi_fluid::{
     PF_ABI_VERSION, PF_BLOCK_APPROVED, PF_BLOCK_BOTTOM_RIGHT, PF_BLOCK_CHECKED, PF_BLOCK_DATE,
-    PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET, PF_BLOCK_MODEL_ESCOLAR, PF_BLOCK_MODEL_INDUSTRIAL,
+    PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET, PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL,
     PF_BLOCK_NONE, PF_BLOCK_NORMS, PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED,
     PF_BLOCK_PROJECT, PF_BLOCK_REVISION, PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT,
     PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF,
@@ -360,7 +360,7 @@ fn a_content_model_and_visibility_change_what_prints_not_the_values() {
     );
     // SAFETY: live session and a known model.
     assert_eq!(
-        unsafe { pf_session_set_block_model(session, PF_BLOCK_MODEL_ESCOLAR) },
+        unsafe { pf_session_set_block_model(session, PF_BLOCK_MODEL_SCHOOL) },
         PF_OK
     );
     assert_eq!(
@@ -395,7 +395,7 @@ fn a_content_model_and_visibility_change_what_prints_not_the_values() {
         PF_OK
     );
     assert!((layout.width_mm - 170.0).abs() < 0.01);
-    assert!((layout.height_mm - 35.0).abs() < 0.01, "escolar on A4");
+    assert!((layout.height_mm - 35.0).abs() < 0.01, "school on A4");
     assert_eq!(layout.rows_len, 2, "the school block has two rows");
     let fields: Vec<u32> = (0..layout.cells_len)
         // SAFETY: the pointers borrow a live session and the lengths come from it.
@@ -404,7 +404,7 @@ fn a_content_model_and_visibility_change_what_prints_not_the_values() {
     assert!(fields.contains(&PF_BLOCK_FIELD_SHEET));
     assert!(!fields.contains(&PF_BLOCK_NUMBER), "number is hidden");
 
-    // A3 gives the escolar block its 180 × 40 mm size.
+    // A3 gives the school block its 180 × 40 mm size.
     let mut sheet = PfSheet::default();
     // SAFETY: live session and a writable record.
     assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
@@ -421,7 +421,7 @@ fn a_content_model_and_visibility_change_what_prints_not_the_values() {
         PF_OK
     );
     assert!((layout.width_mm - 180.0).abs() < 0.01);
-    assert!((layout.height_mm - 40.0).abs() < 0.01, "escolar on A3");
+    assert!((layout.height_mm - 40.0).abs() < 0.01, "school on A3");
 
     // Restablecer restores the model's set; the typed number is still there.
     // SAFETY: live session.

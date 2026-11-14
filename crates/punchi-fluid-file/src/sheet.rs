@@ -23,14 +23,15 @@ use crate::paper::StoredSheet;
 /// 5 added the source of a recorder, and 6 the line class of a pipe. 7 added the sheet: the
 /// paper, its orientation and its frame. 8 added the control-diagram title block of each
 /// circuit, 9 gave that block the project, equipment, scale and norms of the Chilean guide,
-/// 10 added its content model and per-field visibility, and 11 moved the positions to
-/// top-right/bottom-right/bottom-full and added the free note. An older file reads because
-/// every addition has an obvious default: an unturned symbol, an unnamed component, one
-/// circuit, an unbound recorder, a working line, an unframed A4 that is exactly the area
-/// the older release drew on, and a block whose title is the circuit title, whose revision
-/// is `A`, whose scale is `S/E`, whose model is the full industrial block and whose note is
-/// empty.
-pub const SHEET_VERSION: u32 = 11;
+/// 10 added its content model and per-field visibility, 11 moved the positions to
+/// top-right/bottom-right/bottom-full and added the free note, and 12 renamed the
+/// content-model names from `escolar`/`tecnico` to `school`/`technical`. An older file
+/// reads because every addition has an obvious default: an unturned symbol, an unnamed
+/// component, one circuit, an unbound recorder, a working line, an unframed A4 that is
+/// exactly the area the older release drew on, and a block whose title is the circuit
+/// title, whose revision is `A`, whose scale is `S/E`, whose model is the full industrial
+/// block and whose note is empty.
+pub const SHEET_VERSION: u32 = 12;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -411,7 +412,7 @@ impl Sheet {
             }
             if !matches!(
                 circuit.block.model.as_str(),
-                "escolar" | "tecnico" | "industrial"
+                "school" | "technical" | "industrial"
             ) {
                 return Err(SheetError::Invalid(String::from(
                     "a title block names an unknown content model",
@@ -656,6 +657,18 @@ impl Sheet {
                 punchi_fluid_core::BlockPosition::from_name(&circuit.block.position)
                     .as_str()
                     .clone_into(&mut circuit.block.position);
+            }
+        }
+        // 11 → 12: the content-model names. Format 11 wrote the Spanish short names, so a
+        // file from that release is read as the model it meant and saved in English.
+        if self.format < 12 {
+            for circuit in &mut self.circuits {
+                let model = match circuit.block.model.as_str() {
+                    "escolar" => "school",
+                    "tecnico" => "technical",
+                    _ => continue,
+                };
+                model.clone_into(&mut circuit.block.model);
             }
         }
         self.format = SHEET_VERSION;

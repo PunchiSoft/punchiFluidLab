@@ -13,14 +13,14 @@ Images of the running application, used by the README and by pull request review
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `title-block-light.png` | The **docked Cajetín editor** open on a light desktop, industrial model: the content combo, four position miniatures, the twelve guide fields and the 170 × 45 mm block drawn on the sheet beside it |
 | `title-block-dark.png` | The same editor on a dark desktop, to check the fields, the derived sheet number and the block in both themes |
-| `title-block-escolar-light.png` | The docked editor with the **Escolar** model, showing the shorter field set, the **Nota:** box with its placeholder and the compact block |
+| `title-block-school-light.png` | The docked editor with the **Escolar** model, showing the shorter field set, the **Nota:** box with its placeholder and the compact block |
 | `title-block-zoom-light.png` | The A4 industrial block at **2×** from `window-light.png`: the 5 mm title and the 3.5 mm values sit inside their rows, and the title does not touch the Nº de plano row |
 | `about-light.png` | The **Acerca de** popup on a light desktop: the name and the core's version, the unreleased note, the repository and issue links, the copyright with **Leer la licencia**, the author and **Cerrar** |
 | `about-dark.png` | The same popup on a dark desktop, to check the links and the panel in both themes |
 | `license-light.png` | The **Licencia** popup: the GPL summary and the start of the full text that travels inside the binary |
-| `cajetin-tab-light.png` | The **Cajetín** ribbon tab open on a light desktop: the Contenido summary, the positions and the Datos group |
-| `cajetin-portrait-light.png` | The docked editor on **A4 portrait**, with the content and position combos and the three positions the portrait sheet offers |
-| `cajetin-landscape-light.png` | The same editor on **A4 landscape**, with the two corner positions the landscape sheet offers |
+| `title-block-tab-light.png` | The **Cajetín** ribbon tab open on a light desktop: the Contenido summary, the positions and the Datos group |
+| `title-block-portrait-light.png` | The docked editor on **A4 portrait**, with the content and position combos and the three positions the portrait sheet offers |
+| `title-block-landscape-light.png` | The same editor on **A4 landscape**, with the two corner positions the landscape sheet offers |
 | `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 924 KB), because GitHub does not play a repository video inside a page |
 | `run.mp4` | The clip at 4× playback: 44 seconds of the sheet in motion in 11, the valve actuated, the cylinder travelling and the hoses coloured by pressure |
 
@@ -41,18 +41,18 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
-# The docked title-block editor, light and dark; 2 is the industrial model, 0 escolar.
+# The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \
   --grab /tmp/title-block-light.png
 # The Cajetín tab itself.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 \
-  --grab /tmp/cajetin-tab-light.png
+  --grab /tmp/title-block-tab-light.png
 # Portrait, to show the third position in the combo.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a4-portrait.pfluid \
-  --tab 3 --block --block-model 2 --grab /tmp/cajetin-portrait-light.png
+  --tab 3 --block --block-model 2 --grab /tmp/title-block-portrait-light.png
 # The A3 sheet with its reference zones: open a saved A3 document first.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a3.pfluid \

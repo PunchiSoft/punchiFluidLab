@@ -89,9 +89,9 @@ impl BlockPosition {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum ContentModel {
     /// Title, author, course, date and sheet: the compact school block.
-    Escolar,
+    School,
     /// The school fields plus number, revision, checker, approver and the standards.
-    Tecnico,
+    Technical,
     /// Every field, including project, equipment and the `S/E` scale.
     #[default]
     Industrial,
@@ -99,24 +99,28 @@ pub enum ContentModel {
 
 impl ContentModel {
     /// Every model, in the order the editor offers them.
-    pub const ALL: [Self; 3] = [Self::Escolar, Self::Tecnico, Self::Industrial];
+    pub const ALL: [Self; 3] = [Self::School, Self::Technical, Self::Industrial];
 
     /// Stable name used by the file format and the ABI.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
-            Self::Escolar => "escolar",
-            Self::Tecnico => "tecnico",
+            Self::School => "school",
+            Self::Technical => "technical",
             Self::Industrial => "industrial",
         }
     }
 
     /// Model named `name`, or `Industrial` when the name is unknown.
+    ///
+    /// The retired Spanish names of format 11 are mapped by the reader in
+    /// `punchi-fluid-file`, so this function and the format only ever name a model in
+    /// English.
     #[must_use]
     pub fn from_name(name: &str) -> Self {
         match name {
-            "escolar" => Self::Escolar,
-            "tecnico" => Self::Tecnico,
+            "school" => Self::School,
+            "technical" => Self::Technical,
             _ => Self::Industrial,
         }
     }
@@ -125,13 +129,13 @@ impl ContentModel {
     #[must_use]
     pub fn defaults(self) -> FieldSet {
         let fields: &[TitleField] = match self {
-            Self::Escolar => &[
+            Self::School => &[
                 TitleField::Owner,
                 TitleField::Title,
                 TitleField::Prepared,
                 TitleField::Date,
             ],
-            Self::Tecnico => &[
+            Self::Technical => &[
                 TitleField::Owner,
                 TitleField::Title,
                 TitleField::Number,
@@ -563,7 +567,7 @@ mod tests {
         assert_eq!(block.visible, FieldSet::all());
         assert!(!block.is_customized());
 
-        block.set_model(ContentModel::Escolar);
+        block.set_model(ContentModel::School);
         assert!(block.visible.contains(TitleField::Owner));
         assert!(block.visible.contains(TitleField::Title));
         assert!(!block.visible.contains(TitleField::Number));
@@ -576,7 +580,7 @@ mod tests {
         block.set_visible(TitleField::Number, false);
         assert_eq!(block.number, "PF-1", "hiding keeps the value");
         block.reset_visibility();
-        assert_eq!(block.visible, ContentModel::Escolar.defaults());
+        assert_eq!(block.visible, ContentModel::School.defaults());
     }
 
     #[test]

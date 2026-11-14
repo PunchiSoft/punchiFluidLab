@@ -38,6 +38,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0024](0024-a-pressure-switch-reads-its-own-port.md) | A pressure switch reads its own port | accepted | 2026-11-13 |
 | [0025](0025-a-latching-relay-holds-its-last-pulse.md) | A latching relay holds its last pulse | accepted | 2026-11-13 |
 | [0026](0026-the-sheet-is-the-paper.md) | The sheet is the paper the drawing is printed on | accepted | 2026-11-13 |
+| [0027](0027-translation-catalogs-are-qts.md) | The translation catalogs are Qt's, and the core speaks keys | accepted | 2026-11-14 |
 
 ## When a decision needs an ADR
 

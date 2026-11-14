@@ -444,10 +444,12 @@ Rules:
 
 ### Language
 
-UI strings in Fluent files (`i18n/en.ftl`, `i18n/es.ftl`), component names in the
-catalog (`name`, `name_es`). English is the source language; Spanish is the first
-translation because it is the project's own. No string concatenation to build a
-sentence: a translator must be able to reorder it.
+UI strings in Qt catalogs (`i18n/punchi-fluid_es.ts`, compiled to `.qm`; English is the
+source language and needs no file), component names in the catalog (`name`, `name_es`).
+The window translates the key the core returns; the core never carries a sentence
+([ADR 0027](adr/0027-translation-catalogs-are-qts.md)). Spanish is the first translation
+because it is the project's own. No string concatenation and no `(s)` plural: a
+translator must be able to reorder the sentence.
 
 ## What this design refuses
 
@@ -462,8 +464,8 @@ sentence: a translator must be able to reorder it.
 ## Still open
 
 - The font family from `[General] font` is read and stored, not loaded; text size is.
-- UI strings become Fluent messages in M6; the two built-in languages already exist as
-  `name` and `name_es` in the catalog.
+- UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
+  `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 
 Breeze symbolic icons are no longer open: `QIcon::fromTheme` finds them in the user's
 theme and the theme adapter tints and caches them, and a machine without that theme shows

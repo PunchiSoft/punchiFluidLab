@@ -3528,9 +3528,9 @@ pub const PF_BLOCK_FIELD_COUNT: u32 = 12;
 pub const PF_BLOCK_FIELD_SHEET: u32 = 12;
 
 /// Content model: the compact school block.
-pub const PF_BLOCK_MODEL_ESCOLAR: u32 = 0;
+pub const PF_BLOCK_MODEL_SCHOOL: u32 = 0;
 /// Content model: the school fields plus number, revision, checker, approver and norms.
-pub const PF_BLOCK_MODEL_TECNICO: u32 = 1;
+pub const PF_BLOCK_MODEL_TECHNICAL: u32 = 1;
 /// Content model: every field, including project, equipment and scale.
 pub const PF_BLOCK_MODEL_INDUSTRIAL: u32 = 2;
 /// Number of content models.
@@ -3841,8 +3841,8 @@ pub unsafe extern "C" fn pf_session_set_block_model(session: *mut PfSession, mod
             return PF_ERR_NULL;
         };
         let model = match model {
-            PF_BLOCK_MODEL_ESCOLAR => punchi_fluid_core::ContentModel::Escolar,
-            PF_BLOCK_MODEL_TECNICO => punchi_fluid_core::ContentModel::Tecnico,
+            PF_BLOCK_MODEL_SCHOOL => punchi_fluid_core::ContentModel::School,
+            PF_BLOCK_MODEL_TECHNICAL => punchi_fluid_core::ContentModel::Technical,
             PF_BLOCK_MODEL_INDUSTRIAL => punchi_fluid_core::ContentModel::Industrial,
             _ => return session.fail("unknown content model"),
         };

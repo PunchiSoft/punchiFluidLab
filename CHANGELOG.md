@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### El español sale de los identificadores y el plan de traducciones queda escrito — 2026-11-14
+
+El español es el idioma de la interfaz y de los catálogos, no el de los identificadores.
+Dos nombres del modelo de cajetín lo incumplían y el plan de traducciones describía una
+herramienta que no encaja con la ventana.
+
+- **El modelo de cajetín se llama en inglés**: `school` y `technical` sustituyen a
+  `escolar` y `tecnico` en el formato 12, en el ABI (`PF_BLOCK_MODEL_SCHOOL` y
+  `PF_BLOCK_MODEL_TECHNICAL`), en los identificadores de Rust y C++ y en el nombre de las
+  capturas. Un fichero del formato 11 se lee con el modelo que nombraba y al guardarlo
+  escribe el nombre inglés; el test de migración lo prueba.
+- **El plan de traducciones dice la verdad**: [i18n/README.md](i18n/README.md) describe
+  dónde vive hoy el texto, qué falta y el proceso de extracción. La decisión está en
+  [ADR 0027](docs/adr/0027-translation-catalogs-are-qts.md): los catálogos son los de Qt
+  (`.ts` y `.qm`), el núcleo devuelve claves estables y no frases, y el exportador recibe
+  su juego de etiquetas. Fluent no se adopta porque los textos viven en QML y C++ y no
+  existe puente.
+- **La referencia del formato al día**: [sheet-format.md](docs/reference/sheet-format.md)
+  documenta las versiones 7 a 12 y el estado actual del campo `format`.
+- **Evidencia**: `a_format_eleven_sheet_reads_its_retired_model_names`, la puerta
+  completa, `check-docs` y las capturas renombradas en `assets/screenshots/`.
+
 ### Acerca de y Licencia, en la cinta y con el texto completo — 2026-11-14
 
 La fila de pestañas no decía cómo se llama el programa ni con qué licencia viaja. Ahora

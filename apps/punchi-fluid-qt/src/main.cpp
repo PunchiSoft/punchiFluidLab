@@ -15,7 +15,7 @@
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
 //! --selftest           replay every sheet gesture with real events; exits 1 on failure
 //! --block              open the title-block editor, for a capture of it
-//! --block-model N      0 escolar, 1 técnico, 2 industrial, for a capture
+//! --block-model N      0 school, 1 technical, 2 industrial, for a capture
 //! --about              open the About popup, for a capture of it
 //! --license            open the Licence popup, for a capture of it
 //! --probe              print the numbers the status bar shows, then exit 1
@@ -1862,7 +1862,7 @@ int main(int argc, char *argv[])
                   QStringLiteral("title block: the industrial model starts"));
             state->session->setBlockModel(0);
             check(state->session->blockModel() == 0 && state->session->blockFields().size() == 4,
-                  QStringLiteral("title block: escolar keeps four fields"));
+                  QStringLiteral("title block: school keeps four fields"));
             check(state->session->blockPreset() == 1,
                   QStringLiteral("title block: choosing content shows the block"));
             state->session->setBlockFieldVisible(PF_BLOCK_TITLE, false);

@@ -291,8 +291,8 @@ int32_t pf_session_rename_circuit(PfSession *session, uint32_t id, const char *t
 #define PF_BLOCK_FIELD_SHEET 12u
 
 /* Content models. The last chip, "Sin cajetín", is PF_BLOCK_NONE on the position. */
-#define PF_BLOCK_MODEL_ESCOLAR 0u
-#define PF_BLOCK_MODEL_TECNICO 1u
+#define PF_BLOCK_MODEL_SCHOOL 0u
+#define PF_BLOCK_MODEL_TECHNICAL 1u
 #define PF_BLOCK_MODEL_INDUSTRIAL 2u
 #define PF_BLOCK_MODEL_COUNT 3u
 

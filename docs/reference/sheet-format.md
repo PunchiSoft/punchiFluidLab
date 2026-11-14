@@ -13,10 +13,25 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `6` | `1` to `6` | always `6` |
+| `format` | `12` | `1` to `12` | always `12` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (4)`; it is never guessed.
+  understands (12)`; it is never guessed.
+- **Version 12** renamed the `model` of a block from the Spanish `escolar`/`tecnico` to
+  `school`/`technical`. A format 11 file is read as the model it named and saved with the
+  English name.
+- **Version 11** moved the block positions to `top-right`, `bottom-right` and
+  `bottom-full`, and added the free `remark`. `right` and the retired `left` read as
+  bottom right; `full` reads as the bottom band.
+- **Version 10** added the `model` and the per-field `visible` set of a block; an older
+  block reads as the industrial model with every field.
+- **Version 9** added the `project`, `equipment`, `scale` and `norms` of a block; an older
+  block reads with an empty project and equipment, a `S/E` scale and no norms.
+- **Version 8** added the `block` of a circuit: twelve text fields, revision `A`, scale
+  `S/E`, and the circuit title as the default title. The fields, the models and their
+  layout are in [title-block.md](title-block.md).
+- **Version 7** added the `sheet`: the paper, its orientation and its margins. An older
+  file reads as an unframed A4 that is exactly the area the older release drew on.
 - **Version 6** added the `class` of a pipe: working, pilot or drain. A working line is
   not written, so an old sheet looks as it always did.
 - **Version 5** added the `source` of a recorder: which placement it charts and which
