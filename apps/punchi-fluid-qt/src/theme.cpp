@@ -75,6 +75,10 @@ ThemeTokens tokensFrom(const QPalette &palette)
     tokens.accent = ensureContrast(palette.color(QPalette::Highlight), tokens.background, 3.0);
     tokens.supply = ensureContrast(palette.color(QPalette::Link), tokens.background, 3.0);
     tokens.work = tokens.accent;
+    tokens.gridMinor = tokens.inkMuted;
+    tokens.gridMinor.setAlphaF(0.22F);
+    tokens.gridMajor = tokens.inkMuted;
+    tokens.gridMajor.setAlphaF(0.34F);
     return tokens;
 }
 

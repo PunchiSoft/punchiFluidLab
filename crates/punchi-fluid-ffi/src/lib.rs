@@ -50,12 +50,6 @@ use punchi_fluid_core::paper::{
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
 
-/// Largest distance, in millimetres, a dragged port jumps to the port it is wired to.
-///
-/// The move grid is 10 mm, so the nearest grid position to an alignment is at most 5 mm
-/// away; 6 mm catches it. A larger radius would fight the grid and make a component
-/// impossible to place near another port without snapping to it.
-const PORT_MAGNET_MM: f32 = 6.0;
 use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
@@ -571,6 +565,9 @@ pub struct PfSession {
     /// `true` once the starting circuit has been placed. A flag, not "is the document
     /// empty": a component dropped before the first frame would otherwise suppress it.
     seeded: bool,
+    /// Step of the drawing grid, in millimetres. A view setting: the sheet, the file and
+    /// the undo history know nothing about it, but the snap and the drawn ruling share it.
+    grid_step_mm: f32,
     /// Document revision at the moment it was last written to or read from a file, or
     /// `None` when what is on the sheet never came from a file and was never saved.
     ///
@@ -708,6 +705,7 @@ impl PfSession {
             clipboard: Vec::new(),
             selected_pipe: None,
             seeded: false,
+            grid_step_mm: 10.0,
             saved_revision: Some(0),
             recent_path: None,
             recent: RecentList::new(),
@@ -2035,7 +2033,10 @@ impl PfSession {
 
     /// Moves one placement as a drag: the grid first, then the connected port.
     fn move_with_magnet(&mut self, index: usize, centre: Pt) -> bool {
-        let grid = Pt::new(snap(centre.x, 10.0), snap(centre.y, 10.0));
+        let grid = Pt::new(
+            snap(centre.x, self.grid_step_mm),
+            snap(centre.y, self.grid_step_mm),
+        );
         let target = self.magnet_centre(index, grid);
         let height = self
             .document
@@ -2059,6 +2060,9 @@ impl PfSession {
             return centre;
         };
         let delta = Pt::new(centre.x - placement.centre.x, centre.y - placement.centre.y);
+        // A port is at most half a grid step from the nearest line; the extra millimetre
+        // keeps the reach the 10 mm grid always had.
+        let magnet = self.grid_step_mm * 0.5 + 1.0;
         let mut best: Option<(f32, Pt)> = None;
         for connection in self.document.connections() {
             let (mine, other_id, other_port) = if connection.from.placement == placement.id() {
@@ -2113,7 +2117,7 @@ impl PfSession {
                 (mine_at.x, other_at.x, true)
             };
             let correction = to - from;
-            if correction.abs() > PORT_MAGNET_MM {
+            if correction.abs() > magnet {
                 continue;
             }
             if best.is_none_or(|(distance, _)| correction.abs() < distance) {
@@ -3228,7 +3232,7 @@ fn snap(value: f32, grid: f32) -> f32 {
     (value / grid).round() * grid
 }
 
-/// Places a catalog entry at `(x_mm, y_mm)`, snapped to the 10 mm grid.
+/// Places a catalog entry at `(x_mm, y_mm)`, snapped to the session's grid.
 ///
 /// Returns the index of the new placement, or a negative code.
 ///
@@ -3254,7 +3258,13 @@ pub unsafe extern "C" fn pf_session_place_component(
             return session.fail("the catalog entry disappeared");
         };
         let (width, height) = default_size(category_code(definition.category));
-        let centre = session.clear_of_block(Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)), height);
+        let centre = session.clear_of_block(
+            Pt::new(
+                snap(x_mm, session.grid_step_mm),
+                snap(y_mm, session.grid_step_mm),
+            ),
+            height,
+        );
         let index = session
             .document
             .place(punchi_fluid_doc::Placement::new(id, centre, width, height));
@@ -3332,6 +3342,50 @@ pub unsafe extern "C" fn pf_session_set_sheet(
         // SAFETY: the caller promised a readable structure.
         let sheet = unsafe { sheet.read() };
         session.apply_sheet(sheet)
+    })
+}
+
+/// Sets the step of the drawing grid, in millimetres.
+///
+/// A view setting, not a document change: it is not saved, printed or undone. The snap
+/// uses the same step the canvas draws, so the lines never lie about where a component
+/// will land. Valid values are finite and between 1 and 100 mm.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_grid_step(session: *mut PfSession, mm: f32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if !mm.is_finite() || !(1.0..=100.0).contains(&mm) {
+            return session.fail("the grid step must be between 1 and 100 mm");
+        }
+        session.grid_step_mm = mm;
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// Reads the step of the drawing grid, in millimetres.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_grid_step(session: *const PfSession, out: *mut f32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let (Some(session), Some(out)) =
+            (unsafe { borrow_shared(session) }, unsafe { out.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        *out = session.grid_step_mm;
+        PF_OK
     })
 }
 
@@ -4077,7 +4131,10 @@ pub unsafe extern "C" fn pf_session_paste(session: *mut PfSession, x_mm: f32, y_
             return session.fail("the clipboard is empty");
         }
         let copies = session.clipboard.clone();
-        let centre = Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0));
+        let centre = Pt::new(
+            snap(x_mm, session.grid_step_mm),
+            snap(y_mm, session.grid_step_mm),
+        );
         session.paste_at(&copies, centre)
     })
 }
@@ -4106,8 +4163,8 @@ pub unsafe extern "C" fn pf_session_paste_offset(
             return session.fail("the clipboard is empty");
         };
         let centre = Pt::new(
-            snap(anchor.centre.x + right_mm, 10.0),
-            snap(anchor.centre.y + down_mm, 10.0),
+            snap(anchor.centre.x + right_mm, session.grid_step_mm),
+            snap(anchor.centre.y + down_mm, session.grid_step_mm),
         );
         session.paste_at(&copies, centre)
     })
@@ -4137,8 +4194,8 @@ pub unsafe extern "C" fn pf_session_duplicate_component(
         };
         let centre = session.clear_of_block(
             Pt::new(
-                snap(source.centre.x + right_mm, 10.0),
-                snap(source.centre.y + down_mm, 10.0),
+                snap(source.centre.x + right_mm, session.grid_step_mm),
+                snap(source.centre.y + down_mm, session.grid_step_mm),
             ),
             source.height,
         );
@@ -4223,6 +4280,58 @@ pub unsafe extern "C" fn pf_export_paper_name(index: u32, out: *mut c_char, capa
         let buffer = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity as usize) };
         buffer[..bytes.len()].copy_from_slice(bytes);
         buffer[bytes.len()] = 0;
+        PF_OK
+    })
+}
+
+/// Width and height of the paper at `index`, in millimetres and in portrait orientation.
+///
+/// The front end draws its own list from these numbers instead of copying them: the paper
+/// lives once, in the core.
+///
+/// # Safety
+///
+/// `width_mm` and `height_mm` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_export_paper_size_mm(
+    index: u32,
+    width_mm: *mut f32,
+    height_mm: *mut f32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promised writable outputs.
+        let (Some(width), Some(height)) =
+            (unsafe { width_mm.as_mut() }, unsafe { height_mm.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        let Some(paper) = punchi_fluid_export::PaperSize::ALL.get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let (paper_width, paper_height) = paper.size_mm();
+        *width = paper_width;
+        *height = paper_height;
+        PF_OK
+    })
+}
+
+/// The smallest and largest side a custom paper may have, in millimetres.
+///
+/// The page-setup panel states the range the core enforces, so the two cannot drift.
+///
+/// # Safety
+///
+/// `min_mm` and `max_mm` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_export_paper_bounds(min_mm: *mut f32, max_mm: *mut f32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promised writable outputs.
+        let (Some(min), Some(max)) = (unsafe { min_mm.as_mut() }, unsafe { max_mm.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        *min = punchi_fluid_export::PaperSize::MIN_BOUND_MM;
+        *max = punchi_fluid_export::PaperSize::MAX_BOUND_MM;
         PF_OK
     })
 }
@@ -5625,7 +5734,13 @@ pub unsafe extern "C" fn pf_session_move_component(
         else {
             return PF_ERR_MODEL;
         };
-        let centre = session.clear_of_block(Pt::new(snap(x_mm, 10.0), snap(y_mm, 10.0)), height);
+        let centre = session.clear_of_block(
+            Pt::new(
+                snap(x_mm, session.grid_step_mm),
+                snap(y_mm, session.grid_step_mm),
+            ),
+            height,
+        );
         if session.document.move_to(index as usize, centre) {
             PF_OK
         } else {
@@ -5638,8 +5753,8 @@ pub unsafe extern "C" fn pf_session_move_component(
 ///
 /// A hose between two ports on the same axis is a straight line only when the other
 /// coordinate matches. The grid cannot always reach that coordinate — the starting circuit
-/// has an 8.02 mm offset and the grid step is 10 mm — so the nearest dragged port within
-/// [`PORT_MAGNET_MM`] pulls the component onto the other end's axis. The move is still one
+/// has an 8.02 mm offset on the default 10 mm grid — so the nearest dragged port within
+/// half a grid step pulls the component onto the other end's axis. The move is still one
 /// undo entry.
 ///
 /// # Safety
@@ -6198,9 +6313,13 @@ pub unsafe extern "C" fn pf_session_duplicate_selection(
             return session.fail("nothing is selected");
         }
         let indices = session.selected.clone();
-        let copies = session
-            .document
-            .duplicate_many(&indices, (snap(right_mm, 10.0), snap(down_mm, 10.0)));
+        let copies = session.document.duplicate_many(
+            &indices,
+            (
+                snap(right_mm, session.grid_step_mm),
+                snap(down_mm, session.grid_step_mm),
+            ),
+        );
         if copies.is_empty() {
             return session.fail("nothing could be copied");
         }

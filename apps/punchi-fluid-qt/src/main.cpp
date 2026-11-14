@@ -3,7 +3,7 @@
 
 //! The application: a Qt Quick window over the Rust core.
 //!
-//! Four flags make it testable without a display, which is how the drawing is verified:
+//! Flags make it testable without a display, which is how the drawing is verified:
 //!
 //! ```text
 //! --grab <file>        render one frame offscreen and exit
@@ -18,6 +18,12 @@
 //! --block-model N      0 school, 1 technical, 2 industrial, for a capture
 //! --about              open the About popup, for a capture of it
 //! --license            open the Licence popup, for a capture of it
+//! --tab N              open one ribbon tab, for a capture
+//! --menu               open the collapsed ribbon menu, for a capture
+//! --page-setup         open the page-setup panel, for a capture of it
+//! --paper-list         open the paper list on the Disposición tab
+//! --margin-list        open the margin gallery on the Disposición tab
+//! --grid-step N        set the grid step in millimetres, for a capture
 //! --probe              print the numbers the status bar shows, then exit 1
 //! --open <file>        open a saved sheet before anything else
 //! --save <file>        save the sheet and exit 0/1, without a window
@@ -219,7 +225,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (arguments.contains(QStringLiteral("--tab")) || arguments.contains(QStringLiteral("--menu"))) {
+    const bool paperList = arguments.contains(QStringLiteral("--paper-list"));
+    const bool marginList = arguments.contains(QStringLiteral("--margin-list"));
+    if (arguments.contains(QStringLiteral("--tab")) || arguments.contains(QStringLiteral("--menu"))
+        || paperList || marginList) {
         const QString tab = value(QStringLiteral("--tab"));
         QObject *ribbon = nullptr;
         for (QObject *root : engine.rootObjects()) {
@@ -237,9 +246,18 @@ int main(int argc, char *argv[])
                 return 2;
             }
             ribbon->setProperty("current", index);
+        } else if (paperList || marginList) {
+            // Disposición is index 3 and the only tab with the page controls.
+            ribbon->setProperty("current", 3);
         }
         if (arguments.contains(QStringLiteral("--menu"))) {
             ribbon->setProperty("menuOpen", true);
+        }
+        if (paperList) {
+            ribbon->setProperty("paperListRequested", true);
+        }
+        if (marginList) {
+            ribbon->setProperty("marginListRequested", true);
         }
     }
 
@@ -247,6 +265,14 @@ int main(int argc, char *argv[])
         for (QObject *root : engine.rootObjects()) {
             if (root->property("titleBlockOpen").isValid()) {
                 root->setProperty("titleBlockOpen", true);
+            }
+        }
+    }
+
+    if (arguments.contains(QStringLiteral("--page-setup"))) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("pageSetupOpen").isValid()) {
+                root->setProperty("pageSetupOpen", true);
             }
         }
     }
@@ -290,6 +316,19 @@ int main(int argc, char *argv[])
                 std::fprintf(stderr, "--open failed: %s\n",
                              qUtf8Printable(session->lastError()));
             }
+        }
+    }
+
+    const QString gridStepArg = value(QStringLiteral("--grid-step"));
+    if (!gridStepArg.isEmpty()) {
+        bool ok = false;
+        const double step = gridStepArg.toDouble(&ok);
+        if (!ok || step < 1.0 || step > 100.0) {
+            std::fprintf(stderr, "--grid-step takes a value between 1 and 100 mm\n");
+            return 2;
+        }
+        for (FluidSession *session : sessions()) {
+            session->setGridStepMm(step);
         }
     }
 
@@ -1128,6 +1167,13 @@ int main(int argc, char *argv[])
             check(state->session->grid() != grid,
                   QStringLiteral("view: the grid toggles"));
             state->session->toggleGrid();
+            state->session->setGridStepMm(5.0);
+            check(std::abs(state->session->gridStepMm() - 5.0) < 0.01,
+                  QStringLiteral("view: the grid step changes"));
+            state->session->setGridStepMm(10.0);
+            check(std::abs(state->session->gridStepMm() - 10.0) < 0.01
+                      && state->session->canUndo() == undoes,
+                  QStringLiteral("view: the grid step is a view setting"));
             check(state->session->canUndo() == undoes,
                   QStringLiteral("view: zoom does not enter the history"));
         });
@@ -1776,14 +1822,14 @@ int main(int argc, char *argv[])
             options.insert(QStringLiteral("margins"),
                            QVariantList { 5, 5, 5, 5 });
             check(state->session->exportWithOptions(options),
-                  QStringLiteral("export panel: the settings are accepted"));
+                  QStringLiteral("export: a custom print paper is accepted"));
             QFile file(path);
             const bool opened = file.open(QIODevice::ReadOnly);
             const QString svg = opened ? QString::fromUtf8(file.readAll()) : QString();
             check(svg.contains(QStringLiteral("viewBox=\"0 0 120.0 90.0\"")),
-                  QStringLiteral("export panel: the custom paper reaches the page"));
+                  QStringLiteral("export: the custom print paper reaches the page"));
             check(!svg.contains(QStringLiteral("lista de piezas")),
-                  QStringLiteral("export panel: the list can be left off"));
+                  QStringLiteral("export: the list can be left off"));
             QFile::remove(path);
         });
 
@@ -2120,6 +2166,87 @@ int main(int argc, char *argv[])
             state->session->undo();
             check(std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
                   QStringLiteral("sheet: undo returns the ISO margin"));
+        });
+
+        // The page controls keep the common name beside the normalised one, and the
+        // sheet's own name stays canonical for the status bar and the file.
+        steps->push_back([state, check] {
+            const QVariantList papers = state->session->papers();
+            check(papers.size() == 9,
+                  QStringLiteral("page setup: the core lists nine papers"));
+            QString letter;
+            QString legal;
+            QString oficio;
+            for (const QVariant &entry : papers) {
+                const QVariantMap row = entry.toMap();
+                const QString name = row.value(QStringLiteral("name")).toString();
+                if (name == QStringLiteral("Letter")) {
+                    letter = row.value(QStringLiteral("label")).toString();
+                } else if (name == QStringLiteral("Legal")) {
+                    legal = row.value(QStringLiteral("label")).toString();
+                } else if (name == QStringLiteral("Oficio")) {
+                    oficio = row.value(QStringLiteral("label")).toString();
+                }
+            }
+            check(letter == QStringLiteral("Letter (Carta)")
+                      && legal == QStringLiteral("Legal (Oficio)")
+                      && oficio == QStringLiteral("Oficio chileno (Folio)"),
+                  QStringLiteral("page setup: the common names sit in parentheses"));
+            check(state->session->formatPaperSize(215.9, 279.4)
+                      == QStringLiteral("21,59 × 27,94 cm"),
+                  QStringLiteral("page setup: a paper is measured in centimetres with a comma"));
+            check(state->session->formatPaperSize(210.0, 297.0)
+                      == QStringLiteral("21 × 29,7 cm"),
+                  QStringLiteral("page setup: trailing zeros do not clutter the measure"));
+            check(state->session->sheetPaperName() == QStringLiteral("A4"),
+                  QStringLiteral("page setup: the status bar keeps the canonical name"));
+        });
+
+        // A custom paper is the document's, not a print override: saved like any sheet and
+        // one undo away.
+        steps->push_back([state, check] {
+            state->session->setSheetCustomPaper(180.0, 250.0);
+            check(state->session->sheetPaper() == -1
+                      && std::abs(state->session->sheetPaperWidthMm() - 180.0) < 0.01
+                      && std::abs(state->session->sheetPaperHeightMm() - 250.0) < 0.01,
+                  QStringLiteral("page setup: a custom paper is the document's"));
+            check(state->session->sheetPaperDisplay() == QStringLiteral("Personalizado"),
+                  QStringLiteral("page setup: the control names the custom paper"));
+            state->session->undo();
+            check(state->session->sheetPaper() == 1 && state->session->sheetLandscape(),
+                  QStringLiteral("page setup: one undo returns the opening sheet"));
+        });
+
+        // Margin presets are one change each: four margins, one undo.
+        steps->push_back([state, check] {
+            state->session->applyMarginPreset(1);
+            check(state->session->sheetMarginPreset() == 1
+                      && std::abs(state->session->sheetMarginTop() - 10.0) < 0.01
+                      && std::abs(state->session->sheetMarginLeft() - 10.0) < 0.01,
+                  QStringLiteral("page setup: Estrecho applies four margins at once"));
+            state->session->undo();
+            check(state->session->sheetMarginPreset() == 0,
+                  QStringLiteral("page setup: one undo returns the ISO frame"));
+            state->session->applyMarginPreset(2);
+            check(state->session->sheetMarginPreset() == 2
+                      && std::abs(state->session->sheetMarginLeft() - 20.0) < 0.01,
+                  QStringLiteral("page setup: Amplio applies the wide frame"));
+            state->session->undo();
+            check(state->session->sheetMarginPreset() == 0,
+                  QStringLiteral("page setup: the ISO frame comes back"));
+            check(std::abs(state->session->paperMinMm() - 50.0) < 0.01
+                      && std::abs(state->session->paperMaxMm() - 2000.0) < 0.01,
+                  QStringLiteral("page setup: the custom bounds come from the core"));
+        });
+
+        // A custom size outside the bounds is refused and leaves the sheet alone.
+        steps->push_back([state, check] {
+            state->session->setSheetCustomPaper(10.0, 10.0);
+            check(state->session->sheetPaper() == 1,
+                  QStringLiteral("page setup: an impossible custom paper is refused"));
+            check(!state->session->lastError().isEmpty(),
+                  QStringLiteral("page setup: the refusal explains itself"));
+            state->session->setSheetPaper(1);
         });
 
         // The live layout reserves the same band the export does: no example box may sit

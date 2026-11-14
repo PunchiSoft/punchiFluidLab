@@ -462,6 +462,29 @@ fn the_sheet_keeps_its_paper_orientation_and_margins_in_the_file() {
 }
 
 #[test]
+fn a_custom_paper_is_stored_and_read_back_as_the_document_sheet() {
+    let mut sheet = sheet();
+    sheet.sheet = StoredSheet {
+        paper: StoredPaper::Custom {
+            width_mm: 180.0,
+            height_mm: 250.0,
+        },
+        landscape: true,
+        margins: StoredMargins::from(Margins::iso5457()),
+    };
+    let saved = sheet.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(read.sheet, sheet.sheet);
+    let paper = read.paper_sheet();
+    assert_eq!(
+        paper.paper,
+        PaperSize::custom(180.0, 250.0).expect("the size is inside the bounds")
+    );
+    assert_eq!(paper.orientation, Orientation::Landscape);
+    assert_eq!(paper.size_mm(), (250.0, 180.0));
+}
+
+#[test]
 fn a_sheet_whose_frame_leaves_no_drawing_space_is_refused() {
     let mut sheet = sheet();
     sheet.sheet.margins = StoredMargins {

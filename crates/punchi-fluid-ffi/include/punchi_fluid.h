@@ -258,6 +258,10 @@ int32_t pf_session_new_document(PfSession *session);
  * undoable change, refused when the frame would leave no drawing space. */
 int32_t pf_session_sheet(const PfSession *session, PfSheet *out);
 int32_t pf_session_set_sheet(PfSession *session, const PfSheet *sheet);
+/* The drawing grid step, a view setting: not saved, printed or undone. The snap uses the
+ * same step the canvas draws. Valid values are finite and between 1 and 100 mm. */
+int32_t pf_session_set_grid_step(PfSession *session, float mm);
+int32_t pf_session_grid_step(const PfSession *session, float *out);
 
 /* The circuits of the project and the one the sheet shows. */
 uint32_t pf_session_circuit_count(const PfSession *session);
@@ -523,6 +527,10 @@ int32_t pf_session_export(PfSession *session, const char *path, uint32_t kind, u
 uint32_t pf_export_paper_count(void);
 /* Name of the paper at `index`, NUL-terminated UTF-8 in `out`. */
 int32_t pf_export_paper_name(uint32_t index, char *out, uint32_t capacity);
+/* Width and height of the paper at `index`, in millimetres, portrait. */
+int32_t pf_export_paper_size_mm(uint32_t index, float *width_mm, float *height_mm);
+/* Smallest and largest side a custom paper may have, in millimetres. */
+int32_t pf_export_paper_bounds(float *min_mm, float *max_mm);
 
 #ifdef __cplusplus
 }

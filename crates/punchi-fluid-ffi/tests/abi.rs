@@ -25,9 +25,10 @@ use punchi_fluid::{
     PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
     PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi, PfBlockLayout,
     PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
-    PfSession, PfSheet, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
-    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_block,
-    pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
+    PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count,
+    pf_export_paper_name, pf_export_paper_size_mm, pf_session_active_circuit,
+    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    pf_session_block, pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
     pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
     pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
     pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
@@ -39,27 +40,27 @@ use punchi_fluid::{
     pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
     pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
     pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
-    pf_session_free, pf_session_hit_component, pf_session_hit_valve, pf_session_indicator_active,
-    pf_session_is_modified, pf_session_last_error, pf_session_mirror_selected,
-    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_open,
-    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
-    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
-    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
-    pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
-    pf_session_remove_selection, pf_session_rename_circuit, pf_session_reset_block_visibility,
-    pf_session_restart, pf_session_rotate_selected, pf_session_route_pipe, pf_session_save,
-    pf_session_select, pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
-    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
-    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
-    pf_session_set_chart_source, pf_session_set_component_designation,
-    pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
-    pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_straighten_pipe,
-    pf_session_telemetry, pf_session_toggle_contact, pf_session_toggle_select,
-    pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
-    pf_session_valve_spring_return,
+    pf_session_free, pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
+    pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
+    pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
+    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset,
+    pf_session_place_component, pf_session_placement_id, pf_session_port_point,
+    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
+    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
+    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
+    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
+    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
+    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
+    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
+    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
+    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
+    pf_session_set_pipe_class, pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet,
+    pf_session_space_selection, pf_session_straighten_pipe, pf_session_telemetry,
+    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_valve_rect, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -259,6 +260,131 @@ fn the_hit_test_uses_the_layout_of_the_last_frame() {
     // The paper's top-left corner is nowhere near the valve.
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_hit_valve(session, 1.0, 1.0) }, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn every_paper_reports_the_size_the_drawing_list_needs() {
+    assert_eq!(pf_export_paper_count(), 9);
+
+    let mut width = 0.0;
+    let mut height = 0.0;
+    // A4 is index 1, the order `PaperSize::ALL` and the interface share.
+    assert_eq!(
+        unsafe { pf_export_paper_size_mm(1, &raw mut width, &raw mut height) },
+        PF_OK
+    );
+    assert_eq!((width, height), (210.0, 297.0));
+    // Letter, the paper the interface calls Carta: 215.9 × 279.4 mm.
+    assert_eq!(
+        unsafe { pf_export_paper_size_mm(6, &raw mut width, &raw mut height) },
+        PF_OK
+    );
+    assert_eq!((width, height), (215.9, 279.4));
+
+    let mut min = 0.0;
+    let mut max = 0.0;
+    assert_eq!(
+        unsafe { pf_export_paper_bounds(&raw mut min, &raw mut max) },
+        PF_OK
+    );
+    assert_eq!((min, max), (50.0, 2000.0));
+
+    // Every named paper has a positive size and a name in the same order.
+    for index in 0..pf_export_paper_count() {
+        assert_eq!(
+            unsafe { pf_export_paper_size_mm(index, &raw mut width, &raw mut height) },
+            PF_OK
+        );
+        assert!(width > 0.0 && height > 0.0);
+        let mut label = [0 as c_char; 32];
+        assert_eq!(
+            unsafe {
+                pf_export_paper_name(
+                    index,
+                    label.as_mut_ptr(),
+                    u32::try_from(label.len()).unwrap_or(0),
+                )
+            },
+            PF_OK
+        );
+        // SAFETY: the call above wrote a NUL-terminated string inside the array.
+        assert!(
+            !unsafe { CStr::from_ptr(label.as_ptr()) }
+                .to_bytes()
+                .is_empty()
+        );
+    }
+    assert_eq!(
+        unsafe { pf_export_paper_size_mm(99, &raw mut width, &raw mut height) },
+        PF_ERR_MODEL
+    );
+}
+
+#[test]
+fn the_grid_step_is_a_view_setting_and_the_snap_follows_it() {
+    let session = session();
+    let mut step = 0.0;
+    assert_eq!(
+        unsafe { pf_session_grid_step(session, &raw mut step) },
+        PF_OK
+    );
+    assert!(
+        (step - 10.0).abs() < 0.001,
+        "the grid starts at the documented step"
+    );
+
+    let modified = unsafe { pf_session_is_modified(session) };
+    assert_eq!(unsafe { pf_session_set_grid_step(session, 5.0) }, PF_OK);
+    assert_eq!(
+        unsafe { pf_session_grid_step(session, &raw mut step) },
+        PF_OK
+    );
+    assert!((step - 5.0).abs() < 0.001);
+    assert_eq!(
+        unsafe { pf_session_is_modified(session) },
+        modified,
+        "the grid is view state, not a document edit"
+    );
+    assert_eq!(
+        unsafe { pf_session_set_grid_step(session, 0.0) },
+        PF_ERR_MODEL,
+        "a zero step would divide by zero"
+    );
+
+    let index = catalog_index(session, "supply.compressor");
+    let mut rect = [0.0_f32; 4];
+    let placed = unsafe { pf_session_place_component(session, index, 67.0, 67.0) };
+    assert!(placed >= 0);
+    assert_eq!(
+        unsafe {
+            pf_session_component_rect(
+                session,
+                u32::try_from(placed).expect("a non-negative placement index"),
+                rect.as_mut_ptr(),
+            )
+        },
+        PF_OK
+    );
+    assert!((f32::midpoint(rect[0], rect[2]) - 65.0).abs() < 0.01);
+    assert!((f32::midpoint(rect[1], rect[3]) - 65.0).abs() < 0.01);
+
+    assert_eq!(unsafe { pf_session_set_grid_step(session, 20.0) }, PF_OK);
+    let placed = unsafe { pf_session_place_component(session, index, 67.0, 67.0) };
+    assert!(placed >= 0);
+    assert_eq!(
+        unsafe {
+            pf_session_component_rect(
+                session,
+                u32::try_from(placed).expect("a non-negative placement index"),
+                rect.as_mut_ptr(),
+            )
+        },
+        PF_OK
+    );
+    assert!((f32::midpoint(rect[0], rect[2]) - 60.0).abs() < 0.01);
+    assert!((f32::midpoint(rect[1], rect[3]) - 60.0).abs() < 0.01);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -3133,10 +3259,10 @@ fn an_export_can_be_a_vector_drawing() {
 }
 
 #[test]
-fn the_export_panel_settings_reach_the_page() {
+fn a_custom_print_paper_reaches_the_page() {
     let session = session();
     let directory = tempfile::tempdir().expect("a temporary folder");
-    let path = directory.path().join("panel.svg");
+    let path = directory.path().join("print.svg");
     let path_c = CString::new(path.to_str().unwrap_or_default()).expect("a path");
     let date = CString::new("2026-11-12").expect("a date");
 
@@ -3165,10 +3291,7 @@ fn the_export_panel_settings_reach_the_page() {
         svg.contains("viewBox=\"0 0 100.0 80.0\""),
         "the custom paper reached the page"
     );
-    assert!(
-        !svg.contains("lista de piezas"),
-        "the panel turned the list off"
-    );
+    assert!(!svg.contains("lista de piezas"), "the list can be left off");
 
     // A page whose margins leave no room is refused before anything is written.
     let impossible = PfExportOptions {

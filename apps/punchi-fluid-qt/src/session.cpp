@@ -2020,6 +2020,24 @@ void FluidSession::setGrid(bool on)
     emit changed();
 }
 
+void FluidSession::setGridStepMm(double mm)
+{
+    if (!m_session || qFuzzyCompare(mm, m_gridStepMm)) {
+        return;
+    }
+    if (pf_session_set_grid_step(m_session, static_cast<float>(mm)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo cambiar la cuadrícula");
+        emit changed();
+        return;
+    }
+    m_gridStepMm = mm;
+    m_error.clear();
+    emit viewChanged();
+    emit changed();
+}
+
 void FluidSession::zoomIn()
 {
     setZoom(m_zoom * kZoomStep);
@@ -2046,6 +2064,135 @@ int FluidSession::sheetPaper() const
     return m_sheet.paper == PF_SHEET_CUSTOM_PAPER ? -1 : static_cast<int>(m_sheet.paper);
 }
 
+QString FluidSession::paperDisplayLabel(const QString &name) const
+{
+    // The canonical name is what the file stores and the status bar prints; these
+    // parentheticals are only what the page controls offer, where the common name helps.
+    if (name == QStringLiteral("Letter")) {
+        return tr("Letter (Carta)");
+    }
+    if (name == QStringLiteral("Legal")) {
+        return tr("Legal (Oficio)");
+    }
+    if (name == QStringLiteral("Oficio")) {
+        return tr("Oficio chileno (Folio)");
+    }
+    return name;
+}
+
+QString FluidSession::sheetPaperDisplay() const
+{
+    if (m_sheet.paper == PF_SHEET_CUSTOM_PAPER) {
+        return tr("Personalizado");
+    }
+    return paperDisplayLabel(m_sheetPaperName);
+}
+
+QVariantList FluidSession::papers() const
+{
+    QVariantList list;
+    const uint32_t count = pf_export_paper_count();
+    for (uint32_t index = 0; index < count; ++index) {
+        char label[64] = {};
+        float width = 0.0F;
+        float height = 0.0F;
+        if (pf_export_paper_name(index, label, sizeof label) != PF_OK
+            || pf_export_paper_size_mm(index, &width, &height) != PF_OK) {
+            continue;
+        }
+        const QString name = QString::fromUtf8(label);
+        QVariantMap row;
+        row.insert(QStringLiteral("index"), static_cast<int>(index));
+        row.insert(QStringLiteral("name"), name);
+        row.insert(QStringLiteral("label"), paperDisplayLabel(name));
+        row.insert(QStringLiteral("widthMm"), width);
+        row.insert(QStringLiteral("heightMm"), height);
+        row.insert(QStringLiteral("size"), formatPaperSize(width, height));
+        list.append(row);
+    }
+    return list;
+}
+
+QVariantList FluidSession::marginPresets() const
+{
+    const auto preset = [](const char *id, const QString &label, const QString &detail,
+                           double top, double right, double bottom, double left,
+                           bool standard) {
+        QVariantMap row;
+        row.insert(QStringLiteral("id"), QString::fromLatin1(id));
+        row.insert(QStringLiteral("label"), label);
+        row.insert(QStringLiteral("detail"), detail);
+        row.insert(QStringLiteral("top"), top);
+        row.insert(QStringLiteral("right"), right);
+        row.insert(QStringLiteral("bottom"), bottom);
+        row.insert(QStringLiteral("left"), left);
+        row.insert(QStringLiteral("standard"), standard);
+        return row;
+    };
+    // The ISO frame is the default; the two others are page margins, not a standard
+    // drawing frame, and the interface says so rather than passing them off as one.
+    return {
+        preset("normal", tr("Normal (ISO 5457)"),
+               tr("NCh 13.Of93 · Sup. 10 · Der. 10 · Inf. 10 · Izq. 20 mm"), 10.0, 10.0,
+               10.0, 20.0, true),
+        preset("narrow", tr("Estrecho"),
+               tr("10 mm en los cuatro lados · no ISO"), 10.0, 10.0, 10.0, 10.0, false),
+        preset("wide", tr("Amplio"),
+               tr("20 mm en los cuatro lados · no ISO"), 20.0, 20.0, 20.0, 20.0, false),
+    };
+}
+
+QString FluidSession::formatPaperMeasure(double mm) const
+{
+    QString text = QString::number(mm / 10.0, 'f', 2);
+    while (text.endsWith(QLatin1Char('0'))) {
+        text.chop(1);
+    }
+    if (text.endsWith(QLatin1Char('.'))) {
+        text.chop(1);
+    }
+    text.replace(QLatin1Char('.'), QLatin1Char(','));
+    return text;
+}
+
+QString FluidSession::formatPaperSize(double widthMm, double heightMm) const
+{
+    return QStringLiteral("%1 × %2 cm")
+        .arg(formatPaperMeasure(widthMm), formatPaperMeasure(heightMm));
+}
+
+int FluidSession::sheetMarginPreset() const
+{
+    const QVariantList presets = marginPresets();
+    for (int index = 0; index < presets.size(); ++index) {
+        const QVariantMap row = presets.at(index).toMap();
+        const auto same = [](double actual, double wanted) {
+            return std::abs(actual - wanted) < 0.01;
+        };
+        if (same(m_sheet.margin_top, row.value(QStringLiteral("top")).toDouble())
+            && same(m_sheet.margin_right, row.value(QStringLiteral("right")).toDouble())
+            && same(m_sheet.margin_bottom, row.value(QStringLiteral("bottom")).toDouble())
+            && same(m_sheet.margin_left, row.value(QStringLiteral("left")).toDouble())) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+double FluidSession::paperMinMm() const
+{
+    float min = 0.0F;
+    float max = 0.0F;
+    return pf_export_paper_bounds(&min, &max) == PF_OK ? min : 0.0;
+}
+
+double FluidSession::paperMaxMm() const
+{
+    float min = 0.0F;
+    float max = 0.0F;
+    return pf_export_paper_bounds(&min, &max) == PF_OK ? max : 0.0;
+}
+
 void FluidSession::setSheetPaper(int index)
 {
     if (index < 0) {
@@ -2053,6 +2200,15 @@ void FluidSession::setSheetPaper(int index)
     }
     PfSheet next = m_sheet;
     next.paper = static_cast<uint32_t>(index);
+    applySheet(next);
+}
+
+void FluidSession::setSheetCustomPaper(double widthMm, double heightMm)
+{
+    PfSheet next = m_sheet;
+    next.paper = PF_SHEET_CUSTOM_PAPER;
+    next.width_mm = static_cast<float>(widthMm);
+    next.height_mm = static_cast<float>(heightMm);
     applySheet(next);
 }
 
@@ -2091,6 +2247,21 @@ void FluidSession::setSheetMargin(int side, double mm)
     default:
         return;
     }
+    applySheet(next);
+}
+
+void FluidSession::applyMarginPreset(int index)
+{
+    const QVariantList presets = marginPresets();
+    if (index < 0 || index >= presets.size()) {
+        return;
+    }
+    const QVariantMap row = presets.at(index).toMap();
+    PfSheet next = m_sheet;
+    next.margin_top = row.value(QStringLiteral("top")).toFloat();
+    next.margin_right = row.value(QStringLiteral("right")).toFloat();
+    next.margin_bottom = row.value(QStringLiteral("bottom")).toFloat();
+    next.margin_left = row.value(QStringLiteral("left")).toFloat();
     applySheet(next);
 }
 

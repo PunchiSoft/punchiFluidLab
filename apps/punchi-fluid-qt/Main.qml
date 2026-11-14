@@ -120,21 +120,22 @@ Window {
         id: session
     }
 
-    // The paper and the frame are the document's sheet: the ribbon picks them and the canvas,
-    // the check and the print all follow. The panel keeps only what belongs to one print.
-    Component.onCompleted: {
-        window.exportWidthMm = Math.round(session.sheetWidthMm);
-        window.exportHeightMm = Math.round(session.sheetHeightMm);
-    }
-
     /// Which catalog entry is being dragged out of the palette, and where the pointer is.
     /// A plain property rather than a Qt drag-and-drop session: one code path for the
     /// pointer and for anything that drives the window.
     /// The raster resolution. 300 dpi is what a printed sheet needs; the vector page has none.
     property int exportDpi: 300
-    /// A custom size for this one print; the working sheet stays the document's paper.
     property bool exportPanelOpen: false
+    /// The detailed sheet editor. `pageSetupFocus` only decides which field takes focus.
+    property bool pageSetupOpen: false
+    property string pageSetupFocus: "page"
     property bool titleBlockOpen: false
+
+    function openPageSetup(section) {
+        window.exportPanelOpen = false;
+        window.pageSetupFocus = section;
+        window.pageSetupOpen = true;
+    }
     property bool blockCustomizing: false
 
     /// Heights of the real rows of one content model, for the position miniatures.
@@ -205,23 +206,15 @@ Window {
         default: return "";
         }
     }
-    property bool exportCustomPaper: false
-    property int exportWidthMm: 210
-    property int exportHeightMm: 297
     property bool exportPartsList: true
 
-    /// The options the export dialog hands to the session, in one map.
+    /// The options the export dialog hands to the session, in one map. The sheet, its
+    /// orientation and its margins are the document's, so the export does not repeat them.
     function exportOptions(path, kind) {
         return {
             path: path,
             kind: kind,
-            custom_paper: window.exportCustomPaper,
-            width: window.exportWidthMm,
-            height: window.exportHeightMm,
-            landscape: session.sheetLandscape,
             dpi: window.exportDpi,
-            margins: [session.sheetMarginTop, session.sheetMarginRight,
-                      session.sheetMarginBottom, session.sheetMarginLeft],
             parts_list: window.exportPartsList
         };
     }
@@ -512,6 +505,7 @@ Window {
                 } else if (command === "save-as") {
                     saveDialog.open();
                 } else if (command === "export") {
+                    window.pageSetupOpen = false;
                     exportDialog.open();
                 } else {
                     saveCommand();
@@ -523,6 +517,9 @@ Window {
                 } else if (command === "license") {
                     window.openLicense();
                 }
+            }
+            onPageSetupRequested: function (section) {
+                window.openPageSetup(section);
             }
         }
 
@@ -741,7 +738,7 @@ Window {
 
                         Text {
                             width: parent.width
-                            text: qsTr("La hoja y lo que lleva")
+                            text: qsTr("Exportar")
                             color: session.foreground
                             font.pixelSize: 13
                         }
@@ -756,106 +753,12 @@ Window {
                             font.pixelSize: 11
                         }
 
-                        Row {
-                            spacing: 8
-                            Text {
-                                text: qsTr("Tamaño personalizado")
-                                color: session.muted
-                                font.pixelSize: 11
-                                width: 150
-                            }
-                            Rectangle {
-                                width: 200
-                                height: 26
-                                radius: 4
-                                color: window.exportCustomPaper ? session.accent : "transparent"
-                                border.width: 1
-                                border.color: session.muted
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("solo para esta impresión")
-                                    color: session.foreground
-                                    font.pixelSize: 11
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: window.exportCustomPaper = !window.exportCustomPaper
-                                }
-                            }
-                        }
-
-                        Row {
-                            spacing: 8
-                            visible: window.exportCustomPaper
-                            Text {
-                                text: qsTr("Ancho × alto (mm)")
-                                color: session.muted
-                                font.pixelSize: 11
-                                width: 150
-                            }
-                            TextInput {
-                                width: 60
-                                height: 26
-                                verticalAlignment: TextInput.AlignVCenter
-                                text: String(window.exportWidthMm)
-                                color: session.foreground
-                                font.pixelSize: 11
-                                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                                onTextChanged: window.exportWidthMm = parseInt(text, 10) || 0
-                            }
-                            Text {
-                                text: "×"
-                                color: session.muted
-                                font.pixelSize: 11
-                            }
-                            TextInput {
-                                width: 60
-                                height: 26
-                                verticalAlignment: TextInput.AlignVCenter
-                                text: String(window.exportHeightMm)
-                                color: session.foreground
-                                font.pixelSize: 11
-                                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                                onTextChanged: window.exportHeightMm = parseInt(text, 10) || 0
-                            }
-                        }
-
-                        // The four margins, in the order a page is read: above, right,
-                        // below, left.
-                        Row {
-                            spacing: 6
-                            Text {
-                                text: qsTr("Márgenes (mm)")
-                                color: session.muted
-                                font.pixelSize: 11
-                                width: 150
-                            }
-                            Repeater {
-                                // A fixed model: the field binds to the session value and
-                                // writes it only when the edit finishes, so typing a margin
-                                // does not rebuild the row or record a change per keystroke.
-                                model: 4
-                                delegate: TextInput {
-                                    width: 40
-                                    height: 26
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    text: index === 0 ? String(session.sheetMarginTop)
-                                        : index === 1 ? String(session.sheetMarginRight)
-                                        : index === 2 ? String(session.sheetMarginBottom)
-                                        : String(session.sheetMarginLeft)
-                                    color: session.foreground
-                                    font.pixelSize: 11
-                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
-                                    // 0 top, 1 right, 2 bottom, 3 left, the order the
-                                    // session and the ABI use.
-                                    onEditingFinished: {
-                                        const parsed = parseInt(text, 10);
-                                        if (!isNaN(parsed)) {
-                                            session.setSheetMargin(index, parsed);
-                                        }
-                                    }
-                                }
-                            }
+                        Text {
+                            width: parent.width
+                            text: qsTr("La hoja, su orientación y sus márgenes se ajustan en Configurar página.")
+                            color: session.muted
+                            font.pixelSize: 10
+                            wrapMode: Text.WordWrap
                         }
 
                         Row {
@@ -951,8 +854,18 @@ Window {
                     }
                 }
 
+                // The detailed sheet editor. It opens from Archivo and from Disposición;
+                // each change is already applied and undoable, so it has no Aceptar.
+                PageSetupPanel {
+                    id: pageSetupPanel
+                    objectName: "pageSetupPanel"
+                    visible: window.pageSetupOpen
+                    session: session
+                    focusSection: window.pageSetupFocus
+                    onClosed: window.pageSetupOpen = false
+                }
 
-                // The circuit name is the one the selector and the printed title block use.                // The circuit name is the one the selector and the printed title block use.
+                // The circuit name is the one the selector and the printed title block use.
                 // It is text, not a number, and the core refuses an empty or control-laden
                 // one rather than storing a name nothing can draw.
                 Rectangle {

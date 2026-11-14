@@ -6,6 +6,58 @@ publicación.
 
 ## Unreleased
 
+### La cuadrícula se ajusta al dibujo — 2026-11-14
+
+La cuadrícula era una guía fija de 10 mm. Ahora se elige su paso en la misma cinta que
+configura la página, y el imán que coloca los componentes usa ese mismo paso: las líneas
+nunca mienten sobre dónde va a caer una pieza.
+
+- **Disposición ▸ Cuadrícula**: Visible/Oculta y paso de **5, 10 (por defecto), 20 o
+  25 mm**, con una línea más marcada cada cinco pasos. El paso es estado de vista: no se
+  guarda en el archivo, no se imprime y no entra en el historial.
+- **El imán sigue la cuadrícula**: el radio de atracción de los puertos pasa de 6 mm fijos
+  a medio paso más un milímetro, así que un paso fino no atrae de más y uno grueso no se
+  queda corto.
+- **Las líneas se alinean con el origen del papel**, no con el borde del marco: un margen
+  que no es múltiplo del paso ya no desplaza la guía respecto del punto donde cae la pieza.
+- **Se retira Cuadrícula de Ver** para no repetir el mando; `Ctrl+G` sigue alternando la
+  visibilidad y el paso vive en Disposición.
+- **Evidencia**: `the_grid_step_is_a_view_setting_and_the_snap_follows_it`, los pasos
+  `view: the grid step changes` y `view: the grid step is a view setting` de
+  `--selftest`, y las capturas con 5, 10 y 20 mm.
+
+### La hoja se configura como una página, con nombres de verdad — 2026-11-14
+
+Elegir papel era una fila de nueve botones y una lista de códigos. Ahora la hoja se
+configura en un pack de página reconocible, sin tocar el formato del archivo: el papel,
+la orientación y los márgenes ya eran del documento.
+
+- **Pestaña Disposición**: **Página** con el combo **Tamaño** (miniatura proporcionada,
+  nombre normalizado y nombre habitual entre paréntesis) y **Orientación** (Vertical,
+  Apaisado); **Márgenes** con la galería **Normal (ISO 5457)**, **Estrecho**, **Amplio** y
+  **Personalizado**, cada uno con su vista previa y sus cuatro valores. La opción en vigor
+  se marca con borde y visto, no solo con color.
+- **Bloque Configurar página en Archivo** y botón en Disposición: abren el panel detallado
+  con tamaño, orientación, tipos de margen, cuatro márgenes numéricos y una vista previa
+  que sigue cada cambio. No hay Aceptar: cada cambio se aplica al instante y es un undo.
+- **La galería de perfiles también vive en el panel**, como en un procesador de texto:
+  miniatura con la banda de margen sombreada, nombre, cuatro valores y **Márgenes
+  personalizados…** al final; el perfil Normal cita **NCh 13.Of93** además de ISO 5457.
+- **Tamaño personalizado en el documento**, no solo en una impresión: se guarda con la
+  hoja (formato 7) y se reabre. Los límites de 5 a 200 cm por lado salen del núcleo.
+- **Nombres habituales sin tocar el canónico**: `Letter (Carta)`, `Legal (Oficio)` y
+  `Oficio chileno (Folio)` en los controles de página; la barra de estado y el archivo
+  siguen diciendo `Letter`, `Legal` y `Oficio`.
+- **Exportar queda aparte**: el panel conserva la resolución y la lista de piezas; el
+  papel, la orientación y los márgenes son los de la hoja del documento
+  (`PF_EXPORT_DOCUMENT_PAPER`). La impresión puntual con otro papel sigue disponible en el
+  ABI.
+- **Evidencia**: `every_paper_reports_the_size_the_drawing_list_needs`,
+  `a_custom_paper_is_stored_and_read_back_as_the_document_sheet`,
+  `a_custom_print_paper_reaches_the_page`, los pasos `page setup: …` de `--selftest`,
+  `--check-qml`, `--check-theme`, `--check-icons` y las capturas de la pestaña, el combo,
+  la galería y el panel.
+
 ### El español sale de los identificadores y el plan de traducciones queda escrito — 2026-11-14
 
 El español es el idioma de la interfaz y de los catálogos, no el de los identificadores.

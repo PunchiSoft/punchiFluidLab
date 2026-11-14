@@ -56,9 +56,16 @@ qt_add_qml_module(punchi-fluid
     URI PunchiFluid
     VERSION 1.0
     QML_FILES
+        GridControl.qml
         HelpLink.qml
         Main.qml
+        MarginGallery.qml
+        OrientationControl.qml
+        PageControls.qml
+        PageSetupPanel.qml
         PanelButton.qml
+        PaperCombo.qml
+        PaperPreview.qml
         RibbonBar.qml
         RibbonButton.qml
         RibbonGroup.qml
