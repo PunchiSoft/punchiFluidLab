@@ -591,7 +591,7 @@ private:
     bool m_inspectorOpen = false;
     double m_zoom = 1.0;
     bool m_grid = true;
-    double m_gridStepMm = 10.0;
+    double m_gridStepMm = 5.0;
     /// The sheet as the core reported it, and the label and size the interface reads.
     PfSheet m_sheet {};
     QString m_sheetPaperName;

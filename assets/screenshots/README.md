@@ -14,10 +14,10 @@ Images of the running application, used by the README and by pull request review
 | `archivo-page-setup-light.png` | The **Archivo** tab on a light desktop: Documento, Circuito, one **Configurar página** group in reference order (Márgenes, Orientación, Tamaño and the small page launcher), then **Recientes** as a dropdown |
 | `archivo-page-setup-dark.png` | The same tab on a dark desktop, to check the page symbols, the margin dropdown, launcher and orientation in both themes |
 | `paper-sizes-light.png` | The **Tamaño** list open in Archivo: every paper with its proportions, canonical name, common name in parentheses and measure in centimetres; A4 marked |
-| `grid-5-light.png` | The Configurar página panel with a **5 mm** grid: its grid control, the fine ruling and a heavier line every 25 mm |
+| `grid-5-light.png` | The Configurar página panel with the default **5 mm** grid and its eye toggle: the fine ruling and a heavier line every 25 mm |
 | `grid-20-light.png` | The same panel with a **20 mm** grid: the coarse ruling and a heavier line every 100 mm |
 | `margin-presets-light.png` | The **Márgenes** dropdown open directly from Archivo: Normal (ISO 5457 / NCh 13.Of93), Estrecho, Amplio and Márgenes personalizados…, each with its preview, shaded margin band and four values |
-| `page-setup-light.png` | The **Configurar página** panel on a light desktop: size, the orientation dropdown, the grid, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
+| `page-setup-light.png` | The **Configurar página** panel on a light desktop: size, the orientation dropdown, the grid with its eye toggle, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
 | `page-setup-dark.png` | The same panel on a dark desktop, to check the preview, the profile control and the fields in both themes |
 | `title-block-light.png` | The **docked Cajetín editor** open on a light desktop, industrial model: the content combo, four position miniatures, the twelve guide fields and the 170 × 45 mm block drawn on the sheet beside it |
 | `title-block-dark.png` | The same editor on a dark desktop, to check the fields, the derived sheet number and the block in both themes |
