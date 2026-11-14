@@ -27,7 +27,7 @@ Rectangle {
     signal pageSetupRequested(string section)
 
     /// Below this width a ribbon is worse than a menu, so it folds away.
-    readonly property bool collapsed: width < 1100
+    readonly property bool collapsed: width < 1240
     property int current: 1
     property bool menuOpen: false
     /// Capture and review hooks: open a list as soon as its control exists.
@@ -77,29 +77,17 @@ Rectangle {
                     ])
                 },
                 {
-                    // The sheet is configured in one place, and this is its shortcut. The
-                    // nine size buttons are gone: the size lives in the Disposición tab,
-                    // where it has room for the paper's proportions and its common name.
+                    // The page as a dropdown and a launcher, not a tab of its own: the
+                    // margin profiles, the custom size and the grid live in the panel the
+                    // launcher opens.
                     title: qsTr("Configurar página"),
-                    items: [
-                        { id: "page-setup-file", label: qsTr("Configurar página"), icon: "document-properties", hint: qsTr("tamaño, orientación y márgenes de la hoja"), big: true }
-                    ]
+                    custom: "page-setup"
                 },
                 {
-                    // The documents the program already knows, so a circuit reopened a
-                    // hundred times is one click away. The list is the core's; this only
-                    // shows it.
+                    // The documents the program already knows, as one dropdown instead of
+                    // a row that grows with every file opened.
                     title: qsTr("Recientes"),
-                    items: session.recent.length === 0
-                           ? [{ id: "recent-empty", label: qsTr("Ninguno"), icon: "document-open-recent", hint: qsTr("los archivos abiertos o guardados aparecen aquí"), enabled: false }]
-                           : session.recent.map(function (entry, index) {
-                                 return {
-                                     id: "recent:" + index,
-                                     label: entry.name,
-                                     icon: "document-open-recent",
-                                     hint: entry.path
-                                 };
-                             })
+                    custom: "recent"
                 }
             ]
         },
@@ -191,33 +179,6 @@ Rectangle {
                     ]
                 },
                 { title: qsTr("Contraste"), note: session.contrastSummary }
-            ]
-        },
-        {
-            // The page group a layout tab owns in a word processor: size, orientation and
-            // the margin presets, with the detailed editor one click away. The controls
-            // are custom because a list with paper proportions and a margin gallery is not
-            // a ribbon button; the collapsed menu still flattens them into commands.
-            name: qsTr("Disposición"),
-            groups: [
-                {
-                    title: qsTr("Página"),
-                    custom: "page"
-                },
-                {
-                    title: qsTr("Márgenes"),
-                    custom: "margins"
-                },
-                {
-                    title: qsTr("Cuadrícula"),
-                    custom: "grid"
-                },
-                {
-                    title: qsTr("Configurar página"),
-                    items: [
-                        { id: "page-setup-layout", label: qsTr("Configurar página"), icon: "document-properties", hint: qsTr("el editor detallado de la hoja"), big: true }
-                    ]
-                }
             ]
         },
         {
@@ -339,7 +300,7 @@ Rectangle {
         });
         out.push({
             id: "margin-custom",
-            label: qsTr("Personalizado…"),
+            label: qsTr("Márgenes personalizados…"),
             icon: "document-properties",
             hint: qsTr("los cuatro márgenes, en milímetros"),
             current: session.sheetMarginPreset < 0
@@ -347,38 +308,38 @@ Rectangle {
         return out;
     }
 
-    function gridActions() {
-        const out = [
-            {
-                id: "grid-toggle",
-                label: session.grid ? qsTr("Ocultar cuadrícula") : qsTr("Mostrar cuadrícula"),
-                icon: "view-grid",
-                hint: qsTr("la cuadrícula es una guía; no se imprime"),
-                current: session.grid
-            }
-        ];
-        [5, 10, 20, 25].forEach(function (mm) {
-            out.push({
-                id: "grid-step-" + mm,
-                label: qsTr("Cuadrícula de %1 mm").arg(mm),
-                icon: "view-grid",
-                hint: qsTr("paso de la cuadrícula y del imán"),
-                current: Math.abs(session.gridStepMm - mm) < 0.01
-            });
+    function recentActions() {
+        if (session.recent.length === 0) {
+            return [{
+                id: "recent-empty",
+                label: qsTr("Ninguno"),
+                icon: "document-open-recent",
+                hint: qsTr("los archivos abiertos o guardados aparecen aquí"),
+                enabled: false
+            }];
+        }
+        return session.recent.map(function (entry, index) {
+            return {
+                id: "recent:" + index,
+                label: entry.name,
+                icon: "document-open-recent",
+                hint: entry.path
+            };
         });
-        return out;
     }
 
     /// The commands of one group, whether it draws buttons or a custom control.
     function groupActions(group) {
-        if (group.custom === "page") {
-            return paperActions().concat(orientationActions());
+        if (group.custom === "page-setup") {
+            return marginActions().concat(orientationActions(), paperActions(), [{
+                id: "page-setup-file",
+                label: qsTr("Configurar página…"),
+                icon: "document-properties",
+                hint: qsTr("tamaño, márgenes, cuadrícula y tamaño personalizado")
+            }]);
         }
-        if (group.custom === "margins") {
-            return marginActions();
-        }
-        if (group.custom === "grid") {
-            return gridActions();
+        if (group.custom === "recent") {
+            return recentActions();
         }
         return group.items || [];
     }
@@ -404,24 +365,13 @@ Rectangle {
             pageSetupRequested("margins");
             return;
         }
-        if (id === "page-setup-file" || id === "page-setup-layout") {
+        if (id === "page-setup-file") {
             pageSetupRequested("page");
             return;
         }
         if (id === "export-panel") {
             window.exportPanelOpen = true;
             window.pageSetupOpen = false;
-            return;
-        }
-        if (id === "grid-toggle") {
-            session.toggleGrid();
-            return;
-        }
-        if (id.indexOf("grid-step-") === 0) {
-            const mm = parseFloat(id.slice(10));
-            if (!isNaN(mm)) {
-                session.gridStepMm = mm;
-            }
             return;
         }
         if (id === "orientation-portrait") {
@@ -713,9 +663,8 @@ Rectangle {
                     // the group's Row, so the group measures itself around it.
                     Loader {
                         visible: !!modelData.custom
-                        sourceComponent: modelData.custom === "page" ? pageControls
-                                       : modelData.custom === "margins" ? marginControls
-                                       : modelData.custom === "grid" ? gridControls
+                        sourceComponent: modelData.custom === "page-setup" ? pageSetupGroup
+                                       : modelData.custom === "recent" ? recentGroup
                                        : null
                     }
 
@@ -814,12 +763,13 @@ Rectangle {
     }
 
     Component {
-        id: pageControls
+        id: pageSetupGroup
 
-        PageControls {
-            objectName: "pageControls"
+        ConfigurarPaginaGroup {
+            objectName: "pageSetupGroup"
             session: ribbon.session
-            openOnCreate: ribbon.paperListRequested
+            paperListRequested: ribbon.paperListRequested
+            marginListRequested: ribbon.marginListRequested
             onPageSetupRequested: function (section) {
                 ribbon.pageSetupRequested(section);
             }
@@ -827,21 +777,12 @@ Rectangle {
     }
 
     Component {
-        id: gridControls
+        id: recentGroup
 
-        GridControl {
+        RecentCombo {
+            objectName: "recentGroup"
             session: ribbon.session
-        }
-    }
-
-    Component {
-        id: marginControls
-
-        MarginGallery {
-            objectName: "marginGallery"
-            session: ribbon.session
-            openOnCreate: ribbon.marginListRequested
-            onCustomRequested: ribbon.pageSetupRequested("margins")
+            showLabel: false
         }
     }
 }

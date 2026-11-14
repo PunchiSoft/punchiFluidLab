@@ -247,8 +247,8 @@ int main(int argc, char *argv[])
             }
             ribbon->setProperty("current", index);
         } else if (paperList || marginList) {
-            // Disposición is index 3 and the only tab with the page controls.
-            ribbon->setProperty("current", 3);
+            // The page controls and the launcher live in Archivo.
+            ribbon->setProperty("current", 0);
         }
         if (arguments.contains(QStringLiteral("--menu"))) {
             ribbon->setProperty("menuOpen", true);

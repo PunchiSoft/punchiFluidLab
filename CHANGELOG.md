@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### La configuración de página sigue el orden de la referencia — 2026-11-14
+
+La primera corrección había dejado el tamaño visible, pero sin el desplegable de perfiles de
+márgenes y con iconos demasiado pequeños para leerse como hojas. Este ajuste reproduce el
+patrón visible en la referencia dentro del grupo **Configurar página** de Archivo.
+
+- **Orden único en Archivo**: **Márgenes → Orientación → Tamaño → lanzador**. No se crea
+  una pestaña Disposición.
+- **Márgenes** abre directamente desde la cinta la galería de perfiles: Normal (ISO 5457 /
+  NCh 13.Of93), Estrecho, Amplio y Márgenes personalizados…, con miniatura de hoja y
+  valores. Normal es el único perfil normado; los otros se marcan no ISO.
+- **Orientación** es un desplegable Vertical/Apaisado con una miniatura de hoja, no dos
+  baldosas.
+- **Tamaño** es el desplegable de papeles con miniatura, proporciones, nombre canónico y
+  común; el lanzador de hoja al final abre el panel detallado.
+- El panel conserva la galería de márgenes, los campos numéricos, el tamaño personalizado,
+  la cuadrícula y la vista previa. Recientes sigue como desplegable a la derecha.
+- **Evidencia**: `--check-qml` sin problemas, `--selftest` sin fallos, capturas de Archivo
+  y del desplegable de perfiles en claro y oscuro.
+
 ### La cuadrícula se ajusta al dibujo — 2026-11-14
 
 La cuadrícula era una guía fija de 10 mm. Ahora se elige su paso en la misma cinta que

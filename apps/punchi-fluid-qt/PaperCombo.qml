@@ -16,6 +16,13 @@ Item {
 
     property FluidSession session
     property bool openOnCreate: false
+    /// Large page symbol over the name in the ribbon; combo row in the detail panel.
+    property bool ribbonMode: false
+    /// The label above the button; the Archivo group calls it Disposición.
+    property string label: qsTr("Tamaño")
+    /// The ribbon may need a narrower button than the panel.
+    property real controlWidth: 160
+    property real labelWidth: 118
     signal pageSetupRequested(string section)
 
     readonly property var rows: {
@@ -40,8 +47,8 @@ Item {
         onTriggered: openPopup()
     }
 
-    implicitWidth: column.implicitWidth
-    implicitHeight: column.implicitHeight
+    implicitWidth: ribbonMode ? ribbonButton.width : column.implicitWidth
+    implicitHeight: ribbonMode ? ribbonButton.height : column.implicitHeight
 
     function isCurrent(row) {
         return row.custom === true ? session.sheetPaper < 0 : session.sheetPaper === row.index;
@@ -70,14 +77,16 @@ Item {
         spacing: 2
 
         Text {
-            text: qsTr("Tamaño")
+            visible: !paperCombo.ribbonMode
+            text: paperCombo.label
             color: session.muted
             font.pixelSize: 10
         }
 
         Rectangle {
             id: button
-            width: Math.max(160, headerRow.implicitWidth + 16)
+            visible: !paperCombo.ribbonMode
+            width: Math.max(paperCombo.controlWidth, headerRow.implicitWidth + 16)
             height: 26
             radius: 4
             color: pointer.containsMouse || popup.opened ? session.panel : "transparent"
@@ -106,7 +115,7 @@ Item {
                 }
 
                 Text {
-                    width: 118
+                    width: paperCombo.labelWidth
                     anchors.verticalCenter: parent.verticalCenter
                     text: session.sheetPaperDisplay
                     color: session.foreground
@@ -136,11 +145,74 @@ Item {
         }
     }
 
+    Rectangle {
+        id: ribbonButton
+        visible: paperCombo.ribbonMode
+        width: 72
+        height: 66
+        radius: 4
+        color: ribbonPointer.containsMouse || popup.opened || activeFocus
+               ? session.panel : "transparent"
+        border.width: activeFocus ? 1 : 0
+        border.color: session.accent
+        activeFocusOnTab: true
+
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Tamaño: %1").arg(session.sheetPaperDisplay)
+        Accessible.description: qsTr("abre la lista de tamaños de hoja")
+        Accessible.onPressAction: popup.opened ? popup.close() : popup.open()
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 2
+
+            PaperPreview {
+                anchors.horizontalCenter: parent.horizontalCenter
+                session: paperCombo.session
+                paperWidthMm: session.sheetPaperWidthMm
+                paperHeightMm: session.sheetPaperHeightMm
+                landscape: session.sheetLandscape
+                filledPage: true
+                maxWidth: 26
+                maxHeight: 31
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: paperCombo.label
+                color: session.foreground
+                font.pixelSize: 10
+            }
+        }
+
+        Text {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: 4
+            anchors.bottomMargin: 3
+            text: "▾"
+            color: session.muted
+            font.pixelSize: 8
+        }
+
+        MouseArea {
+            id: ribbonPointer
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: popup.opened ? popup.close() : popup.open()
+        }
+
+        Keys.onSpacePressed: popup.opened ? popup.close() : popup.open()
+        Keys.onReturnPressed: popup.opened ? popup.close() : popup.open()
+        Keys.onEnterPressed: popup.opened ? popup.close() : popup.open()
+    }
+
     Popup {
         id: popup
-        parent: button
+        parent: paperCombo.ribbonMode ? ribbonButton : button
         x: 0
-        y: button.height + 4
+        y: parent.height + 4
         width: 350
         height: Math.min(430, list.contentHeight + 12)
         padding: 6
