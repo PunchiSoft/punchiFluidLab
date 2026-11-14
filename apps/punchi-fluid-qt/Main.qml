@@ -120,6 +120,16 @@ Window {
         id: session
     }
 
+    // Opening the properties by clicking the sheet brings the dock back if it was hidden.
+    Connections {
+        target: session
+        function onInspectorChanged() {
+            if (session.inspectorOpen) {
+                window.rightDockOpen = true;
+            }
+        }
+    }
+
     /// Which catalog entry is being dragged out of the palette, and where the pointer is.
     /// A plain property rather than a Qt drag-and-drop session: one code path for the
     /// pointer and for anything that drives the window.
@@ -134,6 +144,11 @@ Window {
     /// changes the document, the history or the modified mark.
     property bool catalogOpen: true
     property int catalogWidth: 248
+    /// The right dock holds the properties and the title-block editor. It is only
+    /// available while one of them is open, and hiding it is view state.
+    property bool rightDockOpen: true
+    readonly property bool rightDockHasContent: session.inspectorOpen || window.titleBlockOpen
+    onTitleBlockOpenChanged: if (titleBlockOpen) rightDockOpen = true
 
     function openPageSetup(section) {
         window.exportPanelOpen = false;
@@ -463,6 +478,13 @@ Window {
         sequence: "Ctrl+B"
         onActivated: window.catalogOpen = !window.catalogOpen
     }
+    // The right dock is the same kind of view state: Ctrl+J folds it while it has content.
+    Shortcut {
+        sequence: "Ctrl+J"
+        onActivated: if (window.rightDockHasContent) {
+                         window.rightDockOpen = !window.rightDockOpen;
+                     }
+    }
 
     // 60 Hz of simulated time in a timer rather than in the paint loop, so a slow frame
     // does not change how far the model advances. The timer stops when the model settles,
@@ -532,9 +554,13 @@ Window {
                 window.openPageSetup(section);
             }
             catalogOpen: window.catalogOpen
+            rightDockOpen: window.rightDockOpen
+            rightDockAvailable: window.rightDockHasContent
             onPanelCommand: function (command) {
                 if (command === "catalog") {
                     window.catalogOpen = !window.catalogOpen;
+                } else if (command === "right-dock" && window.rightDockHasContent) {
+                    window.rightDockOpen = !window.rightDockOpen;
                 }
             }
         }
@@ -565,7 +591,7 @@ Window {
             Rectangle {
                 // The block editor docks beside the sheet, not over it: opening it gives the
                 // editor real room and the sheet keeps the rest of the window.
-                width: parent.width - catalogDock.width - (window.titleBlockOpen ? 360 : 0)
+                width: parent.width - catalogDock.width - rightDock.width
                 height: parent.height
                 color: session.background
 
@@ -1054,204 +1080,6 @@ Window {
                     }
                 }
 
-                // The properties of the valve, opened by a click in edit mode. It reads
-                // what the definition file says rather than a form the front end invented.
-                Rectangle {
-                    visible: session.inspectorOpen
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 24
-                    width: 360
-                    radius: 6
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.accent
-                    height: inspectorColumn.implicitHeight + 28
-                    z: 30
-
-                    Column {
-                        id: inspectorColumn
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 14
-                        spacing: 10
-
-                        Text {
-                            width: parent.width
-                            text: session.inspectorText
-                            color: session.foreground
-                            font.pixelSize: 12
-                            wrapMode: Text.WordWrap
-                        }
-                        // A recorder or a limit switch binds one component: the recorder
-                        // charts a quantity, the switch follows a cylinder's position. The
-                        // list is the core's — only what the circuit can report — and the
-                        // bound source is marked, because a list with no mark is a guess.
-                        Column {
-                            width: parent.width
-                            spacing: 4
-                            visible: chartSources.count > 0
-
-                            Repeater {
-                                id: chartSources
-                                model: session.chartCandidates
-
-                                delegate: Rectangle {
-                                    width: parent.width
-                                    height: 24
-                                    radius: 3
-                                    color: modelData.current ? session.accent : "transparent"
-                                    border.width: 1
-                                    border.color: modelData.current ? session.accent : session.muted
-
-                                    Text {
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.leftMargin: 6
-                                        anchors.rightMargin: 6
-                                        elide: Text.ElideRight
-                                        // The bound row says so in words, not only in
-                                        // colour: a mark a colour-blind reader cannot see
-                                        // is not a mark.
-                                        text: modelData.current
-                                              ? modelData.label + "  ·  " + qsTr("en pantalla")
-                                              : modelData.label
-                                        color: session.foreground
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: session.setChartSource(modelData.placement,
-                                                                          modelData.quantity)
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                width: 120
-                                height: 24
-                                radius: 3
-                                visible: session.chartSourcePlacement >= 0
-                                color: "transparent"
-                                border.width: 1
-                                border.color: session.muted
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Quitar fuente")
-                                    color: session.foreground
-                                    font.pixelSize: 11
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: session.clearChartSource()
-                                }
-                            }
-                        }
-                        Repeater {
-                            id: editRows
-                            model: session.inspectorFields
-
-                            delegate: Row {
-                                width: parent.width
-                                spacing: 8
-                                property string editKey: modelData.key
-                                property alias valueText: editValue.text
-
-                                Text {
-                                    width: 150
-                                    text: modelData.label
-                                    color: session.muted
-                                    font.pixelSize: 11
-                                }
-
-                                Rectangle {
-                                    width: parent.width - 158
-                                    height: 24
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: session.muted
-
-                                    TextInput {
-                                        id: editValue
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        text: String(modelData.value)
-                                        color: session.foreground
-                                        font.pixelSize: 11
-                                        // A designation is a name, not a number: the form
-                                        // asks for one keyboard and parses accordingly.
-                                        inputMethodHints: modelData.numeric === false
-                                                          ? Qt.ImhNone
-                                                          : Qt.ImhFormattedNumbersOnly
-                                    }
-                                }
-                            }
-                        }
-
-                        Row {
-                            spacing: 8
-
-                            Rectangle {
-                                width: 96
-                                height: 26
-                                radius: 4
-                                color: "transparent"
-                                border.width: 1
-                                border.color: session.accent
-                                visible: editRows.count > 0
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Aplicar")
-                                    color: session.foreground
-                                    font.pixelSize: 11
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        // The text travels as it was typed: the form has
-                                        // numbers and a name, and parsing every field as a
-                                        // number here is how a designation becomes NaN.
-                                        let values = [];
-                                        for (let i = 0; i < editRows.count; ++i) {
-                                            const row = editRows.itemAt(i);
-                                            values.push({ key: row.editKey, value: row.valueText });
-                                        }
-                                        session.applyInspectorEdits(values);
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                width: 96
-                                height: 26
-                                radius: 4
-                                color: "transparent"
-                                border.width: 1
-                                border.color: session.accent
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Cerrar")
-                                    color: session.foreground
-                                    font.pixelSize: 11
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: session.closeInspector()
-                                }
-                            }
-                        }
-                    }
-                }
 
                 Text {
                     anchors.centerIn: sheet
@@ -1262,327 +1090,529 @@ Window {
                 }
             }
 
-            // The docked title-block editor. It takes its own column so the sheet stays
-            // visible while the fields change; every edit is one undo entry.
-            Rectangle {
-                id: blockDock
-                visible: window.titleBlockOpen
-                width: 360
+            // The properties and the title block share the right dock: the sheet keeps its
+            // column and every field edits the live circuit.
+            DockPanel {
+                id: rightDock
+                objectName: "rightDock"
+                session: session
+                title: session.inspectorOpen && window.titleBlockOpen
+                       ? qsTr("Propiedades y cajetín")
+                       : (session.inspectorOpen ? qsTr("Propiedades") : qsTr("Cajetín"))
+                hideName: qsTr("Ocultar el panel derecho")
+                showName: qsTr("Mostrar el panel derecho")
+                open: window.rightDockOpen
+                available: window.rightDockHasContent
+                panelWidth: 360
+                sideRight: true
                 height: parent.height
-                color: session.panel
-                border.width: 1
-                border.color: session.muted
+                onToggleRequested: window.rightDockOpen = !window.rightDockOpen
 
                 Flickable {
                     anchors.fill: parent
                     anchors.margins: 14
-                    contentHeight: blockColumn.implicitHeight
+                    contentHeight: rightColumn.implicitHeight
                     clip: true
 
                     Column {
-                        id: blockColumn
+                        id: rightColumn
                         width: parent.width
-                        spacing: 10
+                        spacing: 12
 
-                        Row {
+                        Column {
+                            id: inspectorColumn
                             width: parent.width
-                            spacing: 8
+                            spacing: 10
+                            visible: session.inspectorOpen
 
                             Text {
-                                width: parent.width - 76
-                                text: qsTr("Cajetín del circuito")
-                                color: session.foreground
-                                font.pixelSize: 13
-                                elide: Text.ElideRight
-                            }
-
-                            Rectangle {
-                                width: 68
-                                height: 24
-                                radius: 4
-                                color: "transparent"
-                                border.width: 1
-                                border.color: session.muted
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Cerrar")
-                                    color: session.foreground
-                                    font.pixelSize: 10
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: window.titleBlockOpen = false
-                                }
-                            }
-                        }
-
-                        // Content and position: two labelled combo boxes. The content
-                        // order is the owner's (Técnico, Escolar, Industrial, Sin cajetín);
-                        // the positions follow the sheet orientation.
-                        Row {
-                            width: parent.width
-                            spacing: 8
-
-                            Column {
-                                width: (parent.width - 8) / 2
-                                spacing: 2
-
-                                Text {
-                                    text: qsTr("Contenido")
-                                    color: session.muted
-                                    font.pixelSize: 10
-                                }
-
-                                ComboBox {
-                                    id: modelCombo
-                                    width: parent.width
-                                    model: [qsTr("Técnico"), qsTr("Escolar"),
-                                            qsTr("Industrial"), qsTr("Sin cajetín")]
-                                    currentIndex: session.blockPreset === 3
-                                                  ? 3
-                                                  : (session.blockModel === 1 ? 0
-                                                     : (session.blockModel === 0 ? 1 : 2))
-                                    font.pixelSize: 11
-                                    Accessible.name: qsTr("Contenido del cajetín")
-                                    onActivated: function(index) {
-                                        if (index === 3) {
-                                            session.setBlockPreset(3);
-                                        } else {
-                                            session.setBlockModel(index === 0 ? 1
-                                                                              : (index === 1 ? 0 : 2));
-                                        }
-                                    }
-                                }
-                            }
-
-                            Column {
-                                width: (parent.width - 8) / 2
-                                spacing: 2
-
-                                Text {
-                                    text: qsTr("Posición")
-                                    color: session.muted
-                                    font.pixelSize: 10
-                                }
-
-                                ComboBox {
-                                    id: positionCombo
-                                    width: parent.width
-                                    enabled: session.blockPreset !== 3
-                                    model: window.positionOptions()
-                                    textRole: "label"
-                                    currentIndex: window.positionIndex()
-                                    font.pixelSize: 11
-                                    Accessible.name: qsTr("Posición del cajetín")
-                                    delegate: ItemDelegate {
-                                        width: positionCombo.width
-                                        contentItem: Row {
-                                            spacing: 8
-                                            BlockThumb {
-                                                width: 54
-                                                height: 34
-                                                preset: modelData.preset
-                                                model: session.blockModel
-                                            }
-                                            Text {
-                                                text: modelData.label
-                                                color: session.foreground
-                                                font.pixelSize: 10
-                                                elide: Text.ElideRight
-                                                anchors.verticalCenter: parent.verticalCenter
-                                            }
-                                        }
-                                    }
-                                    onActivated: function(index) {
-                                        if (index >= 0) {
-                                            session.setBlockPreset(model[index].preset);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            text: session.blockCustomized ? qsTr("Personalizado") : qsTr("Modelo del cajetín")
-                            color: session.blockCustomized ? session.accent : session.muted
-                            font.pixelSize: 10
-                        }
-
-                        Row {
-                            width: parent.width
-                            spacing: 8
-
-                            Rectangle {
-                                width: 118
-                                height: 26
-                                radius: 4
-                                color: window.blockCustomizing ? session.accent : "transparent"
-                                border.width: 1
-                                border.color: session.muted
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Personalizar")
-                                    color: session.foreground
-                                    font.pixelSize: 10
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: window.blockCustomizing = !window.blockCustomizing
-                                }
-                            }
-
-                            Rectangle {
-                                width: 118
-                                height: 26
-                                radius: 4
-                                visible: session.blockCustomized
-                                color: "transparent"
-                                border.width: 1
-                                border.color: session.muted
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: qsTr("Restablecer modelo")
-                                    color: session.foreground
-                                    font.pixelSize: 10
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: session.resetBlockVisibility()
-                                }
-                            }
-                        }
-
-                        // Only the model's fields, in print order. Personalizar reveals a
-                        // switch per field; hiding keeps the typed value.
-                        Repeater {
-                            model: session.blockFields
-
-                            delegate: Column {
-                                required property var modelData
                                 width: parent.width
-                                spacing: 2
-                                visible: window.blockCustomizing || modelData.visible
+                                text: session.inspectorText
+                                color: session.foreground
+                                font.pixelSize: 12
+                                wrapMode: Text.WordWrap
+                            }
+                            // A recorder or a limit switch binds one component: the recorder
+                            // charts a quantity, the switch follows a cylinder's position. The
+                            // list is the core's — only what the circuit can report — and the
+                            // bound source is marked, because a list with no mark is a guess.
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                visible: chartSources.count > 0
 
-                                Row {
-                                    width: parent.width
-                                    spacing: 6
+                                Repeater {
+                                    id: chartSources
+                                    model: session.chartCandidates
 
-                                    Text {
-                                        width: 120
-                                        text: modelData.label
-                                        color: session.muted
-                                        font.pixelSize: 10
-                                        elide: Text.ElideRight
-                                    }
-
-                                    Rectangle {
-                                        width: parent.width - (window.blockCustomizing ? 174 : 128)
-                                        height: 26
-                                        color: session.background
-                                        border.width: 1
-                                        border.color: session.muted
-
-                                        TextInput {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 5
-                                            anchors.rightMargin: 5
-                                            verticalAlignment: TextInput.AlignVCenter
-                                            text: modelData.value
-                                            color: session.foreground
-                                            font.pixelSize: 11
-                                            selectByMouse: true
-                                            Accessible.name: modelData.label
-                                            onEditingFinished: session.setBlockField(modelData.key, text)
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        width: 42
-                                        height: 26
-                                        visible: window.blockCustomizing
+                                    delegate: Rectangle {
+                                        width: parent.width
+                                        height: 24
                                         radius: 3
-                                        color: "transparent"
+                                        color: modelData.current ? session.accent : "transparent"
                                         border.width: 1
-                                        border.color: modelData.visible ? session.accent : session.muted
+                                        border.color: modelData.current ? session.accent : session.muted
 
                                         Text {
-                                            anchors.centerIn: parent
-                                            text: modelData.visible ? qsTr("Sí") : qsTr("No")
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            anchors.leftMargin: 6
+                                            anchors.rightMargin: 6
+                                            elide: Text.ElideRight
+                                            // The bound row says so in words, not only in
+                                            // colour: a mark a colour-blind reader cannot see
+                                            // is not a mark.
+                                            text: modelData.current
+                                                  ? modelData.label + "  ·  " + qsTr("en pantalla")
+                                                  : modelData.label
                                             color: session.foreground
-                                            font.pixelSize: 10
+                                            font.pixelSize: 11
                                         }
 
                                         MouseArea {
                                             anchors.fill: parent
-                                            onClicked: session.setBlockFieldVisible(modelData.field,
-                                                                                    !modelData.visible)
+                                            onClicked: session.setChartSource(modelData.placement,
+                                                                              modelData.quantity)
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 120
+                                    height: 24
+                                    radius: 3
+                                    visible: session.chartSourcePlacement >= 0
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: session.muted
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Quitar fuente")
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: session.clearChartSource()
+                                    }
+                                }
+                            }
+                            Repeater {
+                                id: editRows
+                                model: session.inspectorFields
+
+                                delegate: Row {
+                                    width: parent.width
+                                    spacing: 8
+                                    property string editKey: modelData.key
+                                    property alias valueText: editValue.text
+
+                                    Text {
+                                        width: 150
+                                        text: modelData.label
+                                        color: session.muted
+                                        font.pixelSize: 11
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width - 158
+                                        height: 24
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: session.muted
+
+                                        TextInput {
+                                            id: editValue
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            verticalAlignment: TextInput.AlignVCenter
+                                            text: String(modelData.value)
+                                            color: session.foreground
+                                            font.pixelSize: 11
+                                            // A designation is a name, not a number: the form
+                                            // asks for one keyboard and parses accordingly.
+                                            inputMethodHints: modelData.numeric === false
+                                                              ? Qt.ImhNone
+                                                              : Qt.ImhFormattedNumbersOnly
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // The free note. It is stored with the block but not printed yet;
-                        // the opposite-corner placement is the next change.
-                        Column {
-                            width: parent.width
-                            spacing: 3
+                            Row {
+                                spacing: 8
 
-                            Text {
-                                text: qsTr("Nota:")
-                                color: session.foreground
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            TextArea {
-                                id: remarkArea
-                                width: parent.width
-                                height: 78
-                                placeholderText: qsTr("escriba aquí su nota.")
-                                text: session.blockRemark
-                                wrapMode: TextArea.Wrap
-                                color: session.foreground
-                                placeholderTextColor: session.muted
-                                font.pixelSize: 11
-                                selectByMouse: true
-                                Accessible.name: qsTr("Nota del cajetín")
-                                background: Rectangle {
-                                    color: session.background
+                                Rectangle {
+                                    width: 96
+                                    height: 26
+                                    radius: 4
+                                    color: "transparent"
                                     border.width: 1
-                                    border.color: session.muted
+                                    border.color: session.accent
+                                    visible: editRows.count > 0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Aplicar")
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: {
+                                            // The text travels as it was typed: the form has
+                                            // numbers and a name, and parsing every field as a
+                                            // number here is how a designation becomes NaN.
+                                            let values = [];
+                                            for (let i = 0; i < editRows.count; ++i) {
+                                                const row = editRows.itemAt(i);
+                                                values.push({ key: row.editKey, value: row.valueText });
+                                            }
+                                            session.applyInspectorEdits(values);
+                                        }
+                                    }
                                 }
-                                onActiveFocusChanged: {
-                                    if (!activeFocus) {
-                                        session.setBlockRemark(text);
+
+                                Rectangle {
+                                    width: 96
+                                    height: 26
+                                    radius: 4
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: session.accent
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Cerrar")
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: session.closeInspector()
                                     }
                                 }
                             }
                         }
 
-                        Row {
+                        Rectangle {
                             width: parent.width
-                            spacing: 6
+                            height: 1
+                            visible: session.inspectorOpen && window.titleBlockOpen
+                            color: session.line
+                        }
 
-                            Text {
-                                width: 120
-                                text: qsTr("Hoja")
-                                color: session.muted
-                                font.pixelSize: 10
+                        Column {
+                            id: blockColumn
+                            width: parent.width
+                            spacing: 10
+                            visible: window.titleBlockOpen
+
+                            Row {
+                                width: parent.width
+                                spacing: 8
+
+                                Text {
+                                    width: parent.width - 76
+                                    text: qsTr("Cajetín del circuito")
+                                    color: session.foreground
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                }
+
+                                Rectangle {
+                                    width: 68
+                                    height: 24
+                                    radius: 4
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: session.muted
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Cerrar")
+                                        color: session.foreground
+                                        font.pixelSize: 10
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: window.titleBlockOpen = false
+                                    }
+                                }
+                            }
+
+                            // Content and position: two labelled combo boxes. The content
+                            // order is the owner's (Técnico, Escolar, Industrial, Sin cajetín);
+                            // the positions follow the sheet orientation.
+                            Row {
+                                width: parent.width
+                                spacing: 8
+
+                                Column {
+                                    width: (parent.width - 8) / 2
+                                    spacing: 2
+
+                                    Text {
+                                        text: qsTr("Contenido")
+                                        color: session.muted
+                                        font.pixelSize: 10
+                                    }
+
+                                    ComboBox {
+                                        id: modelCombo
+                                        width: parent.width
+                                        model: [qsTr("Técnico"), qsTr("Escolar"),
+                                                qsTr("Industrial"), qsTr("Sin cajetín")]
+                                        currentIndex: session.blockPreset === 3
+                                                      ? 3
+                                                      : (session.blockModel === 1 ? 0
+                                                         : (session.blockModel === 0 ? 1 : 2))
+                                        font.pixelSize: 11
+                                        Accessible.name: qsTr("Contenido del cajetín")
+                                        onActivated: function(index) {
+                                            if (index === 3) {
+                                                session.setBlockPreset(3);
+                                            } else {
+                                                session.setBlockModel(index === 0 ? 1
+                                                                                  : (index === 1 ? 0 : 2));
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Column {
+                                    width: (parent.width - 8) / 2
+                                    spacing: 2
+
+                                    Text {
+                                        text: qsTr("Posición")
+                                        color: session.muted
+                                        font.pixelSize: 10
+                                    }
+
+                                    ComboBox {
+                                        id: positionCombo
+                                        width: parent.width
+                                        enabled: session.blockPreset !== 3
+                                        model: window.positionOptions()
+                                        textRole: "label"
+                                        currentIndex: window.positionIndex()
+                                        font.pixelSize: 11
+                                        Accessible.name: qsTr("Posición del cajetín")
+                                        delegate: ItemDelegate {
+                                            width: positionCombo.width
+                                            contentItem: Row {
+                                                spacing: 8
+                                                BlockThumb {
+                                                    width: 54
+                                                    height: 34
+                                                    preset: modelData.preset
+                                                    model: session.blockModel
+                                                }
+                                                Text {
+                                                    text: modelData.label
+                                                    color: session.foreground
+                                                    font.pixelSize: 10
+                                                    elide: Text.ElideRight
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+                                            }
+                                        }
+                                        onActivated: function(index) {
+                                            if (index >= 0) {
+                                                session.setBlockPreset(model[index].preset);
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Text {
-                                height: 26
-                                verticalAlignment: Text.AlignVCenter
-                                text: session.blockSheet
-                                color: session.foreground
-                                font.pixelSize: 11
+                                text: session.blockCustomized ? qsTr("Personalizado") : qsTr("Modelo del cajetín")
+                                color: session.blockCustomized ? session.accent : session.muted
+                                font.pixelSize: 10
+                            }
+
+                            Row {
+                                width: parent.width
+                                spacing: 8
+
+                                Rectangle {
+                                    width: 118
+                                    height: 26
+                                    radius: 4
+                                    color: window.blockCustomizing ? session.accent : "transparent"
+                                    border.width: 1
+                                    border.color: session.muted
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Personalizar")
+                                        color: session.foreground
+                                        font.pixelSize: 10
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: window.blockCustomizing = !window.blockCustomizing
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 118
+                                    height: 26
+                                    radius: 4
+                                    visible: session.blockCustomized
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: session.muted
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: qsTr("Restablecer modelo")
+                                        color: session.foreground
+                                        font.pixelSize: 10
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: session.resetBlockVisibility()
+                                    }
+                                }
+                            }
+
+                            // Only the model's fields, in print order. Personalizar reveals a
+                            // switch per field; hiding keeps the typed value.
+                            Repeater {
+                                model: session.blockFields
+
+                                delegate: Column {
+                                    required property var modelData
+                                    width: parent.width
+                                    spacing: 2
+                                    visible: window.blockCustomizing || modelData.visible
+
+                                    Row {
+                                        width: parent.width
+                                        spacing: 6
+
+                                        Text {
+                                            width: 120
+                                            text: modelData.label
+                                            color: session.muted
+                                            font.pixelSize: 10
+                                            elide: Text.ElideRight
+                                        }
+
+                                        Rectangle {
+                                            width: parent.width - (window.blockCustomizing ? 174 : 128)
+                                            height: 26
+                                            color: session.background
+                                            border.width: 1
+                                            border.color: session.muted
+
+                                            TextInput {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 5
+                                                anchors.rightMargin: 5
+                                                verticalAlignment: TextInput.AlignVCenter
+                                                text: modelData.value
+                                                color: session.foreground
+                                                font.pixelSize: 11
+                                                selectByMouse: true
+                                                Accessible.name: modelData.label
+                                                onEditingFinished: session.setBlockField(modelData.key, text)
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: 42
+                                            height: 26
+                                            visible: window.blockCustomizing
+                                            radius: 3
+                                            color: "transparent"
+                                            border.width: 1
+                                            border.color: modelData.visible ? session.accent : session.muted
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: modelData.visible ? qsTr("Sí") : qsTr("No")
+                                                color: session.foreground
+                                                font.pixelSize: 10
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: session.setBlockFieldVisible(modelData.field,
+                                                                                        !modelData.visible)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // The free note. It is stored with the block but not printed yet;
+                            // the opposite-corner placement is the next change.
+                            Column {
+                                width: parent.width
+                                spacing: 3
+
+                                Text {
+                                    text: qsTr("Nota:")
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                TextArea {
+                                    id: remarkArea
+                                    width: parent.width
+                                    height: 78
+                                    placeholderText: qsTr("escriba aquí su nota.")
+                                    text: session.blockRemark
+                                    wrapMode: TextArea.Wrap
+                                    color: session.foreground
+                                    placeholderTextColor: session.muted
+                                    font.pixelSize: 11
+                                    selectByMouse: true
+                                    Accessible.name: qsTr("Nota del cajetín")
+                                    background: Rectangle {
+                                        color: session.background
+                                        border.width: 1
+                                        border.color: session.muted
+                                    }
+                                    onActiveFocusChanged: {
+                                        if (!activeFocus) {
+                                            session.setBlockRemark(text);
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                spacing: 6
+
+                                Text {
+                                    width: 120
+                                    text: qsTr("Hoja")
+                                    color: session.muted
+                                    font.pixelSize: 10
+                                }
+
+                                Text {
+                                    height: 26
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: session.blockSheet
+                                    color: session.foreground
+                                    font.pixelSize: 11
+                                }
                             }
                         }
                     }

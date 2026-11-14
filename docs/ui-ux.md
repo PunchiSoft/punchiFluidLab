@@ -286,9 +286,10 @@ dock is a later decision (stage 6 of [interface-plan.md](interface-plan.md)).
   returns the panels, the zoom and the pan to their defaults. The state is never saved in
   the document and never enters the undo history.
 
-**Today** none of this is in the window: the catalog is fixed, the properties float as a
-card and the title block is a fixed column
-([interface-plan.md](interface-plan.md) stages 2a and 2b).
+**Today** the catalog and the right dock fold to their rail, and the properties and the
+title-block editor share the right dock. Auto-hide, the remembered state and
+**Restablecer vista** are still target (stage 2b of
+[interface-plan.md](interface-plan.md)).
 
 ### 2.2 The window adapts
 

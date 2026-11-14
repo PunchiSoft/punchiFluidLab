@@ -19,6 +19,8 @@ Item {
     property bool open: true
     property int panelWidth: 248
     property int railWidth: 24
+    /// `false` when the panel has nothing to show: it takes no width and shows no rail.
+    property bool available: true
     /// `true` when the panel sits on the right of the window.
     property bool sideRight: false
     /// The two accessible names of the control, so the title can be a sentence.
@@ -29,7 +31,7 @@ Item {
 
     signal toggleRequested()
 
-    width: open ? panelWidth : railWidth
+    width: available ? (open ? panelWidth : railWidth) : 0
     Behavior on width {
         NumberAnimation {
             duration: dock.session ? dock.session.motionMs : 180
@@ -37,7 +39,7 @@ Item {
         }
     }
     clip: true
-    readonly property bool railVisible: width <= railWidth + 0.5
+    readonly property bool railVisible: available && width <= railWidth + 0.5
 
     Rectangle {
         anchors.fill: parent
@@ -57,7 +59,7 @@ Item {
     Item {
         id: panelBody
         anchors.fill: parent
-        visible: !dock.railVisible
+        visible: dock.available && !dock.railVisible
         clip: true
 
         Text {
@@ -107,6 +109,7 @@ Item {
         height: 24
         x: dock.sideRight ? 0 : dock.width - width
         y: dock.railVisible ? (dock.height - height) / 2 : 8
+        visible: dock.available
         Behavior on y {
             NumberAnimation { duration: dock.session ? dock.session.motionMs : 180 }
         }
