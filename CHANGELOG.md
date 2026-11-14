@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### La ventana gana planos, líneas y movimiento — 2026-11-14
+
+La primera etapa de la interfaz no cambia todavía lo que se ve: prepara el tema para que la
+cinta tenga profundidad, los paneles puedan ocultarse y el catálogo se lea como una paleta.
+Los planos y las líneas que antes eran literales en cada widget salen ahora del tema.
+
+- `surfaceRaised` y `surfaceSunken` dan dos planos alrededor de la ventana; `line` y
+  `lineStrong` separan sin inventar un color; `accentSoft` es el relleno de una fila o una
+  pestaña activa; `shadow` es la sombra de la hoja.
+- `unit` sigue la fuente del escritorio (18 px en Breeze) y `motionMs` lee
+  `[KDE] AnimationDurationFactor`: 180 ms normal y 0 con movimiento reducido.
+- `--check-theme` mide también el texto y las líneas sobre el plano elevado y el texto
+  sobre el acento suave, en claro y en oscuro: 4,5:1 para el texto y 3:1 para las líneas.
+  Los ocho pares pasan.
+- Sin cambio de formato ni de disposición: el gris secundario queda algo más firme para
+  leerse también sobre el plano elevado, y la cinta y los paneles usan estos tokens en las
+  etapas siguientes.
+- **Evidencia**: `./scripts-dev/check.sh` verde, `--check-theme` en claro y oscuro,
+  `--check-qml` 0 problemas, `--selftest` 0 fallos y `motion 0 ms` con
+  `AnimationDurationFactor=0`.
+
 ### La cuadrícula arranca en 5 mm y se apaga con un ojo — 2026-11-14
 
 La cuadrícula nace ahora en **5 mm**, el paso que el owner ve mejor para el dibujo, y el

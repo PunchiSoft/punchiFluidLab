@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
         const ThemeTokens tokens = tokensFrom(QGuiApplication::palette());
         const Contrast contrast = measure(tokens);
         std::fprintf(stderr, "contrast: %s\n", qUtf8Printable(describe(contrast)));
+        std::fprintf(stderr, "spacing: unit %d px, motion %d ms\n", tokens.unit, tokens.motionMs);
         return contrast.passes() ? 0 : 1;
     }
 

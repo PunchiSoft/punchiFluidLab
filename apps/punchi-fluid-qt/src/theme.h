@@ -16,15 +16,25 @@
 struct ThemeTokens {
     QColor background;
     QColor panel;
+    QColor surfaceRaised;
+    QColor surfaceSunken;
     QColor ink;
     QColor inkDim;
     QColor inkMuted;
     QColor accent;
+    QColor accentSoft;
+    QColor line;
+    QColor lineStrong;
+    QColor shadow;
     QColor supply;
     QColor work;
     /// The drawing grid: the muted ink at the two opacities the sheet uses.
     QColor gridMinor;
     QColor gridMajor;
+    /// The spacing unit, derived from the desktop font. `18` on Breeze, and never below 16.
+    int unit = 16;
+    /// The duration of a panel or ribbon change; `0` when the desktop asks for no motion.
+    int motionMs = 180;
 };
 
 /// Builds the tokens from a palette, blending the two greys the palette does not name.
@@ -53,12 +63,25 @@ struct Contrast {
     double text = 0.0;
     double dim = 0.0;
     double accent = 0.0;
+    /// The same two inks on the raised plane of the ribbon and the panels.
+    double raisedText = 0.0;
+    double raisedDim = 0.0;
+    /// A separating line that carries meaning, against the plain and the raised plane.
+    double line = 0.0;
+    double lineRaised = 0.0;
+    /// Text over the soft accent of a selected row or the active tab.
+    double accentSoftText = 0.0;
 
-    /// Text at 4.5:1 and secondary lines at 3:1, the acceptance criterion of M1.
-    [[nodiscard]] bool passes() const { return text >= 4.5 && dim >= 3.0 && accent >= 3.0; }
+    /// Text at 4.5:1, secondary lines at 3:1 and a meaningful line at 3:1, on both planes.
+    [[nodiscard]] bool passes() const
+    {
+        return text >= 4.5 && dim >= 3.0 && accent >= 3.0 && raisedText >= 4.5
+               && raisedDim >= 3.0 && line >= 3.0 && lineRaised >= 3.0
+               && accentSoftText >= 4.5;
+    }
 };
 
-/// Measures the three pairings the interface depends on.
+/// Measures every pairing the interface depends on.
 Contrast measure(const ThemeTokens &tokens);
 
 /// One line per pairing, for a log or a failing self-test.
