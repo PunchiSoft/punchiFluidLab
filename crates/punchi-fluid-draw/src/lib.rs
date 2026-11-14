@@ -21,7 +21,7 @@ pub mod symbol;
 
 pub use orient::{Orientation, Turned};
 pub use placed::{Placed, draw_placed, port_point, route, route_offset, selection_ring};
-pub use route::route_between_boxes;
+pub use route::{route_between_boxes, route_between_boxes_avoiding};
 pub use schematic::{Layout, draw, draw_readouts, draw_with_layout, layout};
 pub use surface::{Anchor, Call, Colour, LineClass, Pt, Recording, Rect, Stroke, Surface, dashes};
 pub use symbol::{Ink, LINE, NUMERAL, draw_component, draw_valve};

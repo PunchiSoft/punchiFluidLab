@@ -28,7 +28,7 @@
 
 use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
-use punchi_fluid_draw::placed::{port_edge, port_point, route_between_boxes};
+use punchi_fluid_draw::placed::{port_edge, port_point, route_between_boxes_avoiding};
 use punchi_fluid_draw::surface::{Pt, Rect};
 
 use electrical::short_circuits;
@@ -123,6 +123,13 @@ impl Finding {
 #[must_use]
 pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) -> Vec<Finding> {
     let mut findings = Vec::new();
+    // One box per placement, shared by every pipe: the router needs them all to skip the
+    // symbols a hose does not join, and the check is one pass, not one allocation per pipe.
+    let boxes: Vec<Rect> = document
+        .placements()
+        .iter()
+        .map(punchi_fluid_doc::Placement::rect)
+        .collect();
 
     findings.extend(placement_faults(document, sheet, circuit));
 
@@ -134,7 +141,7 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
         else {
             continue;
         };
-        let Some(path) = pipe_path(document, catalog, index) else {
+        let Some(path) = pipe_path_in(document, catalog, index, &boxes) else {
             continue;
         };
         for (component, placement) in document.placements().iter().enumerate() {
@@ -146,8 +153,7 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
             if shrunk.min.x >= shrunk.max.x || shrunk.min.y >= shrunk.max.y {
                 continue;
             }
-            // A hose starts at a port that may sit just inside the symbol; that lead is not
-            // a crossing. Everything after it is. The same at the arrival.
+            // The port lead is not a crossing; everything after it, and the arrival lead, is.
             let crossing = if placement.id() == connection.from.placement {
                 let trimmed = without_lead(&path, rect, start, start_edge, true);
                 crosses(&trimmed, shrunk)
@@ -173,7 +179,7 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
         if connection.circuit != circuit {
             continue;
         }
-        let Some(path) = pipe_path(document, catalog, index) else {
+        let Some(path) = pipe_path_in(document, catalog, index, &boxes) else {
             continue;
         };
         for other in (index + 1)..document.connections().len() {
@@ -484,16 +490,35 @@ fn must_be_wired(definition: &ComponentDefinition, role: PortRole) -> bool {
 /// The routed polyline of one pipe, in millimetres.
 #[must_use]
 pub fn pipe_path(document: &Document, catalog: &Catalog, index: usize) -> Option<Vec<Pt>> {
+    let boxes: Vec<Rect> = document
+        .placements()
+        .iter()
+        .map(punchi_fluid_doc::Placement::rect)
+        .collect();
+    pipe_path_in(document, catalog, index, &boxes)
+}
+
+/// The routed polyline, with the boxes of the whole circuit already built.
+fn pipe_path_in(
+    document: &Document,
+    catalog: &Catalog,
+    index: usize,
+    boxes: &[Rect],
+) -> Option<Vec<Pt>> {
     let connection = document.connections().get(index)?;
+    let from_index = document.index_of(connection.from.placement)?;
+    let to_index = document.index_of(connection.to.placement)?;
     let (start, start_edge, from_rect, end, end_edge, to_rect) =
         pipe_ends(document, catalog, index)?;
-    Some(route_between_boxes(
+    Some(route_between_boxes_avoiding(
         start,
         start_edge,
         from_rect,
         end,
         end_edge,
         to_rect,
+        boxes,
+        [from_index, to_index],
         connection.offset_mm(),
     ))
 }

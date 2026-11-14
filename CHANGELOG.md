@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### La manguera rodea también los componentes que encuentra — 2026-11-14
+
+La ruta automática ya rodeaba los dos símbolos que une; ahora también aparta los que están
+en medio.
+
+- **Búsqueda incremental**: se calcula la ruta, se añaden las cajas que atraviesa y se
+  recalcula, como mucho **3 pasadas y 6 cajas extra**. Un circuito normal no paga nada más;
+  el grafo solo crece cuando hay un componente en el camino.
+- **El caso difícil no se disfraza**: si el plano está tan apretado que no hay pasada, se
+  conserva la forma simple y la comprobación informa el cruce; no se inventa un dibujo.
+- **El desplazamiento manual sigue siendo tuyo**: una ruta arrastrada conserva su forma, y si
+  cruza un cuerpo se informa.
+- **Una manguera se dibujaba dos veces por fotograma**: el bucle duplicado de `draw_placed`
+  se elimina, así que la ruta se calcula una vez y no dos.
+- **Evidencia**: `a_third_component_on_the_way_is_also_avoided`,
+  `two_components_on_the_way_are_both_avoided`,
+  `a_component_between_the_ports_is_routed_around`, y las pruebas anteriores de la ruta y de
+  la comprobación; la puerta completa queda en 350 pruebas, `--check-qml` 0 problemas y
+  `--selftest` 0 fallos.
+
 ### La manguera rodea el símbolo y la comprobación mide lo que se dibuja — 2026-11-14
 
 Una manguera que sale de un puerto lateral y entra por el superior de un compresor dibujaba

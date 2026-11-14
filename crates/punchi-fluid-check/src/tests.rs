@@ -181,6 +181,26 @@ fn components_side_by_side_do_not_overlap() {
 }
 
 #[test]
+fn a_component_between_the_ports_is_routed_around() {
+    let mut document = Document::new();
+    let supply = place(&mut document, "supply.compressor", 30.0, 60.0);
+    let valve = place(&mut document, "valve.3_2.spring_return", 150.0, 60.0);
+    // The throttle sits between them, right on the straight run.
+    place(&mut document, "throttle.fixed", 90.0, 60.0);
+    assert!(
+        document.connect(Endpoint::new(supply, "1"), Endpoint::new(valve, "1")),
+        "the pipe must exist"
+    );
+    let findings = check(&document, &catalog(), sheet(), 0);
+    assert!(
+        !findings
+            .iter()
+            .any(|finding| finding.kind == FindingKind::PipeThroughComponent),
+        "the automatic route goes round the third component: {findings:?}"
+    );
+}
+
+#[test]
 fn a_dragged_pipe_through_a_third_component_is_reported() {
     let mut document = Document::new();
     let supply = place(&mut document, "supply.compressor", 30.0, 60.0);
