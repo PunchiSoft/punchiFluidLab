@@ -853,22 +853,19 @@ int main(int argc, char *argv[])
             // Press, drag and release in one step. Three timer steps are three chances for
             // the window to be busy between them, and a drag whose press and move are not
             // read in order is a drag that never happened. The pipe drag uses the same rule.
+            // The docked editor, if open, takes the right side of the window and the valve
+            // can sit under it. Closed and laid out again, the whole sheet is back.
+            state->window->setProperty("titleBlockOpen", false);
+            QCoreApplication::processEvents();
             PfFrame frame {};
             pf_session_build_frame(state->session->handle(), 4.0F, &frame);
             const QPointF start = toScene(valveCentre());
             const QPointF end = start + QPointF(60.0, 0.0);
             sendWith(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
-            std::fprintf(stderr, "selftest: shift press %.1f,%.1f selected %d of %d count %u\n",
-                         start.x(), start.y(), state->session->selected(),
-                         state->session->selectionCount(),
-                         pf_session_component_count(state->session->handle()));
             sendWith(QEvent::MouseMove, end, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
             sendWith(QEvent::MouseButtonRelease, end, Qt::LeftButton, Qt::NoButton,
                      Qt::ShiftModifier);
-            std::fprintf(stderr, "selftest: shift release selected %d of %d count %u expected %d\n",
-                         state->session->selected(), state->session->selectionCount(),
-                         pf_session_component_count(state->session->handle()), state->components + 1);
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
                   QStringLiteral("editing: Shift-drag copies"));
             state->session->undo();
