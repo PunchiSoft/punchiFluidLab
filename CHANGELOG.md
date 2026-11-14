@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El catálogo se pliega a un raíl — 2026-11-14
+
+La barra del catálogo deja de tener un ancho fijo: se oculta y vuelve con el control de su
+cabecera, con `Ctrl+B` y desde **Ver ▸ Catálogo**, y la hoja recupera esos 224 px.
+
+- `DockPanel` envuelve el contenido con cabecera, título y borde; al plegarse queda un
+  raíl de 24 px con el mismo control, que conserva el foco de teclado. El ancho se anima
+  con `motionMs` y con movimiento reducido cambia sin animación.
+- El glifo es propio: dos paneles, el que se pliega relleno con el acento suave. Es
+  *chrome*, no un símbolo de componente.
+- Es estado de vista: no entra en el historial, no marca el documento y no se guarda en el
+  archivo. La barra de estado y el resto de la ventana no cambian.
+- **Evidencia**: los pasos `panels: the catalog starts open`, `panels: Ctrl+B folds it to
+  the rail`, `panels: hiding is not a document change` y `panels: Ctrl+B brings it back`
+  de `--selftest`, `--check-qml` con 0 problemas, las capturas en claro y oscuro con el
+  catálogo abierto y plegado, y una decena de fotogramas de pintado durante el plegado.
+
 ### La ventana gana planos, líneas y movimiento — 2026-11-14
 
 La primera etapa de la interfaz no cambia todavía lo que se ve: prepara el tema para que la

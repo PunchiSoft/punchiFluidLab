@@ -130,6 +130,10 @@ Window {
     property bool pageSetupOpen: false
     property string pageSetupFocus: "page"
     property bool titleBlockOpen: false
+    /// The two panels are view state: hiding one gives the sheet its room and never
+    /// changes the document, the history or the modified mark.
+    property bool catalogOpen: true
+    property int catalogWidth: 248
 
     function openPageSetup(section) {
         window.exportPanelOpen = false;
@@ -453,6 +457,12 @@ Window {
         sequence: "Ctrl+G"
         onActivated: session.toggleGrid()
     }
+    // The catalog is chrome: Ctrl+B folds it to its rail and brings it back, and the
+    // command in Ver does the same. It is view state, never a document change.
+    Shortcut {
+        sequence: "Ctrl+B"
+        onActivated: window.catalogOpen = !window.catalogOpen
+    }
 
     // 60 Hz of simulated time in a timer rather than in the paint loop, so a slow frame
     // does not change how far the model advances. The timer stops when the model settles,
@@ -521,23 +531,41 @@ Window {
             onPageSetupRequested: function (section) {
                 window.openPageSetup(section);
             }
+            catalogOpen: window.catalogOpen
+            onPanelCommand: function (command) {
+                if (command === "catalog") {
+                    window.catalogOpen = !window.catalogOpen;
+                }
+            }
         }
 
         Row {
             width: parent.width
             height: parent.height - ribbon.height - status.height
 
-            Sidebar {
-                id: sidebar
-                width: 248
-                height: parent.height
+            DockPanel {
+                id: catalogDock
+                objectName: "catalogDock"
                 session: session
+                title: qsTr("Catálogo")
+                hideName: qsTr("Ocultar el catálogo")
+                showName: qsTr("Mostrar el catálogo")
+                open: window.catalogOpen
+                panelWidth: window.catalogWidth
+                height: parent.height
+                onToggleRequested: window.catalogOpen = !window.catalogOpen
+
+                Sidebar {
+                    id: sidebar
+                    anchors.fill: parent
+                    session: session
+                }
             }
 
             Rectangle {
                 // The block editor docks beside the sheet, not over it: opening it gives the
                 // editor real room and the sheet keeps the rest of the window.
-                width: parent.width - sidebar.width - (window.titleBlockOpen ? 360 : 0)
+                width: parent.width - catalogDock.width - (window.titleBlockOpen ? 360 : 0)
                 height: parent.height
                 color: session.background
 

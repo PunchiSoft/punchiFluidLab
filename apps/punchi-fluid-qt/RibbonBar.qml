@@ -15,9 +15,14 @@ import PunchiFluid
 Rectangle {
     id: ribbon
     property FluidSession session
+    /// The catalog's view state, so the Ver command can say what it will do.
+    property bool catalogOpen: true
 
     /// The Archivo commands that need a file dialog, which belongs to the window.
     signal fileCommand(string command)
+
+    /// Panel commands act on the window's view state, not on the session.
+    signal panelCommand(string command)
 
     /// The help links open popups the window owns, like the file dialogs.
     signal helpCommand(string command)
@@ -170,6 +175,9 @@ Rectangle {
                         { id: "zoom-in", label: qsTr("Aumentar"), icon: "zoom-in", hint: qsTr("Ctrl+rueda · acerca la hoja") },
                         { id: "zoom-out", label: qsTr("Disminuir"), icon: "zoom-out", hint: qsTr("Ctrl+rueda · aleja la hoja") },
                         { id: "zoom-reset", label: qsTr("Tamaño original"), icon: "zoom-original", hint: qsTr("Ctrl+0 · quita el zoom y el desplazamiento") },
+                        // The catalog is chrome, and hiding it is view state: the command
+                        // says which way it will go and marks the panel as open.
+                        { id: "catalog", label: qsTr("Catálogo"), icon: "view-list-details", hint: ribbon.catalogOpen ? qsTr("Ctrl+B · oculta la barra del catálogo") : qsTr("Ctrl+B · muestra la barra del catálogo"), current: ribbon.catalogOpen, panel: true }
                     ]
                 },
                 {
@@ -345,6 +353,10 @@ Rectangle {
     }
 
     function invoke(id) {
+        if (id === "catalog") {
+            ribbon.panelCommand("catalog");
+            return;
+        }
         if (id.indexOf("circuit:") === 0) {
             session.selectCircuit(parseInt(id.slice(8), 10));
             return;
@@ -508,7 +520,13 @@ Rectangle {
             for (let g = 0; g < groups.length; ++g) {
                 const items = groupActions(groups[g]);
                 for (let i = 0; i < items.length; ++i) {
+                    // A panel command toggles, so it is invoked twice: the handler must
+                    // run, and the self test must leave the window as it found it.
+                    const panel = items[i].panel === true;
                     invoke(items[i].id);
+                    if (panel) {
+                        invoke(items[i].id);
+                    }
                 }
             }
             // The collapsed menu is generated from the same flattened list; reading it

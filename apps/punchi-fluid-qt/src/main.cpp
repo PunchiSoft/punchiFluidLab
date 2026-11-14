@@ -20,6 +20,7 @@
 //! --license            open the Licence popup, for a capture of it
 //! --tab N              open one ribbon tab, for a capture
 //! --menu               open the collapsed ribbon menu, for a capture
+//! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --page-setup         open the page-setup panel, for a capture of it
 //! --paper-list         open the paper list on the Disposición tab
 //! --margin-list        open the margin gallery on the Disposición tab
@@ -267,6 +268,14 @@ int main(int argc, char *argv[])
         for (QObject *root : engine.rootObjects()) {
             if (root->property("titleBlockOpen").isValid()) {
                 root->setProperty("titleBlockOpen", true);
+            }
+        }
+    }
+
+    if (arguments.contains(QStringLiteral("--catalog-closed"))) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("catalogOpen").isValid()) {
+                root->setProperty("catalogOpen", false);
             }
         }
     }
@@ -665,6 +674,11 @@ int main(int argc, char *argv[])
             QString unsavedPath;
             /// The document the recent list is proved with.
             QString recentDocument;
+            /// The document state a panel toggle must not change.
+            bool panelModified = false;
+            bool panelCanUndo = false;
+            /// The sheet paints the fold costs, so a runaway animation is visible here.
+            int panelPaints = 0;
         };
         auto *state = new SelfTest();
         state->window = window;
@@ -2417,6 +2431,46 @@ int main(int argc, char *argv[])
             check(!state->window->property("aboutOpen").toBool()
                       && !state->window->property("licenseOpen").toBool(),
                   QStringLiteral("help: Escape closes the help popups"));
+        });
+
+        // A panel is chrome: Ctrl+B folds the catalog to its rail, the sheet takes the
+        // room, and the document does not notice. The rail is the same target that brings
+        // it back, so a hidden panel is never a mode the user cannot find.
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            check(dock != nullptr && state->window->property("catalogOpen").toBool(),
+                  QStringLiteral("panels: the catalog starts open"));
+            if (dock == nullptr) {
+                return;
+            }
+            state->panelModified = state->session->modified();
+            state->panelCanUndo = state->session->canUndo();
+            state->panelPaints = state->sheet->paintCount();
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_B, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(!state->window->property("catalogOpen").toBool() && width <= 30.0,
+                  QStringLiteral("panels: Ctrl+B folds it to the rail"));
+            const int paints = state->sheet->paintCount() - state->panelPaints;
+            std::fprintf(stderr, "selftest: the fold painted %d frame(s)\n", paints);
+            check(paints <= 40, QStringLiteral("panels: the fold is a handful of frames"));
+            check(state->session->modified() == state->panelModified
+                      && state->session->canUndo() == state->panelCanUndo,
+                  QStringLiteral("panels: hiding is not a document change"));
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_B, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(state->window->property("catalogOpen").toBool() && width > 200.0,
+                  QStringLiteral("panels: Ctrl+B brings it back"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {

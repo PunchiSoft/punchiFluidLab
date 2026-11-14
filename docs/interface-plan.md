@@ -33,7 +33,8 @@ lines outside generated files is split before it starts, never during review. Th
 |---|---|---|---|---|
 | 0 | `docs/interface-plan` | this plan, the capability entries, the `ui-ux.md` contract and ADR 0028 | `check-docs.sh` | — |
 | 1 | `feat/interface-tokens` | theme tokens, motion token, contrast measurements | `--check-theme`, `--check-qml` | — |
-| 2a | `feat/panel-dock` | `DockPanel`, header toggle, edge rail, width animation, right dock | `--selftest`, light/dark captures | the right dock needs its own review |
+| 2a | `feat/panel-dock` | `DockPanel`, the catalog header toggle, the edge rail and the width animation | `--selftest`, light/dark captures | the right dock is 2a-ii |
+| 2a-ii | `feat/right-dock` | the inspector and the title-block editor share the right dock | `--selftest`, captures | the sections need tabs |
 | 2b | `feat/panel-autohide` | opt-in auto-hide, hysteresis, remembered state, **Restablecer vista** | `--selftest`, captures | — |
 | 3 | `feat/ribbon-depth` | planes, tab and command states, galleries on the same tokens | `--check-theme`, `--selftest`, captures | the galleries move alone |
 | 3b | `feat/ribbon-icons-a` | the family's first eight icons, drawn as geometry | `--check-icons`, captures at 16/24/32 | — |
@@ -79,11 +80,11 @@ block is a 360 px column; the page setup is a 680 px card. There is no control t
 show any of them.
 
 - **`DockPanel.qml`**: a header with a title and a hide control, a content slot, a width,
-  and a rail of four logical pixels when closed. One component, used by the catalog on the
-  left and by the right dock.
-- **Right dock**: the inspector and the title-block editor share one column, with sections
-  or tabs; the sheet keeps its room. The page setup and the export editor stay centered;
-  moving them is a stage 6 decision, not this one.
+  and a rail of one unit (24 px minimum, so the control stays a target) when closed. One
+  component, used by the catalog on the left and, in 2a-ii, by the right dock.
+- **Right dock (2a-ii)**: the inspector and the title-block editor share one column, with
+  sections or tabs; the sheet keeps its room. The page setup and the export editor stay
+  centered; moving them is a stage 6 decision, not this one.
 - **Animation**: width only, `motionMs`, clipped content; reduced motion is instant.
 - **Keyboard**: `Ctrl+B` toggles the catalog, `Ctrl+J` the right dock; every control has an
   accessible name and a state word, not colour alone.
@@ -93,6 +94,10 @@ show any of them.
 `panels: the dock hides and returns`, `panels: hiding is not a document change`; captures
 open and closed in both schemes.
 **Done when** the sheet gains the width of a closed panel and the gate is green.
+
+**Later (owner, 2026-11-14)**: keep a sliver of the panel visible when it folds instead of
+the rail alone, and redraw the control with the icon family of stage 3b. Neither is part of
+2a; both are recorded here so a later review does not lose them.
 
 ### 2b — Auto-hide and memory
 

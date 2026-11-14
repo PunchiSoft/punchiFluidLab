@@ -269,8 +269,8 @@ narrowed, and none of that changes the circuit. The page setup and the export ed
 dock is a later decision (stage 6 of [interface-plan.md](interface-plan.md)).
 
 - A panel has a **header** with its title and its hide control, and a **rail** at the edge
-  while it is closed, so a hidden panel always has a handle and never becomes a mode the
-  user cannot find.
+  while it is closed, one unit wide and never below 24 px, so the control stays a target.
+  A hidden panel always has a handle and never becomes a mode the user cannot find.
 - The hide control is a **project glyph** of two rectangles with the side that folds
   marked. The desktop icon themes have no panel glyph, and a label alone is not a control.
 - Hiding and showing is **animated** with the theme's `motionMs`; with reduced motion it is

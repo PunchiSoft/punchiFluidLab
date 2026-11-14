@@ -57,6 +57,7 @@ qt_add_qml_module(punchi-fluid
     VERSION 1.0
     QML_FILES
         ConfigurarPaginaGroup.qml
+        DockPanel.qml
         GridControl.qml
         HelpLink.qml
         Main.qml
@@ -64,6 +65,7 @@ qt_add_qml_module(punchi-fluid
         OrientationControl.qml
         PageSetupPanel.qml
         PanelButton.qml
+        PanelToggle.qml
         PaperCombo.qml
         PaperPreview.qml
         RecentCombo.qml
