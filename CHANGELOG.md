@@ -14,18 +14,22 @@ ruta sale por el eje del puerto, rodea las dos cajas del símbolo con 2 mm de ho
 por el eje del otro puerto.
 
 - **Ruta que reserva el espacio**: un pequeño grafo ortogonal alrededor de las dos cajas elige
-  el camino más corto con menos codos; si no hay paso, conserva la forma simple y la
+  el camino más corto con menos codos, con la mayor holgura que quepa —2 mm, y 1, 0,2 o 0
+  cuando los símbolos están casi pegados—; si no hay paso, conserva la forma simple y la
   comprobación lo delata.
+- **Un desplazamiento no puede deshacer la mejora**: en una pareja perpendicular el offset no
+  tiene segmento que mover y se ignora; en una paralela se conserva la forma que el usuario
+  arrastró, y si cruza un cuerpo se informa como falta.
 - **La comprobación ve la misma ruta**: usa los bordes de los puertos y el desplazamiento
   arrastrado, no un segundo cálculo. «Un tubo cruza un componente» incluye ahora los propios
   extremos de la manguera; solo se perdona el tramo corto del puerto al borde del símbolo.
-- **El arrastre se respeta**: un desplazamiento guardado por el usuario conserva su forma, y
-  si cruza un cuerpo se informa como falta.
 - **Evidencia**: `a_hose_goes_round_the_symbols_it_joins`,
-  `the_compressor_hose_goes_over_the_compressor`, `aligned_boxes_keep_a_straight_hose`,
+  `the_compressor_hose_goes_over_the_compressor`,
+  `a_perpendicular_hose_ignores_an_offset_and_still_goes_round`,
+  `a_tight_gap_still_gets_a_route_around`, `aligned_boxes_keep_a_straight_hose`,
   `a_dragged_offset_still_takes_its_own_shape`,
   `a_dragged_pipe_through_a_third_component_is_reported` y
-  `a_dragged_hose_through_its_own_end_is_reported`; la puerta completa queda en 345 pruebas,
+  `a_dragged_hose_through_its_own_end_is_reported`; la puerta completa queda en 347 pruebas,
   `--check-qml` 0 problemas y `--selftest` 0 fallos.
 - **Siguiente**: una manguera que atraviesa un tercer componente sigue cruzada por la ruta
   automática; la comprobación la informa, y considerar todas las cajas es el paso que queda.
