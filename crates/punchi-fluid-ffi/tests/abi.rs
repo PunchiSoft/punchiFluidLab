@@ -17,12 +17,18 @@ use std::ffi::{CStr, CString, c_char};
 use std::ptr;
 
 use punchi_fluid::{
-    PF_ABI_VERSION, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL,
-    PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE,
-    PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE,
-    PF_SHEET_CUSTOM_PAPER, PfAbi, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions,
-    PfFrame, PfInk, PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_session_active_circuit,
-    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    PF_ABI_VERSION, PF_BLOCK_APPROVED, PF_BLOCK_BOTTOM_RIGHT, PF_BLOCK_CHECKED, PF_BLOCK_DATE,
+    PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET, PF_BLOCK_MODEL_ESCOLAR, PF_BLOCK_MODEL_INDUSTRIAL,
+    PF_BLOCK_NONE, PF_BLOCK_NORMS, PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED,
+    PF_BLOCK_PROJECT, PF_BLOCK_REVISION, PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT,
+    PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF,
+    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
+    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi, PfBlockLayout,
+    PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
+    PfSession, PfSheet, PfTelemetry, pf_abi, pf_session_active_circuit, pf_session_add_circuit,
+    pf_session_advance, pf_session_align_selection, pf_session_autosave, pf_session_block,
+    pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
+    pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
     pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
     pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
     pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
@@ -42,11 +48,13 @@ use punchi_fluid::{
     pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
     pf_session_recover, pf_session_redo, pf_session_release_component_valve,
     pf_session_release_valve, pf_session_remove_component, pf_session_remove_selected_pipe,
-    pf_session_remove_selection, pf_session_rename_circuit, pf_session_restart,
-    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_remove_selection, pf_session_rename_circuit, pf_session_reset_block_visibility,
+    pf_session_restart, pf_session_rotate_selected, pf_session_route_pipe, pf_session_save,
+    pf_session_select, pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
     pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
+    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
+    pf_session_set_chart_source, pf_session_set_component_designation,
     pf_session_set_component_edits, pf_session_set_pipe_class, pf_session_set_recent_file,
     pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_straighten_pipe,
     pf_session_telemetry, pf_session_toggle_contact, pf_session_toggle_select,
@@ -256,13 +264,15 @@ fn the_hit_test_uses_the_layout_of_the_last_frame() {
 }
 
 #[test]
-fn the_sheet_is_a4_and_a_paper_change_is_one_undo() {
+fn the_sheet_is_a4_landscape_and_a_paper_change_is_one_undo() {
     let session = session();
     let mut sheet = PfSheet::default();
     // SAFETY: live session and a writable record.
     assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
     assert_eq!(sheet.paper, 1, "A4 is the default paper");
-    assert_eq!(sheet.landscape, 0);
+    assert_eq!(sheet.landscape, 1, "the document opens landscape");
+    // The ABI reports the paper's own sides and the orientation flag; the front end turns
+    // them into 297 × 210 mm for the canvas.
     assert_eq!((sheet.width_mm, sheet.height_mm), (210.0, 297.0));
     // ISO 5457: 20 mm on the filing edge and 10 mm on the other three.
     assert_eq!((sheet.margin_left, sheet.margin_top), (20.0, 10.0));
@@ -295,7 +305,181 @@ fn the_sheet_is_a4_and_a_paper_change_is_one_undo() {
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
     // SAFETY: live session and a writable record.
     assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
-    assert_eq!((sheet.paper, sheet.landscape), (1, 0));
+    assert_eq!((sheet.paper, sheet.landscape), (1, 1));
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_seeded_example_stays_clear_of_the_title_block_on_a4() {
+    let session = session();
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    let page = punchi_fluid_export::Page {
+        paper: punchi_fluid_export::PaperSize::A4,
+        orientation: punchi_fluid_export::Orientation::Landscape,
+        margins: punchi_fluid_export::Margins {
+            top: sheet.margin_top,
+            right: sheet.margin_right,
+            bottom: sheet.margin_bottom,
+            left: sheet.margin_left,
+        },
+        title_block: Some(punchi_fluid_export::TitleBlock::default()),
+        parts: None,
+    };
+    let block = page.title_rect();
+    assert!(!block.is_empty(), "A4 has a title block");
+    let count = unsafe { pf_session_component_count(session) };
+    assert!(count >= 4, "the seeded example has its components");
+    for index in 0..count {
+        let mut rect = [0.0_f32; 4];
+        // SAFETY: live session, a component index below the count and a writable box.
+        assert_eq!(
+            unsafe { pf_session_component_rect(session, index, rect.as_mut_ptr()) },
+            PF_OK
+        );
+        assert!(
+            rect[3] <= block.min.y + 0.01,
+            "component {index} enters the block: {rect:?} against {block:?}"
+        );
+    }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_content_model_and_visibility_change_what_prints_not_the_values() {
+    let session = session();
+    let id = u32::try_from(unsafe { pf_session_active_circuit(session) })
+        .expect("the identity of the active circuit");
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_block_model(session) },
+        i32::try_from(PF_BLOCK_MODEL_INDUSTRIAL).expect("the model")
+    );
+    // SAFETY: live session and a known model.
+    assert_eq!(
+        unsafe { pf_session_set_block_model(session, PF_BLOCK_MODEL_ESCOLAR) },
+        PF_OK
+    );
+    assert_eq!(
+        unsafe { pf_session_block_visible(session, id, PF_BLOCK_OWNER) },
+        1
+    );
+    assert_eq!(
+        unsafe { pf_session_block_visible(session, id, PF_BLOCK_NUMBER) },
+        0
+    );
+    assert_eq!(unsafe { pf_session_block_customized(session) }, 0);
+
+    let number = CString::new("PF-2026-07").expect("a number");
+    // SAFETY: live session, the circuit identity and a NUL-terminated value.
+    assert_eq!(
+        unsafe { pf_session_set_block(session, id, PF_BLOCK_NUMBER, number.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and a known field.
+    assert_eq!(
+        unsafe { pf_session_set_block_visible(session, id, PF_BLOCK_TITLE, 0) },
+        PF_OK
+    );
+    assert_eq!(unsafe { pf_session_block_customized(session) }, 1);
+    assert_eq!(block_field(session, id, PF_BLOCK_TITLE), "Circuito 1");
+    assert_eq!(block_field(session, id, PF_BLOCK_NUMBER), "PF-2026-07");
+
+    let mut layout = PfBlockLayout::default();
+    // SAFETY: live session and a writable layout.
+    assert_eq!(
+        unsafe { pf_session_block_layout(session, &raw mut layout) },
+        PF_OK
+    );
+    assert!((layout.width_mm - 170.0).abs() < 0.01);
+    assert!((layout.height_mm - 35.0).abs() < 0.01, "escolar on A4");
+    assert_eq!(layout.rows_len, 2, "the school block has two rows");
+    let fields: Vec<u32> = (0..layout.cells_len)
+        // SAFETY: the pointers borrow a live session and the lengths come from it.
+        .map(|index| unsafe { (*layout.cells.add(index as usize)).field })
+        .collect();
+    assert!(fields.contains(&PF_BLOCK_FIELD_SHEET));
+    assert!(!fields.contains(&PF_BLOCK_NUMBER), "number is hidden");
+
+    // A3 gives the escolar block its 180 × 40 mm size.
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    sheet.paper = 2;
+    sheet.landscape = 1;
+    // SAFETY: live session and a readable sheet.
+    assert_eq!(
+        unsafe { pf_session_set_sheet(session, &raw const sheet) },
+        PF_OK
+    );
+    // SAFETY: live session and a writable layout.
+    assert_eq!(
+        unsafe { pf_session_block_layout(session, &raw mut layout) },
+        PF_OK
+    );
+    assert!((layout.width_mm - 180.0).abs() < 0.01);
+    assert!((layout.height_mm - 40.0).abs() < 0.01, "escolar on A3");
+
+    // Restablecer restores the model's set; the typed number is still there.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_reset_block_visibility(session) }, PF_OK);
+    assert_eq!(unsafe { pf_session_block_customized(session) }, 0);
+    assert_eq!(
+        unsafe { pf_session_block_visible(session, id, PF_BLOCK_TITLE) },
+        1
+    );
+    assert_eq!(block_field(session, id, PF_BLOCK_NUMBER), "PF-2026-07");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_block_remark_round_trips_and_the_position_is_one_undo() {
+    let session = session();
+    let id = u32::try_from(unsafe { pf_session_active_circuit(session) })
+        .expect("the identity of the active circuit");
+    let remark = CString::new("Revisar la línea 2.\nPedir cotización.").expect("a remark");
+    // SAFETY: live session, the circuit identity and a NUL-terminated text.
+    assert_eq!(
+        unsafe { pf_session_set_block_remark(session, id, remark.as_ptr()) },
+        PF_OK
+    );
+    let mut buffer = [0 as c_char; 256];
+    // SAFETY: live session, a writable buffer and its capacity.
+    assert!(
+        unsafe {
+            pf_session_block_remark(
+                session,
+                id,
+                buffer.as_mut_ptr(),
+                u32::try_from(buffer.len()).expect("the buffer capacity"),
+            )
+        } > 0
+    );
+    // SAFETY: the call wrote a NUL-terminated string.
+    assert_eq!(
+        unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_str(),
+        Ok("Revisar la línea 2.\nPedir cotización.")
+    );
+
+    // SAFETY: live session and a known top-right preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(session, PF_BLOCK_TOP_RIGHT) },
+        PF_OK
+    );
+    assert_eq!(
+        unsafe { pf_session_block_preset(session) },
+        i32::try_from(PF_BLOCK_TOP_RIGHT).expect("a preset")
+    );
+    // SAFETY: live session with the position change to undo.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    assert_eq!(
+        unsafe { pf_session_block_preset(session) },
+        i32::try_from(PF_BLOCK_BOTTOM_RIGHT).expect("a preset")
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -1374,25 +1558,31 @@ fn a_pipe_can_be_found_by_its_line_and_deleted() {
     // SAFETY: live session.
     let before = unsafe { pf_session_connection_count(session) };
 
-    // Halfway along the routed pipe: the run is an elbow, so the middle of the bounding
-    // box is never far from it. Walk a small grid and accept the first hit.
+    // The routed pipe is an elbow, so the middle of its bounding box is never far from it.
+    // Walk the whole sheet and accept the first hit: the starting circuit is laid out for
+    // the paper, and the default paper is landscape now.
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    let (width_mm, height_mm) = if sheet.landscape == 0 {
+        (sheet.width_mm, sheet.height_mm)
+    } else {
+        (sheet.height_mm, sheet.width_mm)
+    };
     let mut found = -1;
-    for step in 0..40 {
-        #[allow(clippy::cast_precision_loss)]
-        let x = 20.0 + step as f32 * 3.0;
-        for row in 0..40 {
-            #[allow(clippy::cast_precision_loss)]
-            let y = 20.0 + row as f32 * 3.0;
+    let mut x = 0.0;
+    while x <= width_mm && found < 0 {
+        let mut y = 0.0;
+        while y <= height_mm {
             // SAFETY: live session.
             let hit = unsafe { pf_session_pipe_at(session, x, y, 2.5) };
             if hit >= 0 {
                 found = hit;
                 break;
             }
+            y += 3.0;
         }
-        if found >= 0 {
-            break;
-        }
+        x += 3.0;
     }
     assert!(found >= 0, "the pipe must answer to a point on its line");
 
@@ -2233,6 +2423,200 @@ fn circuits_can_be_added_renamed_and_survive_a_save_and_open() {
         pf_session_free(reopened);
         pf_session_free(original);
     }
+}
+
+/// Reads one field of a circuit's title block, for the block tests.
+fn block_field(session: *const PfSession, id: u32, field: u32) -> String {
+    let mut buffer = [0 as c_char; 160];
+    // SAFETY: the caller passes a live session and the buffer is writable.
+    let length = unsafe {
+        pf_session_block(
+            session,
+            id,
+            field,
+            buffer.as_mut_ptr(),
+            u32::try_from(buffer.len()).unwrap_or(0),
+        )
+    };
+    assert!(length >= 0, "reading a field must succeed");
+    // SAFETY: the call wrote a NUL-terminated string.
+    let text = unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_str();
+    assert!(text.is_ok(), "the field is UTF-8");
+    text.unwrap_or_default().to_owned()
+}
+
+/// The twelve field indices the header names.
+const BLOCK_FIELDS: [u32; 12] = [
+    PF_BLOCK_OWNER,
+    PF_BLOCK_PROJECT,
+    PF_BLOCK_EQUIPMENT,
+    PF_BLOCK_TITLE,
+    PF_BLOCK_NUMBER,
+    PF_BLOCK_REVISION,
+    PF_BLOCK_DATE,
+    PF_BLOCK_PREPARED,
+    PF_BLOCK_CHECKED,
+    PF_BLOCK_APPROVED,
+    PF_BLOCK_SCALE,
+    PF_BLOCK_NORMS,
+];
+
+#[test]
+fn the_title_block_defaults_are_the_guide_ones_and_one_edit_is_one_undo() {
+    let original = session();
+    let id = u32::try_from(unsafe { pf_session_active_circuit(original) })
+        .expect("the identity of the active circuit");
+
+    // A new circuit starts with its own title, revision A and the guide's S/E scale; the
+    // project, equipment and norms start empty.
+    assert_eq!(block_field(original, id, PF_BLOCK_TITLE), "Circuito 1");
+    assert_eq!(block_field(original, id, PF_BLOCK_REVISION), "A");
+    assert_eq!(block_field(original, id, PF_BLOCK_SCALE), "S/E");
+    assert!(block_field(original, id, PF_BLOCK_OWNER).is_empty());
+    assert!(block_field(original, id, PF_BLOCK_PROJECT).is_empty());
+    assert!(block_field(original, id, PF_BLOCK_EQUIPMENT).is_empty());
+    assert!(block_field(original, id, PF_BLOCK_NORMS).is_empty());
+
+    let owner = CString::new("Curso de Neumática").expect("a name");
+    // SAFETY: live session, the circuit identity and a NUL-terminated value.
+    assert_eq!(
+        unsafe { pf_session_set_block(original, id, PF_BLOCK_OWNER, owner.as_ptr()) },
+        PF_OK
+    );
+    let number = CString::new("PF-2026-07").expect("a number");
+    // SAFETY: the same contract.
+    assert_eq!(
+        unsafe { pf_session_set_block(original, id, PF_BLOCK_NUMBER, number.as_ptr()) },
+        PF_OK
+    );
+    assert_eq!(
+        block_field(original, id, PF_BLOCK_OWNER),
+        "Curso de Neumática"
+    );
+    assert_eq!(block_field(original, id, PF_BLOCK_NUMBER), "PF-2026-07");
+
+    // One edit was one entry in the history: undo takes the last field back.
+    // SAFETY: live session with a change to undo.
+    assert_eq!(unsafe { pf_session_undo(original) }, PF_OK);
+    assert!(block_field(original, id, PF_BLOCK_NUMBER).is_empty());
+    assert_eq!(
+        block_field(original, id, PF_BLOCK_OWNER),
+        "Curso de Neumática"
+    );
+
+    // The scale is editable: the default is S/E, and a company may write a ratio.
+    let scale = CString::new("1:50").expect("a scale");
+    // SAFETY: live session, the circuit identity and a NUL-terminated value.
+    assert_eq!(
+        unsafe { pf_session_set_block(original, id, PF_BLOCK_SCALE, scale.as_ptr()) },
+        PF_OK
+    );
+    assert_eq!(block_field(original, id, PF_BLOCK_SCALE), "1:50");
+
+    // A field that does not exist is refused instead of reading past the list.
+    let mut buffer = [0 as c_char; 8];
+    // SAFETY: live session, a writable buffer and an out-of-range field index.
+    assert_eq!(
+        unsafe { pf_session_block(original, id, 12, buffer.as_mut_ptr(), 8) },
+        PF_ERR_MODEL
+    );
+    // Every field index the header names is readable, so the front end can paint the block.
+    for field in BLOCK_FIELDS {
+        assert!(block_field(original, id, field).len() < 160);
+    }
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(original) };
+}
+
+#[test]
+fn the_title_block_survives_a_save_and_an_open() {
+    let original = session();
+    let id = u32::try_from(unsafe { pf_session_active_circuit(original) })
+        .expect("the identity of the active circuit");
+    for (field, value) in [
+        (PF_BLOCK_OWNER, "Curso de Neumática"),
+        (PF_BLOCK_PROJECT, "Línea 2"),
+        (PF_BLOCK_EQUIPMENT, "Prensa 4"),
+        (PF_BLOCK_NUMBER, "PF-2026-07"),
+        (PF_BLOCK_NORMS, "NCh 14 · NCh 1768/1"),
+        (PF_BLOCK_SCALE, "1:50"),
+    ] {
+        let value = CString::new(value).expect("a NUL-free value");
+        // SAFETY: live session, the circuit identity and a NUL-terminated value.
+        assert_eq!(
+            unsafe { pf_session_set_block(original, id, field, value.as_ptr()) },
+            PF_OK
+        );
+    }
+
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("cajetin.pfluid");
+    let path = CString::new(path.to_str().unwrap_or_default()).expect("a path");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(original, path.as_ptr()) }, PF_OK);
+    let reopened = session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(reopened, path.as_ptr()) }, PF_OK);
+    assert_eq!(
+        block_field(reopened, id, PF_BLOCK_OWNER),
+        "Curso de Neumática"
+    );
+    assert_eq!(block_field(reopened, id, PF_BLOCK_PROJECT), "Línea 2");
+    assert_eq!(block_field(reopened, id, PF_BLOCK_EQUIPMENT), "Prensa 4");
+    assert_eq!(block_field(reopened, id, PF_BLOCK_NUMBER), "PF-2026-07");
+    assert_eq!(block_field(reopened, id, PF_BLOCK_SCALE), "1:50");
+    assert_eq!(
+        block_field(reopened, id, PF_BLOCK_NORMS),
+        "NCh 14 · NCh 1768/1"
+    );
+
+    // SAFETY: both sessions are still alive.
+    unsafe {
+        pf_session_free(reopened);
+        pf_session_free(original);
+    }
+}
+
+#[test]
+fn the_block_can_be_moved_or_removed_and_one_undo_returns_it() {
+    let original = session();
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_block_preset(original) },
+        i32::try_from(PF_BLOCK_BOTTOM_RIGHT).expect("a preset")
+    );
+    // SAFETY: live session and a known preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(original, PF_BLOCK_TOP_RIGHT) },
+        PF_OK
+    );
+    assert_eq!(
+        unsafe { pf_session_block_preset(original) },
+        i32::try_from(PF_BLOCK_TOP_RIGHT).expect("a preset")
+    );
+    // SAFETY: live session and the "no block" preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(original, PF_BLOCK_NONE) },
+        PF_OK
+    );
+    assert_eq!(
+        unsafe { pf_session_block_preset(original) },
+        i32::try_from(PF_BLOCK_NONE).expect("a preset")
+    );
+    // SAFETY: live session with two changes to undo.
+    assert_eq!(unsafe { pf_session_undo(original) }, PF_OK);
+    assert_eq!(
+        unsafe { pf_session_block_preset(original) },
+        i32::try_from(PF_BLOCK_TOP_RIGHT).expect("a preset")
+    );
+    // SAFETY: live session and an unknown preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(original, 9) },
+        punchi_fluid::PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(original) };
 }
 
 /// The text of the first text call inside `area` — `x0 y0 x1 y1` — that ends with

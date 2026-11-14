@@ -206,6 +206,46 @@ Rectangle {
             ]
         },
         {
+            name: qsTr("Cajetín"),
+            groups: [
+                {
+                    title: qsTr("Contenido"),
+                    items: [
+                        {
+                            id: "block-content",
+                            label: qsTr("Contenido: %1").arg(
+                                session.blockPreset === 3
+                                ? qsTr("Sin cajetín")
+                                : (session.blockModel === 0 ? qsTr("Escolar")
+                                   : (session.blockModel === 1 ? qsTr("Técnico")
+                                                              : qsTr("Industrial")))),
+                            icon: "x-office-document",
+                            hint: qsTr("elige el modelo en el editor lateral"),
+                            big: true
+                        }
+                    ]
+                },
+                {
+                    title: qsTr("Posición"),
+                    items: (session.sheetLandscape ? [
+                        { id: "position-top-right", label: qsTr("Superior derecha"), icon: "go-top", hint: qsTr("esquina superior derecha"), current: session.blockPreset === 0, enabled: session.blockPreset !== 3 },
+                        { id: "position-bottom-right", label: qsTr("Inferior derecha"), icon: "go-bottom", hint: qsTr("la posición de la norma"), current: session.blockPreset === 1, enabled: session.blockPreset !== 3 }
+                    ] : [
+                        { id: "position-top-right", label: qsTr("Superior derecha"), icon: "go-top", hint: qsTr("esquina superior derecha"), current: session.blockPreset === 0, enabled: session.blockPreset !== 3 },
+                        { id: "position-bottom-right", label: qsTr("Inferior derecha"), icon: "go-bottom", hint: qsTr("la posición de la norma"), current: session.blockPreset === 1, enabled: session.blockPreset !== 3 },
+                        { id: "position-bottom-full", label: qsTr("Abajo centrado"), icon: "go-bottom", hint: qsTr("de lado a lado"), current: session.blockPreset === 2, enabled: session.blockPreset !== 3 }
+                    ])
+                },
+                {
+                    title: qsTr("Datos"),
+                    items: [
+                        { id: "edit-block", label: session.blockPreset === 3 ? qsTr("Añadir cajetín") : qsTr("Editar datos…"), icon: "x-office-address-book", hint: qsTr("abre el editor lateral; cada cambio se deshace"), big: true },
+                        { id: "block-reset", label: qsTr("Restablecer"), icon: "edit-undo", hint: qsTr("vuelve al conjunto de campos del modelo"), enabled: session.blockCustomized }
+                    ]
+                }
+            ]
+        },
+        {
             name: qsTr("Simular"),
             groups: [
                 {
@@ -261,6 +301,25 @@ Rectangle {
             if (!isNaN(index)) {
                 session.setSheetPaper(index);
             }
+            return;
+        }
+        if (id === "edit-block" || id === "block-content") {
+            window.titleBlockOpen = true;
+            return;
+        }
+        if (id.indexOf("position-") === 0) {
+            const preset = {
+                "position-top-right": 0,
+                "position-bottom-right": 1,
+                "position-bottom-full": 2
+            }[id];
+            if (preset !== undefined) {
+                session.setBlockPreset(preset);
+            }
+            return;
+        }
+        if (id === "block-reset") {
+            session.resetBlockVisibility();
             return;
         }
         if (id === "restart") {
@@ -347,7 +406,9 @@ Rectangle {
     /// A `TypeError` in an `onTriggered` handler is invisible until the button is pressed;
     /// this is the only way to press them all without a pointer.
     function selfTest() {
+        const before = current;
         for (let t = 0; t < tabs.length; ++t) {
+            current = t;
             const groups = tabs[t].groups || [];
             for (let g = 0; g < groups.length; ++g) {
                 const items = groups[g].items || [];
@@ -355,7 +416,11 @@ Rectangle {
                     invoke(items[i].id);
                 }
             }
+            // The collapsed menu is generated from the same flattened list; reading it
+            // proves every tab still has one action list and no tab is empty.
+            flatActions();
         }
+        current = before;
     }
 
     /// Every command of the open tab, flattened, for the collapsed menu.

@@ -9,67 +9,27 @@
 use punchi_fluid_draw::{Anchor, Colour, LineClass, Pt, Stroke, Surface};
 
 use crate::page::{Page, TitleBlock};
+use crate::title_block::draw_title_block;
 
 /// Width of the frame and the block rules, in millimetres.
-const RULE: f32 = 0.35;
+pub(crate) const RULE: f32 = 0.35;
 /// Width of the frame line and the centring marks, in millimetres (ISO 5457).
-const FRAME: f32 = 0.7;
-/// Cap height of a field label.
-const LABEL: f32 = 2.2;
+pub(crate) const FRAME: f32 = 0.7;
+/// Cap height of a field label, from ISO 3098 / `NCh` 15.
+pub(crate) const LABEL: f32 = 2.5;
 /// Cap height of a field value.
-const VALUE: f32 = 3.0;
-/// Draws the frame, the centring marks, the title block and the legend of the page.
+pub(crate) const VALUE: f32 = 3.5;
+/// Cap height of the title and the company, the two values that lead the block.
+pub(crate) const HEADING: f32 = 5.0;
+/// The muted ink of a label and of a reference-zone character.
+pub(crate) const MUTED: Colour = Colour::new(90, 90, 90);
+/// Draws the frame, the reference zones, the centring marks, the title block and the legend.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     let content = page.content_rect();
     surface.rect(content, 0.0, None, Some(Stroke::new(FRAME, Colour::BLACK)));
+    draw_reference_zones(surface, page);
     draw_centring_marks(surface, page);
-
-    let title = page.title_rect();
-    surface.rect(title, 0.0, None, Some(Stroke::new(RULE, Colour::BLACK)));
-
-    let row = title.height() / 4.0;
-    for index in 1..4 {
-        #[allow(clippy::cast_precision_loss)]
-        let y = title.min.y + row * index as f32;
-        surface.line(
-            &[Pt::new(title.min.x, y), Pt::new(title.max.x, y)],
-            Stroke::new(RULE * 0.6, Colour::new(90, 90, 90)),
-        );
-    }
-
-    let left = title.min.x + 2.0;
-    let field = |surface: &mut dyn Surface, index: usize, label: &str, value: &str| {
-        #[allow(clippy::cast_precision_loss)]
-        let top = title.min.y + row * index as f32;
-        surface.text(
-            Pt::new(left, top + row * 0.30),
-            label,
-            LABEL,
-            Colour::new(90, 90, 90),
-            Anchor::Start,
-        );
-        surface.text(
-            Pt::new(left, top + row * 0.72),
-            value,
-            VALUE,
-            Colour::BLACK,
-            Anchor::Start,
-        );
-    };
-
-    field(surface, 0, "Título", &block.title);
-    field(surface, 1, "Proyecto / circuito", &block.project);
-    field(
-        surface,
-        2,
-        "Revisión / fecha",
-        &format!("{} · {}", block.revision, block.date),
-    );
-    // A diagram is not to scale: the sheet count is the only page field here. The export
-    // may fit a large drawing onto the paper, but that fit is not a drawing scale and is
-    // not written in the block.
-    let sheet = format!("1/1 · {}", page.paper.label());
-    field(surface, 3, "Hoja", &sheet);
+    draw_title_block(surface, page, block);
 
     if let Some(note) = &block.note {
         // Inside the frame, never in the margin: the margin band belongs to the paper.
@@ -84,6 +44,122 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
 
     draw_legend(surface, page);
     draw_parts(surface, page);
+}
+
+/// The optional reference zones of ISO 5457 / `NCh` 13.Of93.
+///
+/// The drawing space is divided into fields of at most 50 mm: numerals down the left and
+/// right bands and letters across the top and bottom, 3.5 mm high with 0.35 mm rules. The
+/// rules and the characters stay inside the margin bands, so the drawing space itself
+/// carries no extra ink. A3 and larger get them; A4 stays clean (see `Page`).
+fn draw_reference_zones(surface: &mut dyn Surface, page: &Page) {
+    if !page.has_reference_zones() {
+        return;
+    }
+    let paper = page.rect();
+    let content = page.content_rect();
+    if content.is_empty() {
+        return;
+    }
+    let bands = [
+        content.min.x - paper.min.x,
+        paper.max.x - content.max.x,
+        content.min.y - paper.min.y,
+        paper.max.y - content.max.y,
+    ];
+    if bands.iter().any(|band| *band <= 0.0) {
+        return;
+    }
+
+    let columns = field_count(content.width());
+    let rows = field_count(content.height());
+    #[allow(clippy::cast_precision_loss)]
+    let step_x = content.width() / columns as f32;
+    #[allow(clippy::cast_precision_loss)]
+    let step_y = content.height() / rows as f32;
+    let stroke = Stroke::new(RULE, Colour::BLACK);
+
+    // Numerals down the left and right bands: one per row.
+    let left_centre = f32::midpoint(paper.min.x, content.min.x);
+    let right_centre = f32::midpoint(content.max.x, paper.max.x);
+    for row in 0..rows {
+        #[allow(clippy::cast_precision_loss)]
+        let centre = content.min.y + (row as f32 + 0.5) * step_y;
+        let label = (row + 1).to_string();
+        let baseline = centre + VALUE * 0.36;
+        for x in [left_centre, right_centre] {
+            surface.text(Pt::new(x, baseline), &label, VALUE, MUTED, Anchor::Middle);
+        }
+    }
+
+    // Letters across the top and bottom bands: one per column.
+    let top_centre = f32::midpoint(paper.min.y, content.min.y);
+    let bottom_centre = f32::midpoint(content.max.y, paper.max.y);
+    for column in 0..columns {
+        #[allow(clippy::cast_precision_loss)]
+        let centre = content.min.x + (column as f32 + 0.5) * step_x;
+        let label = column_label(column);
+        for y in [top_centre, bottom_centre] {
+            surface.text(
+                Pt::new(centre, y + VALUE * 0.36),
+                &label,
+                VALUE,
+                MUTED,
+                Anchor::Middle,
+            );
+        }
+    }
+
+    // The division rules live only in the bands, never in the drawing space.
+    for column in 1..columns {
+        #[allow(clippy::cast_precision_loss)]
+        let x = content.min.x + column as f32 * step_x;
+        surface.line(
+            &[Pt::new(x, paper.min.y), Pt::new(x, content.min.y)],
+            stroke,
+        );
+        surface.line(
+            &[Pt::new(x, content.max.y), Pt::new(x, paper.max.y)],
+            stroke,
+        );
+    }
+    for row in 1..rows {
+        #[allow(clippy::cast_precision_loss)]
+        let y = content.min.y + row as f32 * step_y;
+        surface.line(
+            &[Pt::new(paper.min.x, y), Pt::new(content.min.x, y)],
+            stroke,
+        );
+        surface.line(
+            &[Pt::new(content.max.x, y), Pt::new(paper.max.x, y)],
+            stroke,
+        );
+    }
+}
+
+/// Number of reference fields along one side: 50 mm each, the last one never longer.
+fn field_count(length: f32) -> usize {
+    if !length.is_finite() || length <= 0.0 {
+        return 1;
+    }
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let count = (length / 50.0).ceil() as usize;
+    count.max(1)
+}
+
+/// Letter of a reference column: `A`..`Z`, then `AA`, `AB`… for a very large sheet.
+fn column_label(mut index: usize) -> String {
+    let mut label = String::new();
+    loop {
+        #[allow(clippy::cast_possible_truncation)]
+        let letter = (b'A' + (index % 26) as u8) as char;
+        label.insert(0, letter);
+        if index < 26 {
+            break;
+        }
+        index = index / 26 - 1;
+    }
+    label
 }
 
 /// The four centring marks of ISO 5457: at the ends of the symmetry axes of the paper, a
@@ -282,6 +358,7 @@ fn draw_legend(surface: &mut dyn Surface, page: &Page) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::page::PaperSize;
     use punchi_fluid_draw::Recording;
 
     #[test]
@@ -337,6 +414,171 @@ mod tests {
         assert!(texts.iter().any(|text| text == "2"), "the count of two");
         assert!(texts.iter().any(|text| text.contains("Cilindro")));
         assert!(texts.iter().any(|text| text.contains("1A1, 1A2")));
+    }
+
+    #[test]
+    fn the_control_block_prints_its_guide_fields_and_marks_the_scale() {
+        let mut block = TitleBlock::new("Un circuito", "2026-11-14");
+        block.owner = String::from("Curso de Neumática");
+        block.project = String::from("Línea 2");
+        block.equipment = String::from("Prensa 4");
+        block.number = String::from("PF-2026-07");
+        block.revision = String::from("B");
+        block.prepared = String::from("Ana");
+        block.checked = String::from("Luis");
+        block.approved = String::from("Marta");
+        block.norms = String::from("NCh 14 · NCh 1768/1");
+        block.remark = String::from("NOTA QUE NO SE IMPRIME");
+        block.sheet = String::from("2/3");
+        let mut recording = Recording::default();
+        draw(&mut recording, &Page::a4(block.clone()), &block);
+        let texts: Vec<String> = recording
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                punchi_fluid_draw::Call::Text { text, .. } => Some(text.clone()),
+                _ => None,
+            })
+            .collect();
+        for expected in [
+            "Empresa / propietario",
+            "Proyecto / instalación",
+            "Equipo / sistema",
+            "Título",
+            "Nº de plano",
+            "Revisión",
+            "Hoja",
+            "Fecha",
+            "Escala",
+            "Dibujado",
+            "Revisado",
+            "Aprobado",
+            "Normas aplicadas",
+            "Curso de Neumática",
+            "Línea 2",
+            "Prensa 4",
+            "PF-2026-07",
+            "2/3",
+            "Marta",
+            "S/E",
+            "NCh 14 · NCh 1768/1",
+        ] {
+            assert!(
+                texts.iter().any(|text| text == expected),
+                "missing {expected}"
+            );
+        }
+        // The block no longer borrows the mechanical fields a part drawing would need.
+        for forbidden in [
+            "Material",
+            "Unidad",
+            "Proyección",
+            "Empresa o curso",
+            "Nota",
+            "NOTA QUE NO SE IMPRIME",
+        ] {
+            assert!(
+                !texts.iter().any(|text| text == forbidden),
+                "a schematic has no {forbidden} field"
+            );
+        }
+    }
+
+    #[test]
+    fn a3_gets_the_reference_zones_and_a4_stays_clean() {
+        let block = TitleBlock::new("Un circuito", "2026-11-14");
+        let zones = |paper, orientation| {
+            let page = Page {
+                paper,
+                orientation,
+                ..Page::a4(block.clone())
+            };
+            let content = page.content_rect();
+            let mut recording = Recording::default();
+            draw(&mut recording, &page, &block);
+            // A reference character is 3.5 mm, in muted ink, inside a margin band. The
+            // block's own revision `A` is black and inside the drawing space, so size and
+            // position tell the two apart.
+            recording
+                .calls()
+                .iter()
+                .filter_map(|call| match call {
+                    punchi_fluid_draw::Call::Text {
+                        at,
+                        text,
+                        size,
+                        colour,
+                        ..
+                    } if (*size - 3.5).abs() < 0.01
+                        && *colour == Colour::new(90, 90, 90)
+                        && (at.x < content.min.x - 0.01
+                            || at.x > content.max.x + 0.01
+                            || at.y < content.min.y - 0.01
+                            || at.y > content.max.y + 0.01) =>
+                    {
+                        Some(text.clone())
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<String>>()
+        };
+
+        let a4 = zones(PaperSize::A4, punchi_fluid_core::Orientation::Portrait);
+        assert!(a4.is_empty(), "A4 carries no reference zones: {a4:?}");
+
+        let a3 = zones(PaperSize::A3, punchi_fluid_core::Orientation::Landscape);
+        for expected in ["A", "B", "1", "2"] {
+            assert!(
+                a3.iter().any(|text| text == expected),
+                "A3 is missing the reference character {expected}: {a3:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn reference_rules_and_characters_never_enter_the_drawing_space() {
+        let block = TitleBlock::new("Un circuito", "2026-11-14");
+        let page = Page {
+            paper: PaperSize::A3,
+            orientation: punchi_fluid_core::Orientation::Portrait,
+            ..Page::a4(block)
+        };
+        let content = page.content_rect();
+        let mut recording = Recording::default();
+        draw_reference_zones(&mut recording, &page);
+        assert!(!recording.is_empty(), "A3 carries reference zones");
+        let in_band = |point: Pt| {
+            point.x <= content.min.x + 0.01
+                || point.x >= content.max.x - 0.01
+                || point.y <= content.min.y + 0.01
+                || point.y >= content.max.y - 0.01
+        };
+        assert!(
+            recording.calls().iter().all(|call| matches!(
+                call,
+                punchi_fluid_draw::Call::Line { .. } | punchi_fluid_draw::Call::Text { .. }
+            )),
+            "the zones draw only rules and characters"
+        );
+        for call in recording.calls() {
+            match call {
+                punchi_fluid_draw::Call::Line { points, .. } => {
+                    for point in points {
+                        assert!(
+                            in_band(*point),
+                            "a reference rule entered the drawing space at {point:?}"
+                        );
+                    }
+                }
+                punchi_fluid_draw::Call::Text { at, .. } => {
+                    assert!(
+                        in_band(*at),
+                        "a reference character entered the drawing space at {at:?}"
+                    );
+                }
+                _ => {}
+            }
+        }
     }
 
     #[test]

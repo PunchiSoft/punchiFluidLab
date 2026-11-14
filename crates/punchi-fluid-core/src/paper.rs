@@ -151,9 +151,10 @@ impl PaperSize {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Orientation {
     /// Taller than wide.
-    #[default]
     Portrait,
-    /// Wider than tall.
+    /// Wider than tall; the program opens landscape on A4 and portrait stays one click
+    /// away in the ribbon (`A4 normal`).
+    #[default]
     Landscape,
 }
 
@@ -256,12 +257,15 @@ pub struct Sheet {
 }
 
 impl Sheet {
-    /// A4 portrait with the ISO 5457 frame, the sheet a new document starts on.
+    /// A4 landscape with the ISO 5457 frame, the sheet a new document starts on.
+    ///
+    /// ISO 5457:1999/Amd 1:2010 allows both A4 orientations; the program opens horizontal
+    /// and `A4 normal` in the ribbon returns to portrait.
     #[must_use]
     pub const fn a4() -> Self {
         Self {
             paper: PaperSize::A4,
-            orientation: Orientation::Portrait,
+            orientation: Orientation::Landscape,
             margins: Margins::iso5457(),
         }
     }
@@ -356,29 +360,31 @@ mod tests {
     }
 
     #[test]
-    fn a_new_sheet_is_a4_and_a_legacy_one_has_no_frame() {
+    fn a_new_sheet_is_a4_landscape_and_a_legacy_one_is_portrait_and_unframed() {
         let sheet = Sheet::a4();
         assert_eq!(sheet.paper, PaperSize::A4);
-        assert_eq!(sheet.orientation, Orientation::Portrait);
-        assert_eq!(sheet.size_mm(), (210.0, 297.0));
+        assert_eq!(sheet.orientation, Orientation::Landscape);
+        assert_eq!(sheet.size_mm(), (297.0, 210.0));
         assert_eq!(sheet.margins, Margins::iso5457());
         assert!(sheet.is_valid());
 
         let legacy = Sheet::legacy();
         assert_eq!(legacy.paper, PaperSize::A4);
+        assert_eq!(legacy.orientation, Orientation::Portrait);
+        assert_eq!(legacy.size_mm(), (210.0, 297.0));
         assert_eq!(legacy.margins, Margins::unframed());
         assert!(legacy.is_valid());
     }
 
     #[test]
     fn landscape_swaps_the_sides_and_the_content_follows() {
-        let portrait = Sheet::a4();
-        let landscape = Sheet {
-            orientation: Orientation::Landscape,
-            ..portrait
+        let landscape = Sheet::a4();
+        let portrait = Sheet {
+            orientation: Orientation::Portrait,
+            ..landscape
         };
-        assert_eq!(portrait.size_mm(), (210.0, 297.0));
         assert_eq!(landscape.size_mm(), (297.0, 210.0));
+        assert_eq!(portrait.size_mm(), (210.0, 297.0));
         let (width, height) = landscape.content_size_mm();
         assert!((width - (297.0 - 30.0)).abs() < f32::EPSILON);
         assert!((height - (210.0 - 20.0)).abs() < f32::EPSILON);

@@ -8,12 +8,14 @@
 //! it over a PDF content stream. The page, the margins and the identification block are
 //! the only things this crate adds.
 
+pub mod block_layout;
 pub mod page;
 pub mod parts;
 pub mod pdf;
 pub mod png;
 pub mod sheet;
 pub mod svg;
+mod title_block;
 
 use std::path::Path;
 

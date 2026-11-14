@@ -15,6 +15,10 @@ fn sheet() -> Sheet {
         circuits: vec![StoredCircuit {
             id: 0,
             title: String::from("Circuito 1"),
+            block: StoredBlock {
+                title: String::from("Circuito 1"),
+                ..StoredBlock::default()
+            },
         }],
         placement: vec![
             StoredPlacement {
@@ -136,7 +140,12 @@ fn a_version_two_sheet_still_reads_and_gains_an_unnamed_component() {
     assert_eq!(sheet.placement[0].quarter_turns, 1);
     assert!(sheet.placement[0].mirrored);
     assert_eq!(sheet.placement[0].designation, None);
-    assert!(sheet.to_json().expect("valid").contains(r#""format": 7"#));
+    assert!(
+        sheet
+            .to_json()
+            .expect("valid")
+            .contains(&format!(r#""format": {SHEET_VERSION}"#))
+    );
 }
 
 #[test]
@@ -174,7 +183,10 @@ fn a_version_one_sheet_still_reads_and_gains_an_unturned_orientation() {
     assert!(!sheet.placement[0].mirrored);
     // Saving it writes the format this build understands, with the fields it added.
     let saved = sheet.to_json().expect("valid");
-    assert!(saved.contains(r#""format": 7"#), "{saved}");
+    assert!(
+        saved.contains(&format!(r#""format": {SHEET_VERSION}"#)),
+        "{saved}"
+    );
     assert_eq!(sheet.placement[0].designation, None, "and no name either");
 }
 
@@ -183,6 +195,179 @@ fn a_turn_that_is_not_one_of_the_four_is_refused() {
     let mut sheet = sheet();
     sheet.placement[0].quarter_turns = 4;
     assert!(sheet.validate().is_err());
+}
+
+#[test]
+fn a_version_seven_sheet_reads_with_its_circuit_title_in_the_block() {
+    // Exactly what format 7 wrote: circuits and a sheet, no control block.
+    let text = r#"{
+          "format": 7,
+          "title": "Anterior",
+          "sheet": {},
+          "circuits": [{"id": 0, "title": "Circuito 1"}],
+          "placement": [],
+          "pipe": []
+        }"#;
+    let sheet = Sheet::parse(text).expect("a version 7 sheet reads");
+    assert_eq!(sheet.format, SHEET_VERSION);
+    assert_eq!(sheet.circuits[0].block.title, "Circuito 1");
+    assert_eq!(sheet.circuits[0].block.revision, "A");
+    assert!(sheet.circuits[0].block.owner.is_empty());
+}
+
+#[test]
+fn a_version_eight_sheet_reads_with_the_guide_defaults() {
+    // Exactly what format 8 wrote: a block with the original eight fields.
+    let text = r#"{
+          "format": 8,
+          "title": "Anterior",
+          "sheet": {},
+          "circuits": [{
+            "id": 0,
+            "title": "Circuito 1",
+            "block": {
+              "owner": "Curso de Neumática",
+              "title": "Circuito 1",
+              "number": "PF-2026-07",
+              "revision": "B",
+              "date": "2026-01-01",
+              "prepared": "Ana",
+              "checked": "Luis",
+              "approved": "Marta",
+              "position": "right"
+            }
+          }],
+          "placement": [],
+          "pipe": []
+        }"#;
+    let sheet = Sheet::parse(text).expect("a version 8 sheet reads");
+    assert_eq!(sheet.format, SHEET_VERSION);
+    let block = &sheet.circuits[0].block;
+    assert_eq!(block.owner, "Curso de Neumática");
+    assert!(block.project.is_empty());
+    assert!(block.equipment.is_empty());
+    assert_eq!(block.scale, "S/E");
+    assert!(block.norms.is_empty());
+    assert_eq!(block.model, "industrial");
+    assert_eq!(block.visible, None, "the model supplies the full field set");
+}
+
+#[test]
+fn a_version_nine_sheet_gains_the_industrial_model() {
+    // Format 9 already had the twelve fields but no model or visibility.
+    let saved = sheet().to_json().expect("valid");
+    let json = saved
+        .replace("\"format\": 11", "\"format\": 9")
+        .replace("\"model\": \"industrial\",", "");
+    let read = Sheet::parse(&json).expect("a version 9 sheet reads");
+    assert_eq!(read.format, SHEET_VERSION);
+    assert_eq!(read.circuits[0].block.model, "industrial");
+    assert_eq!(read.circuits[0].block.visible, None);
+}
+
+#[test]
+fn the_content_model_and_visibility_round_trip() {
+    let mut source = sheet();
+    source.circuits[0].block.model = String::from("escolar");
+    source.circuits[0].block.visible = Some(vec![
+        String::from("owner"),
+        String::from("title"),
+        String::from("prepared"),
+    ]);
+    let saved = source.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(read.circuits[0].block, source.circuits[0].block);
+
+    source.circuits[0].block.model = String::from("mecanico");
+    assert!(source.validate().is_err(), "an unknown model is refused");
+    source.circuits[0].block.model = String::from("escolar");
+    source.circuits[0].block.visible = Some(vec![String::from("material")]);
+    assert!(source.validate().is_err(), "an unknown field is refused");
+}
+
+#[test]
+fn the_block_defaults_are_the_ones_the_guide_starts_at() {
+    let block = StoredBlock::default();
+    assert_eq!(block.scale, "S/E");
+    assert_eq!(block.revision, "A");
+    assert!(block.project.is_empty());
+    assert!(block.equipment.is_empty());
+    assert!(block.norms.is_empty());
+    assert_eq!(block.model, "industrial");
+    assert_eq!(block.visible, None);
+    assert_eq!(block.position, "bottom-right");
+    assert!(block.remark.is_empty());
+}
+
+#[test]
+fn a_block_that_breaks_a_bound_is_refused() {
+    let mut sheet = sheet();
+    sheet.circuits[0].block.owner = String::from("  Curso");
+    assert!(sheet.validate().is_err(), "untrimmed");
+    sheet.circuits[0].block.owner = "x".repeat(MAX_BLOCK_FIELD + 1);
+    assert!(sheet.validate().is_err(), "too long");
+    sheet.circuits[0].block.owner = String::from("Curso\nSegundo");
+    assert!(sheet.validate().is_err(), "control character");
+    sheet.circuits[0].block.owner = String::from("Curso de Neumática");
+    sheet.circuits[0].block.norms = String::from(" NCh 14");
+    assert!(sheet.validate().is_err(), "the new fields are checked too");
+    sheet.circuits[0].block.norms = String::from("NCh 14 · NCh 1768/1");
+    assert!(sheet.validate().is_ok());
+}
+
+#[test]
+fn the_block_survives_a_save_and_an_open() {
+    let mut source = sheet();
+    source.circuits[0].block.owner = String::from("Curso de Neumática");
+    source.circuits[0].block.project = String::from("Línea 2");
+    source.circuits[0].block.equipment = String::from("Prensa 4");
+    source.circuits[0].block.number = String::from("PF-2026-07");
+    source.circuits[0].block.prepared = String::from("Ana");
+    source.circuits[0].block.scale = String::from("1:50");
+    source.circuits[0].block.norms = String::from("NCh 14 · NCh 1768/1");
+    let saved = source.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(read.circuits[0].block, source.circuits[0].block);
+}
+
+#[test]
+fn the_block_position_is_checked_and_round_trips() {
+    let mut sheet = sheet();
+    sheet.circuits[0].block.position = String::from("bottom-full");
+    let saved = sheet.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(read.circuits[0].block.position, "bottom-full");
+    sheet.circuits[0].block.position = String::from("middle");
+    assert!(sheet.validate().is_err(), "an unknown position is refused");
+}
+
+#[test]
+fn a_version_ten_sheet_maps_the_old_positions_and_gains_the_note() {
+    let saved = sheet().to_json().expect("valid");
+    let json = saved
+        .replace("\"format\": 11", "\"format\": 10")
+        .replace("\"position\": \"bottom-right\"", "\"position\": \"left\"");
+    let read = Sheet::parse(&json).expect("a version 10 sheet reads");
+    assert_eq!(read.circuits[0].block.position, "bottom-right");
+    assert!(read.circuits[0].block.remark.is_empty());
+}
+
+#[test]
+fn the_remark_round_trips_and_allows_line_breaks() {
+    let mut source = sheet();
+    source.circuits[0].block.remark = String::from("Revisar la línea 2.\nPedir cotización.");
+    let saved = source.to_json().expect("valid");
+    let read = Sheet::parse(&saved).expect("reads");
+    assert_eq!(
+        read.circuits[0].block.remark,
+        source.circuits[0].block.remark
+    );
+    source.circuits[0].block.remark = String::from("  sangría");
+    assert!(source.validate().is_err(), "untrimmed");
+    source.circuits[0].block.remark = "x".repeat(punchi_fluid_core::title_block::MAX_REMARK + 1);
+    assert!(source.validate().is_err(), "too long");
+    source.circuits[0].block.remark = String::from("Nota\u{0007}");
+    assert!(source.validate().is_err(), "a control character");
 }
 
 #[test]

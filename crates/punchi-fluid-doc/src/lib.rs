@@ -171,17 +171,22 @@ impl Align {
 pub struct Circuit {
     /// Stable identity a placement or a pipe names.
     pub id: u32,
-    /// Name shown in the selector and in the printed title block.
+    /// Name shown in the selector.
     pub title: String,
+    /// Control-diagram block printed with this circuit.
+    pub block: punchi_fluid_core::TitleBlock,
 }
 
 impl Circuit {
-    /// A circuit with an identity and a title.
+    /// A circuit with an identity and a title; its block starts with that title and the
+    /// default revision.
     #[must_use]
     pub fn new(id: u32, title: impl Into<String>) -> Self {
+        let title = title.into();
         Self {
+            block: punchi_fluid_core::TitleBlock::new(title.clone(), ""),
             id,
-            title: title.into(),
+            title,
         }
     }
 }
@@ -492,6 +497,15 @@ enum Change {
         from: String,
         to: String,
     },
+    /// The control-diagram block of a circuit was edited.
+    ///
+    /// The blocks are boxed: they carry nine strings, and an unboxed pair would make every
+    /// other variant of the history pay for the largest one.
+    BlockEdited {
+        id: u32,
+        from: Box<punchi_fluid_core::TitleBlock>,
+        to: Box<punchi_fluid_core::TitleBlock>,
+    },
     /// The sheet the drawing lives on: paper, orientation and frame.
     SheetChanged {
         from: Sheet,
@@ -611,6 +625,47 @@ impl Document {
             return false;
         }
         self.sheet = sheet;
+        true
+    }
+
+    /// Adds a block to a circuit without recording an undo entry.
+    ///
+    /// Used when a project is read from a file: the block is part of the starting state,
+    /// not an edit the user made after opening it.
+    pub fn seed_block(&mut self, id: u32, block: punchi_fluid_core::TitleBlock) -> bool {
+        let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == id) else {
+            return false;
+        };
+        circuit.block = block;
+        true
+    }
+
+    /// The control-diagram block of a circuit.
+    #[must_use]
+    pub fn block(&self, id: u32) -> Option<&punchi_fluid_core::TitleBlock> {
+        self.circuits
+            .iter()
+            .find(|circuit| circuit.id == id)
+            .map(|circuit| &circuit.block)
+    }
+
+    /// Replaces the block of a circuit, as one undoable change.
+    ///
+    /// Returns `true` when the circuit exists and the block actually differs.
+    pub fn set_block(&mut self, id: u32, block: punchi_fluid_core::TitleBlock) -> bool {
+        let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == id) else {
+            return false;
+        };
+        let from = circuit.block.clone();
+        if from == block {
+            return true;
+        }
+        circuit.block = block.clone();
+        self.record(Change::BlockEdited {
+            id,
+            from: Box::new(from),
+            to: Box::new(block),
+        });
         true
     }
 
@@ -1513,6 +1568,11 @@ impl Document {
                     circuit.title.clone_from(to);
                 }
             }
+            Change::BlockEdited { id, to, .. } => {
+                if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
+                    circuit.block = to.as_ref().clone();
+                }
+            }
             Change::SheetChanged { to, .. } => {
                 self.sheet = *to;
             }
@@ -1597,6 +1657,11 @@ impl Document {
             Change::CircuitRenamed { id, from, .. } => {
                 if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
                     circuit.title.clone_from(from);
+                }
+            }
+            Change::BlockEdited { id, from, .. } => {
+                if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
+                    circuit.block = from.as_ref().clone();
                 }
             }
             Change::SheetChanged { from, .. } => {
@@ -2185,11 +2250,11 @@ mod tests {
     }
 
     #[test]
-    fn a_new_document_is_a_framed_a4_and_one_undo_restores_it() {
+    fn a_new_document_is_a_framed_a4_landscape_and_one_undo_restores_it() {
         use punchi_fluid_core::paper::{Margins, Orientation, PaperSize};
         let mut document = Document::new();
         assert_eq!(document.sheet().paper, PaperSize::A4);
-        assert_eq!(document.sheet().orientation, Orientation::Portrait);
+        assert_eq!(document.sheet().orientation, Orientation::Landscape);
         assert_eq!(document.sheet().margins, Margins::iso5457());
 
         let a3 = Sheet {
@@ -2220,7 +2285,8 @@ mod tests {
         // the document keeps the one it had.
         let impossible = Sheet {
             paper: PaperSize::A5,
-            orientation: document.sheet().orientation,
+            // A5 portrait is 148 mm wide, so 100 + 100 mm of margins leave nothing.
+            orientation: punchi_fluid_core::paper::Orientation::Portrait,
             margins: Margins {
                 left: 100.0,
                 right: 100.0,
@@ -2291,6 +2357,28 @@ mod circuit_tests {
         assert_eq!(document.circuits()[0].title, "Power");
         assert!(document.undo());
         assert_eq!(document.circuits()[0].title, "Circuito 1");
+    }
+
+    #[test]
+    fn editing_the_block_is_one_undo_and_the_title_defaults_to_the_circuit() {
+        let mut document = Document::new();
+        assert_eq!(document.circuits()[0].block.title, "Circuito 1");
+        assert_eq!(document.circuits()[0].block.revision, "A");
+
+        let mut block = document.block(0).cloned().expect("the circuit exists");
+        assert!(block.set(punchi_fluid_core::TitleField::Owner, "Curso de Neumática"));
+        assert!(document.set_block(0, block));
+        assert_eq!(
+            document.block(0).map(|block| block.owner.as_str()),
+            Some("Curso de Neumática")
+        );
+        assert!(document.undo());
+        assert!(
+            document
+                .block(0)
+                .is_some_and(|block| block.owner.is_empty())
+        );
+        assert!(!document.set_block(99, punchi_fluid_core::TitleBlock::default()));
     }
 
     #[test]

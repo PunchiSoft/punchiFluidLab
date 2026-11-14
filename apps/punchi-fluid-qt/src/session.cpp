@@ -6,6 +6,7 @@
 #include <QDate>
 #include <QDir>
 #include <QFileInfo>
+#include <QHash>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -13,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <QGuiApplication>
 #include <QVariantMap>
 
@@ -25,6 +27,77 @@ PfRgb toRgb(const QColor &colour)
 {
     return PfRgb { static_cast<uint8_t>(colour.red()), static_cast<uint8_t>(colour.green()),
                    static_cast<uint8_t>(colour.blue()) };
+}
+
+/// The stable key `setBlockField` uses for one field index.
+const char *blockFieldKey(uint32_t field)
+{
+    switch (field) {
+    case PF_BLOCK_OWNER: return "owner";
+    case PF_BLOCK_PROJECT: return "project";
+    case PF_BLOCK_EQUIPMENT: return "equipment";
+    case PF_BLOCK_TITLE: return "title";
+    case PF_BLOCK_NUMBER: return "number";
+    case PF_BLOCK_REVISION: return "revision";
+    case PF_BLOCK_DATE: return "date";
+    case PF_BLOCK_PREPARED: return "prepared";
+    case PF_BLOCK_CHECKED: return "checked";
+    case PF_BLOCK_APPROVED: return "approved";
+    case PF_BLOCK_SCALE: return "scale";
+    case PF_BLOCK_NORMS: return "norms";
+    default: return "";
+    }
+}
+
+/// The Spanish label of one stored field, the same the export prints.
+QString blockFieldLabel(uint32_t field)
+{
+    switch (field) {
+    case PF_BLOCK_OWNER: return QStringLiteral("Empresa / propietario");
+    case PF_BLOCK_PROJECT: return QStringLiteral("Proyecto / instalación");
+    case PF_BLOCK_EQUIPMENT: return QStringLiteral("Equipo / sistema");
+    case PF_BLOCK_TITLE: return QStringLiteral("Título");
+    case PF_BLOCK_NUMBER: return QStringLiteral("Nº de plano");
+    case PF_BLOCK_REVISION: return QStringLiteral("Revisión");
+    case PF_BLOCK_DATE: return QStringLiteral("Fecha");
+    case PF_BLOCK_PREPARED: return QStringLiteral("Dibujado");
+    case PF_BLOCK_CHECKED: return QStringLiteral("Revisado");
+    case PF_BLOCK_APPROVED: return QStringLiteral("Aprobado");
+    case PF_BLOCK_SCALE: return QStringLiteral("Escala");
+    case PF_BLOCK_NORMS: return QStringLiteral("Normas aplicadas");
+    default: return {};
+    }
+}
+
+/// The fields of one content model, in print order.
+void modelFields(int model, const uint32_t **fields, int *count)
+{
+    static const uint32_t escolar[] = { PF_BLOCK_OWNER, PF_BLOCK_TITLE, PF_BLOCK_PREPARED,
+                                        PF_BLOCK_DATE };
+    static const uint32_t tecnico[] = {
+        PF_BLOCK_OWNER,   PF_BLOCK_TITLE,  PF_BLOCK_NUMBER, PF_BLOCK_REVISION,
+        PF_BLOCK_DATE,    PF_BLOCK_PREPARED, PF_BLOCK_CHECKED, PF_BLOCK_APPROVED,
+        PF_BLOCK_NORMS
+    };
+    static const uint32_t industrial[] = {
+        PF_BLOCK_OWNER,   PF_BLOCK_PROJECT, PF_BLOCK_EQUIPMENT, PF_BLOCK_TITLE,
+        PF_BLOCK_NUMBER,  PF_BLOCK_REVISION, PF_BLOCK_DATE,    PF_BLOCK_PREPARED,
+        PF_BLOCK_CHECKED, PF_BLOCK_APPROVED, PF_BLOCK_SCALE,   PF_BLOCK_NORMS
+    };
+    switch (model) {
+    case PF_BLOCK_MODEL_ESCOLAR:
+        *fields = escolar;
+        *count = static_cast<int>(std::size(escolar));
+        break;
+    case PF_BLOCK_MODEL_TECNICO:
+        *fields = tecnico;
+        *count = static_cast<int>(std::size(tecnico));
+        break;
+    default:
+        *fields = industrial;
+        *count = static_cast<int>(std::size(industrial));
+        break;
+    }
 }
 
 } // namespace
@@ -1010,6 +1083,240 @@ bool FluidSession::renameCircuit(int id, const QString &title)
     return true;
 }
 
+QString FluidSession::blockField(uint32_t field) const
+{
+    if (!m_session) {
+        return {};
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return {};
+    }
+    char buffer[256] = {};
+    if (pf_session_block(m_session, static_cast<uint32_t>(id), field, buffer, sizeof buffer)
+        < 0) {
+        return {};
+    }
+    return QString::fromUtf8(buffer);
+}
+
+QString FluidSession::blockRemark() const
+{
+    if (!m_session) {
+        return {};
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return {};
+    }
+    char buffer[1024] = {};
+    if (pf_session_block_remark(m_session, static_cast<uint32_t>(id), buffer, sizeof buffer) < 0) {
+        return {};
+    }
+    return QString::fromUtf8(buffer);
+}
+
+void FluidSession::setBlockRemark(const QString &text)
+{
+    if (!m_session) {
+        return;
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return;
+    }
+    const QByteArray encoded = text.toUtf8();
+    if (pf_session_set_block_remark(m_session, static_cast<uint32_t>(id), encoded.constData())
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo guardar la nota");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
+QString FluidSession::blockSheet() const
+{
+    if (!m_session) {
+        return {};
+    }
+    const int32_t active = pf_session_active_circuit(m_session);
+    const uint32_t count = pf_session_circuit_count(m_session);
+    for (uint32_t index = 0; index < count; ++index) {
+        if (pf_session_circuit_id(m_session, index) == active) {
+            return QStringLiteral("%1/%2").arg(index + 1).arg(count);
+        }
+    }
+    return QStringLiteral("1/1");
+}
+
+int FluidSession::blockPreset() const
+{
+    if (!m_session) {
+        return 3;
+    }
+    return pf_session_block_preset(m_session);
+}
+
+void FluidSession::setBlockPreset(int preset)
+{
+    if (!m_session || preset < 0 || preset > 3) {
+        return;
+    }
+    if (pf_session_set_block_preset(m_session, static_cast<uint32_t>(preset)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo mover el cajetín");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
+int FluidSession::blockModel() const
+{
+    return m_session ? pf_session_block_model(m_session) : PF_BLOCK_MODEL_INDUSTRIAL;
+}
+
+bool FluidSession::blockCustomized() const
+{
+    return m_session && pf_session_block_customized(m_session) == 1;
+}
+
+QVariantList FluidSession::blockFields() const
+{
+    QVariantList rows;
+    if (!m_session) {
+        return rows;
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return rows;
+    }
+    const uint32_t *fields = nullptr;
+    int count = 0;
+    modelFields(blockModel(), &fields, &count);
+    for (int index = 0; index < count; ++index) {
+        const uint32_t field = fields[index];
+        QVariantMap row;
+        row.insert(QStringLiteral("key"), QString::fromLatin1(blockFieldKey(field)));
+        row.insert(QStringLiteral("label"), blockFieldLabel(field));
+        row.insert(QStringLiteral("field"), static_cast<int>(field));
+        row.insert(QStringLiteral("value"), blockField(field));
+        row.insert(QStringLiteral("visible"),
+                   pf_session_block_visible(m_session, static_cast<uint32_t>(id), field) == 1);
+        row.insert(QStringLiteral("heading"),
+                   field == PF_BLOCK_OWNER || field == PF_BLOCK_TITLE);
+        rows.append(row);
+    }
+    return rows;
+}
+
+void FluidSession::setBlockModel(int model)
+{
+    if (!m_session || model < 0 || model >= static_cast<int>(PF_BLOCK_MODEL_COUNT)) {
+        return;
+    }
+    if (pf_session_set_block_model(m_session, static_cast<uint32_t>(model)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo cambiar el modelo");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
+void FluidSession::setBlockFieldVisible(int field, bool visible)
+{
+    if (!m_session || field < 0) {
+        return;
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return;
+    }
+    if (pf_session_set_block_visible(m_session, static_cast<uint32_t>(id),
+                                     static_cast<uint32_t>(field), visible ? 1U : 0U)
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo ocultar el campo");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
+void FluidSession::resetBlockVisibility()
+{
+    if (!m_session) {
+        return;
+    }
+    if (pf_session_reset_block_visibility(m_session) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo restablecer el modelo");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
+void FluidSession::setBlockField(const QString &field, const QString &value)
+{
+    if (!m_session) {
+        return;
+    }
+    static const QHash<QString, uint32_t> fields {
+        { QStringLiteral("owner"), PF_BLOCK_OWNER },
+        { QStringLiteral("project"), PF_BLOCK_PROJECT },
+        { QStringLiteral("equipment"), PF_BLOCK_EQUIPMENT },
+        { QStringLiteral("title"), PF_BLOCK_TITLE },
+        { QStringLiteral("number"), PF_BLOCK_NUMBER },
+        { QStringLiteral("revision"), PF_BLOCK_REVISION },
+        { QStringLiteral("date"), PF_BLOCK_DATE },
+        { QStringLiteral("prepared"), PF_BLOCK_PREPARED },
+        { QStringLiteral("checked"), PF_BLOCK_CHECKED },
+        { QStringLiteral("approved"), PF_BLOCK_APPROVED },
+        { QStringLiteral("scale"), PF_BLOCK_SCALE },
+        { QStringLiteral("norms"), PF_BLOCK_NORMS },
+    };
+    const auto found = fields.constFind(field);
+    if (found == fields.constEnd()) {
+        return;
+    }
+    const int32_t id = pf_session_active_circuit(m_session);
+    if (id < 0) {
+        return;
+    }
+    const QByteArray encoded = value.toUtf8();
+    if (pf_session_set_block(m_session, static_cast<uint32_t>(id), found.value(),
+                             encoded.constData())
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo editar el cajetín");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    refreshDocument();
+    emit blockChanged();
+}
+
 QString FluidSession::recentPath() const
 {
     QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -1802,6 +2109,7 @@ void FluidSession::undo()
     }
     pf_session_undo(m_session);
     refreshDocument();
+    emit blockChanged();
     emit changed();
 }
 
@@ -1812,6 +2120,7 @@ void FluidSession::redo()
     }
     pf_session_redo(m_session);
     refreshDocument();
+    emit blockChanged();
     emit changed();
 }
 
