@@ -243,7 +243,7 @@ Rectangle {
                         { id: "speed-2", label: "2×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 2.0) < 0.001, big: true }
                     ]
                 },
-                { title: qsTr("Estado"), note: session.untilChangeRunning ? qsTr("hasta cambio") : (session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa")) + " · " + qsTr("t %1 s").arg(session.timeS.toFixed(2))) }
+                { title: qsTr("Estado"), note: session.untilChangeRunning ? qsTr("hasta cambio") : (session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa"))) }
             ]
         },
 

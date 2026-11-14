@@ -20,6 +20,10 @@ instante con **Detener** o **Pausa**.
   modo normal. La barra de estado muestra «hasta cambio» mientras dura.
 - El cursor sobre la válvula ya no pide un repintado en cada transición: el parpadeo del
   puntero era el cursor de espera de la ventana bloqueada.
+- La pestaña **Simular** ya no se reconstruye en cada cuadro: su nota de estado incluía
+  `session.timeS`, de modo que la tabla entera se reevaluaba sesenta veces por segundo y
+  recreaba los botones y su cursor de mano. La nota muestra solo el modo; el tiempo sigue
+  en la barra de estado, que se actualiza sin reconstruir la cinta.
 - **Evidencia**: los pasos `transport: the fast-forward reports it is running` y
   `transport: Detener cancels the fast-forward` de `--selftest`, la puerta completa y
   `--check-qml` sin problemas.
