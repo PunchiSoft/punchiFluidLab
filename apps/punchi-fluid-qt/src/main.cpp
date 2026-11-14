@@ -852,6 +852,11 @@ int main(int argc, char *argv[])
         steps->push_back([state, sendWith, toScene, componentRect] {
             const QRectF box = componentRect(state->valveIndex);
             state->routeScene = toScene(box.center());
+            std::fprintf(stderr,
+                         "selftest: shift press valve %d box %.1f,%.1f %.1fx%.1f scene %.1f,%.1f selected %d of %d\n",
+                         state->valveIndex, box.x(), box.y(), box.width(), box.height(),
+                         state->routeScene.x(), state->routeScene.y(), state->session->selected(),
+                         state->session->selectionCount());
             sendWith(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton,
                      Qt::ShiftModifier);
         });
@@ -864,6 +869,9 @@ int main(int argc, char *argv[])
         steps->push_back([state, sendWith, check] {
             sendWith(QEvent::MouseButtonRelease, state->routeScene + QPointF(60.0, 0.0),
                      Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+            std::fprintf(stderr, "selftest: shift release count %u, expected %d, selected %d of %d\n",
+                         pf_session_component_count(state->session->handle()), state->components + 1,
+                         state->session->selected(), state->session->selectionCount());
             check(pf_session_component_count(state->session->handle()) == state->components + 1,
                   QStringLiteral("editing: Shift-drag copies"));
             state->session->undo();
