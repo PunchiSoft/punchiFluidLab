@@ -84,6 +84,11 @@ changed lines outside generated files, it is two phases.
 | **P1.15 — the control-diagram title block and its editor** ✅ delivered | `feat/title-block-editor` | the content-model block (industrial 180 × 65 mm on A3, 170 × 45 mm on A4; school and technical shorter), the twelve fields, model and visibility per circuit, format 11 with migration, scale `S/E`, the **Cajetín** ribbon tab and the docked editor; no material, unit or projection, because a schematic is not to scale | the format, doc and ABI tests, the `--selftest` title-block steps, and the light/dark captures |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET; the order and the remaining electrical entries are in [work-queue.md](work-queue.md) | ADR each, per-library tests |
 
+The interface has its own staged plan: [interface-plan.md](interface-plan.md). It is
+delivered as small branches — tokens, panels, ribbon, icons, catalog, workspace, adaptive
+shell, consistency — and each one is a pull request of its own; it changes no file format
+and no phase order. It is the current work while the libraries wait for their next slice.
+
 All nine check faults are covered now: designation unlocked one, the cross-circuit pipe came
 with P1.8, the mismatched connection with the electrical library, and the ninth is the rail
 short circuit. The reference's label fault is not applicable because our coils and contacts
