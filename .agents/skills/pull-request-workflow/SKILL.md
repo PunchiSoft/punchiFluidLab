@@ -27,6 +27,30 @@ branch deleted afterwards. A second unrelated change in the same branch makes th
 unreadable and the revert impossible; if it appears halfway, finish the first, deliver
 it, and start again from the new `main`.
 
+## Flow
+
+```mermaid
+flowchart TD
+    A["Change request"] --> B{"Another branch with unmerged work?"}
+    B -->|"yes"| C["Finish it, merge it or get explicit owner authorization"]
+    B -->|"no"| D["Branch from updated main"]
+    C --> D
+    D --> E["Implement on the branch"]
+    E --> F{"Owner confirmed the change?"}
+    F -->|"no"| G["Ask and wait"]
+    G --> F
+    F -->|"yes"| H["Run the gate on the branch"]
+    H --> I{"Gate green?"}
+    I -->|"no"| E
+    I -->|"yes"| J["Commit -s, push and open the pull request"]
+    J --> K["Verify base, files and checks"]
+    K --> L{"Merged?"}
+    L -->|"no"| M["Report and ask the owner to merge; wait"]
+    M --> L
+    L -->|"yes"| N["Return to main and fast-forward"]
+    N --> O["Ask about deleting the branch locally and remotely"]
+```
+
 ## The branch
 
 The name is `feat/<descriptor>`, `fix/<descriptor>`, `docs/<descriptor>` or
@@ -75,9 +99,12 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    git --no-pager log --oneline origin/main..HEAD             # expect: empty
    ```
 
-4. **Work, committing on the branch.** Conventional Commits, English imperative subject
-   under 72 characters, English body, `git commit -s`, and the `Co-authored-by:` trailer
-   when an agent co-authored. One thing per commit; formatting and renames travel alone.
+4. **Work, committing on the branch.** Before the first commit, ask the owner to confirm
+   that the implementation matches the request and the expected result, and wait for the
+   answer; a request to commit is not that confirmation unless the exact change was already
+   reviewed. Then use Conventional Commits, an English imperative subject under 72
+   characters, an English body, `git commit -s`, and the `Co-authored-by:` trailer when an
+   agent co-authored. One thing per commit; formatting and renames travel alone.
 
 5. **Run the gate on the branch that will be merged**, not on a memory of a green run:
 
@@ -122,6 +149,14 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    instruction to merge is answered with the URL and a request for the owner to merge
    it. A failing check is fixed on the branch, never bypassed.
 
+   Read `state` and `mergedAt` after the hand-over. While the pull request is not merged,
+   report it and ask the owner to merge; do not start or continue the next change on an
+   unmerged pull request.
+
+9. **After the owner merges, close the loop.** Return to `main`, fast-forward it from
+   `origin/main`, and ask whether to delete the merged branch locally and on the remote.
+   The remote branch may already be gone; never delete a branch with unmerged commits.
+
 ## Gotchas
 
 - **A clean `git status` says nothing about the base.** Only step 2 does.
@@ -156,9 +191,10 @@ attaches commits that are not yours, and the mistake stays invisible until revie
 - **The changelog and the docs travel with the change**, not in a later pull request:
   `CHANGELOG.md` under `Unreleased`, the ADR when a decision changed, the catalog guide
   when a field was added. Reviewers reject "documented separately".
-- **A branch whose pull request is still open is not a base for the next phase.** If the
-  next phase touches the same files, it waits for the merge; if it does not, it branches
-  from `main` and lands on its own.
+- **A branch whose pull request is still open blocks the next change.** Finish it, merge
+  it, or set it aside with explicit owner authorization; do not open an unrelated branch in
+  parallel. If the owner authorizes the parallel change, it branches from `main` and lands
+  on its own, never from the open branch.
 
 ## Coordination
 
@@ -174,7 +210,7 @@ it travels, not permission to start it.
 git --no-pager rev-list --left-right --count main...HEAD   # 0 <n>, never on main
 git --no-pager log --oneline origin/main..HEAD             # the commits being delivered
 ./scripts-dev/check.sh                                     # green on this branch
-gh pr view --json baseRefName,headRefName,mergeStateStatus,state   # state: OPEN
+gh pr view --json baseRefName,headRefName,mergeStateStatus,state,mergedAt   # OPEN, mergedAt null
 gh pr checks
 ```
 

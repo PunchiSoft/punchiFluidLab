@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### El flujo de entrega pide confirmación y comprueba el merge — 2026-11-14
+
+El flujo de pull request ya tenía rama desde `main`, puerta verde y merge del owner; le
+faltaban las paradas que evitan trabajo perdido en paralelo.
+
+- **Una rama activa**: mientras haya trabajo sin fusionar, otro cambio no abre una rama
+  paralela sin autorización explícita del owner. Se termina, se fusiona o se aparta.
+- **Confirmación antes del commit**: el agente pregunta si el cambio coincide con lo pedido
+  y con lo esperado, y espera la respuesta; una orden de commit no sustituye esa revisión.
+- **Verificación del merge**: tras abrir o actualizar el PR se lee su estado. Si no está
+  fusionado, se avisa y se pide al owner que lo fusione antes de continuar. Después del
+  merge se vuelve a `main`, se actualiza y se pregunta por la limpieza local y remota.
+- **Documentación**: [AGENTS.md](AGENTS.md) y
+  [.agents/skills/pull-request-workflow](.agents/skills/pull-request-workflow/SKILL.md)
+  recogen el flujo y su diagrama Mermaid.
+
 ### El marco de ISO 5457 y la norma del cajetín — 2026-11-14
 
 El marco ya se veía, pero le faltaban las cuatro marcas de centrado y una referencia escrita
