@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Mover con la mano desde la tira — 2026-11-15
+
+- **Mover**: un modo visible con puntero de mano; el botón queda marcado, se arrastra con el
+  botón izquierdo y sale con `Esc` o el mismo botón. Entrar en simulación lo deja, porque ahí
+  un clic debe accionar la válvula. Es estado de vista: no toca el documento.
+- El glifo de la mano se dibuja aquí y entra en la familia de iconos.
+- **Evidencia**: `--selftest` con `view: the strip turns the hand on`, `view: the hand drags
+  the sheet without editing` y `view: Esc leaves the hand mode`, 0 fallos; `--check-qml` 0;
+  `./scripts-dev/check.sh` verde y capturas retomadas.
+
 ### Cajetín en pantalla y un solo Iniciar/Pausa — 2026-11-15
 
 La tira suma los dos controles que faltaban de la lista acordada.

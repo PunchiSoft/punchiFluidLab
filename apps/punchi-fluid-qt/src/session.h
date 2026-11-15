@@ -53,6 +53,9 @@ class FluidSession : public QObject
     /// document, the band it reserves or the printed sheet.
     Q_PROPERTY(bool blockVisible READ blockVisible WRITE setBlockVisible
                    NOTIFY blockVisibleChanged)
+    /// The pointer moves the sheet instead of selecting. View state: it never edits, and
+    /// entering the simulation leaves it, because a click must actuate there.
+    Q_PROPERTY(bool handMode READ handMode WRITE setHandMode NOTIFY handModeChanged)
     /// The sheet the document is drawn on: the same paper the export prints.
     Q_PROPERTY(int sheetPaper READ sheetPaper NOTIFY sheetChanged)
     Q_PROPERTY(bool sheetLandscape READ sheetLandscape NOTIFY sheetChanged)
@@ -446,6 +449,8 @@ public:
     double gridStepMm() const { return m_gridStepMm; }
     [[nodiscard]] bool blockVisible() const { return m_blockVisible; }
     void setBlockVisible(bool visible);
+    [[nodiscard]] bool handMode() const { return m_handMode; }
+    void setHandMode(bool hand);
     void setGridStepMm(double mm);
     Q_INVOKABLE void zoomIn();
     Q_INVOKABLE void zoomOut();
@@ -540,6 +545,7 @@ signals:
     void changed();
     void blockChanged();
     void blockVisibleChanged();
+    void handModeChanged();
     void viewChanged();
     void sheetChanged();
     void documentChanged();
@@ -628,6 +634,7 @@ private:
     bool m_grid = true;
     double m_gridStepMm = 5.0;
     bool m_blockVisible = true;
+    bool m_handMode = false;
     /// The sheet as the core reported it, and the label and size the interface reads.
     PfSheet m_sheet {};
     QString m_sheetPaperName;

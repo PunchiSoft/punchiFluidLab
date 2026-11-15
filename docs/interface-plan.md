@@ -56,7 +56,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 6c-i | `feat/view-fit` | fit to the frame, the middle double click and one step of view history | `--selftest` | the strip moves to 6c-ii |
 | 6c-ii | `feat/view-strip` | the floating strip: fit, the zoom panel, the step back and the fold | `--selftest`, captures | the rest moves to 6c-iii |
 | 6c-iii | `feat/view-controls` | Mostrar cajetín and the single Iniciar/Pausa | `--selftest`, captures | Mover and the zoom window move to 6c-iv |
-| 6c-iv | `feat/view-move` | Mover, the zoom window and the hand and fit glyphs | `--selftest`, captures | — |
+| 6c-iv | `feat/view-hand` | Mover, with the hand glyph | `--selftest`, captures | the zoom window moves to 6c-v |
+| 6c-v | `feat/view-window` | the zoom window gesture and the fit glyph | `--selftest`, captures | — |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -280,9 +281,10 @@ right edge of the drawing area** and takes no width from the paper.
   starts the model and pauses it where it stands instead of stopping and losing the run; the
   session already had `startSimulation` and `pauseSimulation`, so the button is one command,
   not a new state.
-- **Left for 6c-iv**: **Mover** (a visible mode with a pointer change, which needs the hand
-  glyph) and the **zoom window** gesture. Two glyphs join the family then: the hand and the
-  fit, and the icon counts and sheet are updated once.
+- **Landed in 6c-iv**: **Mover**, a visible mode with the hand pointer, marked in the strip,
+  left with `Esc` or the same button, and dropped when the simulation starts because a click
+  must actuate there. Its hand glyph joins the family.
+- **Left for 6c-v**: the **zoom window** gesture and the fit glyph.
 - **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
   modified mark, so it needs a view flag in the session and not a change to the document.
   The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always

@@ -458,6 +458,14 @@ Window {
         onTriggered: session.autosave()
     }
 
+    // The hand mode is left with Esc from anywhere, and the canvas also handles it when it
+    // holds the focus; the two paths set the same view flag.
+    Shortcut {
+        sequence: "Esc"
+        enabled: session.handMode
+        onActivated: session.setHandMode(false)
+    }
+
     Shortcut {
         sequence: "Ctrl+Shift+W"
         onActivated: {

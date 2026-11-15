@@ -300,6 +300,7 @@ void FluidSession::startSimulation()
         return;
     }
     cancelUntilChange();
+    setHandMode(false);
     const bool wasEditing = m_editing;
     m_editing = false;
     m_steadyFrames = 0;
@@ -322,6 +323,7 @@ void FluidSession::pauseSimulation()
     // From editing this is the way in: the simulation becomes active without starting,
     // so the components can be looked at before the model moves.
     cancelUntilChange();
+    setHandMode(false);
     const bool wasEditing = m_editing;
     m_editing = false;
     setRunning(false);
@@ -899,6 +901,17 @@ void FluidSession::setViewSetting(const QString &key, const QVariant &value)
 {
     QSettings settings;
     settings.setValue(QStringLiteral("view/") + key, value);
+}
+
+void FluidSession::setHandMode(bool hand)
+{
+    if (m_handMode == hand) {
+        return;
+    }
+    // View state, like the zoom: it changes the pointer, not the document.
+    m_handMode = hand;
+    emit handModeChanged();
+    emit changed();
 }
 
 void FluidSession::setBlockVisible(bool visible)
