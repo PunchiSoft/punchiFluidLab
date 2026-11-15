@@ -11,7 +11,8 @@
 //! --confirm <what>     open the unsaved-work confirmation (`new`, `open` or `close`)
 //! --theme light|dark   force a palette instead of the desktop one
 //! --check-theme        print the contrast ratios and exit 1 when one fails
-//! --check-icons        resolve the ribbon's icons and print what the theme returned
+//! --check-icons        report every ribbon icon as project, theme or missing
+//! --icon-sheet <file>  render the project icons at 16, 24 and 32 px, for a review
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
 //! --selftest           replay every sheet gesture with real events; exits 1 on failure
 //! --block              open the title-block editor, for a capture of it
@@ -35,8 +36,10 @@
 #include <QGuiApplication>
 #include <QDir>
 #include <QFile>
+#include <QImage>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QWheelEvent>
 #include <QIcon>
 #include <QQmlApplicationEngine>
@@ -52,6 +55,7 @@
 #include <limits>
 #include <functional>
 #include <memory>
+#include "actionicons.h"
 #include "canvasitem.h"
 #include "icons.h"
 #include "punchi_fluid.h"
@@ -116,6 +120,7 @@ int main(int argc, char *argv[])
     const bool automatedRun =
         arguments.contains(QStringLiteral("--selftest"))
         || arguments.contains(QStringLiteral("--check-qml"))
+        || arguments.contains(QStringLiteral("--check-icons"))
         || arguments.contains(QStringLiteral("--grab"))
         || arguments.contains(QStringLiteral("--export"))
         || arguments.contains(QStringLiteral("--probe"))
@@ -144,28 +149,6 @@ int main(int argc, char *argv[])
     if (checkQml) {
         collecting = true;
         qInstallMessageHandler(collectQmlMessage);
-    }
-
-    if (arguments.contains(QStringLiteral("--check-icons"))) {
-        // Proves the icon provider independently of QML: Qt strips console.log in release
-        // builds, so a QML-only failure here would be invisible.
-        ThemeIconProvider provider;
-        const QStringList names {
-            QStringLiteral("media-playback-start"),
-            QStringLiteral("view-refresh"),
-            QStringLiteral("open-menu-symbolic"),
-        };
-        ensureIconTheme();
-        std::fprintf(stderr, "theme=%s paths=%s\n", qUtf8Printable(QIcon::themeName()),
-                     qUtf8Printable(QIcon::themeSearchPaths().join(QLatin1Char(':'))));
-        for (const QString &name : names) {
-            QSize size;
-            const QPixmap pixmap =
-                provider.requestPixmap(name + QStringLiteral("?tone=foreground"), &size, QSize(24, 24));
-            std::fprintf(stderr, "  %-24s %dx%d %s\n", qUtf8Printable(name), pixmap.width(),
-                         pixmap.height(), pixmap.isNull() ? "null" : "ok");
-        }
-        return 0;
     }
 
     if (arguments.contains(QStringLiteral("--check-sounds"))) {
@@ -199,6 +182,34 @@ int main(int argc, char *argv[])
         return contrast.passes() ? 0 : 1;
     }
 
+    const QString iconSheet = value(QStringLiteral("--icon-sheet"));
+    if (!iconSheet.isEmpty()) {
+        const ThemeTokens tokens = tokensFrom(QGuiApplication::palette());
+        const QStringList names = actionicons::names();
+        constexpr int cell = 56;
+        QImage image(names.size() * cell, 3 * cell, QImage::Format_ARGB32);
+        image.fill(tokens.background);
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        for (int row = 0; row < 3; ++row) {
+            const int pixels = row == 0 ? 16 : (row == 1 ? 24 : 32);
+            for (int col = 0; col < names.size(); ++col) {
+                const QPixmap icon = actionicons::render(names.at(col), pixels, 1.0, tokens.ink);
+                painter.drawPixmap(col * cell + (cell - pixels) / 2,
+                                   row * cell + (cell - pixels) / 2, icon);
+            }
+        }
+        painter.end();
+        if (!image.save(iconSheet)) {
+            std::fprintf(stderr, "--icon-sheet: could not write %s\n",
+                         qUtf8Printable(iconSheet));
+            return 1;
+        }
+        std::fprintf(stderr, "icon sheet: %d icons at 16, 24 and 32 px in %s\n",
+                     static_cast<int>(names.size()), qUtf8Printable(iconSheet));
+        return 0;
+    }
+
     PfAbi abi {};
     if (pf_abi(&abi) != PF_OK || abi.version != PF_ABI_VERSION) {
         std::fprintf(stderr, "the C++ header and the Rust core disagree on the ABI\n");
@@ -217,6 +228,46 @@ int main(int argc, char *argv[])
     engine.loadFromModule("PunchiFluid", "Main");
     if (engine.rootObjects().isEmpty()) {
         return 1;
+    }
+
+    if (arguments.contains(QStringLiteral("--check-icons"))) {
+        QObject *ribbon = nullptr;
+        for (QObject *root : engine.rootObjects()) {
+            ribbon = root->findChild<QObject *>(QStringLiteral("ribbon"));
+        }
+        if (ribbon == nullptr) {
+            std::fprintf(stderr, "--check-icons: the ribbon is not in the scene\n");
+            return 1;
+        }
+        QVariant listed;
+        if (!QMetaObject::invokeMethod(ribbon, "iconNames", Q_RETURN_ARG(QVariant, listed))) {
+            std::fprintf(stderr, "--check-icons: the ribbon has no icon list\n");
+            return 1;
+        }
+        ensureIconTheme();
+        std::fprintf(stderr, "theme=%s paths=%s\n", qUtf8Printable(QIcon::themeName()),
+                     qUtf8Printable(QIcon::themeSearchPaths().join(QLatin1Char(':'))));
+        int project = 0;
+        int theme = 0;
+        int missing = 0;
+        const QVariantList names = listed.toList();
+        for (const QVariant &entry : names) {
+            const QString name = entry.toString();
+            const bool own = actionicons::has(name);
+            QIcon icon = QIcon::fromTheme(name + QStringLiteral("-symbolic"));
+            if (icon.isNull()) {
+                icon = QIcon::fromTheme(name);
+            }
+            const bool themed = !icon.isNull();
+            const char *source = own ? "project" : (themed ? "theme" : "missing");
+            std::fprintf(stderr, "  %-32s %s\n", qUtf8Printable(name), source);
+            project += own ? 1 : 0;
+            theme += (!own && themed) ? 1 : 0;
+            missing += (!own && !themed) ? 1 : 0;
+        }
+        std::fprintf(stderr, "icons: %d project, %d theme, %d missing\n", project, theme,
+                     missing);
+        return missing == 0 ? 0 : 1;
     }
 
     // The self test turns sheet millimetres into window pixels to drive its gestures, so it

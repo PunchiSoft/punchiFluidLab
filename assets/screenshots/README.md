@@ -6,6 +6,8 @@ Images of the running application, used by the README and by pull request review
 |---|---|
 | `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
+| `action-icons-light.png` | The first eight project icons at **16, 24 and 32 px** on a light surface: Nuevo, Abrir, Guardar, Guardar como, Exportar, Deshacer, Rehacer and Iniciar |
+| `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
 | `catalog-open-light.png` | The catalog open on a light desktop, with its **Catálogo** header and the two-pane hide control; the sheet keeps its column |
 | `catalog-open-dark.png` | The same open catalog on a dark desktop, to check the header and the control in both themes |
 | `catalog-closed-light.png` | The catalog folded to its **24 px rail**: the same control stays on the edge and the sheet uses the recovered width |
@@ -141,6 +143,11 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a3.pfluid \
   --grab /tmp/a3-reference-zones-light.png
+# The icon family at 16, 24 and 32 px, light and dark.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --icon-sheet /tmp/action-icons-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --icon-sheet /tmp/action-icons-dark.png
 # The two help popups.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --about --grab /tmp/about-light.png

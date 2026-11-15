@@ -44,6 +44,8 @@ qt_add_executable(punchi-fluid
     src/replay.h
     src/icons.cpp
     src/icons.h
+    src/actionicons.cpp
+    src/actionicons.h
     src/sounds.cpp
     src/sounds.h
     src/theme.cpp
