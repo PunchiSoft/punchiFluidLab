@@ -631,6 +631,7 @@ Window {
 
                 Sidebar {
                     id: sidebar
+                    objectName: "catalogSidebar"
                     anchors.fill: parent
                     session: session
                 }

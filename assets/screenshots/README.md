@@ -8,8 +8,8 @@ Images of the running application, used by the README and by pull request review
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
 | `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: all 46 ribbon commands, from document and editing to align, transport, panels and menu |
 | `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
-| `catalog-open-light.png` | The catalog open on a light desktop, with its **Catálogo** header and the two-pane hide control; the sheet keeps its column |
-| `catalog-open-dark.png` | The same open catalog on a dark desktop, to check the header and the control in both themes |
+| `catalog-open-light.png` | The catalog on a light desktop: the count, the search, the collapsible categories with their labels and counts, and the footer with the catalog in use and the skipped files (the capture runs the built-in catalog) |
+| `catalog-open-dark.png` | The same catalog on a dark desktop, to check the groups, the search and the footer in both themes |
 | `catalog-closed-light.png` | The catalog folded to its **24 px rail**: the same control stays on the edge and the sheet uses the recovered width |
 | `catalog-closed-dark.png` | The same folded catalog on a dark desktop, to check the rail and the edge line in both themes |
 | `right-dock-inspector-light.png` | The **right dock** with the properties of the selected valve: category, ports, positions, actuation, spring and the editable designation and conductance |

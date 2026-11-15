@@ -483,6 +483,9 @@ int32_t pf_session_describe_component(const PfSession *session, uint32_t index, 
 /* The catalog in display order. The pointers borrow the session. */
 int32_t pf_session_catalog(const PfSession *session, PfCatalog *out);
 
+/* Number of catalog files the loader skipped; 0 means every file loaded. */
+uint32_t pf_session_catalog_problems(const PfSession *session);
+
 /* Draws one catalog entry alone, for a sidebar thumbnail. */
 int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, float height_mm,
                            float pixels_per_mm, PfFrame *out);

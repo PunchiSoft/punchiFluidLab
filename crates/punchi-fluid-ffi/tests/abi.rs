@@ -31,16 +31,17 @@ use punchi_fluid::{
     pf_session_block, pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
     pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
     pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
-    pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
-    pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
-    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
-    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
-    pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
-    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
-    pf_session_free, pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
+    pf_session_catalog_problems, pf_session_chart_candidate, pf_session_chart_candidate_count,
+    pf_session_chart_source, pf_session_check, pf_session_circuit_count, pf_session_circuit_id,
+    pf_session_circuit_name, pf_session_clear_chart_source, pf_session_component_count,
+    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
+    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
+    pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
+    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
+    pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
     pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
@@ -792,6 +793,31 @@ fn the_catalog_lists_every_component_in_a_stable_order() {
         previous = Some((item.category, id));
     }
     assert!(found_valve, "the 3/2 valve must reach the sidebar");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_broken_user_catalog_file_is_counted_and_the_built_ins_still_load() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    std::fs::write(directory.path().join("broken.toml"), "not a catalog file")
+        .expect("writes the broken file");
+    let path = CString::new(directory.path().to_string_lossy().as_bytes()).expect("a UTF-8 path");
+    // SAFETY: the pointer is a live NUL-terminated path.
+    let session = unsafe { pf_session_new(path.as_ptr()) };
+    assert!(!session.is_null());
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_catalog_problems(session) }, 1);
+    let mut catalog = PfCatalog::default();
+    // SAFETY: live session and a writable output.
+    assert_eq!(
+        unsafe { pf_session_catalog(session, &raw mut catalog) },
+        PF_OK
+    );
+    assert!(
+        catalog.items_len >= 5,
+        "a broken user file must not take the built-ins away"
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

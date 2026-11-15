@@ -3,6 +3,7 @@
 
 #include "session.h"
 
+#include <QCoreApplication>
 #include <QDate>
 #include <QDir>
 #include <QFile>
@@ -24,6 +25,34 @@
 #include <vector>
 
 namespace {
+
+/// The folder the core reads user definitions from, with the same XDG rule it uses.
+QString userCatalogDir()
+{
+    const QByteArray explicitDir = qgetenv("PUNCHI_FLUID_CATALOG_DIR");
+    if (!explicitDir.isEmpty()) {
+        return QString::fromLocal8Bit(explicitDir);
+    }
+    const QByteArray data = qgetenv("XDG_DATA_HOME");
+    const QString base = data.isEmpty() ? QDir::homePath() + QStringLiteral("/.local/share")
+                                        : QString::fromLocal8Bit(data);
+    return base + QStringLiteral("/punchi-fluid-lab/catalog");
+}
+
+/// A self test, a QML check, a capture or an export must not depend on the user's catalog:
+/// an extra definition would move the indices a test assumes. The gate also gives these
+/// runs a temporary XDG_DATA_HOME, so this is a second guard, not the only one.
+bool automatedRun()
+{
+    const QStringList args = QCoreApplication::arguments();
+    return args.contains(QStringLiteral("--selftest"))
+           || args.contains(QStringLiteral("--check-qml"))
+           || args.contains(QStringLiteral("--check-icons"))
+           || args.contains(QStringLiteral("--grab"))
+           || args.contains(QStringLiteral("--export"))
+           || args.contains(QStringLiteral("--probe"))
+           || args.contains(QStringLiteral("--report-paints"));
+}
 
 PfRgb toRgb(const QColor &colour)
 {
@@ -109,7 +138,13 @@ FluidSession::FluidSession(QObject *parent)
 {
     connect(&m_untilChangeTimer, &QTimer::timeout, this, &FluidSession::advanceUntilChange);
     m_untilChangeTimer.setInterval(0);
-    m_session = pf_session_new(nullptr);
+    if (automatedRun()) {
+        m_session = pf_session_new(nullptr);
+    } else {
+        m_catalogDir = userCatalogDir();
+        const QByteArray dir = m_catalogDir.toUtf8();
+        m_session = pf_session_new(dir.isEmpty() ? nullptr : dir.constData());
+    }
     if (!m_session) {
         m_error = QStringLiteral("the core refused to create a session");
         return;
@@ -805,6 +840,39 @@ void FluidSession::readCatalog()
         row.insert(QStringLiteral("index"), static_cast<int>(index));
         m_catalog.append(row);
     }
+
+    // The sidebar groups by the definition's own category. The label is translated here,
+    // so the QML never learns the numeric enum.
+    struct Group {
+        int code;
+        const char *label;
+    };
+    const Group groups[] = {
+        { PF_CATEGORY_SUPPLY, QT_TR_NOOP("Alimentación") },
+        { PF_CATEGORY_VALVE, QT_TR_NOOP("Válvulas") },
+        { PF_CATEGORY_ACTUATOR, QT_TR_NOOP("Actuadores") },
+        { PF_CATEGORY_THROTTLE, QT_TR_NOOP("Estranguladores") },
+        { PF_CATEGORY_ACCESSORY, QT_TR_NOOP("Accesorios") },
+        { PF_CATEGORY_SENSOR, QT_TR_NOOP("Instrumentos") },
+    };
+    m_catalogGroups.clear();
+    for (const Group &group : groups) {
+        QVariantList entries;
+        for (const QVariant &entry : m_catalog) {
+            const QVariantMap row = entry.toMap();
+            if (row.value(QStringLiteral("category")).toInt() == group.code) {
+                entries.append(row);
+            }
+        }
+        if (entries.isEmpty()) {
+            continue;
+        }
+        QVariantMap out;
+        out.insert(QStringLiteral("key"), group.code);
+        out.insert(QStringLiteral("label"), tr(group.label));
+        out.insert(QStringLiteral("entries"), entries);
+        m_catalogGroups.append(out);
+    }
     emit catalogChanged();
 }
 
@@ -814,6 +882,11 @@ void FluidSession::loadTheme()
         return;
     }
     applyPalette(QGuiApplication::palette());
+}
+
+int FluidSession::catalogProblems() const
+{
+    return m_session ? static_cast<int>(pf_session_catalog_problems(m_session)) : 0;
 }
 
 QVariant FluidSession::viewSetting(const QString &key, const QVariant &fallback) const

@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### El catálogo se agrupa, se busca y dice qué omitió — 2026-11-15
+
+La barra lateral deja de ser una lista única: muestra el número de componentes, un buscador,
+las categorías del propio catálogo plegables y un pie con la carpeta en uso y los archivos
+que el cargador tuvo que omitir.
+
+- **Buscar** filtra por nombre, `id` y unas pocas palabras cercanas (cilindro, compresor,
+  válvula…), sin distinguir mayúsculas ni tildes. `Ctrl+F` lleva el foco al campo; `Enter`
+  coloca el primer resultado en el centro de la hoja.
+- **Grupos** por categoría, en el orden del catálogo, con la etiqueta traducida en la
+  sesión; el estado plegado se recuerda por grupo en `QSettings`.
+- **Pie** con la carpeta que lee el núcleo y el número de archivos omitidos; el detalle de
+  cada omisión queda para el panel de catálogo.
+- La ventana ahora **carga el catálogo de usuario** (antes pasaba `null` al núcleo), con
+  `PUNCHI_FLUID_CATALOG_DIR` y `XDG_DATA_HOME` como el núcleo; el ABI gana
+  `pf_session_catalog_problems` y su prueba con un archivo roto.
+- Los auto-tests y las capturas usan solo el catálogo integrado, para que un archivo del
+  usuario no mueva los índices que las pruebas asumen.
+- **Evidencia**: los pasos `catalog: …` de `--selftest`, el test ABI
+  `a_broken_user_catalog_file_is_counted_and_the_built_ins_still_load`,
+  `--check-qml` con 0 problemas, `./scripts-dev/check.sh` verde y las capturas del catálogo
+  en claro y oscuro.
+
 ### La cinta completa su familia de iconos — 2026-11-15
 
 Los 46 nombres de icono de la cinta se dibujan ya en el proyecto: ningún comando depende
