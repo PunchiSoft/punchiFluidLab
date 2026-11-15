@@ -133,6 +133,26 @@ is not started until its purpose and its proof are written in
 [skill](../.agents/skills/capability-plan/SKILL.md). Cover it first, then improve it, and
 finish each capability with that decision written down.
 
+## Stop before the symbols
+
+**Owner's decision, 2026-11-15.** When the work reaches the symbols, stop first: the priority
+is **pneumatic symbology**, and **correcting what already exists** comes before adding any
+other library. Geometry has to be exact because it is under a standard, and comparing and
+reproducing a shape is the part an assistant does worst, so no symbol is touched until the
+procedure is agreed.
+
+The order when that point arrives:
+
+1. **Stop** and ask the owner. No symbols branch opens without that answer.
+2. Take stock: the symbols present, the ones in [assets/symbols/review](../assets/symbols/review)
+   and the state of each review.
+3. Agree the **skill** first: [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md)
+   already covers drawing and the review; the correction pass needs its own procedure — read
+   the requirement, write it in words, draw, then lint and the manual checklist. Never
+   compare against another program or copy geometry.
+4. **One symbol per change**: requirement, drawing, light and dark captures, lint and review.
+   No batches where one wrong arc hides among the right ones.
+
 ## Order of work
 
 **M1 → M2 → M1.5**, then M3 onwards as described in [plan.md](plan.md).

@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Parada obligatoria antes de los símbolos — 2026-11-15
+
+Decisión del propietario: la simbología **neumática** va primero y **corregir lo que ya está**
+antes de ampliar bibliotecas; la geometría debe ser exacta porque está bajo norma.
+
+- `next-steps.md` añade la parada con su procedimiento: detenerse y preguntar, inventariar,
+  acordar la skill de corrección y trabajar **un símbolo por cambio** con capturas, lint y
+  revisión.
+- `symbology.md` lo deja escrito en el contrato: la siguiente pasada es de corrección, no de
+  extensión, y un símbolo no se corrige comparándolo con otro programa.
+
 ### Los radios salen del tema — 2026-11-15
 
 - Cuatro tokens de radio en el tema (`radius`, `radiusControl`, `radiusSmall`, `radiusTip`) y
