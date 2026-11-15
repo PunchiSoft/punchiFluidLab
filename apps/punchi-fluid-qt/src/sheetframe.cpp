@@ -8,7 +8,6 @@
 #include <QColor>
 #include <QFontMetricsF>
 #include <QPen>
-#include <QPolygonF>
 
 #include <algorithm>
 #include <cmath>
@@ -219,10 +218,11 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
             }
         }
 
-        // ISO 5457 centring marks: a line from the frame across the border to the paper
-        // edge, with a small arrow. The form is free; the line is the recommended part and
-        // spanning the whole border keeps the left filing margin and the other three sides
-        // looking the same instead of leaving a gap on the left.
+        // ISO 5457 §4.3: four continuous lines of 0.7 mm at the ends of the symmetry
+        // axes, starting at the frame and extending 10 mm beyond it. No arrowhead: the
+        // standard fixes the form, and the filing edge keeps its line 10 mm inside the
+        // paper instead of growing a longer mark than the other three.
+        const qreal extent = 10.0 * scale;
         const qreal paperLeft = fit.originX;
         const qreal paperTop = fit.originY;
         const qreal paperRight = paperLeft + sheetWidth * scale;
@@ -233,35 +233,28 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
         const qreal frameBottom = paperTop + bottom * scale;
         const qreal middleX = (paperLeft + paperRight) * 0.5;
         const qreal middleY = (paperTop + paperBottom) * 0.5;
-        const qreal arrow = 3.0 * scale;
-        const qreal half = 1.5 * scale;
-        painter->setBrush(frameInk);
-        const auto triangle = [painter](QPointF tip, QPointF leftBase, QPointF rightBase) {
-            painter->drawPolygon(QPolygonF { tip, leftBase, rightBase });
+        const auto mark = [painter](QPointF from, QPointF to) {
+            if (std::hypot(to.x() - from.x(), to.y() - from.y()) >= 0.5) {
+                painter->drawLine(from, to);
+            }
         };
+        painter->setBrush(Qt::NoBrush);
+        painter->setPen(QPen(frameInk, std::max<qreal>(1.0, 0.7 * scale)));
         if (frameTop > paperTop + 0.5) {
-            painter->drawLine(QPointF(middleX, frameTop), QPointF(middleX, paperTop));
-            triangle(QPointF(middleX, std::min(paperTop + arrow, frameTop)),
-                     QPointF(middleX - half, paperTop),
-                     QPointF(middleX + half, paperTop));
+            mark(QPointF(middleX, frameTop),
+                 QPointF(middleX, std::max(paperTop, frameTop - extent)));
         }
         if (frameBottom < paperBottom - 0.5) {
-            painter->drawLine(QPointF(middleX, frameBottom), QPointF(middleX, paperBottom));
-            triangle(QPointF(middleX, std::max(paperBottom - arrow, frameBottom)),
-                     QPointF(middleX - half, paperBottom),
-                     QPointF(middleX + half, paperBottom));
+            mark(QPointF(middleX, frameBottom),
+                 QPointF(middleX, std::min(paperBottom, frameBottom + extent)));
         }
         if (frameLeft > paperLeft + 0.5) {
-            painter->drawLine(QPointF(frameLeft, middleY), QPointF(paperLeft, middleY));
-            triangle(QPointF(std::min(paperLeft + arrow, frameLeft), middleY),
-                     QPointF(paperLeft, middleY - half),
-                     QPointF(paperLeft, middleY + half));
+            mark(QPointF(frameLeft, middleY),
+                 QPointF(std::max(paperLeft, frameLeft - extent), middleY));
         }
         if (frameRight < paperRight - 0.5) {
-            painter->drawLine(QPointF(frameRight, middleY), QPointF(paperRight, middleY));
-            triangle(QPointF(std::max(paperRight - arrow, frameRight), middleY),
-                     QPointF(paperRight, middleY - half),
-                     QPointF(paperRight, middleY + half));
+            mark(QPointF(frameRight, middleY),
+                 QPointF(std::min(paperRight, frameRight + extent), middleY));
         }
 
         // The control-diagram block, from the rows the ABI resolved with the same layout the

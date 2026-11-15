@@ -52,8 +52,17 @@ certification.
 | Filing edge | 20 mm on the left, including the frame |
 | Other margins | 10 mm on the top, right and bottom |
 | Frame | Continuous line, 0.7 mm, around the drawing space |
-| Centring marks | Four, at the midpoints of the symmetry axes: a 0.7 mm line from the frame across the border to the paper edge, with a small triangle at the edge. The form is free; the line is the recommended part |
+| Centring marks | Four, at the ends of the symmetry axes: a continuous line of 0.7 mm, starting at the frame and extending 10 mm beyond it (ISO 5457 §4.3). No arrow and no triangle; on the 20 mm filing edge the line stops inside the margin instead of reaching the paper |
 | Reference zones | Optional in ISO 5457; drawn from A3 upwards (see below) |
+
+The centring marks are **not a free form**, and this page records the requirement rather
+than inventing one. ISO 5457 §4.3 asks for four marks at the ends of the axes of symmetry,
+drawn as continuous lines of 0.7 mm that start at the reference border and extend 10 mm
+beyond the frame; the length is measured from the frame, so the 20 mm filing edge keeps its
+mark inside the margin. The export and the canvas draw the same four lines, with no
+arrowhead. As above, this is a **design record, not a claim of certification**: the
+applicable edition is confirmed in the INN catalogue, and the conformance review records
+which requirement was checked.
 
 The A4 sheet therefore has a drawing space of 180 × 277 mm in portrait and 267 × 190 mm in
 landscape; A3 has 267 × 400 mm in portrait and 400 × 267 mm in landscape, and A0 811 ×

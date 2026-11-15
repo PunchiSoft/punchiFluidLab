@@ -162,10 +162,16 @@ fn column_label(mut index: usize) -> String {
     label
 }
 
-/// The four centring marks of ISO 5457: at the ends of the symmetry axes of the paper, a
-/// line from the frame across the border to the paper edge and a small arrow. The form is
-/// free; the line is the recommended part, and spanning the whole border keeps the 20 mm
-/// filing margin looking like the other three sides instead of leaving a gap on the left.
+/// Length of a centring mark beyond the frame, in millimetres (ISO 5457 §4.3).
+pub(crate) const MARK_EXTENT: f32 = 10.0;
+
+/// The four centring marks of ISO 5457 §4.3: continuous lines of 0.7 mm, at the ends of the
+/// symmetry axes, starting at the frame and extending 10 mm beyond it.
+///
+/// They are lines and nothing else. The standard fixes their width, their place and their
+/// length; an arrowhead would be our own invention drawn over a normative element, and the
+/// 20 mm filing edge would grow a longer mark than the other three. On that edge the mark
+/// stops 10 mm inside the paper, because the standard measures from the frame.
 fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
     let paper = page.rect();
     let content = page.content_rect();
@@ -175,60 +181,36 @@ fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
     let cx = f32::midpoint(paper.min.x, paper.max.x);
     let cy = f32::midpoint(paper.min.y, paper.max.y);
     let stroke = Stroke::new(FRAME, Colour::BLACK);
-    let mut mark = |from: Pt, to: Pt, tip: Pt, base: [Pt; 2]| {
+    // A mark shorter than half a millimetre means the frame touches the paper: there is
+    // nothing to draw, and a zero-length line would only add noise to the recording.
+    let mut mark = |from: Pt, to: Pt| {
         let (dx, dy) = from.to(to);
-        if dx.hypot(dy) < 0.5 {
-            return;
+        if dx.hypot(dy) >= 0.5 {
+            surface.line(&[from, to], stroke);
         }
-        surface.line(&[from, to], stroke);
-        surface.polygon(&[tip, base[0], base[1]], Some(Colour::BLACK), None);
     };
     if content.min.y > paper.min.y + 0.5 {
-        let tip = Pt::new(cx, (paper.min.y + 3.0).min(content.min.y));
         mark(
             Pt::new(cx, content.min.y),
-            Pt::new(cx, paper.min.y),
-            tip,
-            [
-                Pt::new(cx - 1.5, paper.min.y),
-                Pt::new(cx + 1.5, paper.min.y),
-            ],
+            Pt::new(cx, (content.min.y - MARK_EXTENT).max(paper.min.y)),
         );
     }
     if content.max.y < paper.max.y - 0.5 {
-        let tip = Pt::new(cx, (paper.max.y - 3.0).max(content.max.y));
         mark(
             Pt::new(cx, content.max.y),
-            Pt::new(cx, paper.max.y),
-            tip,
-            [
-                Pt::new(cx - 1.5, paper.max.y),
-                Pt::new(cx + 1.5, paper.max.y),
-            ],
+            Pt::new(cx, (content.max.y + MARK_EXTENT).min(paper.max.y)),
         );
     }
     if content.min.x > paper.min.x + 0.5 {
-        let tip = Pt::new((paper.min.x + 3.0).min(content.min.x), cy);
         mark(
             Pt::new(content.min.x, cy),
-            Pt::new(paper.min.x, cy),
-            tip,
-            [
-                Pt::new(paper.min.x, cy - 1.5),
-                Pt::new(paper.min.x, cy + 1.5),
-            ],
+            Pt::new((content.min.x - MARK_EXTENT).max(paper.min.x), cy),
         );
     }
     if content.max.x < paper.max.x - 0.5 {
-        let tip = Pt::new((paper.max.x - 3.0).max(content.max.x), cy);
         mark(
             Pt::new(content.max.x, cy),
-            Pt::new(paper.max.x, cy),
-            tip,
-            [
-                Pt::new(paper.max.x, cy - 1.5),
-                Pt::new(paper.max.x, cy + 1.5),
-            ],
+            Pt::new((content.max.x + MARK_EXTENT).min(paper.max.x), cy),
         );
     }
 }
@@ -379,13 +361,67 @@ mod tests {
         assert!(texts.contains(&"Título"));
         assert!(texts.iter().any(|text| text.contains("1 supply")));
         assert!(texts.contains(&"working"));
-        // The four centring marks are the only filled triangles on the sheet.
+        // ISO 5457 §4.3 draws the centring marks as lines: a filled triangle anywhere on
+        // the sheet is a mistake, not a decoration.
         let triangles = recording
             .calls()
             .iter()
             .filter(|call| matches!(call, punchi_fluid_draw::Call::Polygon { .. }))
             .count();
-        assert_eq!(triangles, 4, "one centring arrow on each side");
+        assert_eq!(triangles, 0, "a centring mark is a line, not an arrow");
+    }
+
+    #[test]
+    fn the_centring_marks_are_ten_millimetre_lines_on_the_symmetry_axes() {
+        let mut recording = Recording::default();
+        let block = TitleBlock::new("A circuit", "2026-11-06");
+        let page = Page::a4(block.clone());
+        draw(&mut recording, &page, &block);
+
+        let paper = page.rect();
+        let content = page.content_rect();
+        let cx = f32::midpoint(paper.min.x, paper.max.x);
+        let cy = f32::midpoint(paper.min.y, paper.max.y);
+        let expected = [
+            (
+                Pt::new(cx, content.min.y),
+                Pt::new(cx, content.min.y - MARK_EXTENT),
+            ),
+            (
+                Pt::new(cx, content.max.y),
+                Pt::new(cx, content.max.y + MARK_EXTENT),
+            ),
+            // The filing edge is 20 mm wide, so its mark ends 10 mm inside the paper.
+            (
+                Pt::new(content.min.x, cy),
+                Pt::new(paper.min.x + MARK_EXTENT, cy),
+            ),
+            (Pt::new(content.max.x, cy), Pt::new(paper.max.x, cy)),
+        ];
+
+        let lines: Vec<Vec<Pt>> = recording
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                punchi_fluid_draw::Call::Line { points, stroke }
+                    if (stroke.width - FRAME).abs() < f32::EPSILON =>
+                {
+                    Some(points.clone())
+                }
+                _ => None,
+            })
+            .collect();
+
+        for (from, to) in expected {
+            let found = lines.iter().any(|points| {
+                points.len() == 2
+                    && (points[0].x - from.x).abs() < 0.01
+                    && (points[0].y - from.y).abs() < 0.01
+                    && (points[1].x - to.x).abs() < 0.01
+                    && (points[1].y - to.y).abs() < 0.01
+            });
+            assert!(found, "missing centring line from {from:?} to {to:?}");
+        }
     }
 
     #[test]
