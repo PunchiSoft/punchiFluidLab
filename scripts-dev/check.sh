@@ -94,6 +94,11 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     "$app" --check-theme
     "$app" --check-icons
     "$app" --check-layout
+    # The same layout at another device pixel ratio and with a larger desktop font: the
+    # shell must move its boundaries, not break them.
+    QT_SCALE_FACTOR=1.25 "$app" --check-layout
+    QT_SCALE_FACTOR=1.5 "$app" --check-layout
+    "$app" --font-scale 1.5 --check-layout
     "$app" --selftest
 
     # The export prints the sheet the session holds, so it is proved on a real file: a PDF that

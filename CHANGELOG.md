@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### La cinta se pliega y la ventana recuerda dónde estaba — 2026-11-15
+
+Segunda mitad de la etapa adaptable: la cinta minimizada, la geometría recordada de la
+ventana, el mínimo de 900 × 600 y las pasadas de escala y de fuente grande.
+
+- **Cinta minimizada**: un control al final de la fila de pestañas la pliega; la pestaña
+  activa abre sus grupos como panel **sobre el área de dibujo**, no sobre los encabezados de
+  los paneles, y un comando o `Esc` lo cierra. El estado se recuerda como vista, nunca en el
+  documento.
+- **La ventana recuerda tamaño y posición**, y solo restaura la posición si sigue cayendo en
+  una pantalla; maximizada conserva el tamaño anterior. El mínimo pasa a **900 × 600**.
+- `--check-layout` comprueba además la cinta plegada (la altura baja, el panel no la
+  devuelve y la hoja no cambia), la geometría restaurada y el mínimo; y corre a **1,25×,
+  1,5× y 2×** de densidad y con **fuente 1,5×**, con los umbrales siguiendo a la unidad en
+  vez de fallar.
+- Queda para la etapa 7 que el texto y las alturas de la cinta sean tokens: hoy la cinta no
+  crece con la fuente del escritorio.
+- **Evidencia**: `--check-layout` con 0 fallos en las tres escalas y con fuente grande,
+  `--check-qml` 0 problemas, `--selftest` 0 fallos, `./scripts-dev/check.sh` verde y capturas
+  de la cinta plegada en claro y oscuro.
+
 ### La ventana elige su modo por el espacio que tiene — 2026-11-15
 
 A 900 px la cinta se plegaba pero el catálogo y el panel derecho conservaban sus 324 y 360

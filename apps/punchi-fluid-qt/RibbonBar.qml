@@ -44,6 +44,17 @@ Rectangle {
         : 480
     property int current: 1
     property bool menuOpen: false
+    /// The user folded the ribbon to its tab row. The open tab's groups appear as a panel
+    /// over the sheet and close after a command or `Esc`; the state is view state and is
+    /// remembered with the panels, never written to the document.
+    property bool minimized: false
+    property bool bodyOpen: false
+    readonly property bool bodyShown: !ribbon.collapsed && (!ribbon.minimized || ribbon.bodyOpen)
+    /// The room the panels take beside the drawing. A folded body opens over the sheet, not
+    /// over their headers, so it starts where the workspace starts.
+    property int bodyInsetLeft: 0
+    property int bodyInsetRight: 0
+    signal minimizeToggled()
     /// Capture and review hooks: open a list as soon as its control exists.
     property bool paperListRequested: false
     property bool marginListRequested: false
@@ -52,7 +63,7 @@ Rectangle {
     // The collapsed menu hangs below the tab row, over the sheet. Without a plane of its
     // own the sheet is painted after it and covers it, so the menu is a sibling problem,
     // not a child one.
-    z: menuOpen ? 50 : 0
+    z: menuOpen || (minimized && bodyOpen) ? 50 : 0
 
     // Every command of the ribbon, by tab. `id` is what invoke() switches on; the data is
     // here so the expanded groups and the collapsed menu share one definition.
@@ -284,7 +295,17 @@ Rectangle {
         { id: "license", label: qsTr("Licencia"), hint: qsTr("el texto completo de la GPL") }
     ]
 
-    implicitHeight: collapsed ? tabRow.height + 1 : tabRow.height + body.implicitHeight + 1
+    implicitHeight: collapsed || minimized
+                    ? tabRow.height + 1
+                    : tabRow.height + body.implicitHeight + 1
+
+    // `Esc` folds the minimized body before the key reaches the sheet, which uses it to
+    // leave simulation mode.
+    Shortcut {
+        sequence: "Esc"
+        enabled: ribbon.minimized && ribbon.bodyOpen
+        onActivated: ribbon.bodyOpen = false
+    }
 
     /// The paper choices as commands, for the collapsed menu and the self test. They are
     /// rebuilt on every read so the mark follows the sheet instead of a frozen snapshot.
@@ -372,6 +393,11 @@ Rectangle {
     }
 
     function invoke(id) {
+        // A command ends the minimized body: the panel was a visit to the commands, not a
+        // new resting state.
+        if (ribbon.minimized) {
+            ribbon.bodyOpen = false;
+        }
         if (id === "catalog") {
             ribbon.panelCommand("catalog");
             return;
@@ -694,6 +720,9 @@ Rectangle {
                         onClicked: {
                             ribbon.current = index;
                             ribbon.menuOpen = false;
+                            if (ribbon.minimized) {
+                                ribbon.bodyOpen = true;
+                            }
                         }
                     }
 
@@ -716,6 +745,25 @@ Rectangle {
             large: false
             tone: "foreground"
             onTriggered: ribbon.menuOpen = !ribbon.menuOpen
+        }
+
+        // Folding the ribbon to its tab row and bringing it back: the same control in both
+        // directions, an icon for the shape and a name for the reader.
+        RibbonButton {
+            visible: !ribbon.collapsed
+            anchors.right: helpRow.left
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            session: ribbon.session
+            label: ""
+            accessibleName: ribbon.minimized ? qsTr("Mostrar la cinta") : qsTr("Minimizar la cinta")
+            iconName: ribbon.minimized ? "go-top" : "go-bottom"
+            hint: ribbon.minimized
+                  ? qsTr("Mostrar la cinta · Esc la vuelve a plegar")
+                  : qsTr("Minimizar la cinta · deja las pestañas a la vista")
+            large: false
+            tone: "muted"
+            onTriggered: ribbon.minimizeToggled()
         }
 
         // The help links are text, not buttons: the tab row is chrome, and two framed
@@ -746,13 +794,39 @@ Rectangle {
     Item {
         id: body
         anchors.top: tabRow.bottom
-        width: parent.width
+        anchors.left: parent.left
+        anchors.leftMargin: ribbon.minimized ? ribbon.bodyInsetLeft : 0
+        anchors.right: parent.right
+        anchors.rightMargin: ribbon.minimized ? ribbon.bodyInsetRight : 0
         implicitHeight: 86
-        visible: !ribbon.collapsed
+        visible: ribbon.bodyShown
 
         Rectangle {
             anchors.fill: parent
-            color: session.background
+            // Folded, the body is a panel in front of the sheet, so it takes the card's
+            // surface instead of the ribbon's own plane.
+            color: ribbon.minimized ? session.panel : session.background
+        }
+
+        // Over the sheet the body needs an edge, or it reads as part of the drawing.
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 1
+            color: session.line
+            visible: ribbon.minimized
+        }
+
+        // A panel in front of the sheet casts the theme's shadow; without it the catalog's
+        // header looks cut rather than covered.
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.bottom
+            height: 4
+            color: session.shadow
+            visible: ribbon.minimized
         }
 
         Row {

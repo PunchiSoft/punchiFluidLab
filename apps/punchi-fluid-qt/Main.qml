@@ -15,7 +15,7 @@ Window {
     width: 1280
     height: 800
     minimumWidth: 900
-    minimumHeight: 560
+    minimumHeight: 600
     visible: true
     title: session.title
     color: session.background
@@ -159,6 +159,8 @@ Window {
     onTitleBlockOpenChanged: if (titleBlockOpen) rightDockOpen = true
     /// Auto-hide is opt-in; the panels remember it and their own visibility.
     property bool panelAutoHide: false
+    /// The ribbon folded to its tab row, chosen by the user and remembered with the panels.
+    property bool ribbonMinimized: false
     readonly property bool panelAutoHideBlocked: window.dragCatalog >= 0
         || window.pageSetupOpen || window.exportPanelOpen || window.renameCircuitOpen
         || window.aboutOpen || window.licenseOpen || window.pendingCommand.length > 0
@@ -204,6 +206,9 @@ Window {
     onPanelAutoHideChanged: if (viewStateReady) {
                                  session.setViewSetting("panel/autoHide", panelAutoHide);
                              }
+    onRibbonMinimizedChanged: if (viewStateReady) {
+                                  session.setViewSetting("panel/ribbonMinimized", ribbonMinimized);
+                              }
 
     Component.onCompleted: {
         // View state only: the document is untouched by which panel was open last time.
@@ -217,6 +222,8 @@ Window {
         }
         window.rightDockOpen = session.viewSetting("panel/rightDockOpen", true);
         window.panelAutoHide = session.viewSetting("panel/autoHide", false);
+        window.ribbonMinimized = session.viewSetting("panel/ribbonMinimized", false);
+        window.restoreGeometry();
         window.viewStateReady = true;
     }
 
@@ -226,6 +233,7 @@ Window {
         window.catalogWidth = 18 * session.unit;
         window.rightDockOpen = true;
         window.panelAutoHide = false;
+        window.ribbonMinimized = false;
         session.zoomReset();
     }
 
@@ -371,9 +379,49 @@ Window {
     }
 
     onClosing: function (close) {
+        window.saveGeometry();
         if (!session.closeConfirmed && session.hasUnsavedWork()) {
             close.accepted = false;
             window.pendingCommand = "close";
+        }
+    }
+
+    /// The window's own size and place, remembered as view state: it is where the user
+    /// works, not a property of the document. A maximized window keeps the size it had
+    /// before, so reopening does not present a screen-sized normal window.
+    function saveGeometry() {
+        if (window.visibility !== Window.Windowed) {
+            return;
+        }
+        session.setViewSetting("window/width", window.width);
+        session.setViewSetting("window/height", window.height);
+        session.setViewSetting("window/x", window.x);
+        session.setViewSetting("window/y", window.y);
+    }
+
+    function restoreGeometry() {
+        const width = Number(session.viewSetting("window/width", 0));
+        const height = Number(session.viewSetting("window/height", 0));
+        if (isFinite(width) && width >= window.minimumWidth) {
+            window.width = width;
+        }
+        if (isFinite(height) && height >= window.minimumHeight) {
+            window.height = height;
+        }
+        // A place is only restored when it still lands on a screen: a laptop undocked from
+        // a second monitor must not reopen the window where nothing can reach it.
+        const x = Number(session.viewSetting("window/x", NaN));
+        const y = Number(session.viewSetting("window/y", NaN));
+        const target = window.screen;
+        if (!isFinite(x) || !isFinite(y) || target === null || target === undefined) {
+            return;
+        }
+        const area = target.availableGeometry;
+        const reachable = x < area.x + area.width - 160 && y < area.y + area.height - 120
+                       && x + window.width > area.x + 160 && y + window.height > area.y + 120;
+        if (reachable) {
+            window.x = x;
+            window.y = y;
         }
     }
 
@@ -606,6 +654,10 @@ Window {
             width: parent.width
             height: ribbon.implicitHeight
             session: session
+            minimized: window.ribbonMinimized
+            bodyInsetLeft: window.layoutMode === "compact" ? 0 : catalogDock.width
+            bodyInsetRight: window.layoutMode === "compact" ? 0 : rightDock.width
+            onMinimizeToggled: window.ribbonMinimized = !window.ribbonMinimized
             onFileCommand: function (command) {
                 if (command === "new") {
                     if (!window.guard("new")) {

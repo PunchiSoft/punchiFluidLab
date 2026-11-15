@@ -51,8 +51,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 4b | `feat/catalog-tiles` | two-column tiles, selection, drag, keyboard, resizable width | `--selftest`, captures | — |
 | 5 | `feat/workspace-frame` | sunken workspace, paper elevation, one `Card` for the floating editors | captures, contrast, zoom tests | — |
 | 6a | `feat/adaptive-shell` | three modes from content minimums, sheet floor, compact rails and drawer, `--check-layout` | `--check-layout`, captures | the rest moves to 6a-ii |
-| 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered geometry, large-font run | `--selftest`, captures | — |
-| 6b | `feat/ribbon-minimized` | minimized ribbon, remembered geometry | `--selftest`, captures | — |
+| 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered size and place, 900 × 600, scale and large-font runs | `--check-layout`, captures | — |
+| 6b | (delivered with 6a-ii) | the minimized ribbon and the remembered geometry | the 6a-ii evidence | — |
 | 6c | `feat/view-strip` | the floating view strip, fit to the frame, view history, the three toggles | `--selftest`, captures | the zoom-window gesture if it grows |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
@@ -226,13 +226,20 @@ room it has.
   because the stored-width fallback was clamped before the theme settled the spacing unit.
   The binding to `18 × unit` now survives when there is no stored preference.
 
-**Left for 6a-ii.**
+**Landed in 6a-ii.**
 
-- The **minimized ribbon** and its remembered state.
-- The **remembered window geometry**; today the window opens at 1280 × 800.
-- The **large-font and 1.25×/1.5× runs** in the check; the 2× run passes, and a run with a
-  different font needs a machine whose platform font is not the offscreen default.
-- The window's minimum height (560 in the code, 600 in the contract).
+- The **minimized ribbon**: a control at the right of the tab row folds it to the tabs, the
+  open tab's groups open as a panel over the drawing area only, and a command or `Esc`
+  closes it. The state is remembered with the panels, never in the document.
+- The **remembered size and place**, guarded so a stored place that no longer lands on a
+  screen is dropped, and a maximized window keeps the size it had before.
+- The minimum is now **900 × 600** in the code, as the contract said.
+- The check runs at **1.25×, 1.5× and 2×** density and with a **1.5× font**, and the
+  boundaries move with the unit instead of failing.
+
+**Left for stage 7.** The ribbon's own text sizes and heights are still literals: the
+ribbon does not grow with the desktop font, and the panel heights (34, 62, 84) are not
+tokens. That pass belongs to the consistency stage, which the capability row records.
 
 **How it is built.** The regions are anchored, not stacked by a `Row`: in compact the
 workspace spans the window and the panel floats above it. One expression decides the mode
