@@ -49,6 +49,10 @@ class FluidSession : public QObject
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
     /// The grid step in millimetres, shared by the ruling and the snap.
     Q_PROPERTY(double gridStepMm READ gridStepMm WRITE setGridStepMm NOTIFY viewChanged)
+    /// The title block is drawn or not on screen. View state: it never changes the
+    /// document, the band it reserves or the printed sheet.
+    Q_PROPERTY(bool blockVisible READ blockVisible WRITE setBlockVisible
+                   NOTIFY blockVisibleChanged)
     /// The sheet the document is drawn on: the same paper the export prints.
     Q_PROPERTY(int sheetPaper READ sheetPaper NOTIFY sheetChanged)
     Q_PROPERTY(bool sheetLandscape READ sheetLandscape NOTIFY sheetChanged)
@@ -440,6 +444,8 @@ public:
     bool grid() const { return m_grid; }
     void setGrid(bool on);
     double gridStepMm() const { return m_gridStepMm; }
+    [[nodiscard]] bool blockVisible() const { return m_blockVisible; }
+    void setBlockVisible(bool visible);
     void setGridStepMm(double mm);
     Q_INVOKABLE void zoomIn();
     Q_INVOKABLE void zoomOut();
@@ -533,6 +539,7 @@ public:
 signals:
     void changed();
     void blockChanged();
+    void blockVisibleChanged();
     void viewChanged();
     void sheetChanged();
     void documentChanged();
@@ -620,6 +627,7 @@ private:
     double m_zoom = 1.0;
     bool m_grid = true;
     double m_gridStepMm = 5.0;
+    bool m_blockVisible = true;
     /// The sheet as the core reported it, and the label and size the interface reads.
     PfSheet m_sheet {};
     QString m_sheetPaperName;

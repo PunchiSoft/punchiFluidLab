@@ -218,6 +218,16 @@ Window {
                                   session.setViewSetting("view/stripFolded", viewStripFolded);
                               }
 
+    /// The block's show toggle is view state too: remembered here, never in the document.
+    Connections {
+        target: session
+        function onBlockVisibleChanged() {
+            if (window.viewStateReady) {
+                session.setViewSetting("view/blockVisible", session.blockVisible);
+            }
+        }
+    }
+
     Component.onCompleted: {
         // View state only: the document is untouched by which panel was open last time.
         window.catalogOpen = session.viewSetting("panel/catalogOpen", true);
@@ -232,6 +242,7 @@ Window {
         window.panelAutoHide = session.viewSetting("panel/autoHide", false);
         window.ribbonMinimized = session.viewSetting("panel/ribbonMinimized", false);
         window.viewStripFolded = session.viewSetting("view/stripFolded", false);
+        session.blockVisible = session.viewSetting("view/blockVisible", true);
         window.restoreGeometry();
         window.viewStateReady = true;
     }
@@ -245,6 +256,7 @@ Window {
         window.ribbonMinimized = false;
         window.viewStripFolded = false;
         window.viewStripCompactOpen = false;
+        session.blockVisible = true;
         session.zoomReset();
     }
 
