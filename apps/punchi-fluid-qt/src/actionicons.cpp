@@ -43,6 +43,28 @@ const QStringList &allNames()
         QStringLiteral("zoom-in"),
         QStringLiteral("zoom-out"),
         QStringLiteral("zoom-original"),
+        QStringLiteral("align-horizontal-left"),
+        QStringLiteral("align-horizontal-right"),
+        QStringLiteral("align-vertical-top"),
+        QStringLiteral("align-vertical-bottom"),
+        QStringLiteral("align-horizontal-center"),
+        QStringLiteral("draw-line"),
+        QStringLiteral("distribute-horizontal-equal"),
+        QStringLiteral("distribute-vertical-equal"),
+        QStringLiteral("view-list-details"),
+        QStringLiteral("view-restore"),
+        QStringLiteral("edit-reset"),
+        QStringLiteral("preferences-desktop-theme"),
+        QStringLiteral("go-top"),
+        QStringLiteral("go-bottom"),
+        QStringLiteral("x-office-address-book"),
+        QStringLiteral("media-playback-pause"),
+        QStringLiteral("media-seek-forward"),
+        QStringLiteral("media-skip-forward"),
+        QStringLiteral("media-playback-stop"),
+        QStringLiteral("view-refresh"),
+        QStringLiteral("speedometer"),
+        QStringLiteral("open-menu-symbolic"),
     };
     return names;
 }
@@ -160,6 +182,28 @@ void trash(QPainter &painter)
     painter.drawLine(QPointF(13.5, 10.0), QPointF(13.5, 18.0));
 }
 
+void filledTriangle(QPainter &painter, const QColor &ink, qreal x1, qreal y1, qreal x2,
+                    qreal y2, qreal x3, qreal y3)
+{
+    QPainterPath triangle;
+    triangle.moveTo(x1, y1);
+    triangle.lineTo(x2, y2);
+    triangle.lineTo(x3, y3);
+    triangle.closeSubpath();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(ink);
+    painter.fillPath(triangle, ink);
+    painter.setBrush(Qt::NoBrush);
+}
+
+void circularArrow(QPainter &painter, int startDegrees, int spanDegrees, qreal tipX, qreal tipY,
+                   qreal aX, qreal aY, qreal bX, qreal bY)
+{
+    painter.drawArc(QRectF(5.0, 5.0, 14.0, 14.0), startDegrees * 16, spanDegrees * 16);
+    painter.drawLine(QPointF(tipX, tipY), QPointF(aX, aY));
+    painter.drawLine(QPointF(tipX, tipY), QPointF(bX, bY));
+}
+
 void draw(const QString &name, QPainter &painter, const QColor &ink)
 {
     if (name == QStringLiteral("document-new")) {
@@ -259,6 +303,136 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.setBrush(ink);
         painter.drawEllipse(QPointF(10.0, 10.0), 1.4, 1.4);
         painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("align-horizontal-left")) {
+        painter.drawLine(QPointF(4.0, 4.0), QPointF(4.0, 20.0));
+        painter.drawRect(QRectF(7.0, 6.0, 10.0, 4.0));
+        painter.drawRect(QRectF(7.0, 14.0, 6.0, 4.0));
+    } else if (name == QStringLiteral("align-horizontal-right")) {
+        painter.drawLine(QPointF(20.0, 4.0), QPointF(20.0, 20.0));
+        painter.drawRect(QRectF(7.0, 6.0, 10.0, 4.0));
+        painter.drawRect(QRectF(11.0, 14.0, 6.0, 4.0));
+    } else if (name == QStringLiteral("align-vertical-top")) {
+        painter.drawLine(QPointF(4.0, 4.0), QPointF(20.0, 4.0));
+        painter.drawRect(QRectF(6.0, 7.0, 4.0, 10.0));
+        painter.drawRect(QRectF(14.0, 7.0, 4.0, 6.0));
+    } else if (name == QStringLiteral("align-vertical-bottom")) {
+        painter.drawLine(QPointF(4.0, 20.0), QPointF(20.0, 20.0));
+        painter.drawRect(QRectF(6.0, 7.0, 4.0, 10.0));
+        painter.drawRect(QRectF(14.0, 11.0, 4.0, 6.0));
+    } else if (name == QStringLiteral("align-horizontal-center")) {
+        painter.drawLine(QPointF(12.0, 3.0), QPointF(12.0, 21.0));
+        painter.drawRect(QRectF(7.0, 6.0, 10.0, 4.0));
+        painter.drawRect(QRectF(9.0, 14.0, 6.0, 4.0));
+    } else if (name == QStringLiteral("draw-line")) {
+        QPainterPath route;
+        route.moveTo(4.0, 18.0);
+        route.lineTo(12.0, 18.0);
+        route.lineTo(20.0, 6.0);
+        painter.drawPath(route);
+        painter.setBrush(ink);
+        painter.drawEllipse(QPointF(12.0, 18.0), 1.6, 1.6);
+        painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("distribute-horizontal-equal")) {
+        painter.drawRect(QRectF(4.0, 5.0, 4.0, 14.0));
+        painter.drawRect(QRectF(10.0, 5.0, 4.0, 14.0));
+        painter.drawRect(QRectF(16.0, 5.0, 4.0, 14.0));
+    } else if (name == QStringLiteral("distribute-vertical-equal")) {
+        painter.drawRect(QRectF(4.0, 4.0, 16.0, 4.0));
+        painter.drawRect(QRectF(4.0, 10.0, 16.0, 4.0));
+        painter.drawRect(QRectF(4.0, 16.0, 16.0, 4.0));
+    } else if (name == QStringLiteral("view-list-details")) {
+        for (int line = 0; line < 3; ++line) {
+            const qreal y = 7.0 + line * 5.0;
+            painter.setBrush(ink);
+            painter.drawRect(QRectF(4.0, y - 1.0, 2.0, 2.0));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawLine(QPointF(9.0, y), QPointF(20.0, y));
+        }
+    } else if (name == QStringLiteral("view-restore")) {
+        painter.drawRoundedRect(QRectF(3.0, 5.0, 18.0, 14.0), 2.0, 2.0);
+        painter.drawLine(QPointF(8.0, 5.0), QPointF(8.0, 19.0));
+        painter.drawLine(QPointF(18.0, 12.0), QPointF(11.0, 12.0));
+        painter.drawLine(QPointF(13.5, 9.5), QPointF(11.0, 12.0));
+        painter.drawLine(QPointF(13.5, 14.5), QPointF(11.0, 12.0));
+    } else if (name == QStringLiteral("edit-reset")) {
+        QPainterPath house;
+        house.moveTo(4.0, 12.0);
+        house.lineTo(12.0, 4.0);
+        house.lineTo(20.0, 12.0);
+        house.moveTo(7.0, 12.0);
+        house.lineTo(7.0, 20.0);
+        house.lineTo(17.0, 20.0);
+        house.lineTo(17.0, 12.0);
+        painter.drawPath(house);
+    } else if (name == QStringLiteral("preferences-desktop-theme")) {
+        const QRectF circle(4.0, 4.0, 16.0, 16.0);
+        QPainterPath half;
+        half.arcMoveTo(circle, 90.0);
+        half.arcTo(circle, 90.0, -180.0);
+        half.closeSubpath();
+        painter.setBrush(ink);
+        painter.setPen(Qt::NoPen);
+        painter.fillPath(half, ink);
+        painter.setPen(QPen(ink, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(circle);
+        painter.drawLine(QPointF(12.0, 4.0), QPointF(12.0, 20.0));
+    } else if (name == QStringLiteral("go-top")) {
+        painter.drawLine(QPointF(12.0, 20.0), QPointF(12.0, 8.0));
+        painter.drawLine(QPointF(8.0, 12.0), QPointF(12.0, 8.0));
+        painter.drawLine(QPointF(16.0, 12.0), QPointF(12.0, 8.0));
+        painter.drawLine(QPointF(6.0, 4.0), QPointF(18.0, 4.0));
+    } else if (name == QStringLiteral("go-bottom")) {
+        painter.drawLine(QPointF(12.0, 4.0), QPointF(12.0, 16.0));
+        painter.drawLine(QPointF(8.0, 12.0), QPointF(12.0, 16.0));
+        painter.drawLine(QPointF(16.0, 12.0), QPointF(12.0, 16.0));
+        painter.drawLine(QPointF(6.0, 20.0), QPointF(18.0, 20.0));
+    } else if (name == QStringLiteral("x-office-address-book")) {
+        painter.drawRoundedRect(QRectF(4.0, 4.0, 16.0, 18.0), 2.0, 2.0);
+        painter.drawLine(QPointF(9.0, 4.0), QPointF(9.0, 22.0));
+        painter.drawEllipse(QPointF(14.5, 10.0), 2.0, 2.0);
+        QPainterPath shoulders;
+        shoulders.moveTo(11.5, 17.0);
+        shoulders.cubicTo(11.5, 13.5, 17.5, 13.5, 17.5, 17.0);
+        painter.drawPath(shoulders);
+    } else if (name == QStringLiteral("media-playback-pause")) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        painter.drawRect(QRectF(8.0, 6.0, 3.0, 12.0));
+        painter.drawRect(QRectF(14.0, 6.0, 3.0, 12.0));
+        painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("media-seek-forward")) {
+        filledTriangle(painter, ink, 7.0, 6.0, 15.0, 12.0, 7.0, 18.0);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        painter.drawRect(QRectF(17.0, 6.0, 2.5, 12.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(ink, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    } else if (name == QStringLiteral("media-skip-forward")) {
+        filledTriangle(painter, ink, 4.0, 6.0, 11.0, 12.0, 4.0, 18.0);
+        filledTriangle(painter, ink, 11.0, 6.0, 18.0, 12.0, 11.0, 18.0);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        painter.drawRect(QRectF(19.0, 6.0, 2.5, 12.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(ink, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    } else if (name == QStringLiteral("media-playback-stop")) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        painter.drawRoundedRect(QRectF(7.0, 7.0, 10.0, 10.0), 1.5, 1.5);
+        painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("view-refresh")) {
+        circularArrow(painter, 30, 280, 16.6, 17.4, 12.4, 18.0, 16.6, 13.2);
+    } else if (name == QStringLiteral("speedometer")) {
+        painter.drawArc(QRectF(4.0, 8.0, 16.0, 16.0), 0 * 16, 180 * 16);
+        painter.drawLine(QPointF(12.0, 16.0), QPointF(17.0, 9.5));
+        painter.setBrush(ink);
+        painter.drawEllipse(QPointF(12.0, 16.0), 1.5, 1.5);
+        painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("open-menu-symbolic")) {
+        painter.drawLine(QPointF(5.0, 7.0), QPointF(19.0, 7.0));
+        painter.drawLine(QPointF(5.0, 12.0), QPointF(19.0, 12.0));
+        painter.drawLine(QPointF(5.0, 17.0), QPointF(19.0, 17.0));
     }
 }
 

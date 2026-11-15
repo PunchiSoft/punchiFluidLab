@@ -6,7 +6,7 @@ Images of the running application, used by the README and by pull request review
 |---|---|
 | `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
-| `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface: the primary commands first, then the document, editing, transform and zoom families |
+| `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: all 46 ribbon commands, from document and editing to align, transport, panels and menu |
 | `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
 | `catalog-open-light.png` | The catalog open on a light desktop, with its **Catálogo** header and the two-pane hide control; the sheet keeps its column |
 | `catalog-open-dark.png` | The same open catalog on a dark desktop, to check the header and the control in both themes |
