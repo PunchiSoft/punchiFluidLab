@@ -168,6 +168,7 @@ Contrast measure(const ThemeTokens &tokens)
     contrast.line = contrastRatio(tokens.lineStrong, tokens.background);
     contrast.lineRaised = contrastRatio(tokens.lineStrong, tokens.surfaceRaised);
     contrast.accentSoftText = contrastRatio(tokens.ink, tokens.accentSoft);
+    contrast.sheetEdge = contrastRatio(tokens.lineStrong, tokens.surfaceSunken);
     return contrast;
 }
 
@@ -183,6 +184,7 @@ QString describe(const Contrast &contrast)
         QStringLiteral("raised line %1:1 (needs 3.00)").arg(contrast.lineRaised, 0, 'f', 2),
         QStringLiteral("soft accent text %1:1 (needs 4.50)")
             .arg(contrast.accentSoftText, 0, 'f', 2),
+        QStringLiteral("sheet edge %1:1 (needs 3.00)").arg(contrast.sheetEdge, 0, 'f', 2),
     };
     return lines.join(QStringLiteral(", "));
 }

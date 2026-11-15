@@ -647,34 +647,33 @@ Window {
             }
 
             Rectangle {
-                // The block editor docks beside the sheet, not over it: opening it gives the
-                // editor real room and the sheet keeps the rest of the window.
+                // The workspace is the sunken plane around the paper. The block editor
+                // docks beside the sheet, not over it: opening it gives the editor real
+                // room and the sheet keeps the rest of the window.
                 width: parent.width - catalogDock.width - rightDock.width
                 height: parent.height
-                color: session.background
+                color: session.surfaceSunken
 
                 SchematicItem {
                     id: sheet
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: session.unit
                     session: session
                 }
 
                 // The safety copy of a previous run. It is offered, never loaded on its
                 // own: the file may be work the user already saved, and deciding for them
                 // is how a recovery becomes a loss.
-                Rectangle {
+                Card {
                     visible: session.recoveryOffered && window.pendingCommand.length === 0
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
                     anchors.margins: 24
                     width: 420
-                    radius: 6
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.accent
                     height: recoveryColumn.implicitHeight + 28
                     z: 30
+                    session: session
+                    borderColor: session.accent
 
                     Column {
                         id: recoveryColumn
@@ -736,16 +735,14 @@ Window {
                 // The one place the program stops to ask. It appears only when the answer
                 // can lose work, and it names the work: a dialog that says "¿seguro?" and
                 // nothing else teaches the user to click through it.
-                Rectangle {
+                Card {
                     visible: window.pendingCommand.length > 0
                     anchors.centerIn: parent
                     width: 440
-                    radius: 8
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.accent
                     height: confirmColumn.implicitHeight + 32
                     z: 40
+                    session: session
+                    borderColor: session.accent
 
                     Column {
                         id: confirmColumn
@@ -829,16 +826,13 @@ Window {
                 // The sheet's frame, the raster resolution and the parts list. The paper and
                 // the margins are the document's, so the panel edits them through the session;
                 // only the custom print size and the raster settings belong to one export.
-                Rectangle {
+                Card {
                     visible: window.exportPanelOpen
                     anchors.centerIn: parent
                     width: 440
-                    radius: 8
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.accent
                     height: exportColumn.implicitHeight + 32
                     z: 46
+                    session: session
 
                     Column {
                         id: exportColumn
@@ -980,16 +974,13 @@ Window {
                 // The circuit name is the one the selector and the printed title block use.
                 // It is text, not a number, and the core refuses an empty or control-laden
                 // one rather than storing a name nothing can draw.
-                Rectangle {
+                Card {
                     visible: window.renameCircuitOpen
                     anchors.centerIn: parent
                     width: 420
-                    radius: 8
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.accent
                     height: renameColumn.implicitHeight + 32
                     z: 45
+                    session: session
 
                     Column {
                         id: renameColumn
@@ -1078,18 +1069,16 @@ Window {
 
                 // The circuit check, opened from the ribbon. It lists what is wrong and
                 // where, and says so plainly when nothing is.
-                Rectangle {
+                Card {
                     visible: session.checkOpen
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.margins: 24
                     width: 380
-                    radius: 6
-                    color: session.panel
-                    border.width: 1
-                    border.color: session.checkCount > 0 ? session.accent : session.muted
                     height: checkColumn.implicitHeight + 28
                     z: 30
+                    session: session
+                    borderColor: session.checkCount > 0 ? session.accent : session.lineStrong
 
                     Column {
                         id: checkColumn
@@ -1712,18 +1701,16 @@ Window {
     // About: who wrote the program, which version this is, where the repository lives and
     // under which licence it travels. The version comes from the core, so the popup cannot
     // name a build the binary is not.
-    Rectangle {
+    Card {
         id: aboutPopup
         objectName: "aboutPanel"
         visible: window.aboutOpen
         anchors.centerIn: parent
         width: Math.min(560, parent.width - 48)
         height: aboutColumn.implicitHeight + 36
-        radius: 8
-        color: session.panel
-        border.width: 1
-        border.color: session.accent
         z: 60
+        session: session
+        borderColor: session.accent
 
         Accessible.role: Accessible.Dialog
         Accessible.name: qsTr("Acerca de")
@@ -1894,18 +1881,16 @@ Window {
     // the binary instead of depending on a file next to it. The link is not in the About
     // panel's text on purpose: the program never fetches anything, it only opens the
     // desktop's browser when the user presses one of the two links above.
-    Rectangle {
+    Card {
         id: licensePopup
         objectName: "licensePanel"
         visible: window.licenseOpen
         anchors.centerIn: parent
         width: Math.min(680, parent.width - 48)
         height: Math.min(560, parent.height - 48)
-        radius: 8
-        color: session.panel
-        border.width: 1
-        border.color: session.accent
         z: 60
+        session: session
+        borderColor: session.accent
 
         Accessible.role: Accessible.Dialog
         Accessible.name: qsTr("Licencia")

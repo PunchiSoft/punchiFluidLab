@@ -58,6 +58,7 @@ qt_add_qml_module(punchi-fluid
     URI PunchiFluid
     VERSION 1.0
     QML_FILES
+        Card.qml
         ConfigurarPaginaGroup.qml
         DockPanel.qml
         GridControl.qml

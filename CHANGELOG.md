@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### La hoja es una tarjeta sobre el área de trabajo — 2026-11-15
+
+El dibujo deja de flotar sobre el mismo plano que la ventana: el área de trabajo se hunde,
+la hoja se eleva con su borde y su sombra, y los editores flotantes comparten una sola
+tarjeta.
+
+- El área de trabajo usa `surfaceSunken`; el lienzo conserva un margen de `unit`; la hoja se
+  rellena con `panel`, se bordea con `lineStrong` y lleva la sombra del tema desplazada una
+  vez. El fondo del dibujo sigue el papel, para que los símbolos que borran contra la hoja
+  coincidan.
+- **Un `Card`** para Configurar página, Exportar, Comprobar, Renombrar, la recuperación, la
+  confirmación, Acerca de y Licencia: mismo radio, borde, sombra y jerarquía.
+- `--check-theme` mide además el borde de la hoja contra el área de trabajo: **3,39:1** en
+  claro y **4,83:1** en oscuro.
+- **Evidencia**: `--check-theme`, `--check-qml` con 0 problemas, `--selftest` con 0 fallos,
+  `./scripts-dev/check.sh` verde, capturas a 1:1 y con zoom en claro y oscuro, y la tarjeta
+  de página y la de Acerca de revisadas.
+
 ### El catálogo es una paleta de baldosas — 2026-11-15
 
 La barra lateral termina su forma de paleta: dos columnas de baldosas con el símbolo, el

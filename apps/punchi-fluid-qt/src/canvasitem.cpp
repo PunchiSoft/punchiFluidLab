@@ -93,6 +93,22 @@ void SchematicItem::paint(QPainter *painter)
     if (code != PF_OK) {
         return;
     }
+    // The paper is a raised card on the sunken workspace: one shadow offset, the paper
+    // fill, and a line at its edge. They are drawn once per paint, not blurred per frame.
+    const QRectF paper(placement.originX, placement.originY,
+                       sheet.width() * placement.pixelsPerMm,
+                       sheet.height() * placement.pixelsPerMm);
+    const ThemeTokens &tokens = m_session->tokens();
+    if (tokens.shadow.alpha() > 0) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(tokens.shadow);
+        painter->drawRoundedRect(paper.translated(3.0, 3.0), 3.0, 3.0);
+    }
+    painter->fillRect(paper, tokens.panel);
+    painter->setPen(QPen(tokens.lineStrong, 1.0));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(paper);
+
     drawSheetFrame(painter, *m_session, placement, sheet.width(), sheet.height());
     replayFrame(painter, frame, placement);
 
