@@ -224,10 +224,10 @@ because a skipped workflow leaves required checks pending on protected `main`;
 still runs on `main` and on a release.
 
 The window is built and driven headlessly when `apps/punchi-fluid-qt/build` has been
-configured: `--check-qml`, `--check-theme`, `--check-icons` and `--selftest` under
-`QT_QPA_PLATFORM=offscreen`. A machine without Qt skips that step with a message on
-stderr, and CI does not configure it yet — so a green gate there still does not prove
-the window.
+configured: `--check-qml`, `--check-theme`, `--check-icons`, `--check-layout` and
+`--selftest` under `QT_QPA_PLATFORM=offscreen`. A machine without Qt skips that step with a
+message on stderr, and CI does not configure it yet — so a green gate there still does not
+prove the window.
 
 During a session, `./scripts-dev/test.sh` runs the same tests and
 `./scripts-dev/run.sh` opens the window; both compile only when a source changed and

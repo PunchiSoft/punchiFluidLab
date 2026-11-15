@@ -25,6 +25,10 @@ Images of the running application, used by the README and by pull request review
 | `a3-reference-zones-light.png` | An **A3 landscape** paper card on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same raised paper at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified paper on a dark desktop, to show the readout, the card edge and the shadow in both themes |
+| `layout-compact-light.png` | The **compact** window at 900 × 640: the catalog and the right dock folded to their **24 px rails** and the sheet keeping the whole width, so the drawing is not squeezed |
+| `layout-compact-drawer-light.png` | The same window with the catalog opened as a **drawer over the sheet**: the card's edge and shadow, and the sheet still spanning the window behind it |
+| `layout-compact-drawer-dark.png` | The same drawer on a dark desktop, to check the shadow and the edge of a floating panel |
+| `layout-medium-light.png` | The **medium** window at 1050 × 700: the catalog at 220 px and the right dock at 314, which is exactly the sheet's **480 px floor** |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `editar-light.png` | The **Editar** tab on a light desktop: Historial, Circuito, Componente, Alinear, Conducto and Repartir, with the active tab on the body plane |
@@ -68,6 +72,19 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The three modes: the compact window folded, its catalog drawer, and the medium window.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --size 900x640 --inspect \
+  --grab /tmp/layout-compact-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --size 900x640 --inspect \
+  --overlay catalog --grab /tmp/layout-compact-drawer-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --size 900x640 --inspect \
+  --overlay catalog --grab /tmp/layout-compact-drawer-dark.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --size 1050x700 --inspect \
+  --grab /tmp/layout-medium-light.png
 # The catalog open and folded to its rail, light and dark; the rail is 24 px, so the
 # same control stays a target and the sheet takes the rest.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \

@@ -50,7 +50,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 4a | `feat/catalog-header` | title, count, search, collapsible categories, footer | `--selftest`, captures | — |
 | 4b | `feat/catalog-tiles` | two-column tiles, selection, drag, keyboard, resizable width | `--selftest`, captures | — |
 | 5 | `feat/workspace-frame` | sunken workspace, paper elevation, one `Card` for the floating editors | captures, contrast, zoom tests | — |
-| 6a | `feat/adaptive-shell` | three modes, dock modes, sheet minimum, `--check-layout` | resize test, captures | the right dock unification moves alone |
+| 6a | `feat/adaptive-shell` | three modes from content minimums, sheet floor, compact rails and drawer, `--check-layout` | `--check-layout`, captures | the rest moves to 6a-ii |
+| 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered geometry, large-font run | `--selftest`, captures | — |
 | 6b | `feat/ribbon-minimized` | minimized ribbon, remembered geometry | `--selftest`, captures | — |
 | 6c | `feat/view-strip` | the floating view strip, fit to the frame, view history, the three toggles | `--selftest`, captures | the zoom-window gesture if it grows |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
@@ -201,33 +202,47 @@ edge against the workspace; the existing zoom tests still green.
 
 ### 6a and 6b — The adaptive shell
 
-At 900 px the ribbon folds, but the 248 px catalog, the 360 px dock and the 12 px margin do
-not: the sheet has no room left. The window has one breakpoint and fixed widths.
+At 900 px the ribbon folded, but the catalog and the right dock kept their 324 and 360 px:
+the sheet had 180 px and the drawing was unusable. The shell now chooses its mode from the
+room it has.
 
-- **Modes** by available width, with content minimums rather than magic numbers: a sheet
-  minimum of 480, a catalog minimum of 220, a right dock minimum of 300. Wide, medium and
-  compact.
-- **Dock modes**: `docked`, `rail` and `overlay`; the right dock becomes a drawer in
-  compact, and never covers the sheet without a handle to close it.
-- **Ribbon**: a minimized state, chosen by the user or by the compact mode, that shows the
-  open tab's groups as a panel under the tab row and closes after a command or `Esc`. The
-  state is remembered.
-- **Window**: minimum 900 × 600; geometry remembered; a font larger than the default must
-  not clip the ribbon, so heights come from the font and `unit`, not from 34/62/84.
-- **Test**: a headless `--check-layout` that resizes to 900, 1100, 1240, 1280 and 1920 and
-  asserts the mode, the sheet minimum and that no two panels overlap; runs at 1.25×, 1.5×
-  and 2× density and with a large font; moving the window between two monitors of different
-  scale stays a manual check, because it needs two screens.
+**Landed in 6a.**
 
-**How it is built.** One layout owns each row, every region declares a minimum and a
-preferred width, and the mode follows from what fits, so a new panel does not add a
-breakpoint. A region placed by a layout sets no `x`, `y`, `width` or `height`; an anchored
-region declares no `Layout.*`. Thresholds are read from the room in logical pixels, never
-from a resolution, and the sheet's minimum outranks a panel's preferred width. The
-procedure, the traps and the DPI matrix are
+- **Modes** from content minimums rather than magic numbers: the sheet keeps 480, the
+  catalog 220 and the right dock 300, plus the two canvas margins. `layoutMode` is one
+  expression in `Main.qml`, so a new panel does not add a breakpoint. At the default font
+  the wide mode starts at 1200 px and the medium one at 1036 px.
+- **Medium** narrows both panels towards their minimums and gives the rest to the sheet; at
+  1050 px the catalog takes 220 and the dock 314, which is exactly the sheet's floor.
+- **Compact** folds both panels to their 24 px rails and gives the sheet the whole width.
+  A panel opens as a drawer over the sheet, with the card's edge and shadow, and starts
+  folded so a small window does not open with the drawing covered.
+- **The sheet's floor holds** in every mode: 480 px at 1050, 1100 and 1200, and more above.
+- **`--check-layout`** resizes to 900, 1000, 1050, 1100, 1200, 1280 and 1920 and asserts the
+  mode, the floor, that the sheet spans the window in compact and that the two panels never
+  overlap; then it opens the drawer and checks it took no column. The boundaries come from
+  the live minimums, so a larger font moves them instead of failing the check.
+- **A defect found on the way**: a fresh profile opened the catalog at its 220 px minimum,
+  because the stored-width fallback was clamped before the theme settled the spacing unit.
+  The binding to `18 × unit` now survives when there is no stored preference.
+
+**Left for 6a-ii.**
+
+- The **minimized ribbon** and its remembered state.
+- The **remembered window geometry**; today the window opens at 1280 × 800.
+- The **large-font and 1.25×/1.5× runs** in the check; the 2× run passes, and a run with a
+  different font needs a machine whose platform font is not the offscreen default.
+- The window's minimum height (560 in the code, 600 in the contract).
+
+**How it is built.** The regions are anchored, not stacked by a `Row`: in compact the
+workspace spans the window and the panel floats above it. One expression decides the mode
+from the minimums, and no region mixes anchors with `Layout.*`. Thresholds are read in
+logical pixels, never from a resolution, and the sheet's minimum outranks a panel's
+preferred width. The procedure and the traps are
 [qt-adaptive-layout](../.agents/skills/qt-adaptive-layout/SKILL.md).
 
-**Evidence**: `--check-layout`, `--selftest`, captures of the three modes.
+**Evidence**: `--check-layout` (seven widths plus the drawer, 0 failures), `--check-qml`,
+`--selftest`, captures of compact folded, compact with the drawer, medium and wide.
 
 ### 6c — The view strip
 
