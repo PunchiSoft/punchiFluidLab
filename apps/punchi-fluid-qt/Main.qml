@@ -147,6 +147,14 @@ Window {
     /// The right dock holds the properties and the title-block editor. It is only
     /// available while one of them is open, and hiding it is view state.
     property bool rightDockOpen: true
+    /// In the compact window a panel opens over the sheet and starts folded: the
+    /// remembered preference must not be what covers the drawing on a small screen.
+    property bool catalogOverlay: false
+    property bool rightDockOverlay: false
+    onLayoutModeChanged: if (layoutMode !== "compact") {
+                             catalogOverlay = false;
+                             rightDockOverlay = false;
+                         }
     readonly property bool rightDockHasContent: session.inspectorOpen || window.titleBlockOpen
     onTitleBlockOpenChanged: if (titleBlockOpen) rightDockOpen = true
     /// Auto-hide is opt-in; the panels remember it and their own visibility.
@@ -156,6 +164,33 @@ Window {
         || window.aboutOpen || window.licenseOpen || window.pendingCommand.length > 0
         || openDialog.visible || saveDialog.visible || exportDialog.visible
     property bool viewStateReady: false
+
+    /// The window is laid out from content minimums, not from a remembered resolution
+    /// (interface-plan.md, stage 6a): the sheet floor and the two canvas margins are the
+    /// room a panel may not take, and what is left is what the panels share. Every number
+    /// here is a measurement or the spacing unit, never a width copied from a screenshot.
+    readonly property int sheetFloor: 480
+    readonly property int catalogFloor: 220
+    readonly property int dockFloor: 300
+    readonly property int dockPreference: 20 * session.unit
+    readonly property int panelRoom: Math.max(0, window.width - 2 * session.unit)
+    readonly property string layoutMode:
+        window.panelRoom >= window.catalogWidth + window.dockPreference + window.sheetFloor
+            ? "wide"
+            : window.panelRoom >= window.catalogFloor + window.dockFloor + window.sheetFloor
+                ? "medium"
+                : "compact"
+    /// What the panels may take once the drawing has its floor.
+    readonly property int panelBudget: Math.max(0, window.panelRoom - window.sheetFloor)
+    readonly property int effectiveDockWidth:
+        window.layoutMode === "wide"
+            ? window.dockPreference
+            : Math.min(window.dockPreference,
+                       Math.max(window.dockFloor, window.panelBudget - window.catalogFloor))
+    readonly property int effectiveCatalogWidth:
+        window.layoutMode === "wide"
+            ? window.catalogWidth
+            : Math.max(window.catalogFloor, window.panelBudget - window.effectiveDockWidth)
 
     onCatalogOpenChanged: if (viewStateReady) {
                               session.setViewSetting("panel/catalogOpen", catalogOpen);
@@ -173,10 +208,13 @@ Window {
     Component.onCompleted: {
         // View state only: the document is untouched by which panel was open last time.
         window.catalogOpen = session.viewSetting("panel/catalogOpen", true);
-        const storedWidth =
-            Number(session.viewSetting("panel/catalogWidth", 18 * session.unit));
-        window.catalogWidth =
-            Math.max(220, Math.min(480, isFinite(storedWidth) ? storedWidth : 18 * session.unit));
+        // A stored width is a preference; a fresh profile keeps the binding to the spacing
+        // unit, so the panel opens at its real width even though the theme settles after
+        // this call. Clamping a missing value to 220 parked the catalog at its minimum.
+        const storedWidth = Number(session.viewSetting("panel/catalogWidth", 0));
+        if (isFinite(storedWidth) && storedWidth > 0) {
+            window.catalogWidth = Math.max(220, Math.min(480, storedWidth));
+        }
         window.rightDockOpen = session.viewSetting("panel/rightDockOpen", true);
         window.panelAutoHide = session.viewSetting("panel/autoHide", false);
         window.viewStateReady = true;
@@ -611,7 +649,10 @@ Window {
             }
         }
 
-        Row {
+        // The regions are anchored, not stacked by a Row: in the compact window a panel
+        // floats over the sheet instead of taking a column, and anchors let the workspace
+        // keep its full width while the panel is above it.
+        Item {
             width: parent.width
             height: parent.height - ribbon.height - status.height
 
@@ -622,17 +663,34 @@ Window {
                 title: qsTr("Catálogo")
                 hideName: qsTr("Ocultar el catálogo")
                 showName: qsTr("Mostrar el catálogo")
-                open: window.catalogOpen
-                panelWidth: window.catalogWidth
-                height: parent.height
+                open: window.layoutMode === "compact" ? window.catalogOverlay
+                                                      : window.catalogOpen
+                panelWidth: window.layoutMode === "compact"
+                              ? Math.min(window.catalogWidth, window.width - 4 * session.unit)
+                              : window.effectiveCatalogWidth
+                floating: window.layoutMode === "compact"
+                z: window.layoutMode === "compact" ? 10 : 0
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 resizable: true
                 minimumPanelWidth: 220
                 maximumPanelWidth: 480
                 autoHide: window.panelAutoHide
                 autoHideBlocked: window.panelAutoHideBlocked
-                onToggleRequested: window.catalogOpen = !window.catalogOpen
+                onToggleRequested: {
+                    if (window.layoutMode === "compact") {
+                        window.catalogOverlay = !window.catalogOverlay;
+                    } else {
+                        window.catalogOpen = !window.catalogOpen;
+                    }
+                }
                 onAutoHideRequested: function (open) {
-                    window.catalogOpen = open;
+                    if (window.layoutMode === "compact") {
+                        window.catalogOverlay = open;
+                    } else {
+                        window.catalogOpen = open;
+                    }
                 }
                 onWidthRequested: function (width) {
                     window.catalogWidth = width;
@@ -650,8 +708,12 @@ Window {
                 // The workspace is the sunken plane around the paper. The block editor
                 // docks beside the sheet, not over it: opening it gives the editor real
                 // room and the sheet keeps the rest of the window.
-                width: parent.width - catalogDock.width - rightDock.width
-                height: parent.height
+                anchors.left: window.layoutMode === "compact"
+                               ? parent.left : catalogDock.right
+                anchors.right: window.layoutMode === "compact"
+                                ? parent.right : rightDock.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 color: session.surfaceSunken
 
                 SchematicItem {
@@ -1148,16 +1210,34 @@ Window {
                        : (session.inspectorOpen ? qsTr("Propiedades") : qsTr("Cajetín"))
                 hideName: qsTr("Ocultar el panel derecho")
                 showName: qsTr("Mostrar el panel derecho")
-                open: window.rightDockOpen
+                open: window.layoutMode === "compact" ? window.rightDockOverlay
+                                                      : window.rightDockOpen
                 available: window.rightDockHasContent
-                panelWidth: 360
+                panelWidth: window.layoutMode === "compact"
+                                ? Math.min(window.dockPreference,
+                                           window.width - 4 * session.unit)
+                                : window.effectiveDockWidth
+                floating: window.layoutMode === "compact"
+                z: window.layoutMode === "compact" ? 10 : 0
                 sideRight: true
-                height: parent.height
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 autoHide: window.panelAutoHide
                 autoHideBlocked: window.panelAutoHideBlocked
-                onToggleRequested: window.rightDockOpen = !window.rightDockOpen
+                onToggleRequested: {
+                    if (window.layoutMode === "compact") {
+                        window.rightDockOverlay = !window.rightDockOverlay;
+                    } else {
+                        window.rightDockOpen = !window.rightDockOpen;
+                    }
+                }
                 onAutoHideRequested: function (open) {
-                    window.rightDockOpen = open;
+                    if (window.layoutMode === "compact") {
+                        window.rightDockOverlay = open;
+                    } else {
+                        window.rightDockOpen = open;
+                    }
                 }
 
                 Flickable {
