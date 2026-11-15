@@ -31,7 +31,9 @@ Numbers, not adjectives. The drawing is checked against this table.
 
 ## Evidence
 
-- `--symbol-sheet <id>` at 300 dpi, light and dark: `<id>-300-light.png`, `<id>-300-dark.png`
+- 300 dpi sheet, print ink:
+  `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-300.png`
+  (a 60 mm square, the symbol in a fixed 40 mm box; dark scheme is the next step)
 - Symbol lint: passes
 - Palette legibility at 24–30 px: `<id>-light.png`, `<id>-dark.png`
 
