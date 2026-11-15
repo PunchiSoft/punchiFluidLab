@@ -901,6 +901,17 @@ void FluidSession::setViewSetting(const QString &key, const QVariant &value)
     settings.setValue(QStringLiteral("view/") + key, value);
 }
 
+void FluidSession::setBlockVisible(bool visible)
+{
+    if (m_blockVisible == visible) {
+        return;
+    }
+    // View state, not a document edit: no undo entry, no modified mark.
+    m_blockVisible = visible;
+    emit blockVisibleChanged();
+    emit changed();
+}
+
 void FluidSession::applyPalette(const QPalette &palette)
 {
     m_tokens = tokensFrom(palette);

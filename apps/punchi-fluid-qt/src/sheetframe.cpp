@@ -262,7 +262,9 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
         // the school and technical models are shorter, and a hidden field collapses its
         // cell. Text keeps the ISO 3098 heights (5 / 3.5 / 2.5 mm).
         const int preset = session.blockPreset();
-        if (preset == 3) {
+        // Hidden by the view strip, or by the document's own "Sin cajetín": either way the
+        // block is not drawn, and the band it reserves stays reserved.
+        if (preset == 3 || !session.blockVisible()) {
             painter->restore();
             return;
         }

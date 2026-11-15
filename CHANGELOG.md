@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Cajetín en pantalla y un solo Iniciar/Pausa — 2026-11-15
+
+La tira suma los dos controles que faltaban de la lista acordada.
+
+- **Mostrar cajetín**: on/off de vista. El cajetín deja de dibujarse, la banda que reserva
+  sigue reservada y la impresión no cambia; sin deshacer y sin marca de modificado. El botón
+  se resalta cuando el cajetín está oculto, que es el estado excepcional.
+- **Iniciar/Pausa**: un solo botón que arranca el modelo y lo **pausa donde está** en vez de
+  detenerlo y perder la marcha; la sesión ya tenía `startSimulation` y `pauseSimulation`, así
+  que no hay estado nuevo.
+- La rejilla conserva su interruptor en **Ver** y el borde se sigue dibujando siempre.
+- **Evidencia**: `--selftest` con los pasos `view: hiding the block changes nothing in the
+  document`, `view: the strip starts the model` y `view: the same button pauses where it
+  stands`, 0 fallos; `--check-qml` 0; `./scripts-dev/check.sh` verde y capturas retomadas.
+
 ### La tira de vista flota sobre el borde derecho — 2026-11-15
 
 La segunda mitad de la 6c pone la superficie de las operaciones que ya existían.

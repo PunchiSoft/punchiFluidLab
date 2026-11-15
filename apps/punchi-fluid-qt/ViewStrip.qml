@@ -93,6 +93,14 @@ Card {
             canvas.previousView();
         } else if (id === "panel") {
             strip.panelOpen = !strip.panelOpen;
+        } else if (id === "block") {
+            session.blockVisible = !session.blockVisible;
+        } else if (id === "play") {
+            if (session.running) {
+                session.pauseSimulation();
+            } else {
+                session.startSimulation();
+            }
         }
     }
 
@@ -123,6 +131,38 @@ Card {
                 hint: qsTr("Zoom · disminuir, 100 %, aumentar y vista anterior")
                 selected: strip.panelOpen
                 onTriggered: strip.invoke("panel")
+            }
+
+            Rectangle {
+                width: strip.side - 12
+                height: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: strip.session.line
+            }
+
+            ViewStripButton {
+                session: strip.session
+                iconName: "document-properties"
+                name: strip.session.blockVisible ? qsTr("Ocultar el cajetín")
+                                                 : qsTr("Mostrar el cajetín")
+                hint: strip.session.blockVisible
+                      ? qsTr("Ocultar el cajetín · solo en pantalla")
+                      : qsTr("Mostrar el cajetín · solo en pantalla")
+                // Highlighted when the block is hidden: the strip flags the exceptional
+                // state, not the default one.
+                selected: !strip.session.blockVisible
+                onTriggered: strip.invoke("block")
+            }
+
+            ViewStripButton {
+                session: strip.session
+                iconName: strip.session.running ? "media-playback-pause"
+                                                : "media-playback-start"
+                name: strip.session.running ? qsTr("Pausa") : qsTr("Iniciar")
+                hint: strip.session.running
+                      ? qsTr("Pausa · F8, se detiene donde está")
+                      : qsTr("Iniciar · F9, anima el modelo")
+                onTriggered: strip.invoke("play")
             }
 
             Rectangle {

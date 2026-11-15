@@ -2577,6 +2577,35 @@ int main(int argc, char *argv[])
             state->window->setProperty("viewStripFolded", false);
         });
 
+        // The block's show toggle is view state, and the transport is one button: start,
+        // then pause where it stands instead of stopping and losing the run.
+        steps->push_back([state] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            state->panelModified = state->session->modified();
+            state->panelCanUndo = state->session->canUndo();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("block")));
+        });
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            check(!state->session->blockVisible()
+                      && state->session->modified() == state->panelModified
+                      && state->session->canUndo() == state->panelCanUndo,
+                  QStringLiteral("view: hiding the block changes nothing in the document"));
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("block")));
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("play")));
+        });
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            check(state->session->running(),
+                  QStringLiteral("view: the strip starts the model"));
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("play")));
+        });
+        steps->push_back([state, check] {
+            check(!state->session->running() && !state->session->editing(),
+                  QStringLiteral("view: the same button pauses where it stands"));
+            state->session->stopSimulation();
+        });
+
         // The sheet is the paper: choosing A3 changes the document, the canvas and the
         // check together, and every choice is one undo.
         steps->push_back([state, check] {
