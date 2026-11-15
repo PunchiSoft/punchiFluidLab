@@ -23,6 +23,7 @@ skill is the bug.
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
+| [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) | breakpoints on available room, Layout versus anchors, per-panel minimums, the size and DPI matrix | resizing the shell; adding a panel, dock or view strip; proving the adaptive stage |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
 | [parity-run](parity-run/SKILL.md) | the loop of an owner-authorized long run: queue, one commit per capability, gate, one pull request | a parity run is authorized or resumed; a fresh session continues it after a reset |
 | [reference-parity](reference-parity/SKILL.md) | inspect the running parent app as the reference for symbols, animations and workflow, then prove parity without copying | a symbol, animation or workflow must match the parent app; the owner says the result does not look like the reference |
@@ -44,6 +45,10 @@ skill is the bug.
 Before the first edit of any change, read
 [pull-request-workflow](pull-request-workflow/SKILL.md): no work happens on `main`, and
 the branch, the gate and the pull request are one route.
+
+For a change to the window — a panel, a dock, the ribbon, the view strip or a new
+breakpoint — read [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) before choosing a
+width: the content sets the limits, the room chooses the mode.
 
 For a capability that does something a student needs — that is most of the product — read
 [capability-plan](capability-plan/SKILL.md) first: it is the gate that turns a need into a

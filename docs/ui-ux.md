@@ -322,8 +322,22 @@ before a panel is allowed to cover it:
 - Heights come from the font and the spacing unit, not from 34, 62 or 84: a desktop font
   larger than the default must not clip the ribbon.
 - The window opens at 1280 px and remembers its geometry. The minimum is 900 × 600.
-- **Today** only the ribbon breakpoint exists; the modes, the drawer and the minimized
-  ribbon are target ([interface-plan.md](interface-plan.md) stage 6).
+- **The mode is a consequence of the limits, not a list of numbers.** Each region declares
+  a minimum and a preferred width; wide, medium and compact follow from what fits, so a new
+  panel does not need a new breakpoint.
+- **The breakpoint is measured on the room the shell has**, in device-independent pixels,
+  never on a resolution remembered from a screenshot: HiDPI changes the pixel count without
+  changing the window.
+- **The sheet's minimum wins.** When a panel's preferred width and the sheet's floor
+  disagree, the panel narrows to its minimum and then becomes a rail or a drawer; the
+  drawing is the region that never gives way.
+- **Layouts or anchors, never both in the same item.** A region placed by a layout must not
+  set `x`, `y`, `width` or `height`, and an anchored region must not declare `Layout.*`:
+  mixing them produces geometry conflicts and binding cycles.
+- **Today** only the ribbon breakpoint exists, and every region is anchored with its width
+  computed by subtraction; the modes, the drawer and the minimized ribbon are target
+  ([interface-plan.md](interface-plan.md) stage 6a). The window's minimum is 900 × 560 in
+  the code, below the 900 × 600 this contract states; stage 6a closes that gap.
 
 ### 3. The sheet
 
@@ -416,6 +430,36 @@ schematic simulator lives by, and the one the reference tool uses:
   because the valve symbol also shows its spool position and the status bar prints
   the number.
 - Every long operation (> 100 ms) shows progress in the status bar, never a modal.
+
+### 3.1 The view strip
+
+The commands used while reading the sheet — moving, zooming, fitting, hiding a guide and
+starting the model — are a **strip that floats over the right edge of the drawing area**,
+not a fourth column and not a floating window: it takes no width from the paper, it does
+not fight the right dock, and it leaves with the room it needs.
+
+| Control | Behaviour |
+|---|---|
+| **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, the status bar says how to leave, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode. |
+| **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Ventana** (drag a rectangle; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
+| **Ajustar al marco** | Fits the **frame inside the margins**, not the paper: the drawing space is what the reader came for, and the paper margin is not drawing. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. |
+| **Cajetín**, **Rejilla**, **Marco** | Three toggles over what is drawn on screen, and nothing else. The block, the grid and the reference frame are view state, like the zoom: no undo entry, no modified mark, no file field. |
+| **Iniciar / Pausa** | One button, the same command as `F9`/`F8`; neutral until the model runs, and the rest of the transport stays in **Simular**. |
+
+- **No literal in the strip.** Its width, height, icon size and row height come from the
+  spacing unit and the font; its colours from the theme tokens; the double-click interval
+  from the desktop's `QStyleHints`, so a slower double click is the one the system already
+  taught the user.
+- **Nothing is duplicated.** Every button calls the same action as the ribbon and the
+  keyboard path; the strip is a second place to reach the command, never a second command.
+- **It folds.** The user can fold it to one button, the state is remembered as view state,
+  and below the compact breakpoint it folds on its own. Reduced motion makes the fold
+  instant.
+- **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
+  budget to say what the zoom readout and **Ajustar al marco** already say.
+- **Today** the ribbon carries Aumentar, Disminuir and Tamaño original, the middle button
+  pans and `Ctrl+0` returns to 1:1; the strip, the fit, the view history and the three
+  toggles are target ([interface-plan.md](interface-plan.md) stage 6c).
 
 ### 4. Status bar
 
@@ -580,6 +624,12 @@ translator must be able to reorder the sentence.
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
   ([interface-plan.md](interface-plan.md) stage 6).
+- Whether **Cajetín** and **Marco** stay view toggles or one of them becomes a document
+  change with its own command and undo. Until the owner decides, both are view state, and
+  the block keeps its band reserved even when it is not drawn.
+- What **Marco externo** names: the paper's edge or the ISO reference frame inside the
+  margins. The duplicated paper edge is gone and one line remains; if the toggle must hide
+  a frame, it is the ISO frame, never the paper's own boundary.
 - UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
   `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 
