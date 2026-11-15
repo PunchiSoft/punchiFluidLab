@@ -36,6 +36,9 @@ Item {
     property bool autoHideBlocked: false
     property bool hovered: false
     property bool manualHide: false
+    /// `true` when the panel floats over the sheet (the compact window) instead of taking a
+    /// column: it carries the card's edge and shadow so it reads as above the drawing.
+    property bool floating: false
     readonly property int autoHideOpenMs: 350
     readonly property int autoHideCloseMs: 800
 
@@ -52,17 +55,31 @@ Item {
             easing.type: Easing.InOutQuad
         }
     }
-    clip: true
+    // A floating panel draws its shadow outside its own bounds, so it may not clip; the
+    // width animation is clipped by the body instead, which is the only part that moves.
+    clip: !floating
     readonly property bool railVisible: available && width <= railWidth + 0.5
+
+    Rectangle {
+        visible: dock.floating && !dock.railVisible
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: 8
+        color: dock.session ? dock.session.shadow : "transparent"
+        z: -1
+    }
 
     Rectangle {
         anchors.fill: parent
         color: dock.railVisible ? dock.session.surfaceRaised : dock.session.background
+        border.width: dock.floating && !dock.railVisible ? 1 : 0
+        border.color: dock.session ? dock.session.lineStrong : "transparent"
     }
 
     // The edge against the sheet, so the panel is not a floating rectangle. It stays
     // while the panel is folded, which is what makes the rail read as a panel edge.
     Rectangle {
+        visible: !dock.floating
         width: 1
         height: parent.height
         anchors.right: dock.sideRight ? undefined : parent.right

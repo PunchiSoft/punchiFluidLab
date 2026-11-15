@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### La ventana elige su modo por el espacio que tiene — 2026-11-15
+
+A 900 px la cinta se plegaba pero el catálogo y el panel derecho conservaban sus 324 y 360
+px: a la hoja le quedaban 180 y el dibujo era inservible. El armazón decide ahora su modo
+con mínimos de contenido, no con una lista de anchos.
+
+- **Tres modos**: ancha desde 1200 px con la fuente por defecto, media desde 1036 y
+  compacta por debajo. El mínimo de la hoja es **480 px** y no cede en ningún modo.
+- En **media** los dos paneles se estrechan hasta sus mínimos; en **compacta** se pliegan a
+  sus rieles de 24 px, la hoja ocupa todo el ancho y un panel se abre como **cajón** con el
+  borde y la sombra de la tarjeta, plegado de inicio para no abrir tapando el dibujo.
+- **`--check-layout`** recorre 900, 1000, 1050, 1100, 1200, 1280 y 1920 px y comprueba el
+  modo, el suelo de la hoja, que en compacta la hoja ocupa la ventana y que los paneles no
+  se pisan; después abre el cajón y comprueba que no le quita columna. Los umbrales salen de
+  los mínimos vivos, así que una fuente mayor los mueve en vez de romper la prueba.
+- **Defecto encontrado de paso**: en un perfil nuevo el catálogo abría en su mínimo de
+  220 px y no en `18 × unit`, porque el valor por defecto se recortaba antes de que el tema
+  fijara la unidad. Ahora el enlace sobrevive cuando no hay preferencia guardada.
+- Queda para **6a-ii** la cinta minimizada, la geometría recordada de la ventana y la pasada
+  con fuente grande y escalas 1,25× y 1,5×.
+- **Evidencia**: `--check-layout` con 0 fallos, `--check-qml` 0 problemas, `--selftest` 0
+  fallos, `./scripts-dev/check.sh` verde, una pasada a 2× y capturas de compacta plegada,
+  compacta con cajón, media y ancha.
+
 ### Las marcas de centrado siguen la norma — 2026-11-15
 
 Las cuatro marcas del borde llevaban una flecha que la norma no pide y cruzaban todo el

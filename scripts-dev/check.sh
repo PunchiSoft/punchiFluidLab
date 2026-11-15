@@ -93,6 +93,7 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     "$app" --check-qml
     "$app" --check-theme
     "$app" --check-icons
+    "$app" --check-layout
     "$app" --selftest
 
     # The export prints the sheet the session holds, so it is proved on a real file: a PDF that

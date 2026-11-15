@@ -11,6 +11,7 @@
 //! --confirm <what>     open the unsaved-work confirmation (`new`, `open` or `close`)
 //! --theme light|dark   force a palette instead of the desktop one
 //! --check-theme        print the contrast ratios and exit 1 when one fails
+//! --check-layout       resize through the shell's modes; exits 1 when one is wrong
 //! --check-icons        report every ribbon icon as project, theme or missing
 //! --icon-sheet <file>  render the project icons at 16, 24 and 32 px, for a review
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
@@ -23,6 +24,7 @@
 //! --menu               open the collapsed ribbon menu, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
+//! --overlay catalog|right  open a compact panel over the sheet, for a capture of it
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
@@ -44,6 +46,7 @@
 #include <QWheelEvent>
 #include <QIcon>
 #include <QQmlApplicationEngine>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QSettings>
 #include <QTimer>
@@ -122,6 +125,7 @@ int main(int argc, char *argv[])
         arguments.contains(QStringLiteral("--selftest"))
         || arguments.contains(QStringLiteral("--check-qml"))
         || arguments.contains(QStringLiteral("--check-icons"))
+        || arguments.contains(QStringLiteral("--check-layout"))
         || arguments.contains(QStringLiteral("--grab"))
         || arguments.contains(QStringLiteral("--export"))
         || arguments.contains(QStringLiteral("--probe"))
@@ -667,6 +671,129 @@ int main(int argc, char *argv[])
     if (arguments.contains(QStringLiteral("--inspect"))) {
         for (FluidSession *session : sessions()) {
             session->inspectValve();
+        }
+    }
+    if (arguments.contains(QStringLiteral("--check-layout"))) {
+        // The adaptive shell, proved where it is decided: the window is resized to the sizes
+        // the capability names and the mode, the sheet's floor and the panels are read back
+        // from the live items. A mode that only exists in a comment fails here.
+        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
+        auto *sheet = window != nullptr ? window->findChild<SchematicItem *>() : nullptr;
+        auto *catalog = window != nullptr
+                            ? window->findChild<QQuickItem *>(QStringLiteral("catalogDock"))
+                            : nullptr;
+        auto *dock = window != nullptr
+                         ? window->findChild<QQuickItem *>(QStringLiteral("rightDock"))
+                         : nullptr;
+        if (window == nullptr || sheet == nullptr || catalog == nullptr || dock == nullptr) {
+            std::fprintf(stderr, "layout: no window, canvas or dock\n");
+            return 1;
+        }
+        const QList<FluidSession *> layoutSessions = sessions();
+        // The dock only exists while it has content, so the check opens the inspector: the
+        // squeezed case is the one with both panels asking for room.
+        for (FluidSession *session : layoutSessions) {
+            session->inspectValve();
+        }
+        const qreal unit = layoutSessions.isEmpty() ? 18.0 : layoutSessions.constFirst()->unit();
+        struct LayoutCase {
+            int width;
+            int height;
+        };
+        const LayoutCase cases[] = {
+            { 900, 640 }, { 1000, 700 }, { 1050, 700 }, { 1100, 700 },
+            { 1200, 760 }, { 1280, 800 }, { 1920, 1000 },
+        };
+        // The boundaries are the shell's own content minimums, read from the window, so a
+        // desktop with a larger font moves them instead of failing this check.
+        const int catalogPref = window->property("catalogWidth").toInt();
+        const qreal dockPref = window->property("dockPreference").toReal();
+        const qreal floor = window->property("sheetFloor").toReal();
+        const auto expectedMode = [&](int width) {
+            const qreal room = static_cast<qreal>(width) - 2.0 * unit;
+            if (room >= static_cast<qreal>(catalogPref) + dockPref + floor) {
+                return QStringLiteral("wide");
+            }
+            if (room >= 220.0 + 300.0 + floor) {
+                return QStringLiteral("medium");
+            }
+            return QStringLiteral("compact");
+        };
+        std::fprintf(stderr,
+                     "layout: at unit %.0f the wide mode starts at %d and the medium at %d\n",
+                     unit, static_cast<int>(static_cast<qreal>(catalogPref) + dockPref + floor
+                                            + 2.0 * unit),
+                     static_cast<int>(220.0 + 300.0 + floor + 2.0 * unit));
+        // The panels animate their width, so every case is read after the motion, not
+        // during it: a mode decided on a half-open panel is not what the user sees.
+        const auto settle = [] {
+            QEventLoop loop;
+            QTimer::singleShot(260, &loop, &QEventLoop::quit);
+            loop.exec();
+        };
+        int failures = 0;
+        for (const LayoutCase &one : cases) {
+            window->resize(one.width, one.height);
+            settle();
+
+            const QString mode = window->property("layoutMode").toString();
+            const QString expected = expectedMode(one.width);
+            const qreal sheetWidth = sheet->width();
+            const bool modeOk = mode == expected;
+            const bool floorOk = sheetWidth >= 480.0;
+            // A compact window floats its panels, so the sheet keeps the whole width; a
+            // docked one gives them a column and the workspace starts after it.
+            const bool floatOk = mode != QLatin1String("compact")
+                                 || sheetWidth >= one.width - 2.0 * unit - 1.0;
+            const QRectF catalogScene(catalog->mapToScene(QPointF(0.0, 0.0)),
+                                      QSizeF(catalog->width(), catalog->height()));
+            const QRectF dockScene(dock->mapToScene(QPointF(0.0, 0.0)),
+                                   QSizeF(dock->width(), dock->height()));
+            const bool overlap = catalog->width() > 0.0 && dock->width() > 0.0
+                                 && catalogScene.intersects(dockScene);
+            const bool ok = modeOk && floorOk && floatOk && !overlap;
+            if (!ok) {
+                ++failures;
+            }
+            std::fprintf(stderr,
+                         "layout: %4dx%-4d %-7s sheet %6.1f  mode %s  floor %s  spans %s  "
+                         "panels %s  catalog %d  dock %d  unit %.1f\n",
+                         one.width, one.height, qUtf8Printable(mode), sheetWidth,
+                         modeOk ? "ok" : "FAIL", floorOk ? "ok" : "FAIL",
+                         floatOk ? "ok" : "FAIL", overlap ? "overlap" : "clear",
+                         static_cast<int>(catalog->width()), static_cast<int>(dock->width()),
+                         unit);
+        }
+        // The compact drawer: a panel asked for must open over the sheet without taking a
+        // column from it, which is what keeps the drawing at its floor in a small window.
+        window->resize(900, 640);
+        settle();
+        window->setProperty("catalogOverlay", true);
+        settle();
+        const bool drawer = catalog->width() > 4.0 * unit
+                            && sheet->width() >= 900.0 - 2.0 * unit - 1.0;
+        if (!drawer) {
+            ++failures;
+        }
+        std::fprintf(stderr,
+                     "layout:  compact drawer catalog %d, sheet %6.1f  %s\n",
+                     static_cast<int>(catalog->width()), sheet->width(),
+                     drawer ? "ok" : "FAIL");
+        window->setProperty("catalogOverlay", false);
+        std::fprintf(stderr, "layout: %d failure(s)\n", failures);
+        return failures == 0 ? 0 : 1;
+    }
+
+    if (arguments.contains(QStringLiteral("--overlay"))) {
+        // A compact window folds its panels; this opens one over the sheet so a capture can
+        // show the drawer, which otherwise needs a click on the rail.
+        const QString which = value(QStringLiteral("--overlay"));
+        for (QObject *root : engine.rootObjects()) {
+            if (which == QLatin1String("catalog")) {
+                root->setProperty("catalogOverlay", true);
+            } else if (which == QLatin1String("right")) {
+                root->setProperty("rightDockOverlay", true);
+            }
         }
     }
     if (arguments.contains(QStringLiteral("--right-dock-closed"))) {

@@ -312,10 +312,12 @@ before a panel is allowed to cover it:
 |---|---|---|---|---|
 | **Ancha** | the sheet, the catalog and the dock fit at their preferred widths | full | docked | docked |
 | **Media** | the preferred widths no longer fit but the minimums do | full | docked, narrower | docked, narrower |
-| **Compacta** | the minimums do not fit (about 1240 px and below today) | tabs and **Menú**; optionally minimized | rail | overlay drawer with its handle |
+| **Compacta** | the minimums do not fit (about 1036 px and below at the default font) | tabs and **Menú**; optionally minimized | rail, opened as a drawer | rail, opened as a drawer |
 
 - The minimums are content measurements, not magic numbers: the sheet keeps 480 px, the
-  catalog 220 px and the right dock 300 px.
+  catalog 220 px and the right dock 300 px. At the default font the wide mode starts at
+  **1200 px** and the medium one at **1036 px**; a larger font moves both, because the panel
+  widths follow the spacing unit.
 - **The ribbon can be minimized** by the user or by the compact mode: the tab row stays and
   the open tab's groups appear as a panel under it, closing after a command or `Esc`. The
   minimized state is remembered.
@@ -334,10 +336,13 @@ before a panel is allowed to cover it:
 - **Layouts or anchors, never both in the same item.** A region placed by a layout must not
   set `x`, `y`, `width` or `height`, and an anchored region must not declare `Layout.*`:
   mixing them produces geometry conflicts and binding cycles.
-- **Today** only the ribbon breakpoint exists, and every region is anchored with its width
-  computed by subtraction; the modes, the drawer and the minimized ribbon are target
+- **Today** the three modes exist: `layoutMode` in `Main.qml` derives them from the
+  content minimums, the sheet never drops below 480 px, and the compact window folds both
+  panels to their 24 px rails and opens them as drawers with the card's edge and shadow.
+  `--check-layout` proves it at seven widths and with the drawer open. **Still target**:
+  the minimized ribbon, the remembered window geometry and the large-font run
   ([interface-plan.md](interface-plan.md) stage 6a). The window's minimum is 900 × 560 in
-  the code, below the 900 × 600 this contract states; stage 6a closes that gap.
+  the code, below the 900 × 600 this contract states.
 
 ### 3. The sheet
 
