@@ -31,7 +31,7 @@ Images of the running application, used by the README and by pull request review
 | `layout-medium-light.png` | The **medium** window at 1050 × 700: the catalog at 220 px and the right dock at 314, which is exactly the sheet's **480 px floor** |
 | `ribbon-minimized-light.png` | The ribbon folded to its **tab row**: the open tab's commands as a panel over the drawing area only, with the catalog keeping its header, and the control that brings the ribbon back |
 | `ribbon-minimized-dark.png` | The same folded ribbon on a dark desktop, to check the panel's edge and surface |
-| `view-strip-light.png` | The **view strip** over the right edge of the drawing with its zoom panel open: Ajustar al marco, Disminuir, 100 %, Aumentar, Vista anterior (dimmed at 1:1, because there is no step to take back) and the fold control |
+| `view-strip-light.png` | The **view strip** over the right edge of the drawing with its zoom panel open: Ajustar al marco, Zoom, **Mostrar cajetín**, **Iniciar** and the fold control, and inside the panel Disminuir, 100 %, Aumentar and Vista anterior (dimmed at 1:1, because there is no step to take back) |
 | `view-strip-dark.png` | The same strip and panel on a dark desktop, to check the card, the edge and the dimmed command |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |

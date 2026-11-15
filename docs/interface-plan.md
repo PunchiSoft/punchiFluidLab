@@ -55,7 +55,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 6b | (delivered with 6a-ii) | the minimized ribbon and the remembered geometry | the 6a-ii evidence | — |
 | 6c-i | `feat/view-fit` | fit to the frame, the middle double click and one step of view history | `--selftest` | the strip moves to 6c-ii |
 | 6c-ii | `feat/view-strip` | the floating strip: fit, the zoom panel, the step back and the fold | `--selftest`, captures | the rest moves to 6c-iii |
-| 6c-iii | `feat/view-controls` | Mover, the zoom window, Mostrar cajetín, play/pause and the two missing glyphs | `--selftest`, captures | the play/pause waits for the transport decision |
+| 6c-iii | `feat/view-controls` | Mostrar cajetín and the single Iniciar/Pausa | `--selftest`, captures | Mover and the zoom window move to 6c-iv |
+| 6c-iv | `feat/view-move` | Mover, the zoom window and the hand and fit glyphs | `--selftest`, captures | — |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -274,10 +275,14 @@ right edge of the drawing area** and takes no width from the paper.
   reachable from the keyboard and named for assistive technology, and its folded state is
   remembered. In the compact window it starts folded and the one button opens it, like the
   panels' drawers.
-- **Left for 6c-iii**: **Mover** (a visible mode with a pointer change, which needs the hand
-  glyph), the **zoom window** gesture, **Mostrar cajetín** (a view flag the block drawing
-  reads) and the **play/pause** button, which waits for the transport to say whether the
-  model pauses or only stops. Two glyphs join the family then: the hand and the fit.
+- **Landed in 6c-iii**: **Mostrar cajetín**, a view flag the live drawing reads (the band
+  stays reserved and the print is untouched), and the single **Iniciar/Pausa** button, which
+  starts the model and pauses it where it stands instead of stopping and losing the run; the
+  session already had `startSimulation` and `pauseSimulation`, so the button is one command,
+  not a new state.
+- **Left for 6c-iv**: **Mover** (a visible mode with a pointer change, which needs the hand
+  glyph) and the **zoom window** gesture. Two glyphs join the family then: the hand and the
+  fit, and the icon counts and sheet are updated once.
 - **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
   modified mark, so it needs a view flag in the session and not a change to the document.
   The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always
