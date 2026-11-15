@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Los radios salen del tema — 2026-11-15
+
+- Cuatro tokens de radio en el tema (`radius`, `radiusControl`, `radiusSmall`, `radiusTip`) y
+  dieciocho archivos QML sin su propio número. Con la paleta por defecto la ventana es
+  **idéntica píxel a píxel** a la publicada.
+- De paso, el panel de zoom de la tira recibe su sesión y dibuja tarjeta de verdad en vez de
+  depender de lo que hubiera detrás; sus dos capturas se retoman.
+- **Evidencia**: diff de `window-light.png` vacío, `--check-qml` 0 problemas, `--selftest` 0
+  y `./scripts-dev/check.sh` verde.
+
 ### El texto y las alturas de la cinta salen del tema — 2026-11-15
 
 Primera parte de la etapa 7: la cinta deja de tener tamaños escritos a mano.
