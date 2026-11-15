@@ -27,6 +27,7 @@
 //! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
 //! --overlay catalog|right  open a compact panel over the sheet, for a capture of it
 //! --ribbon-minimized   fold the ribbon and open its tab, for a capture of the panel
+//! --view-panel         open the view strip's zoom panel, for a capture of it
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
@@ -852,6 +853,14 @@ int main(int argc, char *argv[])
         return failures == 0 ? 0 : 1;
     }
 
+    if (arguments.contains(QStringLiteral("--view-panel"))) {
+        // The strip's zoom panel, open, for a capture: a click cannot reach it headlessly.
+        for (QObject *root : engine.rootObjects()) {
+            if (QObject *strip = root->findChild<QObject *>(QStringLiteral("viewStrip"))) {
+                strip->setProperty("panelOpen", true);
+            }
+        }
+    }
     if (arguments.contains(QStringLiteral("--ribbon-minimized"))) {
         // The folded ribbon with the open tab's groups over the sheet, which is the state a
         // capture has to show and a click cannot reach headlessly.
@@ -984,6 +993,8 @@ int main(int argc, char *argv[])
             bool viewCanUndo = false;
             /// The zoom before a fit, so one step back can be checked.
             double viewZoom = 1.0;
+            /// The strip's height before it folds, so the fold can be measured.
+            qreal stripHeight = 0.0;
             /// A file the sheet is saved to, so a step that needs a clean document has one.
             QString unsavedPath;
             /// The document the recent list is proved with.
@@ -2524,6 +2535,46 @@ int main(int argc, char *argv[])
             state->sheet->previousView();
             check(qFuzzyCompare(state->session->zoom(), state->viewZoom),
                   QStringLiteral("view: one step goes back to the previous view"));
+        });
+
+        // The strip over the right edge drives the same operations, never a second copy of
+        // them, and folding it is view state like the panels.
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            check(strip != nullptr,
+                  QStringLiteral("view: the strip floats over the drawing area"));
+            if (strip == nullptr) {
+                return;
+            }
+            state->session->zoomReset();
+            state->viewComponents = pf_session_component_count(state->session->handle());
+            state->viewCanUndo = state->session->canUndo();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("fit")));
+        });
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            check(state->session->zoom() > 1.0
+                      && pf_session_component_count(state->session->handle())
+                             == state->viewComponents
+                      && state->session->canUndo() == state->viewCanUndo,
+                  QStringLiteral("view: the strip fits the frame without editing"));
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("zoom-in")));
+        });
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            const double magnified = state->session->zoom();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("back")));
+            check(state->session->zoom() < magnified,
+                  QStringLiteral("view: the strip steps back to the previous view"));
+            state->stripHeight = strip->property("height").toReal();
+            state->window->setProperty("viewStripFolded", true);
+        });
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            const qreal folded = strip->property("height").toReal();
+            check(folded < state->stripHeight && folded > 0.0,
+                  QStringLiteral("view: the strip folds to one button"));
+            state->window->setProperty("viewStripFolded", false);
         });
 
         // The sheet is the paper: choosing A3 changes the document, the canvas and the

@@ -60,6 +60,8 @@ qt_add_qml_module(punchi-fluid
     VERSION 1.0
     QML_FILES
         Card.qml
+        ViewStrip.qml
+        ViewStripButton.qml
         ConfigurarPaginaGroup.qml
         DockPanel.qml
         GridControl.qml
