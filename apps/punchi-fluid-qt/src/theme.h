@@ -14,6 +14,12 @@
 /// platform plugin, so reading it *is* reading the desktop. Nothing below this file may
 /// name a colour.
 struct ThemeTokens {
+    /// Corner radii, named by what they round: the card, a control, a small control and a
+    /// tooltip. They are design values of the adapter, not literals of a widget.
+    int radius = 8;
+    int radiusControl = 6;
+    int radiusSmall = 4;
+    int radiusTip = 3;
     /// Text sizes, derived from the same desktop font the spacing unit follows.
     int textSmall = 10;
     int textBody = 11;

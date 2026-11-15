@@ -42,7 +42,7 @@ Item {
                 id: toggle
                 width: 92
                 height: 26
-                radius: 4
+                radius: session.radiusSmall
                 color: pointer.containsMouse || session.grid ? session.surfaceRaised : "transparent"
                 border.width: session.grid || activeFocus ? 1 : 0
                 border.color: session.grid ? session.accent : session.lineStrong
@@ -94,7 +94,7 @@ Item {
                 id: stepButton
                 width: 82
                 height: 26
-                radius: 4
+                radius: session.radiusSmall
                 color: stepPointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
                 border.width: activeFocus ? 1 : 0
                 border.color: session.accent
@@ -159,7 +159,7 @@ Item {
             color: session.surfaceRaised
             border.width: 1
             border.color: session.lineStrong
-            radius: 4
+            radius: session.radiusSmall
         }
 
         contentItem: ListView {
@@ -185,7 +185,7 @@ Item {
 
                 width: ListView.view.width
                 height: 28
-                radius: 3
+                radius: session.radiusTip
                 color: pointer.containsMouse || ListView.isCurrentItem ? session.surfaceRaised : "transparent"
                 border.width: chosen ? 1 : 0
                 border.color: session.accent

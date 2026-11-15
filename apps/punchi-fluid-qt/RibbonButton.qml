@@ -51,7 +51,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: 4
+        radius: session.radiusSmall
         opacity: button.available ? 1 : 1
         color: button.pressed ? session.surfaceSunken
                : button.selected ? session.accentSoft
@@ -141,7 +141,7 @@ Item {
         anchors.topMargin: 2
         width: tipText.implicitWidth + 14
         height: tipText.implicitHeight + 8
-        radius: 3
+        radius: session.radiusTip
         color: session.surfaceRaised
         border.width: 1
         border.color: session.lineStrong

@@ -61,7 +61,7 @@ Item {
         anchors.bottom: parent.bottom
         width: 20
         height: 20
-        radius: 3
+        radius: session.radiusTip
         color: pointer.containsMouse || activeFocus ? session.surfaceRaised : "transparent"
         border.width: activeFocus ? 1 : 0
         border.color: session.accent

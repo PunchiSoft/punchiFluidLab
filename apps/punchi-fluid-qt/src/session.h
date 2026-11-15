@@ -157,6 +157,11 @@ class FluidSession : public QObject
     Q_PROPERTY(int textSmall READ textSmall NOTIFY changed)
     Q_PROPERTY(int textBody READ textBody NOTIFY changed)
     Q_PROPERTY(int textLabel READ textLabel NOTIFY changed)
+    /// Corner radii from the theme, so no widget rounds a corner with its own number.
+    Q_PROPERTY(int radius READ radius NOTIFY changed)
+    Q_PROPERTY(int radiusControl READ radiusControl NOTIFY changed)
+    Q_PROPERTY(int radiusSmall READ radiusSmall NOTIFY changed)
+    Q_PROPERTY(int radiusTip READ radiusTip NOTIFY changed)
     Q_PROPERTY(int motionMs READ motionMs NOTIFY changed)
 
 public:
@@ -334,6 +339,10 @@ public:
     [[nodiscard]] int textSmall() const { return m_tokens.textSmall; }
     [[nodiscard]] int textBody() const { return m_tokens.textBody; }
     [[nodiscard]] int textLabel() const { return m_tokens.textLabel; }
+    [[nodiscard]] int radius() const { return m_tokens.radius; }
+    [[nodiscard]] int radiusControl() const { return m_tokens.radiusControl; }
+    [[nodiscard]] int radiusSmall() const { return m_tokens.radiusSmall; }
+    [[nodiscard]] int radiusTip() const { return m_tokens.radiusTip; }
     /// The duration of a panel or ribbon change; `0` under reduced motion.
     int motionMs() const { return m_tokens.motionMs; }
 

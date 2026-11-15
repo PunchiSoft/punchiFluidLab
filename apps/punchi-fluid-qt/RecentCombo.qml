@@ -45,7 +45,7 @@ Item {
             id: button
             width: 100
             height: 26
-            radius: 4
+            radius: session.radiusSmall
             color: pointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
             border.width: activeFocus ? 1 : 0
             border.color: session.accent
@@ -109,7 +109,7 @@ Item {
             color: session.surfaceRaised
             border.width: 1
             border.color: session.lineStrong
-            radius: 4
+            radius: session.radiusSmall
         }
 
         contentItem: ListView {
@@ -126,7 +126,7 @@ Item {
 
                 width: ListView.view.width
                 height: modelData.empty === true ? 28 : 38
-                radius: 3
+                radius: session.radiusTip
                 color: pointer.containsMouse && modelData.empty !== true ? session.surfaceRaised : "transparent"
 
                 Accessible.role: Accessible.Button

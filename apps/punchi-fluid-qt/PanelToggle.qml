@@ -30,7 +30,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 4
+        radius: session.radiusSmall
         color: toggle.activeFocus || pointer.containsMouse ? toggle.session.panel : "transparent"
         border.width: toggle.activeFocus ? 1 : 0
         border.color: toggle.session.accent

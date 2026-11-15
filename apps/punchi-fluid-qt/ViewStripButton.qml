@@ -38,7 +38,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 6
+        radius: session.radiusControl
         color: button.pressed ? session.surfaceSunken
                : button.selected ? session.accentSoft
                : button.hovered ? session.surfaceRaised
@@ -82,7 +82,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: tipText.implicitWidth + 14
         height: tipText.implicitHeight + 8
-        radius: 3
+        radius: session.radiusTip
         color: session.surfaceRaised
         border.width: 1
         border.color: session.lineStrong
