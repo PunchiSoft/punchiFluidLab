@@ -342,9 +342,10 @@ bring notes from the two CAD references before they are settled.
   decide: the program defines **100 % as the sheet fitted**, so the two commands would do the
   same thing. Either the 100 % row goes, or it takes a different meaning, or the duplication is
   accepted.
-- **Zoom and the middle double click** need an explicit review against the references: what
-  the fit targets, where the view is anchored when magnifying, and what the double click does.
-  The owner will write the notes.
+- **Zoom and the middle double click** are a **parallel track**, not a consequence of the work
+  area: they need their own review against the references — where the view is anchored when
+  magnifying and what the double click does — and the owner will write the notes.
+  Each of the three items is settled on its own.
 - **The work area**: at high magnification the sheet is centred, so the view shows the middle
   of the paper. The owner clarifies that the red rectangle in their capture is **the whole
   drawing area**, and that it **may extend into the light band outside it** — towards the
