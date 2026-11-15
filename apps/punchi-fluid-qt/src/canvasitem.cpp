@@ -62,6 +62,9 @@ void SchematicItem::setSession(FluidSession *session)
         // is not merely invisible: it would reappear the next time the reader magnified
         // with the ribbon. `Ctrl+0` clears it here, once, instead of in every caller.
         connect(m_session, &FluidSession::viewChanged, this, [this] {
+            // Any zoom change other than a fit abandons the fitted view. `fitToFrame`
+            // sets the flag again after its own `setZoom` returns.
+            m_fitted = false;
             if (qFuzzyCompare(m_session->zoom(), 1.0)) {
                 m_pan = QPointF();
             }
@@ -220,7 +223,7 @@ QPointF SchematicItem::limitedPan(const Fit &centred) const
     // sheet that could be pushed aside is a sheet the reader can lose. Above 1:1 the sheet
     // may be moved until only a sliver of it remains in view, which is wide enough to keep
     // a zoom anchored at the pointer without ever losing the drawing completely.
-    if (!m_session || m_session->zoom() <= 1.0) {
+    if (!m_session || (m_session->zoom() <= 1.0 && !m_fitted)) {
         return QPointF();
     }
     const QSizeF sheet = sheetSizeMm();
@@ -258,8 +261,26 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
     // The middle button pans; it never selects, actuates or edits. Starting here, before
     // the left-button split, keeps the two gestures from ever sharing a branch.
     if (event->button() == Qt::MiddleButton) {
+        // A second press in place fits the frame: it is where a schematic reader looks for
+        // it, and the single press keeps its pan so the two gestures never compete.
+        const QPointF at = event->position();
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        const bool repeated =
+            m_lastMiddleMs > 0
+            && now - m_lastMiddleMs <= QGuiApplication::styleHints()->mouseDoubleClickInterval()
+            && (at - m_lastMiddleFrom).manhattanLength() <= 6.0;
+        m_lastMiddleMs = now;
+        m_lastMiddleFrom = at;
+        if (event->type() == QEvent::MouseButtonDblClick || repeated) {
+            m_panning = false;
+            m_lastMiddleMs = 0;
+            setCursor(QCursor(Qt::ArrowCursor));
+            fitToFrame();
+            event->accept();
+            return;
+        }
         m_panning = true;
-        m_panFrom = event->position();
+        m_panFrom = at;
         setCursor(QCursor(Qt::ClosedHandCursor));
         setFocus(true);
         event->accept();
@@ -404,6 +425,8 @@ void SchematicItem::zoomAt(const QPointF &position, double factor)
     }
     const QPointF sheet = toSheet(position);
     const double before = m_session->zoom();
+    rememberView();
+    m_fitted = false;
     m_session->setZoom(before * factor);
     if (qFuzzyCompare(m_session->zoom(), before)) {
         return;
@@ -423,6 +446,7 @@ void SchematicItem::panBy(const QPointF &delta)
     if (!m_session) {
         return;
     }
+    m_fitted = false;
     m_pan += delta;
     // Bounded at the gesture, not only at the paint, so dragging back does not have to
     // retrace an overshoot the reader never saw.

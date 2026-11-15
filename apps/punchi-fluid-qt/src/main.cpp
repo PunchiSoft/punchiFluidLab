@@ -982,6 +982,8 @@ int main(int argc, char *argv[])
             QPointF viewSheet;
             uint32_t viewComponents = 0;
             bool viewCanUndo = false;
+            /// The zoom before a fit, so one step back can be checked.
+            double viewZoom = 1.0;
             /// A file the sheet is saved to, so a step that needs a clean document has one.
             QString unsavedPath;
             /// The document the recent list is proved with.
@@ -2481,6 +2483,47 @@ int main(int argc, char *argv[])
             check(qFuzzyCompare(state->session->zoom(), 1.0)
                       && (under - QPointF(150.0, 30.0)).manhattanLength() < 0.5,
                   QStringLiteral("view: Ctrl+0 returns to 1:1 and drops the pan"));
+        });
+
+        // The middle double click fits the frame inside the margins, not the paper, and one
+        // step back returns to the view before it.
+        steps->push_back([state, send, toScene] {
+            state->session->zoomReset();
+            state->viewZoom = state->session->zoom();
+            state->viewScene = toScene(QPointF(148.0, 105.0));
+            // Two clicks in place, the way a hand produces them: the item counts the
+            // repeat itself, so a replayed sequence needs no platform double click.
+            send(QEvent::MouseButtonPress, state->viewScene, Qt::MiddleButton, Qt::MiddleButton);
+            send(QEvent::MouseButtonRelease, state->viewScene, Qt::MiddleButton, Qt::NoButton);
+            send(QEvent::MouseButtonPress, state->viewScene, Qt::MiddleButton, Qt::MiddleButton);
+            send(QEvent::MouseButtonRelease, state->viewScene, Qt::MiddleButton, Qt::NoButton);
+        });
+        steps->push_back([state, check] {
+            const Fit fit = state->sheet->viewPlacement();
+            const double left = state->session->sheetMarginLeft();
+            const double top = state->session->sheetMarginTop();
+            const double right =
+                state->session->sheetWidthMm() - state->session->sheetMarginRight();
+            const double bottom =
+                state->session->sheetHeightMm() - state->session->sheetMarginBottom();
+            const QPointF centre(fit.originX + (left + right) * 0.5 * fit.pixelsPerMm,
+                                 fit.originY + (top + bottom) * 0.5 * fit.pixelsPerMm);
+            const double frameWidth = (right - left) * fit.pixelsPerMm;
+            const double frameHeight = (bottom - top) * fit.pixelsPerMm;
+            std::fprintf(stderr, "selftest: fit zoom %.2f, frame %.0fx%.0f in %.0fx%.0f\n",
+                         state->session->zoom(), frameWidth, frameHeight, state->sheet->width(),
+                         state->sheet->height());
+            check(!qFuzzyCompare(state->session->zoom(), state->viewZoom)
+                      && frameWidth <= state->sheet->width() + 1.0
+                      && frameHeight <= state->sheet->height() + 1.0
+                      && std::abs(centre.x() - state->sheet->width() * 0.5) <= 1.0
+                      && std::abs(centre.y() - state->sheet->height() * 0.5) <= 1.0,
+                  QStringLiteral("view: the middle double click fits the frame"));
+        });
+        steps->push_back([state, check] {
+            state->sheet->previousView();
+            check(qFuzzyCompare(state->session->zoom(), state->viewZoom),
+                  QStringLiteral("view: one step goes back to the previous view"));
         });
 
         // The sheet is the paper: choosing A3 changes the document, the canvas and the
