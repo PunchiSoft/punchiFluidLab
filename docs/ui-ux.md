@@ -449,7 +449,7 @@ not fight the right dock, and it leaves with the room it needs.
 
 | Control | Behaviour |
 |---|---|
-| **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, the status bar says how to leave, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode. |
+| **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode, and entering the simulation leaves the mode, because a click must actuate there. |
 | **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Ventana** (drag a rectangle; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
 | **Ajustar al marco** | Fits the **frame inside the margins**, not the paper: the drawing space is what the reader came for, and the paper margin is not drawing. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. |
 | **Mostrar cajetín** | One toggle over what is drawn on screen, and nothing else: the block is view state, like the zoom, with no undo entry, no modified mark and no file field. |
@@ -474,10 +474,10 @@ not fight the right dock, and it leaves with the room it needs.
   budget to say what the zoom readout and **Ajustar al marco** already say.
 - **Today** the strip exists: it floats over the right edge of the drawing with **Ajustar
   al marco**, a **zoom panel** (−, 100 %, +, vista anterior), **Mostrar cajetín** and the
-  single **Iniciar/Pausa**, plus the fold control, and it is remembered as view state. The
-  middle button pans and its **double click fits the frame**, one step of view history is
-  kept, and `Ctrl+0` returns to 1:1. **Still target**: Mover, the zoom window gesture and
-  the two glyphs they need ([interface-plan.md](interface-plan.md) stage 6c-iv).
+  single **Iniciar/Pausa**, **Mover** (a visible hand mode) and the fold control, and it is
+  remembered as view state. The middle button pans and its **double click fits the frame**,
+  one step of view history is kept, and `Ctrl+0` returns to 1:1. **Still target**: the zoom
+  window gesture and its glyph ([interface-plan.md](interface-plan.md) stage 6c-v).
 
 ### 4. Status bar
 
