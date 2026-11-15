@@ -117,6 +117,19 @@ void SchematicItem::paint(QPainter *painter)
     drawSheetFrame(painter, *m_session, placement, sheet.width(), sheet.height());
     replayFrame(painter, frame, placement);
 
+    // The rectangle of the zoom window, over the drawing and never in it.
+    if (m_zoomDragging) {
+        const QRectF band = QRectF(m_zoomFrom, m_zoomTo).normalized();
+        QColor ink = tokens.accent;
+        painter->save();
+        painter->setPen(QPen(ink, 1.0, Qt::DashLine));
+        QColor wash = ink;
+        wash.setAlphaF(0.12F);
+        painter->setBrush(wash);
+        painter->drawRect(band);
+        painter->restore();
+    }
+
     if (m_connecting >= 0 && m_session) {
         const Fit fit = placement;
         painter->save();
@@ -234,6 +247,14 @@ bool SchematicItem::onValve(const QPointF &position) const
 void SchematicItem::mousePressEvent(QMouseEvent *event)
 {
     if (!m_session) {
+        return;
+    }
+    // The zoom window is armed by the strip: the next left drag is the rectangle.
+    if (event->button() == Qt::LeftButton && m_zoomWindow) {
+        m_zoomDragging = true;
+        m_zoomFrom = event->position();
+        m_zoomTo = m_zoomFrom;
+        event->accept();
         return;
     }
     // The hand mode moves the sheet with the left button: a visible mode, not a hidden
@@ -455,6 +476,12 @@ void SchematicItem::placeCatalogAt(int catalogIndex, const QPointF &position)
 
 void SchematicItem::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_zoomDragging) {
+        m_zoomTo = event->position();
+        update();
+        event->accept();
+        return;
+    }
     if (m_panning) {
         panBy(event->position() - m_panFrom);
         m_panFrom = event->position();
@@ -536,50 +563,6 @@ void SchematicItem::mouseMoveEvent(QMouseEvent *event)
     event->accept();
 }
 
-void SchematicItem::keyPressEvent(QKeyEvent *event)
-{
-    if (!m_session) {
-        return;
-    }
-    if (event->key() == Qt::Key_Escape && m_session->handMode()) {
-        m_session->setHandMode(false);
-        event->accept();
-        return;
-    }
-    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
-        m_session->removeSelected();
-        update();
-        event->accept();
-        return;
-    }
-    // The keyboard path for panning. It is the only way to reach a corner of a magnified
-    // sheet without a pointer, and it stays out of the way because the sheet only sees a
-    // key when it holds the focus. Shift takes a longer step.
-    const double step = (event->modifiers() & Qt::ShiftModifier) != 0
-        ? kPanPerArrow * 4.0
-        : kPanPerArrow;
-    switch (event->key()) {
-    case Qt::Key_Left:
-        panBy(QPointF(step, 0.0));
-        event->accept();
-        return;
-    case Qt::Key_Right:
-        panBy(QPointF(-step, 0.0));
-        event->accept();
-        return;
-    case Qt::Key_Up:
-        panBy(QPointF(0.0, step));
-        event->accept();
-        return;
-    case Qt::Key_Down:
-        panBy(QPointF(0.0, -step));
-        event->accept();
-        return;
-    default:
-        break;
-    }
-    QQuickPaintedItem::keyPressEvent(event);
-}
 
 void SchematicItem::wheelEvent(QWheelEvent *event)
 {
@@ -676,6 +659,17 @@ void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     if (event->button() != Qt::LeftButton) {
+        return;
+    }
+    // The zoom window ends here: a rectangle worth a glance zooms, a stray click does not.
+    if (m_zoomWindow && event->button() == Qt::LeftButton) {
+        const QRectF band = QRectF(m_zoomFrom, m_zoomTo).normalized();
+        m_zoomDragging = false;
+        cancelZoomWindow();
+        if (band.width() >= 8.0 && band.height() >= 8.0) {
+            zoomToWindow(band);
+        }
+        event->accept();
         return;
     }
     // A hand-mode drag ends with the left button, and the pointer goes back to the open

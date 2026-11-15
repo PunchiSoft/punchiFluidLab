@@ -93,6 +93,8 @@ Card {
             canvas.previousView();
         } else if (id === "panel") {
             strip.panelOpen = !strip.panelOpen;
+        } else if (id === "window") {
+            canvas.beginZoomWindow();
         } else if (id === "hand") {
             session.handMode = !session.handMode;
         } else if (id === "block") {
@@ -131,7 +133,7 @@ Card {
 
             ViewStripButton {
                 session: strip.session
-                iconName: "zoom-original"
+                iconName: "view-fit"
                 name: qsTr("Ajustar al marco")
                 hint: qsTr("Ajustar al marco · doble clic central")
                 onTriggered: strip.invoke("fit")
@@ -234,6 +236,11 @@ Card {
                 height: 1
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: strip.session.line
+            }
+            PanelRow {
+                icon: "view-fit"
+                label: qsTr("Ventana · arrastra un rectángulo")
+                onTriggered: strip.invoke("window")
             }
             PanelRow {
                 icon: "edit-undo"

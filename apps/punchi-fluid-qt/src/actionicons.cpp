@@ -58,6 +58,7 @@ const QStringList &allNames()
         QStringLiteral("go-top"),
         QStringLiteral("go-bottom"),
         QStringLiteral("hand"),
+        QStringLiteral("view-fit"),
         QStringLiteral("x-office-address-book"),
         QStringLiteral("media-playback-pause"),
         QStringLiteral("media-seek-forward"),
@@ -383,6 +384,16 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawLine(QPointF(8.0, 12.0), QPointF(12.0, 8.0));
         painter.drawLine(QPointF(16.0, 12.0), QPointF(12.0, 8.0));
         painter.drawLine(QPointF(6.0, 4.0), QPointF(18.0, 4.0));
+    } else if (name == QStringLiteral("view-fit")) {
+        // Four corners around the space: fit the drawing, not the paper.
+        painter.drawLine(QPointF(4.0, 9.0), QPointF(4.0, 4.0));
+        painter.drawLine(QPointF(4.0, 4.0), QPointF(9.0, 4.0));
+        painter.drawLine(QPointF(15.0, 4.0), QPointF(20.0, 4.0));
+        painter.drawLine(QPointF(20.0, 4.0), QPointF(20.0, 9.0));
+        painter.drawLine(QPointF(4.0, 15.0), QPointF(4.0, 20.0));
+        painter.drawLine(QPointF(4.0, 20.0), QPointF(9.0, 20.0));
+        painter.drawLine(QPointF(15.0, 20.0), QPointF(20.0, 20.0));
+        painter.drawLine(QPointF(20.0, 20.0), QPointF(20.0, 15.0));
     } else if (name == QStringLiteral("hand")) {
         // The pointer mode: a palm with four fingers and a thumb, drawn as an outline so it
         // reads at 16 px without a filled blob.

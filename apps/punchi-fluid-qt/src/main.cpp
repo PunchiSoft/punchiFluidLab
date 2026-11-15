@@ -2647,6 +2647,42 @@ int main(int argc, char *argv[])
             state->session->zoomReset();
         });
 
+        // The zoom window: the panel arms it, a drag chooses the rectangle, and the chosen
+        // centre lands on the canvas centre. A stray click or Esc leaves the view alone.
+        steps->push_back([state, check, send, toScene] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            state->session->zoomReset();
+            state->viewZoom = state->session->zoom();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("window")));
+            check(state->sheet->zoomWindowActive(),
+                  QStringLiteral("view: the strip arms the zoom window"));
+            const QPointF from = toScene(QPointF(120.0, 80.0));
+            const QPointF to = toScene(QPointF(180.0, 130.0));
+            send(QEvent::MouseButtonPress, from, Qt::LeftButton, Qt::LeftButton);
+            send(QEvent::MouseMove, to, Qt::NoButton, Qt::LeftButton);
+            send(QEvent::MouseButtonRelease, to, Qt::LeftButton, Qt::NoButton);
+        });
+        steps->push_back([state, check] {
+            const Fit fit = state->sheet->viewPlacement();
+            const QPointF centre(fit.originX + 150.0 * fit.pixelsPerMm,
+                                 fit.originY + 105.0 * fit.pixelsPerMm);
+            check(!state->sheet->zoomWindowActive()
+                      && state->session->zoom() > state->viewZoom,
+                  QStringLiteral("view: the zoom window magnifies the rectangle"));
+            check(std::abs(centre.x() - state->sheet->width() * 0.5) <= 1.5
+                      && std::abs(centre.y() - state->sheet->height() * 0.5) <= 1.5,
+                  QStringLiteral("view: the rectangle lands centred"));
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("window")));
+            const double before = state->session->zoom();
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->sheet, &escape);
+            check(!state->sheet->zoomWindowActive()
+                      && qFuzzyCompare(state->session->zoom(), before),
+                  QStringLiteral("view: Esc cancels the zoom window"));
+            state->session->zoomReset();
+        });
+
         // The sheet is the paper: choosing A3 changes the document, the canvas and the
         // check together, and every choice is one undo.
         steps->push_back([state, check] {
