@@ -104,7 +104,10 @@ in a circuit teaches the wrong thing. The order is fixed by
    per normative feature.
 5. **The owner signs off.** If a requirement is ambiguous, the symbol is marked unverified
    and the question is written down; a plausible drawing is the worst outcome here.
-6. **Record which requirement was checked** in the review file, not only "reviewed".
+6. **Record which requirement was checked** in the review file, not only "reviewed". Fill
+   [assets/symbols/review/TEMPLATE.md](../../../assets/symbols/review/TEMPLATE.md): function,
+   clause, measures, captures, the checklist and a person's sign-off. A record without the
+   clause and the measures is an opinion.
 
 ## Valve checklist
 
