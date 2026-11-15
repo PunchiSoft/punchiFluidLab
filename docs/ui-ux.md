@@ -642,6 +642,9 @@ translator must be able to reorder the sentence.
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
   ([interface-plan.md](interface-plan.md) stage 6).
+- The **fit and the zoom** are under review: the owner wants the sheet fitted rather than the
+  frame, and the zoom and the middle double click checked against the two CAD references.
+  Nothing changes until that note arrives ([interface-plan.md](interface-plan.md#open-decisions-owner-2026-11-15)).
 - Whether hiding the block **releases its band** to the drawing or keeps it reserved. Today
   the band stays reserved, so the circuit is drawn in the same place whether the block is
   shown or not.

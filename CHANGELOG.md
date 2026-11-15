@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### Pendientes de zoom, ajuste y área de trabajo — 2026-11-15
+
+- `interface-plan.md` recoge tres decisiones abiertas del propietario: el ajuste debe encuadrar
+  **la hoja** y no el marco; el zoom y el doble clic central se revisan contra las dos
+  referencias CAD; y el anclaje del área de trabajo a gran ampliación está por decidir.
+- No se toca código: solo queda escrito para no perderlo ni improvisarlo.
+
 ### Ficha de revisión por símbolo — 2026-11-15
 
 - `assets/symbols/review/TEMPLATE.md`: función, cláusula, tabla de medidas, capturas a
