@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Ajustar al marco y volver a la vista anterior — 2026-11-15
+
+Primera mitad de la tira de vista: la matemática primero, la superficie después.
+
+- **Ajustar al marco**: el zoom mayor que hace que el marco interior (no el papel) llene el
+  lienzo, con el desplazamiento que lo centra. También funciona por debajo de 1:1 sin perder
+  el centrado, que es lo que antes descartaba el límite de desplazamiento.
+- **Doble clic del botón central** ajusta al marco; la pulsación simple sigue desplazando, y
+  el intervalo sale del escritorio.
+- **Un paso de historial**: la vista anterior se guarda antes de un ajuste o de un zoom en el
+  puntero, y volver atrás la restaura. `Ctrl+0` sigue siendo el papel a 1:1.
+- **Evidencia**: pasos nuevos del `--selftest` que miden el marco contra el lienzo y su centro
+  contra el centro del lienzo (`fit zoom 1,11, frame 560x399 in 560x603`), el paso de vuelta
+  atrás, los pasos de zoom y desplazamiento todavía verdes, `--check-qml` 0 problemas y
+  `./scripts-dev/check.sh` verde.
+
 ### La cinta se pliega y la ventana recuerda dónde estaba — 2026-11-15
 
 Segunda mitad de la etapa adaptable: la cinta minimizada, la geometría recordada de la

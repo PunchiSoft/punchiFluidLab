@@ -53,7 +53,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 6a | `feat/adaptive-shell` | three modes from content minimums, sheet floor, compact rails and drawer, `--check-layout` | `--check-layout`, captures | the rest moves to 6a-ii |
 | 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered size and place, 900 × 600, scale and large-font runs | `--check-layout`, captures | — |
 | 6b | (delivered with 6a-ii) | the minimized ribbon and the remembered geometry | the 6a-ii evidence | — |
-| 6c | `feat/view-strip` | the floating view strip, fit to the frame, view history, the three toggles | `--selftest`, captures | the zoom-window gesture if it grows |
+| 6c-i | `feat/view-fit` | fit to the frame, the middle double click and one step of view history | `--selftest` | the strip moves to 6c-ii |
+| 6c-ii | `feat/view-strip` | the floating view strip, the zoom window, the show toggle and the play/pause button | `--selftest`, captures | the zoom-window gesture if it grows |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -257,15 +258,17 @@ The reader who is drawing looks at the sheet, not at the ribbon; zooming, fittin
 starting the model should cost no trip to the top of the window. The strip lives **over the
 right edge of the drawing area** and takes no width from the paper.
 
-- **What exists today**: `Ctrl` + wheel and the ribbon's three zoom commands, the wheel, the
-  middle button and the arrows to pan, `Ctrl+0` for 1:1, the grid toggle, and the block's
-  **Sin cajetín** preset — which is a document change, not a view toggle.
-- **Fit to the frame**: the zoom is the largest that fits the frame inside the margins, and
-  the pan centres it. `Ctrl+0` keeps meaning the paper at 1:1, so the two are different
-  readings of the sheet and neither replaces the other. The same fit answers the **double
-  click of the middle button**; the single press keeps panning.
-- **View history**: one step back, so a zoom at the pointer or a fit can be undone without
-  hunting for the previous magnification. It is view state like the rest.
+- **What existed before 6c**: `Ctrl` + wheel and the ribbon's three zoom commands, the
+  wheel, the middle button and the arrows to pan, `Ctrl+0` for 1:1, the grid toggle, and the
+  block's **Sin cajetín** preset — which is a document change, not a view toggle.
+- **Landed in 6c-i**: **fit to the frame**, the zoom that makes the frame inside the margins
+  fill the canvas, with the pan centring it; the same fit answers the **double click of the
+  middle button**, while the single press keeps panning; and **one step of view history**,
+  kept before a fit or a zoom at the pointer. `Ctrl+0` keeps meaning the paper at 1:1, so the
+  two are different readings of the sheet and neither replaces the other. The fit works
+  below 1:1 without losing its centring, which the old pan limit would have discarded.
+- **Left for 6c-ii**: the strip itself, the zoom window gesture, **Mostrar cajetín** and the
+  single play/pause button.
 - **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
   modified mark, so it needs a view flag in the session and not a change to the document.
   The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always
@@ -280,9 +283,11 @@ right edge of the drawing area** and takes no width from the paper.
 **Open question for the owner**: whether hiding the block releases its band to the drawing
 or keeps it reserved ([ui-ux.md](ui-ux.md) §3.1).
 
-**Evidence**: `--selftest` steps for the fit, the double click, the view history, each
-toggle and the play button; captures in both schemes and at the compact breakpoint; the
-keyboard path for every control; `--check-qml`; the zoom self-tests still green.
+**Evidence for 6c-i**: the `--selftest` steps `view: the middle double click fits the
+frame` and `view: one step goes back to the previous view`, which measure the frame against
+the canvas and its centre against the canvas centre, plus the existing zoom and pan steps
+still green. 6c-ii adds the steps for each control, the captures in both schemes and at the
+compact breakpoint, and the keyboard path.
 
 
 ### 7 — Consistency
