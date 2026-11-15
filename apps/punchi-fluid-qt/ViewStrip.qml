@@ -240,7 +240,7 @@ Card {
             }
             PanelRow {
                 icon: "view-fit"
-                label: qsTr("Ventana · arrastra un rectángulo")
+                label: qsTr("Zoom a una zona")
                 onTriggered: strip.invoke("window")
             }
             PanelRow {
