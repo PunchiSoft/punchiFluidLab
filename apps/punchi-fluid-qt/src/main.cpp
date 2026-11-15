@@ -12,6 +12,7 @@
 //! --theme light|dark   force a palette instead of the desktop one
 //! --check-theme        print the contrast ratios and exit 1 when one fails
 //! --check-layout       resize through the shell's modes; exits 1 when one is wrong
+//! --font-scale N       multiply the desktop font, to prove a larger-font run
 //! --check-icons        report every ribbon icon as project, theme or missing
 //! --icon-sheet <file>  render the project icons at 16, 24 and 32 px, for a review
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
@@ -25,6 +26,7 @@
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
 //! --overlay catalog|right  open a compact panel over the sheet, for a capture of it
+//! --ribbon-minimized   fold the ribbon and open its tab, for a capture of the panel
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
@@ -39,6 +41,7 @@
 #include <QGuiApplication>
 #include <QDir>
 #include <QFile>
+#include <QFont>
 #include <QImage>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -126,6 +129,7 @@ int main(int argc, char *argv[])
         || arguments.contains(QStringLiteral("--check-qml"))
         || arguments.contains(QStringLiteral("--check-icons"))
         || arguments.contains(QStringLiteral("--check-layout"))
+        || arguments.contains(QStringLiteral("--font-scale"))
         || arguments.contains(QStringLiteral("--grab"))
         || arguments.contains(QStringLiteral("--export"))
         || arguments.contains(QStringLiteral("--probe"))
@@ -230,6 +234,22 @@ int main(int argc, char *argv[])
 
     const QString reportPaints = value(QStringLiteral("--report-paints"));
     const QString size = value(QStringLiteral("--size"));
+
+    // The spacing unit follows the desktop font, so a larger font is the case a layout has
+    // to survive; scaling it here is how that case is proved without a second desktop.
+    const QString fontScale = value(QStringLiteral("--font-scale"));
+    if (!fontScale.isEmpty()) {
+        bool scaleOk = false;
+        const double factor = fontScale.toDouble(&scaleOk);
+        if (!scaleOk || factor < 0.75 || factor > 4.0) {
+            std::fprintf(stderr, "--font-scale takes a factor from 0.75 to 4, not \"%s\"\n",
+                         qUtf8Printable(fontScale));
+            return 2;
+        }
+        QFont font = QGuiApplication::font();
+        font.setPointSizeF(font.pointSizeF() * factor);
+        QGuiApplication::setFont(font);
+    }
 
     QQmlApplicationEngine engine;
     // The desktop's own icons, resolved through QIcon::fromTheme and tinted with the ink
@@ -780,10 +800,68 @@ int main(int argc, char *argv[])
                      static_cast<int>(catalog->width()), sheet->width(),
                      drawer ? "ok" : "FAIL");
         window->setProperty("catalogOverlay", false);
+
+        // The ribbon folds to its tab row and the open tab's groups float over the sheet:
+        // the fold must remove height and the panel must not put it back.
+        auto *ribbon = window->findChild<QQuickItem *>(QStringLiteral("ribbon"));
+        if (ribbon == nullptr) {
+            std::fprintf(stderr, "layout: no ribbon\n");
+            return 1;
+        }
+        window->resize(1280, 800);
+        settle();
+        const qreal unfolded = ribbon->height();
+        const qreal wideSheet = sheet->width();
+        ribbon->setProperty("minimized", true);
+        settle();
+        const qreal folded = ribbon->height();
+        ribbon->setProperty("bodyOpen", true);
+        settle();
+        const bool minimizedOk = folded < unfolded && ribbon->height() == folded
+                                 && sheet->width() == wideSheet;
+        if (!minimizedOk) {
+            ++failures;
+        }
+        std::fprintf(stderr,
+                     "layout:  ribbon unfolded %.0f, folded %.0f, body open %.0f, sheet %.0f  %s\n",
+                     unfolded, folded, ribbon->height(), sheet->width(),
+                     minimizedOk ? "ok" : "FAIL");
+        ribbon->setProperty("bodyOpen", false);
+        ribbon->setProperty("minimized", false);
+        settle();
+
+        // The window's own geometry is view state too: a saved size comes back, and the
+        // minimum height is the one the contract states, not the 560 it used to be.
+        window->resize(1180, 740);
+        settle();
+        QMetaObject::invokeMethod(window, "saveGeometry");
+        window->resize(1000, 650);
+        settle();
+        QMetaObject::invokeMethod(window, "restoreGeometry");
+        settle();
+        const bool sizeBack = window->width() == 1180 && window->height() == 740;
+        const bool tallEnough = window->minimumHeight() >= 600.0;
+        if (!sizeBack || !tallEnough) {
+            ++failures;
+        }
+        std::fprintf(stderr,
+                     "layout:  geometry %dx%d, minimum height %d  %s\n", window->width(),
+                     window->height(), window->minimumHeight(),
+                     sizeBack && tallEnough ? "ok" : "FAIL");
         std::fprintf(stderr, "layout: %d failure(s)\n", failures);
         return failures == 0 ? 0 : 1;
     }
 
+    if (arguments.contains(QStringLiteral("--ribbon-minimized"))) {
+        // The folded ribbon with the open tab's groups over the sheet, which is the state a
+        // capture has to show and a click cannot reach headlessly.
+        for (QObject *root : engine.rootObjects()) {
+            root->setProperty("ribbonMinimized", true);
+            if (QObject *ribbon = root->findChild<QObject *>(QStringLiteral("ribbon"))) {
+                ribbon->setProperty("bodyOpen", true);
+            }
+        }
+    }
     if (arguments.contains(QStringLiteral("--overlay"))) {
         // A compact window folds its panels; this opens one over the sheet so a capture can
         // show the drawer, which otherwise needs a click on the rail.

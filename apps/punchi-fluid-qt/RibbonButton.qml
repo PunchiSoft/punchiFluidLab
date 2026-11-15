@@ -15,6 +15,9 @@ Item {
     property string label: ""
     property string iconName: ""
     property string hint: ""
+    /// The accessible name when the button shows only an icon: an empty label would leave
+    /// the control unnamed to a screen reader.
+    property string accessibleName: ""
     property bool large: true
     /// `foreground`, `muted` or `accent`; the colour itself comes from the theme.
     property string tone: "foreground"
@@ -38,7 +41,7 @@ Item {
     activeFocusOnTab: available
 
     Accessible.role: Accessible.Button
-    Accessible.name: label
+    Accessible.name: accessibleName.length > 0 ? accessibleName : label
     Accessible.description: hint
     Accessible.onPressAction: if (button.available) button.triggered()
 
