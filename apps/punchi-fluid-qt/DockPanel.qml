@@ -21,6 +21,10 @@ Item {
     property int railWidth: 24
     /// `false` when the panel has nothing to show: it takes no width and shows no rail.
     property bool available: true
+    /// `true` when the open panel can be resized by dragging its inner edge.
+    property bool resizable: false
+    property int minimumPanelWidth: 220
+    property int maximumPanelWidth: 480
     /// `true` when the panel sits on the right of the window.
     property bool sideRight: false
     /// The two accessible names of the control, so the title can be a sentence.
@@ -39,6 +43,7 @@ Item {
 
     signal toggleRequested()
     signal autoHideRequested(bool open)
+    signal widthRequested(int width)
 
     width: available ? (open ? panelWidth : railWidth) : 0
     Behavior on width {
@@ -108,6 +113,40 @@ Item {
         }
     }
 
+    // The inner edge is the resize handle while the panel is open. It sits under the
+    // toggle so the control keeps its click; the cursor is the resize one.
+    Rectangle {
+        id: resizeHandle
+        visible: dock.resizable && dock.available && !dock.railVisible
+        width: 6
+        height: parent.height
+        anchors.right: dock.sideRight ? undefined : parent.right
+        anchors.left: dock.sideRight ? parent.left : undefined
+        color: handlePointer.containsMouse || handlePointer.pressed
+               ? dock.session.accentSoft : "transparent"
+        z: 2
+
+        MouseArea {
+            id: handlePointer
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SplitHCursor
+            property real pressX: 0
+            property int pressWidth: 0
+
+            onPressed: {
+                pressX = mapToItem(null, mouse.x, 0).x;
+                pressWidth = dock.width;
+            }
+            onPositionChanged: if (pressed) {
+                const delta = mapToItem(null, mouse.x, 0).x - pressX;
+                const next = dock.sideRight ? pressWidth - delta : pressWidth + delta;
+                dock.widthRequested(Math.round(Math.max(dock.minimumPanelWidth,
+                                                       Math.min(dock.maximumPanelWidth, next))));
+            }
+        }
+    }
+
     PanelToggle {
         id: toggle
         session: dock.session
@@ -119,6 +158,7 @@ Item {
         x: dock.sideRight ? 0 : dock.width - width
         y: dock.railVisible ? (dock.height - height) / 2 : 8
         visible: dock.available
+        z: 3
         Behavior on y {
             NumberAnimation { duration: dock.session ? dock.session.motionMs : 180 }
         }

@@ -73,6 +73,10 @@ Item {
         });
     }
 
+    function place(index) {
+        sheet.placeCatalogAt(index, Qt.point(sheet.width / 2, sheet.height / 2));
+    }
+
     function firstMatch(query) {
         const groups = session.catalogGroups;
         for (let g = 0; g < groups.length; ++g) {
@@ -153,7 +157,7 @@ Item {
         onAccepted: {
             const row = sidebar.firstMatch(search.text);
             if (row) {
-                sheet.placeCatalogAt(row.index, Qt.point(sheet.width / 2, sheet.height / 2));
+                sidebar.place(row.index);
             }
         }
         Keys.onEscapePressed: {
@@ -250,100 +254,137 @@ Item {
                                                 : qsTr("desplegar el grupo")
                     }
 
-                    Repeater {
-                        model: sidebar.isExpanded(group.modelData.key) ? group.shown : []
+                    Item {
+                        width: group.width
+                        height: grid.implicitHeight + 8
+                        visible: sidebar.isExpanded(group.modelData.key)
 
-                        delegate: Rectangle {
-                            id: row
-                            required property var modelData
-                            width: group.width
-                            height: 60
-                            color: sidebar.selectedIndex === modelData.index
-                                   ? session.panel
-                                   : rowPointer.containsMouse ? session.surfaceRaised
-                                   : "transparent"
+                        Grid {
+                            id: grid
+                            x: 10
+                            y: 4
+                            width: group.width - 20
+                            columns: 2
+                            spacing: 6
 
-                            Rectangle {
-                                anchors.left: parent.left
-                                width: 3
-                                height: parent.height
-                                visible: sidebar.selectedIndex === modelData.index
-                                color: session.accent
-                            }
+                            Repeater {
+                                model: sidebar.isExpanded(group.modelData.key) ? group.shown : []
 
-                            PreviewItem {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 48
-                                height: 48
-                                session: sidebar.session
-                                index: modelData.index
-                            }
+                                delegate: Rectangle {
+                                    id: tile
+                                    required property var modelData
+                                    readonly property bool chosen:
+                                        sidebar.selectedIndex === modelData.index
+                                    width: (group.width - 26) / 2
+                                    height: 108
+                                    radius: 4
+                                    color: chosen ? session.panel
+                                           : tilePointer.containsMouse ? session.surfaceRaised
+                                           : "transparent"
+                                    border.width: activeFocus ? 2 : chosen ? 1 : 0
+                                    border.color: session.accent
+                                    activeFocusOnTab: true
 
-                            Column {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 70
-                                anchors.right: parent.right
-                                anchors.rightMargin: 8
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 3
+                                    Accessible.role: Accessible.Button
+                                    Accessible.name: modelData.name
+                                    Accessible.description: modelData.id
 
-                                Text {
-                                    width: parent.width
-                                    text: modelData.name
-                                    color: session.foreground
-                                    font.pixelSize: 13
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    width: parent.width
-                                    text: modelData.id
-                                    color: session.muted
-                                    font.pixelSize: 11
-                                    elide: Text.ElideRight
-                                }
-                            }
+                                    Keys.onReturnPressed: sidebar.place(modelData.index)
+                                    Keys.onEnterPressed: sidebar.place(modelData.index)
+                                    Keys.onSpacePressed: sidebar.place(modelData.index)
 
-                            MouseArea {
-                                id: rowPointer
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: session.editing ? Qt.OpenHandCursor : Qt.ArrowCursor
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        width: 2
+                                        color: tile.chosen ? session.accent : "transparent"
+                                    }
 
-                                property bool dragging: false
+                                    PreviewItem {
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 6
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: 48
+                                        height: 48
+                                        session: sidebar.session
+                                        index: modelData.index
+                                    }
 
-                                onClicked: {
-                                    sidebar.selectedIndex = modelData.index;
-                                    sidebar.selectedName = modelData.name;
-                                }
+                                    Text {
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 58
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.leftMargin: 5
+                                        anchors.rightMargin: 5
+                                        height: 30
+                                        text: modelData.name
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                        font.bold: tile.chosen
+                                        horizontalAlignment: Text.AlignHCenter
+                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 2
+                                        elide: Text.ElideRight
+                                    }
 
-                                // Dragging out of the palette is the editor's gesture. It
-                                // is done by hand rather than with Qt's drag and drop so
-                                // one code path serves the pointer and anything that drives
-                                // the window, and a drop has one testable entry point.
-                                onPressed: if (session.editing) {
-                                               dragging = true;
-                                               window.dragCatalog = modelData.index;
-                                               window.dragPoint = mapToItem(null, mouse.x, mouse.y);
-                                           }
-                                onPositionChanged: if (dragging) {
-                                                       window.dragPoint = mapToItem(null, mouse.x, mouse.y);
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.bottom: parent.bottom
+                                        anchors.leftMargin: 5
+                                        anchors.rightMargin: 5
+                                        anchors.bottomMargin: 5
+                                        text: modelData.id
+                                        color: session.muted
+                                        font.pixelSize: 9
+                                        horizontalAlignment: Text.AlignHCenter
+                                        elide: Text.ElideRight
+                                    }
+
+                                    MouseArea {
+                                        id: tilePointer
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: session.editing ? Qt.OpenHandCursor
+                                                                     : Qt.ArrowCursor
+
+                                        property bool dragging: false
+
+                                        onClicked: {
+                                            tile.forceActiveFocus();
+                                            sidebar.selectedIndex = modelData.index;
+                                            sidebar.selectedName = modelData.name;
+                                        }
+
+                                        onPressed: if (session.editing) {
+                                                       dragging = true;
+                                                       tile.forceActiveFocus();
+                                                       window.dragCatalog = modelData.index;
+                                                       window.dragPoint =
+                                                           mapToItem(null, mouse.x, mouse.y);
                                                    }
-                                onReleased: {
-                                    if (!dragging) {
-                                        return;
+                                        onPositionChanged: if (dragging) {
+                                                               window.dragPoint =
+                                                                   mapToItem(null, mouse.x, mouse.y);
+                                                           }
+                                        onReleased: {
+                                            if (!dragging) {
+                                                return;
+                                            }
+                                            dragging = false;
+                                            const landing = mapToItem(sheet, mouse.x, mouse.y);
+                                            if (sheet.contains(landing)) {
+                                                sheet.placeCatalogAt(window.dragCatalog, landing);
+                                            }
+                                            window.dragCatalog = -1;
+                                        }
+                                        onCanceled: {
+                                            dragging = false;
+                                            window.dragCatalog = -1;
+                                        }
                                     }
-                                    dragging = false;
-                                    const landing = mapToItem(sheet, mouse.x, mouse.y);
-                                    if (sheet.contains(landing)) {
-                                        sheet.placeCatalogAt(window.dragCatalog, landing);
-                                    }
-                                    window.dragCatalog = -1;
-                                }
-                                onCanceled: {
-                                    dragging = false;
-                                    window.dragCatalog = -1;
                                 }
                             }
                         }
