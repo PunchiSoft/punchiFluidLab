@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La corrección de símbolos empieza con palabras, no con líneas — 2026-11-15
+
+- El skill de simbología añade la **puerta previa**: requisito en nuestras palabras con su
+  cláusula, medidas en números y aprobación del propietario, antes de dibujar.
+- Una imagen de Commons o de una librería CAD solo recuerda **qué símbolos existen**; nunca
+  es la fuente de una proporción.
+- La **corrección** queda ordenada: inventario, un símbolo por cambio, lint, capturas a
+  300 dpi en claro y oscuro, lista de la familia y firma; la duda termina en «no verificado».
+
 ### Parada obligatoria antes de los símbolos — 2026-11-15
 
 Decisión del propietario: la simbología **neumática** va primero y **corregir lo que ya está**
