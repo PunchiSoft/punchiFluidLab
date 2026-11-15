@@ -52,7 +52,7 @@ lines outside generated files is split before it starts, never during review. Th
 | 5 | `feat/workspace-frame` | sunken workspace, paper elevation, one `Card` for the floating editors | captures, contrast, zoom tests | — |
 | 6a | `feat/adaptive-shell` | three modes from content minimums, sheet floor, compact rails and drawer, `--check-layout` | `--check-layout`, captures | the rest moves to 6a-ii |
 | 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered size and place, 900 × 600, scale and large-font runs | `--check-layout`, captures | — |
-| 6b | `feat/ribbon-minimized` | minimized ribbon, remembered geometry | `--selftest`, captures | — |
+| 6b | (delivered with 6a-ii) | the minimized ribbon and the remembered geometry | the 6a-ii evidence | — |
 | 6c | `feat/view-strip` | the floating view strip, fit to the frame, view history, the three toggles | `--selftest`, captures | the zoom-window gesture if it grows |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
