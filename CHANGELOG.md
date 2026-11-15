@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### El texto y las alturas de la cinta salen del tema — 2026-11-15
+
+Primera parte de la etapa 7: la cinta deja de tener tamaños escritos a mano.
+
+- `--font-scale 1.5` crece las pestañas, las etiquetas, los iconos y las alturas de la cinta
+  y nada se recorta; con la fuente por defecto el resultado es **idéntico al anterior**, que
+  es la prueba de que los tokens reproducen lo que había.
+- La fila de la ventana adaptable pasa a **`covered`**: era su último hueco.
+- Quedan para 7b y 7c el foco y las ayudas de todos los controles, los radios y márgenes
+  fuera de la cinta, las lecturas de la barra de estado y el movimiento reducido.
+- **Evidencia**: captura con fuente 1,5× en `assets/screenshots/font-large-light.png`,
+  `--check-qml` 0, `--selftest` 0 y `./scripts-dev/check.sh` verde.
+
 ### Ventana de zoom y glifo propio de Ajustar — 2026-11-15
 
 Con esto se cierra la tira de vista.

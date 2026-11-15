@@ -318,6 +318,17 @@ interactive item has hover, pressed, focus and disabled; every tooltip names the
 the status bar groups its readings; reduced motion is honoured everywhere; the docs say
 what the window does. The gate, the captures and the changelog close the plan.
 
+### 7 — Consistency
+
+**Landed in 7a.** The ribbon's text sizes and heights come from the theme: `textSmall`,
+`textBody` and `textLabel` derive from the same desktop font as the spacing unit, and the
+tab row, the buttons, the groups and the body grow with it. At the default unit the numbers
+are exactly the ones the ribbon was drawn with, so the window is pixel-identical.
+
+**Still in 7.** Focus and tooltips on every control, the radius and margin literals outside
+the ribbon, the status bar's readings, and reduced motion in the panel, ribbon and strip
+folds.
+
 ## Rules that hold in every stage
 
 - **View state is not document state**: panels, zoom, pan, grid and the ribbon's minimized

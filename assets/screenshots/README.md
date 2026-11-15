@@ -4,6 +4,7 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
+| `font-large-light.png` | The window with the desktop font at **1.5×** (`--font-scale 1.5`): the ribbon's tabs, labels, icons and heights all grow with the tokens, so nothing clips |
 | `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the sunken workspace around the **raised paper card** with its edge and shadow, the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the sunken workspace, the paper edge and the help links in both themes |
 | `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: the **48 drawings** — the 46 ribbon commands, from document and editing to align, transport, panels and menu, plus the hand and the fit the view strip uses |
@@ -76,6 +77,10 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The window with the desktop font at 1.5x, to prove the ribbon grows with it.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --font-scale 1.5 \
+  --grab /tmp/font-large-light.png
 # The view strip with its zoom panel open, light and dark.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --view-panel \
