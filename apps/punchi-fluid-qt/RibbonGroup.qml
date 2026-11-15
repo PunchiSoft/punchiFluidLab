@@ -16,7 +16,7 @@ Item {
     default property alias content: row.data
 
     implicitWidth: Math.max(row.implicitWidth, titleText.implicitWidth) + 22
-    implicitHeight: 84
+    implicitHeight: Math.max(84, 4 * session.unit + 12)
 
     Row {
         id: row
@@ -32,7 +32,7 @@ Item {
         anchors.bottom: parent.bottom
         text: group.title
         color: session.muted
-        font.pixelSize: 10
+        font.pixelSize: session.textSmall
         font.letterSpacing: 0.4
     }
 

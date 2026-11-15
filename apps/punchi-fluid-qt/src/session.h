@@ -153,6 +153,10 @@ class FluidSession : public QObject
     Q_PROPERTY(QColor lineStrong READ lineStrong NOTIFY changed)
     Q_PROPERTY(QColor shadow READ shadow NOTIFY changed)
     Q_PROPERTY(int unit READ unit NOTIFY changed)
+    /// Text sizes from the theme, so a widget never picks a font size of its own.
+    Q_PROPERTY(int textSmall READ textSmall NOTIFY changed)
+    Q_PROPERTY(int textBody READ textBody NOTIFY changed)
+    Q_PROPERTY(int textLabel READ textLabel NOTIFY changed)
     Q_PROPERTY(int motionMs READ motionMs NOTIFY changed)
 
 public:
@@ -327,6 +331,9 @@ public:
     QColor shadow() const { return m_tokens.shadow; }
     /// The spacing unit the panels and the ribbon use, from the desktop font.
     int unit() const { return m_tokens.unit; }
+    [[nodiscard]] int textSmall() const { return m_tokens.textSmall; }
+    [[nodiscard]] int textBody() const { return m_tokens.textBody; }
+    [[nodiscard]] int textLabel() const { return m_tokens.textLabel; }
     /// The duration of a panel or ribbon change; `0` under reduced motion.
     int motionMs() const { return m_tokens.motionMs; }
 
