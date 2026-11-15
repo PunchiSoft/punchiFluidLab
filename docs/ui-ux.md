@@ -318,12 +318,17 @@ before a panel is allowed to cover it:
   catalog 220 px and the right dock 300 px. At the default font the wide mode starts at
   **1200 px** and the medium one at **1036 px**; a larger font moves both, because the panel
   widths follow the spacing unit.
-- **The ribbon can be minimized** by the user or by the compact mode: the tab row stays and
-  the open tab's groups appear as a panel under it, closing after a command or `Esc`. The
-  minimized state is remembered.
-- Heights come from the font and the spacing unit, not from 34, 62 or 84: a desktop font
-  larger than the default must not clip the ribbon.
-- The window opens at 1280 px and remembers its geometry. The minimum is 900 × 600.
+- **The ribbon can be minimized** by the user, with the control at the right end of the tab
+  row: the tab row stays and the open tab's groups appear as a panel over the drawing area
+  (never over the panels' headers), closing after a command or `Esc`. The state is
+  remembered with the panels. Below the collapse threshold the ribbon already folds to
+  **Menú** instead.
+- **The window remembers its size and place**, and only when the place still lands on a
+  screen: a laptop undocked from a second monitor must not reopen off-screen. A maximized
+  window keeps the size it had before. The minimum is 900 × 600.
+- **The mode boundaries follow the spacing unit**, which follows the desktop font, so a
+  larger font moves them. The ribbon's own text and heights are still literals; turning
+  them into tokens is stage 7.
 - **The mode is a consequence of the limits, not a list of numbers.** Each region declares
   a minimum and a preferred width; wide, medium and compact follow from what fits, so a new
   panel does not need a new breakpoint.
@@ -336,13 +341,12 @@ before a panel is allowed to cover it:
 - **Layouts or anchors, never both in the same item.** A region placed by a layout must not
   set `x`, `y`, `width` or `height`, and an anchored region must not declare `Layout.*`:
   mixing them produces geometry conflicts and binding cycles.
-- **Today** the three modes exist: `layoutMode` in `Main.qml` derives them from the
-  content minimums, the sheet never drops below 480 px, and the compact window folds both
-  panels to their 24 px rails and opens them as drawers with the card's edge and shadow.
-  `--check-layout` proves it at seven widths and with the drawer open. **Still target**:
-  the minimized ribbon, the remembered window geometry and the large-font run
-  ([interface-plan.md](interface-plan.md) stage 6a). The window's minimum is 900 × 560 in
-  the code, below the 900 × 600 this contract states.
+- **Today** the stage is built: `layoutMode` derives the three modes from the content
+  minimums, the sheet never drops below 480 px, the compact window folds both panels to
+  their 24 px rails and opens them as drawers, the ribbon folds to its tab row, and the
+  window remembers its size and place. `--check-layout` proves it at seven widths, with the
+  drawer open, with the ribbon folded and with the geometry restored, at 1.25×, 1.5× and
+  2× density and with a 1.5× font ([interface-plan.md](interface-plan.md) stage 6a).
 
 ### 3. The sheet
 

@@ -29,6 +29,8 @@ Images of the running application, used by the README and by pull request review
 | `layout-compact-drawer-light.png` | The same window with the catalog opened as a **drawer over the sheet**: the card's edge and shadow, and the sheet still spanning the window behind it |
 | `layout-compact-drawer-dark.png` | The same drawer on a dark desktop, to check the shadow and the edge of a floating panel |
 | `layout-medium-light.png` | The **medium** window at 1050 × 700: the catalog at 220 px and the right dock at 314, which is exactly the sheet's **480 px floor** |
+| `ribbon-minimized-light.png` | The ribbon folded to its **tab row**: the open tab's commands as a panel over the drawing area only, with the catalog keeping its header, and the control that brings the ribbon back |
+| `ribbon-minimized-dark.png` | The same folded ribbon on a dark desktop, to check the panel's edge and surface |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `editar-light.png` | The **Editar** tab on a light desktop: Historial, Circuito, Componente, Alinear, Conducto and Repartir, with the active tab on the body plane |
@@ -72,6 +74,13 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The ribbon folded to its tab row, with its commands as a panel over the sheet.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --ribbon-minimized \
+  --grab /tmp/ribbon-minimized-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --ribbon-minimized \
+  --grab /tmp/ribbon-minimized-dark.png
 # The three modes: the compact window folded, its catalog drawer, and the medium window.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --size 900x640 --inspect \
