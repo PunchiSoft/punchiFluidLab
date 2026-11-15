@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El catálogo es una paleta de baldosas — 2026-11-15
+
+La barra lateral termina su forma de paleta: dos columnas de baldosas con el símbolo, el
+nombre en dos líneas y el `id`, y un ancho que se puede arrastrar y se recuerda.
+
+- El ancho arranca en **324 px** (`18 × unit`), se arrastra entre 220 y 480 px desde el
+  borde interior y se guarda como estado de vista.
+- Cada baldosa es enfocable; **Enter** o **Espacio** la coloca en el centro de la hoja, y
+  el recorrido de teclado pasa por todas. La selección lleva la barra de acento y la palabra
+  del estado, no solo el color.
+- La búsqueda y los grupos de la etapa 4a siguen; las baldosas se ordenan dentro de su
+  categoría y el pie conserva la carpeta y los omitidos.
+- **Evidencia**: los pasos `catalog: a tile is in the scene`, `catalog: Return accepts a
+  focused tile`, `catalog: Return places the focused tile`, `catalog: the width is the one
+  chosen` y `catalog: the width is remembered` de `--selftest`, `--check-qml` con 0
+  problemas, `./scripts-dev/check.sh` verde y las capturas a 324 y 240 px.
+
 ### El catálogo se agrupa, se busca y dice qué omitió — 2026-11-15
 
 La barra lateral deja de ser una lista única: muestra el número de componentes, un buscador,

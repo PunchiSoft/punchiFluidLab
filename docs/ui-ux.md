@@ -231,9 +231,9 @@ The sidebar is generated from the catalog, so it is exactly as complete as
 `~/.local/share/punchi-fluid-lab/catalog/` plus the built-in files. Adding a valve
 file adds an entry; deleting the file removes it; `disabled = true` hides it.
 
-**Today** the sidebar has the count, the search, the collapsible categories and the
-footer; its rows are still one per line, and the two-column tiles and the resizable width
-are stage 4b ([interface-plan.md](interface-plan.md)).
+**Today** the sidebar is the palette: the count, the search, the collapsible categories,
+two-column tiles and the footer, with a width the user can drag and the session remembers.
+The panel that lists the reasons for each skipped file is still target.
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
   `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the

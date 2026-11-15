@@ -22,6 +22,7 @@
 //! --tab N              open one ribbon tab, for a capture
 //! --menu               open the collapsed ribbon menu, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
+//! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
@@ -351,6 +352,22 @@ int main(int argc, char *argv[])
         for (QObject *root : engine.rootObjects()) {
             if (root->property("catalogOpen").isValid()) {
                 root->setProperty("catalogOpen", false);
+            }
+        }
+    }
+
+    const QString catalogWidth = value(QStringLiteral("--catalog-width"));
+    if (!catalogWidth.isEmpty()) {
+        bool ok = false;
+        const int width = catalogWidth.toInt(&ok);
+        if (!ok || width < 220 || width > 480) {
+            std::fprintf(stderr, "--catalog-width takes 220 to 480, not \"%s\"\n",
+                         qUtf8Printable(catalogWidth));
+            return 2;
+        }
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("catalogWidth").isValid()) {
+                root->setProperty("catalogWidth", width);
             }
         }
     }
@@ -1498,14 +1515,14 @@ int main(int argc, char *argv[])
         // driven through the sidebar's own mouse area, so the mapping from the palette to the
         // sheet is the one the user gets.
         steps->push_back([state, check, send] {
-            // The palette rows live inside a ListView, whose delegates are children of its
+            // The palette tiles live inside a Grid, whose delegates are children of its
             // content item rather than of the window, so the tree is walked by hand.
             QQuickItem *row = nullptr;
             std::function<void(QQuickItem *)> seek = [&](QQuickItem *item) {
                 // A MouseArea written inline in QML gets a generated class name
                 // (QQuickMouseArea_QML_3), so the test asks by inheritance, not by name.
                 if (row == nullptr && item->isVisible() && item->inherits("QQuickMouseArea")
-                    && item->width() > 200.0 && item->height() > 40.0) {
+                    && item->width() > 80.0 && item->height() > 50.0) {
                     row = item;
                     return;
                 }
@@ -2770,6 +2787,51 @@ int main(int argc, char *argv[])
             if (search != nullptr) {
                 search->setProperty("text", QString());
             }
+        });
+
+        // A tile is keyboard reachable: focus it and Return places it, like a click.
+        steps->push_back([state, check] {
+            QQuickItem *mouse = nullptr;
+            std::function<void(QQuickItem *)> seek = [&](QQuickItem *item) {
+                if (mouse == nullptr && item->isVisible() && item->inherits("QQuickMouseArea")
+                    && item->width() > 80.0 && item->height() > 50.0) {
+                    mouse = item;
+                    return;
+                }
+                for (QQuickItem *child : item->childItems()) {
+                    seek(child);
+                }
+            };
+            seek(state->window->contentItem());
+            check(mouse != nullptr, QStringLiteral("catalog: a tile is in the scene"));
+            if (mouse != nullptr) {
+                if (QQuickItem *tile = mouse->parentItem(); tile != nullptr) {
+                    tile->forceActiveFocus();
+                }
+                state->components = pf_session_component_count(state->session->handle());
+            }
+        });
+        steps->push_back([state, check] {
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+            check(true, QStringLiteral("catalog: Return accepts a focused tile"));
+        });
+        steps->push_back([state, check] {
+            const uint32_t now = pf_session_component_count(state->session->handle());
+            check(now == state->components + 1,
+                  QStringLiteral("catalog: Return places the focused tile"));
+            state->window->setProperty("catalogWidth", 300);
+        });
+        steps->push_back([state, check] {
+            QObject *dock =
+                state->window->findChild<QObject *>(QStringLiteral("catalogDock"));
+            const double width = dock != nullptr ? dock->property("width").toDouble() : -1.0;
+            check(width >= 295.0 && width <= 305.0,
+                  QStringLiteral("catalog: the width is the one chosen"));
+            check(state->session->viewSetting(QStringLiteral("panel/catalogWidth"), 0).toInt()
+                      == 300,
+                  QStringLiteral("catalog: the width is remembered"));
+            state->window->setProperty("catalogWidth", 18 * state->session->unit());
         });
 
         QTimer::singleShot(400, window, [state, steps] {

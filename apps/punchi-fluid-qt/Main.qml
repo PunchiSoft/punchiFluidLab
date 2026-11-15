@@ -143,7 +143,7 @@ Window {
     /// The two panels are view state: hiding one gives the sheet its room and never
     /// changes the document, the history or the modified mark.
     property bool catalogOpen: true
-    property int catalogWidth: 248
+    property int catalogWidth: 18 * session.unit
     /// The right dock holds the properties and the title-block editor. It is only
     /// available while one of them is open, and hiding it is view state.
     property bool rightDockOpen: true
@@ -173,7 +173,10 @@ Window {
     Component.onCompleted: {
         // View state only: the document is untouched by which panel was open last time.
         window.catalogOpen = session.viewSetting("panel/catalogOpen", true);
-        window.catalogWidth = session.viewSetting("panel/catalogWidth", 248);
+        const storedWidth =
+            Number(session.viewSetting("panel/catalogWidth", 18 * session.unit));
+        window.catalogWidth =
+            Math.max(220, Math.min(480, isFinite(storedWidth) ? storedWidth : 18 * session.unit));
         window.rightDockOpen = session.viewSetting("panel/rightDockOpen", true);
         window.panelAutoHide = session.viewSetting("panel/autoHide", false);
         window.viewStateReady = true;
@@ -182,7 +185,7 @@ Window {
     /// Panels back to their opening state, and the sheet back to 1:1 with no pan.
     function resetView() {
         window.catalogOpen = true;
-        window.catalogWidth = 248;
+        window.catalogWidth = 18 * session.unit;
         window.rightDockOpen = true;
         window.panelAutoHide = false;
         session.zoomReset();
@@ -622,11 +625,17 @@ Window {
                 open: window.catalogOpen
                 panelWidth: window.catalogWidth
                 height: parent.height
+                resizable: true
+                minimumPanelWidth: 220
+                maximumPanelWidth: 480
                 autoHide: window.panelAutoHide
                 autoHideBlocked: window.panelAutoHideBlocked
                 onToggleRequested: window.catalogOpen = !window.catalogOpen
                 onAutoHideRequested: function (open) {
                     window.catalogOpen = open;
+                }
+                onWidthRequested: function (width) {
+                    window.catalogWidth = width;
                 }
 
                 Sidebar {
