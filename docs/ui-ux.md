@@ -351,7 +351,7 @@ before a panel is allowed to cover it:
 ### 3. The sheet
 
 **The sheet is a raised card on a sunken workspace.** The canvas fills the drawing area
-inside one `unit` of margin over `surface_sunken`; the paper is filled with `panel`, edged
+inside **half a `unit`** of margin over `surface_sunken`; the paper is filled with `panel`, edged
 with `line_strong` and carries the `shadow` token offset once behind it. The drawing's own
 background follows the paper, so a symbol that erases against the page matches. Every
 floating editor is one `Card` with the same radius, edge and shadow; the shadow is drawn,
