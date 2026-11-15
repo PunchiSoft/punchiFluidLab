@@ -148,7 +148,7 @@ Item {
         selectByMouse: true
         Accessible.name: qsTr("Buscar en el catálogo")
         background: Rectangle {
-            radius: 4
+            radius: session.radiusSmall
             color: session.surfaceSunken
             border.width: 1
             border.color: search.activeFocus ? session.accent : session.lineStrong
@@ -277,7 +277,7 @@ Item {
                                         sidebar.selectedIndex === modelData.index
                                     width: (group.width - 26) / 2
                                     height: 108
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     color: chosen ? session.panel
                                            : tilePointer.containsMouse ? session.surfaceRaised
                                            : "transparent"

@@ -64,7 +64,7 @@ Item {
         visible: dock.floating && !dock.railVisible
         anchors.fill: parent
         anchors.margins: -3
-        radius: 8
+        radius: session.radius
         color: dock.session ? dock.session.shadow : "transparent"
         z: -1
     }

@@ -661,7 +661,7 @@ Window {
         y: window.dragPoint.y - height * 0.5
         width: 72
         height: 44
-        radius: 4
+        radius: session.radiusSmall
         color: session.panel
         opacity: 0.9
         border.width: 1
@@ -862,7 +862,7 @@ Window {
                             Rectangle {
                                 width: 96
                                 height: 26
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.accent
@@ -880,7 +880,7 @@ Window {
                             Rectangle {
                                 width: 96
                                 height: 26
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -935,7 +935,7 @@ Window {
                             Rectangle {
                                 width: 120
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.accent
@@ -953,7 +953,7 @@ Window {
                             Rectangle {
                                 width: 120
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -971,7 +971,7 @@ Window {
                             Rectangle {
                                 width: 120
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -1065,7 +1065,7 @@ Window {
                             Rectangle {
                                 width: 60
                                 height: 26
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: window.exportPartsList ? session.accent : "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -1087,7 +1087,7 @@ Window {
                             Rectangle {
                                 width: 130
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.accent
@@ -1108,7 +1108,7 @@ Window {
                             Rectangle {
                                 width: 100
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -1166,7 +1166,7 @@ Window {
                         Rectangle {
                             width: parent.width
                             height: 30
-                            radius: 4
+                            radius: session.radiusSmall
                             color: session.background
                             border.width: 1
                             border.color: session.muted
@@ -1193,7 +1193,7 @@ Window {
                             Rectangle {
                                 width: 120
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.accent
@@ -1215,7 +1215,7 @@ Window {
                             Rectangle {
                                 width: 120
                                 height: 28
-                                radius: 4
+                                radius: session.radiusSmall
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -1274,7 +1274,7 @@ Window {
                         Rectangle {
                             width: 96
                             height: 26
-                            radius: 4
+                            radius: session.radiusSmall
                             color: "transparent"
                             border.width: 1
                             border.color: session.accent
@@ -1385,7 +1385,7 @@ Window {
                                     delegate: Rectangle {
                                         width: parent.width
                                         height: 24
-                                        radius: 3
+                                        radius: session.radiusTip
                                         color: modelData.current ? session.accent : "transparent"
                                         border.width: 1
                                         border.color: modelData.current ? session.accent : session.muted
@@ -1418,7 +1418,7 @@ Window {
                                 Rectangle {
                                     width: 120
                                     height: 24
-                                    radius: 3
+                                    radius: session.radiusTip
                                     visible: session.chartSourcePlacement >= 0
                                     color: "transparent"
                                     border.width: 1
@@ -1485,7 +1485,7 @@ Window {
                                 Rectangle {
                                     width: 96
                                     height: 26
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     color: "transparent"
                                     border.width: 1
                                     border.color: session.accent
@@ -1517,7 +1517,7 @@ Window {
                                 Rectangle {
                                     width: 96
                                     height: 26
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     color: "transparent"
                                     border.width: 1
                                     border.color: session.accent
@@ -1565,7 +1565,7 @@ Window {
                                 Rectangle {
                                     width: 68
                                     height: 24
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     color: "transparent"
                                     border.width: 1
                                     border.color: session.muted
@@ -1683,7 +1683,7 @@ Window {
                                 Rectangle {
                                     width: 118
                                     height: 26
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     color: window.blockCustomizing ? session.accent : "transparent"
                                     border.width: 1
                                     border.color: session.muted
@@ -1704,7 +1704,7 @@ Window {
                                 Rectangle {
                                     width: 118
                                     height: 26
-                                    radius: 4
+                                    radius: session.radiusSmall
                                     visible: session.blockCustomized
                                     color: "transparent"
                                     border.width: 1
@@ -1772,7 +1772,7 @@ Window {
                                             width: 42
                                             height: 26
                                             visible: window.blockCustomizing
-                                            radius: 3
+                                            radius: session.radiusTip
                                             color: "transparent"
                                             border.width: 1
                                             border.color: modelData.visible ? session.accent : session.muted

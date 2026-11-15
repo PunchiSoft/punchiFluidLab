@@ -108,7 +108,7 @@ Item {
             visible: !margins.ribbonMode
             width: Math.max(margins.controlWidth, headerRow.implicitWidth + 16)
             height: 26
-            radius: 4
+            radius: session.radiusSmall
             color: pointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
             border.width: activeFocus ? 1 : 0
             border.color: session.accent
@@ -175,7 +175,7 @@ Item {
         visible: margins.ribbonMode
         width: 72
         height: 66
-        radius: 4
+        radius: session.radiusSmall
         color: ribbonPointer.containsMouse || popup.opened || activeFocus
                ? session.surfaceRaised : "transparent"
         border.width: activeFocus ? 1 : 0
@@ -254,7 +254,7 @@ Item {
             color: session.surfaceRaised
             border.width: 1
             border.color: session.lineStrong
-            radius: 4
+            radius: session.radiusSmall
         }
 
         contentItem: ListView {
@@ -283,7 +283,7 @@ Item {
 
                 width: ListView.view.width
                 height: 56
-                radius: 3
+                radius: session.radiusTip
                 color: pointer.containsMouse || ListView.isCurrentItem ? session.surfaceRaised : "transparent"
                 border.width: margins.isCurrent(modelData) ? 1 : 0
                 border.color: session.accent

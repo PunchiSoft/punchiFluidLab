@@ -52,7 +52,7 @@ Item {
             visible: !orientation.ribbonMode
             width: orientation.controlWidth
             height: 26
-            radius: 4
+            radius: session.radiusSmall
             color: pointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
             border.width: activeFocus ? 1 : 0
             border.color: session.accent
@@ -113,7 +113,7 @@ Item {
         visible: orientation.ribbonMode
         width: 72
         height: 66
-        radius: 4
+        radius: session.radiusSmall
         color: ribbonPointer.containsMouse || popup.opened || activeFocus
                ? session.surfaceRaised : "transparent"
         border.width: activeFocus ? 1 : 0
@@ -187,7 +187,7 @@ Item {
             color: session.surfaceRaised
             border.width: 1
             border.color: session.lineStrong
-            radius: 4
+            radius: session.radiusSmall
         }
 
         contentItem: ListView {
@@ -207,7 +207,7 @@ Item {
 
                 width: ListView.view.width
                 height: 34
-                radius: 3
+                radius: session.radiusTip
                 color: pointer.containsMouse || ListView.isCurrentItem ? session.surfaceRaised : "transparent"
                 border.width: chosen ? 1 : 0
                 border.color: session.accent

@@ -29,7 +29,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 4
+        radius: session.radiusSmall
         color: pointer.containsMouse || button.activeFocus ? session.background : "transparent"
         border.width: 1
         border.color: button.primary ? session.accent : session.lineStrong

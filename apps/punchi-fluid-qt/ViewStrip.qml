@@ -35,7 +35,7 @@ Card {
 
         width: panel.width - 16
         height: 2 * strip.session.unit - 6
-        radius: 4
+        radius: session.radiusSmall
         color: rowArea.containsMouse && row.available ? strip.session.surfaceRaised
                                                      : "transparent"
         opacity: row.available ? 1 : 0.4
@@ -204,6 +204,7 @@ Card {
     // ---- the zoom panel -----------------------------------------------------
     Card {
         id: panel
+        session: strip.session
         visible: strip.panelOpen && !strip.folded
         anchors.right: parent.left
         anchors.rightMargin: 6
@@ -239,7 +240,7 @@ Card {
             }
             PanelRow {
                 icon: "view-fit"
-                label: qsTr("Ventana · arrastra un rectángulo")
+                label: qsTr("Zoom a una zona")
                 onTriggered: strip.invoke("window")
             }
             PanelRow {

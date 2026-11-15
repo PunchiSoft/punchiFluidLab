@@ -689,7 +689,7 @@ Rectangle {
                         anchors.topMargin: tab.active ? 0 : 3
                         width: parent.width
                         height: tab.active ? parent.height : 28
-                        radius: 4
+                        radius: session.radiusSmall
                         topLeftRadius: 4
                         topRightRadius: 4
                         bottomLeftRadius: tab.active ? 0 : 4
@@ -908,7 +908,7 @@ Rectangle {
         anchors.leftMargin: 3
         width: menu.width
         height: menu.height
-        radius: 4
+        radius: session.radiusSmall
         color: session.shadow
         z: 19
     }
@@ -922,7 +922,7 @@ Rectangle {
         width: 240
         height: Math.min(menuColumn.implicitHeight + 12, ribbon.menuMaxHeight)
         color: session.surfaceRaised
-        radius: 4
+        radius: session.radiusSmall
         border.width: 1
         border.color: session.line
         z: 20

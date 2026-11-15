@@ -450,7 +450,7 @@ not fight the right dock, and it leaves with the room it needs.
 | Control | Behaviour |
 |---|---|
 | **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode, and entering the simulation leaves the mode, because a click must actuate there. |
-| **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Ventana** (drag a rectangle; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
+| **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Zoom a una zona** (drag the area; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
 | **Ajustar al marco** | Fits the **frame inside the margins**, not the paper: the drawing space is what the reader came for, and the paper margin is not drawing. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. |
 | **Mostrar cajetín** | One toggle over what is drawn on screen, and nothing else: the block is view state, like the zoom, with no undo entry, no modified mark and no file field. |
 | **Iniciar / Pausa** | One button, the same command as `F9`/`F8`; neutral until the model runs, and the rest of the transport stays in **Simular**. |

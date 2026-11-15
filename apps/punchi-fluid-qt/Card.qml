@@ -12,7 +12,7 @@ import PunchiFluid
 Item {
     id: card
     property FluidSession session
-    property int radius: 8
+    property int radius: session ? session.radius : 8
     property color borderColor: session ? session.lineStrong : "transparent"
 
     Rectangle {

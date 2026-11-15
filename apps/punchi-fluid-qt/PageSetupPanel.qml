@@ -205,7 +205,7 @@ Card {
                             Rectangle {
                                 width: 62
                                 height: 24
-                                radius: 3
+                                radius: session.radiusTip
                                 color: "transparent"
                                 border.width: 1
                                 border.color: session.muted
@@ -255,7 +255,7 @@ Card {
             Rectangle {
                 width: 66
                 height: 26
-                radius: 3
+                radius: session.radiusTip
                 color: "transparent"
                 border.width: 1
                 border.color: session.muted
@@ -283,7 +283,7 @@ Card {
             Rectangle {
                 width: 66
                 height: 26
-                radius: 3
+                radius: session.radiusTip
                 color: "transparent"
                 border.width: 1
                 border.color: session.muted
@@ -304,7 +304,7 @@ Card {
             Rectangle {
                 width: 110
                 height: 26
-                radius: 4
+                radius: session.radiusSmall
                 color: "transparent"
                 border.width: 1
                 border.color: session.accent
@@ -357,7 +357,7 @@ Card {
             Rectangle {
                 width: 150
                 height: 28
-                radius: 4
+                radius: session.radiusSmall
                 color: "transparent"
                 border.width: 1
                 border.color: session.muted
@@ -408,7 +408,7 @@ Card {
             Rectangle {
                 width: 100
                 height: 28
-                radius: 4
+                radius: session.radiusSmall
                 color: "transparent"
                 border.width: 1
                 border.color: session.accent

@@ -51,7 +51,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: 3
+        radius: session.radiusTip
         color: "transparent"
         border.width: link.activeFocus ? 1 : 0
         border.color: session.accent
@@ -78,7 +78,7 @@ Item {
         anchors.topMargin: 2
         width: tipText.implicitWidth + 14
         height: tipText.implicitHeight + 8
-        radius: 3
+        radius: session.radiusTip
         color: session.surfaceRaised
         border.width: 1
         border.color: session.lineStrong
