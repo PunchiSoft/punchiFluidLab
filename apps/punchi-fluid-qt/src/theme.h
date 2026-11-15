@@ -71,13 +71,15 @@ struct Contrast {
     double lineRaised = 0.0;
     /// Text over the soft accent of a selected row or the active tab.
     double accentSoftText = 0.0;
+    /// The paper's edge against the sunken workspace around it.
+    double sheetEdge = 0.0;
 
     /// Text at 4.5:1, secondary lines at 3:1 and a meaningful line at 3:1, on both planes.
     [[nodiscard]] bool passes() const
     {
         return text >= 4.5 && dim >= 3.0 && accent >= 3.0 && raisedText >= 4.5
                && raisedDim >= 3.0 && line >= 3.0 && lineRaised >= 3.0
-               && accentSoftText >= 4.5;
+               && accentSoftText >= 4.5 && sheetEdge >= 3.0;
     }
 };
 

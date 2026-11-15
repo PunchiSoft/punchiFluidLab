@@ -12,10 +12,9 @@ import QtQuick
 import QtQuick.Controls
 import PunchiFluid
 
-Rectangle {
+Card {
     id: panel
 
-    property FluidSession session
     property string focusSection: "page"
     property string localError: ""
     property string customWidthText: ""
@@ -26,10 +25,6 @@ Rectangle {
     anchors.centerIn: parent
     width: Math.min(680, parent.width - 48)
     height: column.implicitHeight + 36
-    radius: 8
-    color: session.panel
-    border.width: 1
-    border.color: session.accent
     focus: visible
     activeFocusOnTab: true
     z: 47

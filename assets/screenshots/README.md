@@ -4,8 +4,8 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
-| `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
-| `window-dark.png` | The same window on a dark desktop, to check the paper edge, the frame and the help links in both themes |
+| `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the sunken workspace around the **raised paper card** with its edge and shadow, the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
+| `window-dark.png` | The same window on a dark desktop, to check the sunken workspace, the paper edge and the help links in both themes |
 | `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: all 46 ribbon commands, from document and editing to align, transport, panels and menu |
 | `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
 | `catalog-open-light.png` | The catalog on a light desktop at its **324 px** default: the count, the search, the collapsible categories and two-column tiles with the symbol, the name and the `id`; the footer names the catalog in use and the skipped files (the capture runs the built-in catalog) |
@@ -22,9 +22,9 @@ Images of the running application, used by the README and by pull request review
 | `paneles-ver-dark.png` | The same group on a dark desktop, to check the marks and the commands in both themes |
 | `ribbon-menu-light.png` | The ribbon folded at 1000 px with **Menú** open: the commands in one scrollable card with its shadow, bounded above the status bar |
 | `ribbon-menu-dark.png` | The same folded menu on a dark desktop, to check the card, the border and the shadow in both themes |
-| `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
-| `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
-| `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
+| `a3-reference-zones-light.png` | An **A3 landscape** paper card on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
+| `zoom-light.png` | The same raised paper at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
+| `zoom-dark.png` | The same magnified paper on a dark desktop, to show the readout, the card edge and the shadow in both themes |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `editar-light.png` | The **Editar** tab on a light desktop: Historial, Circuito, Componente, Alinear, Conducto and Repartir, with the active tab on the body plane |
@@ -35,8 +35,8 @@ Images of the running application, used by the README and by pull request review
 | `grid-5-light.png` | The Configurar página panel with the default **5 mm** grid and its eye toggle: the fine ruling and a heavier line every 25 mm |
 | `grid-20-light.png` | The same panel with a **20 mm** grid: the coarse ruling and a heavier line every 100 mm |
 | `margin-presets-light.png` | The **Márgenes** dropdown open directly from Archivo: Normal (ISO 5457 / NCh 13.Of93), Estrecho, Amplio and Márgenes personalizados…, each with its preview, shaded margin band and four values |
-| `page-setup-light.png` | The **Configurar página** panel on a light desktop: size, the orientation dropdown, the grid with its eye toggle, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
-| `page-setup-dark.png` | The same panel on a dark desktop, to check the preview, the profile control and the fields in both themes |
+| `page-setup-light.png` | The **Configurar página** editor on the shared **Card** and its shadow: size, the orientation dropdown, the grid with its eye toggle, the **Márgenes** profile gallery, four numeric margins, the custom size and the live preview with the shaded margin band |
+| `page-setup-dark.png` | The same card and fields on a dark desktop, to check the preview, the profile control and the shadow in both themes |
 | `title-block-light.png` | The **docked Cajetín editor** open on a light desktop, industrial model: the content combo, four position miniatures, the twelve guide fields and the 170 × 45 mm block drawn on the sheet beside it |
 | `title-block-dark.png` | The same editor on a dark desktop, to check the fields, the derived sheet number and the block in both themes |
 | `title-block-school-light.png` | The docked editor with the **Escolar** model, showing the shorter field set, the **Nota:** box with its placeholder and the compact block |

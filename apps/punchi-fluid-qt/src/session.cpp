@@ -915,7 +915,8 @@ void FluidSession::applyPalette(const QPalette &palette)
         ink.supply = toRgb(m_tokens.supply);
         ink.work = toRgb(m_tokens.work);
         ink.accent = toRgb(m_tokens.accent.lighter(150));
-        ink.background = toRgb(m_tokens.background);
+        // The drawing erases against the paper, which is the raised panel on the workspace.
+        ink.background = toRgb(m_tokens.panel);
         pf_session_set_ink(m_session, &ink);
     }
     emit changed();

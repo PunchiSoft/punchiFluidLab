@@ -327,6 +327,13 @@ before a panel is allowed to cover it:
 
 ### 3. The sheet
 
+**The sheet is a raised card on a sunken workspace.** The canvas fills the drawing area
+inside one `unit` of margin over `surface_sunken`; the paper is filled with `panel`, edged
+with `line_strong` and carries the `shadow` token offset once behind it. The drawing's own
+background follows the paper, so a symbol that erases against the page matches. Every
+floating editor is one `Card` with the same radius, edge and shadow; the shadow is drawn,
+never blurred per frame, and none of it changes the zoom, the pan, the check or the print.
+
 **Two modes, and the click means something different in each.** This is the split a
 schematic simulator lives by, and the one the reference tool uses:
 
