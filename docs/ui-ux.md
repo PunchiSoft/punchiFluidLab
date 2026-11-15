@@ -64,9 +64,9 @@ finds it in the user's theme and rasterises it; a machine with no such icon gets
 alone, as a native application does. The ribbon's commands use the project's own line
 family instead, so one command looks the same on every desktop
 ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)); the family falls back to the
-desktop's symbol and then to the label. **Today** the first eight commands — Nuevo, Abrir,
-Guardar, Guardar como, Exportar, Deshacer, Rehacer and Iniciar — use the project family;
-the rest still fall back to the desktop until stage 3c. See
+desktop's symbol and then to the label. **Today** the document, editing, transform and zoom commands — 24 in all, from Nuevo and
+Abrir to Copiar, Borrar and Tamaño original — use the project family; the rest still fall
+back to the desktop until stage 3c. See
 [ADR 0004](adr/0004-icons-from-the-desktop.md).
 
 The toolbar is a **ribbon**: a tab row, then the commands of the open tab in labelled
