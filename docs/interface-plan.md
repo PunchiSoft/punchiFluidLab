@@ -28,6 +28,8 @@ the same command. None of that is a teaching feature, and all of it is in the wa
 | 2026-11-15 | **One play/pause button** in the strip, the rest of the transport in **Simular** | the access is worth it during a demonstration; a second transport is not |
 | 2026-11-15 | The strip's sizes come from **`unit` and the font**, and the double-click interval from the desktop | a 44 px strip is a screenshot, not a design |
 | 2026-11-15 | The adaptive shell is built with **content minimums and one owning layout** | a breakpoint per panel does not survive the next panel |
+| 2026-11-15 | **One show toggle, the block**; the grid keeps its own and the border is always drawn | a second grid toggle duplicates **Ver**, and the paper's edge is not optional |
+| 2026-11-15 | The **centring marks** follow ISO 5457 §4.3: 10 mm lines beyond the frame, no arrow | the form is normative; "the form is free" was our own note |
 
 ## Stages
 
@@ -242,17 +244,19 @@ right edge of the drawing area** and takes no width from the paper.
   click of the middle button**; the single press keeps panning.
 - **View history**: one step back, so a zoom at the pointer or a fit can be undone without
   hunting for the previous magnification. It is view state like the rest.
-- **The three toggles**: block, grid and reference frame, drawn or not, with no undo entry
-  and no modified mark. The grid already is view state; the block and the frame need a view
-  flag in the session, not a change to the document.
+- **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
+  modified mark, so it needs a view flag in the session and not a change to the document.
+  The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always
+  drawn.
+- **The marks are the standard's**: four continuous lines of 0.7 mm, 10 mm beyond the frame,
+  without an arrowhead, on screen and in the print.
 - **Transport**: one play/pause button, the same command as `F9`/`F8`, neutral until there
   is a model to run.
 - **Sizes**: strip width, row height and icon size from `unit` and the font; the double
   click interval from `QStyleHints`; colours from the theme. No minimap.
 
-**Open questions for the owner**: whether the block and frame toggles stay view-only or one
-of them changes the document, and whether **marco externo** is the paper's edge or the ISO
-frame ([ui-ux.md](ui-ux.md) §3.1).
+**Open question for the owner**: whether hiding the block releases its band to the drawing
+or keeps it reserved ([ui-ux.md](ui-ux.md) §3.1).
 
 **Evidence**: `--selftest` steps for the fit, the double click, the view history, each
 toggle and the play button; captures in both schemes and at the compact breakpoint; the

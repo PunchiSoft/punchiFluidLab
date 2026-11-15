@@ -443,7 +443,7 @@ not fight the right dock, and it leaves with the room it needs.
 | **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, the status bar says how to leave, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode. |
 | **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Ventana** (drag a rectangle; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
 | **Ajustar al marco** | Fits the **frame inside the margins**, not the paper: the drawing space is what the reader came for, and the paper margin is not drawing. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. |
-| **Cajetín**, **Rejilla**, **Marco** | Three toggles over what is drawn on screen, and nothing else. The block, the grid and the reference frame are view state, like the zoom: no undo entry, no modified mark, no file field. |
+| **Mostrar cajetín** | One toggle over what is drawn on screen, and nothing else: the block is view state, like the zoom, with no undo entry, no modified mark and no file field. |
 | **Iniciar / Pausa** | One button, the same command as `F9`/`F8`; neutral until the model runs, and the rest of the transport stays in **Simular**. |
 
 - **No literal in the strip.** Its width, height, icon size and row height come from the
@@ -452,6 +452,12 @@ not fight the right dock, and it leaves with the room it needs.
   taught the user.
 - **Nothing is duplicated.** Every button calls the same action as the ribbon and the
   keyboard path; the strip is a second place to reach the command, never a second command.
+- **One toggle, not three.** The grid already has its toggle in **Ver** and in
+  Configurar página, and the paper's edge is always drawn: it is where the sheet ends and
+  the print carries it.
+- **The border is normative, not decoration.** The paper's edge carries four centring
+  marks, and ISO 5457 §4.3 fixes them as continuous lines of 0.7 mm, 10 mm beyond the
+  frame, without an arrow; no view toggle removes them.
 - **It folds.** The user can fold it to one button, the state is remembered as view state,
   and below the compact breakpoint it folds on its own. Reduced motion makes the fold
   instant.
@@ -624,12 +630,9 @@ translator must be able to reorder the sentence.
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
   ([interface-plan.md](interface-plan.md) stage 6).
-- Whether **Cajetín** and **Marco** stay view toggles or one of them becomes a document
-  change with its own command and undo. Until the owner decides, both are view state, and
-  the block keeps its band reserved even when it is not drawn.
-- What **Marco externo** names: the paper's edge or the ISO reference frame inside the
-  margins. The duplicated paper edge is gone and one line remains; if the toggle must hide
-  a frame, it is the ISO frame, never the paper's own boundary.
+- Whether hiding the block **releases its band** to the drawing or keeps it reserved. Today
+  the band stays reserved, so the circuit is drawn in the same place whether the block is
+  shown or not.
 - UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
   `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 

@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Las marcas de centrado siguen la norma — 2026-11-15
+
+Las cuatro marcas del borde llevaban una flecha que la norma no pide y cruzaban todo el
+margen de archivo. ISO 5457 §4.3 las fija de otra manera y ahora se dibujan así.
+
+- Cuatro líneas continuas de **0,7 mm** en los extremos de los ejes de simetría, desde el
+  marco y **10 mm más allá**; sin flecha ni triángulo.
+- En el borde de archivo de 20 mm la marca termina **dentro del margen**, no en el borde del
+  papel, porque la norma mide desde el marco.
+- La misma regla en pantalla y en la exportación: el lienzo y `punchi-fluid-export` dibujan
+  las cuatro líneas, y una prueba mide sus extremos y comprueba que no queda ningún
+  triángulo relleno en la hoja.
+- `docs/reference/title-block.md` lo registra como **referencia**: el requisito, la cláusula
+  y la advertencia de que es un registro de diseño y no una certificación.
+- La tira de vista queda con **un solo «mostrar»**, el cajetín: la rejilla conserva su
+  toggle en **Ver** y el borde se dibuja siempre.
+- **Evidencia**: `punchi-fluid-export` con 39 pruebas verdes, `--check-qml` 0 problemas,
+  `--selftest` 0 fallos, capturas de las cuatro marcas ampliadas en claro y oscuro, y
+  `./scripts-dev/check.sh` verde.
+
 ### La pestaña activa se asienta en el cuerpo de la cinta — 2026-11-15
 
 La pestaña activa dejaba aire sobre el cuerpo y el subrayado no llegaba a los bordes, así
