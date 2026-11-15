@@ -15,6 +15,21 @@ manual, a datasheet or the standard itself. Geometry is written by hand to confo
 and the pull request states which requirement was checked. The normative text is
 copyrighted; this repository records *our* engineering contract, not the standard.
 
+### The gate before geometry
+
+No line is drawn until these three exist, in this order:
+
+1. **The requirement, in our words**, with the clause it comes from. If the clause cannot
+   be cited, stop: the symbol stays marked unverified and the question goes to the owner.
+2. **The measures**, as numbers: box proportions, where each port sits, the arrow's sense,
+   the spring's end, the blocking mark. A drawing is checked against these numbers, never
+   against a picture.
+3. **The owner's approval of 1 and 2.** The geometry comes after, one symbol at a time.
+
+A picture from Wikimedia Commons, a CAD library or a manual is **only** a reminder of which
+symbols exist; it is never the source of a proportion. Those drawings were made by someone
+else, for their own edition, and copying one would break both the licence and the geometry.
+
 ## Standards in force
 
 | Standard | Edition | Governs here |
@@ -73,6 +88,23 @@ disagree, the document wins and this skill is the bug.
 8. **Open the pull request with the evidence**: the lint result, the two screenshots,
    the review file and the checklist item that was checked. A symbol change without a
    conformance review is not reviewable.
+
+## Correcting an existing symbol
+
+The first pass over this library is a **correction**, because a wrong symbol that is already
+in a circuit teaches the wrong thing. The order is fixed by
+[docs/next-steps.md](../../../docs/next-steps.md#stop-before-the-symbols):
+
+1. **Stock-taking first**: list the symbols, the ones under `assets/symbols/review` and the
+   state of each review. Do not touch anything before that list exists.
+2. **One symbol per change.** A batch hides a wrong arc among ten right ones, and the review
+   stops being a review.
+3. **Write the requirement and the measures** (the gate above), then change the file.
+4. **Lint, then 300 dpi light and dark captures**, then the family checklist with one answer
+   per normative feature.
+5. **The owner signs off.** If a requirement is ambiguous, the symbol is marked unverified
+   and the question is written down; a plausible drawing is the worst outcome here.
+6. **Record which requirement was checked** in the review file, not only "reviewed".
 
 ## Valve checklist
 
