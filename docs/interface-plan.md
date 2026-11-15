@@ -54,7 +54,8 @@ lines outside generated files is split before it starts, never during review. Th
 | 6a-ii | `feat/adaptive-rest` | minimized ribbon, remembered size and place, 900 × 600, scale and large-font runs | `--check-layout`, captures | — |
 | 6b | (delivered with 6a-ii) | the minimized ribbon and the remembered geometry | the 6a-ii evidence | — |
 | 6c-i | `feat/view-fit` | fit to the frame, the middle double click and one step of view history | `--selftest` | the strip moves to 6c-ii |
-| 6c-ii | `feat/view-strip` | the floating view strip, the zoom window, the show toggle and the play/pause button | `--selftest`, captures | the zoom-window gesture if it grows |
+| 6c-ii | `feat/view-strip` | the floating strip: fit, the zoom panel, the step back and the fold | `--selftest`, captures | the rest moves to 6c-iii |
+| 6c-iii | `feat/view-controls` | Mover, the zoom window, Mostrar cajetín, play/pause and the two missing glyphs | `--selftest`, captures | the play/pause waits for the transport decision |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -267,8 +268,16 @@ right edge of the drawing area** and takes no width from the paper.
   kept before a fit or a zoom at the pointer. `Ctrl+0` keeps meaning the paper at 1:1, so the
   two are different readings of the sheet and neither replaces the other. The fit works
   below 1:1 without losing its centring, which the old pan limit would have discarded.
-- **Left for 6c-ii**: the strip itself, the zoom window gesture, **Mostrar cajetín** and the
-  single play/pause button.
+- **Landed in 6c-ii**: the **strip** itself, floating over the right edge of the drawing
+  with **Ajustar al marco**, a **zoom panel** (−, 100 %, +, vista anterior) and a fold control
+  that leaves one button; its width, row height and icon size come from `unit`, it is
+  reachable from the keyboard and named for assistive technology, and its folded state is
+  remembered. In the compact window it starts folded and the one button opens it, like the
+  panels' drawers.
+- **Left for 6c-iii**: **Mover** (a visible mode with a pointer change, which needs the hand
+  glyph), the **zoom window** gesture, **Mostrar cajetín** (a view flag the block drawing
+  reads) and the **play/pause** button, which waits for the transport to say whether the
+  model pauses or only stops. Two glyphs join the family then: the hand and the fit.
 - **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
   modified mark, so it needs a view flag in the session and not a change to the document.
   The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always
@@ -283,11 +292,13 @@ right edge of the drawing area** and takes no width from the paper.
 **Open question for the owner**: whether hiding the block releases its band to the drawing
 or keeps it reserved ([ui-ux.md](ui-ux.md) §3.1).
 
-**Evidence for 6c-i**: the `--selftest` steps `view: the middle double click fits the
-frame` and `view: one step goes back to the previous view`, which measure the frame against
-the canvas and its centre against the canvas centre, plus the existing zoom and pan steps
-still green. 6c-ii adds the steps for each control, the captures in both schemes and at the
-compact breakpoint, and the keyboard path.
+**Evidence**: the `--selftest` steps `view: the middle double click fits the frame` and
+`view: one step goes back to the previous view`, which measure the frame against the canvas
+and its centre against the canvas centre; `view: the strip floats over the drawing area`,
+`view: the strip fits the frame without editing`, `view: the strip steps back to the
+previous view` and `view: the strip folds to one button`; the captures of the strip with
+its panel in both schemes; and the existing zoom and pan steps still green. 6c-iii adds the
+rest of the controls and the compact capture.
 
 
 ### 7 — Consistency

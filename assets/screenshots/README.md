@@ -31,6 +31,8 @@ Images of the running application, used by the README and by pull request review
 | `layout-medium-light.png` | The **medium** window at 1050 × 700: the catalog at 220 px and the right dock at 314, which is exactly the sheet's **480 px floor** |
 | `ribbon-minimized-light.png` | The ribbon folded to its **tab row**: the open tab's commands as a panel over the drawing area only, with the catalog keeping its header, and the control that brings the ribbon back |
 | `ribbon-minimized-dark.png` | The same folded ribbon on a dark desktop, to check the panel's edge and surface |
+| `view-strip-light.png` | The **view strip** over the right edge of the drawing with its zoom panel open: Ajustar al marco, Disminuir, 100 %, Aumentar, Vista anterior (dimmed at 1:1, because there is no step to take back) and the fold control |
+| `view-strip-dark.png` | The same strip and panel on a dark desktop, to check the card, the edge and the dimmed command |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
 | `editar-light.png` | The **Editar** tab on a light desktop: Historial, Circuito, Componente, Alinear, Conducto and Repartir, with the active tab on the body plane |
@@ -74,6 +76,13 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The view strip with its zoom panel open, light and dark.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --view-panel \
+  --grab /tmp/view-strip-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --view-panel \
+  --grab /tmp/view-strip-dark.png
 # The ribbon folded to its tab row, with its commands as a panel over the sheet.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --ribbon-minimized \

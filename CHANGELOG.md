@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### La tira de vista flota sobre el borde derecho — 2026-11-15
+
+La segunda mitad de la 6c pone la superficie de las operaciones que ya existían.
+
+- La **tira** flota sobre el borde derecho del área de dibujo y no le quita columna al
+  papel: **Ajustar al marco**, un **panel de zoom** (−, 100 %, +, vista anterior) y el
+  control que la pliega a un solo botón.
+- Tamaños e iconos salen de `unit`; el panel y la tira usan la tarjeta, el borde y la sombra
+  del tema; cada botón tiene nombre accesible, ayuda con el atajo y se alcanza con el
+  teclado. El estado plegado se recuerda como vista y no entra en el documento.
+- En ventana **compacta** la tira nace plegada y su botón la abre como las gavetas de los
+  paneles.
+- **Evidencia**: `--selftest` con los pasos `view: the strip floats over the drawing area`,
+  `view: the strip fits the frame without editing`, `view: the strip steps back to the
+  previous view` y `view: the strip folds to one button`, 0 fallos; `--check-qml` 0;
+  `./scripts-dev/check.sh` verde y capturas de la tira con su panel en claro y oscuro.
+
 ### Ajustar al marco y volver a la vista anterior — 2026-11-15
 
 Primera mitad de la tira de vista: la matemática primero, la superficie después.

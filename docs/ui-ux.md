@@ -472,11 +472,12 @@ not fight the right dock, and it leaves with the room it needs.
   instant.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
   budget to say what the zoom readout and **Ajustar al marco** already say.
-- **Today** the ribbon carries Aumentar, Disminuir and Tamaño original, the middle button
-  pans and its **double click fits the frame**, one step of view history is kept before a
-  fit or a zoom at the pointer, and `Ctrl+0` returns to 1:1. **Still target**: the strip
-  itself, the zoom window gesture, the show toggle and the play/pause button
-  ([interface-plan.md](interface-plan.md) stage 6c-ii).
+- **Today** the strip exists: it floats over the right edge of the drawing with **Ajustar
+  al marco**, a **zoom panel** (−, 100 %, +, vista anterior) and the fold control, and it is
+  remembered as view state. The middle button pans and its **double click fits the frame**,
+  one step of view history is kept, and `Ctrl+0` returns to 1:1. **Still target**: Mover,
+  the zoom window gesture, **Mostrar cajetín** and the play/pause button
+  ([interface-plan.md](interface-plan.md) stage 6c-iii).
 
 ### 4. Status bar
 
