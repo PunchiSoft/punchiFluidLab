@@ -14,6 +14,10 @@
 /// platform plugin, so reading it *is* reading the desktop. Nothing below this file may
 /// name a colour.
 struct ThemeTokens {
+    /// Text sizes, derived from the same desktop font the spacing unit follows.
+    int textSmall = 10;
+    int textBody = 11;
+    int textLabel = 12;
     QColor background;
     QColor panel;
     QColor surfaceRaised;

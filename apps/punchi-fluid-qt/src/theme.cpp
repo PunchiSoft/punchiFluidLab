@@ -153,6 +153,11 @@ ThemeTokens tokensFrom(const QPalette &palette)
     tokens.gridMajor = tokens.inkMuted;
     tokens.gridMajor.setAlphaF(0.34F);
     tokens.unit = unitFromFont();
+    // The same font the unit follows, so a larger desktop grows both. At the default 18 px
+    // unit these are the 10, 11 and 12 the ribbon was drawn with.
+    tokens.textSmall = std::max(10, (tokens.unit * 55 + 50) / 100);
+    tokens.textBody = std::max(11, (tokens.unit * 61 + 50) / 100);
+    tokens.textLabel = std::max(12, (tokens.unit * 66 + 50) / 100);
     tokens.motionMs = motionFromDesktop();
     return tokens;
 }

@@ -38,6 +38,10 @@ Rectangle {
 
     /// Below this width a ribbon is worse than a menu, so it folds away.
     readonly property bool collapsed: width < 1240
+    /// The tab row grows with the font and the spacing unit; at the default unit it is the
+    /// 34 px the ribbon was drawn with.
+    readonly property int tabHeight: Math.max(2 * session.unit - 2,
+                                             session.textLabel + 2 * session.unit / 3)
     /// The folded menu scrolls when the window cannot hold every command.
     readonly property real menuMaxHeight: ribbon.Window.window
         ? Math.max(160, ribbon.Window.window.height - ribbon.y - tabRow.height - 56)
@@ -637,7 +641,7 @@ Rectangle {
     Item {
         id: tabRow
         width: parent.width
-        height: 34
+        height: ribbon.tabHeight
 
         // The tab row is the raised plane of the ribbon; the body below returns to the
         // window plane, so the active tab reads as part of the body.
@@ -670,7 +674,7 @@ Rectangle {
                     readonly property bool active: ribbon.current === index
 
                     width: tabText.implicitWidth + 26
-                    height: 34
+                    height: ribbon.tabHeight
 
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
@@ -703,7 +707,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: modelData.name
                         color: tab.active ? session.foreground : session.muted
-                        font.pixelSize: 12
+                        font.pixelSize: session.textLabel
                     }
 
                     Rectangle {
@@ -798,7 +802,7 @@ Rectangle {
         anchors.leftMargin: ribbon.minimized ? ribbon.bodyInsetLeft : 0
         anchors.right: parent.right
         anchors.rightMargin: ribbon.minimized ? ribbon.bodyInsetRight : 0
-        implicitHeight: 86
+        implicitHeight: Math.max(86, 4 * session.unit + 14)
         visible: ribbon.bodyShown
 
         Rectangle {

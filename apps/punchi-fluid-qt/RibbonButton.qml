@@ -36,7 +36,10 @@ Item {
     implicitWidth: large
                    ? Math.max(58, labelText.implicitWidth + 14)
                    : smallRow.implicitWidth + 14
-    implicitHeight: large ? 62 : 24
+    readonly property int iconSide: Math.round(session.unit * 4.0 / 3.0)
+    readonly property int smallIconSide: Math.round(session.unit * 8.0 / 9.0)
+    readonly property int bigHeight: Math.max(62, 3 * session.unit + 8)
+    implicitHeight: large ? bigHeight : Math.max(24, session.unit + 6)
     opacity: available ? 1 : 0.4
     activeFocusOnTab: available
 
@@ -65,12 +68,12 @@ Item {
 
         Image {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 24
-            height: 24
+            width: button.iconSide
+            height: button.iconSide
             // An empty source draws nothing, so there is no need for a visibility binding
             // that could be evaluated before `source` is.
-            sourceSize.width: 24
-            sourceSize.height: 24
+            sourceSize.width: button.iconSide
+            sourceSize.height: button.iconSide
             source: button.iconName.length > 0
                     ? "image://theme/" + button.iconName + "?tone=" + button.tone
                     : ""
@@ -81,7 +84,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: button.label
             color: session.foreground
-            font.pixelSize: 11
+            font.pixelSize: session.textBody
             horizontalAlignment: Text.AlignHCenter
         }
     }
@@ -97,10 +100,10 @@ Item {
 
         Image {
             anchors.verticalCenter: parent.verticalCenter
-            width: 16
-            height: 16
-            sourceSize.width: 16
-            sourceSize.height: 16
+            width: button.smallIconSide
+            height: button.smallIconSide
+            sourceSize.width: button.smallIconSide
+            sourceSize.height: button.smallIconSide
             source: button.iconName.length > 0
                     ? "image://theme/" + button.iconName + "?tone=" + button.tone
                     : ""
@@ -110,7 +113,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: button.label
             color: session.foreground
-            font.pixelSize: 11
+            font.pixelSize: session.textBody
         }
     }
 
@@ -148,7 +151,7 @@ Item {
             anchors.centerIn: parent
             text: button.hint
             color: session.foreground
-            font.pixelSize: 11
+            font.pixelSize: session.textBody
         }
     }
 
