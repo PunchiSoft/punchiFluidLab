@@ -331,6 +331,24 @@ its session, so it draws a card instead of relying on what was behind it.
 **Still in 7.** Focus and tooltips on every control, the margin literals, the status bar's
 readings, and reduced motion in the panel, ribbon and strip folds.
 
+## Open decisions (owner, 2026-11-15)
+
+Three things were reported while using the window and are **not** changed yet: the owner will
+bring notes from the two CAD references before they are settled.
+
+- **The fit must target the sheet, not the frame.** "Ajustar al marco" fits the frame inside
+  the margins, so at any zoom the paper's own edges fall outside; the owner wants the **whole
+  sheet** fitted, margins included, and nothing inside it used as the target. Consequence to
+  decide: the program defines **100 % as the sheet fitted**, so the two commands would do the
+  same thing. Either the 100 % row goes, or it takes a different meaning, or the duplication is
+  accepted.
+- **Zoom and the middle double click** need an explicit review against the references: what
+  the fit targets, where the view is anchored when magnifying, and what the double click does.
+  The owner will write the notes.
+- **The work area**: at high magnification the sheet is centred, so the view shows the middle
+  of the paper. Whether the drawing should anchor to the corner of the work area instead, or
+  the work area itself should move, is the owner's call from that note.
+
 ## Rules that hold in every stage
 
 - **View state is not document state**: panels, zoom, pan, grid and the ribbon's minimized
