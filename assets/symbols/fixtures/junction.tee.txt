@@ -1,0 +1,1 @@
+Circle { centre: Pt { x: 20.0, y: 20.0 }, radius: 4.4, fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }

@@ -1,0 +1,5 @@
+Rect { rect: Rect { min: Pt { x: 4.0, y: 4.0 }, max: Pt { x: 36.0, y: 32.800003 } }, corner: 0.6, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Line { points: [Pt { x: 2.3999999, y: 16.0 }, Pt { x: 5.6, y: 16.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 2.3999999, y: 26.400002 }, Pt { x: 5.6, y: 26.400002 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 14.400001, y: 31.199999 }, Pt { x: 14.400001, y: 34.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 25.599998, y: 31.199999 }, Pt { x: 25.599998, y: 34.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }

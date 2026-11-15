@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### La geometría de cada símbolo queda congelada — 2026-11-15
+
+Primera pieza del arnés de símbolos: la que impide que un dibujo se mueva sin que se vea.
+
+- `punchi-fluid-draw/tests/symbol_geometry.rs` dibuja cada definición incorporada en una caja
+  fija y compara sus llamadas con `assets/symbols/fixtures/<id>.txt`; **36 fixtures**, 228 KB.
+- Un cambio intencionado se regenera con `UPDATE_SYMBOL_FIXTURES=1` y **se revisa el diff**
+  antes de commitearlo; falta de fixture es fallo, no aviso.
+- La ficha de revisión y el skill enlazan el arnés; el README de los fixtures explica el
+  procedimiento y la regla: un fixture aprobado sin leer el diff aprueba cualquier cosa.
+- **Evidencia**: la prueba corre en `cargo test --workspace`, dentro de
+  `./scripts-dev/check.sh` con **exit 0**.
+
 ### Menos margen alrededor de la hoja — 2026-11-15
 
 - El lienzo conserva **medio `unit`** (9 px con la fuente por defecto) en vez de uno entero:

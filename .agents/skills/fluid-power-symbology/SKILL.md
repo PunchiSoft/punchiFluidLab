@@ -100,8 +100,10 @@ in a circuit teaches the wrong thing. The order is fixed by
 2. **One symbol per change.** A batch hides a wrong arc among ten right ones, and the review
    stops being a review.
 3. **Write the requirement and the measures** (the gate above), then change the file.
-4. **Lint, then 300 dpi light and dark captures**, then the family checklist with one answer
-   per normative feature.
+4. **Lint, the geometry fixture and the 300 dpi captures**, then the family checklist with
+   one answer per normative feature. The fixture is
+   [assets/symbols/fixtures](../../../assets/symbols/fixtures/README.md): the drawing in
+   numbers, which fails when a point moves; read its diff before approving it.
 5. **The owner signs off.** If a requirement is ambiguous, the symbol is marked unverified
    and the question is written down; a plausible drawing is the worst outcome here.
 6. **Record which requirement was checked** in the review file, not only "reviewed". Fill

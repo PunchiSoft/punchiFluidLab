@@ -1,0 +1,17 @@
+Line { points: [Pt { x: 0.0, y: 16.4 }, Pt { x: 0.5, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 1.2, y: 16.4 }, Pt { x: 1.7, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 2.4, y: 16.4 }, Pt { x: 2.9, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 3.6000001, y: 16.4 }, Pt { x: 4.1000004, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 4.8, y: 16.4 }, Pt { x: 5.3, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 6.0, y: 16.4 }, Pt { x: 6.4999, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 7.1998, y: 16.4 }, Pt { x: 7.6998, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 8.3998, y: 16.4 }, Pt { x: 8.8998, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 9.5998, y: 16.4 }, Pt { x: 10.0998, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 10.7998, y: 16.4 }, Pt { x: 11.2997, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Line { points: [Pt { x: 11.999599, y: 16.4 }, Pt { x: 12.0, y: 16.4 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Electrical } }
+Rect { rect: Rect { min: Pt { x: 12.0, y: 13.200001 }, max: Pt { x: 16.0, y: 19.6 } }, corner: 0.6, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Line { points: [Pt { x: 16.0, y: 13.200001 }, Pt { x: 24.8, y: 8.0 }, Pt { x: 24.8, y: 24.8 }, Pt { x: 16.0, y: 19.6 }, Pt { x: 16.0, y: 13.200001 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 24.8, y: 8.0 }, Pt { x: 24.8, y: 24.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Circle { centre: Pt { x: 0.0, y: 16.4 }, radius: 1.4, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Text { at: Pt { x: 1.5872911, y: 7.5817165 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 1.5872911, y: 7.5817165 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
