@@ -57,6 +57,7 @@ const QStringList &allNames()
         QStringLiteral("preferences-desktop-theme"),
         QStringLiteral("go-top"),
         QStringLiteral("go-bottom"),
+        QStringLiteral("hand"),
         QStringLiteral("x-office-address-book"),
         QStringLiteral("media-playback-pause"),
         QStringLiteral("media-seek-forward"),
@@ -382,6 +383,20 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawLine(QPointF(8.0, 12.0), QPointF(12.0, 8.0));
         painter.drawLine(QPointF(16.0, 12.0), QPointF(12.0, 8.0));
         painter.drawLine(QPointF(6.0, 4.0), QPointF(18.0, 4.0));
+    } else if (name == QStringLiteral("hand")) {
+        // The pointer mode: a palm with four fingers and a thumb, drawn as an outline so it
+        // reads at 16 px without a filled blob.
+        QPainterPath palm;
+        palm.moveTo(5.0, 12.5);
+        palm.lineTo(5.0, 19.0);
+        palm.quadTo(10.0, 21.5, 15.0, 19.0);
+        palm.lineTo(15.0, 12.5);
+        painter.drawPath(palm);
+        painter.drawLine(QPointF(7.5, 12.5), QPointF(7.5, 6.0));
+        painter.drawLine(QPointF(10.0, 12.5), QPointF(10.0, 4.0));
+        painter.drawLine(QPointF(12.5, 12.5), QPointF(12.5, 5.0));
+        painter.drawLine(QPointF(15.0, 12.5), QPointF(15.0, 8.0));
+        painter.drawLine(QPointF(5.0, 15.0), QPointF(2.5, 11.0));
     } else if (name == QStringLiteral("go-bottom")) {
         painter.drawLine(QPointF(12.0, 4.0), QPointF(12.0, 16.0));
         painter.drawLine(QPointF(8.0, 12.0), QPointF(12.0, 16.0));

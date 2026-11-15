@@ -61,6 +61,11 @@ void SchematicItem::setSession(FluidSession *session)
         // Back at 1:1 the whole sheet fits again, so a pan left over from a magnified view
         // is not merely invisible: it would reappear the next time the reader magnified
         // with the ribbon. `Ctrl+0` clears it here, once, instead of in every caller.
+        connect(m_session, &FluidSession::handModeChanged, this, [this] {
+            setCursor(QCursor(m_session->handMode() ? Qt::OpenHandCursor : Qt::ArrowCursor));
+            update();
+        });
+        setCursor(QCursor(m_session->handMode() ? Qt::OpenHandCursor : Qt::ArrowCursor));
         connect(m_session, &FluidSession::viewChanged, this, [this] {
             // Any zoom change other than a fit abandons the fitted view. `fitToFrame`
             // sets the flag again after its own `setZoom` returns.
@@ -206,33 +211,6 @@ Fit SchematicItem::placement() const
     return Fit { centred.pixelsPerMm, centred.originX + pan.x(), centred.originY + pan.y() };
 }
 
-Fit SchematicItem::centredPlacement(double zoom) const
-{
-    const QSizeF sheet = sheetSizeMm();
-    const Fit fitted = fitArea(width(), height(), sheet.width(), sheet.height());
-    // Zoom keeps the middle of the sheet in the middle of the item, so magnifying does not
-    // throw the circuit off screen; the pan is what moves it afterwards.
-    const qreal scale = fitted.pixelsPerMm * zoom;
-    return Fit { scale, (width() - sheet.width() * scale) * 0.5,
-                 (height() - sheet.height() * scale) * 0.5 };
-}
-
-QPointF SchematicItem::limitedPan(const Fit &centred) const
-{
-    // At 1:1 the sheet fits, so it stays centred: there is nothing to reveal and a fitted
-    // sheet that could be pushed aside is a sheet the reader can lose. Above 1:1 the sheet
-    // may be moved until only a sliver of it remains in view, which is wide enough to keep
-    // a zoom anchored at the pointer without ever losing the drawing completely.
-    if (!m_session || (m_session->zoom() <= 1.0 && !m_fitted)) {
-        return QPointF();
-    }
-    const QSizeF sheet = sheetSizeMm();
-    const qreal limitX = (width() + sheet.width() * centred.pixelsPerMm) * 0.5;
-    const qreal limitY = (height() + sheet.height() * centred.pixelsPerMm) * 0.5;
-    return QPointF(std::clamp(m_pan.x(), -limitX, limitX),
-                   std::clamp(m_pan.y(), -limitY, limitY));
-}
-
 QSizeF SchematicItem::sheetSizeMm() const
 {
     if (!m_session) {
@@ -256,6 +234,16 @@ bool SchematicItem::onValve(const QPointF &position) const
 void SchematicItem::mousePressEvent(QMouseEvent *event)
 {
     if (!m_session) {
+        return;
+    }
+    // The hand mode moves the sheet with the left button: a visible mode, not a hidden
+    // modifier, so the pointer and the strip agree on what a drag does.
+    if (event->button() == Qt::LeftButton && m_session->handMode()) {
+        m_panning = true;
+        m_panFrom = event->position();
+        setCursor(QCursor(Qt::ClosedHandCursor));
+        setFocus(true);
+        event->accept();
         return;
     }
     // The middle button pans; it never selects, actuates or edits. Starting here, before
@@ -553,6 +541,11 @@ void SchematicItem::keyPressEvent(QKeyEvent *event)
     if (!m_session) {
         return;
     }
+    if (event->key() == Qt::Key_Escape && m_session->handMode()) {
+        m_session->setHandMode(false);
+        event->accept();
+        return;
+    }
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
         m_session->removeSelected();
         update();
@@ -683,6 +676,16 @@ void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     if (event->button() != Qt::LeftButton) {
+        return;
+    }
+    // A hand-mode drag ends with the left button, and the pointer goes back to the open
+    // hand: leaving the pan armed would make the next drag pan instead of moving a symbol.
+    if (m_panning) {
+        m_panning = false;
+        setCursor(QCursor(m_session != nullptr && m_session->handMode() ? Qt::OpenHandCursor
+                                                                        : Qt::ArrowCursor));
+        update();
+        event->accept();
         return;
     }
     if (m_banding && m_session) {

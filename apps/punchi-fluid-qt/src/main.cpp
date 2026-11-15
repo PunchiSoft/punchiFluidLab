@@ -2594,16 +2594,57 @@ int main(int argc, char *argv[])
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("block")));
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("play")));
         });
+        // Start and pause in one step, without an event loop between them: the solver does
+        // not advance, so the gestures that follow see the opening model untouched.
         steps->push_back([state, check] {
             QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
-            check(state->session->running(),
-                  QStringLiteral("view: the strip starts the model"));
+            // From editing, so the button starts whatever an earlier step left running.
+            state->session->stopSimulation();
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("play")));
+            const bool started = state->session->running();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("play")));
+            check(started && !state->session->running() && !state->session->editing(),
+                  QStringLiteral("view: the same button starts and pauses where it stands"));
+            state->session->stopSimulation();
+        });
+
+        // The hand mode: a visible pointer mode that moves the sheet with the left button,
+        // marks itself in the strip, leaves with Esc and never edits.
+        steps->push_back([state, check, toScene] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
+            // A sheet that fits has nothing to pan, so the drag is proved magnified.
+            state->session->setZoom(1.6);
+            state->viewScene = toScene(QPointF(150.0, 100.0));
+            state->viewSheet = state->sheet->sheetPointForScene(state->viewScene);
+            state->viewComponents = pf_session_component_count(state->session->handle());
+            state->viewCanUndo = state->session->canUndo();
+            QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("hand")));
+            check(state->session->handMode(),
+                  QStringLiteral("view: the strip turns the hand on"));
+        });
+        steps->push_back([state, send] {
+            send(QEvent::MouseButtonPress, state->viewScene, Qt::LeftButton, Qt::LeftButton);
+            send(QEvent::MouseMove, state->viewScene + QPointF(40.0, 0.0), Qt::NoButton,
+                 Qt::LeftButton);
+            send(QEvent::MouseButtonRelease, state->viewScene + QPointF(40.0, 0.0),
+                 Qt::LeftButton, Qt::NoButton);
         });
         steps->push_back([state, check] {
-            check(!state->session->running() && !state->session->editing(),
-                  QStringLiteral("view: the same button pauses where it stands"));
-            state->session->stopSimulation();
+            const QPointF under = state->sheet->sheetPointForScene(state->viewScene);
+            check(under.x() < state->viewSheet.x() - 0.5
+                      && pf_session_component_count(state->session->handle())
+                             == state->viewComponents
+                      && state->session->canUndo() == state->viewCanUndo,
+                  QStringLiteral("view: the hand drags the sheet without editing"));
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &escape);
+        });
+        steps->push_back([state, check] {
+            check(!state->session->handMode(),
+                  QStringLiteral("view: Esc leaves the hand mode"));
+            // Back to the opening view, so the gestures that follow see the same sheet the
+            // earlier steps did.
+            state->session->zoomReset();
         });
 
         // The sheet is the paper: choosing A3 changes the document, the canvas and the
@@ -2789,8 +2830,9 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonRelease, toScene(target), Qt::LeftButton, Qt::NoButton);
             QPointF moved;
             state->session->portPoint(cylinder, QStringLiteral("1"), &moved);
-            std::fprintf(stderr, "selftest: magnet port x %.2f against %.2f\n", moved.x(),
-                         valvePort.x());
+            std::fprintf(stderr, "selftest: magnet port x %.2f against %.2f (hand %d, zoom %.2f)\n",
+                         moved.x(), valvePort.x(), state->session->handMode() ? 1 : 0,
+                         state->session->zoom());
             check(std::abs(moved.x() - valvePort.x()) < 0.05,
                   QStringLiteral("magnet: the dragged port lands on the other end's axis"));
             state->session->undo();

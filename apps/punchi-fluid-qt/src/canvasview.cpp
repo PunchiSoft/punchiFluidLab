@@ -13,6 +13,8 @@
 #include <QPointF>
 #include <QSizeF>
 
+#include <algorithm>
+
 void SchematicItem::rememberView()
 {
     if (!m_session) {
@@ -73,5 +75,32 @@ void SchematicItem::previousView()
     m_pan = pan;
     emit viewHistoryChanged();
     update();
+}
+
+Fit SchematicItem::centredPlacement(double zoom) const
+{
+    const QSizeF sheet = sheetSizeMm();
+    const Fit fitted = fitArea(width(), height(), sheet.width(), sheet.height());
+    // Zoom keeps the middle of the sheet in the middle of the item, so magnifying does not
+    // throw the circuit off screen; the pan is what moves it afterwards.
+    const qreal scale = fitted.pixelsPerMm * zoom;
+    return Fit { scale, (width() - sheet.width() * scale) * 0.5,
+                 (height() - sheet.height() * scale) * 0.5 };
+}
+
+QPointF SchematicItem::limitedPan(const Fit &centred) const
+{
+    // At 1:1 the sheet fits, so it stays centred: there is nothing to reveal and a fitted
+    // sheet that could be pushed aside is a sheet the reader can lose. Above 1:1 the sheet
+    // may be moved until only a sliver of it remains in view, which is wide enough to keep
+    // a zoom anchored at the pointer without ever losing the drawing completely.
+    if (!m_session || (m_session->zoom() <= 1.0 && !m_fitted)) {
+        return QPointF();
+    }
+    const QSizeF sheet = sheetSizeMm();
+    const qreal limitX = (width() + sheet.width() * centred.pixelsPerMm) * 0.5;
+    const qreal limitY = (height() + sheet.height() * centred.pixelsPerMm) * 0.5;
+    return QPointF(std::clamp(m_pan.x(), -limitX, limitX),
+                   std::clamp(m_pan.y(), -limitY, limitY));
 }
 

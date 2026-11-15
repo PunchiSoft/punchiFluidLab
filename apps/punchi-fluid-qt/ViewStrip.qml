@@ -93,6 +93,8 @@ Card {
             canvas.previousView();
         } else if (id === "panel") {
             strip.panelOpen = !strip.panelOpen;
+        } else if (id === "hand") {
+            session.handMode = !session.handMode;
         } else if (id === "block") {
             session.blockVisible = !session.blockVisible;
         } else if (id === "play") {
@@ -115,6 +117,17 @@ Card {
             id: openRows
             visible: !strip.folded
             spacing: 2
+
+            ViewStripButton {
+                session: strip.session
+                iconName: "hand"
+                name: strip.session.handMode ? qsTr("Dejar de mover") : qsTr("Mover")
+                hint: strip.session.handMode
+                      ? qsTr("Mover · Esc o el mismo botón lo deja")
+                      : qsTr("Mover · arrastra el dibujo con el botón izquierdo")
+                selected: strip.session.handMode
+                onTriggered: strip.invoke("hand")
+            }
 
             ViewStripButton {
                 session: strip.session
