@@ -79,9 +79,9 @@ Item {
         width: tipText.implicitWidth + 14
         height: tipText.implicitHeight + 8
         radius: 3
-        color: session.panel
+        color: session.surfaceRaised
         border.width: 1
-        border.color: session.muted
+        border.color: session.lineStrong
 
         Text {
             id: tipText

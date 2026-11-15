@@ -43,9 +43,9 @@ Item {
                 width: 92
                 height: 26
                 radius: 4
-                color: pointer.containsMouse || session.grid ? session.panel : "transparent"
+                color: pointer.containsMouse || session.grid ? session.surfaceRaised : "transparent"
                 border.width: session.grid || activeFocus ? 1 : 0
-                border.color: session.grid ? session.accent : session.muted
+                border.color: session.grid ? session.accent : session.lineStrong
                 activeFocusOnTab: true
 
                 Accessible.role: Accessible.CheckBox
@@ -95,7 +95,7 @@ Item {
                 width: 82
                 height: 26
                 radius: 4
-                color: stepPointer.containsMouse || popup.opened ? session.panel : "transparent"
+                color: stepPointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
                 border.width: activeFocus ? 1 : 0
                 border.color: session.accent
                 activeFocusOnTab: true
@@ -156,9 +156,9 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: session.panel
+            color: session.surfaceRaised
             border.width: 1
-            border.color: session.muted
+            border.color: session.lineStrong
             radius: 4
         }
 
@@ -186,7 +186,7 @@ Item {
                 width: ListView.view.width
                 height: 28
                 radius: 3
-                color: pointer.containsMouse || ListView.isCurrentItem ? session.panel : "transparent"
+                color: pointer.containsMouse || ListView.isCurrentItem ? session.surfaceRaised : "transparent"
                 border.width: chosen ? 1 : 0
                 border.color: session.accent
 

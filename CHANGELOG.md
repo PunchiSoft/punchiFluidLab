@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### La cinta tiene dos planos y estados — 2026-11-15
+
+La cinta deja de ser una superficie plana: la fila de pestañas se eleva sobre el cuerpo, la
+pestaña activa se une al plano de la hoja con un subrayado de acento, y cada comando
+responde al puntero y al teclado.
+
+- La fila de pestañas usa `surfaceRaised`; el cuerpo vuelve al fondo de la ventana, con una
+  `line` que cierra la cinta y separadores más finos entre grupos.
+- Hover con relleno elevado, pulsado con el plano hundido, foco con anillo de acento y
+  selección con `accentSoft`; la pestaña activa lleva su subrayado.
+- Las galerías de **Configurar página** y los desplegables de **Archivo** usan los mismos
+  bordes, planos y estados; el menú plegado gana una sombra dibujada, sin desenfoque por
+  cuadro, y se desplaza cuando no cabe en la ventana.
+- Sin un color nuevo: todo sale del tema y `--check-theme` sigue midiendo los pares.
+- **Evidencia**: `--check-theme`, `--check-qml` con 0 problemas, `./scripts-dev/check.sh`
+  verde y las capturas de las cinco pestañas en claro y oscuro, incluida la de un comando
+  deshabilitado.
+
 ### Los paneles recuerdan su estado y se ocultan al salir si se pide — 2026-11-14
 
 Los paneles dejan de empezar siempre igual: recuerdan si estaban abiertos, su ancho y si el

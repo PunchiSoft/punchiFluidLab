@@ -38,6 +38,10 @@ Rectangle {
 
     /// Below this width a ribbon is worse than a menu, so it folds away.
     readonly property bool collapsed: width < 1240
+    /// The folded menu scrolls when the window cannot hold every command.
+    readonly property real menuMaxHeight: ribbon.Window.window
+        ? Math.max(160, ribbon.Window.window.height - ribbon.y - tabRow.height - 56)
+        : 480
     property int current: 1
     property bool menuOpen: false
     /// Capture and review hooks: open a list as soon as its control exists.
@@ -587,6 +591,19 @@ Rectangle {
         width: parent.width
         height: 34
 
+        // The tab row is the raised plane of the ribbon; the body below returns to the
+        // window plane, so the active tab reads as part of the body.
+        Rectangle {
+            anchors.fill: parent
+            color: session.surfaceRaised
+        }
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 1
+            color: session.line
+        }
+
         Row {
             id: tabsRow
             anchors.left: parent.left
@@ -604,7 +621,12 @@ Rectangle {
                     width: tabText.implicitWidth + 26
                     height: 28
                     radius: 4
-                    color: ribbon.current === index ? session.panel : (tabPointer.containsMouse ? session.panel : "transparent")
+                    color: ribbon.current === index ? session.background
+                           : tabPointer.pressed ? session.surfaceSunken
+                           : tabPointer.containsMouse ? session.surfaceRaised
+                           : "transparent"
+                    border.width: ribbon.current === index || activeFocus ? 1 : 0
+                    border.color: activeFocus ? session.accent : session.line
 
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
@@ -689,6 +711,11 @@ Rectangle {
         implicitHeight: 86
         visible: !ribbon.collapsed
 
+        Rectangle {
+            anchors.fill: parent
+            color: session.background
+        }
+
         Row {
             id: groupsRow
             anchors.left: parent.left
@@ -757,43 +784,62 @@ Rectangle {
 
     // ---- collapsed menu -----------------------------------------------------
     Rectangle {
+        visible: menu.visible
+        anchors.top: menu.top
+        anchors.left: menu.left
+        anchors.topMargin: 3
+        anchors.leftMargin: 3
+        width: menu.width
+        height: menu.height
+        radius: 4
+        color: session.shadow
+        z: 19
+    }
+
+    Rectangle {
         id: menu
         visible: ribbon.collapsed && ribbon.menuOpen
         anchors.top: tabRow.bottom
         anchors.left: parent.left
         anchors.leftMargin: 8
         width: 240
-        height: menuColumn.implicitHeight + 12
-        color: session.panel
+        height: Math.min(menuColumn.implicitHeight + 12, ribbon.menuMaxHeight)
+        color: session.surfaceRaised
         radius: 4
         border.width: 1
-        border.color: session.muted
+        border.color: session.line
         z: 20
 
-        Column {
-            id: menuColumn
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: 6
-            spacing: 1
+        Flickable {
+            anchors.fill: parent
+            contentHeight: menuColumn.implicitHeight + 12
+            clip: true
 
-            Repeater {
-                model: ribbon.menuOpen ? ribbon.flatActions() : []
+            Column {
+                id: menuColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 6
+                spacing: 1
 
-                delegate: RibbonButton {
-                    required property var modelData
-                    width: menuColumn.width
-                    session: ribbon.session
-                    label: modelData.label
-                    iconName: modelData.icon || ""
-                    hint: modelData.hint || ""
-                    large: false
-                    leftAligned: true
-                    tone: "foreground"
-                    onTriggered: {
-                        ribbon.invoke(modelData.id);
-                        ribbon.menuOpen = false;
+                Repeater {
+                    model: ribbon.menuOpen ? ribbon.flatActions() : []
+
+                    delegate: RibbonButton {
+                        required property var modelData
+                        width: menuColumn.width
+                        session: ribbon.session
+                        label: modelData.label
+                        iconName: modelData.icon || ""
+                        hint: modelData.hint || ""
+                        large: false
+                        leftAligned: true
+                        tone: "foreground"
+                        onTriggered: {
+                            ribbon.invoke(modelData.id);
+                            ribbon.menuOpen = false;
+                        }
                     }
                 }
             }
@@ -804,7 +850,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         width: parent.width
         height: 1
-        color: session.panel
+        color: session.line
     }
 
     Component {

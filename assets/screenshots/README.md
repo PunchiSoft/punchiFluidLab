@@ -17,11 +17,15 @@ Images of the running application, used by the README and by pull request review
 | `right-dock-folded-dark.png` | The right dock folded to its **24 px rail**, the same control on the edge and the sheet using the recovered width |
 | `paneles-ver-light.png` | The **Ver ▸ Paneles** group: Catálogo and Propiedades marked by state, **Ocultar al salir** with the opt-in auto-hide active and **Restablecer vista** |
 | `paneles-ver-dark.png` | The same group on a dark desktop, to check the marks and the commands in both themes |
+| `ribbon-menu-light.png` | The ribbon folded at 1000 px with **Menú** open: the commands in one scrollable card with its shadow, bounded above the status bar |
+| `ribbon-menu-dark.png` | The same folded menu on a dark desktop, to check the card, the border and the shadow in both themes |
 | `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
 | `simular-light.png` | The **Simular** tab open on a light desktop: its six transport tiles, the three speed tiles and the state, with the group names underneath |
 | `simular-dark.png` | The same tab on a dark desktop, to check the tiles and the marked speed in both themes |
+| `editar-light.png` | The **Editar** tab on a light desktop: Historial, Circuito, Componente, Alinear, Conducto and Repartir, with the active tab on the body plane |
+| `editar-dark.png` | The same tab on a dark desktop, to check the tab underline, the group separators and the command states in both themes |
 | `archivo-page-setup-light.png` | The **Archivo** tab on a light desktop: Documento, Circuito, one **Configurar página** group in reference order (Márgenes, Orientación, Tamaño and the small page launcher), then **Recientes** as a dropdown |
 | `archivo-page-setup-dark.png` | The same tab on a dark desktop, to check the page symbols, the margin dropdown, launcher and orientation in both themes |
 | `paper-sizes-light.png` | The **Tamaño** list open in Archivo: every paper with its proportions, canonical name, common name in parentheses and measure in centimetres; A4 marked |
@@ -38,6 +42,7 @@ Images of the running application, used by the README and by pull request review
 | `about-dark.png` | The same popup on a dark desktop, to check the links and the panel in both themes |
 | `license-light.png` | The **Licencia** popup: the GPL summary and the start of the full text that travels inside the binary |
 | `title-block-tab-light.png` | The **Cajetín** ribbon tab open on a light desktop: the Contenido summary, the positions and the Datos group |
+| `title-block-tab-dark.png` | The same tab on a dark desktop, to check the groups and the active tab in both themes |
 | `title-block-portrait-light.png` | The docked editor on **A4 portrait**, with the content and position combos and the three positions the portrait sheet offers |
 | `title-block-landscape-light.png` | The same editor on **A4 landscape**, with the two corner positions the landscape sheet offers |
 | `run.gif` | The same clip as an inline image for the README (720 px, 12 fps, 924 KB), because GitHub does not play a repository video inside a page |
@@ -96,14 +101,38 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 2 --auto-hide \
   --grab /tmp/paneles-ver-dark.png
+# The ribbon folded at a narrow width, with the menu open and bounded.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --size 1000x700 --tab 0 --menu \
+  --grab /tmp/ribbon-menu-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --size 1000x700 --tab 0 --menu \
+  --grab /tmp/ribbon-menu-dark.png
 # The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \
   --grab /tmp/title-block-light.png
-# The Cajetín tab itself.
+# The Cajetín tab itself, light and dark.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 \
   --grab /tmp/title-block-tab-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 3 \
+  --grab /tmp/title-block-tab-dark.png
+# The Editar tab, light and dark.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 1 \
+  --grab /tmp/editar-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 1 \
+  --grab /tmp/editar-dark.png
+# The Simular tab, light and dark.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 4 \
+  --grab /tmp/simular-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 4 \
+  --grab /tmp/simular-dark.png
 # Portrait, to show the third position in the combo.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a4-portrait.pfluid \

@@ -70,6 +70,12 @@ The toolbar is a **ribbon**: a tab row, then the commands of the open tab in lab
 groups with a hair line between them. The simulation transport is the **Simular** tab,
 selectable like Archivo, Editar and Ver.
 
+**The ribbon has two planes.** The tab row sits on `surface_raised` and the body returns to
+the window plane; a `line` closes the ribbon and a fainter one separates the groups. The
+active tab takes the body's colour with an accent underline; a command takes a raised fill
+on hover, the sunken one while pressed, and a visible accent ring when it holds the focus.
+Depth comes from the palette, never from a new hue.
+
 - A **large** command draws an icon over its label, the way a native ribbon draws the
   primary actions; a **small** command draws the icon beside the label. Group names sit
   underneath, which is what makes the row readable instead of a guessing game.
@@ -86,7 +92,8 @@ selectable like Archivo, Editar and Ver.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
   pause and on keyboard focus, and the same string is the accessible description.
 - Below 1240 px the body folds away: the tabs stay, and one **Menú** button opens the
-  commands of the open tab. A ribbon without width is a maze.
+  commands of the open tab. A ribbon without width is a maze; the menu scrolls when the
+  window cannot hold every command, so none is out of reach.
 - **The two help links are text at the right end of the tab row**, with the same weight
   as the tabs: **Acerca de** opens a popup with the name, the core's version, "versión en
   desarrollo, sin publicar", a one-line description, the repository and the issue tracker,
