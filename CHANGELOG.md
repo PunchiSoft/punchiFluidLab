@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Hoja del símbolo a 300 dpi — 2026-11-15
+
+- `punchi-fluid-export` gana el binario `symbol-sheet <id> <archivo> [--dpi 300]`: dibuja un
+  símbolo incorporado en una caja fija de 40 mm sobre un cuadrado de 60 mm, con la tinta de
+  impresión, y escribe el PNG. La ficha de revisión ya apunta a la orden real.
+- Vive en el export y no en el CLI porque el CLI no depende del export, y añadir esa arista
+  pediría un ADR.
+- **Evidencia**: hoja de `valve.3_2.spring_return` escrita a 709 × 709 px (60 mm a 300 dpi),
+  `./scripts-dev/check.sh` verde y clippy sin avisos.
+
 ### La geometría de cada símbolo queda congelada — 2026-11-15
 
 Primera pieza del arnés de símbolos: la que impide que un dibujo se mueva sin que se vea.
