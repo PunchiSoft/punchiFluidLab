@@ -346,8 +346,11 @@ bring notes from the two CAD references before they are settled.
   the fit targets, where the view is anchored when magnifying, and what the double click does.
   The owner will write the notes.
 - **The work area**: at high magnification the sheet is centred, so the view shows the middle
-  of the paper. Whether the drawing should anchor to the corner of the work area instead, or
-  the work area itself should move, is the owner's call from that note.
+  of the paper. The owner clarifies that the red rectangle in their capture is **the whole
+  drawing area**, and that it **may extend into the light band outside it** — towards the
+  window edge and under the floating strip — instead of stopping at its current border. The
+  spacing-unit margin around the canvas is part of what the note will settle, together with
+  whether the drawing anchors to a corner when magnified.
 
 ## Rules that hold in every stage
 
