@@ -134,8 +134,10 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
 
     // The edge of the paper, and the ISO 5457 frame inside it. Without them "outside the
     // sheet" is a finding the user cannot see.
-    QColor edge = session.tokens().inkMuted;
-    edge.setAlphaF(0.55F);
+    // One edge only: the paper card already has its shadow and fill, so the outer line is
+    // the single boundary and uses the measured line token. The ISO frame is drawn inside
+    // the margins and stays distinct.
+    QColor edge = session.tokens().lineStrong;
     painter->save();
     painter->setPen(QPen(edge, 1.0));
     painter->setBrush(Qt::NoBrush);

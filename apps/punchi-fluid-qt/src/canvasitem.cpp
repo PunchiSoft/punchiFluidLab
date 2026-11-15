@@ -105,9 +105,6 @@ void SchematicItem::paint(QPainter *painter)
         painter->drawRoundedRect(paper.translated(3.0, 3.0), 3.0, 3.0);
     }
     painter->fillRect(paper, tokens.panel);
-    painter->setPen(QPen(tokens.lineStrong, 1.0));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(paper);
 
     drawSheetFrame(painter, *m_session, placement, sheet.width(), sheet.height());
     replayFrame(painter, frame, placement);

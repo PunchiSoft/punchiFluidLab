@@ -636,38 +636,55 @@ Rectangle {
             Repeater {
                 model: ribbon.tabs
 
-                delegate: Rectangle {
+                delegate: Item {
+                    id: tab
                     required property int index
                     required property var modelData
 
+                    readonly property bool active: ribbon.current === index
+
                     width: tabText.implicitWidth + 26
-                    height: 28
-                    radius: 4
-                    color: ribbon.current === index ? session.background
-                           : tabPointer.pressed ? session.surfaceSunken
-                           : tabPointer.containsMouse ? session.surfaceRaised
-                           : "transparent"
-                    border.width: ribbon.current === index || activeFocus ? 1 : 0
-                    border.color: activeFocus ? session.accent : session.line
+                    height: 34
 
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
                     activeFocusOnTab: true
 
+                    // The active tab reaches the body and drops its bottom corners, so it
+                    // is the same surface as the ribbon below instead of a card cut out of
+                    // it. The accent underline runs the full width at the seam.
+                    Rectangle {
+                        id: tabSurface
+                        anchors.top: parent.top
+                        anchors.topMargin: tab.active ? 0 : 3
+                        width: parent.width
+                        height: tab.active ? parent.height : 28
+                        radius: 4
+                        topLeftRadius: 4
+                        topRightRadius: 4
+                        bottomLeftRadius: tab.active ? 0 : 4
+                        bottomRightRadius: tab.active ? 0 : 4
+                        color: tab.active ? session.background
+                               : tabPointer.pressed ? session.surfaceSunken
+                               : tabPointer.containsMouse ? session.surfaceRaised
+                               : "transparent"
+                        border.width: tab.activeFocus ? 1 : 0
+                        border.color: session.accent
+                    }
+
                     Text {
                         id: tabText
                         anchors.centerIn: parent
                         text: modelData.name
-                        color: ribbon.current === index ? session.foreground : session.muted
+                        color: tab.active ? session.foreground : session.muted
                         font.pixelSize: 12
                     }
 
                     Rectangle {
                         anchors.bottom: parent.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width - 8
+                        width: parent.width
                         height: 2
-                        color: ribbon.current === index ? session.accent : "transparent"
+                        color: tab.active ? session.accent : "transparent"
                     }
 
                     MouseArea {

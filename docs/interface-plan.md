@@ -22,6 +22,12 @@ the same command. None of that is a teaching feature, and all of it is in the wa
 | 2026-11-14 | Panel visibility and width are **remembered**, never saved in the document | it is view state, like zoom and pan |
 | 2026-11-14 | The ribbon has **one project family of line icons**, large and small | the same command must look the same on every desktop |
 | 2026-11-14 | The adaptive shell is **its own stage**, not part of the panel stage | it changes the layout architecture, not only the chrome |
+| 2026-11-15 | The view controls are a **strip floating over the right edge of the drawing area** | it takes no width from the paper and does not fight the right dock; a fourth column was refused |
+| 2026-11-15 | **No minimap**; **Ajustar al marco** and the zoom readout take its place | a second drawing of a single sheet is not a map, and it spends a frame budget |
+| 2026-11-15 | Fitting means the **frame inside the margins**, on the button and on a **double click of the middle button**; the single press still pans | the drawing space is what the reader came for, and the middle click is where the gesture is looked for |
+| 2026-11-15 | **One play/pause button** in the strip, the rest of the transport in **Simular** | the access is worth it during a demonstration; a second transport is not |
+| 2026-11-15 | The strip's sizes come from **`unit` and the font**, and the double-click interval from the desktop | a 44 px strip is a screenshot, not a design |
+| 2026-11-15 | The adaptive shell is built with **content minimums and one owning layout** | a breakpoint per panel does not survive the next panel |
 
 ## Stages
 
@@ -44,6 +50,7 @@ lines outside generated files is split before it starts, never during review. Th
 | 5 | `feat/workspace-frame` | sunken workspace, paper elevation, one `Card` for the floating editors | captures, contrast, zoom tests | — |
 | 6a | `feat/adaptive-shell` | three modes, dock modes, sheet minimum, `--check-layout` | resize test, captures | the right dock unification moves alone |
 | 6b | `feat/ribbon-minimized` | minimized ribbon, remembered geometry | `--selftest`, captures | — |
+| 6c | `feat/view-strip` | the floating view strip, fit to the frame, view history, the three toggles | `--selftest`, captures | the zoom-window gesture if it grows |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -206,10 +213,51 @@ not: the sheet has no room left. The window has one breakpoint and fixed widths.
 - **Window**: minimum 900 × 600; geometry remembered; a font larger than the default must
   not clip the ribbon, so heights come from the font and `unit`, not from 34/62/84.
 - **Test**: a headless `--check-layout` that resizes to 900, 1100, 1240, 1280 and 1920 and
-  asserts the mode, the sheet minimum and that no two panels overlap; a run at 2× density
-  and with a large font.
+  asserts the mode, the sheet minimum and that no two panels overlap; runs at 1.25×, 1.5×
+  and 2× density and with a large font; moving the window between two monitors of different
+  scale stays a manual check, because it needs two screens.
+
+**How it is built.** One layout owns each row, every region declares a minimum and a
+preferred width, and the mode follows from what fits, so a new panel does not add a
+breakpoint. A region placed by a layout sets no `x`, `y`, `width` or `height`; an anchored
+region declares no `Layout.*`. Thresholds are read from the room in logical pixels, never
+from a resolution, and the sheet's minimum outranks a panel's preferred width. The
+procedure, the traps and the DPI matrix are
+[qt-adaptive-layout](../.agents/skills/qt-adaptive-layout/SKILL.md).
 
 **Evidence**: `--check-layout`, `--selftest`, captures of the three modes.
+
+### 6c — The view strip
+
+The reader who is drawing looks at the sheet, not at the ribbon; zooming, fitting and
+starting the model should cost no trip to the top of the window. The strip lives **over the
+right edge of the drawing area** and takes no width from the paper.
+
+- **What exists today**: `Ctrl` + wheel and the ribbon's three zoom commands, the wheel, the
+  middle button and the arrows to pan, `Ctrl+0` for 1:1, the grid toggle, and the block's
+  **Sin cajetín** preset — which is a document change, not a view toggle.
+- **Fit to the frame**: the zoom is the largest that fits the frame inside the margins, and
+  the pan centres it. `Ctrl+0` keeps meaning the paper at 1:1, so the two are different
+  readings of the sheet and neither replaces the other. The same fit answers the **double
+  click of the middle button**; the single press keeps panning.
+- **View history**: one step back, so a zoom at the pointer or a fit can be undone without
+  hunting for the previous magnification. It is view state like the rest.
+- **The three toggles**: block, grid and reference frame, drawn or not, with no undo entry
+  and no modified mark. The grid already is view state; the block and the frame need a view
+  flag in the session, not a change to the document.
+- **Transport**: one play/pause button, the same command as `F9`/`F8`, neutral until there
+  is a model to run.
+- **Sizes**: strip width, row height and icon size from `unit` and the font; the double
+  click interval from `QStyleHints`; colours from the theme. No minimap.
+
+**Open questions for the owner**: whether the block and frame toggles stay view-only or one
+of them changes the document, and whether **marco externo** is the paper's edge or the ISO
+frame ([ui-ux.md](ui-ux.md) §3.1).
+
+**Evidence**: `--selftest` steps for the fit, the double click, the view history, each
+toggle and the play button; captures in both schemes and at the compact breakpoint; the
+keyboard path for every control; `--check-qml`; the zoom self-tests still green.
+
 
 ### 7 — Consistency
 
@@ -238,6 +286,10 @@ what the window does. The gate, the captures and the changelog close the plan.
 - **Moving the page setup or the export editor into the right dock**: the panel just landed
   centered, and it keeps its own layout; stage 6 decides after the adaptive modes are
   measured.
+- **A minimap**: a second drawing of a single sheet is not a map, and it spends a frame
+  budget to say what the zoom readout and the fit already say.
+- **A navigation wheel, an orbit cube or a cinematic camera**: there is no 3D model to
+  orbit, and a radial menu hides the commands it offers.
 - **A fourth region**: the window keeps three; a document tab strip below the sheet would
   need an ADR.
 - **A brand palette**: the colours stay the desktop's; depth comes from planes and lines.

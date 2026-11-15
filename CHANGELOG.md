@@ -6,6 +6,40 @@ publicación.
 
 ## Unreleased
 
+### La pestaña activa se asienta en el cuerpo de la cinta — 2026-11-15
+
+La pestaña activa dejaba aire sobre el cuerpo y el subrayado no llegaba a los bordes, así
+que parecía recortada de la cinta en vez de ser la misma superficie.
+
+- La pestaña activa ocupa la fila completa, baja hasta el cuerpo con las esquinas inferiores
+  rectas, pierde el borde inferior y el subrayado de acento va a todo el ancho, en la
+  costura.
+- Las pestañas inactivas siguen centradas a la misma altura, para que todos los textos
+  compartan la línea, y el anillo de foco se mantiene.
+- El borde del papel se dibuja **una sola vez**, con `lineStrong`; la segunda línea que
+  duplicaba el contorno del área de trabajo desaparece.
+- **Evidencia**: `--check-qml` con 0 problemas, `--selftest` con 0 fallos, capturas de la
+  cinta en claro y oscuro y `./scripts-dev/check.sh` verde.
+
+### Guía adaptable y tira de vista — 2026-11-15
+
+Se documenta cómo se construye la ventana adaptable y se especifica la tira de vista que
+acompaña al lienzo, para no perder las decisiones ni lo que falta.
+
+- Nuevo skill **`qt-adaptive-layout`**: umbrales medidos sobre el espacio disponible,
+  `Layout` frente a anclas, mínimos por panel y la matriz de tamaños y escalas.
+- `ui-ux.md` añade la regla «Layout o anclas, nunca ambas», el criterio de umbral, el mínimo
+  de la hoja por encima del ancho preferido y la especificación de la **tira de vista**
+  (§3.1): flotante sobre el borde derecho, sin minimapa, ajuste al marco con doble clic
+  central, historial de vista, tres toggles y un solo play/pausa.
+- `interface-plan.md` registra las decisiones y la **etapa 6c**, con lo que existe hoy, la
+  pregunta abierta sobre el cajetín y el marco, y lo que queda fuera (minimapa, rueda de
+  navegación, cubo, cámara).
+- `capabilities.md` documenta la navegación del lienzo como capacidad propia y suma las
+  pasadas a 125 % y 150 % a la evidencia de la ventana adaptable.
+- La guía externa aportada por el owner se usó como referencia: no se copia su texto ni su
+  código.
+
 ### La hoja es una tarjeta sobre el área de trabajo — 2026-11-15
 
 El dibujo deja de flotar sobre el mismo plano que la ventana: el área de trabajo se hunde,
