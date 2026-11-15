@@ -40,6 +40,18 @@ public:
     /// Frames replayed since start. Exposed so a test can prove an idle window stops.
     int paintCount() const { return m_paintCount; }
 
+    /// Fits the frame inside the margins, not the paper: the drawing space is what the
+    /// reader came for, and the margin is paper. It is also the middle button's double
+    /// click. View state only, and one step for `previousView`.
+    Q_INVOKABLE void fitToFrame();
+    /// Returns to the view before the last fit or zoom at the pointer. One step, so a
+    /// second call does nothing instead of walking a history nobody asked for.
+    Q_INVOKABLE void previousView();
+    Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY viewHistoryChanged)
+    [[nodiscard]] bool canGoBack() const { return m_hasPreviousView; }
+    /// Where the sheet sits in the item: the scale the zoom produced and the pan's offset.
+    [[nodiscard]] Fit viewPlacement() const { return placement(); }
+
     /// Places a catalog entry at a point of this item, in widget pixels.
     ///
     /// The sidebar drag ends here so the conversion from pixels to sheet millimetres
@@ -58,6 +70,7 @@ public:
 signals:
     void sessionChanged();
     void paintCountChanged();
+    void viewHistoryChanged();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -87,6 +100,8 @@ private:
     [[nodiscard]] QPointF limitedPan(const Fit &centred) const;
     /// Multiplies the zoom by `factor` while keeping the sheet point under `position`.
     void zoomAt(const QPointF &position, double factor);
+    /// Keeps the view for `previousView` before a fit or a zoom changes it.
+    void rememberView();
     /// Moves the view by `delta` pixels, limited by `limitedPan`.
     void panBy(const QPointF &delta);
 
@@ -135,4 +150,14 @@ private:
     /// A middle-button pan in progress, and where it started.
     bool m_panning = false;
     QPointF m_panFrom;
+    /// The last middle press, so a second one in place is the fit and not a pan.
+    qint64 m_lastMiddleMs = 0;
+    QPointF m_lastMiddleFrom;
+    /// The view before the last fit or zoom, so one step back is possible.
+    double m_previousZoom = 1.0;
+    QPointF m_previousPan;
+    bool m_hasPreviousView = false;
+    /// `true` while the view is the fitted frame. A fitted frame can be smaller than 1:1
+    /// and still sit off the paper's centre, so its pan must survive below 1:1.
+    bool m_fitted = false;
 };

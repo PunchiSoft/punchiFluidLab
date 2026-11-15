@@ -473,8 +473,10 @@ not fight the right dock, and it leaves with the room it needs.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
   budget to say what the zoom readout and **Ajustar al marco** already say.
 - **Today** the ribbon carries Aumentar, Disminuir and Tamaño original, the middle button
-  pans and `Ctrl+0` returns to 1:1; the strip, the fit, the view history and the three
-  toggles are target ([interface-plan.md](interface-plan.md) stage 6c).
+  pans and its **double click fits the frame**, one step of view history is kept before a
+  fit or a zoom at the pointer, and `Ctrl+0` returns to 1:1. **Still target**: the strip
+  itself, the zoom window gesture, the show toggle and the play/pause button
+  ([interface-plan.md](interface-plan.md) stage 6c-ii).
 
 ### 4. Status bar
 
