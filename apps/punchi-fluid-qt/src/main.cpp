@@ -2695,6 +2695,83 @@ int main(int argc, char *argv[])
                   QStringLiteral("panels: reset view returns to 1:1"));
         });
 
+        // The catalog header filters the groups and remembers a collapsed one. Search is
+        // a view state: it never changes the document until a match is placed.
+        steps->push_back([state, check] {
+            QObject *sidebar =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSidebar"));
+            QObject *search =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSearch"));
+            check(sidebar != nullptr && search != nullptr,
+                  QStringLiteral("catalog: the search and the groups are in the scene"));
+            if (sidebar != nullptr && search != nullptr) {
+                search->setProperty("text", QStringLiteral("cilindro"));
+            }
+        });
+        steps->push_back([state, check] {
+            QObject *sidebar =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSidebar"));
+            QObject *search =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSearch"));
+            const int matches =
+                sidebar != nullptr ? sidebar->property("matchCount").toInt() : -1;
+            const int total = state->session->catalog().size();
+            check(matches >= 2 && matches < total,
+                  QStringLiteral("catalog: the search narrows the groups"));
+            if (search != nullptr) {
+                search->setProperty("text", QString());
+            }
+        });
+        steps->push_back([state, check] {
+            QObject *sidebar =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSidebar"));
+            check(sidebar != nullptr
+                      && sidebar->property("matchCount").toInt()
+                             == state->session->catalog().size(),
+                  QStringLiteral("catalog: clearing the search brings everything back"));
+            if (sidebar != nullptr) {
+                QMetaObject::invokeMethod(sidebar, "toggleGroup", Q_ARG(QVariant, 0));
+            }
+        });
+        steps->push_back([state, check] {
+            QObject *sidebar =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSidebar"));
+            check(!state->session->viewSetting(QStringLiteral("catalog/group-0"), true).toBool(),
+                  QStringLiteral("catalog: a collapsed group is remembered"));
+            if (sidebar != nullptr) {
+                QMetaObject::invokeMethod(sidebar, "toggleGroup", Q_ARG(QVariant, 0));
+            }
+        });
+        steps->push_back([state, check] {
+            QObject *search =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSearch"));
+            state->components = pf_session_component_count(state->session->handle());
+            if (search != nullptr) {
+                search->setProperty("text", QStringLiteral("compresor"));
+                auto *item = qobject_cast<QQuickItem *>(search);
+                if (item != nullptr) {
+                    item->forceActiveFocus();
+                }
+            }
+            check(search != nullptr, QStringLiteral("catalog: the search field takes focus"));
+        });
+        steps->push_back([state, check] {
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+            check(true, QStringLiteral("catalog: Enter accepts the search"));
+        });
+        steps->push_back([state, check] {
+            const uint32_t now =
+                pf_session_component_count(state->session->handle());
+            check(now == state->components + 1,
+                  QStringLiteral("catalog: Enter places the first match"));
+            QObject *search =
+                state->window->findChild<QObject *>(QStringLiteral("catalogSearch"));
+            if (search != nullptr) {
+                search->setProperty("text", QString());
+            }
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);

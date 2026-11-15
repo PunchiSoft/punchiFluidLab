@@ -231,21 +231,22 @@ The sidebar is generated from the catalog, so it is exactly as complete as
 `~/.local/share/punchi-fluid-lab/catalog/` plus the built-in files. Adding a valve
 file adds an entry; deleting the file removes it; `disabled = true` hides it.
 
-**Today** the sidebar is a flat list of that catalog, each row drawn with its own symbol;
-a click selects and a drag places. The header with the count and the search, the
-collapsible category groups, the tiles and the footer with the catalog folder and the
-skipped-file count below are the target and are not in the window yet
-([interface-plan.md](interface-plan.md) stage 4).
+**Today** the sidebar has the count, the search, the collapsible categories and the
+footer; its rows are still one per line, and the two-column tiles and the resizable width
+are stage 4b ([interface-plan.md](interface-plan.md)).
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
-  `accessory`, `sensor`), collapsible, in a stable order, state remembered per user.
+  `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the
+  label is translated in the session, so the QML never learns the numeric enum.
 - The sidebar is **a palette of tiles**, two per row: the symbol, the name on two lines
   and the `id` beneath. The header carries the title, the number of entries and the search
-  field; the footer names the folder in use and the skipped files.
-- The thumbnail of each tile is **the symbol of its own definition**, drawn by the
+  field; the footer names the folder in use and the number of skipped files.
+- The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - Search filters by `name`, `id` and a few synonyms; `Ctrl+F` focuses it; typing
   selects the first match and `Enter` starts placing it.
+- The footer names the folder the core reads and the skipped files; a panel that lists the
+  reasons for each skipped file is still target.
 - The sidebar is `18 × grid_unit` wide by default and resizable between its minimum and a
   third of the window; the width is remembered as view state, not saved in the document.
 - **A pipe is drawn port to port**: press on a port (the pointer turns into a crosshair

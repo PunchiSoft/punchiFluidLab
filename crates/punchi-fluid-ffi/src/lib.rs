@@ -3154,6 +3154,17 @@ pub unsafe extern "C" fn pf_session_catalog(session: *const PfSession, out: *mut
     })
 }
 
+/// Number of catalog files the loader skipped.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_catalog_problems(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| session.catalog.problems().len() as u32)
+}
+
 /// Draws one catalog entry alone into `out`, for a sidebar thumbnail.
 ///
 /// # Safety

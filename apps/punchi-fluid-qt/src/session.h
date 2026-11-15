@@ -127,6 +127,9 @@ class FluidSession : public QObject
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
 
     Q_PROPERTY(QVariantList catalog READ catalog NOTIFY catalogChanged)
+    Q_PROPERTY(QVariantList catalogGroups READ catalogGroups NOTIFY catalogChanged)
+    Q_PROPERTY(QString catalogDir READ catalogDir CONSTANT)
+    Q_PROPERTY(int catalogProblems READ catalogProblems NOTIFY catalogChanged)
     Q_PROPERTY(QString contrastSummary READ contrastSummary NOTIFY changed)
     Q_PROPERTY(bool themePasses READ themePasses NOTIFY changed)
     Q_PROPERTY(bool settled READ settled NOTIFY settledChanged)
@@ -297,6 +300,9 @@ public:
     bool untilChangeRunning() const { return m_untilChange; }
 
     QVariantList catalog() const { return m_catalog; }
+    QVariantList catalogGroups() const { return m_catalogGroups; }
+    QString catalogDir() const { return m_catalogDir; }
+    int catalogProblems() const;
     QString contrastSummary() const { return describe(m_contrast); }
     /// `true` when every pairing meets the criterion of `docs/ui-ux.md`.
     [[nodiscard]] bool themePasses() const { return m_contrast.passes(); }
@@ -626,6 +632,8 @@ private:
     QVariantList m_inspectorFields;
     int m_inspectorIndex = -1;
     QVariantList m_catalog;
+    QVariantList m_catalogGroups;
+    QString m_catalogDir;
     ThemeTokens m_tokens;
     Contrast m_contrast;
     bool m_settled = false;
