@@ -57,7 +57,7 @@ lines outside generated files is split before it starts, never during review. Th
 | 6c-ii | `feat/view-strip` | the floating strip: fit, the zoom panel, the step back and the fold | `--selftest`, captures | the rest moves to 6c-iii |
 | 6c-iii | `feat/view-controls` | Mostrar cajetín and the single Iniciar/Pausa | `--selftest`, captures | Mover and the zoom window move to 6c-iv |
 | 6c-iv | `feat/view-hand` | Mover, with the hand glyph | `--selftest`, captures | the zoom window moves to 6c-v |
-| 6c-v | `feat/view-window` | the zoom window gesture and the fit glyph | `--selftest`, captures | — |
+| 6c-v | `feat/view-window` | the zoom window gesture and the fit glyph | `--selftest`, captures | done |
 | 7 | `feat/interface-consistency` | literals to tokens, focus, tooltips, status bar, reduced motion | the full gate | — |
 
 ## Stage detail
@@ -284,7 +284,10 @@ right edge of the drawing area** and takes no width from the paper.
 - **Landed in 6c-iv**: **Mover**, a visible mode with the hand pointer, marked in the strip,
   left with `Esc` or the same button, and dropped when the simulation starts because a click
   must actuate there. Its hand glyph joins the family.
-- **Left for 6c-v**: the **zoom window** gesture and the fit glyph.
+- **Landed in 6c-v**: the **zoom window**, armed from the panel, one left drag, and the view
+  zooms so the rectangle fills the canvas with its centre on the canvas centre; a stray
+  click or `Esc` leaves the view alone. The **fit glyph** joins the family, so Ajustar no
+  longer shares the magnifier with 100 %.
 - **The toggle**: one, **Mostrar cajetín**, drawn or not, with no undo entry and no
   modified mark, so it needs a view flag in the session and not a change to the document.
   The grid keeps its toggle in **Ver** and Configurar página, and the paper's edge is always

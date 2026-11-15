@@ -476,8 +476,8 @@ not fight the right dock, and it leaves with the room it needs.
   al marco**, a **zoom panel** (−, 100 %, +, vista anterior), **Mostrar cajetín** and the
   single **Iniciar/Pausa**, **Mover** (a visible hand mode) and the fold control, and it is
   remembered as view state. The middle button pans and its **double click fits the frame**,
-  one step of view history is kept, and `Ctrl+0` returns to 1:1. **Still target**: the zoom
-  window gesture and its glyph ([interface-plan.md](interface-plan.md) stage 6c-v).
+  one step of view history is kept, the **zoom window** is one drag from the panel, and
+  `Ctrl+0` returns to 1:1. All of stage 6c is built.
 
 ### 4. Status bar
 

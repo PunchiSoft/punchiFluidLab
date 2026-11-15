@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Ventana de zoom y glifo propio de Ajustar — 2026-11-15
+
+Con esto se cierra la tira de vista.
+
+- **Ventana**: el panel arma el gesto, un arrastre dibuja el rectángulo sobre la hoja y el
+  zoom lo llena con su centro en el centro del lienzo; un clic suelto o `Esc` no mueven la
+  vista. Es estado de vista y guarda un paso para «Vista anterior».
+- **Glifo de Ajustar**: cuatro esquinas alrededor del espacio, para no compartir la lupa del
+  100 %. La familia pasa a **48 dibujos**.
+- La capacidad de navegar el lienzo pasa a **`covered`**.
+- **Evidencia**: `--selftest` con `view: the strip arms the zoom window`, `view: the zoom
+  window magnifies the rectangle`, `view: the rectangle lands centred` y `view: Esc cancels
+  the zoom window`, 0 fallos; `--check-qml` 0; `./scripts-dev/check.sh` verde y capturas
+  retomadas.
+
 ### Mover con la mano desde la tira — 2026-11-15
 
 - **Mover**: un modo visible con puntero de mano; el botón queda marcado, se arrastra con el
