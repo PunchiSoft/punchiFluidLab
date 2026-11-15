@@ -8,11 +8,13 @@
 #include <QDir>
 #include <QImage>
 #include <QPainter>
+#include <QScreen>
 #include <QSet>
 #include <QStandardPaths>
 #include <QUrlQuery>
 #include <QtGlobal>
 
+#include "actionicons.h"
 #include "theme.h"
 
 namespace {
@@ -99,14 +101,34 @@ QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size, const Q
     const int requested = requestedSize.isValid() ? requestedSize.width() : 0;
     const int pixels = requested > kMinPixels ? requested : 22;
     const QString tone = query.queryItemValue(QStringLiteral("tone"));
+    const qreal dpr = QGuiApplication::primaryScreen()
+                          ? QGuiApplication::primaryScreen()->devicePixelRatio()
+                          : 1.0;
+    const int dprKey = qRound(dpr * 100.0);
 
-    const QString key = name + u'|' + tone + u'|' + QString::number(pixels);
+    const QString key =
+        name + u'|' + tone + u'|' + QString::number(pixels) + u'|' + QString::number(dprKey);
     const auto cached = m_cache.constFind(key);
     if (cached != m_cache.constEnd()) {
         if (size != nullptr) {
-            *size = cached->size();
+            const qreal ratio = cached->devicePixelRatio() > 0.0 ? cached->devicePixelRatio()
+                                                                : 1.0;
+            *size = QSize(qRound(cached->width() / ratio), qRound(cached->height() / ratio));
         }
         return *cached;
+    }
+
+    // The ribbon's own family comes first (ADR 0028). It is drawn here as geometry at the
+    // pixel size Qt asks for; the cache key carries the screen ratio so a 2× request never
+    // reuses a 1× raster. (Setting a device ratio on a provider pixmap makes QML draw it at
+    // its physical size and clip the item, so the ratio stays out of the pixmap.)
+    if (actionicons::has(name)) {
+        QPixmap pixmap = actionicons::render(name, pixels, 1.0, colourFor(tone));
+        m_cache.insert(key, pixmap);
+        if (size != nullptr) {
+            *size = pixmap.size();
+        }
+        return pixmap;
     }
 
     // Breeze ships both `foo` and `foo-symbolic`; the symbolic one is the flat glyph that

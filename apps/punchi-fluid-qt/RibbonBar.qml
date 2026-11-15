@@ -585,6 +585,28 @@ Rectangle {
         return out;
     }
 
+    /// Every icon name the ribbon uses, once, for `--check-icons`. The menu button is not
+    /// a tab command, so it is added here.
+    function iconNames() {
+        const out = [];
+        for (let t = 0; t < tabs.length; ++t) {
+            const groups = tabs[t].groups || [];
+            for (let g = 0; g < groups.length; ++g) {
+                const items = groupActions(groups[g]);
+                for (let i = 0; i < items.length; ++i) {
+                    const name = items[i].icon || "";
+                    if (name.length > 0 && out.indexOf(name) < 0) {
+                        out.push(name);
+                    }
+                }
+            }
+        }
+        if (out.indexOf("open-menu-symbolic") < 0) {
+            out.push("open-menu-symbolic");
+        }
+        return out;
+    }
+
     // ---- tabs ---------------------------------------------------------------
     Item {
         id: tabRow

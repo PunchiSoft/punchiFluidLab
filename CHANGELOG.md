@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### La cinta empieza a dibujar sus propios iconos — 2026-11-15
+
+Los primeros ocho comandos de la cinta dejan de depender del tema del escritorio: sus
+glifos se dibujan aquí como geometría, con una sola tinta y el trazo de la referencia.
+
+- `actionicons` dibuja Nuevo, Abrir, Guardar, Guardar como, Exportar, Deshacer, Rehacer e
+  Iniciar en una rejilla de 24, trazo de 2 y extremos redondeados; el resto sigue cayendo
+  al icono simbólico del tema y, si no hay, a la etiqueta.
+- El proveedor resuelve primero la familia propia, después el tema; `--check-icons` informa
+  **8 propios, 38 del tema y 0 ausentes**, y falla solo si un comando no resuelve ni por una
+  vía ni por la otra.
+- Los glifos se dibujan al tamaño que pide Qt, que ya incluye la densidad de la pantalla, y
+  la caché distingue esa densidad para no reutilizar un raster de otra pantalla.
+- `--icon-sheet` imprime la familia a 16, 24 y 32 px en claro y oscuro, para la revisión
+  antes de completar el resto.
+- **Evidencia**: `--check-icons`, la hoja de iconos en claro y oscuro, las capturas de
+  Archivo, Editar y Simular con los iconos nuevos, `--check-qml` con 0 problemas,
+  `--selftest` con 0 fallos y `./scripts-dev/check.sh` verde.
+
 ### La cinta tiene dos planos y estados — 2026-11-15
 
 La cinta deja de ser una superficie plana: la fila de pestañas se eleva sobre el cuerpo, la
