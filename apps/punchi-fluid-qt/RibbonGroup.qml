@@ -43,6 +43,6 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 18
         width: 1
-        color: session.panel
+        color: session.line
     }
 }

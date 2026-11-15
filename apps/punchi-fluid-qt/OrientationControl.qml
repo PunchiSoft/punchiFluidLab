@@ -53,7 +53,7 @@ Item {
             width: orientation.controlWidth
             height: 26
             radius: 4
-            color: pointer.containsMouse || popup.opened ? session.panel : "transparent"
+            color: pointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
             border.width: activeFocus ? 1 : 0
             border.color: session.accent
             activeFocusOnTab: true
@@ -115,7 +115,7 @@ Item {
         height: 66
         radius: 4
         color: ribbonPointer.containsMouse || popup.opened || activeFocus
-               ? session.panel : "transparent"
+               ? session.surfaceRaised : "transparent"
         border.width: activeFocus ? 1 : 0
         border.color: session.accent
         activeFocusOnTab: true
@@ -184,9 +184,9 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: session.panel
+            color: session.surfaceRaised
             border.width: 1
-            border.color: session.muted
+            border.color: session.lineStrong
             radius: 4
         }
 
@@ -208,7 +208,7 @@ Item {
                 width: ListView.view.width
                 height: 34
                 radius: 3
-                color: pointer.containsMouse || ListView.isCurrentItem ? session.panel : "transparent"
+                color: pointer.containsMouse || ListView.isCurrentItem ? session.surfaceRaised : "transparent"
                 border.width: chosen ? 1 : 0
                 border.color: session.accent
 

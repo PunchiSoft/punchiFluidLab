@@ -41,7 +41,7 @@ Item {
                ? (preview.filledPage ? preview.session.panel : preview.session.background)
                : "transparent"
         border.width: 1
-        border.color: preview.session ? preview.session.muted : "transparent"
+        border.color: preview.session ? preview.session.lineStrong : "transparent"
     }
 
     // The margin band, shaded the way a page-setup gallery shades it: the paper is the

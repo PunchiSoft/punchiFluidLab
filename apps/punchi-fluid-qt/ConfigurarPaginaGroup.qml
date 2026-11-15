@@ -62,7 +62,7 @@ Item {
         width: 20
         height: 20
         radius: 3
-        color: pointer.containsMouse || activeFocus ? session.panel : "transparent"
+        color: pointer.containsMouse || activeFocus ? session.surfaceRaised : "transparent"
         border.width: activeFocus ? 1 : 0
         border.color: session.accent
         activeFocusOnTab: true
@@ -81,7 +81,7 @@ Item {
                 anchors.fill: parent
                 color: "transparent"
                 border.width: 1
-                border.color: session.muted
+                border.color: session.lineStrong
                 radius: 1
             }
 
@@ -114,7 +114,7 @@ Item {
                 anchors.bottom: parent.bottom
                 width: 5
                 height: 5
-                color: session.panel
+                color: session.surfaceRaised
                 border.width: 1
                 border.color: session.accent
             }

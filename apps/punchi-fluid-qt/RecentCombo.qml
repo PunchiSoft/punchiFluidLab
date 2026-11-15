@@ -46,7 +46,7 @@ Item {
             width: 100
             height: 26
             radius: 4
-            color: pointer.containsMouse || popup.opened ? session.panel : "transparent"
+            color: pointer.containsMouse || popup.opened ? session.surfaceRaised : "transparent"
             border.width: activeFocus ? 1 : 0
             border.color: session.accent
             activeFocusOnTab: true
@@ -106,9 +106,9 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: session.panel
+            color: session.surfaceRaised
             border.width: 1
-            border.color: session.muted
+            border.color: session.lineStrong
             radius: 4
         }
 
@@ -127,7 +127,7 @@ Item {
                 width: ListView.view.width
                 height: modelData.empty === true ? 28 : 38
                 radius: 3
-                color: pointer.containsMouse && modelData.empty !== true ? session.panel : "transparent"
+                color: pointer.containsMouse && modelData.empty !== true ? session.surfaceRaised : "transparent"
 
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.empty === true

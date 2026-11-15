@@ -32,7 +32,7 @@ Item {
         radius: 4
         color: pointer.containsMouse || button.activeFocus ? session.background : "transparent"
         border.width: 1
-        border.color: button.primary ? session.accent : session.muted
+        border.color: button.primary ? session.accent : session.lineStrong
     }
 
     Text {

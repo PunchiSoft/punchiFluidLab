@@ -28,6 +28,7 @@ Item {
     signal triggered()
 
     readonly property bool hovered: pointer.containsMouse
+    readonly property bool pressed: pointer.pressed
 
     implicitWidth: large
                    ? Math.max(58, labelText.implicitWidth + 14)
@@ -46,10 +47,12 @@ Item {
         anchors.margins: 1
         radius: 4
         opacity: button.available ? 1 : 1
-        color: button.selected || button.hovered || button.activeFocus ? session.panel
-                                                                      : "transparent"
-        border.width: button.activeFocus ? 1 : 0
-        border.color: session.accent
+        color: button.pressed ? session.surfaceSunken
+               : button.selected ? session.accentSoft
+               : button.hovered ? session.surfaceRaised
+               : "transparent"
+        border.width: button.activeFocus ? 1 : (button.selected ? 1 : 0)
+        border.color: button.activeFocus ? session.accent : session.lineStrong
     }
 
     Column {
@@ -133,9 +136,9 @@ Item {
         width: tipText.implicitWidth + 14
         height: tipText.implicitHeight + 8
         radius: 3
-        color: session.panel
+        color: session.surfaceRaised
         border.width: 1
-        border.color: session.muted
+        border.color: session.lineStrong
 
         Text {
             id: tipText
