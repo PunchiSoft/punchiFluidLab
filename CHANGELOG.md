@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### La cinta dibuja los iconos de documento, edición y zoom — 2026-11-15
+
+La familia propia crece de ocho a **24 iconos**: los comandos de documento, edición,
+transformación y zoom ya no cambian de trazo con el tema del escritorio.
+
+- Se suman Propiedades, Circuito, Nuevo circuito, Renombrar, Girar, Recientes, Comprobar,
+  Copiar, Pegar, Duplicar, Reflejar, Todo, Borrar, Aumentar, Disminuir y Tamaño original.
+- `--check-icons` informa **24 propios, 22 del tema y 0 ausentes**; el resto sigue cayendo
+  al tema hasta 3c-ii.
+- La hoja `--icon-sheet` muestra los 24 a 16, 24 y 32 px en claro y oscuro.
+- **Evidencia**: `--check-icons`, la hoja de iconos, las capturas de Archivo, Editar, Ver,
+  Simular, ventana, zoom y panel de página, `--check-qml` con 0 problemas, `--selftest` con
+  0 fallos y `./scripts-dev/check.sh` verde.
+
 ### La cinta empieza a dibujar sus propios iconos — 2026-11-15
 
 Los primeros ocho comandos de la cinta dejan de depender del tema del escritorio: sus
