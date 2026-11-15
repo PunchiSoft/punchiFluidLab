@@ -151,9 +151,14 @@ Window {
     /// remembered preference must not be what covers the drawing on a small screen.
     property bool catalogOverlay: false
     property bool rightDockOverlay: false
+    /// The view strip over the right edge of the drawing. Folding it is view state, and a
+    /// compact window starts with it folded to one button that opens it again.
+    property bool viewStripFolded: false
+    property bool viewStripCompactOpen: false
     onLayoutModeChanged: if (layoutMode !== "compact") {
                              catalogOverlay = false;
                              rightDockOverlay = false;
+                             viewStripCompactOpen = false;
                          }
     readonly property bool rightDockHasContent: session.inspectorOpen || window.titleBlockOpen
     onTitleBlockOpenChanged: if (titleBlockOpen) rightDockOpen = true
@@ -209,6 +214,9 @@ Window {
     onRibbonMinimizedChanged: if (viewStateReady) {
                                   session.setViewSetting("panel/ribbonMinimized", ribbonMinimized);
                               }
+    onViewStripFoldedChanged: if (viewStateReady) {
+                                  session.setViewSetting("view/stripFolded", viewStripFolded);
+                              }
 
     Component.onCompleted: {
         // View state only: the document is untouched by which panel was open last time.
@@ -223,6 +231,7 @@ Window {
         window.rightDockOpen = session.viewSetting("panel/rightDockOpen", true);
         window.panelAutoHide = session.viewSetting("panel/autoHide", false);
         window.ribbonMinimized = session.viewSetting("panel/ribbonMinimized", false);
+        window.viewStripFolded = session.viewSetting("view/stripFolded", false);
         window.restoreGeometry();
         window.viewStateReady = true;
     }
@@ -234,6 +243,8 @@ Window {
         window.rightDockOpen = true;
         window.panelAutoHide = false;
         window.ribbonMinimized = false;
+        window.viewStripFolded = false;
+        window.viewStripCompactOpen = false;
         session.zoomReset();
     }
 
@@ -773,6 +784,28 @@ Window {
                     anchors.fill: parent
                     anchors.margins: session.unit
                     session: session
+                }
+
+                // The strip floats over the right edge of the drawing: it takes no column
+                // from the paper, and a compact window folds it to one button.
+                ViewStrip {
+                    id: viewStrip
+                    objectName: "viewStrip"
+                    session: session
+                    canvas: sheet
+                    folded: window.layoutMode === "compact"
+                            ? !window.viewStripCompactOpen : window.viewStripFolded
+                    anchors.right: parent.right
+                    anchors.rightMargin: session.unit
+                    anchors.verticalCenter: parent.verticalCenter
+                    z: 20
+                    onFoldToggled: {
+                        if (window.layoutMode === "compact") {
+                            window.viewStripCompactOpen = !window.viewStripCompactOpen;
+                        } else {
+                            window.viewStripFolded = !window.viewStripFolded;
+                        }
+                    }
                 }
 
                 // The safety copy of a previous run. It is offered, never loaded on its
