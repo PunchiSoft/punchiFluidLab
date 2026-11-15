@@ -802,7 +802,9 @@ Window {
                 SchematicItem {
                     id: sheet
                     anchors.fill: parent
-                    anchors.margins: session.unit
+                    // Half a spacing unit: the paper is the protagonist, and a full unit of
+                    // bare workspace read as a thick frame around it.
+                    anchors.margins: Math.max(4, Math.round(session.unit / 2))
                     session: session
                 }
 

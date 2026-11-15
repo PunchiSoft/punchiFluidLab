@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Menos margen alrededor de la hoja — 2026-11-15
+
+- El lienzo conserva **medio `unit`** (9 px con la fuente por defecto) en vez de uno entero:
+  la banda de área de trabajo alrededor del papel era demasiado gruesa y le quitaba sitio al
+  dibujo.
+- **Evidencia**: capturas de la ventana retomadas, `--check-qml` 0, `--selftest` 0 y
+  `./scripts-dev/check.sh` verde.
+
 ### Pendientes de zoom, ajuste y área de trabajo — 2026-11-15
 
 - `interface-plan.md` recoge tres decisiones abiertas del propietario: el ajuste debe encuadrar
