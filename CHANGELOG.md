@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### Ficha de revisión por símbolo — 2026-11-15
+
+- `assets/symbols/review/TEMPLATE.md`: función, cláusula, tabla de medidas, capturas a
+  300 dpi, lista de comprobación y firma de una persona. Una ficha sin cláusula ni medidas
+  no es una revisión.
+- El skill de simbología enlaza la ficha desde el paso de corrección.
+
 ### La corrección de símbolos empieza con palabras, no con líneas — 2026-11-15
 
 - El skill de simbología añade la **puerta previa**: requisito en nuestras palabras con su
