@@ -187,14 +187,19 @@ int main(int argc, char *argv[])
         const ThemeTokens tokens = tokensFrom(QGuiApplication::palette());
         const QStringList names = actionicons::names();
         constexpr int cell = 56;
-        QImage image(names.size() * cell, 3 * cell, QImage::Format_ARGB32);
+        constexpr int perRow = 12;
+        const int rowsPerSize = (names.size() + perRow - 1) / perRow;
+        const int columns = std::min(static_cast<int>(names.size()), perRow);
+        QImage image(columns * cell, rowsPerSize * 3 * cell, QImage::Format_ARGB32);
         image.fill(tokens.background);
         QPainter painter(&image);
         painter.setRenderHint(QPainter::Antialiasing, true);
-        for (int row = 0; row < 3; ++row) {
-            const int pixels = row == 0 ? 16 : (row == 1 ? 24 : 32);
-            for (int col = 0; col < names.size(); ++col) {
-                const QPixmap icon = actionicons::render(names.at(col), pixels, 1.0, tokens.ink);
+        for (int sizeRow = 0; sizeRow < 3; ++sizeRow) {
+            const int pixels = sizeRow == 0 ? 16 : (sizeRow == 1 ? 24 : 32);
+            for (int index = 0; index < names.size(); ++index) {
+                const int row = sizeRow * rowsPerSize + index / perRow;
+                const int col = index % perRow;
+                const QPixmap icon = actionicons::render(names.at(index), pixels, 1.0, tokens.ink);
                 painter.drawPixmap(col * cell + (cell - pixels) / 2,
                                    row * cell + (cell - pixels) / 2, icon);
             }

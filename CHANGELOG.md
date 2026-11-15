@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La cinta completa su familia de iconos — 2026-11-15
+
+Los 46 nombres de icono de la cinta se dibujan ya en el proyecto: ningún comando depende
+del tema del escritorio y todos comparten rejilla, trazo y tinta.
+
+- Se suman alinear, repartir, conducto, paneles, transporte, tema, ir arriba/abajo, agenda,
+  pausa, avance, salto, detener, actualizar, velocímetro y menú.
+- `--check-icons` informa **46 propios, 0 del tema y 0 ausentes**; el tema queda solo como
+  respaldo para un comando que no tuviera dibujo.
+- La hoja `--icon-sheet` reordena la revisión en 12 columnas por tamaño y muestra los 46 a
+  16, 24 y 32 px en claro y oscuro.
+- **Evidencia**: `--check-icons`, la hoja de iconos, la pasada completa de capturas de las
+  cinco pestañas, el menú plegado, la ventana, el zoom, el panel de página, el cajetín y las
+  ayudas, `--check-qml` con 0 problemas, `--selftest` con 0 fallos y `./scripts-dev/check.sh`
+  verde.
+
 ### La cinta dibuja los iconos de documento, edición y zoom — 2026-11-15
 
 La familia propia crece de ocho a **24 iconos**: los comandos de documento, edición,
