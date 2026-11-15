@@ -13,7 +13,15 @@
 #include <QPointF>
 #include <QSizeF>
 
+#include <QCursor>
+#include <QKeyEvent>
+
 #include <algorithm>
+
+namespace {
+/// One arrow-key pan step, in pixels.
+constexpr double kPanPerArrow = 24.0;
+} // namespace
 
 void SchematicItem::rememberView()
 {
@@ -104,3 +112,99 @@ QPointF SchematicItem::limitedPan(const Fit &centred) const
                    std::clamp(m_pan.y(), -limitY, limitY));
 }
 
+void SchematicItem::keyPressEvent(QKeyEvent *event)
+{
+    if (!m_session) {
+        return;
+    }
+    if (event->key() == Qt::Key_Escape && (m_session->handMode() || m_zoomWindow)) {
+        cancelZoomWindow();
+        m_session->setHandMode(false);
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        m_session->removeSelected();
+        update();
+        event->accept();
+        return;
+    }
+    // The keyboard path for panning. It is the only way to reach a corner of a magnified
+    // sheet without a pointer, and it stays out of the way because the sheet only sees a
+    // key when it holds the focus. Shift takes a longer step.
+    const double step = (event->modifiers() & Qt::ShiftModifier) != 0
+        ? kPanPerArrow * 4.0
+        : kPanPerArrow;
+    switch (event->key()) {
+    case Qt::Key_Left:
+        panBy(QPointF(step, 0.0));
+        event->accept();
+        return;
+    case Qt::Key_Right:
+        panBy(QPointF(-step, 0.0));
+        event->accept();
+        return;
+    case Qt::Key_Up:
+        panBy(QPointF(0.0, step));
+        event->accept();
+        return;
+    case Qt::Key_Down:
+        panBy(QPointF(0.0, -step));
+        event->accept();
+        return;
+    default:
+        break;
+    }
+    QQuickPaintedItem::keyPressEvent(event);
+}
+
+void SchematicItem::beginZoomWindow()
+{
+    m_zoomWindow = true;
+    m_zoomDragging = false;
+    setCursor(QCursor(Qt::CrossCursor));
+    setFocus(true);
+    emit zoomWindowChanged();
+}
+
+void SchematicItem::cancelZoomWindow()
+{
+    if (!m_zoomWindow) {
+        return;
+    }
+    m_zoomWindow = false;
+    m_zoomDragging = false;
+    setCursor(QCursor(m_session != nullptr && m_session->handMode() ? Qt::OpenHandCursor
+                                                                    : Qt::ArrowCursor));
+    update();
+    emit zoomWindowChanged();
+}
+
+void SchematicItem::zoomToWindow(const QRectF &rect)
+{
+    if (!m_session) {
+        return;
+    }
+    const Fit before = placement();
+    if (before.pixelsPerMm <= 0.0 || rect.width() < 1.0 || rect.height() < 1.0) {
+        return;
+    }
+    const qreal widthMm = rect.width() / before.pixelsPerMm;
+    const qreal heightMm = rect.height() / before.pixelsPerMm;
+    const Fit fitted = fitArea(width(), height(), static_cast<float>(widthMm),
+                               static_cast<float>(heightMm));
+    const qreal base = centredPlacement(1.0).pixelsPerMm;
+    if (base <= 0.0) {
+        return;
+    }
+    const QPointF centre((rect.center().x() - before.originX) / before.pixelsPerMm,
+                         (rect.center().y() - before.originY) / before.pixelsPerMm);
+    rememberView();
+    const double zoom = fitted.pixelsPerMm / base;
+    m_session->setZoom(zoom);
+    const Fit centred = centredPlacement(m_session->zoom());
+    m_fitted = true;
+    m_pan = QPointF(width() * 0.5 - centre.x() * centred.pixelsPerMm - centred.originX,
+                    height() * 0.5 - centre.y() * centred.pixelsPerMm - centred.originY);
+    update();
+}

@@ -48,6 +48,11 @@ public:
     /// second call does nothing instead of walking a history nobody asked for.
     Q_INVOKABLE void previousView();
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY viewHistoryChanged)
+    /// A one-use gesture: the next left drag is a rectangle to zoom into.
+    Q_PROPERTY(bool zoomWindowActive READ zoomWindowActive NOTIFY zoomWindowChanged)
+    [[nodiscard]] bool zoomWindowActive() const { return m_zoomWindow; }
+    Q_INVOKABLE void beginZoomWindow();
+    Q_INVOKABLE void cancelZoomWindow();
     [[nodiscard]] bool canGoBack() const { return m_hasPreviousView; }
     /// Where the sheet sits in the item: the scale the zoom produced and the pan's offset.
     [[nodiscard]] Fit viewPlacement() const { return placement(); }
@@ -71,6 +76,7 @@ signals:
     void sessionChanged();
     void paintCountChanged();
     void viewHistoryChanged();
+    void zoomWindowChanged();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -102,6 +108,8 @@ private:
     void zoomAt(const QPointF &position, double factor);
     /// Keeps the view for `previousView` before a fit or a zoom changes it.
     void rememberView();
+    /// Zooms so the rectangle, in item pixels, fills the canvas and stays centred.
+    void zoomToWindow(const QRectF &rect);
     /// Moves the view by `delta` pixels, limited by `limitedPan`.
     void panBy(const QPointF &delta);
 
@@ -160,4 +168,9 @@ private:
     /// `true` while the view is the fitted frame. A fitted frame can be smaller than 1:1
     /// and still sit off the paper's centre, so its pan must survive below 1:1.
     bool m_fitted = false;
+    /// The zoom window: armed, dragging, and the rectangle in item pixels.
+    bool m_zoomWindow = false;
+    bool m_zoomDragging = false;
+    QPointF m_zoomFrom;
+    QPointF m_zoomTo;
 };
