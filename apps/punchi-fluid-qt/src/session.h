@@ -514,6 +514,10 @@ public:
     Q_INVOKABLE void restart();
     /// Reads the desktop palette into the core. Called on start and on theme change.
     Q_INVOKABLE void loadTheme();
+    /// A window view setting (panel state, auto-hide), stored per user and never in the
+    /// document. A missing key returns `fallback`.
+    Q_INVOKABLE QVariant viewSetting(const QString &key, const QVariant &fallback) const;
+    Q_INVOKABLE void setViewSetting(const QString &key, const QVariant &value);
     /// Uses `palette` instead of the application palette, for a forced light or dark run.
     void applyPalette(const QPalette &palette);
 

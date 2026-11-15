@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### Los paneles recuerdan su estado y se ocultan al salir si se pide — 2026-11-14
+
+Los paneles dejan de empezar siempre igual: recuerdan si estaban abiertos, su ancho y si el
+auto-hide está encendido. **Ver ▸ Paneles** reúne Catálogo, Propiedades, **Ocultar al
+salir** y **Restablecer vista**.
+
+- **Ocultar al salir** es opt-in: con el puntero sobre el raíl durante 350 ms el panel
+  vuelve; 800 ms después de salir se pliega. No se oculta con el teclado dentro, con un
+  arrastre del catálogo en curso ni con un diálogo abierto.
+- La visibilidad, el ancho del catálogo y la marca de auto-hide viven en `QSettings`, no en
+  el documento. **Restablecer vista** devuelve los paneles, el zoom y el desplazamiento a
+  su estado inicial.
+- Las capturas y los auto-tests usan un archivo de ajustes propio, así que no pisan la
+  vista que el usuario eligió.
+- **Evidencia**: los pasos `panels: the catalog state is remembered`, `panels: auto-hide is
+  opt-in`, `panels: the auto-hide flag is remembered`, `panels: leaving the rail hides it`,
+  `panels: the edge opens it after the dwell`, `panels: a manual hide stays closed under
+  the pointer`, `panels: reset view opens the panels`, `panels: reset view turns auto-hide
+  off` y `panels: reset view returns to 1:1` de `--selftest`, `--check-qml` con 0
+  problemas, `./scripts-dev/check.sh` verde y las capturas de **Paneles** en claro y
+  oscuro.
+
 ### Las propiedades y el cajetín comparten el panel derecho — 2026-11-14
 
 El inspector flotante y la columna fija del cajetín se unifican en un solo **panel

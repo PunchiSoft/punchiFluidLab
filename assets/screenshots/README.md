@@ -15,6 +15,8 @@ Images of the running application, used by the README and by pull request review
 | `right-dock-block-light.png` | The right dock with the **title-block editor**: content and position combos, the twelve guide fields and the derived sheet number |
 | `right-dock-both-light.png` | Both sections sharing the dock, separated by a line: properties above and title block below, scrolling as one column |
 | `right-dock-folded-dark.png` | The right dock folded to its **24 px rail**, the same control on the edge and the sheet using the recovered width |
+| `paneles-ver-light.png` | The **Ver ▸ Paneles** group: Catálogo and Propiedades marked by state, **Ocultar al salir** with the opt-in auto-hide active and **Restablecer vista** |
+| `paneles-ver-dark.png` | The same group on a dark desktop, to check the marks and the commands in both themes |
 | `a3-reference-zones-light.png` | An **A3 landscape** sheet on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
 | `zoom-light.png` | The same sheet at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified sheet on a dark desktop, to show the readout and the sheet edge in both themes |
@@ -87,6 +89,13 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme dark --inspect --right-dock-closed \
   --grab /tmp/right-dock-folded-dark.png
+# The Paneles group, with auto-hide on so its command is marked.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 2 --auto-hide \
+  --grab /tmp/paneles-ver-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --tab 2 --auto-hide \
+  --grab /tmp/paneles-ver-dark.png
 # The docked title-block editor, light and dark; 2 is the industrial model, 0 school.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --tab 3 --block --block-model 2 \
