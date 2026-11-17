@@ -155,6 +155,8 @@ Window {
     /// compact window starts with it folded to one button that opens it again.
     property bool viewStripFolded: false
     property bool viewStripCompactOpen: false
+    /// The strip of circuits at the foot of the sheet; the canvas gives it the room.
+    readonly property int tabStripHeight: Math.max(28, 2 * session.unit - 8)
     onLayoutModeChanged: if (layoutMode !== "compact") {
                              catalogOverlay = false;
                              rightDockOverlay = false;
@@ -805,7 +807,21 @@ Window {
                     // Half a spacing unit: the paper is the protagonist, and a full unit of
                     // bare workspace read as a thick frame around it.
                     anchors.margins: Math.max(4, Math.round(session.unit / 2))
+                    anchors.bottomMargin: Math.max(4, Math.round(session.unit / 2))
+                                          + window.tabStripHeight
                     session: session
+                }
+
+                // The circuits, at the foot of the sheet: read-only for now, so the reader
+                // knows which one is being worked on.
+                CircuitTabs {
+                    objectName: "circuitTabs"
+                    session: session
+                    height: window.tabStripHeight
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    z: 12
                 }
 
                 // The strip floats over the right edge of the drawing: it takes no column
