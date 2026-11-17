@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Los circuitos, al pie de la hoja — 2026-11-17
+
+- Una tira **dentro de la región del dibujo**, encima de la barra de estado, muestra una
+  pestaña por circuito con su icono y su nombre; la activa lleva fondo y regla de acento, no
+  solo color. Por ahora es **solo lectura**: dice en cuál se está trabajando.
+- El lienzo le cede el alto, así que la hoja no queda tapada.
+- Queda para la siguiente fase el `+`, el cambio con `Ctrl+Tab` y el renombrado en la propia
+  pestaña con `F2`.
+- **Evidencia**: capturas retomadas (51), `--check-qml` 0, `--selftest` 0 y
+  `./scripts-dev/check.sh` verde.
+
 ### Hoja del símbolo a 300 dpi — 2026-11-15
 
 - `punchi-fluid-export` gana el binario `symbol-sheet <id> <archivo> [--dpi 300]`: dibuja un
