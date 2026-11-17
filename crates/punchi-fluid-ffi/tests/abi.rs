@@ -21,27 +21,27 @@ use punchi_fluid::{
     PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET, PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL,
     PF_BLOCK_NONE, PF_BLOCK_NORMS, PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED,
     PF_BLOCK_PROJECT, PF_BLOCK_REVISION, PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT,
-    PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF,
-    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
-    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi, PfBlockLayout,
-    PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint,
-    PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count,
-    pf_export_paper_name, pf_export_paper_size_mm, pf_session_active_circuit,
-    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
-    pf_session_block, pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
-    pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
-    pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
-    pf_session_catalog_problems, pf_session_chart_candidate, pf_session_chart_candidate_count,
-    pf_session_chart_source, pf_session_check, pf_session_circuit_count, pf_session_circuit_id,
-    pf_session_circuit_name, pf_session_clear_chart_source, pf_session_component_count,
-    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
-    pf_session_component_orientation, pf_session_component_rect,
-    pf_session_component_valve_position, pf_session_component_valve_spring_return,
-    pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
-    pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
-    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
-    pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
+    PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER,
+    PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK,
+    PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi,
+    PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk,
+    PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds,
+    pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
+    pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
+    pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
+    pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
+    pf_session_block_remark, pf_session_block_visible, pf_session_build_frame,
+    pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_catalog_problems,
+    pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
+    pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
+    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
+    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
+    pf_session_component_rect, pf_session_component_valve_position,
+    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
+    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
+    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
+    pf_session_free, pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
     pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
@@ -49,19 +49,20 @@ use punchi_fluid::{
     pf_session_place_component, pf_session_placement_id, pf_session_port_point,
     pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
     pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
-    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
-    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
-    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
-    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
-    pf_session_set_pipe_class, pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet,
-    pf_session_space_selection, pf_session_straighten_pipe, pf_session_telemetry,
-    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_rect, pf_session_valve_spring_return,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
+    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
+    pf_session_rename_circuit, pf_session_reset_block_visibility, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
+    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
+    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_set_component_edits, pf_session_set_grid_step, pf_session_set_pipe_class,
+    pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet, pf_session_space_selection,
+    pf_session_straighten_pipe, pf_session_telemetry, pf_session_toggle_contact,
+    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -2483,6 +2484,89 @@ fn an_export_carries_the_caller_date_and_fits_a_large_circuit() {
     );
 
     // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn circuits_can_be_removed_undone_and_the_last_one_is_protected() {
+    let session = session();
+    let first =
+        u32::try_from(unsafe { pf_session_active_circuit(session) }).expect("first circuit id");
+    let first_components = unsafe { pf_session_component_count(session) };
+    let title = CString::new("Mando").expect("a title");
+    let second = u32::try_from(unsafe { pf_session_add_circuit(session, title.as_ptr()) })
+        .expect("second circuit id");
+    assert!(second > 0);
+    assert_eq!(unsafe { pf_session_circuit_count(session) }, 2);
+    assert_eq!(
+        unsafe { pf_session_active_circuit(session) },
+        i32::try_from(second).expect("id fits")
+    );
+
+    assert_eq!(unsafe { pf_session_remove_circuit(session, second) }, PF_OK);
+    assert_eq!(unsafe { pf_session_circuit_count(session) }, 1);
+    assert_eq!(
+        unsafe { pf_session_active_circuit(session) },
+        i32::try_from(first).expect("id fits")
+    );
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    assert_eq!(unsafe { pf_session_circuit_count(session) }, 2);
+    assert_eq!(
+        unsafe { pf_session_circuit_id(session, 1) },
+        i32::try_from(second).expect("id fits")
+    );
+    assert_eq!(
+        unsafe { pf_session_active_circuit(session) },
+        i32::try_from(second).expect("id fits")
+    );
+
+    // Removing a circuit with live contents uses the same ABI path; undo restores both.
+    assert!(unsafe { pf_session_place_component(session, 0, 40.0, 40.0) } >= 0);
+    let before = unsafe { pf_session_component_count(session) };
+    assert_eq!(unsafe { pf_session_remove_circuit(session, second) }, PF_OK);
+    assert_eq!(
+        unsafe { pf_session_component_count(session) },
+        first_components
+    );
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    assert_eq!(unsafe { pf_session_component_count(session) }, before);
+    assert!(
+        before > first_components,
+        "undo restored the added component"
+    );
+    assert_eq!(
+        unsafe { pf_session_active_circuit(session) },
+        i32::try_from(second).expect("id fits")
+    );
+
+    assert_eq!(unsafe { pf_session_remove_circuit(session, second) }, PF_OK);
+    assert_eq!(
+        unsafe { pf_session_remove_circuit(session, first) },
+        PF_ERR_MODEL
+    );
+    assert_eq!(unsafe { pf_session_circuit_count(session) }, 1);
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn circuit_limit_is_enforced_at_the_abi() {
+    let session = session();
+    let title = CString::new("Circuito").expect("a title");
+    for _ in 1..punchi_fluid::PF_MAX_CIRCUITS {
+        assert!(unsafe { pf_session_add_circuit(session, title.as_ptr()) } >= 0);
+    }
+    assert_eq!(
+        unsafe { pf_session_circuit_count(session) } as usize,
+        punchi_fluid::PF_MAX_CIRCUITS
+    );
+    assert_eq!(
+        unsafe { pf_session_add_circuit(session, title.as_ptr()) },
+        PF_ERR_LIMIT
+    );
+    assert_eq!(
+        unsafe { pf_session_circuit_count(session) } as usize,
+        punchi_fluid::PF_MAX_CIRCUITS
+    );
     unsafe { pf_session_free(session) };
 }
 
