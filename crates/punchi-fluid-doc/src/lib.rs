@@ -491,6 +491,14 @@ enum Change {
         index: usize,
         circuit: Circuit,
     },
+    /// A circuit was removed with everything it held.
+    CircuitRemoved {
+        /// Position it occupied, so undo puts it back where it was.
+        index: usize,
+        circuit: Circuit,
+        /// The circuit that takes over when the removed one was in view.
+        next_active: u32,
+    },
     /// A circuit was renamed.
     CircuitRenamed {
         id: u32,
@@ -691,6 +699,57 @@ impl Document {
         self.active = id;
         self.record(Change::CircuitAdded { index, circuit });
         id
+    }
+
+    /// Removes a circuit with its placements and pipes, as one undoable change.
+    ///
+    /// The last circuit is not removed: a project without circuits is not a project. The
+    /// circuit in view hands over to its right neighbour, or to the left one when it was the
+    /// last of the strip.
+    pub fn remove_circuit(&mut self, id: u32) -> bool {
+        if self.circuits.len() <= 1 {
+            return false;
+        }
+        let Some(index) = self.circuits.iter().position(|circuit| circuit.id == id) else {
+            return false;
+        };
+        let circuit = self.circuits[index].clone();
+        let next_active = if self.active != id {
+            self.active
+        } else if index + 1 < self.circuits.len() {
+            self.circuits[index + 1].id
+        } else {
+            self.circuits[index - 1].id
+        };
+        // Pipes, then placements, then the circuit: the batch is applied in this order and
+        // undone in the opposite one, so an index is valid when it is used.
+        let mut changes: Vec<Change> = Vec::new();
+        for (at, connection) in self.connections.iter().enumerate().rev() {
+            if connection.circuit == id {
+                changes.push(Change::Disconnected {
+                    index: at,
+                    connection: connection.clone(),
+                });
+            }
+        }
+        for (at, placement) in self.placements.iter().enumerate().rev() {
+            if placement.circuit == id {
+                changes.push(Change::Removed {
+                    index: at,
+                    orphans: Vec::new(),
+                    placement: placement.clone(),
+                });
+            }
+        }
+        changes.push(Change::CircuitRemoved {
+            index,
+            circuit,
+            next_active,
+        });
+        let batch = Change::Batch(changes);
+        self.apply(&batch);
+        self.record(batch);
+        true
     }
 
     /// Renames a circuit, as one undoable change.
@@ -1571,6 +1630,14 @@ impl Document {
                 insert_at(&mut self.circuits, *index, circuit.clone());
                 self.active = circuit.id;
             }
+            Change::CircuitRemoved {
+                index, next_active, ..
+            } => {
+                if *index < self.circuits.len() {
+                    self.circuits.remove(*index);
+                }
+                self.active = *next_active;
+            }
             Change::CircuitRenamed { id, to, .. } => {
                 if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
                     circuit.title.clone_from(to);
@@ -1661,6 +1728,10 @@ impl Document {
                 if self.active == circuit.id {
                     self.active = self.circuits.first().map_or(0, |circuit| circuit.id);
                 }
+            }
+            Change::CircuitRemoved { index, circuit, .. } => {
+                insert_at(&mut self.circuits, *index, circuit.clone());
+                self.active = circuit.id;
             }
             Change::CircuitRenamed { id, from, .. } => {
                 if let Some(circuit) = self.circuits.iter_mut().find(|circuit| circuit.id == *id) {
@@ -2571,5 +2642,39 @@ mod circuit_limit_tests {
             0,
             "the limit refuses a new circuit"
         );
+    }
+}
+
+#[cfg(test)]
+mod circuit_remove_tests {
+    use super::Document;
+
+    #[test]
+    fn removing_a_circuit_takes_its_content_and_one_undo_brings_it_back() {
+        let mut document = Document::new();
+        let first = document.circuits[0].id;
+        let second = document.add_circuit("Mando");
+        assert_eq!(document.active, second);
+        assert!(
+            document.remove_circuit(second),
+            "a circuit that exists is removed"
+        );
+        assert_eq!(
+            document.active, first,
+            "the right neighbour takes over, or the left"
+        );
+        assert!(document.undo(), "one undo returns it");
+        assert!(
+            document.remove_circuit(second),
+            "it is back, so it can be removed again"
+        );
+    }
+
+    #[test]
+    fn the_last_circuit_is_never_removed() {
+        let mut document = Document::new();
+        let only = document.circuits[0].id;
+        assert!(!document.remove_circuit(only));
+        assert_eq!(document.circuits.len(), 1);
     }
 }
