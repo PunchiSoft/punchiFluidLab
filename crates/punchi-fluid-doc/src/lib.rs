@@ -519,12 +519,7 @@ enum Change {
     Batch(Vec<Change>),
 }
 
-/// The most circuits one project may hold.
-///
-/// A teaching project uses two or three: the power circuit, its control and a variant. The
-/// cap bounds the file, the undo history and the tab strip at once, and a document above it
-/// is refused when it is read rather than silently trimmed.
-pub const MAX_CIRCUITS: usize = 32;
+pub use punchi_fluid_core::MAX_CIRCUITS;
 
 /// The document being edited.
 #[derive(Debug, Clone)]

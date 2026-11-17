@@ -36,8 +36,8 @@ pub const SHEET_VERSION: u32 = 12;
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
 
-/// Most circuits a project may hold.
-pub const MAX_CIRCUITS: usize = 64;
+/// Most circuits a project may hold, from the core's one limit.
+pub use punchi_fluid_core::MAX_CIRCUITS;
 
 /// Longest accepted circuit title, in characters.
 pub const MAX_CIRCUIT_TITLE: usize = 80;
