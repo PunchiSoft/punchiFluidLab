@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Cambiar, añadir y renombrar circuitos en la tira — 2026-11-17
+
+- **Clic** en una pestaña cambia de circuito: vista, sin deshacer ni marca de modificado.
+  **`Ctrl+Tab`** recorre las pestañas.
+- **`+`** añade un circuito y lo muestra.
+- **`F2`** o doble clic renombra **en la propia pestaña**, con `Enter` para guardar y `Esc`
+  para cancelar; es edición de documento y un solo deshacer.
+- **Evidencia**: pasos nuevos del `--selftest` (`circuits: the tab renames the circuit with
+  undo`, `circuits: the plus adds a circuit and shows it`), 0 fallos; `--check-qml` 0;
+  capturas retomadas (51) y `./scripts-dev/check.sh` verde.
+
 ### Los circuitos, al pie de la hoja — 2026-11-17
 
 - Una tira **dentro de la región del dibujo**, encima de la barra de estado, muestra una
