@@ -359,10 +359,10 @@ never blurred per frame, and none of it changes the zoom, the pan, the check or 
 
 **The circuits sit at the foot of the sheet.** A strip inside the drawing region — not a
 fourth region — shows one tab per circuit with its icon and its name, the active one marked by
-a background and an accent rule at the seam, never by colour alone. Today it is **read-only**:
-it says which circuit is being worked on. Switching with `Ctrl+Tab`, adding with `+` and
-renaming in the tab itself (`F2`, `Enter` to save, `Esc` to cancel) come next on the same
-strip, and switching is view state while renaming is a document edit with its undo.
+a background and an accent rule at the seam, never by colour alone. A click switches the
+circuit — view state, no undo entry — and `Ctrl+Tab` walks them; `+` adds one and shows it;
+`F2` or a double click renames **in the tab**, with `Enter` to save and `Esc` to cancel, which
+is a document edit and one undo like any other.
 
 **Two modes, and the click means something different in each.** This is the split a
 schematic simulator lives by, and the one the reference tool uses:
