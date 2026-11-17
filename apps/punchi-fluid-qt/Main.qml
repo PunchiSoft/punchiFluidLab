@@ -462,6 +462,24 @@ Window {
 
     // The hand mode is left with Esc from anywhere, and the canvas also handles it when it
     // holds the focus; the two paths set the same view flag.
+    // Ctrl+Tab walks the circuits; the strip shows the same change on the same click.
+    Shortcut {
+        sequence: "Ctrl+Tab"
+        onActivated: {
+            const list = session.circuits;
+            if (list.length < 2) {
+                return;
+            }
+            let index = 0;
+            for (let i = 0; i < list.length; ++i) {
+                if (list[i].id === session.activeCircuit) {
+                    index = i;
+                }
+            }
+            session.selectCircuit(list[(index + 1) % list.length].id);
+        }
+    }
+
     Shortcut {
         sequence: "Esc"
         enabled: session.handMode

@@ -2639,6 +2639,37 @@ int main(int argc, char *argv[])
             QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
             QCoreApplication::sendEvent(state->window, &escape);
         });
+        // The strip at the foot: renaming in the tab is a document edit with its undo, and
+        // the plus adds a circuit that becomes the one in view.
+        steps->push_back([state, check] {
+            QObject *strip = state->window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            check(strip != nullptr,
+                  QStringLiteral("circuits: the strip is at the foot of the sheet"));
+            if (strip == nullptr) {
+                return;
+            }
+            const int id = state->session->activeCircuit();
+            strip->setProperty("editing", id);
+            strip->setProperty("draft", QStringLiteral("Mando"));
+            QMetaObject::invokeMethod(strip, "commitRename");
+            bool named = false;
+            for (const QVariant &entry : state->session->circuits()) {
+                const QVariantMap map = entry.toMap();
+                if (map.value(QStringLiteral("id")).toInt() == id) {
+                    named = map.value(QStringLiteral("name")).toString()
+                            == QStringLiteral("Mando");
+                }
+            }
+            check(named && state->session->canUndo(),
+                  QStringLiteral("circuits: the tab renames the circuit with undo"));
+            state->session->undo();
+            const int added = state->session->addCircuit();
+            check(added != id && state->session->activeCircuit() == added,
+                  QStringLiteral("circuits: the plus adds a circuit and shows it"));
+            // The gestures that follow work on the circuit the test started with.
+            state->session->undo();
+            state->session->selectCircuit(id);
+        });
         steps->push_back([state, check] {
             check(!state->session->handMode(),
                   QStringLiteral("view: Esc leaves the hand mode"));
