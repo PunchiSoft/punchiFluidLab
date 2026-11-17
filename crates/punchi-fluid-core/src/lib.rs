@@ -18,6 +18,13 @@ pub mod units;
 pub use component::{Component, ComponentKind, Port, PortId, PortKind};
 pub use network::{Circuit, Connection, NodeId};
 pub use paper::{Margins, Orientation, PaperSize, Sheet};
+
+/// The most circuits one project may hold.
+///
+/// A teaching project uses two or three: the power circuit, its control and a variant. The
+/// cap bounds the file, the undo history and the tab strip at once, and it lives here so the
+/// document, the file and the window cannot disagree about it.
+pub const MAX_CIRCUITS: usize = 32;
 pub use title_block::{BlockPosition, ContentModel, FieldSet, TitleBlock, TitleField};
 pub use units::{Pressure, Temperature, Volume};
 
