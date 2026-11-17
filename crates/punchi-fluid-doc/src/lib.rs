@@ -519,6 +519,13 @@ enum Change {
     Batch(Vec<Change>),
 }
 
+/// The most circuits one project may hold.
+///
+/// A teaching project uses two or three: the power circuit, its control and a variant. The
+/// cap bounds the file, the undo history and the tab strip at once, and a document above it
+/// is refused when it is read rather than silently trimmed.
+pub const MAX_CIRCUITS: usize = 32;
+
 /// The document being edited.
 #[derive(Debug, Clone)]
 pub struct Document {
@@ -670,7 +677,13 @@ impl Document {
     }
 
     /// Adds an empty circuit and makes it active, as one undoable change.
+    ///
+    /// Returns `0` when the project already holds [`MAX_CIRCUITS`]: the caller treats `0` as
+    /// "nothing was added", so the window can disable the control and the ABI can refuse.
     pub fn add_circuit(&mut self, title: impl Into<String>) -> u32 {
+        if self.circuits.len() >= MAX_CIRCUITS {
+            return 0;
+        }
         let id = self
             .circuits
             .iter()
@@ -2541,6 +2554,27 @@ mod spacing_tests {
         assert!(
             !tight.space_evenly(&[a, b, c], Axis::Horizontal),
             "overlapping boxes that do not fit are left alone"
+        );
+    }
+}
+
+#[cfg(test)]
+mod circuit_limit_tests {
+    use super::{Document, MAX_CIRCUITS};
+
+    #[test]
+    fn a_project_stops_at_the_circuit_limit() {
+        let mut document = Document::new();
+        let mut added = 0usize;
+        while document.add_circuit("Circuito") != 0 {
+            added += 1;
+            assert!(added <= MAX_CIRCUITS, "the limit never fired");
+        }
+        assert!(added > 0, "the document starts below the limit");
+        assert_eq!(
+            document.add_circuit("Uno más"),
+            0,
+            "the limit refuses a new circuit"
         );
     }
 }
