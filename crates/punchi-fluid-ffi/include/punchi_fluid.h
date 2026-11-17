@@ -17,6 +17,8 @@ extern "C" {
 #define PF_OK 0
 #define PF_ERR_NULL -1
 #define PF_ERR_MODEL -2
+#define PF_ERR_LIMIT -4
+#define PF_MAX_CIRCUITS 32u
 #define PF_ERR_PANIC -3
 
 #define PF_ABI_VERSION 10u
@@ -273,6 +275,8 @@ int32_t pf_session_active_circuit(const PfSession *session);
 int32_t pf_session_select_circuit(PfSession *session, uint32_t id);
 /* Adds an empty circuit and makes it active; returns its identity or a negative error. */
 int32_t pf_session_add_circuit(PfSession *session, const char *title);
+/* Removes the circuit and its contents as one undoable edit; refuses the last circuit. */
+int32_t pf_session_remove_circuit(PfSession *session, uint32_t id);
 int32_t pf_session_rename_circuit(PfSession *session, uint32_t id, const char *title);
 
 /* The control-diagram title block of a circuit. The twelve fields are indexed in the order

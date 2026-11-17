@@ -72,6 +72,10 @@ pub const PF_OK: i32 = 0;
 pub const PF_ERR_NULL: i32 = -1;
 /// The model refused the request; see [`pf_session_last_error`].
 pub const PF_ERR_MODEL: i32 = -2;
+/// Operation refused by a project bound, such as the maximum number of circuits.
+pub const PF_ERR_LIMIT: i32 = -4;
+/// Maximum number of circuits in one project, shared with the core and file format.
+pub const PF_MAX_CIRCUITS: usize = punchi_fluid_core::MAX_CIRCUITS;
 /// A panic was caught at the boundary.
 pub const PF_ERR_PANIC: i32 = -3;
 
@@ -3528,11 +3532,40 @@ pub unsafe extern "C" fn pf_session_add_circuit(
             return session.fail("the circuit title is empty or invalid");
         };
         let id = session.document.add_circuit(title);
+        if id == 0 {
+            session.error = cstring("the project already has the maximum number of circuits");
+            return PF_ERR_LIMIT;
+        }
         session.select_only(None);
         session.clipboard.clear();
         session.rebuild_model();
         session.error = CString::default();
         i32::try_from(id).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// Removes a circuit and its contents as one undoable change.
+///
+/// Refuses to remove the last circuit. Returns [`PF_OK`] on success or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_remove_circuit(session: *mut PfSession, id: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if !session.document.remove_circuit(id) {
+            return session.fail("cannot remove the last circuit or no such circuit exists");
+        }
+        session.select_only(None);
+        session.clipboard.clear();
+        session.rebuild_model();
+        session.error = CString::default();
+        PF_OK
     })
 }
 
