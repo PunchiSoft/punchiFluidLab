@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Ajustar a la hoja, y el + junto a la última pestaña — 2026-11-18
+
+- **Ajustar a la hoja**: el ajuste encuadra el papel entero, márgenes y bordes incluidos, en
+  lugar del marco interior. Como el 100 % ya significaba «la hoja ajustada», la fila del 100 %
+  desaparece del panel de zoom: era el mismo mando dos veces.
+- El **+** de la tira va **pegado a la última pestaña** y se desplaza con ellas, como en un
+  navegador, en vez de quedar en el borde de la ventana.
+- **Evidencia**: el auto-test mide el **papel** contra el lienzo y su centro contra el centro,
+  y comprueba que el ajuste deja el zoom en 1,0; 0 fallos, `--check-qml` 0 y capturas
+  retomadas.
+
 ### Cerrar circuitos desde la pestaña — 2026-11-17
 
 - **× en todas las pestañas menos la última**: cerrar quita el circuito con sus componentes y

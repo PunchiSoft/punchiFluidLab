@@ -336,12 +336,9 @@ readings, and reduced motion in the panel, ribbon and strip folds.
 Three things were reported while using the window and are **not** changed yet: the owner will
 bring notes from the two CAD references before they are settled.
 
-- **The fit must target the sheet, not the frame.** "Ajustar al marco" fits the frame inside
-  the margins, so at any zoom the paper's own edges fall outside; the owner wants the **whole
-  sheet** fitted, margins included, and nothing inside it used as the target. Consequence to
-  decide: the program defines **100 % as the sheet fitted**, so the two commands would do the
-  same thing. Either the 100 % row goes, or it takes a different meaning, or the duplication is
-  accepted.
+- **The fit targets the sheet** — settled and built: the fit frames the **whole sheet**,
+  margins included, and the panel's 100 % row is gone because it meant the same view. See
+  [ui-ux.md](ui-ux.md) §3.1.
 - **Zoom and the middle double click** are a **parallel track**, not a consequence of the work
   area: they need their own review against the references — where the view is anchored when
   magnifying and what the double click does — and the owner will write the notes.

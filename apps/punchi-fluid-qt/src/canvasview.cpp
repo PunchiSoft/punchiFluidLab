@@ -38,35 +38,18 @@ void SchematicItem::rememberView()
     }
 }
 
-void SchematicItem::fitToFrame()
+void SchematicItem::fitToSheet()
 {
     if (!m_session) {
         return;
     }
-    const QSizeF sheet = sheetSizeMm();
-    const qreal left = m_session->sheetMarginLeft();
-    const qreal top = m_session->sheetMarginTop();
-    const qreal right = sheet.width() - m_session->sheetMarginRight();
-    const qreal bottom = sheet.height() - m_session->sheetMarginBottom();
-    const qreal frameWidth = right - left;
-    const qreal frameHeight = bottom - top;
-    if (frameWidth <= 0.0 || frameHeight <= 0.0) {
-        return;
-    }
-    const Fit fitted = fitArea(width(), height(), frameWidth, frameHeight);
-    const qreal base = centredPlacement(1.0).pixelsPerMm;
-    if (base <= 0.0) {
-        return;
-    }
+    // The sheet, not the frame inside its margins: the whole paper is what the reader
+    // asked to see, edges included. 100 % already means "the paper fitted", so the fit
+    // is that view with the pan cleared, and one step back is kept.
     rememberView();
-    m_session->setZoom(fitted.pixelsPerMm / base);
-    // `centredPlacement` centres the paper; the frame sits off its centre by the margins,
-    // so the pan is the distance between the two centres at the fitted scale.
-    const qreal scale = fitted.pixelsPerMm;
-    const QPointF frameCentre((left + right) * 0.5 - sheet.width() * 0.5,
-                              (top + bottom) * 0.5 - sheet.height() * 0.5);
-    m_fitted = true;
-    m_pan = QPointF(-frameCentre.x() * scale, -frameCentre.y() * scale);
+    m_fitted = false;
+    m_pan = QPointF();
+    m_session->setZoom(1.0);
     update();
 }
 
