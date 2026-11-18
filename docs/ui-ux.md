@@ -369,8 +369,9 @@ close control is on **every tab except the last** — a project without circuits
 project — and it sits at the right of the name with its own hit area and an accessible name.
 A circuit with components asks first, naming it, and offers Cancelar; an empty one closes at
 once. The circuit in view hands over to its right neighbour, or to the left one when it was
-the last of the strip. `+` adds a circuit and disables at the project limit of **32**, with
-the limit in its help; the strip scrolls horizontally instead of growing into a second row.
+the last of the strip. `+` sits **right after the last tab**, as a browser does, scrolls with
+them and disables at the project limit of **32**, with the limit in its help; the strip
+scrolls horizontally instead of growing into a second row.
 
 **Two modes, and the click means something different in each.** This is the split a
 schematic simulator lives by, and the one the reference tool uses:
@@ -465,8 +466,8 @@ not fight the right dock, and it leaves with the room it needs.
 | Control | Behaviour |
 |---|---|
 | **Mover** | A visible mode: the pointer becomes a hand, the button stays marked, and `Esc` or the same button ends it. The wheel, the middle button and the arrows keep working in either mode, and entering the simulation leaves the mode, because a click must actuate there. |
-| **Zoom** | One button that opens a short panel: `−`, `100 %`, `+`, **Zoom a una zona** (drag the area; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
-| **Ajustar al marco** | Fits the **frame inside the margins**, not the paper: the drawing space is what the reader came for, and the paper margin is not drawing. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. |
+| **Zoom** | One button that opens a short panel: `−`, `+`, **Zoom a una zona** (drag the area; one use, `Esc` cancels) and **Anterior** (back to the view before the last zoom or fit). |
+| **Ajustar a la hoja** | Fits the **whole sheet**, margins included: the paper is what the reader asked to see, edges and all. It is also the **double click of the middle button**, which is where a schematic reader looks for it; the single press still pans. Because 100 % means the same view, the panel no longer offers both. |
 | **Mostrar cajetín** | One toggle over what is drawn on screen, and nothing else: the block is view state, like the zoom, with no undo entry, no modified mark and no file field. |
 | **Iniciar / Pausa** | One button, the same command as `F9`/`F8`; neutral until the model runs, and the rest of the transport stays in **Simular**. |
 
@@ -486,11 +487,11 @@ not fight the right dock, and it leaves with the room it needs.
   and below the compact breakpoint it folds on its own. Reduced motion makes the fold
   instant.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
-  budget to say what the zoom readout and **Ajustar al marco** already say.
-- **Today** the strip exists: it floats over the right edge of the drawing with **Ajustar
-  al marco**, a **zoom panel** (−, 100 %, +, vista anterior), **Mostrar cajetín** and the
-  single **Iniciar/Pausa**, **Mover** (a visible hand mode) and the fold control, and it is
-  remembered as view state. The middle button pans and its **double click fits the frame**,
+  budget to say what the zoom readout and **Ajustar a la hoja** already say.
+- **Today** the strip exists: it floats over the right edge of the drawing with **Ajustar a
+  la hoja**, a **zoom panel** (−, +, vista anterior), **Mostrar cajetín**, the single
+  **Iniciar/Pausa**, **Mover** (a visible hand mode) and the fold control, and it is
+  remembered as view state. The middle button pans and its **double click fits the sheet**,
   one step of view history is kept, the **zoom window** is one drag from the panel, and
   `Ctrl+0` returns to 1:1. All of stage 6c is built.
 
