@@ -82,7 +82,7 @@ Card {
             return;
         }
         if (id === "fit") {
-            canvas.fitToFrame();
+            canvas.fitToSheet();
         } else if (id === "zoom-in") {
             session.zoomIn();
         } else if (id === "zoom-out") {
@@ -221,11 +221,6 @@ Card {
                 icon: "zoom-out"
                 label: qsTr("Disminuir")
                 onTriggered: strip.invoke("zoom-out")
-            }
-            PanelRow {
-                icon: "zoom-original"
-                label: qsTr("100 % · el papel a 1:1")
-                onTriggered: strip.invoke("reset")
             }
             PanelRow {
                 icon: "zoom-in"

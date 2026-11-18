@@ -2514,10 +2514,11 @@ int main(int argc, char *argv[])
                   QStringLiteral("view: Ctrl+0 returns to 1:1 and drops the pan"));
         });
 
-        // The middle double click fits the frame inside the margins, not the paper, and one
-        // step back returns to the view before it.
+        // The middle double click fits the whole sheet, margins included, and one step back
+        // returns to the view before it.
         steps->push_back([state, send, toScene] {
             state->session->zoomReset();
+            state->session->zoomIn();
             state->viewZoom = state->session->zoom();
             state->viewScene = toScene(QPointF(148.0, 105.0));
             // Two clicks in place, the way a hand produces them: the item counts the
@@ -2529,25 +2530,20 @@ int main(int argc, char *argv[])
         });
         steps->push_back([state, check] {
             const Fit fit = state->sheet->viewPlacement();
-            const double left = state->session->sheetMarginLeft();
-            const double top = state->session->sheetMarginTop();
-            const double right =
-                state->session->sheetWidthMm() - state->session->sheetMarginRight();
-            const double bottom =
-                state->session->sheetHeightMm() - state->session->sheetMarginBottom();
-            const QPointF centre(fit.originX + (left + right) * 0.5 * fit.pixelsPerMm,
-                                 fit.originY + (top + bottom) * 0.5 * fit.pixelsPerMm);
-            const double frameWidth = (right - left) * fit.pixelsPerMm;
-            const double frameHeight = (bottom - top) * fit.pixelsPerMm;
-            std::fprintf(stderr, "selftest: fit zoom %.2f, frame %.0fx%.0f in %.0fx%.0f\n",
-                         state->session->zoom(), frameWidth, frameHeight, state->sheet->width(),
+            const double paperWidth = state->session->sheetWidthMm() * fit.pixelsPerMm;
+            const double paperHeight = state->session->sheetHeightMm() * fit.pixelsPerMm;
+            const QPointF centre(fit.originX + paperWidth * 0.5,
+                                 fit.originY + paperHeight * 0.5);
+            std::fprintf(stderr, "selftest: fit zoom %.2f, paper %.0fx%.0f in %.0fx%.0f\n",
+                         state->session->zoom(), paperWidth, paperHeight, state->sheet->width(),
                          state->sheet->height());
-            check(!qFuzzyCompare(state->session->zoom(), state->viewZoom)
-                      && frameWidth <= state->sheet->width() + 1.0
-                      && frameHeight <= state->sheet->height() + 1.0
+            check(qFuzzyCompare(state->session->zoom(), 1.0)
+                      && !qFuzzyCompare(state->session->zoom(), state->viewZoom)
+                      && paperWidth <= state->sheet->width() + 1.0
+                      && paperHeight <= state->sheet->height() + 1.0
                       && std::abs(centre.x() - state->sheet->width() * 0.5) <= 1.0
                       && std::abs(centre.y() - state->sheet->height() * 0.5) <= 1.0,
-                  QStringLiteral("view: the middle double click fits the frame"));
+                  QStringLiteral("view: the middle double click fits the sheet, edges included"));
         });
         steps->push_back([state, check] {
             state->sheet->previousView();
@@ -2565,24 +2561,27 @@ int main(int argc, char *argv[])
                 return;
             }
             state->session->zoomReset();
+            state->session->zoomIn();
+            state->session->zoomIn();
             state->viewComponents = pf_session_component_count(state->session->handle());
             state->viewCanUndo = state->session->canUndo();
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("fit")));
         });
         steps->push_back([state, check] {
             QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
-            check(state->session->zoom() > 1.0
+            check(qFuzzyCompare(state->session->zoom(), 1.0)
                       && pf_session_component_count(state->session->handle())
                              == state->viewComponents
                       && state->session->canUndo() == state->viewCanUndo,
-                  QStringLiteral("view: the strip fits the frame without editing"));
+                  QStringLiteral("view: the strip fits the sheet without editing"));
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("zoom-in")));
         });
         steps->push_back([state, check] {
             QObject *strip = state->window->findChild<QObject *>(QStringLiteral("viewStrip"));
             const double magnified = state->session->zoom();
             QMetaObject::invokeMethod(strip, "invoke", Q_ARG(QVariant, QStringLiteral("back")));
-            check(state->session->zoom() < magnified,
+            check(!qFuzzyCompare(state->session->zoom(), magnified)
+                      && !state->sheet->canGoBack(),
                   QStringLiteral("view: the strip steps back to the previous view"));
             state->stripHeight = strip->property("height").toReal();
             state->window->setProperty("viewStripFolded", true);

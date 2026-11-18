@@ -67,7 +67,7 @@ void SchematicItem::setSession(FluidSession *session)
         });
         setCursor(QCursor(m_session->handMode() ? Qt::OpenHandCursor : Qt::ArrowCursor));
         connect(m_session, &FluidSession::viewChanged, this, [this] {
-            // Any zoom change other than a fit abandons the fitted view. `fitToFrame`
+            // Any zoom change other than a fit abandons the fitted view. `fitToSheet`
             // sets the flag again after its own `setZoom` returns.
             m_fitted = false;
             if (qFuzzyCompare(m_session->zoom(), 1.0)) {
@@ -284,7 +284,7 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
             m_panning = false;
             m_lastMiddleMs = 0;
             setCursor(QCursor(Qt::ArrowCursor));
-            fitToFrame();
+            fitToSheet();
             event->accept();
             return;
         }

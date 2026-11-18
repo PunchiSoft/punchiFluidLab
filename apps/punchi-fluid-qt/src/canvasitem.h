@@ -40,10 +40,10 @@ public:
     /// Frames replayed since start. Exposed so a test can prove an idle window stops.
     int paintCount() const { return m_paintCount; }
 
-    /// Fits the frame inside the margins, not the paper: the drawing space is what the
-    /// reader came for, and the margin is paper. It is also the middle button's double
-    /// click. View state only, and one step for `previousView`.
-    Q_INVOKABLE void fitToFrame();
+    /// Fits the whole sheet, margins included: the paper is what the reader asked to see,
+    /// edges and all. It is also the middle button's double click. View state only, and one
+    /// step for `previousView`.
+    Q_INVOKABLE void fitToSheet();
     /// Returns to the view before the last fit or zoom at the pointer. One step, so a
     /// second call does nothing instead of walking a history nobody asked for.
     Q_INVOKABLE void previousView();
