@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La selección marca el símbolo, no una caja — 2026-11-18
+
+- Al seleccionar un componente, **sus propias líneas toman el acento** en vez de dibujarse un
+  rectángulo alrededor. Se parece a la referencia y no añade una segunda geometría que no dice
+  nada del símbolo.
+- El estado no queda solo en color: el inspector nombra lo seleccionado.
+- **Evidencia**: prueba nueva del dibujo (`a_selected_component_is_drawn_in_accent_and_not_boxed`)
+  que comprueba que no se añade ninguna llamada y que hay trazo de acento; `--selftest` 0
+  fallos y `./scripts-dev/check.sh` verde.
+
 ### Ajustar a la hoja, y el + junto a la última pestaña — 2026-11-18
 
 - **Ajustar a la hoja**: el ajuste encuadra el papel entero, márgenes y bordes incluidos, en

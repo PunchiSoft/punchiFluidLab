@@ -441,9 +441,11 @@ schematic simulator lives by, and the one the reference tool uses:
   - **Simulación**: the model runs; clicking a valve actuates it, dragging a
     throttle changes it. Components cannot be moved or deleted, so a stray click
     during a demonstration never destroys work. `Esc` returns to edit mode.
-- Selection is drawn with the accent colour plus a 2 px outline; hover only changes
-  the cursor and shows a tooltip (never moves anything: a hover that changes the
-  document is a known UX trap).
+- **Selection is the symbol's own lines in the accent colour, not a box around it**: the
+  reference marks the component, and an extra rectangle is a second drawing that says
+  nothing the symbol does not. The inspector names what is selected, so the state is never
+  colour alone. Hover only changes the cursor and shows a tooltip (never moves anything: a
+  hover that changes the document is a known UX trap).
 - Pipes are orthogonal; the route is stored as a list of waypoints so it survives a
   move. Ports snap with a magnet radius derived from the grid step.
 - **A hose straightens when its component is dragged near the other end.** Two ports on the
