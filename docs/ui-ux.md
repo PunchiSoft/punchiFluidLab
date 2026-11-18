@@ -91,6 +91,16 @@ Depth comes from the palette, never from a new hue.
   stop, reset, the speed and the mode; no other tab repeats them. There is no separate
   "animate" action: being in simulation mode *is* the animation, and its commands are the
   transport's.
+- **A list of circuits is not a ribbon command.** The strip at the foot of the sheet owns the
+  list — its order, switching, closing and renaming — and the ribbon offers only the commands
+  that act on the circuit in view. One button per circuit says the same thing twice, makes
+  the group's width grow with the project (the adaptive breakpoints cannot measure it) and
+  leaves the closing and the renaming in one place and the switching in two.
+- **One file is a project; one sheet in it is a circuit.** A command, a dialog or a hint that
+  acts on the file says *proyecto* — Nuevo proyecto, Abrir proyecto, Guardar proyecto,
+  Recientes — and one that acts on a sheet says *circuito* — Nuevo circuito, Renombrar,
+  Cerrar circuito. A dialog that says "abrir circuito" while the file holds several promises
+  a file per circuit, which is not what the format does.
 - A command that does not exist yet is **not on screen**. A tab whose work has not landed
   says so in one line. A grey button that teaches nothing is worse than a missing one.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
@@ -113,7 +123,7 @@ a second, short table beside it, because they are not commands of a tab.
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with the circuit selector, Nuevo circuito and Renombrar; one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
+| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
@@ -565,10 +575,15 @@ disappears on its own window colour.
   `accessibleName` set explicitly.
 - Contrast: text ≥ 4.5:1, lines and icons ≥ 3:1 against their surface, measured in a
   test, not by eye.
-- Keyboard: every action reachable without a pointer; `Tab` cycles regions, arrows
-  pan a magnified sheet while the sheet holds the focus, `Del` deletes,
-  `Ctrl+Z`/`Ctrl+Y` undo and redo, `Space` starts and stops the simulation, `F1` opens
-  shortcuts.
+- Keyboard: every action reachable without a pointer. `Tab` cycles regions, arrows pan a
+  magnified sheet while it holds the focus, `Del` deletes, `Ctrl+Z`/`Ctrl+Shift+Z` undo and
+  redo, `F9`/`F8`/`F5` start, pause and stop, and `Space` holds the valve while it is down.
+  The document keys follow the desktop's tabs: **`Ctrl+N` a new project, `Ctrl+T` a new
+  circuit, `Ctrl+W` closes the circuit in view, `Ctrl+Q` quits, `Ctrl+Tab` and
+  `Ctrl+Shift+Tab` walk the circuits, `F2` renames the one in view.** `Ctrl+W` closes a
+  sheet, never the window: a pointer cannot lose a project by closing what it is looking at.
+  The four keys still missing (`Ctrl+T`, `Ctrl+W`, `Ctrl+Q` and the reverse walk) land with
+  stage 8 of [interface-plan.md](interface-plan.md).
 - State never communicated by colour alone.
 - **Panels**: the hide control and the edge rail are reachable with `Tab`, expose their
   name and their state, and hiding a panel never leaves the focus inside it. Auto-hide is
