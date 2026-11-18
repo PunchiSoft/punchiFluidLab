@@ -198,6 +198,15 @@ pub fn draw_placed(
     // extension the network reports for it, a valve with its own position. There is no
     // list of the three components the model knows, because the model follows the sheet.
     for placed in placements {
+        // A selected component is marked by its own lines taking the accent, not by a box
+        // drawn around it: the reference marks the symbol, and an extra rectangle is a
+        // second drawing that says nothing the symbol does not.
+        let mut selected_ink = *ink;
+        if selected.contains(&placed.index) {
+            selected_ink.line = ink.accent;
+            selected_ink.text = ink.accent;
+        }
+        let ink = &selected_ink;
         let Some(definition) = catalog.get(placed.catalog_id) else {
             // A document may name a component this machine does not have: the box says so
             // instead of the component vanishing.
@@ -272,15 +281,6 @@ pub fn draw_placed(
                 indicator_rays(surface, placed, definition, ink);
             }
         }
-    }
-
-    // The ring marks the selection, not the last component touched: a drag of six
-    // components shows six rings until it is done.
-    for placed in placements
-        .iter()
-        .filter(|placed| selected.contains(&placed.index))
-    {
-        selection_ring(surface, placed.box_rect(), ink.accent);
     }
 }
 
@@ -671,3 +671,56 @@ mod routing_tests;
 #[cfg(test)]
 #[path = "placed_electrical_tests.rs"]
 mod electrical_tests;
+
+#[cfg(test)]
+mod selection_tests {
+    use crate::orient::Orientation;
+    use crate::placed::{Placed, draw_placed};
+    use crate::surface::{Call, Pt, Recording, Rect};
+    use crate::symbol::Ink;
+    use punchi_fluid_catalog::Catalog;
+
+    fn one() -> Placed<'static> {
+        Placed {
+            index: 0,
+            catalog_id: "supply.compressor",
+            rect: Rect::from_min_size(Pt::new(10.0, 10.0), 22.0, 22.0),
+            extension: 0.0,
+            valve_position: 0,
+            reading: None,
+            series: None,
+            contact_closed: None,
+            orientation: Orientation::NONE,
+            designation: None,
+        }
+    }
+
+    #[test]
+    fn a_selected_component_is_drawn_in_accent_and_not_boxed() {
+        let catalog = Catalog::builtin();
+        let ink = Ink::print();
+        let plain = {
+            let mut recording = Recording::default();
+            draw_placed(&mut recording, &[one()], &[], &catalog, &ink, &[]);
+            recording
+        };
+        let picked = {
+            let mut recording = Recording::default();
+            draw_placed(&mut recording, &[one()], &[], &catalog, &ink, &[0]);
+            recording
+        };
+
+        // No extra stroke: the selection is the symbol's own lines, not a ring around it.
+        assert_eq!(picked.calls().len(), plain.calls().len());
+        let accent = picked.calls().iter().any(|call| match call {
+            Call::Line { stroke, .. } | Call::Arc { stroke, .. } => stroke.colour == ink.accent,
+            Call::Rect { stroke, .. }
+            | Call::Circle { stroke, .. }
+            | Call::Polygon { stroke, .. } => {
+                matches!(stroke, Some(stroke) if stroke.colour == ink.accent)
+            }
+            Call::Text { colour, .. } => *colour == ink.accent,
+        });
+        assert!(accent, "the selected symbol carries the accent");
+    }
+}
