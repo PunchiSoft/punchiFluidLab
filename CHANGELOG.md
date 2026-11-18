@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La interfaz pendiente, escrita — 2026-11-18
+
+- El plan de interfaz gana la lista de lo que queda tras la etapa 7, con cifras que se pueden
+  comprobar: 84 espaciados y 23 márgenes literales, 137 tamaños de texto, 53 áreas de ratón
+  frente a 4 consejos, la tira de circuitos sin foco ni teclado en la **×** y el **+**, y la
+  barra de estado sin agrupar.
+- La cinta deja de repetir la tira: el contrato dice que la lista de circuitos vive **solo en
+  la tira**, y que Archivo conserva los comandos **Nuevo**, **Renombrar** y **Cerrar** para el
+  circuito en pantalla.
+- Se anota que hoy **`Ctrl+N` reinicia el documento** y su consejo dice «empieza otro
+  circuito», y queda decidido el vocabulario: **un archivo es un proyecto y una hoja es un
+  circuito**; el renombrado alcanza el grupo, los diálogos, sus filtros y los consejos.
+- Las teclas quedan decididas, siguiendo a los editores con pestañas: **`Ctrl+N`** proyecto
+  nuevo, **`Ctrl+T`** circuito nuevo, **`Ctrl+W`** cierra el circuito en vista, **`Ctrl+Q`**
+  sale, **`Ctrl+Shift+Tab`** recorre hacia atrás; `Ctrl+Shift+W` se retira.
+
 ### El cierre de la pestaña dice lo que cuesta — 2026-11-18
 
 - Pasar el puntero por la **×** de una pestaña muestra «Cerrar circuito»; si el circuito
