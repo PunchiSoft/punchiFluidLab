@@ -17,17 +17,17 @@ use std::ffi::{CStr, CString, c_char};
 use std::ptr;
 
 use punchi_fluid::{
-    PF_ABI_VERSION, PF_BLOCK_APPROVED, PF_BLOCK_BOTTOM_RIGHT, PF_BLOCK_CHECKED, PF_BLOCK_DATE,
-    PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET, PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL,
-    PF_BLOCK_NONE, PF_BLOCK_NORMS, PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED,
-    PF_BLOCK_PROJECT, PF_BLOCK_REVISION, PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT,
-    PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER,
-    PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK,
-    PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi,
-    PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk,
-    PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds,
-    pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
-    pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
+    PF_ABI_VERSION, PF_BLOCK_APPROVED, PF_BLOCK_BOTTOM_FULL, PF_BLOCK_BOTTOM_RIGHT,
+    PF_BLOCK_CHECKED, PF_BLOCK_DATE, PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET,
+    PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL, PF_BLOCK_NONE, PF_BLOCK_NORMS,
+    PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED, PF_BLOCK_PROJECT, PF_BLOCK_REVISION,
+    PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE,
+    PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG,
+    PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION,
+    PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi, PfBlockLayout, PfCall, PfCatalog,
+    PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint, PfSession, PfSheet,
+    PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count, pf_export_paper_name,
+    pf_export_paper_size_mm, pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
     pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
     pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
     pf_session_block_remark, pf_session_block_visible, pf_session_build_frame,
@@ -472,6 +472,235 @@ fn the_seeded_example_stays_clear_of_the_title_block_on_a4() {
             "component {index} enters the block: {rect:?} against {block:?}"
         );
     }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+/// The block's own rectangle on the session's sheet, as the ABI protects it.
+fn block_box(session: *mut PfSession) -> [f32; 4] {
+    let mut sheet = PfSheet::default();
+    // SAFETY: live session and a writable record.
+    assert_eq!(unsafe { pf_session_sheet(session, &raw mut sheet) }, PF_OK);
+    let mut layout = PfBlockLayout::default();
+    // SAFETY: live session and a writable layout.
+    assert_eq!(
+        unsafe { pf_session_block_layout(session, &raw mut layout) },
+        PF_OK
+    );
+    let preset =
+        u32::try_from(unsafe { pf_session_block_preset(session) }).unwrap_or(PF_BLOCK_NONE);
+    if preset == PF_BLOCK_NONE {
+        return [0.0; 4];
+    }
+    // The ABI reports the paper's own sides and the orientation flag; the sheet the canvas
+    // sees is the turned one.
+    let (width, height) = if sheet.landscape == 1 {
+        (sheet.height_mm, sheet.width_mm)
+    } else {
+        (sheet.width_mm, sheet.height_mm)
+    };
+    let left = sheet.margin_left;
+    let right = width - sheet.margin_right;
+    let top = sheet.margin_top;
+    let bottom = height - sheet.margin_bottom;
+    let frame_width = right - left;
+    let frame_height = bottom - top;
+    let width = if preset == PF_BLOCK_BOTTOM_FULL {
+        frame_width
+    } else {
+        frame_width.min(layout.width_mm)
+    };
+    let height = frame_height.min(layout.height_mm);
+    let x = if preset == PF_BLOCK_BOTTOM_FULL {
+        left
+    } else {
+        right - width
+    };
+    let y = if preset == PF_BLOCK_TOP_RIGHT {
+        top
+    } else {
+        bottom - height
+    };
+    [x, y, x + width, y + height]
+}
+
+/// The centre of a placement, in millimetres.
+fn centre_of(boxed: [f32; 4]) -> (f32, f32) {
+    (
+        f32::midpoint(boxed[0], boxed[2]),
+        f32::midpoint(boxed[1], boxed[3]),
+    )
+}
+
+#[test]
+fn the_block_protects_its_own_box_and_the_strip_beside_it_is_drawing_space() {
+    let session = session();
+    let compressor = catalog_index(session, "supply.compressor");
+    let block = block_box(session);
+    assert!(block[0] > 0.0, "A4 landscape carries a block");
+
+    // A point below the band the old rule reserved, but to the left of the block, stands
+    // where the user asked: no printed thing covers that column.
+    // SAFETY: live session.
+    let left = unsafe { pf_session_place_component(session, compressor, 60.0, 175.0) };
+    assert!(left >= 0, "the drop is accepted");
+    let boxed = component_box(session, u32::try_from(left).unwrap_or(0));
+    assert!(
+        boxed[3] > block[1],
+        "the box is below the block's top: {boxed:?}"
+    );
+    assert!(
+        boxed[2] < block[0],
+        "and beside it, not under it: {boxed:?}"
+    );
+    let (_, centre_y) = centre_of(boxed);
+    assert!(
+        (centre_y - 175.0).abs() < 0.02,
+        "the vertical choice is the user's: {centre_y}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_drop_inside_the_block_moves_to_its_edge() {
+    let session = session();
+    let compressor = catalog_index(session, "supply.compressor");
+    let block = block_box(session);
+    // SAFETY: live session.
+    let inside = unsafe { pf_session_place_component(session, compressor, 200.0, 175.0) };
+    assert!(inside >= 0);
+    let boxed = component_box(session, u32::try_from(inside).unwrap_or(0));
+    assert!(
+        (boxed[3] - block[1]).abs() < 0.02,
+        "the box sits on the block's edge: {boxed:?} against {block:?}"
+    );
+    let (centre_x, _) = centre_of(boxed);
+    assert!(
+        (centre_x - 200.0).abs() < 0.02,
+        "the horizontal choice is untouched: {centre_x}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_shorter_block_reserves_less() {
+    let session = session();
+    let compressor = catalog_index(session, "supply.compressor");
+    let industrial = block_box(session);
+    // SAFETY: live session and a known model.
+    assert_eq!(
+        unsafe { pf_session_set_block_model(session, PF_BLOCK_MODEL_SCHOOL) },
+        PF_OK
+    );
+    let school = block_box(session);
+    assert!(
+        school[1] > industrial[1],
+        "the school block is shorter: {school:?} against {industrial:?}"
+    );
+
+    // Inside the industrial block, above the school one: the same drop is pushed by the
+    // first and accepted by the second. The probe gives the height the drop will take.
+    // SAFETY: live session.
+    let probe = unsafe { pf_session_place_component(session, compressor, 100.0, 100.0) };
+    let probe_box = component_box(session, u32::try_from(probe).unwrap_or(0));
+    let half = (probe_box[3] - probe_box[1]) * 0.5;
+    let y = school[1] - half - 4.0;
+    assert!(y + half < school[1], "the point clears the school block");
+    assert!(
+        y + half > industrial[1],
+        "and reaches the industrial one: {y} against {industrial:?}"
+    );
+    // SAFETY: live session.
+    let schooled = unsafe { pf_session_place_component(session, compressor, 200.0, y) };
+    let (_, school_y) = centre_of(component_box(session, u32::try_from(schooled).unwrap_or(0)));
+    assert!(
+        (school_y - y).abs() <= 2.5,
+        "the shorter block only snaps the point: {school_y} against {y}"
+    );
+
+    // SAFETY: live session and a known model.
+    assert_eq!(
+        unsafe { pf_session_set_block_model(session, PF_BLOCK_MODEL_INDUSTRIAL) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    let industrialised = unsafe { pf_session_place_component(session, compressor, 200.0, y) };
+    let (_, pushed) = centre_of(component_box(
+        session,
+        u32::try_from(industrialised).unwrap_or(0),
+    ));
+    assert!(
+        pushed < y - 0.5,
+        "the industrial block pushes the same drop up: {pushed} against {y}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_full_bottom_position_still_reserves_the_whole_strip() {
+    let session = session();
+    let compressor = catalog_index(session, "supply.compressor");
+    // SAFETY: live session and a known preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(session, PF_BLOCK_BOTTOM_FULL) },
+        PF_OK
+    );
+    let block = block_box(session);
+    // SAFETY: live session.
+    let placed = unsafe { pf_session_place_component(session, compressor, 60.0, 175.0) };
+    let boxed = component_box(session, u32::try_from(placed).unwrap_or(0));
+    assert!(
+        (boxed[3] - block[1]).abs() < 0.02,
+        "edge to edge covers the whole strip: {boxed:?} against {block:?}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn without_a_block_the_frame_is_free_and_enabling_one_reports_the_collision() {
+    let session = session();
+    let compressor = catalog_index(session, "supply.compressor");
+    // SAFETY: live session and the "no block" preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(session, PF_BLOCK_NONE) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    let placed = unsafe { pf_session_place_component(session, compressor, 200.0, 175.0) };
+    let boxed = component_box(session, u32::try_from(placed).unwrap_or(0));
+    let (_, free_y) = centre_of(boxed);
+    assert!(
+        (free_y - 175.0).abs() < 0.02,
+        "nothing is printed there, so nothing is reserved: {free_y}"
+    );
+
+    // SAFETY: live session and the standard preset.
+    assert_eq!(
+        unsafe { pf_session_set_block_preset(session, PF_BLOCK_BOTTOM_RIGHT) },
+        PF_OK
+    );
+    let mut text = [0 as c_char; 8192];
+    // SAFETY: live session and a writable buffer.
+    let code = unsafe {
+        pf_session_check(
+            session,
+            text.as_mut_ptr(),
+            u32::try_from(text.len()).unwrap_or(u32::MAX),
+        )
+    };
+    assert!(code > 0, "the check reports the collision");
+    // SAFETY: the call above wrote a NUL-terminated report.
+    let report = unsafe { CStr::from_ptr(text.as_ptr()) }
+        .to_string_lossy()
+        .into_owned();
+    assert!(
+        report.contains("bajo el cajetín"),
+        "the component is under the block: {report}"
+    );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

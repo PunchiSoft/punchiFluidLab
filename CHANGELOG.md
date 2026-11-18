@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El cajetín ya no reserva una banda — 2026-11-18
+
+- El área de dibujo es **el marco entero**: el cajetín protege solo **su propio rectángulo**
+  (ancho, alto y posición del layout resuelto). En A4 industrial se recuperan los 4.365 mm² de
+  la franja a su izquierda, que antes no admitían nada.
+- Un símbolo soltado o movido **solo se empuja si entra en la franja horizontal del cajetín**;
+  a su izquierda se baja hasta el marco. La elección horizontal del usuario no se toca.
+- **`Sin cajetín` libera el marco**. Si se activa un cajetín encima de un dibujo, la
+  comprobación reporta la falta `under_title_block` con el componente señalado.
+- El ejemplo inicial se compone en el mayor rectángulo que el cajetín deja libre, así que
+  mantiene su forma, y el pegado mueve el grupo solo si alguna caja entra en el cajetín.
+- **Evidencia**: seis pruebas nuevas del ABI y de la comprobación, los pasos del `--selftest`
+  «el ejemplo queda fuera del cajetín» y «la franja de al lado admite un soltado», y las
+  capturas clara y oscura.
+- La ADR 0030 queda **`accepted`**; queda anotado que la lista de piezas es solo de la página
+  impresa, por lo que el lienzo no la reserva.
+
 ### El cajetín protege su caja, no una banda — 2026-11-18
 
 - **ADR 0030**: la reserva del cajetín pasa a ser **su propio rectángulo** —ancho, alto y

@@ -41,7 +41,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0027](0027-translation-catalogs-are-qts.md) | The translation catalogs are Qt's, and the core speaks keys | accepted | 2026-11-14 |
 | [0028](0028-the-ribbon-draws-its-own-icons.md) | The ribbon draws its own action icons | accepted; amends the icon rule of [0005](0005-qt-quick-over-a-c-abi.md) | 2026-11-14 |
 | [0029](0029-a-two-pressure-valve-decides-by-pressure.md) | A two-pressure valve decides by pressure, not by position | accepted | 2026-11-18 |
-| [0030](0030-the-block-protects-its-own-box.md) | The title block protects its own box, not a band | proposed | 2026-11-18 |
+| [0030](0030-the-block-protects-its-own-box.md) | The title block protects its own box, not a band | accepted | 2026-11-18 |
 
 ## When a decision needs an ADR
 

@@ -101,6 +101,45 @@ fn a_component_outside_the_sheet_is_reported() {
 }
 
 #[test]
+fn a_component_under_the_title_block_is_reported_and_one_beside_it_is_not() {
+    let mut document = Document::new();
+    // The frame is the sheet; the block is one rectangle of it, not a band.
+    let beside = place(&mut document, "supply.compressor", 40.0, 110.0);
+    let under = place(&mut document, "supply.compressor", 170.0, 115.0);
+    let block = Rect::from_corners(Pt::new(150.0, 100.0), Pt::new(200.0, 130.0));
+    let findings = check_with_reserved(&document, &catalog(), sheet(), 0, &[block]);
+
+    let index_of = |id: u64| {
+        document
+            .placements()
+            .iter()
+            .position(|placement| placement.id() == id)
+            .unwrap_or_default()
+    };
+    let reported: Vec<usize> = findings
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::UnderTitleBlock)
+        .filter_map(|finding| finding.component)
+        .collect();
+    assert_eq!(
+        reported,
+        vec![index_of(under)],
+        "only the box that enters the block: {findings:?}"
+    );
+    assert!(
+        !reported.contains(&index_of(beside)),
+        "the strip beside the block is drawing space"
+    );
+
+    // The plain check knows no block and reports only the geometric faults.
+    assert!(
+        !check(&document, &catalog(), sheet(), 0)
+            .iter()
+            .any(|finding| finding.kind == FindingKind::UnderTitleBlock)
+    );
+}
+
+#[test]
 fn a_port_with_no_pipe_is_reported_but_an_exhaust_is_not() {
     let mut document = Document::new();
     let supply = place(&mut document, "supply.compressor", 40.0, 40.0);

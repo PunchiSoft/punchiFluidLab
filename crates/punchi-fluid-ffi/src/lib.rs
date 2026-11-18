@@ -38,7 +38,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
 use punchi_fluid_catalog::{Behaviour, Catalog};
-use punchi_fluid_check::check;
+use punchi_fluid_check::check_with_reserved;
 use punchi_fluid_core::paper::{
     Margins as PaperMargins, Orientation as PaperOrientation, PaperSize, Sheet as PaperSheet,
 };
@@ -750,46 +750,84 @@ impl PfSession {
         }
         self.seeded = true;
         // The layout goes inside the frame the sheet leaves free, not on the raw paper: a
-        // component in the margin is outside the drawing space from the first frame.
-        let area = self.content_rect();
+        // component in the margin is outside the drawing space from the first frame. It
+        // also stays above the block, which is how the example has always been composed.
+        let area = self.layout_rect();
         self.seed_document(area);
         // The document is now the circuit: the model is built from it, never from a
         // hardcoded three-component list.
         self.rebuild_model();
     }
 
-    /// The drawing space the ISO 5457 frame leaves free, minus the title-block band.
+    /// The drawing space the ISO 5457 frame leaves free: the content area, margins excluded.
     ///
-    /// The export reserves the same band through [`punchi_fluid_export::Page`], and the
-    /// canvas must not lay the circuit under a block that will hide it. The resolved block
-    /// height (45 mm of industrial A4, 65 mm of A3, less for a school model or a collapsed
-    /// row) is subtracted from the bottom; the width is left as the sheet gives it, because
-    /// the block may sit on the right, on the left or across the full lower band. With no
-    /// block the whole frame is drawing space.
+    /// The title block is not subtracted here. It protects **its own rectangle** (see
+    /// [`Self::block_rect`]), so the strip of sheet beside it stays drawing space instead of
+    /// being lost to a band across the paper ([ADR 0030]).
     fn content_rect(&self) -> Rect {
         let sheet = self.document.sheet();
         let (width, height) = sheet.size_mm();
         let margins = sheet.margins;
-        let inner_width = (width - margins.left - margins.right).max(1.0);
-        let mut top = margins.top;
-        let mut inner_height = (height - margins.top - margins.bottom).max(1.0);
+        Rect::from_min_size(
+            Pt::new(margins.left, margins.top),
+            (width - margins.left - margins.right).max(1.0),
+            (height - margins.top - margins.bottom).max(1.0),
+        )
+    }
+
+    /// The rectangle the title block prints on, in millimetres of the sheet.
+    ///
+    /// Width and height come from the resolved layout — a shorter model or a collapsed row
+    /// reserves less — and the position decides the corner. `None` when the sheet carries no
+    /// block, which leaves the whole frame free.
+    fn block_rect(&self) -> Option<Rect> {
+        let position = self.block_position()?;
         let id = self.document.active_circuit();
-        let position = self
-            .document
-            .block(id)
-            .map_or(punchi_fluid_core::BlockPosition::BottomRight, |block| {
-                block.position
-            });
-        if position != punchi_fluid_core::BlockPosition::None
-            && let Some(block) = self.document.block(id)
-        {
-            let layout = punchi_fluid_export::block_layout::layout(block, sheet.paper);
-            inner_height = (inner_height - layout.height).max(1.0);
-            if position == punchi_fluid_core::BlockPosition::TopRight {
-                top += layout.height;
-            }
+        let block = self.document.block(id)?;
+        let area = self.content_rect();
+        let layout = punchi_fluid_export::block_layout::layout(block, self.document.sheet().paper);
+        let width = if position == punchi_fluid_core::BlockPosition::BottomFull {
+            area.width()
+        } else {
+            area.width().min(layout.width)
+        };
+        let height = area.height().min(layout.height);
+        let left = if position == punchi_fluid_core::BlockPosition::BottomFull {
+            area.min.x
+        } else {
+            area.max.x - width
+        };
+        let top = if position == punchi_fluid_core::BlockPosition::TopRight {
+            area.min.y
+        } else {
+            area.max.y - height
+        };
+        Some(Rect::from_corners(
+            Pt::new(left, top),
+            Pt::new(left + width, top + height),
+        ))
+    }
+
+    /// What the sheet already fills: the rectangles a component may not enter.
+    fn reserved_rects(&self) -> Vec<Rect> {
+        self.block_rect().into_iter().collect()
+    }
+
+    /// The largest rectangle of the frame the block leaves free.
+    ///
+    /// The starting circuit is composed in this one, so the worked example keeps the shape
+    /// it was drawn with and never overlaps the block. The strip beside the block is still
+    /// drawing space for the user: a drop there is clamped only if it enters the block.
+    fn layout_rect(&self) -> Rect {
+        let area = self.content_rect();
+        let Some(block) = self.block_rect() else {
+            return area;
+        };
+        if self.block_position() == Some(punchi_fluid_core::BlockPosition::TopRight) {
+            Rect::from_corners(Pt::new(area.min.x, block.max.y), area.max)
+        } else {
+            Rect::from_corners(area.min, Pt::new(area.max.x, block.min.y))
         }
-        Rect::from_min_size(Pt::new(margins.left, top), inner_width, inner_height)
     }
 
     /// The active block position, or `None` when there is no block.
@@ -802,26 +840,32 @@ impl PfSession {
         Some(block.position)
     }
 
-    /// Keeps a box of `height` clear of the reserved block band.
+    /// Keeps a box of `width` × `height` clear of the title block's own rectangle.
     ///
-    /// A drop or a move can ask for a point under a bottom block or over a top-right one;
-    /// the placement moves to the band's inner edge instead of disappearing behind it. Only
-    /// the vertical centre moves, so the user's horizontal choice is untouched.
-    fn clear_of_block(&self, centre: Pt, height: f32) -> Pt {
+    /// A box beside the block may go down to the frame; one that shares the block's
+    /// horizontal range is pushed to the block's inner edge instead of disappearing behind
+    /// it. Only the vertical centre moves, so the user's horizontal choice is untouched.
+    fn clear_of_block(&self, centre: Pt, width: f32, height: f32) -> Pt {
         let Some(position) = self.block_position() else {
             return centre;
         };
-        let area = self.content_rect();
-        let half = height.max(0.0) * 0.5;
+        let Some(block) = self.block_rect() else {
+            return centre;
+        };
+        let half_width = width.max(0.0) * 0.5;
+        if centre.x + half_width <= block.min.x || centre.x - half_width >= block.max.x {
+            return centre;
+        }
+        let half_height = height.max(0.0) * 0.5;
         if position == punchi_fluid_core::BlockPosition::TopRight {
-            let top = area.min.y + half;
+            let top = block.max.y + half_height;
             if centre.y < top {
                 Pt::new(centre.x, top)
             } else {
                 centre
             }
         } else {
-            let bottom = area.max.y - half;
+            let bottom = block.min.y - half_height;
             if centre.y > bottom {
                 Pt::new(centre.x, bottom)
             } else {
@@ -830,25 +874,39 @@ impl PfSession {
         }
     }
 
-    /// Shifts a whole pasted group when its edge would enter the block band.
+    /// Shifts a whole pasted group when one of its boxes would enter the block.
+    ///
+    /// The group is one gesture, so it moves as one: the shift is the smallest that takes
+    /// every box sharing the block's horizontal range out of it. A group entirely beside
+    /// the block keeps the offset the user asked for.
     fn paste_clear_of_block(&self, copies: &[Placement], down: f32) -> f32 {
         let Some(position) = self.block_position() else {
             return down;
         };
-        let area = self.content_rect();
+        let Some(block) = self.block_rect() else {
+            return down;
+        };
+        let touching: Vec<Rect> = copies
+            .iter()
+            .map(Placement::rect)
+            .filter(|rect| rect.max.x > block.min.x && rect.min.x < block.max.x)
+            .collect();
+        if touching.is_empty() {
+            return down;
+        }
         if position == punchi_fluid_core::BlockPosition::TopRight {
-            let highest = copies
+            let highest = touching
                 .iter()
-                .map(|copy| copy.rect().min.y)
+                .map(|rect| rect.min.y)
                 .fold(f32::MAX, f32::min);
-            let extra = area.min.y - (highest + down);
+            let extra = block.max.y - (highest + down);
             if extra > 0.0 { down + extra } else { down }
         } else {
-            let lowest = copies
+            let lowest = touching
                 .iter()
-                .map(|copy| copy.rect().max.y)
+                .map(|rect| rect.max.y)
                 .fold(f32::MIN, f32::max);
-            let extra = area.max.y - (lowest + down);
+            let extra = block.min.y - (lowest + down);
             if extra < 0.0 { down + extra } else { down }
         }
     }
@@ -1975,12 +2033,14 @@ impl PfSession {
     /// cached list is a list that goes stale behind an edit.
     fn findings(&self) -> Vec<punchi_fluid_check::Finding> {
         // The drawing space, not the last frame's size: the sheet is what the document
-        // says, whether or not the window has painted since it changed.
-        check(
+        // says, whether or not the window has painted since it changed. The block is a
+        // rectangle of that space, not a band, so it arrives as a reserved area.
+        check_with_reserved(
             &self.document,
             &self.catalog,
             self.content_rect(),
             self.document.active_circuit(),
+            &self.reserved_rects(),
         )
     }
 
@@ -2042,12 +2102,12 @@ impl PfSession {
             snap(centre.y, self.grid_step_mm),
         );
         let target = self.magnet_centre(index, grid);
-        let height = self
+        let size = self
             .document
             .placements()
             .get(index)
-            .map_or(0.0, |placement| placement.height);
-        let target = self.clear_of_block(target, height);
+            .map_or((0.0, 0.0), |placement| (placement.width, placement.height));
+        let target = self.clear_of_block(target, size.0, size.1);
         self.document.move_to(index, target)
     }
 
@@ -2311,7 +2371,10 @@ impl PfSession {
         ]
         .into_iter()
         .map(|(id, rect)| {
-            punchi_fluid_doc::Placement::new(id, rect.center(), rect.width(), rect.height())
+            // The composition is the fixed one, but a box that would land on the title block
+            // moves to its inner edge: the starting circuit never hides behind it.
+            let centre = self.clear_of_block(rect.center(), rect.width(), rect.height());
+            punchi_fluid_doc::Placement::new(id, centre, rect.width(), rect.height())
         })
         .collect();
         // A component dropped before the first frame stays; the starting circuit is added
@@ -3278,6 +3341,7 @@ pub unsafe extern "C" fn pf_session_place_component(
                 snap(x_mm, session.grid_step_mm),
                 snap(y_mm, session.grid_step_mm),
             ),
+            width,
             height,
         );
         let index = session
@@ -4266,6 +4330,7 @@ pub unsafe extern "C" fn pf_session_duplicate_component(
                 snap(source.centre.x + right_mm, session.grid_step_mm),
                 snap(source.centre.y + down_mm, session.grid_step_mm),
             ),
+            source.width,
             source.height,
         );
         let Some(copy) = session.document.duplicate(index as usize, Some(centre)) else {
@@ -5795,11 +5860,11 @@ pub unsafe extern "C" fn pf_session_move_component(
         let Some(session) = (unsafe { borrow(session) }) else {
             return PF_ERR_NULL;
         };
-        let Some(height) = session
+        let Some((width, height)) = session
             .document
             .placements()
             .get(index as usize)
-            .map(|placement| placement.height)
+            .map(|placement| (placement.width, placement.height))
         else {
             return PF_ERR_MODEL;
         };
@@ -5808,6 +5873,7 @@ pub unsafe extern "C" fn pf_session_move_component(
                 snap(x_mm, session.grid_step_mm),
                 snap(y_mm, session.grid_step_mm),
             ),
+            width,
             height,
         );
         if session.document.move_to(index as usize, centre) {
@@ -6123,7 +6189,10 @@ pub unsafe extern "C" fn pf_session_move_selection(
             .filter_map(|index| {
                 let placement = session.document.placements().get(*index)?;
                 let centre = Pt::new(placement.centre.x + right_mm, placement.centre.y + down_mm);
-                Some((*index, session.clear_of_block(centre, placement.height)))
+                Some((
+                    *index,
+                    session.clear_of_block(centre, placement.width, placement.height),
+                ))
             })
             .collect();
         if session.document.move_many(&moves) {
@@ -8036,7 +8105,14 @@ pub unsafe extern "C" fn pf_session_check(
 mod layout_tests {
     use super::*;
 
-    /// Seeds the worked example on `paper` and proves no box enters the block band.
+    /// `true` when the two rectangles share area, touching edges excluded.
+    fn intersect_rects(a: Rect, b: Rect) -> Option<Rect> {
+        let min = Pt::new(a.min.x.max(b.min.x), a.min.y.max(b.min.y));
+        let max = Pt::new(a.max.x.min(b.max.x), a.max.y.min(b.max.y));
+        (max.x > min.x && max.y > min.y).then(|| Rect::from_corners(min, max))
+    }
+
+    /// Seeds the worked example on `paper` and proves no box enters the block.
     fn seeded_example_stays_clear(paper: PaperSize, orientation: PaperOrientation) {
         let mut session = PfSession::new(None);
         // A fresh document on the paper under test, so the seed lays out the reduced space
@@ -8057,11 +8133,12 @@ mod layout_tests {
             "{}: the drawing space exists",
             paper.label()
         );
+        let block = session.block_rect().expect("the sheet has a block");
         for placement in session.document.placements() {
             let rect = placement.rect();
             assert!(
-                rect.max.y <= area.max.y + 0.01,
-                "{}: {} enters the block band: {rect:?} against {area:?}",
+                intersect_rects(rect, block).is_none(),
+                "{}: {} enters the block: {rect:?} against {block:?}",
                 paper.label(),
                 placement.catalog_id
             );
