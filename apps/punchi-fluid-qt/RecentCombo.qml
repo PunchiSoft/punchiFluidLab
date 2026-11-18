@@ -53,7 +53,7 @@ Item {
 
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("Recientes: %1").arg(currentLabel())
-            Accessible.description: qsTr("abre la lista de documentos recientes")
+            Accessible.description: qsTr("abre la lista de proyectos recientes")
             Accessible.onPressAction: popup.opened ? popup.close() : popup.open()
 
             Row {
@@ -134,8 +134,8 @@ Item {
                                  ? qsTr("Ninguno")
                                  : qsTr("%1, %2").arg(modelData.name).arg(modelData.path)
                 Accessible.description: modelData.empty === true
-                                        ? qsTr("no hay documentos recientes")
-                                        : qsTr("abre este documento")
+                                        ? qsTr("no hay proyectos recientes")
+                                        : qsTr("abre este proyecto")
                 Accessible.onPressAction: if (modelData.empty !== true) {
                                               recent.session.openRecent(index);
                                               popup.close();

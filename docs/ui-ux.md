@@ -582,8 +582,8 @@ disappears on its own window colour.
   circuit, `Ctrl+W` closes the circuit in view, `Ctrl+Q` quits, `Ctrl+Tab` and
   `Ctrl+Shift+Tab` walk the circuits, `F2` renames the one in view.** `Ctrl+W` closes a
   sheet, never the window: a pointer cannot lose a project by closing what it is looking at.
-  The four keys still missing (`Ctrl+T`, `Ctrl+W`, `Ctrl+Q` and the reverse walk) land with
-  stage 8 of [interface-plan.md](interface-plan.md).
+  While a circuit is being renamed or a close waits for an answer, `Ctrl+T` and `Ctrl+W` stay
+  out of the way: the dialog owns the keyboard until it closes.
 - State never communicated by colour alone.
 - **Panels**: the hide control and the edge rail are reachable with `Tab`, expose their
   name and their state, and hiding a panel never leaves the focus inside it. Auto-hide is

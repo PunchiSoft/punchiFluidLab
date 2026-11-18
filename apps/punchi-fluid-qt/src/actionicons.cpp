@@ -40,6 +40,7 @@ const QStringList &allNames()
         QStringLiteral("object-flip-horizontal"),
         QStringLiteral("edit-select-all"),
         QStringLiteral("edit-delete"),
+        QStringLiteral("window-close"),
         QStringLiteral("zoom-in"),
         QStringLiteral("zoom-out"),
         QStringLiteral("zoom-original"),
@@ -243,6 +244,11 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawEllipse(QPointF(10.0, 10.0), 1.6, 1.6);
         painter.drawLine(QPointF(8.0, 14.0), QPointF(16.0, 14.0));
         painter.drawEllipse(QPointF(14.0, 14.0), 1.6, 1.6);
+    } else if (name == QStringLiteral("window-close")) {
+        // The x of a closing tab, at the same weight as the rest of the family: two strokes
+        // that meet in the middle, not a boxed glyph.
+        painter.drawLine(QPointF(7.0, 7.0), QPointF(17.0, 17.0));
+        painter.drawLine(QPointF(17.0, 7.0), QPointF(7.0, 17.0));
     } else if (name == QStringLiteral("x-office-document")) {
         page(painter, 5.0, 3.0, 19.0, 21.0, 4.0);
         documentLines(painter, 8.0, 16.0, 10.0, 3.0);
