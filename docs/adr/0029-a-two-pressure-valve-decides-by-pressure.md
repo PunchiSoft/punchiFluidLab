@@ -1,6 +1,6 @@
 # 0029 — A two-pressure valve decides by pressure, not by position
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-18
 - **Deciders:** project owner, implementation session
 - **Context crates:** `punchi-fluid-catalog`, `punchi-fluid-solver`, `punchi-fluid-draw`
