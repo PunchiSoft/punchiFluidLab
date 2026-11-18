@@ -155,8 +155,12 @@ show/hide switch per field; hiding keeps the value, collapses its cell and marks
 every change is one undo and marks the document modified. There is **no material, unit or
 projection**; the scale starts at **`S/E`** and stays editable. The industrial block is
 180 × 65 mm on A3 and larger and 170 × 45 mm on A4 and A5; the school and technical models
-are shorter. Labels elide rather than clip, the value fits inside its cell, and the live
-layout reserves the band and clamps a component dropped or moved under it.
+are shorter. Labels elide rather than clip and the value fits inside its cell. The live
+layout protects the **block's own rectangle** — what it prints on, plus its clearance, and the
+parts-list column above it — and not a band: the rest of the frame, including the lower left
+beside the block, is drawing space ([ADR 0030](adr/0030-the-block-protects-its-own-box.md)).
+**Today** the session still reserves the full width of the band; the footprint lands with its
+capability.
 
 **The properties panel edits one instance, and its first field is its name.** The
 designation is text, not a number: it is the field that ends up under the symbol and in the
@@ -678,9 +682,10 @@ translator must be able to reorder the sentence.
 - The **fit and the zoom** are under review: the owner wants the sheet fitted rather than the
   frame, and the zoom and the middle double click checked against the two CAD references.
   Nothing changes until that note arrives ([interface-plan.md](interface-plan.md#open-decisions-owner-2026-11-15)).
-- Whether hiding the block **releases its band** to the drawing or keeps it reserved. Today
-  the band stays reserved, so the circuit is drawn in the same place whether the block is
-  shown or not.
+- **The block's reserve is decided**: `Sin cajetín` frees the frame, and enabling a block
+  over an existing drawing is a fault the check reports
+  ([ADR 0030](adr/0030-the-block-protects-its-own-box.md)); the footprint replaces the band
+  with its capability.
 - UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
   `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
 
