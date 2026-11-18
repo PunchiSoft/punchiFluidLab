@@ -40,6 +40,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0026](0026-the-sheet-is-the-paper.md) | The sheet is the paper the drawing is printed on | accepted | 2026-11-13 |
 | [0027](0027-translation-catalogs-are-qts.md) | The translation catalogs are Qt's, and the core speaks keys | accepted | 2026-11-14 |
 | [0028](0028-the-ribbon-draws-its-own-icons.md) | The ribbon draws its own action icons | accepted; amends the icon rule of [0005](0005-qt-quick-over-a-c-abi.md) | 2026-11-14 |
+| [0029](0029-a-two-pressure-valve-decides-by-pressure.md) | A two-pressure valve decides by pressure, not by position | proposed | 2026-11-18 |
 
 ## When a decision needs an ADR
 

@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### ADR: el selector y la dos presiones deciden por presión — 2026-11-18
+
+- **ADR 0029**: una variante `Behaviour::Pressure` con dos clases, `shuttle` y `two_pressure`.
+  El selector conecta la salida a la entrada de mayor presión y cierra la otra; la dos
+  presiones solo da salida con las dos presionadas y toma la menor, y descarga cuando una
+  falta. Se resuelve como frontera de presión, sin volumen interno inventado ni estado.
+- Los dos símbolos serán archivos, con sus puertos `1 · 1 · 2`, su geometría, su fixture y su
+  ficha de revisión.
+- **No hay código todavía**: el ADR queda `proposed` hasta que el propietario lo acepte.
+
 ### La selección marca el símbolo, no una caja — 2026-11-18
 
 - Al seleccionar un componente, **sus propias líneas toman el acento** en vez de dibujarse un
