@@ -1,6 +1,6 @@
 # 0030 — The title block protects its own box, not a band
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-18
 - **Deciders:** project owner, implementation session
 - **Context crates:** `punchi-fluid-ffi`, `punchi-fluid-export`, `punchi-fluid-check`
@@ -47,6 +47,15 @@ the block's position, width or a parts list that grows upward from it.
   and no format bump.
 - **The example is seeded clear of the protected rectangles**, not above the band, so the
   first circuit shows what the rule allows.
+
+## Amendment (2026-11-18, with the implementation)
+
+The parts list is **not on the canvas**: it exists only on the printed page, where the export
+already gives it a column and fits the drawing into what remains. Reserving it live would
+forbid paper the student can see, which is the phantom rule this record rejects, so the canvas
+protects the block alone and the page keeps its own fitting. The starting circuit is composed
+in the largest rectangle the block leaves free, so the worked example keeps the shape it was
+drawn with while a user's own drop may still use the strip beside the block.
 
 ## Consequences
 

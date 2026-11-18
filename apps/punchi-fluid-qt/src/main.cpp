@@ -22,6 +22,8 @@
 //! --about              open the About popup, for a capture of it
 //! --license            open the Licence popup, for a capture of it
 //! --tab N              open one ribbon tab, for a capture
+//! --place ID           place a catalog entry by index or id, for a capture
+//! --spot X,Y           place it at that point of the sheet, in millimetres
 //! --menu               open the collapsed ribbon menu, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
@@ -541,15 +543,48 @@ int main(int argc, char *argv[])
         }
     }
 
+    // A capture can name the spot: the strip beside the title block is only visible with a
+    // component in it, and the fixed spots below never reach that corner.
+    QPointF captureSpot;
+    bool hasCaptureSpot = false;
+    for (int at = 0; at + 1 < arguments.size(); ++at) {
+        if (arguments.at(at) != QStringLiteral("--spot")) {
+            continue;
+        }
+        const QStringList parts = arguments.at(at + 1).split(QLatin1Char(','));
+        bool xOk = false;
+        bool yOk = false;
+        const double x = parts.value(0).toDouble(&xOk);
+        const double y = parts.value(1).toDouble(&yOk);
+        if (parts.size() != 2 || !xOk || !yOk) {
+            std::fprintf(stderr, "--spot takes x,y in millimetres\n");
+            return 2;
+        }
+        captureSpot = QPointF(x, y);
+        hasCaptureSpot = true;
+    }
+
     int drop = 0;
     for (int at = 0; at + 1 < arguments.size(); ++at) {
         if (arguments.at(at) != QStringLiteral("--place")) {
             continue;
         }
         bool ok = false;
-        const int catalogIndex = arguments.at(at + 1).toInt(&ok);
+        int catalogIndex = arguments.at(at + 1).toInt(&ok);
         if (!ok) {
-            std::fprintf(stderr, "--place takes a catalog index, not \"%s\"\n",
+            // An id is easier to write in a capture than a list position.
+            for (FluidSession *session : sessions()) {
+                for (const QVariant &entry : session->catalog()) {
+                    const QVariantMap row = entry.toMap();
+                    if (row.value(QStringLiteral("id")).toString() == arguments.at(at + 1)) {
+                        catalogIndex = row.value(QStringLiteral("index")).toInt();
+                        ok = true;
+                    }
+                }
+            }
+        }
+        if (!ok) {
+            std::fprintf(stderr, "--place takes a catalog index or id, not \"%s\"\n",
                          qUtf8Printable(arguments.at(at + 1)));
             return 2;
         }
@@ -557,7 +592,7 @@ int main(int argc, char *argv[])
         // covering the circuit the model is simulating.
         const QPointF spots[] = {QPointF(36.0, 112.0), QPointF(158.0, 112.0), QPointF(96.0, 22.0)};
         for (FluidSession *session : sessions()) {
-            const QPointF spot = spots[drop % 3];
+            const QPointF spot = hasCaptureSpot ? captureSpot : spots[drop % 3];
             session->placeComponent(catalogIndex, spot.x(), spot.y());
         }
         ++drop;
@@ -3009,21 +3044,68 @@ int main(int argc, char *argv[])
             state->session->setSheetPaper(1);
         });
 
-        // The live layout reserves the same band the export does: no example box may sit
-        // under the block, where the canvas would paint over it.
+        // The block protects its own rectangle, not a band: no example box may sit under
+        // it, and the strip beside it is drawing space.
         steps->push_back([state, check, componentRect] {
             PfBlockLayout block {};
             const bool hasBlock =
                 state->session->blockPreset() != 3
                 && pf_session_block_layout(state->session->handle(), &block) == PF_OK;
-            const double bandTop = state->session->sheetHeightMm()
-                - state->session->sheetMarginBottom() - block.height_mm;
+            const double frameLeft = state->session->sheetMarginLeft();
+            const double frameRight = state->session->sheetWidthMm()
+                - state->session->sheetMarginRight();
+            const double frameTop = state->session->sheetMarginTop();
+            const double frameBottom = state->session->sheetHeightMm()
+                - state->session->sheetMarginBottom();
+            const int preset = state->session->blockPreset();
+            const double width = preset == 2 ? frameRight - frameLeft
+                                             : std::min<double>(block.width_mm,
+                                                                frameRight - frameLeft);
+            const double height = std::min<double>(block.height_mm, frameBottom - frameTop);
+            const double left = preset == 2 ? frameLeft : frameRight - width;
+            const double top = preset == 0 ? frameTop : frameBottom - height;
+            const QRectF protectedArea(left, top, width, height);
             bool clear = true;
             for (int index = 0; index < state->session->componentCount(); ++index) {
-                clear = clear && componentRect(index).bottom() <= bandTop + 0.01;
+                clear = clear && !componentRect(index).intersects(protectedArea);
             }
             check(!hasBlock || clear,
-                  QStringLiteral("title block: the example stays clear of the block band"));
+                  QStringLiteral("title block: the example stays clear of the block"));
+        });
+
+        // A drop in the lower left, below the band the old rule reserved, is drawing space:
+        // the block does not own that column (ADR 0030).
+        steps->push_back([state, check, componentRect] {
+            int compressor = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                if (row.value(QStringLiteral("id")).toString()
+                    == QStringLiteral("supply.compressor")) {
+                    compressor = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            PfBlockLayout block {};
+            const bool hasBlock =
+                state->session->blockPreset() != 3
+                && pf_session_block_layout(state->session->handle(), &block) == PF_OK;
+            const double frameBottom = state->session->sheetHeightMm()
+                - state->session->sheetMarginBottom();
+            const double blockTop = frameBottom - block.height_mm;
+            const double blockLeft =
+                state->session->sheetWidthMm() - state->session->sheetMarginRight()
+                - block.width_mm;
+            const int before = state->session->componentCount();
+            const int placed = compressor >= 0
+                                   ? state->session->placeComponent(compressor, 60.0, 175.0)
+                                   : -1;
+            const QRectF box = placed >= 0 ? componentRect(placed) : QRectF();
+            check(!hasBlock
+                      || (placed >= 0 && box.top() > blockTop && box.right() < blockLeft),
+                  QStringLiteral("title block: the strip beside it takes a drop"));
+            while (state->session->componentCount() > before) {
+                state->session->undo();
+            }
         });
 
         // The port magnet: a hose between two ports on the same axis becomes straight when

@@ -28,6 +28,10 @@
 
 use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
+
+mod placement;
+
+use placement::placement_faults;
 use punchi_fluid_draw::placed::{port_edge, port_point, route_between_boxes_avoiding};
 use punchi_fluid_draw::surface::{Pt, Rect};
 
@@ -54,6 +58,8 @@ pub enum FindingKind {
     MismatchedConnection,
     /// The live rail and its return are joined: a short circuit of the control circuit.
     ShortCircuit,
+    /// A component sits under the title block, where the printed sheet hides it.
+    UnderTitleBlock,
 }
 
 impl FindingKind {
@@ -70,6 +76,7 @@ impl FindingKind {
             Self::PipeAcrossCircuits => "pipe_across_circuits",
             Self::MismatchedConnection => "mismatched_connection",
             Self::ShortCircuit => "short_circuit",
+            Self::UnderTitleBlock => "under_title_block",
         }
     }
 
@@ -86,6 +93,7 @@ impl FindingKind {
             Self::PipeAcrossCircuits => "un tubo une dos circuitos",
             Self::MismatchedConnection => "una conexión une dos terminales que no encajan",
             Self::ShortCircuit => "el positivo del raíl y su retorno están unidos",
+            Self::UnderTitleBlock => "un componente cae bajo el cajetín",
         }
     }
 }
@@ -122,6 +130,23 @@ impl Finding {
 /// document index, so two runs on the same document produce the same list.
 #[must_use]
 pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) -> Vec<Finding> {
+    check_with_reserved(document, catalog, sheet, circuit, &[])
+}
+
+/// The same check, with the rectangles the sheet already fills.
+///
+/// The title block protects what it prints on, not a band: `reserved` carries its own
+/// rectangle (and any other printed area), so a component beside it is legal and one under
+/// it is a fault. A caller that does not know the block — the headless check, which has no
+/// page layout — passes none and still gets every geometric fault.
+#[must_use]
+pub fn check_with_reserved(
+    document: &Document,
+    catalog: &Catalog,
+    sheet: Rect,
+    circuit: u32,
+    reserved: &[Rect],
+) -> Vec<Finding> {
     let mut findings = Vec::new();
     // One box per placement, shared by every pipe: the router needs them all to skip the
     // symbols a hose does not join, and the check is one pass, not one allocation per pipe.
@@ -131,7 +156,7 @@ pub fn check(document: &Document, catalog: &Catalog, sheet: Rect, circuit: u32) 
         .map(punchi_fluid_doc::Placement::rect)
         .collect();
 
-    findings.extend(placement_faults(document, sheet, circuit));
+    findings.extend(placement_faults(document, sheet, circuit, reserved));
 
     for (index, connection) in document.connections().iter().enumerate() {
         if connection.circuit != circuit {
@@ -375,47 +400,6 @@ fn is_electrical(role: PortRole) -> bool {
     matches!(role, PortRole::Electrical)
 }
 
-/// Faults about where a component sits: off the sheet, or on top of another one.
-fn placement_faults(document: &Document, sheet: Rect, circuit: u32) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    for (index, placement) in document.placements().iter().enumerate() {
-        if placement.circuit != circuit {
-            continue;
-        }
-        let rect = placement.rect();
-        if !contains_rect(sheet, rect) {
-            findings.push(Finding {
-                kind: FindingKind::OutsideSheet,
-                at: rect.center(),
-                component: Some(index),
-                pipe: None,
-            });
-        }
-    }
-
-    for (index, placement) in document.placements().iter().enumerate() {
-        if placement.circuit != circuit {
-            continue;
-        }
-        for (other, candidate) in document.placements().iter().enumerate().skip(index + 1) {
-            if candidate.circuit != circuit {
-                continue;
-            }
-            let overlap = intersect(placement.rect(), candidate.rect());
-            if let Some(area) = overlap {
-                findings.push(Finding {
-                    kind: FindingKind::OverlappingComponents,
-                    at: area.center(),
-                    component: Some(other),
-                    pipe: None,
-                });
-            }
-        }
-    }
-
-    findings
-}
-
 /// Two actuators with one name.
 ///
 /// The parts list would print the same actuator twice, and whoever reads the schematic
@@ -563,34 +547,6 @@ fn pipe_ends(
         port_edge(to_definition, &connection.to.port),
         to.rect(),
     ))
-}
-
-fn contains_rect(outer: Rect, inner: Rect) -> bool {
-    inner.min.x >= outer.min.x
-        && inner.min.y >= outer.min.y
-        && inner.max.x <= outer.max.x
-        && inner.max.y <= outer.max.y
-}
-
-/// The overlap of two rectangles, when it has area.
-///
-/// The bounds are compared before they are turned into a `Rect`, because building one from
-/// two corners normalises them: two boxes far apart would produce a rectangle that spans
-/// the gap between them and a positive area out of nothing.
-fn intersect(a: Rect, b: Rect) -> Option<Rect> {
-    let min_x = a.min.x.max(b.min.x);
-    let min_y = a.min.y.max(b.min.y);
-    let max_x = a.max.x.min(b.max.x);
-    let max_y = a.max.y.min(b.max.y);
-    // Touching edges is not an overlap: two components may sit side by side.
-    if max_x - min_x > 0.5 && max_y - min_y > 0.5 {
-        Some(Rect::from_corners(
-            Pt::new(min_x, min_y),
-            Pt::new(max_x, max_y),
-        ))
-    } else {
-        None
-    }
 }
 
 /// The tolerance, in millimetres, by which a component box is shrunk before a hose is
