@@ -205,6 +205,14 @@ Rectangle {
                         Accessible.description: tab.modelData.components > 0
                             ? qsTr("Cierra el circuito y elimina sus componentes y conductos")
                             : qsTr("Cierra este circuito vacío")
+                        // The tip says what the click costs, not only what it does: closing a
+                        // circuit with components removes them, and the undo is the only way
+                        // back.
+                        ToolTip.visible: closeArea.containsMouse
+                        ToolTip.delay: 600
+                        ToolTip.text: tab.modelData.components > 0
+                                      ? qsTr("Cerrar circuito · se eliminan sus componentes y conductos")
+                                      : qsTr("Cerrar circuito")
 
                         Rectangle {
                             anchors.fill: parent
