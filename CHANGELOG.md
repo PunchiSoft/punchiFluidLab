@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### El cierre de la pestaña dice lo que cuesta — 2026-11-18
+
+- Pasar el puntero por la **×** de una pestaña muestra «Cerrar circuito»; si el circuito
+  tiene componentes, el consejo avisa de que se eliminan con él, que es justo lo que hace el
+  clic. Sin atajo inventado: la × no tiene tecla propia.
+- **Evidencia**: `--check-qml` 0 problemas y `--selftest` 0 fallos.
+
 ### ADR: el selector y la dos presiones deciden por presión — 2026-11-18
 
 - **ADR 0029**: una variante `Behaviour::Pressure` con dos clases, `shuttle` y `two_pressure`.
