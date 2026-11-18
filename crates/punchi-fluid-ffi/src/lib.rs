@@ -3418,6 +3418,31 @@ pub unsafe extern "C" fn pf_session_circuit_count(session: *const PfSession) -> 
     u32::try_from(session.document.circuits().len()).unwrap_or(0)
 }
 
+/// Number of placements in one circuit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_circuit_component_count(
+    session: *const PfSession,
+    id: u32,
+) -> u32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return 0;
+    };
+    u32::try_from(
+        session
+            .document
+            .placements()
+            .iter()
+            .filter(|placement| placement.circuit == id)
+            .count(),
+    )
+    .unwrap_or(0)
+}
+
 /// Identity of the circuit at `index`, or a negative error.
 ///
 /// # Safety

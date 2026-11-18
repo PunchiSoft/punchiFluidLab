@@ -267,6 +267,7 @@ int32_t pf_session_grid_step(const PfSession *session, float *out);
 
 /* The circuits of the project and the one the sheet shows. */
 uint32_t pf_session_circuit_count(const PfSession *session);
+uint32_t pf_session_circuit_component_count(const PfSession *session, uint32_t id);
 int32_t pf_session_circuit_id(const PfSession *session, uint32_t index);
 int32_t pf_session_circuit_name(const PfSession *session, uint32_t index, char *out,
                                 uint32_t capacity);

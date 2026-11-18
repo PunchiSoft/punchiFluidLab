@@ -129,6 +129,8 @@ class FluidSession : public QObject
     Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
     Q_PROPERTY(QVariantList circuits READ circuits NOTIFY changed)
     Q_PROPERTY(int activeCircuit READ activeCircuit NOTIFY changed)
+    /// Maximum circuits allowed by the document and file format.
+    Q_PROPERTY(int circuitLimit READ circuitLimit CONSTANT)
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY speedChanged)
@@ -236,6 +238,7 @@ public:
     /// Opens one of them by its place in the list.
     Q_INVOKABLE bool selectCircuit(int id);
     Q_INVOKABLE int addCircuit();
+    Q_INVOKABLE bool removeCircuit(int id);
     Q_INVOKABLE bool renameCircuit(int id, const QString &title);
     /// Writes one field of the active circuit's block: `owner`, `project`, `equipment`,
     /// `title`, `number`, `revision`, `date`, `prepared`, `checked`, `approved`, `scale`
@@ -268,6 +271,7 @@ public:
     Q_INVOKABLE void resetBlockVisibility();
     Q_INVOKABLE QVariantList circuits() const;
     Q_INVOKABLE int activeCircuit() const;
+    [[nodiscard]] int circuitLimit() const { return static_cast<int>(PF_MAX_CIRCUITS); }
     Q_INVOKABLE bool openRecent(int slot);
     /// Forgets every remembered document.
     Q_INVOKABLE void forgetRecent();

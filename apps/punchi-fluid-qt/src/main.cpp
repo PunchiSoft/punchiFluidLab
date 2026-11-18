@@ -28,6 +28,7 @@
 //! --overlay catalog|right  open a compact panel over the sheet, for a capture of it
 //! --ribbon-minimized   fold the ribbon and open its tab, for a capture of the panel
 //! --view-panel         open the view strip's zoom panel, for a capture of it
+//! --circuits N         add circuits before the capture, for a strip with several tabs
 //! --right-dock-closed  start with the right dock folded, for a capture of its rail
 //! --auto-hide          start with the opt-in auto-hide on, for a capture of Paneles
 //! --page-setup         open the page-setup panel, for a capture of it
@@ -853,6 +854,23 @@ int main(int argc, char *argv[])
         return failures == 0 ? 0 : 1;
     }
 
+    if (const QString count = value(QStringLiteral("--circuits")); !count.isEmpty()) {
+        // A capture of the tab strip with more than one circuit: the program keeps the
+        // circuits the session added, so the frame shows what a project of several looks
+        // like. It is a capture hook, not a command of the interface.
+        bool ok = false;
+        const int wanted = count.toInt(&ok);
+        if (ok) {
+            for (FluidSession *session : sessions()) {
+                while (wanted > 1 && static_cast<int>(pf_session_circuit_count(session->handle()))
+                                          < wanted) {
+                    if (session->addCircuit() < 0) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
     if (arguments.contains(QStringLiteral("--view-panel"))) {
         // The strip's zoom panel, open, for a capture: a click cannot reach it headlessly.
         for (QObject *root : engine.rootObjects()) {
@@ -2670,6 +2688,130 @@ int main(int argc, char *argv[])
             state->session->undo();
             state->session->selectCircuit(id);
         });
+        // Closing circuits from the strip: empty closes immediately; populated asks,
+        // names the circuit and can be cancelled; one undo returns all of it.
+        steps->push_back([state, check] {
+            QObject *window = state->window;
+            QObject *tabs = window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            const int before = state->session->circuits().size();
+            // Closing the tab in view hands over to the right neighbour, or to the left one
+            // when it was the last: the new circuit is added last, so it is the left one.
+            const int left = state->session->circuits().last().toMap().value("id").toInt();
+            const int empty = state->session->addCircuit();
+            QVariant id = empty;
+            QVariant name = QStringLiteral("Vacío");
+            QVariant count = 0;
+            QVariant removed;
+            const bool invoked = QMetaObject::invokeMethod(
+                window, "requestCircuitRemoval", Q_RETURN_ARG(QVariant, removed),
+                Q_ARG(QVariant, id), Q_ARG(QVariant, name), Q_ARG(QVariant, count));
+            check(invoked && removed.toBool()
+                      && state->session->circuits().size() == before
+                      && state->session->activeCircuit() == left
+                      && window->property("pendingCircuitRemoval").toInt() < 0,
+                  QStringLiteral("circuits: an empty tab closes without asking"));
+            state->session->undo();
+            check(state->session->circuits().size() == before + 1
+                      && state->session->activeCircuit() == empty,
+                  QStringLiteral("circuits: undo returns an empty closed tab"));
+            state->session->undo();
+            check(state->session->circuits().size() == before,
+                  QStringLiteral("circuits: undo removes the added empty tab"));
+            const int active = state->session->activeCircuit();
+            check(tabs->property("canCloseCircuit").toBool()
+                      == (state->session->circuits().size() > 1),
+                  QStringLiteral("circuits: close control visibility follows the last-tab rule"));
+        });
+        steps->push_back([state, check] {
+            QObject *window = state->window;
+            const int before = state->session->circuits().size();
+            const int first = state->session->activeCircuit();
+            const int components =
+                static_cast<int>(pf_session_component_count(state->session->handle()));
+            check(components > 0, QStringLiteral("circuits: the active test circuit has work"));
+            const int neighbour = state->session->addCircuit();
+            check(neighbour >= 0, QStringLiteral("circuits: a right neighbour is added"));
+            state->session->selectCircuit(first);
+            const QVariant id = first;
+            const QVariant name = state->session->circuits().first().toMap().value("name");
+            const QVariant count = components;
+            QMetaObject::invokeMethod(window, "requestCircuitRemoval", Q_ARG(QVariant, id),
+                                      Q_ARG(QVariant, name), Q_ARG(QVariant, count));
+            check(window->property("pendingCircuitRemoval").toInt() == first
+                      && state->session->circuits().size() == before + 1,
+                  QStringLiteral("circuits: a populated tab asks before closing"));
+            QMetaObject::invokeMethod(window, "cancelCircuitRemoval");
+            check(state->session->circuits().size() == before + 1
+                      && state->session->activeCircuit() == first,
+                  QStringLiteral("circuits: cancelling preserves the tab and its contents"));
+            QMetaObject::invokeMethod(window, "requestCircuitRemoval", Q_ARG(QVariant, id),
+                                      Q_ARG(QVariant, name), Q_ARG(QVariant, count));
+            QVariant removed;
+            const QVariantList ordered = state->session->circuits();
+            int firstIndex = -1;
+            for (int i = 0; i < ordered.size(); ++i) {
+                if (ordered.at(i).toMap().value("id").toInt() == first) {
+                    firstIndex = i;
+                }
+            }
+            const int expectedNext = firstIndex + 1 < ordered.size()
+                                         ? ordered.at(firstIndex + 1).toMap().value("id").toInt()
+                                         : ordered.at(firstIndex - 1).toMap().value("id").toInt();
+            QMetaObject::invokeMethod(window, "confirmCircuitRemoval", Q_RETURN_ARG(QVariant, removed));
+            check(removed.toBool() && state->session->circuits().size() == before
+                      && state->session->activeCircuit() == expectedNext,
+                  QStringLiteral("circuits: confirming selects the right neighbour"));
+            state->session->undo();
+            check(state->session->circuits().size() == before + 1
+                      && state->session->activeCircuit() == first
+                      && static_cast<int>(pf_session_component_count(state->session->handle()))
+                             == components,
+                  QStringLiteral("circuits: one undo restores a closed populated tab"));
+            state->session->undo();
+            check(state->session->circuits().size() == before
+                      && state->session->activeCircuit() == first,
+                  QStringLiteral("circuits: undo removes the added neighbour"));
+        });
+        steps->push_back([state, check] {
+            const int original = state->session->circuits().size();
+            int removed = 0;
+            while (state->session->circuits().size() > 1) {
+                const QVariantList circuits = state->session->circuits();
+                const int id = circuits.last().toMap().value("id").toInt();
+                if (!state->session->removeCircuit(id)) {
+                    break;
+                }
+                ++removed;
+            }
+            QObject *tabs = state->window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            check(state->session->circuits().size() == 1 && tabs != nullptr
+                      && !tabs->property("canCloseCircuit").toBool(),
+                  QStringLiteral("circuits: the last tab has no close control"));
+            for (int i = 0; i < removed; ++i) {
+                state->session->undo();
+            }
+            check(state->session->circuits().size() == original,
+                  QStringLiteral("circuits: undo restores the tabs after the last-tab check"));
+        });
+        steps->push_back([state, check] {
+            const int before = state->session->circuits().size();
+            const int limit = state->session->circuitLimit();
+            while (state->session->circuits().size() < limit) {
+                if (state->session->addCircuit() < 0) {
+                    break;
+                }
+            }
+            QObject *tabs = state->window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            QObject *plus = tabs ? tabs->findChild<QObject *>(QStringLiteral("addCircuitButton"))
+                                 : nullptr;
+            const bool capped = state->session->circuits().size() == limit && plus != nullptr
+                                && !plus->property("enabled").toBool();
+            check(capped, QStringLiteral("circuits: plus disables at the project limit"));
+            while (state->session->circuits().size() > before) {
+                state->session->undo();
+            }
+        });
+
         steps->push_back([state, check] {
             check(!state->session->handMode(),
                   QStringLiteral("view: Esc leaves the hand mode"));
