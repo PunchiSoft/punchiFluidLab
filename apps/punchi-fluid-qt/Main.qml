@@ -36,6 +36,8 @@ Window {
     /// path is kept so "Guardar y abrir" knows which file it was going to open.
     property string pendingCommand: ""
     property string pendingPath: ""
+    property int pendingCircuitRemoval: -1
+    property string pendingCircuitName: ""
 
     /// The rename panel for the circuit in view. It edits a project datum, not a placement.
     property bool renameCircuitOpen: false
@@ -76,6 +78,33 @@ Window {
     function openRenameCircuit() {
         window.renameCircuitText = window.activeCircuitName();
         window.renameCircuitOpen = true;
+    }
+
+    function requestCircuitRemoval(id, name, components) {
+        if (session.circuits.length <= 1) {
+            return false;
+        }
+        if (Number(components) === 0) {
+            return session.removeCircuit(Number(id));
+        }
+        window.pendingCircuitRemoval = Number(id);
+        window.pendingCircuitName = String(name);
+        return true;
+    }
+
+    function confirmCircuitRemoval() {
+        const id = window.pendingCircuitRemoval;
+        window.pendingCircuitRemoval = -1;
+        window.pendingCircuitName = "";
+        if (id >= 0) {
+            return session.removeCircuit(Number(id));
+        }
+        return false;
+    }
+
+    function cancelCircuitRemoval() {
+        window.pendingCircuitRemoval = -1;
+        window.pendingCircuitName = "";
     }
 
     /// Asks before throwing work away. Only reached when there is work to lose, so the
@@ -258,6 +287,7 @@ Window {
         window.ribbonMinimized = false;
         window.viewStripFolded = false;
         window.viewStripCompactOpen = false;
+        window.cancelCircuitRemoval();
         session.blockVisible = true;
         session.zoomReset();
     }
@@ -836,10 +866,55 @@ Window {
                     objectName: "circuitTabs"
                     session: session
                     height: window.tabStripHeight
+                    onRemoveRequested: function (id, name, components) {
+                        window.requestCircuitRemoval(id, name, components);
+                    }
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     z: 12
+                }
+
+                Card {
+                    visible: window.pendingCircuitRemoval >= 0
+                    anchors.centerIn: parent
+                    width: 360
+                    height: removeCircuitColumn.implicitHeight + 28
+                    z: 42
+                    session: session
+                    borderColor: session.accent
+
+                    Column {
+                        id: removeCircuitColumn
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 12
+
+                        Text {
+                            width: parent.width
+                            text: qsTr("¿Cerrar «%1» y eliminar sus componentes y conductos?")
+                                      .arg(window.pendingCircuitName)
+                            color: session.foreground
+                            font.pixelSize: session.textLabel
+                            wrapMode: Text.WordWrap
+                        }
+                        Row {
+                            spacing: 8
+                            RibbonButton {
+                                session: session
+                                label: qsTr("Cancelar")
+                                large: false
+                                onTriggered: window.cancelCircuitRemoval()
+                            }
+                            RibbonButton {
+                                session: session
+                                label: qsTr("Cerrar circuito")
+                                large: false
+                                tone: "accent"
+                                onTriggered: window.confirmCircuitRemoval()
+                            }
+                        }
+                    }
                 }
 
                 // The strip floats over the right edge of the drawing: it takes no column

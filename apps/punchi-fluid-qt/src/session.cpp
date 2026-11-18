@@ -1155,6 +1155,8 @@ QVariantList FluidSession::circuits() const
         QVariantMap row;
         row.insert(QStringLiteral("id"), id);
         row.insert(QStringLiteral("name"), QString::fromUtf8(name));
+        row.insert(QStringLiteral("components"),
+                   pf_session_circuit_component_count(m_session, static_cast<uint32_t>(id)));
         list.append(row);
     }
     return list;
@@ -1201,6 +1203,12 @@ int FluidSession::addCircuit()
         return -1;
     }
     const uint32_t count = pf_session_circuit_count(m_session);
+    if (count >= PF_MAX_CIRCUITS) {
+        m_error = QStringLiteral("el proyecto alcanzó el máximo de %1 circuitos")
+                      .arg(PF_MAX_CIRCUITS);
+        emit changed();
+        return -1;
+    }
     const QString title = QStringLiteral("Circuito %1").arg(count + 1);
     const QByteArray encoded = title.toUtf8();
     const int id = pf_session_add_circuit(m_session, encoded.constData());
@@ -1227,6 +1235,36 @@ int FluidSession::addCircuit()
     emit runningChanged();
     emit changed();
     return id;
+}
+
+bool FluidSession::removeCircuit(int id)
+{
+    if (!m_session || id < 0
+        || pf_session_remove_circuit(m_session, static_cast<uint32_t>(id)) != PF_OK) {
+        if (m_session) {
+            const char *message = pf_session_last_error(m_session);
+            m_error = message ? QString::fromUtf8(message)
+                              : QStringLiteral("no se pudo cerrar el circuito");
+            emit changed();
+        }
+        return false;
+    }
+    m_error.clear();
+    m_selected = -1;
+    m_inspectorOpen = false;
+    cancelUntilChange();
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    refreshDocument();
+    refresh(true);
+    emit inspectorChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return true;
 }
 
 bool FluidSession::renameCircuit(int id, const QString &title)

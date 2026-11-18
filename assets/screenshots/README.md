@@ -4,6 +4,8 @@ Images of the running application, used by the README and by pull request review
 
 | File | What it shows |
 |---|---|
+| `circuit-tabs-light.png` | The **circuit strip** with three tabs: each with its document icon, its name and its close control, the active one marked by its background and accent rule, the plus at the right, and the sheet number `3/3` in the block |
+| `circuit-tabs-dark.png` | The same strip on a dark desktop, to check the close control, the active tab and the plus in both schemes |
 | `font-large-light.png` | The window with the desktop font at **1.5×** (`--font-scale 1.5`): the ribbon's tabs, labels, icons and heights all grow with the tokens, so nothing clips |
 | `window-light.png` | The window on a light desktop, on the **A4 landscape** sheet the program opens with: the sunken workspace around the **raised paper card** with its edge and shadow, the ISO 5457 frame with its four centring marks, compressor, service unit, 3/2 valve and cylinder, every port with its connection circle, the two help links **Acerca de** and **Licencia** at the right of the tab row, and the status bar reading `A4 · 297 × 210 mm` |
 | `window-dark.png` | The same window on a dark desktop, to check the sunken workspace, the paper edge and the help links in both themes |
@@ -77,6 +79,13 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 # The magnified pair, at the zoom the review is about.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --zoom 1.5 --grab /tmp/zoom-light.png
+# The circuit strip with three tabs, light and dark; --circuits is a capture hook.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --circuits 3 \
+  --grab /tmp/circuit-tabs-light.png
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme dark --circuits 3 \
+  --grab /tmp/circuit-tabs-dark.png
 # The window with the desktop font at 1.5x, to prove the ribbon grows with it.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --font-scale 1.5 \

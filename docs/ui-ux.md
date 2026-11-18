@@ -360,9 +360,17 @@ never blurred per frame, and none of it changes the zoom, the pan, the check or 
 **The circuits sit at the foot of the sheet.** A strip inside the drawing region — not a
 fourth region — shows one tab per circuit with its icon and its name, the active one marked by
 a background and an accent rule at the seam, never by colour alone. A click switches the
-circuit — view state, no undo entry — and `Ctrl+Tab` walks them; `+` adds one and shows it;
-`F2` or a double click renames **in the tab**, with `Enter` to save and `Esc` to cancel, which
-is a document edit and one undo like any other.
+circuit — view state, no undo entry — and `Ctrl+Tab` walks them, scrolling the strip so the
+active tab is in view; `F2` or a double click renames **in the tab**, with `Enter` to save and
+`Esc` to cancel, which is a document edit and one undo like any other.
+
+**Closing a tab removes the circuit**, with everything it holds, as one undoable edit. The
+close control is on **every tab except the last** — a project without circuits is not a
+project — and it sits at the right of the name with its own hit area and an accessible name.
+A circuit with components asks first, naming it, and offers Cancelar; an empty one closes at
+once. The circuit in view hands over to its right neighbour, or to the left one when it was
+the last of the strip. `+` adds a circuit and disables at the project limit of **32**, with
+the limit in its help; the strip scrolls horizontally instead of growing into a second row.
 
 **Two modes, and the click means something different in each.** This is the split a
 schematic simulator lives by, and the one the reference tool uses:
