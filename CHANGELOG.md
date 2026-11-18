@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### Cerrar circuitos desde la pestaña — 2026-11-17
+
+- **× en todas las pestañas menos la última**: cerrar quita el circuito con sus componentes y
+  conductos, y **un deshacer** lo devuelve entero. La última no la lleva: un proyecto sin
+  circuitos no es un proyecto.
+- **Si tiene trabajo dentro pregunta**, nombrando el circuito, y ofrece Cancelar; si está
+  vacío se cierra sin diálogo. El circuito en vista pasa al vecino de la derecha o, si era el
+  último, al de la izquierda.
+- El **+ se deshabilita** al llegar a 32, con el límite en su ayuda, y **la tira se desplaza**
+  en horizontal en vez de crecer a una segunda fila.
+- **Evidencia**: catorce pasos nuevos del `--selftest` de la tira (cierre vacío, cierre con
+  contenido, cancelar, confirmar, deshacer, última pestaña y tope), 0 fallos; `--check-qml`
+  0; 53 capturas retomadas y `./scripts-dev/check.sh` verde.
+
 ### Cambiar, añadir y renombrar circuitos en la tira — 2026-11-17
 
 - **Clic** en una pestaña cambia de circuito: vista, sin deshacer ni marca de modificado.
