@@ -14,7 +14,7 @@ publicación.
   falta. Se resuelve como frontera de presión, sin volumen interno inventado ni estado.
 - Los dos símbolos serán archivos, con sus puertos `1 · 1 · 2`, su geometría, su fixture y su
   ficha de revisión.
-- **No hay código todavía**: el ADR queda `proposed` hasta que el propietario lo acepte.
+- La ADR queda **`accepted`** al fusionarse, y `capabilities.md` registra la capacidad: comportamiento `Pressure`, validación, reglas del solver, dos archivos, fixtures, hojas y fichas.
 
 ### La selección marca el símbolo, no una caja — 2026-11-18
 
