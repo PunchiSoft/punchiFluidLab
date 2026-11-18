@@ -334,8 +334,12 @@ readings, and reduced motion in the panel, ribbon and strip folds.
 ## Remaining after stage 7 (2026-11-18)
 
 Stage 7 closes the **consistency of the window that exists**, not the interface: every
-capability still to come brings its own screens. This is what is pending today, in build
-order, with the count that makes each item checkable.
+capability still to come brings its own screens. This is what was pending on 2026-11-18, in
+build order, with the count that makes each item checkable.
+
+**Landed since:** stage 8, the ribbon's commands and the document keys. The strip is the only
+list, the ribbon keeps Nuevo, Renombrar and Cerrar, and `Ctrl+T`, `Ctrl+W`, `Ctrl+Q` and
+`Ctrl+Shift+Tab` are in force ([ui-ux.md](ui-ux.md) §1 and the changelog say what changed).
 
 ### 7b-ii — Space and size from the theme
 
@@ -355,30 +359,6 @@ pixel-identical at the default unit, which the capture diff proves.
   the theme.
 - Reduced motion is honoured by the dock folds (`session.motionMs`); the
   remaining animations are checked one by one.
-
-### 8 — The ribbon stops mirroring the strip
-
-The Archivo tab lists every circuit as a button — up to the project limit of 32 — beside
-**Nuevo circuito** and **Renombrar**. That is the same list the strip already draws at the
-foot of the sheet, so the window says it twice, and the group's width grows with the
-project, which is exactly what the adaptive breakpoints cannot measure. It also mixes small
-commands against the large Documento commands, which is the size difference the owner
-reported.
-
-- **The strip is the only list.** Order, switching, closing and renaming live there.
-- **The ribbon keeps the commands**: **Nuevo**, **Renombrar** and **Cerrar**, at one size,
-  with a group width that is the same at one circuit and at thirty-two.
-- **The naming is wrong today**: `Ctrl+N` / **Nuevo** resets the document to one empty
-  circuit and clears the file path, while its hint says "empieza otro circuito"; the real
-  "another circuit" is **Nuevo circuito**. One of the two goes and the hint tells the truth.
-- **The keys are decided** and go in with this stage: **`Ctrl+T`** opens a circuit (the `+`),
-  **`Ctrl+W`** closes the one in view (the `×`, with the confirmation and the undo it already
-  has), **`Ctrl+Q`** quits, and **`Ctrl+Shift+Tab`** walks backwards. `Ctrl+Shift+W` retires:
-  two keys for one action is how the wrong one gets learned.
-- **Settled: the file is a proyecto and a sheet is a circuito.** The rename reaches every
-  file-level string — the group title, the two dialogs («Abrir circuito», «Guardar
-  circuito»), their filters (`Circuitos (*.pfluid)`) and the hints that call a project a
-  circuit — while the strip, the `+`, the `×` and their messages keep saying circuito.
 
 ### 9 — Centring a selection
 

@@ -108,7 +108,7 @@ Card {
 
         Text {
             width: parent.width
-            text: qsTr("La hoja de este documento. Cada cambio se puede deshacer.")
+            text: qsTr("La hoja de este proyecto. Cada cambio se puede deshacer.")
             color: session.muted
             font.pixelSize: 11
             wrapMode: Text.WordWrap

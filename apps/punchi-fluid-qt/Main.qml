@@ -80,6 +80,19 @@ Window {
         window.renameCircuitOpen = true;
     }
 
+    /// The circuit in view, asked to close itself: the strip's x, the ribbon's Cerrar and
+    /// Ctrl+W all land here, so the confirmation and the undo are the same three.
+    function requestActiveCircuitRemoval() {
+        const list = session.circuits;
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i].id === session.activeCircuit) {
+                return window.requestCircuitRemoval(list[i].id, list[i].name,
+                                                    list[i].components);
+            }
+        }
+        return false;
+    }
+
     function requestCircuitRemoval(id, name, components) {
         if (session.circuits.length <= 1) {
             return false;
@@ -391,8 +404,8 @@ Window {
 
     FileDialog {
         id: openDialog
-        title: qsTr("Abrir circuito")
-        nameFilters: [qsTr("Circuitos (*.pfluid)"), qsTr("Todos los archivos (*)")]
+        title: qsTr("Abrir proyecto")
+        nameFilters: [qsTr("Proyectos (*.pfluid)"), qsTr("Todos los archivos (*)")]
         fileMode: FileDialog.OpenFile
         onAccepted: function (file) {
             // Opening replaces the sheet, so unsaved work is asked about first.
@@ -422,8 +435,8 @@ Window {
 
     FileDialog {
         id: saveDialog
-        title: qsTr("Guardar circuito")
-        nameFilters: [qsTr("Circuitos (*.pfluid)")]
+        title: qsTr("Guardar proyecto")
+        nameFilters: [qsTr("Proyectos (*.pfluid)")]
         fileMode: FileDialog.SaveFile
         defaultSuffix: "pfluid"
         onAccepted: function (file) {
@@ -495,19 +508,26 @@ Window {
     // Ctrl+Tab walks the circuits; the strip shows the same change on the same click.
     Shortcut {
         sequence: "Ctrl+Tab"
-        onActivated: {
-            const list = session.circuits;
-            if (list.length < 2) {
-                return;
-            }
-            let index = 0;
-            for (let i = 0; i < list.length; ++i) {
-                if (list[i].id === session.activeCircuit) {
-                    index = i;
-                }
-            }
-            session.selectCircuit(list[(index + 1) % list.length].id);
+        onActivated: window.walkCircuit(1)
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Shift+Tab"
+        onActivated: window.walkCircuit(-1)
+    }
+
+    function walkCircuit(step) {
+        const list = session.circuits;
+        if (list.length < 2) {
+            return;
         }
+        let index = 0;
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i].id === session.activeCircuit) {
+                index = i;
+            }
+        }
+        session.selectCircuit(list[(index + step + list.length) % list.length].id);
     }
 
     Shortcut {
@@ -516,8 +536,28 @@ Window {
         onActivated: session.setHandMode(false)
     }
 
+    // A circuit opens with Ctrl+T and closes with Ctrl+W, as a tab does; Ctrl+Q quits the
+    // program. Ctrl+W never closes the window: a project is not lost by closing what is in
+    // front of the reader.
+    // While a circuit is being renamed, or a close is waiting for an answer, the two keys
+    // stay out of the way: the dialog owns the keyboard until it closes.
+    readonly property bool circuitDialogOpen: window.renameCircuitOpen
+                                              || window.pendingCircuitRemoval >= 0
+
     Shortcut {
-        sequence: "Ctrl+Shift+W"
+        sequence: "Ctrl+T"
+        enabled: !window.circuitDialogOpen
+        onActivated: session.addCircuit()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+W"
+        enabled: !window.circuitDialogOpen
+        onActivated: window.requestActiveCircuitRemoval()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Q"
         onActivated: {
             if (!window.guard("close")) {
                 session.confirmClose();
@@ -735,6 +775,7 @@ Window {
             width: parent.width
             height: ribbon.implicitHeight
             session: session
+            host: window
             minimized: window.ribbonMinimized
             bodyInsetLeft: window.layoutMode === "compact" ? 0 : catalogDock.width
             bodyInsetRight: window.layoutMode === "compact" ? 0 : rightDock.width
@@ -1033,10 +1074,10 @@ Window {
                         Text {
                             width: parent.width
                             text: window.pendingCommand === "close"
-                                  ? qsTr("El circuito tiene cambios sin guardar.\n¿Cierro y los pierdo?")
+                                  ? qsTr("El proyecto tiene cambios sin guardar.\n¿Cierro y los pierdo?")
                                   : (window.pendingCommand === "open"
-                                     ? qsTr("El circuito tiene cambios sin guardar.\n¿Abro otro archivo y los pierdo?")
-                                     : qsTr("El circuito tiene cambios sin guardar.\n¿Empiezo uno nuevo y los pierdo?"))
+                                     ? qsTr("El proyecto tiene cambios sin guardar.\n¿Abro otro archivo y los pierdo?")
+                                     : qsTr("El proyecto tiene cambios sin guardar.\n¿Empiezo uno nuevo y los pierdo?"))
                             color: session.foreground
                             font.pixelSize: 13
                             wrapMode: Text.WordWrap

@@ -2811,6 +2811,29 @@ int main(int argc, char *argv[])
             }
         });
 
+        // The strip is the list. The ribbon's Circuito group is three commands and does not
+        // grow with the project, and its Cerrar reaches the same removal the strip's x does.
+        steps->push_back([state, check] {
+            const int before = state->session->circuits().size();
+            check(state->session->addCircuit() >= 0,
+                  QStringLiteral("ribbon: a circuit opens from its command"));
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            const QVariantList tabs = ribbon ? ribbon->property("tabs").toList() : QVariantList();
+            const QVariantList groups = tabs.value(0).toMap().value("groups").toList();
+            const QVariantList items = groups.value(1).toMap().value("items").toList();
+            bool listsCircuits = false;
+            for (const QVariant &item : items) {
+                if (item.toMap().value("id").toString().startsWith(QStringLiteral("circuit:"))) {
+                    listsCircuits = true;
+                }
+            }
+            check(tabs.size() == 5 && groups.size() >= 2 && items.size() == 3 && !listsCircuits,
+                  QStringLiteral("ribbon: the Circuito group is commands, not the list"));
+            state->session->undo();
+            check(state->session->circuits().size() == before,
+                  QStringLiteral("ribbon: the added circuit leaves with the undo"));
+        });
+
         steps->push_back([state, check] {
             check(!state->session->handMode(),
                   QStringLiteral("view: Esc leaves the hand mode"));
@@ -3410,6 +3433,23 @@ int main(int argc, char *argv[])
                       == 300,
                   QStringLiteral("catalog: the width is remembered"));
             state->window->setProperty("catalogWidth", 18 * state->session->unit());
+        });
+
+        // Closing from the ribbon reaches the same removal the strip's x does. It runs last,
+        // because the circuit in view changes and the gestures above measure that sheet.
+        steps->push_back([state, check] {
+            const int before = state->session->circuits().size();
+            check(state->session->addCircuit() >= 0,
+                  QStringLiteral("ribbon: a second circuit for the close"));
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            QMetaObject::invokeMethod(ribbon, "invoke",
+                                      Q_ARG(QVariant, QStringLiteral("circuit-close")));
+            check(state->session->circuits().size() == before,
+                  QStringLiteral("ribbon: Cerrar closes the circuit in view"));
+            state->session->undo();
+            check(state->session->circuits().size() == before + 1,
+                  QStringLiteral("ribbon: the closed circuit returns with the undo"));
+            state->session->undo();
         });
 
         QTimer::singleShot(400, window, [state, steps] {

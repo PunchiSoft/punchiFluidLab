@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La cinta deja de repetir la tira — 2026-11-18
+
+- El grupo **Circuito** de Archivo ya no enumera los circuitos: **la tira al pie de la hoja es
+  la única lista**. La cinta conserva los comandos **Nuevo**, **Renombrar** y **Cerrar** del
+  circuito en pantalla, del mismo tamaño y con el mismo ancho con uno o con 32 circuitos.
+- **Teclas de documento**: `Ctrl+N` proyecto nuevo, `Ctrl+T` circuito nuevo, `Ctrl+W` cierra
+  el circuito en pantalla (con su confirmación y su undo), `Ctrl+Q` sale y `Ctrl+Shift+Tab`
+  recorre hacia atrás; `Ctrl+Shift+W` se retira. Mientras se renombra o se espera una
+  confirmación, `Ctrl+T` y `Ctrl+W` no interfieren.
+- **Vocabulario**: un archivo es un **proyecto** y una hoja un **circuito**; el grupo, los
+  diálogos de abrir y guardar, sus filtros y los avisos de cambios sin guardar dicen proyecto,
+  y la tira sigue diciendo circuito.
+- **Evidencia**: prueba nueva del `--selftest` (el grupo son tres comandos y no la lista;
+  Cerrar cierra y el undo devuelve el circuito), `--check-qml` 0 problemas, `--check-icons` 47
+  de proyecto y 0 ausentes, `--selftest` 0 fallos y capturas clara y oscura.
+
 ### La interfaz pendiente, escrita — 2026-11-18
 
 - El plan de interfaz gana la lista de lo que queda tras la etapa 7, con cifras que se pueden

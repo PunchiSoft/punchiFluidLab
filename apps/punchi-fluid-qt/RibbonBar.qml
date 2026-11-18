@@ -15,6 +15,9 @@ import PunchiFluid
 Rectangle {
     id: ribbon
     property FluidSession session
+    /// The window that owns the dialogs, the guards and the export panel. The ribbon only
+    /// asks it, and the window passes itself in.
+    property var host: null
     /// The catalog's view state, so the Ver command can say what it will do.
     property bool catalogOpen: true
     /// The right dock's view state and whether it has content to show.
@@ -76,10 +79,10 @@ Rectangle {
             name: qsTr("Archivo"),
             groups: [
                 {
-                    title: qsTr("Documento"),
+                    title: qsTr("Proyecto"),
                     items: [
-                        { id: "new", label: qsTr("Nuevo"), icon: "document-new", hint: qsTr("Ctrl+N · empieza otro circuito"), big: true },
-                        { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un circuito"), big: true },
+                        { id: "new", label: qsTr("Nuevo"), icon: "document-new", hint: qsTr("Ctrl+N · empieza un proyecto vacío"), big: true },
+                        { id: "open", label: qsTr("Abrir"), icon: "document-open", hint: qsTr("Ctrl+O · abre un proyecto"), big: true },
                         { id: "save", label: qsTr("Guardar"), icon: "document-save", hint: session.currentPath.length > 0 ? session.currentPath : qsTr("Ctrl+S · pide un archivo la primera vez"), big: true },
                         { id: "save-as", label: qsTr("Guardar como"), icon: "document-save-as", hint: qsTr("Ctrl+Shift+S · elige otro archivo") },
                         { id: "export", label: qsTr("Exportar"), icon: "document-export", hint: qsTr("Ctrl+Shift+E · el plano en la hoja que elijas, PDF o PNG"), big: true },
@@ -87,23 +90,15 @@ Rectangle {
                     ]
                 },
                 {
-                    // A project is one document with several circuits. The list is the
-                    // core's, so the selector cannot name a circuit that is not there.
+                    // The strip at the foot of the sheet is the list of circuits; this group
+                    // holds only the commands that act on the circuit in view, so its width
+                    // is the same with one circuit or with thirty-two.
                     title: qsTr("Circuito"),
-                    items: session.circuits.map(function(circuit, index) {
-                        return {
-                            id: "circuit:" + circuit.id,
-                            label: circuit.name,
-                            icon: "x-office-document",
-                            hint: circuit.id === session.activeCircuit
-                                  ? qsTr("en pantalla")
-                                  : qsTr("abrir este circuito"),
-                            current: circuit.id === session.activeCircuit
-                        };
-                    }).concat([
-                        { id: "circuit-new", label: qsTr("Nuevo circuito"), icon: "list-add", hint: qsTr("crea una hoja vacía y la abre") },
-                        { id: "circuit-rename", label: qsTr("Renombrar"), icon: "edit-rename", hint: qsTr("cambia el nombre del circuito en pantalla") }
-                    ])
+                    items: [
+                        { id: "circuit-new", label: qsTr("Nuevo"), icon: "list-add", hint: qsTr("Ctrl+T · crea un circuito vacío y lo abre") },
+                        { id: "circuit-rename", label: qsTr("Renombrar"), icon: "edit-rename", hint: qsTr("F2 · cambia el nombre del circuito en pantalla") },
+                        { id: "circuit-close", label: qsTr("Cerrar"), icon: "window-close", hint: qsTr("Ctrl+W · cierra el circuito en pantalla"), enabled: session.circuits.length > 1 }
+                    ]
                 },
                 {
                     // The page as a dropdown and a launcher, not a tab of its own: the
@@ -327,7 +322,7 @@ Rectangle {
             id: "paper-custom",
             label: qsTr("Personalizado…"),
             icon: "document-properties",
-            hint: qsTr("ancho y alto de la hoja, guardados en el documento"),
+            hint: qsTr("ancho y alto de la hoja, guardados con el proyecto"),
             current: session.sheetPaper < 0
         });
         return out;
@@ -418,16 +413,20 @@ Rectangle {
             ribbon.panelCommand("reset-view");
             return;
         }
-        if (id.indexOf("circuit:") === 0) {
-            session.selectCircuit(parseInt(id.slice(8), 10));
-            return;
-        }
         if (id === "circuit-new") {
             session.addCircuit();
             return;
         }
         if (id === "circuit-rename") {
-            window.openRenameCircuit();
+            if (ribbon.host) {
+                ribbon.host.openRenameCircuit();
+            }
+            return;
+        }
+        if (id === "circuit-close") {
+            if (ribbon.host) {
+                ribbon.host.requestActiveCircuitRemoval();
+            }
             return;
         }
         if (id === "paper-custom") {
@@ -443,8 +442,10 @@ Rectangle {
             return;
         }
         if (id === "export-panel") {
-            window.exportPanelOpen = true;
-            window.pageSetupOpen = false;
+            if (ribbon.host) {
+                ribbon.host.exportPanelOpen = true;
+                ribbon.host.pageSetupOpen = false;
+            }
             return;
         }
         if (id === "orientation-portrait") {
@@ -470,7 +471,9 @@ Rectangle {
             return;
         }
         if (id === "edit-block" || id === "block-content") {
-            window.titleBlockOpen = true;
+            if (ribbon.host) {
+                ribbon.host.titleBlockOpen = true;
+            }
             return;
         }
         if (id.indexOf("position-") === 0) {
