@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El cajetín protege su caja, no una banda — 2026-11-18
+
+- **ADR 0030**: la reserva del cajetín pasa a ser **su propio rectángulo** —ancho, alto y
+  posición, más la lista de piezas—, no su altura a todo lo ancho. En A4 industrial la banda
+  reservaba 12.015 mm² para proteger 7.650: el 36 % de la banda, la franja de 97 mm a la
+  izquierda del cajetín, es papel que nada tapa y que hoy no se puede dibujar.
+- `Sin cajetín` **libera el marco**; si se activa un cajetín encima de un dibujo, la
+  comprobación lo marca donde ocurre y el símbolo se puede mover.
+- La reserva se recalcula del layout resuelto: no hay campo nuevo ni cambio de formato, y la
+  exportación dibuja en el marco con el cajetín por encima.
+- **No hay código todavía**: el ADR queda `proposed` hasta que lo aceptes al fusionar, y la
+  capacidad F1 queda registrada como `partial` con su evidencia por escribir.
 ### La cinta deja de repetir la tira — 2026-11-18
 
 - El grupo **Circuito** de Archivo ya no enumera los circuitos: **la tira al pie de la hoja es
