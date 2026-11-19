@@ -28,8 +28,7 @@ are drawn by the renderer at the current extension. No third-party asset.
 | Piston crosses the internal length the file declares and stays inside the barrel | pass | at full stroke it leaves only the declared dead length against the rod-side wall; animation test |
 | Rod keeps its length and shows at rest | pass | animation test |
 | Legible at palette size | pass | `catalog-dark.png` |
-| Legible at 300 dpi | **not checked** | needs a per-symbol render |
-
+| Legible at 300 dpi | pass | `cylinder.double_acting_32_200-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Correction of 2026-11-07
 
 The rod-end port used to leave the barrel's top edge next to the corner, where it read as
@@ -44,9 +43,10 @@ bar floating inside the barrel; it now meets both walls at every position of the
 
 ## What is still open
 
-- 300 dpi image and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - **It is not simulated yet**: driving it needs two working lines, which is the network
   solver of M4. The definition and its symbol are right today; the circuit that drives it
   is the next milestone.
 - The 2026-11-06 travel correction shortened the barrel and moved the cap port to the
   centreline; the images next to this file were regenerated after it.
+- `cylinder.double_acting_32_200-300.png`

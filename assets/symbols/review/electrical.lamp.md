@@ -30,8 +30,7 @@ symbol.
 | The state is also a word | pass | `encendida` beside the symbol |
 | A dark lamp keeps both away | pass | `a_lamp_shows_its_state_as_rays_not_only_colour` |
 | The class says what the line is | pass | dotted stem for the wire |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.lamp-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -44,3 +43,4 @@ symbol.
 ## Images
 
 - `electrical.lamp-light.png`, `electrical.lamp-dark.png` — this symbol lit.
+- `electrical.lamp-300.png`

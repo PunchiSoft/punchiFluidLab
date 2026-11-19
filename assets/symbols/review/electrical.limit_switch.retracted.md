@@ -30,8 +30,7 @@ inspector writes (ADR 0023). No third-party asset and no trace of another progra
 | A visible gap at rest | pass | the open bar above the terminals |
 | The two ends are distinguishable | pass | the lever points to the watched side |
 | The class says what each line is | pass | dotted stems for the wires |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.limit_switch.retracted-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -45,3 +44,4 @@ inspector writes (ADR 0023). No third-party asset and no trace of another progra
 ## Images
 
 - `electrical.limit_switch.retracted-light.png`, `electrical.limit_switch.retracted-dark.png` — this symbol at rest.
+- `electrical.limit_switch.retracted-300.png`

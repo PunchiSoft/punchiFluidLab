@@ -46,8 +46,7 @@ breaks one fails `cargo test --workspace`.
 | Spool position readable without colour | pass | the active square is filled *and* the other position's path is dimmed |
 | Actuation glyphs match the standard's table | pass | lever = bar, arm and pivot circle; the reference table of [docs/symbology.md](../../../docs/symbology.md) lists every glyph |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible when printed at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `valve.3_2.spring_return-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Correction of 2026-11-06
 
 The first drawing put each position's flow path across the boundary into the
@@ -93,3 +92,4 @@ numeral is now written beside its own stub, on the side where no other port is w
 - `valve.3_2.spring_return-dark.png`, `valve.3_2.spring_return-light.png` — this symbol.
 - `catalog-dark.png`, `catalog-light.png` — the whole catalog on one sheet
   (`PUNCHI_FLUID_PREVIEW=1 ./scripts-dev/run.sh --dark`).
+- `valve.3_2.spring_return-300.png`

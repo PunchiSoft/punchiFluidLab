@@ -28,8 +28,7 @@ asset and no trace of another program's symbol.
 | The actuator distinguishes this part from the others | pass | `electrical.switch.selector-light.png` |
 | The rest state matches `normally_closed` | pass | the blade at rest |
 | The class says what each line is | pass | dotted stems for the wires |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.switch.selector-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -42,3 +41,4 @@ asset and no trace of another program's symbol.
 ## Images
 
 - `electrical.switch.selector-light.png`, `electrical.switch.selector-dark.png` — this symbol at rest.
+- `electrical.switch.selector-300.png`

@@ -28,8 +28,7 @@ the switch state (ADR 0024). No third-party asset and no trace of another progra
 | The rectangular actuator and the contact are distinct | pass | `electrical.pressure_switch-light.png` |
 | A visible gap at rest | pass | the open bar above the terminals |
 | The class says what each line is | pass | dotted stems for the wires |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.pressure_switch-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -43,3 +42,4 @@ the switch state (ADR 0024). No third-party asset and no trace of another progra
 ## Images
 
 - `electrical.pressure_switch-light.png`, `electrical.pressure_switch-dark.png` — this symbol at rest.
+- `electrical.pressure_switch-300.png`

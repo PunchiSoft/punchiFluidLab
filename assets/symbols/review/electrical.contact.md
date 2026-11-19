@@ -30,8 +30,7 @@ travel (ADR 0018). No third-party asset and no trace of another program's symbol
 | The actuator is drawn, not implied | pass | the push rod and its cap |
 | The class says what the line is | pass | `electrical`, dotted |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `electrical.contact-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **A contact is a file with two terminals** ([ADR 0017](../../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md)):
@@ -41,7 +40,7 @@ travel (ADR 0018). No third-party asset and no trace of another program's symbol
 
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - IEC 60617 is the reference for electrical symbols; this geometry is our contract until a
   reader checks it against the edition in force.
 
@@ -49,3 +48,4 @@ travel (ADR 0018). No third-party asset and no trace of another program's symbol
 
 - `electrical.contact-light.png`, `electrical.contact-dark.png` (open)
 - `electrical.contact-closed-light.png`, `electrical.contact-closed-dark.png` (closed)
+- `electrical.contact-300.png`

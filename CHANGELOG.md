@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Las hojas a 300 dpi de los símbolos — 2026-11-19
+
+- Las **36 fichas** de `assets/symbols/review/` llevan su **hoja a 300 dpi** (`<id>-300.png`,
+  60 mm cuadrados en tinta de impresión, 709 px) y la fila de legibilidad respondida. El estado
+  sigue `pending-300dpi` hasta que el propietario firme; la exportación mantiene el aviso de no
+  verificado.
+- **Hallazgo**: `electrical.relay.latching` **falla** a 300 dpi: las etiquetas `A2` y `R1`
+  chocan con sus terminales. Queda `blocked` con el defecto escrito y sin firmar.
+- `throttle.fixed` sigue **bloqueado** por la forma no confirmada; su hoja no cambia el estado.
+- **Evidencia**: 36 hojas nuevas, `cargo test -p punchi-fluid-catalog` verde (38 pruebas) y
+  `check-docs` verde.
+
 ### El cajetín ya no reserva una banda — 2026-11-18
 
 - El área de dibujo es **el marco entero**: el cajetín protege solo **su propio rectángulo**

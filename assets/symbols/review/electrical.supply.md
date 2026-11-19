@@ -29,8 +29,7 @@ and no trace of another program's symbol.
 | The polarity is drawn, not typed | pass | the plus and the minus are line primitives |
 | Terminals where the wires attach | pass | the stems and the connection circles |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `electrical.supply-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **A second domain in the same document** ([ADR 0017](../../docs/adr/0017-the-electrical-circuit-is-a-second-domain.md)):
@@ -41,7 +40,7 @@ and no trace of another program's symbol.
 
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The control model — a live line, a closed contact moving a valve — is the next slice.
 - IEC 60617 is the reference for electrical symbols; this geometry is our contract until a
   reader checks it against the edition in force.
@@ -49,3 +48,4 @@ and no trace of another program's symbol.
 ## Images
 
 - `electrical.supply-light.png`, `electrical.supply-dark.png`
+- `electrical.supply-300.png`

@@ -30,9 +30,10 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The bottom intake mark is drawn, as the reference does | pass | the stem and circle, declared as a mark, not a port |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `supply.compressor-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The compressor is modelled as a constant-pressure source: the real machine's delivery curve
   is not modelled. The bottom circle is the reference's intake/condensate mark; this model
   has one supply port, so it is drawn but not connected.
@@ -40,3 +41,4 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 ## Images
 
 - `supply.compressor-light.png`, `supply.compressor-dark.png`
+- `supply.compressor-300.png`

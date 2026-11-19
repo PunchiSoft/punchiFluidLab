@@ -28,8 +28,7 @@ program's symbol.
 | The dial is the symbol; the number is a reading, not a primitive | pass | the value is drawn from the model at the lower part of the dial |
 | One port at the bottom, where a gauge connects | pass | the stem and the numeral |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `gauge.pressure-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **A behaviour, not a decoration** ([ADR 0008](../../docs/adr/0008-a-gauge-is-a-behaviour.md)):
@@ -41,10 +40,11 @@ program's symbol.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - A moving needle is a later improvement; the number is the evidence today.
 - Flow, force and strip-chart instruments are separate behaviours, each with its own ADR.
 
 ## Images
 
 - `gauge.pressure-light.png`, `gauge.pressure-dark.png`
+- `gauge.pressure-300.png`

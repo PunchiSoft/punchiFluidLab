@@ -30,8 +30,7 @@ program's symbol.
 | One contact, linked from both windings | pass | the two dashed links |
 | A visible gap at rest | pass | the open bar between 11 and 14 |
 | The terminal names sit close at palette size | **caveat** | A2/R1 are tight; the 300 dpi pass must confirm |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | fail | `electrical.relay.latching-300.png`: A2 and R1 collide with their terminal circles |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -42,7 +41,14 @@ program's symbol.
 - A coil live at the same time as the other is not a priority rule: the model holds the last
   state, and a circuit that drives both is a fault the check will learn to report.
 
+## What is still open
+
+- **The 300 dpi sheet fails**: the `A2` and `R1` labels collide with their terminal circles
+  on the left. The numerals have to move and the sheet be rendered again before the record
+  can be signed; the symbol is blocked, not merely unverified.
+
 ## Images
 
 - `electrical.relay.latching-light.png`, `electrical.relay.latching-dark.png` — this symbol
   at rest.
+- `electrical.relay.latching-300.png`

@@ -31,12 +31,14 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The bottom intake mark is drawn, as the reference does | pass | the stem and circle, declared as a mark, not a port |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `supply.compressor_adjustable-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The compressor is modelled as a constant-pressure source: the real machine's delivery curve
   is not modelled.
 
 ## Images
 
 - `supply.compressor_adjustable-light.png`, `supply.compressor_adjustable-dark.png`
+- `supply.compressor_adjustable-300.png`

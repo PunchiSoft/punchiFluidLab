@@ -32,8 +32,7 @@ program's symbol.
 | The mechanical link is dashed, not a wire | pass | the dashes between coil and contact |
 | The terminals are named in the file, not in code | pass | A1, A2, 11, 14 |
 | The class says what each line is | pass | dotted stems for the wires |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.relay-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## What this review does not prove
 
 - The 300 dpi pass is still owed: the status stays `pending-300dpi` and the export keeps the
@@ -48,3 +47,4 @@ program's symbol.
 ## Images
 
 - `electrical.relay-light.png`, `electrical.relay-dark.png` — this symbol at rest.
+- `electrical.relay-300.png`

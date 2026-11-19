@@ -31,13 +31,14 @@ asset, no trace, no scan.
 | It sits between the compressor and the first valve | pass | the worked example wires compressor → unit → valve |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `preparation.service_unit-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
 - **The lubricator is not drawn.** The unit's name says filter, regulator and lubricator, but
   only the filter (its diamond and its drain) and the regulator's dial are on the symbol. The
   lubricator's own glyph needs a reference to copy the requirement from, and inventing a
   plausible shape for it is worse than leaving it out and saying so.
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The unit is modelled as a **fixed restriction**: it does not regulate, it does not filter
   and it does not lubricate. A regulator that holds a set pressure is a model of its own.
 - The three functions are drawn as **one** block. ISO 1219-1 also allows them drawn
@@ -46,3 +47,4 @@ asset, no trace, no scan.
 ## Images
 
 - `preparation.service_unit-dark.png`, `-light.png`
+- `preparation.service_unit-300.png`
