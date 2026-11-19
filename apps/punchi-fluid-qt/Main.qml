@@ -17,7 +17,8 @@ Window {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: session.title
+    // Inicio is not a document: the window does not offer an untitled one.
+    title: window.startViewOpen ? qsTr("Punchi Fluid Lab") : session.title
     color: session.background
 
     /// Silence is a property of the window, not of a button: the status bar draws it and
@@ -796,6 +797,9 @@ Window {
         RibbonBar {
             id: ribbon
             objectName: "ribbon"
+            // Inicio is a page, not a document: the ribbon and the status bar belong to the
+            // sheet and are not shown over it (ADR 0031, as the reference does).
+            visible: !window.startViewOpen
             width: parent.width
             height: ribbon.implicitHeight
             session: session
@@ -851,11 +855,13 @@ Window {
         // floats over the sheet instead of taking a column, and anchors let the workspace
         // keep its full width while the panel is above it.
         Item {
+            id: region
             width: parent.width
             height: parent.height - ribbon.height - status.height
 
             DockPanel {
                 id: catalogDock
+                visible: !window.startViewOpen
                 objectName: "catalogDock"
                 session: session
                 title: qsTr("Catálogo")
@@ -902,6 +908,22 @@ Window {
                 }
             }
 
+            // Inicio covers the whole region, panels included: it is a page, not a card.
+            StartView {
+                objectName: "startView"
+                visible: window.startViewOpen
+                session: session
+                canReturn: session.currentPath.length > 0 || session.hasModel
+                onNewProject: window.newProjectFromStart()
+                onOpenProject: window.openProjectFromStart()
+                onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
+                onAboutRequested: window.openAbout()
+                onLicenceRequested: window.openLicense()
+                onReturnRequested: window.startViewOpen = false
+                anchors.fill: parent
+                z: 40
+            }
+
             Rectangle {
                 // The workspace is the sunken plane around the paper. The block editor
                 // docks beside the sheet, not over it: opening it gives the editor real
@@ -928,21 +950,6 @@ Window {
 
                 // The circuits, at the foot of the sheet: read-only for now, so the reader
                 // knows which one is being worked on.
-                StartView {
-                    objectName: "startView"
-                    visible: window.startViewOpen
-                    session: session
-                    canReturn: session.currentPath.length > 0 || session.hasModel
-                    onNewProject: window.newProjectFromStart()
-                    onOpenProject: window.openProjectFromStart()
-                    onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
-                    onAboutRequested: window.openAbout()
-                    onLicenceRequested: window.openLicense()
-                    onReturnRequested: window.startViewOpen = false
-                    anchors.fill: parent
-                    z: 20
-                }
-
                 CircuitTabs {
                     objectName: "circuitTabs"
                     visible: !window.startViewOpen
@@ -1515,6 +1522,7 @@ Window {
             // column and every field edits the live circuit.
             DockPanel {
                 id: rightDock
+                visible: !window.startViewOpen
                 objectName: "rightDock"
                 session: session
                 title: session.inspectorOpen && window.titleBlockOpen
@@ -2066,12 +2074,16 @@ Window {
 
         StatusBar {
             id: status
+            visible: !window.startViewOpen
             width: parent.width
             height: 40
             session: session
+            startView: window.startViewOpen
             muted: window.muted
             onMuteToggled: window.muted = !window.muted
-            hint: sidebar.selectedName.length > 0
+            hint: window.startViewOpen
+                  ? qsTr("Inicio: crea un proyecto, abre uno reciente o empieza desde el catálogo")
+                  : sidebar.selectedName.length > 0
                   ? qsTr("Elegido en el catálogo: %1 — arrástralo a la hoja para colocarlo")
                         .arg(sidebar.selectedName)
                   : !session.hasModel

@@ -400,6 +400,20 @@ int main(int argc, char *argv[])
         }
     }
 
+    // The program opens on Inicio; the automated runs that measure the window or drive the
+    // sheet keep it closed so they see the page they were written against (ADR 0031).
+    const bool windowTest =
+        arguments.contains(QStringLiteral("--selftest"))
+        || arguments.contains(QStringLiteral("--check-layout"))
+        || arguments.contains(QStringLiteral("--check-qml"))
+        || arguments.contains(QStringLiteral("--check-theme"))
+        || arguments.contains(QStringLiteral("--check-icons"));
+    for (QObject *root : engine.rootObjects()) {
+        if (!windowTest && root->property("startViewOpen").isValid()) {
+            root->setProperty("startViewOpen", true);
+        }
+    }
+
     if (arguments.contains(QStringLiteral("--page-setup"))) {
         for (QObject *root : engine.rootObjects()) {
             if (root->property("pageSetupOpen").isValid()) {

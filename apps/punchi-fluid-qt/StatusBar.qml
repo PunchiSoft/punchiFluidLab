@@ -11,6 +11,8 @@ Rectangle {
     id: status
     property FluidSession session
     property string hint: ""
+    /// Inicio is not a sheet: the readings of a document have nothing to say there.
+    property bool startView: false
     /// Shown by the button below and obeyed by `SoundFeedback`; the window owns it.
     property bool muted: false
 
@@ -27,6 +29,7 @@ Rectangle {
 
     Row {
         id: readings
+        visible: !status.startView
         x: 16
         anchors.verticalCenter: parent.verticalCenter
         spacing: 26

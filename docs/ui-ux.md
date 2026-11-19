@@ -380,7 +380,7 @@ reachable from **Archivo ▸ Inicio**; with a project open the view covers the s
 region, the same width and the same tokens as the catalog; returning to the sheet returns the
 catalog with its remembered width.
 
-**Today** the page is reachable from **Archivo ▸ Inicio** and closes with **Volver**; the startup default and the catalog's replacement by the rail land with the next slice. It offers, in reading order:
+**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver** or with **Nuevo**. Inicio takes the whole region: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
 
 - **Nuevo proyecto**, the primary action, with `Enter`; **Abrir…**; and the **recent
   projects**, each with a thumbnail, its name and its folder. A path that is gone stays in the
