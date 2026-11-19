@@ -1112,6 +1112,29 @@ int main(int argc, char *argv[])
 
         auto steps = std::make_shared<QVector<std::function<void()>>>();
 
+        // The product opens on an empty sheet: the worked example is a fixture the test asks
+        // for, so the gestures below are proved on the circuit they were written around.
+        steps->push_back([state, check] {
+            check(state->session->componentCount() == 0,
+                  QStringLiteral("startup: the window opens with an empty sheet"));
+            QObject *hint = state->window->findChild<QObject *>(QStringLiteral("emptySheetHint"));
+            check(hint != nullptr && hint->property("visible").toBool(),
+                  QStringLiteral("startup: the empty sheet says what to do"));
+            QObject *pressure =
+                state->window->findChild<QObject *>(QStringLiteral("pressureReading"));
+            check(pressure != nullptr && !pressure->property("visible").toBool(),
+                  QStringLiteral("startup: model readings stay hidden without a model"));
+            const bool loaded = state->session->loadExample();
+            std::fprintf(stderr, "selftest: startup load example=%d components=%d error=%s\n",
+                         loaded ? 1 : 0, state->session->componentCount(),
+                         qUtf8Printable(state->session->lastError()));
+            check(loaded,
+                  QStringLiteral("startup: the example loads on request (%1)")
+                      .arg(state->session->lastError()));
+            check(state->session->componentCount() >= 4,
+                  QStringLiteral("startup: the example is the fixture"));
+        });
+
         // The program opens in edit mode, as the reference does. A click there selects and
         // must not actuate anything: the model only moves once the user asks for it.
         steps->push_back([state, check, send, valveCentre, toScene] {
@@ -1880,6 +1903,8 @@ int main(int argc, char *argv[])
             state->session->discardAndNewDocument();
             check(!state->session->modified(),
                   QStringLiteral("unsaved: starting over begins clean"));
+            check(state->session->loadExample(),
+                  QStringLiteral("unsaved: the next circuit test asks for its fixture"));
             QFile::remove(state->unsavedPath);
         });
 

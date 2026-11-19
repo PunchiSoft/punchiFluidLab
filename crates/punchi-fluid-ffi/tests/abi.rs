@@ -43,26 +43,26 @@ use punchi_fluid::{
     pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
     pf_session_free, pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
     pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
-    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
-    pf_session_new, pf_session_open, pf_session_open_recent, pf_session_paste,
-    pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset,
-    pf_session_place_component, pf_session_placement_id, pf_session_port_point,
-    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
-    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
-    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
-    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
-    pf_session_rename_circuit, pf_session_reset_block_visibility, pf_session_restart,
-    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
-    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
-    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
-    pf_session_set_chart_source, pf_session_set_component_designation,
-    pf_session_set_component_edits, pf_session_set_grid_step, pf_session_set_pipe_class,
-    pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet, pf_session_space_selection,
-    pf_session_straighten_pipe, pf_session_telemetry, pf_session_toggle_contact,
-    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
-    pf_session_valve_spring_return,
+    pf_session_load_example, pf_session_mirror_selected, pf_session_move_component,
+    pf_session_move_selection, pf_session_new, pf_session_new_document, pf_session_open,
+    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
+    pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
+    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
+    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
+    pf_session_release_valve, pf_session_remove_circuit, pf_session_remove_component,
+    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
+    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
+    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
+    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
+    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
+    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
+    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
+    pf_session_set_pipe_class, pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet,
+    pf_session_space_selection, pf_session_straighten_pipe, pf_session_telemetry,
+    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
+    pf_session_valve_rect, pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -70,6 +70,9 @@ fn session() -> *mut PfSession {
     // that has no user directory passes.
     let session = unsafe { pf_session_new(ptr::null()) };
     assert!(!session.is_null(), "a session must always be created");
+    // Most ABI tests exercise the worked example; it is now an explicit fixture rather
+    // than the product's implicit start document (ADR 0031).
+    assert_eq!(unsafe { pf_session_load_example(session) }, PF_OK);
     session
 }
 
@@ -387,6 +390,37 @@ fn the_grid_step_is_a_view_setting_and_the_snap_follows_it() {
     );
     assert!((f32::midpoint(rect[0], rect[2]) - 60.0).abs() < 0.01);
     assert!((f32::midpoint(rect[1], rect[3]) - 60.0).abs() < 0.01);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_new_document_is_an_empty_sheet_and_the_example_loads_on_request() {
+    // SAFETY: a null directory asks for the built-in catalog.
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null());
+    // The constructor and every new document are empty; building the first frame does not
+    // seed the fixture either. The example is explicit.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_component_count(session) }, 0);
+    let mut frame = PfFrame::default();
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 1.0, &raw mut frame) },
+        PF_OK
+    );
+    assert_eq!(unsafe { pf_session_component_count(session) }, 0);
+    // SAFETY: live session, an empty document.
+    assert_eq!(unsafe { pf_session_load_example(session) }, PF_OK);
+    assert!(unsafe { pf_session_component_count(session) } >= 4);
+    // A second call is refused: the example cannot be duplicated behind the reader's back.
+    // SAFETY: live session.
+    assert_ne!(unsafe { pf_session_load_example(session) }, PF_OK);
+    // Starting another document empties the fixture and leaves it clean.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_new_document(session) }, PF_OK);
+    assert_eq!(unsafe { pf_session_component_count(session) }, 0);
+    assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

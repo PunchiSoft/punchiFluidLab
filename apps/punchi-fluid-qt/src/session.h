@@ -277,6 +277,9 @@ public:
     Q_INVOKABLE void forgetRecent();
     /// Starts a new document and forgets the current file.
     Q_INVOKABLE void newDocument();
+    /// Draws the worked example into an empty document: the fixture the tests ask for and
+    /// the example template of the start view. Refused when the document has components.
+    Q_INVOKABLE bool loadExample();
 
     /// `true` while the transport is playing. Pausing stops the sheet loop without
     /// touching the model, so resuming continues from the same instant.
