@@ -168,6 +168,8 @@ tooling, never a runtime dependency).
 
 - Circuit files are untrusted input: parse defensively, bound sizes, never index
   with unvalidated data.
+  Every limit has a number, a message and a one-past-it test in the crate that owns
+  the data ([.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md)).
 - No telemetry, no network at runtime, no shell-outs.
 - `assets/` may only contain files whose licence and origin are recorded; ISO
   symbols are drawn from the standard, never traced from another program.
@@ -195,7 +197,8 @@ tooling, never a runtime dependency).
 
 - Budgets and their verification are in [docs/engineering.md](docs/engineering.md).
 - No allocation in the solver step or the per-frame draw loop; reuse buffers.
-- Every cache has a bound and an eviction rule; a cache without one is a leak.
+- Every cache has a bound and an eviction rule; a cache without one is a leak. The procedure is
+  [.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md).
 - `Arc` for shared immutables, never `Rc<RefCell<…>>`, no global mutable state.
 - A change that moves a budget says so in the pull request, with the measurement.
 
