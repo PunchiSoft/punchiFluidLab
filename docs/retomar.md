@@ -95,15 +95,17 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
 
-`main` en **`5c99cb5`**, árbol limpio, sin PRs abiertas. El gate (`./scripts-dev/check.sh`)
-sale **0** y `--selftest` **0 fallos**.
+La base al retomar fue `main` en **`2ad7360`**, árbol limpio y sin PRs abiertas. El trabajo
+actual está en `feat/start-templates`, creado desde esa base; no se ha pedido commit ni PR.
+`./scripts-dev/check.sh` sale **0**; `--selftest` termina con **0 fallos**. Las capturas claras y
+oscuras de Inicio están en `assets/screenshots/start-view-templates-{light,dark}.png`.
 
 | Área | Estado real hoy |
 |---|---|
 | Arranque | **Inicio**: la ventana abre en la página de inicio, no en un circuito. Sin cinta, sin barra de estado, sin catálogo ni dock derecho; el raíl ocupa su sitio y el título nombra el programa, nunca «sin título» |
 | Proyecto nuevo | **hoja vacía**: marco y A4 apaisado, cero componentes; la hoja dice «Arrastra símbolos a la hoja para empezar» y las lecturas físicas quedan ocultas hasta que haya modelo |
-| Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; será la primera **plantilla** de Inicio |
-| Página Inicio | tarjetas **Nuevo proyecto** y **Abrir…**, **recientes** con nombre y carpeta, **Aprender** (Acerca de, Licencia) y **Volver**. Se abre también desde Archivo ▸ Inicio |
+| Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; Inicio lo ofrece como la primera de **cuatro plantillas** |
+| Página Inicio | **Nuevo proyecto**, **Abrir…**, cuatro plantillas propias con miniatura del renderizador, **recientes** con nombre y carpeta, **Aprender** (Acerca de, Licencia) y **Volver**. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
 | Recientes | tope de **10** en `punchi-fluid-file`; la página aún no declara el suyo y no tiene «quitar» ni gris para rutas ausentes |
 | Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
 | Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
@@ -112,8 +114,8 @@ sale **0** y `--selftest` **0 fallos**.
 
 **Lo inmediato, en este orden:**
 
-1. **Plantillas con miniatura** en Inicio: el ejemplo como primera tarjeta y tres circuitos
-   docentes, dibujados por nuestro renderizador.
+1. **Plantillas con miniatura**: implementadas en `feat/start-templates`; pendiente revisión del
+   propietario antes de entregar la PR.
 2. **Recientes**: tope propio en la página, ruta ausente en gris y **quitar**
    (`pf_session_forget_recent` ya existe en el ABI).
 3. **Cerrar el último proyecto vuelve a Inicio**, con la confirmación de cambios.

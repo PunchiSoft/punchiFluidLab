@@ -67,7 +67,8 @@ not have it.
 | Circuits per project | 32 | `punchi-fluid-core` | refused opening and adding |
 | Undo depth | the document's | `punchi-fluid-doc` | bounded steps |
 | Catalog keys and numbers | per field | `punchi-fluid-catalog` | one test per rule |
-| Icon and thumbnail caches | to be declared | `apps/punchi-fluid-qt` | owed |
+| Icon cache | 200 entries per size and tint | `apps/punchi-fluid-qt` | LRU bound in `docs/engineering.md` |
+| Start-view template thumbnails | 4 × 512 × 288 RGBA pixels (≤ 2.25 MiB) | `apps/punchi-fluid-qt` | fixed template count, bounded raster dimensions, selftest checks four cards |
 
 When a limit moves, the table and the changelog move with it.
 

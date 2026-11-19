@@ -167,6 +167,12 @@ typedef struct PfEditSet {
 
 typedef struct PfSession PfSession;
 
+#define PF_TEMPLATE_WORKED_EXAMPLE 0U
+#define PF_TEMPLATE_DOUBLE_ACTING 1U
+#define PF_TEMPLATE_AIR_PREPARATION 2U
+#define PF_TEMPLATE_ELECTRICAL_CONTROL 3U
+#define PF_TEMPLATE_COUNT 4U
+
 const char *pf_version(void);
 int32_t pf_abi(PfAbi *out);
 
@@ -175,6 +181,8 @@ PfSession *pf_session_new(const char *user_catalog_dir);
  * example template of the start view. Refused when the document already has components;
  * a new document is empty (ADR 0031). */
 int32_t pf_session_load_example(PfSession *session);
+/* Loads a compiled-in start-page circuit into an empty document, clean and ready to edit. */
+int32_t pf_session_load_template(PfSession *session, uint32_t index);
 void pf_session_free(PfSession *session);
 const char *pf_session_last_error(const PfSession *session);
 
@@ -499,6 +507,9 @@ uint32_t pf_session_catalog_problems(const PfSession *session);
 /* Draws one catalog entry alone, for a sidebar thumbnail. */
 int32_t pf_session_preview(PfSession *session, uint32_t index, float width_mm, float height_mm,
                            float pixels_per_mm, PfFrame *out);
+/* Draws one compiled-in start-page circuit for a thumbnail; dimensions are bounded to 60–1000 mm. */
+int32_t pf_session_preview_template(PfSession *session, uint32_t index, float width_mm,
+                                    float height_mm, float pixels_per_mm, PfFrame *out);
 
 /* What `pf_session_export` writes. */
 #define PF_EXPORT_PNG 0U

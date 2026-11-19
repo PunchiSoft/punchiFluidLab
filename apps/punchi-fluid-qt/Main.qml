@@ -37,6 +37,7 @@ Window {
     /// path is kept so "Guardar y abrir" knows which file it was going to open.
     property string pendingCommand: ""
     property string pendingPath: ""
+    property int pendingTemplate: -1
     property int pendingCircuitRemoval: -1
     property string pendingCircuitName: ""
 
@@ -53,6 +54,19 @@ Window {
         if (!window.guard("new")) {
             session.newDocument();
             window.startViewOpen = false;
+        }
+    }
+
+    function newProjectFromTemplate(templateIndex) {
+        if (window.guard("template")) {
+            window.pendingTemplate = templateIndex;
+            return;
+        }
+        session.newDocument();
+        if (session.loadTemplate(templateIndex)) {
+            window.startViewOpen = false;
+        } else {
+            startPage.templateError = qsTr("No se pudo cargar la plantilla desde el catálogo disponible.");
         }
     }
 
@@ -159,7 +173,18 @@ Window {
     function discardAndContinue() {
         const cmd = window.pendingCommand;
         window.pendingCommand = "";
-        if (cmd === "close") {
+        if (cmd === "template") {
+            const templateIndex = window.pendingTemplate;
+            window.pendingTemplate = -1;
+            session.discardAndNewDocument();
+            if (session.loadTemplate(templateIndex)) {
+                window.startViewOpen = false;
+            } else {
+                window.startViewOpen = true;
+                startPage.templateError = qsTr("No se pudo cargar la plantilla desde el catálogo disponible.");
+            }
+            window.pendingPath = "";
+        } else if (cmd === "close") {
             session.confirmClose();
             window.close();
         } else if (cmd === "open") {
@@ -910,6 +935,7 @@ Window {
 
             // Inicio covers the whole region, panels included: it is a page, not a card.
             StartView {
+                id: startPage
                 objectName: "startView"
                 visible: window.startViewOpen
                 session: session
@@ -917,6 +943,9 @@ Window {
                 onNewProject: window.newProjectFromStart()
                 onOpenProject: window.openProjectFromStart()
                 onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
+                onTemplateRequested: function (templateIndex) {
+                    window.newProjectFromTemplate(templateIndex);
+                }
                 onAboutRequested: window.openAbout()
                 onLicenceRequested: window.openLicense()
                 onReturnRequested: window.startViewOpen = false
@@ -1183,7 +1212,10 @@ Window {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
-                                    onClicked: window.pendingCommand = ""
+                                    onClicked: {
+                                        window.pendingCommand = "";
+                                        window.pendingTemplate = -1;
+                                    }
                                 }
                             }
                         }

@@ -943,6 +943,7 @@ void FluidSession::applyPalette(const QPalette &palette)
         ink.background = toRgb(m_tokens.panel);
         pf_session_set_ink(m_session, &ink);
     }
+    emit themeChanged();
     emit changed();
 }
 
@@ -1719,16 +1720,23 @@ bool FluidSession::saveCurrent()
 
 bool FluidSession::loadExample()
 {
-    if (!m_session) {
+    return loadTemplate(static_cast<int>(PF_TEMPLATE_WORKED_EXAMPLE));
+}
+
+bool FluidSession::loadTemplate(int index)
+{
+    if (!m_session || index < 0) {
         return false;
     }
-    const int32_t result = pf_session_load_example(m_session);
+    const int32_t result = pf_session_load_template(m_session, static_cast<uint32_t>(index));
     if (result != PF_OK) {
         const char *message = pf_session_last_error(m_session);
         m_error = message != nullptr ? QString::fromUtf8(message) : QString();
+        emit changed();
         return false;
     }
     m_error.clear();
+    m_currentPath.clear();
     m_selected = -1;
     cancelUntilChange();
     m_editing = true;

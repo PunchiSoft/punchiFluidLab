@@ -56,6 +56,7 @@ Anything else is a change to an existing module, with the review that implies.
 | Undo history | ≤ 100 entries, ≤ 32 MB | `Arc<Document>` snapshots, oldest dropped |
 | Telemetry ring | 10 Hz × 60 s × 32 B ≈ 19 KB | fixed capacity, no growth |
 | Icon cache | ≤ 200 entries per (size, tint) | LRU |
+| Start-view template thumbnails | ≤ 4 × 512 × 288 RGBA images = 2.25 MiB | one fixed-size image per compiled template; dropped on theme change or item destruction |
 | Export bitmap | ≤ 80 Mpx (≈ 320 MB), DPI 72–600, one page | refused before allocation |
 
 ### Rules

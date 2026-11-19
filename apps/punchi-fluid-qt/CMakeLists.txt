@@ -41,6 +41,8 @@ qt_add_executable(punchi-fluid
     src/canvasitem.h
     src/previewitem.cpp
     src/previewitem.h
+    src/templatepreviewitem.cpp
+    src/templatepreviewitem.h
     src/replay.cpp
     src/replay.h
     src/icons.cpp
