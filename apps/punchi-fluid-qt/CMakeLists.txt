@@ -81,6 +81,7 @@ qt_add_qml_module(punchi-fluid
         RibbonGroup.qml
         Sidebar.qml
         SoundFeedback.qml
+        StartView.qml
         StatusBar.qml
 )
 
