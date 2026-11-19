@@ -93,6 +93,37 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ---
 
+### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
+
+`main` en **`5c99cb5`**, árbol limpio, sin PRs abiertas. El gate (`./scripts-dev/check.sh`)
+sale **0** y `--selftest` **0 fallos**.
+
+| Área | Estado real hoy |
+|---|---|
+| Arranque | **Inicio**: la ventana abre en la página de inicio, no en un circuito. Sin cinta, sin barra de estado, sin catálogo ni dock derecho; el raíl ocupa su sitio y el título nombra el programa, nunca «sin título» |
+| Proyecto nuevo | **hoja vacía**: marco y A4 apaisado, cero componentes; la hoja dice «Arrastra símbolos a la hoja para empezar» y las lecturas físicas quedan ocultas hasta que haya modelo |
+| Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; será la primera **plantilla** de Inicio |
+| Página Inicio | tarjetas **Nuevo proyecto** y **Abrir…**, **recientes** con nombre y carpeta, **Aprender** (Acerca de, Licencia) y **Volver**. Se abre también desde Archivo ▸ Inicio |
+| Recientes | tope de **10** en `punchi-fluid-file`; la página aún no declara el suyo y no tiene «quitar» ni gris para rutas ausentes |
+| Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
+| Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
+| Símbolos | **36 fichas** con hoja a **300 dpi**; `electrical.relay.latching` **falla** (A2/R1 chocan con sus terminales) y `throttle.fixed` sigue bloqueado por forma |
+| Skills nuevas | `untrusted-input-bounds`, `security-review`, `qt-lifetimes` (con `machine-resource-budget` cubren límites, superficie y vidas útiles) |
+
+**Lo inmediato, en este orden:**
+
+1. **Plantillas con miniatura** en Inicio: el ejemplo como primera tarjeta y tres circuitos
+   docentes, dibujados por nuestro renderizador.
+2. **Recientes**: tope propio en la página, ruta ausente en gris y **quitar**
+   (`pf_session_forget_recent` ya existe en el ABI).
+3. **Cerrar el último proyecto vuelve a Inicio**, con la confirmación de cambios.
+4. Pulido del raíl: hover, foco visible, teclado y nombres accesibles.
+5. Símbolos: mover **A2/R1** y nueva hoja a 300 dpi; después **OR/AND**.
+
+**Decisiones vigentes:** ADR 0030 (el cajetín protege su caja) y ADR 0031 (Inicio y proyecto
+nuevo vacío) están **aceptadas**; la vista Inicio es estado de vista y nunca entra en el
+documento.
+
 ## 1. Qué es este proyecto
 
 `punchi-fluid-lab`: simulador libre de circuitos neumáticos (y más adelante hidráulicos), en
@@ -557,13 +588,14 @@ Todo lo demás está en [AGENTS.md](../AGENTS.md).
 Copia esto tal cual en el chat nuevo:
 
 > Trabajamos en `/home/cristian/Desarrollo/punchi-fluid-lab (Rust)`. Lee
-> `docs/retomar.md` completo y después `docs/next-steps.md`. Resume en tres líneas el
+> `docs/retomar.md` completo, sobre todo §0.3, y después `docs/next-steps.md`. Resume en tres líneas el
 > estado y continúa con el hito que te indique, respetando `AGENTS.md`. Si algo de lo
 > que dice la documentación no coincide con el código, para y dime qué encontraste antes
 > de cambiar nada.
 
 Y añade el hito que quieras empezar:
 
+- `Seguimos con las plantillas con miniatura de Inicio.`
 - `Empezamos P3: el resto de la edición de §4.2.`
 - `Antes de nada, cierra la revisión a 300 dpi de los símbolos.`
 - `Antes de nada, añade el panel de exportación que falta: márgenes, tamaño personalizado y resolución.`
