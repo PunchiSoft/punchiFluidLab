@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Los límites de entrada dejan de depender de la memoria — 2026-11-19
+
+- Nueva skill **`untrusted-input-bounds`**: todo lo que entra de fuera y toda colección o
+  caché que crece tiene **un número, un mensaje y una prueba del caso «uno más»**, en el
+  crate que posee el dato. Incluye la lista de comprobación (archivo, cadena, colección,
+  bucle, asignación, caché, historial, espera), la decisión entre rechazar y truncar, la
+  tabla de límites vigentes y los errores que no se cometen.
+- Se nombra lo que son: consumo de recursos sin límite (OWASP API4:2023), **CWE-400**, **CWE-770**
+  y **CWE-789**.
+- Registrada en `.agents/skills/README.md` y enlazada desde `AGENTS.md` (seguridad y cachés).
+- **Evidencia**: `check-docs` verde; es documentación, no toca código ni activos.
+- **Primera deuda anotada**: la caché de iconos y miniaturas aún no declara tope ni desalojo.
+
 ### El programa arranca en Inicio — 2026-11-19
 
 - Una ejecución normal abre en **Inicio**, no en la hoja; las comprobaciones automáticas de la
