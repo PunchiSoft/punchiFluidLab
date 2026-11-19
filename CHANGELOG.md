@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El programa arranca en Inicio — 2026-11-19
+
+- Una ejecución normal abre en **Inicio**, no en la hoja; las comprobaciones automáticas de la
+  ventana (`--selftest`, `--check-layout`, `--check-qml`, `--check-theme`, `--check-icons`)
+  mantienen la hoja, que es aquello para lo que fueron escritas.
+- **Nuevo** crea el proyecto vacío y cierra la página; **Volver** regresa a la hoja.
+- **Inicio ocupa toda la región**: la cinta y la barra de estado no se muestran, el catálogo y
+  el dock derecho se ocultan y el raíl toma su sitio; el título de la ventana nombra el
+  programa, nunca un documento sin título. Las **plantillas** con miniatura son el trozo
+  siguiente.
+- **Evidencia**: `--check-qml` 0, `--selftest` 0 fallos, `check.sh` verde.
+
 ### La página Inicio — 2026-11-19
 
 - **Inicio** existe como vista: cubre la hoja con su raíl a la izquierda (Nuevo, Abrir,
