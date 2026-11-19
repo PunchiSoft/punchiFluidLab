@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Revisión de seguridad por cambio — 2026-11-19
+
+- Nueva skill **`security-review`**: nombra la **superficie** que toca un cambio (documento,
+  catálogo, recientes, autoguardado, exportación, portapapeles, diálogos, enlaces, dependencias),
+  aplica el control que ya existe en `docs/engineering.md`, exige el **caso hostil** y deja el
+  **registro** en la PR.
+- Incluye **recomendaciones al programar**: parsear en temporal y permutar, validar antes de
+  reservar, no aceptar rutas de un documento, comprobar el destino, fallar cerrado, probar el
+  rechazo y no dejar restos.
+- Registrada en `.agents/skills/README.md` y enlazada desde `AGENTS.md` (seguridad).
+- **Evidencia**: `check-docs` verde; solo documentación.
+
 ### Los límites de entrada dejan de depender de la memoria — 2026-11-19
 
 - Nueva skill **`untrusted-input-bounds`**: todo lo que entra de fuera y toda colección o
