@@ -176,6 +176,10 @@ tooling, never a runtime dependency).
 - Catalog files are untrusted input too: they are parsed with unknown keys rejected,
   every number is range-checked, and no file can make the loader allocate or loop
   beyond a bound.
+- A change that touches a file, a path, an export, the clipboard, autosave or a link is
+  reviewed against the threat table in [docs/engineering.md](docs/engineering.md) with
+  [.agents/skills/security-review](.agents/skills/security-review/SKILL.md): the surface,
+  the control, the hostile case and the record.
 
 ## Interface rules
 
