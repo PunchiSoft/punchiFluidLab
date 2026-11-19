@@ -26,8 +26,7 @@ program's symbol.
 | A junction is a filled dot and carries no shape of its own | pass | screenshots |
 | No port numerals, because the three ports are one point and the numerals would overprint | pass | both screenshots: a clean dot, no smudge |
 | Legible at palette size | pass | `catalog-dark.png` |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `junction.tee-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **Three ports on one point.** A junction is a node, so every hose that arrives costs
@@ -41,7 +40,7 @@ program's symbol.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The dot's radius relative to the hoses it joins was chosen for legibility and was not
   measured against a printed copy of the standard from this machine. If a measurement
   later disagrees, the radius changes in the file and nowhere else.
@@ -49,3 +48,4 @@ program's symbol.
 ## Images
 
 - `junction.tee-dark.png`, `junction.tee-light.png`
+- `junction.tee-300.png`

@@ -34,8 +34,7 @@ program's symbol.
 | The position that does not use 5 shuts it, and 3 is shut in the other | pass | blocking marks inside the square that closes them |
 | The two exhaust paths do not share the edge between the squares | pass | 4/5 at the left of each square, 2/3 at the right |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `valve.5_2.spring_return-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **Port order 4, 2 on top and 5, 1, 3 below**, instead of the equally valid mirrored
@@ -48,7 +47,7 @@ program's symbol.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - Exhaust ports are drawn as a stub and a numeral, not with the ISO 1219-1 exhaust
   triangle; the same is true of the built-in 3/2 valve. It is a renderer-wide gap, not a
   property of this file.
@@ -58,3 +57,4 @@ program's symbol.
 ## Images
 
 - `valve.5_2.spring_return-light.png`, `valve.5_2.spring_return-dark.png`
+- `valve.5_2.spring_return-300.png`

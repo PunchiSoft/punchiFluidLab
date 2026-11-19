@@ -30,8 +30,7 @@ trace of another program's symbol or sound.
 | The state is a word, not only a colour | pass | `sonando` / `en silencio` |
 | The arrow stays clear of the state word | pass | the image above |
 | The class says what the line is | pass | dotted stem for the wire |
-| Legible at 300 dpi | **not checked** | needs the maintainer's reader |
-
+| Legible at 300 dpi | pass | `electrical.buzzer-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Sound check
 
 | Requirement | Result | Evidence |
@@ -53,3 +52,4 @@ trace of another program's symbol or sound.
 ## Images
 
 - `electrical.buzzer-light.png`, `electrical.buzzer-dark.png` — this symbol sounding.
+- `electrical.buzzer-300.png`

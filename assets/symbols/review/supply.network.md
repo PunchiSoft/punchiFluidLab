@@ -29,11 +29,13 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | The connection circle marks the port | pass | drawn by the renderer at port 1 |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `supply.network-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The source is a constant pressure: a real network sags under load, which is not modelled.
 
 ## Images
 
 - `supply.network-light.png`, `supply.network-dark.png`
+- `supply.network-300.png`

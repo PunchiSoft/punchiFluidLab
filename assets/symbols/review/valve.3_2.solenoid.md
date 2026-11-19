@@ -31,8 +31,7 @@ program's symbol.
 | The coil terminal is where the control circuit arrives | pass | `Y1` on the actuator side, with its numeral |
 | The rest position vents the working line | pass | 2→3 in the first square |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `valve.3_2.solenoid-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **The coil is a terminal, not a label** ([ADR 0018](../../docs/adr/0018-the-control-circuit-is-a-boolean-net.md)):
@@ -43,10 +42,11 @@ program's symbol.
 
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - IEC 60617 is the reference for the coil's drawing; this geometry is our contract until a
   reader checks it.
 
 ## Images
 
 - `valve.3_2.solenoid-light.png`, `valve.3_2.solenoid-dark.png`
+- `valve.3_2.solenoid-300.png`

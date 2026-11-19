@@ -34,8 +34,7 @@ return spring are drawn by the renderer at the current extension. No third-party
 | The piston meets both walls of the bore | pass | it is drawn as the seal between the two chambers; `the_piston_meets_both_walls_of_the_bore` |
 | One port, drilled in the cap end, leaving it downwards | pass | the rod end carries no port at all: that is what makes it single-acting; `each_port_of_a_cylinder_is_drilled_in_an_end_cap` |
 | Legible at palette size | pass | `catalog-dark.png` |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `cylinder.single_acting_20_100-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Correction of 2026-11-07
 
 The piston was drawn with a tenth of the bore inset at the top and the bottom and read as a
@@ -46,7 +45,7 @@ its cap downwards, and its numeral is written beyond the stub.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The spring is drawn as a six-coil zigzag that drops to two turns when the piston is
   out: Part 1 does not fix a coil count, but the end turns are not distinguished from the
   active turns. Left as is and recorded.
@@ -57,3 +56,4 @@ its cap downwards, and its numeral is written beyond the stub.
 
 - `cylinder.single_acting_20_100-dark.png`, `-light.png`
 - `catalog-dark.png`, `catalog-light.png`
+- `cylinder.single_acting_20_100-300.png`

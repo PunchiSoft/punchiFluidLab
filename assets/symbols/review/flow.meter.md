@@ -29,8 +29,7 @@ third-party asset and no trace of another program's symbol.
 | The meter interrupts the line, so it has one port on each side | pass | the stubs and the numerals |
 | The arrow marks the positive direction of the reading | pass | port 1 to port 2 |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `flow.meter-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **A behaviour of its own** ([ADR 0014](../../docs/adr/0014-a-flow-meter-is-a-restriction-that-reports.md)):
@@ -42,7 +41,7 @@ third-party asset and no trace of another program's symbol.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The normative shape of the meter in the instrument family is recorded as our contract in
   [docs/symbology.md](../../docs/symbology.md), not as a copy of a published figure; the
   review is `pending` until a second reader checks it.
@@ -51,3 +50,4 @@ third-party asset and no trace of another program's symbol.
 ## Images
 
 - `flow.meter-light.png`, `flow.meter-dark.png`
+- `flow.meter-300.png`

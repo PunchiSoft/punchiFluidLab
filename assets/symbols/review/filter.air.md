@@ -28,12 +28,14 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `filter.air-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The filter is modelled as a fixed restriction with a high conductance: it does not clog, and
   nothing separates the particles it traps.
 
 ## Images
 
 - `filter.air-light.png`, `filter.air-dark.png`
+- `filter.air-300.png`

@@ -28,8 +28,7 @@ blocking bar. No third-party asset and no trace of another program's symbol.
 | One port, where the hose arrives | pass | the stub and its numeral |
 | No stub on the far side, because nothing leaves | pass | the bar ends the line |
 | Legible at palette size (24–30 px) | pass | `catalog-dark.png`, sidebar row |
-| Legible at 300 dpi | **not checked** | needs M2 |
-
+| Legible at 300 dpi | pass | `plug.blind-300.png`: automated pass at 300 dpi; the second reader's signature is still owed |
 ## Decisions this symbol carries
 
 - **A behaviour of its own** ([ADR 0016](../../docs/adr/0016-a-termination-is-a-component.md)):
@@ -40,10 +39,11 @@ blocking bar. No third-party asset and no trace of another program's symbol.
 
 ## What is still open
 
-- 300 dpi render (M2) and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The normative figure was not traced; the requirement is our contract in
   [docs/symbology.md](../../docs/symbology.md).
 
 ## Images
 
 - `plug.blind-light.png`, `plug.blind-dark.png`
+- `plug.blind-300.png`

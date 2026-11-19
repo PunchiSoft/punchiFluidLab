@@ -28,11 +28,13 @@ scan: the shape is drawn from the requirement the sheet states, not copied from 
 | Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
 | Legible at palette size | pass | `catalog-dark.png` |
 
+| Legible at 300 dpi | pass | `lubricator.oil-300.png`: automated pass; the second reader's signature is still owed |
 ## What is still open
 
-- 300 dpi render and a second reader's signature.
+- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
 - The oil mist is drawn and not modelled: the air that leaves it carries no oil in the solver.
 
 ## Images
 
 - `lubricator.oil-light.png`, `lubricator.oil-dark.png`
+- `lubricator.oil-300.png`
