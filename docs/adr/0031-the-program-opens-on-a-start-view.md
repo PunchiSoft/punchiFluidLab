@@ -58,6 +58,23 @@ Two facts today:
   drawing, bounded and cached, and the recent list is view state in `QSettings`. No network,
   no telemetry, no auto-open of the last file.
 
+## How it lands
+
+The fixture stays useful without leaking into the product, which decides the first change:
+
+- **`pf_session_new` creates an empty document**: frame, one circuit, no components. The
+  window, the CLI's future editor and any host start from nothing.
+- **A new entry point seeds the worked example on request** — `pf_session_load_example` — and
+  nothing in the product calls it. The ABI tests' session helper calls it, which keeps the
+  fixture those tests were written around, and the example **template** of `Inicio` will call
+  it too (or copy a compiled document, whichever the template work finds simpler).
+- **The `--selftest` asks for the example explicitly** before its circuit steps, so the battery
+  that says "the example has a valve and a cylinder" keeps proving the same gestures.
+- **The empty sheet's invitation** is part of the same change, because a blank page with no
+  sentence is the state the reader meets first.
+
+Then the start view (the page and its rail) and finally the templates with their thumbnails.
+
 ## Consequences
 
 - The ABI stops seeding on creation; the template is loaded explicitly. The tests and
