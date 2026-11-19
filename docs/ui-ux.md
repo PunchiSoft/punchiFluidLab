@@ -382,20 +382,24 @@ catalog with its remembered width.
 
 **Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver** or with **Nuevo**. Inicio takes the whole region: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
 
-- **Nuevo proyecto**, the primary action, with `Enter`; **Abrir…**; and the **recent
-  projects**, each with a thumbnail, its name and its folder. A path that is gone stays in the
-  list, greyed and named as unavailable, with **quitar**; the list is bounded and never opens
-  a file on its own.
-- **Ejemplos**, our own circuits with a thumbnail drawn by the renderer: a 3/2 valve with a
-  single-acting cylinder, a 5/2 valve with a double-acting one, a service unit feeding a
-  valve, and an electrical control. Choosing one copies it into a new project; **Nuevo**
-  starts empty. The worked example that used to seed the window is the first of these.
+- **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The current
+  recent rows show each project's name and folder; unavailable-path styling, removal and the
+  page's own list limit remain the next step.
+- **Plantillas**, four circuits authored for this project: a 3/2 valve and single-acting
+  cylinder (the worked example), a 5/2 valve and double-acting cylinder, air preparation
+  ahead of a valve, and an electrical pushbutton driving a solenoid valve. Each card is a
+  keyboard-focusable button; choosing one copies its circuit into a clean project, while
+  **Nuevo proyecto** remains empty.
 - **Aprender**: the shortcuts, what “conforme a ISO 1219” means, and the About panel.
 
-The thumbnails come from the same drawing as the sheet, are cached with a bound, and nothing
-is fetched: templates are compiled in and the recent list is view state in `QSettings`. The
-start view is reachable from **Archivo ▸ Inicio**, is fully keyboard reachable, and every
-action exposes its name to the accessibility layer.
+The template grid uses a **10 × `unit` by 8 × `unit` cell** with a centred **8 × `unit`
+square card**; at the default 18 px unit that is a 180 × 144 px cell and a 144 px card. The
+grid adds half a unit between cells and chooses its column count from the available width.
+Each thumbnail calls the same Rust drawing and Qt replay path as the sheet, then keeps one
+512 × 288 RGBA image until the theme changes or the card is destroyed. Four fixed templates
+bound that cache at 2.25 MiB; no image is fetched. Template cards expose their title and
+description to assistive technology. Inicio is reachable from **Archivo ▸ Inicio**; other
+start-page actions still have keyboard and recent-list work remaining.
 
 ### 3. The sheet
 

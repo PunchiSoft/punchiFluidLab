@@ -3573,6 +3573,52 @@ int main(int argc, char *argv[])
             state->session->undo();
         });
 
+        // Inicio offers the authored circuits and loads the selected one as a clean project.
+        steps->push_back([state, check] {
+            state->session->newDocument();
+            state->window->setProperty("startViewOpen", true);
+            QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));
+            check(start != nullptr && start->property("visible").toBool(),
+                  QStringLiteral("templates: Inicio is visible"));
+            check(state->session->templateCount() == static_cast<int>(PF_TEMPLATE_COUNT),
+                  QStringLiteral("templates: the ABI count reaches the session"));
+        });
+        steps->push_back([state, check] {
+            QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));
+            check(start != nullptr, QStringLiteral("templates: the start page remains available"));
+            if (start == nullptr) {
+                return;
+            }
+            check(start->property("templateCardCount").toInt()
+                      == static_cast<int>(PF_TEMPLATE_COUNT),
+                  QStringLiteral("templates: Inicio presents exactly four cards"));
+            const bool requested = QMetaObject::invokeMethod(
+                start, "activateTemplate", Q_ARG(QVariant, QVariant(3)));
+            check(requested, QStringLiteral("templates: a card can request a template"));
+            check(!state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("templates: choosing one returns to its project"));
+            check(state->session->componentCount() == 6,
+                  QStringLiteral("templates: the electrical circuit is copied into the project"));
+            check(!state->session->modified(),
+                  QStringLiteral("templates: a starting circuit is clean, not an edit"));
+
+            state->session->setDesignation(0, QStringLiteral("pendiente"));
+            state->window->setProperty("startViewOpen", true);
+            QMetaObject::invokeMethod(start, "activateTemplate", Q_ARG(QVariant, QVariant(1)));
+            check(state->window->property("pendingCommand").toString()
+                      == QStringLiteral("template")
+                      && state->window->property("pendingTemplate").toInt() == 1,
+                  QStringLiteral("templates: replacing unsaved work asks for confirmation"));
+            check(state->session->componentCount() == 6 && state->session->modified(),
+                  QStringLiteral("templates: work stays intact before confirmation"));
+            const bool discarded =
+                QMetaObject::invokeMethod(state->window, "discardAndContinue");
+            check(discarded, QStringLiteral("templates: the confirmation can continue"));
+            check(state->session->componentCount() == 3 && !state->session->modified()
+                      && !state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("templates: discard opens the requested template cleanly"));
+        });
+
         QTimer::singleShot(400, window, [state, steps] {
             auto *timer = new QTimer(state->window);
             timer->setInterval(350);

@@ -84,6 +84,24 @@ changed lines outside generated files, it is two phases.
 | **P1.15 — the control-diagram title block and its editor** ✅ delivered | `feat/title-block-editor` | the content-model block (industrial 180 × 65 mm on A3, 170 × 45 mm on A4; school and technical shorter), the twelve fields, model and visibility per circuit, format 11 with migration, scale `S/E`, the **Cajetín** ribbon tab and the docked editor; no material, unit or projection, because a schematic is not to scale | the format, doc and ABI tests, the `--selftest` title-block steps, and the light/dark captures |
 | **P6 — digital and GRAFCET** | `feat/digital` | the digital library, then GRAFCET; the order and the remaining electrical entries are in [work-queue.md](work-queue.md) | ADR each, per-library tests |
 
+## Owner's current order for Inicio (2026-11-19)
+
+This short queue is the owner's immediate priority; it takes precedence over unrelated
+interface polish. Each item remains its own branch and pull request, and the next item does
+not start until the current pull request is merged.
+
+1. **Templates with thumbnails** — implemented on `feat/start-templates`: the worked example
+   first, followed by three authored teaching circuits; all previews use the shared renderer.
+   Evidence: `the_four_start_templates_load_clean_and_cannot_replace_a_working_document`,
+   `template_previews_use_the_renderer_and_refuse_unbounded_dimensions`, the start-view
+   `--selftest` (including the unsaved-work confirmation), and light/dark captures.
+2. **Recent projects** — declare the page's own limit, keep unavailable paths visible in grey,
+   and let the student remove one (`pf_session_forget_recent` already exists).
+3. **Closing the last project returns to Inicio**, with the existing unsaved-work confirmation.
+4. **Polish the navigation rail**: hover, visible focus, keyboard reachability and accessible names.
+5. **Symbols**: stop and agree the correction procedure before moving A2/R1 in the latching
+   relay, then add OR/AND; the symbol review still requires the owner to define the procedure.
+
 The interface has its own staged plan: [interface-plan.md](interface-plan.md). It is
 delivered as small branches — tokens, panels, ribbon, icons, catalog, workspace, adaptive
 shell, consistency — and each one is a pull request of its own; it changes no file format

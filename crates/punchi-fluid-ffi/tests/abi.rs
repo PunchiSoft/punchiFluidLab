@@ -24,45 +24,47 @@ use punchi_fluid::{
     PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE,
     PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG,
     PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION,
-    PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PfAbi, PfBlockLayout, PfCall, PfCatalog,
-    PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint, PfSession, PfSheet,
-    PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count, pf_export_paper_name,
-    pf_export_paper_size_mm, pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
-    pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
-    pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
-    pf_session_block_remark, pf_session_block_visible, pf_session_build_frame,
-    pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_catalog_problems,
-    pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
-    pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
-    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
-    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
-    pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
-    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
-    pf_session_free, pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
+    PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PF_TEMPLATE_COUNT, PfAbi, PfBlockLayout, PfCall,
+    PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint, PfSession,
+    PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count,
+    pf_export_paper_name, pf_export_paper_size_mm, pf_session_active_circuit,
+    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
+    pf_session_block, pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
+    pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
+    pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
+    pf_session_catalog_problems, pf_session_chart_candidate, pf_session_chart_candidate_count,
+    pf_session_chart_source, pf_session_check, pf_session_circuit_count, pf_session_circuit_id,
+    pf_session_circuit_name, pf_session_clear_chart_source, pf_session_component_count,
+    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
+    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
+    pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
+    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
+    pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
     pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
-    pf_session_load_example, pf_session_mirror_selected, pf_session_move_component,
-    pf_session_move_selection, pf_session_new, pf_session_new_document, pf_session_open,
-    pf_session_open_recent, pf_session_paste, pf_session_paste_offset, pf_session_pipe_at,
-    pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
+    pf_session_load_example, pf_session_load_template, pf_session_mirror_selected,
+    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_new_document,
+    pf_session_open, pf_session_open_recent, pf_session_paste, pf_session_paste_offset,
+    pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
     pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_recent_count, pf_session_recent_path,
-    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
-    pf_session_release_valve, pf_session_remove_circuit, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
-    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
-    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
-    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
-    pf_session_set_pipe_class, pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet,
-    pf_session_space_selection, pf_session_straighten_pipe, pf_session_telemetry,
-    pf_session_toggle_contact, pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo,
-    pf_session_valve_rect, pf_session_valve_spring_return,
+    pf_session_press_valve, pf_session_preview, pf_session_preview_template,
+    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
+    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
+    pf_session_rename_circuit, pf_session_reset_block_visibility, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
+    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
+    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_set_component_edits, pf_session_set_grid_step, pf_session_set_pipe_class,
+    pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet, pf_session_space_selection,
+    pf_session_straighten_pipe, pf_session_telemetry, pf_session_toggle_contact,
+    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
+    pf_session_valve_spring_return,
 };
 
 fn session() -> *mut PfSession {
@@ -422,6 +424,82 @@ fn a_new_document_is_an_empty_sheet_and_the_example_loads_on_request() {
     assert_eq!(unsafe { pf_session_component_count(session) }, 0);
     assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
     // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_four_start_templates_load_clean_and_cannot_replace_a_working_document() {
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null());
+    let expected_components = [4, 3, 5, 6];
+    let expected_pipes = [3, 3, 4, 5];
+
+    for index in 0..PF_TEMPLATE_COUNT {
+        assert_eq!(unsafe { pf_session_new_document(session) }, PF_OK);
+        assert_eq!(unsafe { pf_session_load_template(session, index) }, PF_OK);
+        assert_eq!(
+            unsafe { pf_session_component_count(session) },
+            expected_components[index as usize]
+        );
+        assert_eq!(
+            unsafe { pf_session_connection_count(session) },
+            expected_pipes[index as usize]
+        );
+        assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
+    }
+
+    let before = unsafe { pf_session_component_count(session) };
+    assert_eq!(
+        unsafe { pf_session_load_template(session, PF_TEMPLATE_COUNT) },
+        PF_ERR_MODEL
+    );
+    assert_eq!(unsafe { pf_session_component_count(session) }, before);
+    assert_eq!(
+        unsafe { pf_session_load_template(session, 0) },
+        PF_ERR_MODEL
+    );
+    assert_eq!(unsafe { pf_session_component_count(session) }, before);
+
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn template_previews_use_the_renderer_and_refuse_unbounded_dimensions() {
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null());
+
+    for index in 0..PF_TEMPLATE_COUNT {
+        let mut frame = PfFrame::default();
+        assert_eq!(
+            unsafe {
+                pf_session_preview_template(session, index, 180.0, 100.0, 2.0, &raw mut frame)
+            },
+            PF_OK
+        );
+        assert!(
+            frame.calls_len > 0,
+            "template {index} draws components and pipes"
+        );
+        assert!(
+            frame.points_len > 0,
+            "template {index} uses the shared renderer"
+        );
+        assert_eq!((frame.width_mm, frame.height_mm), (180.0, 100.0));
+    }
+
+    let mut frame = PfFrame::default();
+    assert_eq!(
+        unsafe { pf_session_preview_template(session, 0, 59.0, 100.0, 2.0, &raw mut frame) },
+        PF_ERR_MODEL
+    );
+    assert_eq!(frame.calls_len, 0);
+    assert_eq!(
+        unsafe {
+            pf_session_preview_template(session, 0, 180.0, 100.0, f32::INFINITY, &raw mut frame)
+        },
+        PF_ERR_MODEL
+    );
+
     unsafe { pf_session_free(session) };
 }
 

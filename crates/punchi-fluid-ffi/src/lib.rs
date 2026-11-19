@@ -66,6 +66,8 @@ use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
 use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
 use punchi_fluid_solver::pneumatic::Telemetry;
 
+mod templates;
+
 /// The call succeeded.
 pub const PF_OK: i32 = 0;
 /// A required pointer was null.
@@ -76,6 +78,8 @@ pub const PF_ERR_MODEL: i32 = -2;
 pub const PF_ERR_LIMIT: i32 = -4;
 /// Maximum number of circuits in one project, shared with the core and file format.
 pub const PF_MAX_CIRCUITS: usize = punchi_fluid_core::MAX_CIRCUITS;
+/// Number of compiled-in circuits the start view offers as templates.
+pub const PF_TEMPLATE_COUNT: u32 = templates::COUNT;
 /// A panic was caught at the boundary.
 pub const PF_ERR_PANIC: i32 = -3;
 
@@ -1033,6 +1037,96 @@ impl PfSession {
             scale: scale.max(0.01),
         };
         punchi_fluid_draw::draw_component(&mut buffer, rect, definition, 0, 0.0, ink);
+        PF_OK
+    }
+
+    /// Draws one compiled-in start-page circuit into the shared preview frame.
+    fn build_template_preview(
+        &mut self,
+        index: u32,
+        width_mm: f32,
+        height_mm: f32,
+        scale: f32,
+    ) -> i32 {
+        if !width_mm.is_finite()
+            || !height_mm.is_finite()
+            || !(60.0..=1_000.0).contains(&width_mm)
+            || !(60.0..=1_000.0).contains(&height_mm)
+        {
+            return self.fail("template preview dimensions must be between 60 and 1000 mm");
+        }
+        if !scale.is_finite() || !(0.01..=100.0).contains(&scale) {
+            return self.fail("template preview scale must be between 0.01 and 100");
+        }
+        let area = Rect::from_corners(Pt::new(0.0, 0.0), Pt::new(width_mm, height_mm));
+        let document = match templates::document(index, &self.catalog, area) {
+            Ok(document) => document,
+            Err(error) => return self.fail(&error),
+        };
+        let empty_charts = std::collections::HashMap::new();
+        let empty_contacts = std::collections::HashMap::new();
+        let empty_relays = std::collections::HashMap::new();
+        let empty_indicators = std::collections::HashMap::new();
+        let Self {
+            catalog,
+            ink,
+            preview_calls,
+            preview_points,
+            preview_text,
+            ..
+        } = self;
+        preview_calls.clear();
+        preview_points.clear();
+        preview_text.clear();
+        let (placed, pipes) = scene(
+            &document,
+            catalog,
+            None,
+            &[],
+            document.active_circuit(),
+            &empty_charts,
+            ContactStates {
+                contacts: &empty_contacts,
+                relays: &empty_relays,
+                indicators: &empty_indicators,
+            },
+        );
+        let mut buffer = FrameBuffer {
+            calls: preview_calls,
+            points: preview_points,
+            text: preview_text,
+            scale,
+        };
+        draw_placed(&mut buffer, &placed, &pipes, catalog, ink, &[]);
+        PF_OK
+    }
+
+    /// Loads one compiled-in template as a clean starting document.
+    fn load_template(&mut self, index: u32) -> i32 {
+        if !self.document.placements().is_empty() {
+            return self.fail("the document already has components");
+        }
+        if templates::Template::from_index(index).is_none() {
+            return self.fail("that start-page template does not exist");
+        }
+        if index == 0 {
+            self.seeded = false;
+            self.ensure_seeded();
+            self.saved_revision = Some(self.document.revision());
+            self.error = CString::default();
+            return PF_OK;
+        }
+        let document = match templates::document(index, &self.catalog, self.layout_rect()) {
+            Ok(document) => document,
+            Err(error) => return self.fail(&error),
+        };
+        self.document = document;
+        self.seeded = true;
+        self.saved_revision = Some(self.document.revision());
+        self.select_only(None);
+        self.clipboard.clear();
+        self.rebuild_model();
+        self.error = CString::default();
         PF_OK
     }
 
@@ -2579,6 +2673,25 @@ pub unsafe extern "C" fn pf_session_load_example(session: *mut PfSession) -> i32
     })
 }
 
+/// Loads one of the compiled-in start-page circuits into an empty document.
+///
+/// `index` is in `0..PF_TEMPLATE_COUNT`; template zero is the worked fixture used by the
+/// tests. The document remains clean, as a template is a starting point rather than an edit.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_load_template(session: *mut PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        session.load_template(index)
+    })
+}
+
 /// Frees a session. A null pointer is ignored.
 ///
 /// # Safety
@@ -3280,6 +3393,48 @@ pub unsafe extern "C" fn pf_session_preview(
         };
         let code =
             session.build_preview(index, width_mm.max(1.0), height_mm.max(1.0), pixels_per_mm);
+        if code != PF_OK {
+            return code;
+        }
+        *out = PfFrame {
+            calls: session.preview_calls.as_ptr(),
+            calls_len: session.preview_calls.len() as u32,
+            points: session.preview_points.as_ptr(),
+            points_len: session.preview_points.len() as u32,
+            text: session.preview_text.as_ptr(),
+            text_len: session.preview_text.len() as u32,
+            width_mm,
+            height_mm,
+        };
+        PF_OK
+    })
+}
+
+/// Draws one compiled-in start-page circuit into `out` for a thumbnail.
+///
+/// Width and height are bounded to 60–1000 mm, and `pixels_per_mm` to 0.01–100, before any
+/// drawing work. The pointers in `out` borrow the session and remain valid until its next
+/// preview or free.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer, and `out` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_preview_template(
+    session: *mut PfSession,
+    index: u32,
+    width_mm: f32,
+    height_mm: f32,
+    pixels_per_mm: f32,
+    out: *mut PfFrame,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both pointer contracts.
+        let (Some(session), Some(out)) = (unsafe { borrow(session) }, unsafe { out.as_mut() })
+        else {
+            return PF_ERR_NULL;
+        };
+        let code = session.build_template_preview(index, width_mm, height_mm, pixels_per_mm);
         if code != PF_OK {
             return code;
         }

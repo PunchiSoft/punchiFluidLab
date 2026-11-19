@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Plantillas con miniatura en Inicio — 2026-11-19
+
+- **Inicio** ofrece cuatro circuitos propios: el ejemplo 3/2 con cilindro simple, uno 5/2 de
+  doble efecto, uno de preparación del aire y uno de control eléctrico. Cada tarjeta muestra
+  una miniatura dibujada y seleccionarla crea un proyecto limpio; **Nuevo proyecto** sigue vacío.
+- Las tarjetas siguen el paso de la interfaz: celda de `10 × 8 unit`, tarjeta cuadrada de
+  `8 × 8 unit` y separación de `0.5 unit`. La miniatura reutiliza el renderizador de la hoja.
+- La caché tiene cuatro imágenes RGBA de 512 × 288 como máximo (2.25 MiB total) y se libera al
+  cambiar el tema o destruir la tarjeta.
+- **Evidencia**: 2 pruebas ABI nuevas, 2 pruebas unitarias de plantillas, `--check-qml` sin
+  problemas, `--selftest` con 0 fallos (incluida la confirmación ante trabajo sin guardar) y
+  capturas claro/oscuro de Inicio revisadas.
+
 ### Vidas útiles en Qt y QML — 2026-11-19
 
 - Nueva skill **`qt-lifetimes`**: un dueño por `QObject`, conexiones con objeto de contexto que

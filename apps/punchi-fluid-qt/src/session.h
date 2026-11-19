@@ -127,6 +127,7 @@ class FluidSession : public QObject
     Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
     Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
     Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
+    Q_PROPERTY(int templateCount READ templateCount CONSTANT)
     Q_PROPERTY(QVariantList circuits READ circuits NOTIFY changed)
     Q_PROPERTY(int activeCircuit READ activeCircuit NOTIFY changed)
     /// Maximum circuits allowed by the document and file format.
@@ -235,6 +236,8 @@ public:
     Q_INVOKABLE QStringList paperNames();
     /// The documents opened or saved recently, newest first: `path` and `name`.
     QVariantList recent() const { return m_recent; }
+    /// Number of compiled-in circuits offered by the start view.
+    int templateCount() const { return static_cast<int>(PF_TEMPLATE_COUNT); }
     /// Opens one of them by its place in the list.
     Q_INVOKABLE bool selectCircuit(int id);
     Q_INVOKABLE int addCircuit();
@@ -280,6 +283,8 @@ public:
     /// Draws the worked example into an empty document: the fixture the tests ask for and
     /// the example template of the start view. Refused when the document has components.
     Q_INVOKABLE bool loadExample();
+    /// Loads one compiled-in start-page circuit into a clean new project.
+    Q_INVOKABLE bool loadTemplate(int index);
 
     /// `true` while the transport is playing. Pausing stops the sheet loop without
     /// touching the model, so resuming continues from the same instant.
@@ -573,6 +578,8 @@ signals:
     void sheetChanged();
     void documentChanged();
     void recentChanged();
+    /// The drawing ink changed; cached rendered previews must be rebuilt.
+    void themeChanged();
     void modeChanged();
     void inspectorChanged();
     void catalogChanged();
