@@ -41,6 +41,7 @@ const QStringList &allNames()
         QStringLiteral("edit-select-all"),
         QStringLiteral("edit-delete"),
         QStringLiteral("window-close"),
+        QStringLiteral("go-home"),
         QStringLiteral("zoom-in"),
         QStringLiteral("zoom-out"),
         QStringLiteral("zoom-original"),
@@ -244,6 +245,14 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawEllipse(QPointF(10.0, 10.0), 1.6, 1.6);
         painter.drawLine(QPointF(8.0, 14.0), QPointF(16.0, 14.0));
         painter.drawEllipse(QPointF(14.0, 14.0), 1.6, 1.6);
+    } else if (name == QStringLiteral("go-home")) {
+        // A house: the roof over the walls, with the door left out at this size.
+        QPainterPath house;
+        house.moveTo(5.0, 11.0);
+        house.lineTo(12.0, 4.5);
+        house.lineTo(19.0, 11.0);
+        painter.drawPath(house);
+        painter.drawRect(QRectF(7.0, 11.0, 10.0, 8.5));
     } else if (name == QStringLiteral("window-close")) {
         // The x of a closing tab, at the same weight as the rest of the family: two strokes
         // that meet in the middle, not a boxed glyph.

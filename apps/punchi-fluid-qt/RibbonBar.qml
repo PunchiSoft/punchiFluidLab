@@ -101,6 +101,14 @@ Rectangle {
                     ]
                 },
                 {
+                    // Inicio is reachable from here with a project open, and returns with
+                    // Volver or Esc (ADR 0031).
+                    title: qsTr("Inicio"),
+                    items: [
+                        { id: "home", label: qsTr("Inicio"), icon: "go-home", hint: qsTr("la página de inicio: nuevo, abrir y recientes") }
+                    ]
+                },
+                {
                     // The page as a dropdown and a launcher, not a tab of its own: the
                     // margin profiles, the custom size and the grid live in the panel the
                     // launcher opens.
@@ -411,6 +419,12 @@ Rectangle {
         }
         if (id === "reset-view") {
             ribbon.panelCommand("reset-view");
+            return;
+        }
+        if (id === "home") {
+            if (ribbon.host) {
+                ribbon.host.openStartView();
+            }
             return;
         }
         if (id === "circuit-new") {

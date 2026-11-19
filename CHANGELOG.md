@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### La página Inicio — 2026-11-19
+
+- **Inicio** existe como vista: cubre la hoja con su raíl a la izquierda (Nuevo, Abrir,
+  Aprender con Acerca de y Licencia), la tarjeta de **Nuevo proyecto** y **Abrir…**, y la
+  lista de **recientes** con nombre y carpeta. Se abre desde **Archivo ▸ Inicio** y vuelve a la
+  hoja con **Volver**.
+- **Nuevo** desde Inicio crea un proyecto vacío y cierra la vista; abrir un reciente hace lo
+  mismo. La vista es estado de vista: no entra en el documento.
+- Icono propio `go-home` para el comando; `--check-icons` queda en 48 de proyecto.
+- **Todavía no es el arranque**: al abrir el programa se sigue viendo la hoja vacía; el
+  arranque en Inicio, el raíl en el sitio del catálogo y las plantillas son el siguiente trozo.
+- **Evidencia**: `--check-qml` 0 problemas, `--selftest` 0 fallos (la vista no altera los gestos)
+  y `--check-icons` sin ausentes.
+
 ### Inicio: el programa abre sin circuito — 2026-11-19
 
 - **ADR 0031**: al arrancar se muestra la vista **Inicio** en el área de dibujo —no una

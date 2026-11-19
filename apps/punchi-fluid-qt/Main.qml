@@ -41,6 +41,30 @@ Window {
 
     /// The rename panel for the circuit in view. It edits a project datum, not a placement.
     property bool renameCircuitOpen: false
+    /// Inicio covers the sheet while it is open; it is view state, never the document.
+    property bool startViewOpen: false
+
+    function openStartView() {
+        window.startViewOpen = true;
+    }
+
+    function newProjectFromStart() {
+        if (!window.guard("new")) {
+            session.newDocument();
+            window.startViewOpen = false;
+        }
+    }
+
+    function openProjectFromStart() {
+        window.startViewOpen = false;
+        openDialog.open();
+    }
+
+    function openRecentFromStart(slot) {
+        if (session.openRecent(slot)) {
+            window.startViewOpen = false;
+        }
+    }
     property string renameCircuitText: ""
 
     /// The help popups. They belong to the window, not to the document: opening one never
@@ -892,6 +916,7 @@ Window {
 
                 SchematicItem {
                     id: sheet
+                    visible: !window.startViewOpen
                     anchors.fill: parent
                     // Half a spacing unit: the paper is the protagonist, and a full unit of
                     // bare workspace read as a thick frame around it.
@@ -903,8 +928,24 @@ Window {
 
                 // The circuits, at the foot of the sheet: read-only for now, so the reader
                 // knows which one is being worked on.
+                StartView {
+                    objectName: "startView"
+                    visible: window.startViewOpen
+                    session: session
+                    canReturn: session.currentPath.length > 0 || session.hasModel
+                    onNewProject: window.newProjectFromStart()
+                    onOpenProject: window.openProjectFromStart()
+                    onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
+                    onAboutRequested: window.openAbout()
+                    onLicenceRequested: window.openLicense()
+                    onReturnRequested: window.startViewOpen = false
+                    anchors.fill: parent
+                    z: 20
+                }
+
                 CircuitTabs {
                     objectName: "circuitTabs"
+                    visible: !window.startViewOpen
                     session: session
                     height: window.tabStripHeight
                     onRemoveRequested: function (id, name, components) {
