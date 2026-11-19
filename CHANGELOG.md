@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Vidas útiles en Qt y QML — 2026-11-19
+
+- Nueva skill **`qt-lifetimes`**: un dueño por `QObject`, conexiones con objeto de contexto que
+  mueren con él, modelos, imágenes y cachés que no crecen, y `grab` solo en captura.
+- Incluye las pruebas que lo delatan: reposo sin repintar (`--report-paints`), abrir y cerrar
+  cinco veces sin crecimiento, cierre durante una simulación con diálogo abierto, y ASan/LSan
+  cuando se sospecha.
+- Registrada en `.agents/skills/README.md` y enlazada desde `AGENTS.md` (memoria y rendimiento).
+- **Evidencia**: `check-docs` verde; solo documentación.
+
 ### Revisión de seguridad por cambio — 2026-11-19
 
 - Nueva skill **`security-review`**: nombra la **superficie** que toca un cambio (documento,
