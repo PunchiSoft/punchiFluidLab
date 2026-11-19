@@ -95,8 +95,15 @@ not start until the current pull request is merged.
    Evidence: `the_four_start_templates_load_clean_and_cannot_replace_a_working_document`,
    `template_previews_use_the_renderer_and_refuse_unbounded_dimensions`, the start-view
    `--selftest` (including the unsaved-work confirmation), and light/dark captures.
-2. **Recent projects** — declare the page's own limit, keep unavailable paths visible in grey,
-   and let the student remove one (`pf_session_forget_recent` already exists).
+2. **Recent projects** — implemented on `feat/recent-page`: the page lists at most
+   `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, a path whose file is gone stays in grey
+   as **no disponible** with **quitar**, and `pf_session_forget_recent_at` removes one entry on
+   a copy before writing, so a refusal changes nothing. Evidence: `an_entry_whose_file_is_gone_is_kept_until_it_is_forgotten`,
+   `pruning_drops_the_entries_whose_file_is_gone`, the ABI tests
+   `a_missing_document_stays_in_the_list_until_it_is_removed`, the invariant
+   `the_page_never_asks_for_more_rows_than_the_list_remembers`,
+   and the `--selftest` steps from `recent: the page keeps a missing document` to
+   `recent: the page limit comes from the ABI`.
 3. **Closing the last project returns to Inicio**, with the existing unsaved-work confirmation.
 4. **Polish the navigation rail**: hover, visible focus, keyboard reachability and accessible names.
 5. **Symbols**: stop and agree the correction procedure before moving A2/R1 in the latching

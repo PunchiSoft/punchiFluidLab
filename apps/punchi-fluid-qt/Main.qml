@@ -943,6 +943,7 @@ Window {
                 onNewProject: window.newProjectFromStart()
                 onOpenProject: window.openProjectFromStart()
                 onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
+                onForgetRecent: function (slot) { session.forgetRecentAt(slot); }
                 onTemplateRequested: function (templateIndex) {
                     window.newProjectFromTemplate(templateIndex);
                 }

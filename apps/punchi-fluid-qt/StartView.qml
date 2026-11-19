@@ -25,6 +25,7 @@ Rectangle {
     signal newProject()
     signal openProject()
     signal openRecent(int slot)
+    signal forgetRecent(int slot)
     signal templateRequested(int templateIndex)
     signal aboutRequested()
     signal licenceRequested()
@@ -328,39 +329,92 @@ Rectangle {
                         font.pixelSize: session.textSmall
                     }
                     Repeater {
-                        model: start.session.recent
+                        model: start.session.recentPage
                         delegate: Rectangle {
+                            id: recentRow
+                            objectName: "recentRow" + modelData.slot
                             width: parent.width
                             height: session.unit * 2
                             radius: session.radiusControl
-                            color: recentArea.containsMouse ? session.surfaceRaised : "transparent"
+                            color: recentArea.containsMouse && modelData.available
+                                   ? session.surfaceRaised : "transparent"
 
                             Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 anchors.left: parent.left
                                 anchors.leftMargin: session.unit / 2
+                                anchors.right: forgetButton.left
+                                anchors.rightMargin: session.unit / 2
                                 spacing: 2
                                 Text {
                                     text: modelData.name
-                                    color: session.foreground
+                                    color: modelData.available ? session.foreground
+                                                               : session.muted
                                     font.pixelSize: session.textBody
+                                    elide: Text.ElideRight
+                                    width: parent.width
                                 }
                                 Text {
-                                    text: modelData.path
+                                    text: modelData.available
+                                          ? modelData.path
+                                          : qsTr("no disponible · %1").arg(modelData.path)
                                     color: session.muted
                                     font.pixelSize: session.textSmall
                                     elide: Text.ElideMiddle
                                     width: parent.width
                                 }
                             }
+
+                            Button {
+                                id: forgetButton
+                                objectName: "recentForget" + modelData.slot
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.right: parent.right
+                                anchors.rightMargin: session.unit / 3
+                                height: session.unit * 1.5
+                                padding: session.unit / 3
+                                flat: true
+                                text: qsTr("quitar")
+                                Accessible.name: qsTr("Quitar de recientes: %1")
+                                                 .arg(modelData.name)
+                                onClicked: start.forgetRecent(modelData.slot)
+
+                                contentItem: Text {
+                                    text: forgetButton.text
+                                    color: forgetButton.hovered ? session.foreground
+                                                                : session.muted
+                                    font.pixelSize: session.textSmall
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    radius: session.radiusSmall
+                                    color: forgetButton.hovered ? session.surfaceRaised
+                                                                : "transparent"
+                                    border.width: forgetButton.activeFocus ? 1 : 0
+                                    border.color: session.accent
+                                }
+                            }
+
                             MouseArea {
                                 id: recentArea
                                 anchors.fill: parent
+                                anchors.rightMargin: forgetButton.width + session.unit / 2
                                 hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: start.openRecent(index)
+                                cursorShape: modelData.available ? Qt.PointingHandCursor
+                                                                 : Qt.ArrowCursor
+                                onClicked: if (modelData.available) {
+                                               start.openRecent(modelData.slot);
+                                           }
                             }
                         }
+                    }
+                    Text {
+                        visible: session.recent.length > session.recentPage.length
+                        text: qsTr("Los demás están en Archivo ▸ Recientes.")
+                        color: session.muted
+                        font.pixelSize: session.textSmall
+                        topPadding: session.unit / 6
                     }
                 }
 

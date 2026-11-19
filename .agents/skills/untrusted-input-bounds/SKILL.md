@@ -62,6 +62,7 @@ not have it.
 | Limit | Value | Owner | Evidence |
 |---|---|---|---|
 | Recent projects | 10 | `punchi-fluid-file` | fifteen remembered, ten kept |
+| Recent rows on Inicio | 5 | `punchi-fluid-ffi` | `PF_RECENT_PAGE_LIMIT` compared with the list bound in the gate |
 | Recent path | 4096 bytes | `punchi-fluid-file` | a longer path is refused |
 | Recent list file | 64 KB | `punchi-fluid-file` | a larger file is refused |
 | Circuits per project | 32 | `punchi-fluid-core` | refused opening and adding |

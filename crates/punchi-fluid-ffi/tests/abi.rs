@@ -41,15 +41,16 @@ use punchi_fluid::{
     pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
     pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
     pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
-    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent, pf_session_free,
-    pf_session_grid_step, pf_session_hit_component, pf_session_hit_valve,
-    pf_session_indicator_active, pf_session_is_modified, pf_session_last_error,
-    pf_session_load_example, pf_session_load_template, pf_session_mirror_selected,
-    pf_session_move_component, pf_session_move_selection, pf_session_new, pf_session_new_document,
-    pf_session_open, pf_session_open_recent, pf_session_paste, pf_session_paste_offset,
-    pf_session_pipe_at, pf_session_pipe_class, pf_session_pipe_offset, pf_session_place_component,
-    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_preview_template,
+    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
+    pf_session_forget_recent_at, pf_session_free, pf_session_grid_step, pf_session_hit_component,
+    pf_session_hit_valve, pf_session_indicator_active, pf_session_is_modified,
+    pf_session_last_error, pf_session_load_example, pf_session_load_template,
+    pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
+    pf_session_new, pf_session_new_document, pf_session_open, pf_session_open_recent,
+    pf_session_paste, pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class,
+    pf_session_pipe_offset, pf_session_place_component, pf_session_placement_id,
+    pf_session_port_point, pf_session_press_component_valve, pf_session_press_valve,
+    pf_session_preview, pf_session_preview_template, pf_session_recent_available,
     pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
     pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
     pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
@@ -2651,16 +2652,21 @@ fn the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened() 
     );
     assert!(path_of(session, 1).ends_with("uno.pfluid"));
 
-    // A document that vanished is forgotten instead of offered, and the list on disk keeps
-    // only what can still be opened.
+    // A document that vanished is reported and kept: the start view greys it until the user
+    // removes it, so the row never disappears behind the reader's back.
     std::fs::remove_file(&second).expect("removes");
     // The document on the sheet is not modified by this, so opening the first is allowed.
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_open_recent(session, 0) }, PF_ERR_MODEL);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_recent_count(session) }, 1);
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 2);
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_open_recent(session, 0) }, PF_OK);
+    assert_eq!(unsafe { pf_session_recent_available(session, 0) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_available(session, 1) }, 1);
+    // The other one still opens, and it does not take the unavailable row with it.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_open_recent(session, 1) }, PF_OK);
     // The list survives a session: a new one starts with what was written.
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
@@ -2671,8 +2677,9 @@ fn the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened() 
         PF_OK
     );
     // SAFETY: live session.
-    assert_eq!(unsafe { pf_session_recent_count(session) }, 1);
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 2);
     assert!(path_of(session, 0).ends_with("uno.pfluid"));
+    assert!(path_of(session, 1).ends_with("dos.pfluid"));
     // Forgetting empties the list, in memory and on disk.
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_forget_recent(session) }, PF_OK);
@@ -2688,6 +2695,81 @@ fn the_documents_that_were_saved_or_opened_are_remembered_and_can_be_reopened() 
     );
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_recent_count(session) }, 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_missing_document_stays_in_the_list_until_it_is_removed() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let list_path = directory.path().join("recent.json");
+    let list = CString::new(list_path.to_string_lossy().as_bytes()).unwrap_or_default();
+    let present = directory.path().join("presente.pfluid");
+    let gone = directory.path().join("perdido.pfluid");
+    let present_encoded = CString::new(present.to_string_lossy().as_bytes()).unwrap_or_default();
+
+    let session = session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_set_recent_file(session, list.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_save(session, present_encoded.as_ptr()) },
+        PF_OK
+    );
+    // A path that never existed reaches the list the way a document that moved does: it is
+    // remembered, it is reported as unavailable, and it waits for the user.
+    std::fs::write(
+        &list_path,
+        format!(
+            r#"{{"version":1,"path":["{}","{}"]}}"#,
+            gone.to_string_lossy().replace('\\', "\\\\"),
+            present.to_string_lossy().replace('\\', "\\\\")
+        ),
+    )
+    .expect("writes the list");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_set_recent_file(session, list.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 2);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_available(session, 0) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_available(session, 1) }, 1);
+    // An unknown slot is refused instead of guessed, and the list is untouched.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_forget_recent_at(session, 99) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 2);
+    // Removing the missing row leaves the available one where it was.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_forget_recent_at(session, 0) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_available(session, 0) }, 1);
+    // The removal reached the file: a new session reads one entry.
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_set_recent_file(session, list.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_recent_count(session) }, 1);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }

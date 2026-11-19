@@ -172,6 +172,8 @@ typedef struct PfSession PfSession;
 #define PF_TEMPLATE_AIR_PREPARATION 2U
 #define PF_TEMPLATE_ELECTRICAL_CONTROL 3U
 #define PF_TEMPLATE_COUNT 4U
+/* How many remembered documents Inicio lists at once; the list keeps ten for Archivo. */
+#define PF_RECENT_PAGE_LIMIT 5U
 
 const char *pf_version(void);
 int32_t pf_abi(PfAbi *out);
@@ -378,7 +380,12 @@ int32_t pf_session_set_recent_file(PfSession *session, const char *path);
 uint32_t pf_session_recent_count(const PfSession *session);
 int32_t pf_session_recent_path(const PfSession *session, uint32_t slot, char *out,
                                uint32_t capacity);
+/* 1 when the file is still there, 0 when it has gone, negative for an unknown slot.
+ * A missing entry stays in the list so the start view can show it as unavailable. */
+int32_t pf_session_recent_available(const PfSession *session, uint32_t slot);
 int32_t pf_session_open_recent(PfSession *session, uint32_t slot);
+/* Removes one entry, or every entry, from the list and its file. */
+int32_t pf_session_forget_recent_at(PfSession *session, uint32_t slot);
 int32_t pf_session_forget_recent(PfSession *session);
 
 /* The name the user gave a component, and how to set it (an empty text clears it). */

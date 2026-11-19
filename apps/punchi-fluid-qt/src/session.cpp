@@ -1545,6 +1545,7 @@ void FluidSession::refreshBuzzer()
 void FluidSession::refreshRecent()
 {
     m_recent.clear();
+    m_recentPage.clear();
     if (!m_session) {
         emit recentChanged();
         return;
@@ -1558,10 +1559,18 @@ void FluidSession::refreshRecent()
             continue;
         }
         const QString path = QString::fromUtf8(buffer.data(), written);
+        const bool available = pf_session_recent_available(m_session, slot) == 1;
         QVariantMap entry;
+        entry.insert(QStringLiteral("slot"), static_cast<int>(slot));
         entry.insert(QStringLiteral("path"), path);
         entry.insert(QStringLiteral("name"), QFileInfo(path).fileName());
+        entry.insert(QStringLiteral("available"), available);
         m_recent.append(entry);
+        // The page lists a prefix of the same list, so its row and its slot never drift
+        // apart when an entry is removed.
+        if (m_recentPage.size() < recentPageLimit()) {
+            m_recentPage.append(entry);
+        }
     }
     emit recentChanged();
 }
@@ -1610,6 +1619,25 @@ void FluidSession::forgetRecent()
     }
     pf_session_forget_recent(m_session);
     refreshRecent();
+}
+
+bool FluidSession::forgetRecentAt(int slot)
+{
+    if (!m_session || slot < 0) {
+        return false;
+    }
+    if (pf_session_forget_recent_at(m_session, static_cast<uint32_t>(slot)) != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo quitar el proyecto de recientes");
+        refreshRecent();
+        emit changed();
+        return false;
+    }
+    m_error.clear();
+    refreshRecent();
+    emit changed();
+    return true;
 }
 
 QString FluidSession::autosavePath() const

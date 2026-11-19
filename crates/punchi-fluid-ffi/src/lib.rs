@@ -78,6 +78,12 @@ pub const PF_ERR_MODEL: i32 = -2;
 pub const PF_ERR_LIMIT: i32 = -4;
 /// Maximum number of circuits in one project, shared with the core and file format.
 pub const PF_MAX_CIRCUITS: usize = punchi_fluid_core::MAX_CIRCUITS;
+/// How many remembered documents Inicio lists at once.
+///
+/// The page is a decision, not a limit of the list: the last ten are kept for **Archivo**,
+/// and five fit under the templates above the minimum window without scrolling, leaving the
+/// line that points at Archivo inside the page.
+pub const PF_RECENT_PAGE_LIMIT: u32 = 5;
 /// Number of compiled-in circuits the start view offers as templates.
 pub const PF_TEMPLATE_COUNT: u32 = templates::COUNT;
 /// A panic was caught at the boundary.
@@ -5077,10 +5083,32 @@ pub unsafe extern "C" fn pf_session_recent_path(
     })
 }
 
+/// `1` when the remembered document still exists, `0` when it has gone.
+///
+/// An entry whose file moved or was deleted stays in the list so Inicio can show it in
+/// grey and offer to remove it; the caller asks here instead of guessing from the open.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_recent_available(session: *const PfSession, slot: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(entry) = session.recent.entries().get(slot as usize) else {
+            return PF_ERR_MODEL;
+        };
+        i32::from(std::path::Path::new(&entry.path).exists())
+    })
+}
+
 /// Opens one remembered document by its place in the list.
 ///
-/// A document that vanished since the list was written is forgotten and reported, which
-/// also cleans the menu: the entries are the files that can still be opened.
+/// A document that vanished since the list was written is reported and **kept**: the start
+/// view shows it as unavailable until the user removes it.
 ///
 /// # Safety
 ///
@@ -5101,10 +5129,6 @@ pub unsafe extern "C" fn pf_session_open_recent(session: *mut PfSession, slot: u
                 if std::path::Path::new(&entry.path).exists() {
                     return session.fail(&cause.to_string());
                 }
-                session.recent.forget(&entry.path);
-                if let Some(list_path) = session.recent_path.clone() {
-                    let _ = session.recent.write(&list_path);
-                }
                 return session.fail("that document is no longer there");
             }
         };
@@ -5116,6 +5140,39 @@ pub unsafe extern "C" fn pf_session_open_recent(session: *mut PfSession, slot: u
             }
             Err(cause) => session.fail(&cause),
         }
+    })
+}
+
+/// Forgets one remembered document by its place in the list.
+///
+/// The entry leaves the list and the list file. The write happens on a copy first: a
+/// failure leaves both the list and the file exactly as they were, because a removal that
+/// half-lands would bring the row back on the next start.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_forget_recent_at(session: *mut PfSession, slot: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(entry) = session.recent.entries().get(slot as usize).cloned() else {
+            return session.fail("that document is not in the list");
+        };
+        let mut next = session.recent.clone();
+        if !next.forget(&entry.path) {
+            return session.fail("that document is not in the list");
+        }
+        if let Some(list_path) = session.recent_path.clone() {
+            if let Err(cause) = next.write(&list_path) {
+                return session.fail(&cause.to_string());
+            }
+        }
+        session.recent = next;
+        PF_OK
     })
 }
 
@@ -8336,6 +8393,22 @@ mod layout_tests {
     fn the_seeded_example_stays_clear_of_the_block_on_a4_and_a3() {
         seeded_example_stays_clear(PaperSize::A4, PaperOrientation::Landscape);
         seeded_example_stays_clear(PaperSize::A3, PaperOrientation::Landscape);
+    }
+}
+
+#[cfg(test)]
+mod recent_tests {
+    use super::PF_RECENT_PAGE_LIMIT;
+
+    #[test]
+    fn the_page_never_asks_for_more_rows_than_the_list_remembers() {
+        // The page limit is a decision about the start view; the list is the bound owned by
+        // the file crate. If one grows past the other, the page would promise rows that
+        // cannot exist, so the two numbers are compared here.
+        assert!(
+            usize::try_from(PF_RECENT_PAGE_LIMIT).unwrap_or(usize::MAX)
+                <= punchi_fluid_file::recent::MAX_RECENT
+        );
     }
 }
 

@@ -129,14 +129,18 @@ Item {
                 radius: session.radiusTip
                 color: pointer.containsMouse && modelData.empty !== true ? session.surfaceRaised : "transparent"
 
+                readonly property bool available: modelData.empty !== true
+                                                  && modelData.available !== false
+
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.empty === true
                                  ? qsTr("Ninguno")
                                  : qsTr("%1, %2").arg(modelData.name).arg(modelData.path)
                 Accessible.description: modelData.empty === true
                                         ? qsTr("no hay proyectos recientes")
-                                        : qsTr("abre este proyecto")
-                Accessible.onPressAction: if (modelData.empty !== true) {
+                                        : (row.available ? qsTr("abre este proyecto")
+                                                         : qsTr("el archivo ya no está"))
+                Accessible.onPressAction: if (row.available) {
                                               recent.session.openRecent(index);
                                               popup.close();
                                           }
@@ -152,7 +156,7 @@ Item {
                     Text {
                         width: parent.width
                         text: row.modelData.name
-                        color: row.modelData.empty === true ? session.muted : session.foreground
+                        color: row.available ? session.foreground : session.muted
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -160,7 +164,8 @@ Item {
                     Text {
                         width: parent.width
                         visible: row.modelData.empty !== true
-                        text: row.modelData.path
+                        text: row.available ? row.modelData.path
+                                            : qsTr("no disponible · %1").arg(row.modelData.path)
                         color: session.muted
                         font.pixelSize: 9
                         elide: Text.ElideMiddle
@@ -171,8 +176,8 @@ Item {
                     id: pointer
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: row.modelData.empty === true ? Qt.ArrowCursor : Qt.PointingHandCursor
-                    enabled: row.modelData.empty !== true
+                    cursorShape: row.available ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: row.available
                     onClicked: {
                         recent.session.openRecent(index);
                         popup.close();
@@ -182,14 +187,14 @@ Item {
 
             Keys.onReturnPressed: {
                 const entry = recent.rows[currentIndex];
-                if (entry && entry.empty !== true) {
+                if (entry && entry.empty !== true && entry.available !== false) {
                     recent.session.openRecent(currentIndex);
                     popup.close();
                 }
             }
             Keys.onEnterPressed: {
                 const entry = recent.rows[currentIndex];
-                if (entry && entry.empty !== true) {
+                if (entry && entry.empty !== true && entry.available !== false) {
                     recent.session.openRecent(currentIndex);
                     popup.close();
                 }
