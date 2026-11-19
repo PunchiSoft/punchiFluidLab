@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Inicio: el programa abre sin circuito — 2026-11-19
+
+- **ADR 0031**: al arrancar se muestra la vista **Inicio** en el área de dibujo —no una
+  pestaña ni una cuarta región—, con **Nuevo, Abrir, recientes y cuatro ejemplos** con su
+  miniatura, y la cinta reducida a **Proyecto** y **Ayuda**. El **lateral izquierdo** pasa a
+  ser el raíl de Inicio (Iniciar, Nuevo, Abrir, Aprender) en el sitio del catálogo; el dock
+  derecho se oculta y los comandos que necesitan documento no se muestran en gris.
+- **Inicio** se abre también desde **Archivo ▸ Inicio** con un proyecto abierto; **Volver** o
+  `Esc` regresa a la hoja.
+- **Nuevo proyecto es una hoja vacía** y la hoja invita a empezar: «Arrastra símbolos a la
+  hoja para empezar», con el catálogo y las plantillas como caminos.
+- El ejemplo que se sembraba deja de ser el documento de arranque y pasa a ser la **primera
+  plantilla**; la fixture se queda en las pruebas y no la ve el usuario.
+- Cerrar el último proyecto vuelve a **Inicio**; nada se abre solo, las miniaturas se dibujan
+  con nuestro renderizador y todo es local.
+- **No hay código todavía**: el ADR queda `proposed` y la capacidad F0 se registra como
+  `missing` con su evidencia por escribir.
+
 ### Las hojas a 300 dpi de los símbolos — 2026-11-19
 
 - Las **36 fichas** de `assets/symbols/review/` llevan su **hoja a 300 dpi** (`<id>-300.png`,

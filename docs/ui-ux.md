@@ -362,6 +362,41 @@ before a panel is allowed to cover it:
   drawer open, with the ribbon folded and with the geometry restored, at 1.25×, 1.5× and
   2× density and with a 1.5× font ([interface-plan.md](interface-plan.md) stage 6a).
 
+### 2.3 The start view: Inicio
+
+**With no project open, the drawing region holds the start view**, not an empty sheet: it is
+not a fourth region and not a ribbon tab, because the ribbon holds commands and the start view
+holds the decision of what to work on. The ribbon shows **Proyecto** and **Ayuda** only; a tab
+whose commands cannot act on an empty project is not shown. The view closes when a project
+opens ([ADR 0031](adr/0031-the-program-opens-on-a-start-view.md)).
+
+**The left region carries the start navigation** while the start view is shown: the catalog's
+column holds a rail with **Iniciar**, **Nuevo**, **Abrir** and **Aprender** — shortcuts, what
+ISO 1219 conformance means, About and licence — instead of a second sidebar. The right dock is
+hidden, since with no project it has no inspector and no block. The command that needs a
+document (`Guardar`, `Exportar`) is not shown greyed: it appears with the project. `Inicio` is
+reachable from **Archivo ▸ Inicio**; with a project open the view covers the sheet and
+**Volver** or `Esc` returns to it, and with none it is the only view. The rail is the same
+region, the same width and the same tokens as the catalog; returning to the sheet returns the
+catalog with its remembered width.
+
+It offers, in reading order:
+
+- **Nuevo proyecto**, the primary action, with `Enter`; **Abrir…**; and the **recent
+  projects**, each with a thumbnail, its name and its folder. A path that is gone stays in the
+  list, greyed and named as unavailable, with **quitar**; the list is bounded and never opens
+  a file on its own.
+- **Ejemplos**, our own circuits with a thumbnail drawn by the renderer: a 3/2 valve with a
+  single-acting cylinder, a 5/2 valve with a double-acting one, a service unit feeding a
+  valve, and an electrical control. Choosing one copies it into a new project; **Nuevo**
+  starts empty. The worked example that used to seed the window is the first of these.
+- **Aprender**: the shortcuts, what “conforme a ISO 1219” means, and the About panel.
+
+The thumbnails come from the same drawing as the sheet, are cached with a bound, and nothing
+is fetched: templates are compiled in and the recent list is view state in `QSettings`. The
+start view is reachable from **Archivo ▸ Inicio**, is fully keyboard reachable, and every
+action exposes its name to the accessibility layer.
+
 ### 3. The sheet
 
 **The sheet is a raised card on a sunken workspace.** The canvas fills the drawing area
@@ -370,6 +405,11 @@ with `line_strong` and carries the `shadow` token offset once behind it. The dra
 background follows the paper, so a symbol that erases against the page matches. Every
 floating editor is one `Card` with the same radius, edge and shadow; the shadow is drawn,
 never blurred per frame, and none of it changes the zoom, the pan, the check or the print.
+
+**An empty sheet says what to do.** With no components it carries a short invitation — a
+first line *Arrastra símbolos a la hoja para empezar* and a second one naming the catalog and
+the start view — instead of a sentence about the state. It is text, not an illustration, and
+it disappears with the first component.
 
 **The circuits sit at the foot of the sheet.** A strip inside the drawing region — not a
 fourth region — shows one tab per circuit with its icon and its name, the active one marked by
