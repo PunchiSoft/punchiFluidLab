@@ -18,6 +18,7 @@ skill is the bug.
 | [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) | budgets, allocation-free hot paths, bounded caches | solver step, draw loop, cache, profiling, budget changes |
 | [untrusted-input-bounds](untrusted-input-bounds/SKILL.md) | a limit, a message and a one-past-it test for every untrusted input and every collection that grows | writing a parser, a list, a queue, a cache, an undo history or a loop over file data |
 | [security-review](security-review/SKILL.md) | the surface a change touches, the control that already exists, the hostile case and the record | a change reads or writes a file, resolves a path, exports, pastes, autosaves, opens a link, or touches dependencies, workflows or a release |
+| [qt-lifetimes](qt-lifetimes/SKILL.md) | one owner per QObject, connections that end with their context, models and images that do not grow | adding a QObject, item, connection, model or cached image; a window that grows while idle |
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
 | [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
@@ -41,9 +42,10 @@ skill is the bug.
 4. [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) — what it costs.
 5. [untrusted-input-bounds](untrusted-input-bounds/SKILL.md) — what it accepts.
 6. [security-review](security-review/SKILL.md) — what it must refuse.
-7. [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) —
+7. [qt-lifetimes](qt-lifetimes/SKILL.md) — what must die when.
+8. [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) —
    what it brings in.
-8. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
+9. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
    survive, and how to find the process when it cannot.
 
 Before the first edit of any change, read

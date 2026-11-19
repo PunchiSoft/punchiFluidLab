@@ -204,6 +204,8 @@ tooling, never a runtime dependency).
 - Every cache has a bound and an eviction rule; a cache without one is a leak. The procedure is
   [.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md).
 - `Arc` for shared immutables, never `Rc<RefCell<…>>`, no global mutable state.
+- A `QObject` has one owner, a connection ends with its context, and models, images and
+  caches do not grow: [.agents/skills/qt-lifetimes](.agents/skills/qt-lifetimes/SKILL.md).
 - A change that moves a budget says so in the pull request, with the measurement.
 
 ## Validation
