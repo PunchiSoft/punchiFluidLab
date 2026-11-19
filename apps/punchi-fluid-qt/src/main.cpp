@@ -1066,6 +1066,8 @@ int main(int argc, char *argv[])
             QString unsavedPath;
             /// The document the recent list is proved with.
             QString recentDocument;
+            /// Files written to prove the page's slice of the recent list.
+            QVector<QString> recentPages;
             /// The document state a panel toggle must not change.
             bool panelModified = false;
             bool panelCanUndo = false;
@@ -2018,14 +2020,54 @@ int main(int argc, char *argv[])
                   QStringLiteral("recent: the whole circuit returns"));
             check(state->session->currentPath() == state->recentDocument,
                   QStringLiteral("recent: the opened file is the one in the list"));
-            // A file that is gone is dropped instead of left in the menu, because the list
-            // promises documents that can be opened.
+
+            // A document that moved or was deleted stays in the list, greyed, so the row
+            // says why it cannot be opened instead of vanishing.
             QFile::remove(state->recentDocument);
             check(!state->session->openRecent(0),
                   QStringLiteral("recent: opening one that is gone fails"));
-            check(state->session->recent().isEmpty(),
-                  QStringLiteral("recent: and it is forgotten from the list"));
+            const QVariantList kept = state->session->recent();
+            check(kept.size() == 1
+                      && !kept.value(0).toMap().value(QStringLiteral("available")).toBool(),
+                  QStringLiteral("recent: the page keeps a missing document"));
+            check(state->session->recentPage().size() == 1,
+                  QStringLiteral("recent: the missing document reaches the page"));
+
+            // Quitar removes that row and nothing else, in memory and in the list file.
+            check(state->session->forgetRecentAt(0),
+                  QStringLiteral("recent: quitar forgets the row"));
+            check(state->session->recent().isEmpty() && state->session->recentPage().isEmpty(),
+                  QStringLiteral("recent: quitar forgets only that row"));
+            check(!state->session->forgetRecentAt(0),
+                  QStringLiteral("recent: an unknown slot is refused"));
+        });
+        // The page lists a slice of the list: ten are remembered for Archivo, six are shown
+        // under the templates, and the number comes from the ABI, never from QML.
+        steps->push_back([state, check] {
             state->session->forgetRecent();
+            state->recentPages.clear();
+            for (int index = 0; index < 8; ++index) {
+                const QString path =
+                    QDir::tempPath() + QStringLiteral("/punchi-reciente-%1.pfluid").arg(index);
+                state->recentPages.append(path);
+                check(state->session->saveTo(path),
+                      QStringLiteral("recent page: file %1 is written").arg(index));
+            }
+            check(state->session->recent().size() == 8,
+                  QStringLiteral("recent: the list remembers every file"));
+            check(state->session->recentPage().size() == state->session->recentPageLimit(),
+                  QStringLiteral("recent: the page shows at most its limit"));
+            check(state->session->recentPageLimit() == static_cast<int>(PF_RECENT_PAGE_LIMIT),
+                  QStringLiteral("recent: the page limit comes from the ABI"));
+            const QVariantMap first = state->session->recentPage().value(0).toMap();
+            check(first.value(QStringLiteral("slot")).toInt() == 0
+                      && first.value(QStringLiteral("available")).toBool(),
+                  QStringLiteral("recent: the page names the slot it came from"));
+            state->session->forgetRecent();
+            for (const QString &path : state->recentPages) {
+                QFile::remove(path);
+            }
+            state->recentPages.clear();
             check(state->session->recent().isEmpty(),
                   QStringLiteral("recent: forgetting leaves the list empty"));
         });

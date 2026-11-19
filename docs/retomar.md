@@ -95,18 +95,19 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
 
-La base al retomar fue `main` en **`2ad7360`**, árbol limpio y sin PRs abiertas. El trabajo
-actual está en `feat/start-templates`, creado desde esa base; no se ha pedido commit ni PR.
-`./scripts-dev/check.sh` sale **0**; `--selftest` termina con **0 fallos**. Las capturas claras y
-oscuras de Inicio están en `assets/screenshots/start-view-templates-{light,dark}.png`.
+`main` está en **`c342f1e`** tras fusionar la PR #135 (plantillas). El trabajo actual es
+`feat/recent-page`; todavía no se ha pedido commit ni PR de esa rama. `./scripts-dev/check.sh`
+sale **0** y `--selftest` termina con **0 fallos**. Las capturas de Inicio están en
+`assets/screenshots/start-view-templates-{light,dark}.png` y
+`start-view-recents-{light,dark}.png`.
 
 | Área | Estado real hoy |
 |---|---|
 | Arranque | **Inicio**: la ventana abre en la página de inicio, no en un circuito. Sin cinta, sin barra de estado, sin catálogo ni dock derecho; el raíl ocupa su sitio y el título nombra el programa, nunca «sin título» |
 | Proyecto nuevo | **hoja vacía**: marco y A4 apaisado, cero componentes; la hoja dice «Arrastra símbolos a la hoja para empezar» y las lecturas físicas quedan ocultas hasta que haya modelo |
 | Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; Inicio lo ofrece como la primera de **cuatro plantillas** |
-| Página Inicio | **Nuevo proyecto**, **Abrir…**, cuatro plantillas propias con miniatura del renderizador, **recientes** con nombre y carpeta, **Aprender** (Acerca de, Licencia) y **Volver**. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
-| Recientes | tope de **10** en `punchi-fluid-file`; la página aún no declara el suyo y no tiene «quitar» ni gris para rutas ausentes |
+| Página Inicio | **Nuevo proyecto**, **Abrir…**, cuatro plantillas propias con miniatura del renderizador, **recientes**, **Aprender** (Acerca de, Licencia) y **Volver**. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
+| Recientes | tope de **10** en `punchi-fluid-file` y de **5** en la página (`PF_RECENT_PAGE_LIMIT`); una ruta ausente queda en gris como `no disponible` con **quitar**, y la lista ya no poda al leerse |
 | Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
 | Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
 | Símbolos | **36 fichas** con hoja a **300 dpi**; `electrical.relay.latching` **falla** (A2/R1 chocan con sus terminales) y `throttle.fixed` sigue bloqueado por forma |
@@ -116,8 +117,8 @@ oscuras de Inicio están en `assets/screenshots/start-view-templates-{light,dark
 
 1. **Plantillas con miniatura**: implementadas en `feat/start-templates`; pendiente revisión del
    propietario antes de entregar la PR.
-2. **Recientes**: tope propio en la página, ruta ausente en gris y **quitar**
-   (`pf_session_forget_recent` ya existe en el ABI).
+2. **Recientes**: implementado en `feat/recent-page` (tope de 6 en la página, ausente en gris
+   como `no disponible` y **quitar** por fila, con `pf_session_forget_recent_at`).
 3. **Cerrar el último proyecto vuelve a Inicio**, con la confirmación de cambios.
 4. Pulido del raíl: hover, foco visible, teclado y nombres accesibles.
 5. Símbolos: mover **A2/R1** y nueva hoja a 300 dpi; después **OR/AND**.

@@ -132,9 +132,14 @@ impl RecentList {
 
     /// Drops every entry whose file is no longer there.
     ///
-    /// The list exists so its entries can be opened, so an entry that cannot be opened is
-    /// noise in the menu. A file that is merely unreadable stays: it may be a permissions
-    /// problem the user can fix, and silently forgetting it would be worse.
+    /// **Not** called when the list is read: a document that moved or was deleted stays
+    /// visible in the start view, greyed and named as unavailable, until the user removes
+    /// it. A row that disappears without a word is worse than a row that says why it cannot
+    /// be opened. A file that is merely unreadable stays either way: it may be a permissions
+    /// problem the user can fix.
+    ///
+    /// Kept as an explicit operation for a caller that wants to compact the list; the
+    /// window removes one entry at a time instead.
     pub fn prune_missing(&mut self) -> usize {
         let before = self.entries.len();
         self.entries.retain(|entry| Path::new(&entry.path).exists());
@@ -153,9 +158,13 @@ impl RecentList {
         }
     }
 
-    /// Reads the list, pruning entries whose file is gone.
+    /// Reads the list as it was written, including entries whose file has gone.
     ///
-    /// A missing file is an empty list, not an error: the first run has no list, and a
+    /// The caller decides what to do with a missing document: the window shows it as
+    /// unavailable until the user removes it, so pruning here would hide the very state the
+    /// recent list exists to explain.
+    ///
+    /// A missing list file is an empty list, not an error: the first run has no list, and a
     /// program that refuses to start because its own convenience file is absent is worse
     /// than one without a recent menu.
     ///
@@ -172,9 +181,7 @@ impl RecentList {
         if size > MAX_BYTES {
             return Err(RecentError::TooLarge);
         }
-        let mut list = Self::parse(&fs::read_to_string(path)?)?;
-        list.prune_missing();
-        Ok(list)
+        Self::parse(&fs::read_to_string(path)?)
     }
 
     /// Parses a list from text, bounding everything a file could get wrong.
@@ -274,8 +281,8 @@ mod tests {
     fn a_list_round_trips_and_never_writes_a_temporary_file() {
         let directory = tempfile::tempdir().expect("a temporary folder");
         let path = directory.path().join("recent.json");
-        // Reading prunes entries whose file is gone, so the documents are real files: the
-        // list promise is "documents you can open", not "paths somebody typed".
+        // The list round trips the paths it was given, so the fixture uses real files: a
+        // readable path is what the menu opens, not a name somebody typed.
         let documents: Vec<String> = ["uno", "dos"]
             .iter()
             .map(|name| {
@@ -324,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn an_entry_whose_file_is_gone_is_dropped_on_read() {
+    fn an_entry_whose_file_is_gone_is_kept_until_it_is_forgotten() {
         let directory = tempfile::tempdir().expect("a temporary folder");
         let document = directory.path().join("vivo.pfluid");
         std::fs::write(&document, "{}").expect("writes");
@@ -334,9 +341,29 @@ mod tests {
         assert!(list.remember(&document.to_string_lossy()));
         let path = directory.path().join("recent.json");
         list.write(&path).expect("writes");
-        let read = RecentList::read(&path).expect("reads");
-        assert_eq!(read.len(), 1, "only the file that exists is offered");
-        assert!(read.entries()[0].path.ends_with("vivo.pfluid"));
+
+        // A row that cannot be opened is still a row: the window greys it instead of
+        // deleting it behind the user's back.
+        let mut read = RecentList::read(&path).expect("reads");
+        assert_eq!(read.len(), 2, "both entries survive the read");
+        assert_eq!(read.entries()[0].path, document.to_string_lossy());
+        assert!(read.forget(&gone.to_string_lossy()));
+        assert_eq!(read.len(), 1, "forgetting one entry keeps the other");
+        assert!(!read.forget(&gone.to_string_lossy()));
+    }
+
+    #[test]
+    fn pruning_drops_the_entries_whose_file_is_gone() {
+        let directory = tempfile::tempdir().expect("a temporary folder");
+        let document = directory.path().join("vivo.pfluid");
+        std::fs::write(&document, "{}").expect("writes");
+        let gone = directory.path().join("borrado.pfluid");
+        let mut list = RecentList::new();
+        assert!(list.remember(&gone.to_string_lossy()));
+        assert!(list.remember(&document.to_string_lossy()));
+        assert_eq!(list.prune_missing(), 1);
+        assert_eq!(list.len(), 1);
+        assert!(list.entries()[0].path.ends_with("vivo.pfluid"));
     }
 
     #[test]

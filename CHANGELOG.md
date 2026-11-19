@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Recientes en Inicio: tope, ausentes en gris y «quitar» — 2026-11-19
+
+- **Inicio** lista como máximo cinco de los diez proyectos recordados; el resto sigue en
+  **Archivo ▸ Recientes** y una línea lo dice cuando la página muestra solo una parte.
+- Un proyecto cuyo archivo se movió o se borró **ya no desaparece**: queda en gris como
+  `no disponible · ruta`, no se puede abrir y se retira con **quitar**, sin tocar el documento,
+  el historial ni la marca de cambios. La lista ya no poda al leerse.
+- El ABI gana `pf_session_recent_available` y `pf_session_forget_recent_at`; el límite de la
+  página es `PF_RECENT_PAGE_LIMIT`, nunca un número en QML.
+- **Evidencia**: `an_entry_whose_file_is_gone_is_kept_until_it_is_forgotten`,
+  `pruning_drops_the_entries_whose_file_is_gone`, las pruebas ABI
+  `a_missing_document_stays_in_the_list_until_it_is_removed` y
+  `the_page_never_asks_for_more_rows_than_the_list_remembers`,
+  los pasos `--selftest` desde `recent: the page keeps a missing document` hasta
+  `recent: the page limit comes from the ABI`, y capturas claro/oscuro.
+
 ### Plantillas con miniatura en Inicio — 2026-11-19
 
 - **Inicio** ofrece cuatro circuitos propios: el ejemplo 3/2 con cilindro simple, uno 5/2 de

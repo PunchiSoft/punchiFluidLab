@@ -382,9 +382,13 @@ catalog with its remembered width.
 
 **Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver** or with **Nuevo**. Inicio takes the whole region: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
 
-- **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The current
-  recent rows show each project's name and folder; unavailable-path styling, removal and the
-  page's own list limit remain the next step.
+- **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The page
+  lists at most `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, newest first, with the
+  name and the folder; the rest stay in **Archivo ▸ Recientes**, and a line says so when the
+  page is showing a slice. A document whose file has gone stays in the list in grey, marked
+  **no disponible · <ruta>**, cannot be opened, and leaves it only through its **quitar**
+  control, which is a button with an accessible name and does not touch the document, the
+  history or the modified mark.
 - **Plantillas**, four circuits authored for this project: a 3/2 valve and single-acting
   cylinder (the worked example), a 5/2 valve and double-acting cylinder, air preparation
   ahead of a valve, and an electrical pushbutton driving a solenoid valve. Each card is a

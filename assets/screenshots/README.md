@@ -11,6 +11,8 @@ Images of the running application, used by the README and by pull request review
 | `window-dark.png` | The same window on a dark desktop, to check the sunken workspace, the paper edge and the help links in both themes |
 | `start-view-templates-light.png` | Inicio on a light desktop: four authored circuit cards with thumbnails from the shared renderer, names and details; the square cards sit inside evenly spaced cells |
 | `start-view-templates-dark.png` | The same start view on a dark desktop, to check card margins, thumbnails, text and edges in both schemes |
+| `start-view-recents-light.png` | The **Recientes** list on Inicio: five rows of the ten remembered, one openable and four whose file has gone in grey as `no disponible`, each with its **quitar**, and the line that points at **Archivo ▸ Recientes** for the rest |
+| `start-view-recents-dark.png` | The same list on a dark desktop, to check the grey row, the remove control and the pointer at Archivo in both schemes |
 | `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: the **48 drawings** — the 46 ribbon commands, from document and editing to align, transport, panels and menu, plus the hand and the fit the view strip uses |
 | `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
 | `catalog-open-light.png` | The catalog on a light desktop at its **324 px** default: the count, the search, the collapsible categories and two-column tiles with the symbol, the name and the `id`; the footer names the catalog in use and the skipped files (the capture runs the built-in catalog) |

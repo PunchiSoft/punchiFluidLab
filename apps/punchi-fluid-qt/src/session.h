@@ -127,6 +127,10 @@ class FluidSession : public QObject
     Q_PROPERTY(bool recoveryOffered READ recoveryOffered NOTIFY documentChanged)
     Q_PROPERTY(bool closeConfirmed READ closeConfirmed NOTIFY changed)
     Q_PROPERTY(QVariantList recent READ recent NOTIFY recentChanged)
+    /// The first `recentPageLimit` entries, each with its `slot` in the full list.
+    Q_PROPERTY(QVariantList recentPage READ recentPage NOTIFY recentChanged)
+    /// How many remembered documents Inicio lists; the page never chooses that number.
+    Q_PROPERTY(int recentPageLimit READ recentPageLimit CONSTANT)
     Q_PROPERTY(int templateCount READ templateCount CONSTANT)
     Q_PROPERTY(QVariantList circuits READ circuits NOTIFY changed)
     Q_PROPERTY(int activeCircuit READ activeCircuit NOTIFY changed)
@@ -234,8 +238,14 @@ public:
                               qreal dpi);
     /// The papers the export offers, in the order the panel lists them.
     Q_INVOKABLE QStringList paperNames();
-    /// The documents opened or saved recently, newest first: `path` and `name`.
+    /// The documents opened or saved recently, newest first: `path`, `name` and `available`.
     QVariantList recent() const { return m_recent; }
+    /// The page's slice of that list: `slot`, `path`, `name` and `available`.
+    QVariantList recentPage() const { return m_recentPage; }
+    [[nodiscard]] int recentPageLimit() const
+    {
+        return static_cast<int>(PF_RECENT_PAGE_LIMIT);
+    }
     /// Number of compiled-in circuits offered by the start view.
     int templateCount() const { return static_cast<int>(PF_TEMPLATE_COUNT); }
     /// Opens one of them by its place in the list.
@@ -278,6 +288,8 @@ public:
     Q_INVOKABLE bool openRecent(int slot);
     /// Forgets every remembered document.
     Q_INVOKABLE void forgetRecent();
+    /// Forgets one remembered document by its place in the full list.
+    Q_INVOKABLE bool forgetRecentAt(int slot);
     /// Starts a new document and forgets the current file.
     Q_INVOKABLE void newDocument();
     /// Draws the worked example into an empty document: the fixture the tests ask for and
@@ -651,6 +663,7 @@ private:
     bool m_recoveryOffered = false;
     bool m_closeConfirmed = false;
     QVariantList m_recent;
+    QVariantList m_recentPage;
     bool m_valveSpringReturn = true;
     /// The program starts in edit mode, as the reference does: nothing moves and a click on
     /// a valve selects it. Simulation is entered deliberately, with Iniciar or Pausa.
