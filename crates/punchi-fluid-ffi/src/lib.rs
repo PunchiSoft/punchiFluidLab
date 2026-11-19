@@ -737,9 +737,8 @@ impl PfSession {
             block_cells: Vec::new(),
         };
         session.build_catalog();
-        // Seeded now, not on the first frame: a front end may place or connect before it
-        // ever paints, and a document that is empty until the paint would refuse it.
-        session.ensure_seeded();
+        // A new session is a new, empty project. Tests and the start view load the worked
+        // example explicitly; it is never the product's first frame (ADR 0031).
         session
     }
 
@@ -1790,7 +1789,6 @@ impl PfSession {
         self.calls.clear();
         self.points.clear();
         self.text.clear();
-        self.ensure_seeded();
         let Self {
             catalog,
             document,
@@ -2551,6 +2549,34 @@ pub unsafe extern "C" fn pf_session_new(user_catalog_dir: *const c_char) -> *mut
         Box::into_raw(Box::new(PfSession::new(dir.as_deref())))
     }))
     .unwrap_or(std::ptr::null_mut())
+}
+
+/// Draws the worked example into an empty document: the fixture of the front end's tests
+/// and the example template of the start view.
+///
+/// Refused when the document already holds components, so it cannot duplicate a circuit
+/// behind the reader's back ([ADR 0031](../../docs/adr/0031-the-program-opens-on-a-start-view.md)).
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_load_example(session: *mut PfSession) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if !session.document.placements().is_empty() {
+            return session.fail("the document already has components");
+        }
+        session.seeded = false;
+        session.ensure_seeded();
+        // A template opens clean: the example is a starting point, not an edit.
+        session.saved_revision = Some(session.document.revision());
+        session.error = CString::default();
+        PF_OK
+    })
 }
 
 /// Frees a session. A null pointer is ignored.
@@ -3353,7 +3379,7 @@ pub unsafe extern "C" fn pf_session_place_component(
     })
 }
 
-/// Starts a new document with the worked example and no history.
+/// Starts a new empty document with no history.
 ///
 /// # Safety
 ///
@@ -3369,9 +3395,16 @@ pub unsafe extern "C" fn pf_session_new_document(session: *mut PfSession) -> i32
         let (width, height) = session.document.sheet().size_mm();
         session.width_mm = width;
         session.height_mm = height;
+        // A new document is an empty sheet: the worked example is a fixture and a template,
+        // never the first frame (ADR 0031). It is asked for with `pf_session_load_example`.
         session.seeded = false;
         session.select_only(None);
-        session.ensure_seeded();
+        session.saved_revision = Some(session.document.revision());
+        session.contacts.clear();
+        session.relays.clear();
+        session.indicators.clear();
+        session.charts.clear();
+        session.rebuild_model();
         session.error = CString::default();
         PF_OK
     })
@@ -4654,7 +4687,6 @@ impl PfSession {
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing, and the name of the circuit in view.
         let block = export_block(&self.document, target, date);
-        self.ensure_seeded();
         let circuit = self.document.active_circuit();
         let (placed, pipes) = scene(
             &self.document,

@@ -32,21 +32,26 @@ Rectangle {
         spacing: 26
 
         Text {
+            objectName: "pressureReading"
+            visible: session.hasModel
             text: qsTr("Presión %1 bar").arg(session.pressureBar.toFixed(2))
             color: session.foreground
             font.pixelSize: 13
         }
         Text {
+            visible: session.hasModel
             text: qsTr("Carrera %1 mm").arg(session.positionMm.toFixed(1))
             color: session.foreground
             font.pixelSize: 13
         }
         Text {
+            visible: session.hasModel
             text: qsTr("Velocidad %1 mm/s").arg(session.velocityMmS.toFixed(1))
             color: session.foreground
             font.pixelSize: 13
         }
         Text {
+            visible: session.hasModel
             text: qsTr("t %1 s").arg(session.timeS.toFixed(2))
             color: session.muted
             font.pixelSize: 13

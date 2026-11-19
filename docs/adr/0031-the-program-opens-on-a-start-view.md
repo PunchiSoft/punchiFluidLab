@@ -1,6 +1,6 @@
 # 0031 — The program opens on a start view, and a new project is empty
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-19
 - **Deciders:** project owner, implementation session
 - **Context crates:** `punchi-fluid-ffi`, `apps/punchi-fluid-qt`
@@ -76,7 +76,6 @@ The fixture stays useful without leaking into the product, which decides the fir
 Then the start view (the page and its rail) and finally the templates with their thumbnails.
 
 ## Consequences
-
 - The ABI stops seeding on creation; the template is loaded explicitly. The tests and
   `--selftest` steps that depend on "the example has a valve and a cylinder" must build their
   circuit, which is the risky part and gets its own change.
@@ -87,6 +86,24 @@ Then the start view (the page and its rail) and finally the templates with their
   document like any other circuit.
 - The ribbon, the panels and the status bar hide what cannot act on an empty project; a tab
   whose commands cannot run is not shown.
+
+## Amendment (2026-11-19, first implementation slice)
+
+The product session now starts with an empty document. The ABI's `pf_session_new` also starts
+empty; `pf_session_load_example` is an explicit fixture/template entry point. The ABI test
+helper requests that fixture for tests that exercise the worked circuit, and the window's
+`--selftest` checks that startup is empty before asking for it. The first-frame renderer and
+export no longer seed an example implicitly. The empty-sheet message is present. The `Inicio`
+view, its rail, recents and thumbnails remain the next slices; until then the blank-sheet
+message names only the catalog, which is already available. Pressure, stroke, velocity and
+time readings stay hidden when there is no model, so the empty sheet does not display a
+meaningless negative pressure.
+
+- ABI: `a_new_document_is_an_empty_sheet_and_the_example_loads_on_request`.
+- Window: `startup: the window opens with an empty sheet`, `startup: the empty sheet says what
+  to do`, `startup: model readings stay hidden without a model`, and
+  `startup: the example loads on request`.
+- Full gate still required before delivery.
 
 ## Alternatives considered
 

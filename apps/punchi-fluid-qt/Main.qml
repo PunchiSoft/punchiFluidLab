@@ -1447,12 +1447,26 @@ Window {
                 }
 
 
-                Text {
+                // A blank sheet says what to do, not what is missing: the reader meets it
+                // before the first component, and a pointer is not the only way in.
+                Column {
+                    objectName: "emptySheetHint"
                     anchors.centerIn: sheet
-                    visible: !session.hasModel
-                    text: qsTr("No hay un circuito que dibujar")
-                    color: session.muted
-                    font.pixelSize: 16
+                    visible: session.componentCount === 0
+                    spacing: session.unit / 2
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: qsTr("Arrastra símbolos a la hoja para empezar")
+                        color: session.muted
+                        font.pixelSize: session.textLabel
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: qsTr("O elige un símbolo en el catálogo para empezar")
+                        color: session.muted
+                        font.pixelSize: session.textBody
+                    }
                 }
             }
 
@@ -2019,6 +2033,8 @@ Window {
             hint: sidebar.selectedName.length > 0
                   ? qsTr("Elegido en el catálogo: %1 — arrástralo a la hoja para colocarlo")
                         .arg(sidebar.selectedName)
+                  : !session.hasModel
+                    ? qsTr("Elige un símbolo en el catálogo o arrástralo a la hoja para empezar")
                   : session.editing
                     ? qsTr("Modo edición: un clic sobre la válvula abre sus propiedades · F9 inicia la simulación")
                     : qsTr("Mantén pulsada la válvula para accionarla · F8 pausa · F5 detiene · Ctrl+M silencia")

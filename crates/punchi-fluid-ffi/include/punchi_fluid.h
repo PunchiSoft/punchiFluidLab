@@ -171,6 +171,10 @@ const char *pf_version(void);
 int32_t pf_abi(PfAbi *out);
 
 PfSession *pf_session_new(const char *user_catalog_dir);
+/* Draws the worked example into an empty document: the fixture of the tests and the
+ * example template of the start view. Refused when the document already has components;
+ * a new document is empty (ADR 0031). */
+int32_t pf_session_load_example(PfSession *session);
 void pf_session_free(PfSession *session);
 const char *pf_session_last_error(const PfSession *session);
 
@@ -253,7 +257,8 @@ int32_t pf_session_rotate_selected(PfSession *session, int32_t anticlockwise);
 int32_t pf_session_mirror_selected(PfSession *session);
 /* How a placement is turned: `out[0]` quarter turns clockwise, `out[1]` the mirror. */
 int32_t pf_session_component_orientation(const PfSession *session, uint32_t index, uint32_t *out);
-/* Starts a new document and seeds the worked example. */
+/* Starts a new empty document. Load a worked example explicitly with
+ * pf_session_load_example; the product does not seed one on start. */
 int32_t pf_session_new_document(PfSession *session);
 
 /* The sheet: paper, orientation and frame. Reading it never fails; setting it is one

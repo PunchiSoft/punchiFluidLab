@@ -1717,6 +1717,34 @@ bool FluidSession::saveCurrent()
     return !m_currentPath.isEmpty() && saveTo(m_currentPath);
 }
 
+bool FluidSession::loadExample()
+{
+    if (!m_session) {
+        return false;
+    }
+    const int32_t result = pf_session_load_example(m_session);
+    if (result != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message != nullptr ? QString::fromUtf8(message) : QString();
+        return false;
+    }
+    m_error.clear();
+    m_selected = -1;
+    cancelUntilChange();
+    m_editing = true;
+    m_running = false;
+    m_settled = false;
+    m_valveSpringReturn = pf_session_valve_spring_return(m_session) == 1;
+    refreshDocument();
+    refresh(true);
+    emit documentChanged();
+    emit modeChanged();
+    emit settledChanged();
+    emit runningChanged();
+    emit changed();
+    return true;
+}
+
 void FluidSession::newDocument()
 {
     if (!m_session) {

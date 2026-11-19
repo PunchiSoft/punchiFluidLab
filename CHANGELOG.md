@@ -16,13 +16,19 @@ publicación.
 - **Inicio** se abre también desde **Archivo ▸ Inicio** con un proyecto abierto; **Volver** o
   `Esc` regresa a la hoja.
 - **Nuevo proyecto es una hoja vacía** y la hoja invita a empezar: «Arrastra símbolos a la
-  hoja para empezar», con el catálogo y las plantillas como caminos.
+  hoja para empezar», con el catálogo como camino disponible ahora; las plantillas llegarán
+  con la vista Inicio.
 - El ejemplo que se sembraba deja de ser el documento de arranque y pasa a ser la **primera
   plantilla**; la fixture se queda en las pruebas y no la ve el usuario.
 - Cerrar el último proyecto vuelve a **Inicio**; nada se abre solo, las miniaturas se dibujan
   con nuestro renderizador y todo es local.
-- **No hay código todavía**: el ADR queda `proposed` y la capacidad F0 se registra como
-  `missing` con su evidencia por escribir.
+- **ADR 0031 aceptada** al fusionarse la PR #127. La F0 deja de ser `missing` y pasa a
+  `partial`: la vista Inicio, su raíl, los recientes y las plantillas quedan pendientes.
+- **Primer trozo implementado**: la sesión del producto y `Nuevo` parten vacíos; el ABI ofrece
+  una carga explícita del ejemplo para la plantilla y las pruebas; la primera pintura y la
+  exportación ya no lo siembran de forma implícita. El selftest verifica hoja vacía, mensaje y
+  carga explícita de la fixture. En una hoja vacía se ocultan las lecturas físicas (incluida la
+  presión negativa ficticia) y el consejo de estado dice cómo empezar.
 
 ### Las hojas a 300 dpi de los símbolos — 2026-11-19
 
