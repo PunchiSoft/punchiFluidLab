@@ -95,11 +95,11 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
 
-`main` está en **`c342f1e`** tras fusionar la PR #135 (plantillas). El trabajo actual es
-`feat/recent-page`; todavía no se ha pedido commit ni PR de esa rama. `./scripts-dev/check.sh`
-sale **0** y `--selftest` termina con **0 fallos**. Las capturas de Inicio están en
-`assets/screenshots/start-view-templates-{light,dark}.png` y
-`start-view-recents-{light,dark}.png`.
+`main` está en **`a828d43`** tras fusionar las PR #135 (plantillas) y #136 (recientes). El
+trabajo actual es `feat/palette-drag-grab` (PR #137), autorizado en paralelo mientras se
+revisaba la anterior. `./scripts-dev/check.sh` sale **0** y `--selftest` termina con **0
+fallos**. Las capturas de Inicio están en `assets/screenshots/start-view-templates-{light,dark}.png`
+y `start-view-recents-{light,dark}.png`.
 
 | Área | Estado real hoy |
 |---|---|
@@ -115,12 +115,14 @@ sale **0** y `--selftest` termina con **0 fallos**. Las capturas de Inicio está
 
 **Lo inmediato, en este orden:**
 
-1. **Plantillas con miniatura**: implementadas en `feat/start-templates`; pendiente revisión del
-   propietario antes de entregar la PR.
-2. **Recientes**: implementado en `feat/recent-page` (tope de 6 en la página, ausente en gris
+1. **Plantillas con miniatura**: entregadas en la PR #135.
+2. **Recientes**: entregado en la PR #136 (tope de 5 en la página, ausente en gris
    como `no disponible` y **quitar** por fila, con `pf_session_forget_recent_at`).
 3. **Cerrar el último proyecto vuelve a Inicio**, con la confirmación de cambios.
 4. Pulido del raíl: hover, foco visible, teclado y nombres accesibles.
+4b. **Arrastre de la paleta**: hecho en `feat/palette-drag-grab` (la ficha conserva el puntero
+   y la paleta se desplaza con rueda o barra). Quedan la tolerancia al soltar fuera de la hoja
+   y la colocación en dos pasos.
 5. Símbolos: mover **A2/R1** y nueva hoja a 300 dpi; después **OR/AND**.
 
 **Decisiones vigentes:** ADR 0030 (el cajetín protege su caja) y ADR 0031 (Inicio y proyecto

@@ -1874,6 +1874,42 @@ int main(int argc, char *argv[])
             }
         });
 
+        // A real hand does not travel in one straight jump: it starts up and to the right,
+        // still over the palette, and only then crosses to the sheet. The palette scrolls,
+        // and a scroll container that takes the gesture cancels the drag, which is exactly
+        // the "the symbol vanished on the way" the owner reported.
+        steps->push_back([state, check, send] {
+            state->components = pf_session_component_count(state->session->handle());
+            send(QEvent::MouseButtonPress, state->paletteScene, Qt::LeftButton,
+                 Qt::LeftButton);
+        });
+        steps->push_back([state, check, send] {
+            // Two moves inside the palette, past the drag threshold, before leaving it.
+            const QPointF first = state->paletteScene + QPointF(14.0, -16.0);
+            send(QEvent::MouseMove, first, Qt::NoButton, Qt::LeftButton);
+        });
+        steps->push_back([state, check, send] {
+            const QPointF second = state->paletteScene + QPointF(26.0, -34.0);
+            send(QEvent::MouseMove, second, Qt::NoButton, Qt::LeftButton);
+        });
+        steps->push_back([state, check, send, toScene] {
+            send(QEvent::MouseMove, toScene(QPointF(170.0, 70.0)), Qt::NoButton,
+                 Qt::LeftButton);
+        });
+        steps->push_back([state, check, send, toScene] {
+            send(QEvent::MouseButtonRelease, toScene(QPointF(170.0, 70.0)), Qt::LeftButton,
+                 Qt::NoButton);
+        });
+        steps->push_back([state, check] {
+            const uint32_t now = pf_session_component_count(state->session->handle());
+            check(now == state->components + 1,
+                  QStringLiteral("palette: a diagonal gesture still places the component"));
+            while (pf_session_can_undo(state->session->handle()) == 1
+                   && pf_session_component_count(state->session->handle()) > state->components) {
+                state->session->undo();
+            }
+        });
+
         // Unsaved work is known, marked in the title and copied for safety. A crash costs
         // the work since the last copy, and a close asks before losing the rest. The sheet
         // has been edited by the steps above, so the baseline is a save, not an assumption.

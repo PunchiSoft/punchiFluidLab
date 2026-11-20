@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Arrastrar de la paleta sin perder el gesto — 2026-11-19
+
+- La ficha de la paleta **conserva el puntero** durante todo el arrastre. Antes, el área
+  desplazable del catálogo tomaba el gesto en cuanto pasaba su umbral, y una mano que se
+  desviaba en diagonal cancelaba el arrastre: la miniatura y el símbolo desaparecían de
+  camino. Ahora el recorrido puede cruzar la paleta, los paneles y la hoja sin cancelarse.
+- La paleta se sigue desplazando con la rueda o con **su propia barra**, que aparece cuando
+  hace falta; ya no se desplaza arrastrando sobre un símbolo.
+- **Evidencia**: el paso `--selftest` `palette: a diagonal gesture still places the component`,
+  que reproduce el gesto cancelado y **falla sin el cambio**, junto con los pasos `palette: …`
+  que ya existían; `--check-qml` y `--check-layout` verdes.
+
 ### Recientes en Inicio: tope, ausentes en gris y «quitar» — 2026-11-19
 
 - **Inicio** lista como máximo cinco de los diez proyectos recordados; el resto sigue en
