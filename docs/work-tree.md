@@ -67,7 +67,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-002 | Card text runs into its icon | `in progress` | [§2](start-view-corrections.md) |
 | P-003 | Template pictures are tiny and pale | `in progress` | [§3](start-view-corrections.md) |
 | P-004 | Recent rows overlap | `done` | [§4](start-view-corrections.md) |
-| P-005 | No way back to Inicio with a project open | `planned` | [§5](start-view-corrections.md) |
+| P-005 | No way back to Inicio with a project open | `in progress` | [§5](start-view-corrections.md) — home control in the strip, `Ctrl+Home`, `Volver` for an empty project; `feat/start-view-home-tab`, `home:` selftest 0 failures, layout and captures |
 | P-006 | Recents have no page bound and do not mark a missing file | `in progress` | [§6](start-view-corrections.md) |
 | P-007 | Closing the last project does not return to Inicio | `planned` | [§7](start-view-corrections.md) |
 | P-008 | The rail is uneven and its focus is not the catalogue's | `in progress` | [§8](start-view-corrections.md) |

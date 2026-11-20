@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### Inicio: una casa fija en la tira y Ctrl+Home — 2026-11-20
+
+- La tira de circuitos estrena un **control de Inicio fijo** a la izquierda, fuera del
+  `Flickable`: icono `go-home` de 16 px, tooltip, nombre accesible y una regla de 1 px que
+  separa la vuelta del proyecto. La tira se desplaza bajo él y el signo `+` sigue al final de
+  la fila. El control **no es un circuito**: no entra en la lista, el archivo ni el historial
+  de deshacer.
+- **`Ctrl+Home`** abre Inicio desde la hoja y cede la tecla cuando un `TextInput` o un
+  `TextEdit` tiene el foco; el comando **Archivo ▸ Inicio** sigue como segunda vía.
+- **Volver** existe también en un proyecto nuevo y vacío: `canReturn` cuenta los circuitos,
+  no solo la ruta y el modelo, así que abrir Inicio nunca deja al lector sin vuelta.
+- Las pestañas de circuito y el `+` son **alcanzables con Tab** y tienen nombre accesible; el
+  control de cerrar conserva el suyo. Se retira la pista falsa de `Esc` del control Volver:
+  la página se cierra con **Volver** o **Nuevo**.
+- El caso de tira de `--check-layout` comprueba la casa dentro de la tira, el `Flickable`
+  después de ella y el `+` al final tras desplazarse; como dos circuitos no desbordan el
+  ancho mínimo de la hoja, añade circuitos hasta que la fila realmente se desplaza.
+- Las capturas de la tira usan `--template 0` además de `--circuits 2`: `--grab` abre Inicio,
+  y la plantilla cierra la página para que la tira quede en el marco.
+- **Evidencia**: pasos `home:` de `--selftest` con 0 fallos; `--check-layout` correcto a 1280
+  y 1440 y a 1,25×, 1,5×, 2× y fuente 1,5×; `--check-qml` sin problemas; y las capturas
+  `assets/screenshots/circuit-tabs-{light,dark}.png` y las de Inicio alcanzado desde un
+  proyecto.
+
 ### Inicio: iconos nítidos, tarjetas derivadas y tema que refresca — 2026-11-20
 
 - Los iconos de Inicio siguen **una sola regla de raster con dos tamaños**: `1,1 × unit` en el

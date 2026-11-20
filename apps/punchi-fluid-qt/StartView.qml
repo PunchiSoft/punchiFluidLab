@@ -96,14 +96,6 @@ Rectangle {
                         color: session.muted
                         font.pixelSize: session.textSmall
                     }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: session.unit / 3
-                        text: "Esc"
-                        color: session.muted
-                        font.pixelSize: session.textSmall
-                    }
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor

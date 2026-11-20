@@ -45,6 +45,7 @@
 //! ```
 
 #include <QColor>
+#include <QAccessible>
 #include <QGuiApplication>
 #include <QDir>
 #include <QFile>
@@ -910,7 +911,7 @@ int main(int argc, char *argv[])
         };
         const LayoutCase cases[] = {
             { 900, 640 }, { 1000, 700 }, { 1050, 700 }, { 1100, 700 },
-            { 1200, 760 }, { 1280, 800 }, { 1920, 1000 },
+            { 1200, 760 }, { 1280, 800 }, { 1440, 900 }, { 1920, 1000 },
         };
         // The boundaries are the shell's own content minimums, read from the window, so a
         // desktop with a larger font moves them instead of failing this check.
@@ -1071,6 +1072,83 @@ int main(int argc, char *argv[])
         startViewCase(1440, 900);
         window->setProperty("startViewOpen", false);
         settle();
+        // The strip with the fixed home control: the control stays inside the strip, the
+        // Flickable starts after it, and the plus remains reachable at the end of the row.
+        // The case runs here because the start-page case above closes Inicio first.
+        {
+            window->resize(1280, 800);
+            settle();
+            FluidSession *stripSession = layoutSessions.isEmpty() ? nullptr
+                                                                 : layoutSessions.constFirst();
+            if (stripSession != nullptr) {
+                while (static_cast<int>(stripSession->circuits().size()) < 2) {
+                    if (stripSession->addCircuit() < 0) {
+                        break;
+                    }
+                }
+            }
+            settle();
+            auto *strip = window->findChild<QQuickItem *>(QStringLiteral("circuitTabs"));
+            auto *home = window->findChild<QQuickItem *>(QStringLiteral("homeTab"));
+            auto *scroll = window->findChild<QQuickItem *>(QStringLiteral("tabScroll"));
+            auto *plus = window->findChild<QQuickItem *>(QStringLiteral("addCircuitButton"));
+            bool ok = strip != nullptr && home != nullptr && scroll != nullptr && plus != nullptr
+                      && strip->isVisible() && home->isVisible();
+            QString detail;
+            if (!ok) {
+                detail = QStringLiteral("missing home, strip, scroll or plus");
+            }
+            if (ok) {
+                qreal content = scroll->property("contentWidth").toReal();
+                ok = home->x() >= 0.0 && home->x() + home->width() <= strip->width()
+                     && scroll->x() >= home->x() + home->width();
+                if (!ok) {
+                    detail = QStringLiteral("home at %1, scroll at %2, strip %3")
+                                 .arg(home->x()).arg(scroll->x()).arg(strip->width());
+                }
+                // Two circuits do not fill the strip at the sheet's floor: the tabs are
+                // capped at 200 px and the scroll keeps at least the sheet width beside the
+                // panels. Add circuits, within the project limit, until the row really
+                // scrolls, so the far end and the plus are proved rather than assumed.
+                int guard = 0;
+                while (ok && content <= scroll->width()
+                       && stripSession != nullptr
+                       && static_cast<int>(stripSession->circuits().size())
+                              < stripSession->circuitLimit()
+                       && guard++ < stripSession->circuitLimit()) {
+                    if (stripSession->addCircuit() < 0) {
+                        break;
+                    }
+                    settle();
+                    content = scroll->property("contentWidth").toReal();
+                }
+                ok = ok && content > scroll->width();
+                if (!ok) {
+                    detail = QStringLiteral("content %1, scroll width %2, strip %3")
+                                 .arg(content).arg(scroll->width()).arg(strip->width());
+                }
+            }
+            if (ok) {
+                scroll->setProperty("contentX", scroll->property("contentWidth").toReal()
+                                                    - scroll->width());
+                settle();
+                const QPointF plusAt = plus->mapToItem(strip, QPointF(0.0, 0.0));
+                ok = plusAt.x() >= 0.0 && plusAt.x() + plus->width() <= strip->width();
+                if (!ok) {
+                    detail = QStringLiteral("plus at %.0f").arg(plusAt.x());
+                }
+            }
+            if (!ok) {
+                ++failures;
+            }
+            std::fprintf(stderr,
+                         "layout:  strip home and scrolling plus                %s%s\n",
+                         ok ? "ok" : "FAIL",
+                         detail.isEmpty()
+                             ? ""
+                             : qUtf8Printable(QStringLiteral(" (") + detail
+                                              + QStringLiteral(")")));
+        }
         for (const LayoutCase &one : cases) {
             window->resize(one.width, one.height);
             settle();
@@ -1346,6 +1424,10 @@ int main(int argc, char *argv[])
             /// The palette before the theme step, so the check leaves the desktop as it
             /// found it.
             QPalette paletteBeforeTheme;
+            /// The document the home control must leave untouched when it opens Inicio.
+            int homeCircuits = 0;
+            int homeActive = -1;
+            bool homeCanUndo = false;
         };
         auto *state = new SelfTest();
         state->window = window;
@@ -1398,6 +1480,22 @@ int main(int argc, char *argv[])
             float bounds[4] = {0.0F, 0.0F, 0.0F, 0.0F};
             pf_session_component_rect(session->handle(), static_cast<uint32_t>(index), bounds);
             return QRectF(QPointF(bounds[0], bounds[1]), QPointF(bounds[2], bounds[3]));
+        };
+        const auto accessibleName = [](QQuickItem *item) {
+            if (item == nullptr) {
+                return QString();
+            }
+            QAccessibleInterface *iface = QAccessible::queryAccessibleInterface(item);
+            return iface != nullptr ? iface->text(QAccessible::Name) : QString();
+        };
+        const auto clickItem = [state, send](QQuickItem *item) {
+            if (item == nullptr) {
+                return;
+            }
+            const QPointF centre = item->mapToScene(QPointF(item->width() * 0.5,
+                                                            item->height() * 0.5));
+            send(QEvent::MouseButtonPress, centre, Qt::LeftButton, Qt::LeftButton);
+            send(QEvent::MouseButtonRelease, centre, Qt::LeftButton, Qt::NoButton);
         };
 
         auto steps = std::make_shared<QVector<std::function<void()>>>();
@@ -4047,6 +4145,192 @@ int main(int argc, char *argv[])
             check(state->session->componentCount() == 3 && !state->session->modified()
                       && !state->window->property("startViewOpen").toBool(),
                   QStringLiteral("templates: discard opens the requested template cleanly"));
+        });
+
+        // The strip's home is the way back, and it is not a circuit: these steps prove the
+        // control, Volver, Ctrl+Home, the empty project and the strip's keyboard order.
+        steps->push_back([state, check, accessibleName, clickItem] {
+            state->session->newDocument();
+            while (state->session->circuits().size() < 2) {
+                if (state->session->addCircuit() < 0) {
+                    break;
+                }
+            }
+            state->window->setProperty("startViewOpen", false);
+            state->homeCircuits = static_cast<int>(state->session->circuits().size());
+            state->homeActive = state->session->activeCircuit();
+            state->homeCanUndo = state->session->canUndo();
+            QQuickItem *home =
+                state->window->findChild<QQuickItem *>(QStringLiteral("homeTab"));
+            check(home != nullptr && home->isVisible(),
+                  QStringLiteral("home: the strip shows the home control"));
+            if (home == nullptr) {
+                return;
+            }
+            check(home->property("accessibleLabel").toString() == QStringLiteral("Inicio")
+                      && home->property("tooltipText").toString() == QStringLiteral("Inicio"),
+                  QStringLiteral("home: the tooltip and the mirrored label are Inicio"));
+            check(accessibleName(home) == QStringLiteral("Inicio"),
+                  QStringLiteral("home: assistive technology reads Inicio"));
+            check(home->property("text").toString().isEmpty(),
+                  QStringLiteral("home: the control carries no visible text"));
+            clickItem(home);
+        });
+        steps->push_back([state, check] {
+            QObject *start =
+                state->window->findChild<QObject *>(QStringLiteral("startView"));
+            check(state->window->property("startViewOpen").toBool() && start != nullptr
+                      && start->property("visible").toBool(),
+                  QStringLiteral("home: a click opens Inicio"));
+            check(static_cast<int>(state->session->circuits().size()) == state->homeCircuits,
+                  QStringLiteral("home: the control is not a circuit"));
+            check(state->session->activeCircuit() == state->homeActive,
+                  QStringLiteral("home: opening Inicio leaves the circuit in view"));
+            check(state->session->canUndo() == state->homeCanUndo,
+                  QStringLiteral("home: opening Inicio adds no undo entry"));
+            if (start != nullptr) {
+                QMetaObject::invokeMethod(start, "returnRequested");
+            }
+        });
+        steps->push_back([state, check] {
+            check(!state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("home: Volver returns to the sheet"));
+            check(state->session->activeCircuit() == state->homeActive
+                      && static_cast<int>(state->session->circuits().size())
+                             == state->homeCircuits,
+                  QStringLiteral("home: Volver keeps the same circuit"));
+        });
+        steps->push_back([state, check, clickItem] {
+            state->session->newDocument();
+            state->window->setProperty("startViewOpen", false);
+            check(static_cast<int>(state->session->circuits().size()) == 1
+                      && state->session->currentPath().isEmpty()
+                      && !state->session->hasModel(),
+                  QStringLiteral("home: a new project is empty and has no path"));
+            clickItem(state->window->findChild<QQuickItem *>(QStringLiteral("homeTab")));
+        });
+        steps->push_back([state, check] {
+            QObject *start =
+                state->window->findChild<QObject *>(QStringLiteral("startView"));
+            check(state->window->property("startViewOpen").toBool() && start != nullptr
+                      && start->property("canReturn").toBool(),
+                  QStringLiteral("home: an empty project still shows Volver"));
+            if (start != nullptr) {
+                QMetaObject::invokeMethod(start, "returnRequested");
+            }
+        });
+        steps->push_back([state, check] {
+            QQuickItem *home =
+                state->window->findChild<QQuickItem *>(QStringLiteral("homeTab"));
+            if (home != nullptr) {
+                home->forceActiveFocus();
+            }
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Home, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            check(state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("home: Ctrl+Home opens Inicio"));
+            state->window->setProperty("startViewOpen", false);
+        });
+        steps->push_back([state, check] {
+            QObject *tabs =
+                state->window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            const QVariantList circuits = state->session->circuits();
+            check(tabs != nullptr && !circuits.isEmpty(),
+                  QStringLiteral("home: the strip is there for the rename"));
+            if (tabs == nullptr || circuits.isEmpty()) {
+                return;
+            }
+            const QVariantMap first = circuits.constFirst().toMap();
+            check(QMetaObject::invokeMethod(tabs, "beginRename",
+                                            Q_ARG(QVariant, first.value(QStringLiteral("id"))),
+                                            Q_ARG(QVariant, first.value(QStringLiteral("name")))),
+                  QStringLiteral("home: the circuit rename editor opens"));
+        });
+        steps->push_back([state, check] {
+            QQuickItem *focus = state->window->activeFocusItem();
+            check(focus != nullptr && focus->inherits("QQuickTextInput"),
+                  QStringLiteral("home: the rename editor owns the keyboard"));
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Home, Qt::ControlModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            check(!state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("home: Ctrl+Home yields to a text editor"));
+            QObject *tabs =
+                state->window->findChild<QObject *>(QStringLiteral("circuitTabs"));
+            if (tabs != nullptr) {
+                QMetaObject::invokeMethod(tabs, "cancelRename");
+            }
+        });
+        steps->push_back([state, check] {
+            while (state->session->circuits().size() < 2) {
+                if (state->session->addCircuit() < 0) {
+                    break;
+                }
+            }
+            state->window->setProperty("startViewOpen", false);
+            QQuickItem *home =
+                state->window->findChild<QQuickItem *>(QStringLiteral("homeTab"));
+            if (home != nullptr) {
+                home->forceActiveFocus();
+            }
+        });
+        steps->push_back([state, check, accessibleName] {
+            QQuickItem *home =
+                state->window->findChild<QQuickItem *>(QStringLiteral("homeTab"));
+            QQuickItem *plus =
+                state->window->findChild<QQuickItem *>(QStringLiteral("addCircuitButton"));
+            const QVariantList circuits = state->session->circuits();
+            check(circuits.size() == 2,
+                  QStringLiteral("home: the keyboard order uses two circuits"));
+            if (home == nullptr || plus == nullptr || circuits.size() != 2) {
+                return;
+            }
+            check(state->window->activeFocusItem() == home,
+                  QStringLiteral("home: the home control is the first focusable item"));
+            const QVariantMap firstRow = circuits.at(0).toMap();
+            const QVariantMap secondRow = circuits.at(1).toMap();
+            auto *repeater =
+                state->window->findChild<QObject *>(QStringLiteral("tabRepeater"));
+            QQuickItem *first = nullptr;
+            QQuickItem *second = nullptr;
+            if (repeater != nullptr) {
+                QMetaObject::invokeMethod(repeater, "itemAt", Q_RETURN_ARG(QQuickItem *, first),
+                                          Q_ARG(int, 0));
+                QMetaObject::invokeMethod(repeater, "itemAt", Q_RETURN_ARG(QQuickItem *, second),
+                                          Q_ARG(int, 1));
+            }
+            auto *close = first != nullptr
+                              ? first->findChild<QQuickItem *>(
+                                    QStringLiteral("circuitCloseButton_")
+                                    + QString::number(firstRow.value(QStringLiteral("id")).toInt()))
+                              : nullptr;
+            check(accessibleName(first)
+                      == firstRow.value(QStringLiteral("name")).toString(),
+                  QStringLiteral("home: the first circuit tab is named"));
+            check(accessibleName(second)
+                      == secondRow.value(QStringLiteral("name")).toString(),
+                  QStringLiteral("home: the second circuit tab is named"));
+            check(accessibleName(plus) == QStringLiteral("Nuevo circuito"),
+                  QStringLiteral("home: the plus is named"));
+            check(accessibleName(close)
+                      == QStringLiteral("Cerrar %1").arg(
+                             firstRow.value(QStringLiteral("name")).toString()),
+                  QStringLiteral("home: the close control is named"));
+            QKeyEvent tabOne(QEvent::KeyPress, Qt::Key_Tab, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &tabOne);
+            check(state->window->activeFocusItem() == first,
+                  QStringLiteral("home: Tab reaches the first circuit"));
+            QKeyEvent tabTwo(QEvent::KeyPress, Qt::Key_Tab, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &tabTwo);
+            check(state->window->activeFocusItem() == second,
+                  QStringLiteral("home: Tab reaches the second circuit"));
+            QKeyEvent tabThree(QEvent::KeyPress, Qt::Key_Tab, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &tabThree);
+            check(state->window->activeFocusItem() == plus,
+                  QStringLiteral("home: Tab reaches the plus"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {

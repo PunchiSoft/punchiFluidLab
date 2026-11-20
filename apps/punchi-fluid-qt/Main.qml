@@ -45,6 +45,10 @@ Window {
     property bool renameCircuitOpen: false
     /// Inicio covers the sheet while it is open; it is view state, never the document.
     property bool startViewOpen: false
+    /// `true` while a text field owns the keyboard: Ctrl+Home then moves the caret instead
+    /// of leaving the sheet, which is the key's meaning in every editor.
+    readonly property bool textEditorFocused: window.activeFocusItem instanceof TextInput
+                                              || window.activeFocusItem instanceof TextEdit
 
     function openStartView() {
         window.startViewOpen = true;
@@ -580,6 +584,14 @@ Window {
         session.selectCircuit(list[(index + step + list.length) % list.length].id);
     }
 
+    // The keyboard path back to Inicio. The strip's home control and the ribbon command are
+    // the pointer paths; a focused text field keeps Ctrl+Home for its caret.
+    Shortcut {
+        sequence: "Ctrl+Home"
+        enabled: !window.startViewOpen && !window.textEditorFocused
+        onActivated: window.openStartView()
+    }
+
     Shortcut {
         sequence: "Esc"
         enabled: session.handMode
@@ -939,7 +951,9 @@ Window {
                 objectName: "startView"
                 visible: window.startViewOpen
                 session: session
-                canReturn: session.currentPath.length > 0 || session.hasModel
+                canReturn: session.circuits.length > 0
+                           || session.currentPath.length > 0
+                           || session.hasModel
                 onNewProject: window.newProjectFromStart()
                 onOpenProject: window.openProjectFromStart()
                 onOpenRecent: function (slot) { window.openRecentFromStart(slot); }
@@ -988,6 +1002,7 @@ Window {
                     onRemoveRequested: function (id, name, components) {
                         window.requestCircuitRemoval(id, name, components);
                     }
+                    onHomeRequested: window.openStartView()
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom

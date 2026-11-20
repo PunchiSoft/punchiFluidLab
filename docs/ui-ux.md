@@ -380,8 +380,9 @@ column holds a rail with **Iniciar**, **Nuevo**, **Abrir** and **Aprender** — 
 ISO 1219 conformance means, About and licence — instead of a second sidebar. The right dock is
 hidden, since with no project it has no inspector and no block. The command that needs a
 document (`Guardar`, `Exportar`) is not shown greyed: it appears with the project. `Inicio` is
-reachable from **Archivo ▸ Inicio**; with a project open the view covers the sheet and
-**Volver** or `Esc` returns to it, and with none it is the only view. The rail is the same
+reachable from **Archivo ▸ Inicio**, from the **strip's home control** at the foot of the
+sheet, and from `Ctrl+Home`; with a project open the view covers the sheet and **Volver**
+returns to it, and with none it is the only view. The rail is the same
 region, the same width and the same tokens as the catalog; returning to the sheet returns the
 catalog with its remembered width.
 
@@ -451,10 +452,15 @@ it disappears with the first component.
 
 **The circuits sit at the foot of the sheet.** A strip inside the drawing region — not a
 fourth region — shows one tab per circuit with its icon and its name, the active one marked by
-a background and an accent rule at the seam, never by colour alone. A click switches the
+a background and an accent rule at the seam, never by colour alone. **Inicio sits at the left
+of the strip**, before the scroll: a compact icon control with a tooltip and an accessible
+name, separated by a rule from the project. It is the way back, not a circuit, so it never
+enters the list, the file or the undo history; `Ctrl+Home` from the sheet is the same command,
+and both close with **Volver**. A click switches the
 circuit — view state, no undo entry — and `Ctrl+Tab` walks them, scrolling the strip so the
 active tab is in view; `F2` or a double click renames **in the tab**, with `Enter` to save and
-`Esc` to cancel, which is a document edit and one undo like any other.
+`Esc` to cancel, which is a document edit and one undo like any other. The circuit tabs and
+the plus are keyboard reachable and named; the strip scrolls under the fixed home.
 
 **Closing a tab removes the circuit**, with everything it holds, as one undoable edit. The
 close control is on **every tab except the last** — a project without circuits is not a
