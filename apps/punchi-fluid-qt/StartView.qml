@@ -124,17 +124,10 @@ Rectangle {
                     width: parent.width
                     height: session.unit * 1.9
                     radius: session.radiusControl
-                    color: session.accentSoft
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: session.unit / 6
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: session.unit / 5
-                        height: parent.height - session.unit / 2
-                        radius: width / 2
-                        color: session.accent
-                    }
+                    // The current view is the filled row, as in the reference. Its text and
+                    // icon are the measured `onAccent`, and the row has no hover of its own,
+                    // so nothing repaints the fill under them.
+                    color: session.accent
 
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
@@ -147,13 +140,13 @@ Rectangle {
                         Image {
                             width: Math.round(session.unit * 0.9)
                             height: width
-                            source: "image://theme/go-home?tone=foreground"
+                            source: "image://theme/go-home?tone=onaccent"
                             smooth: true
                         }
                         Text {
                             width: parent.width - Math.round(session.unit * 0.9) - parent.spacing
                             text: qsTr("Inicio")
-                            color: session.foreground
+                            color: session.onAccent
                             font.pixelSize: session.textBody
                             font.bold: true
                             elide: Text.ElideRight
@@ -305,7 +298,7 @@ Rectangle {
                     x: session.unit
                     y: session.unit
                     width: Math.max(0, startScroll.width - x * 2)
-                    spacing: session.unit / 2.2
+                    spacing: session.unit / 1.8
 
                     Text {
                         text: qsTr("Inicio")
@@ -330,130 +323,120 @@ Rectangle {
                         topPadding: session.unit / 4
                     }
 
-                    Rectangle {
+                    // The ways in are cards on the page, as in the reference: the page
+                    // is one plane and each choice is a surface of its own. The default
+                    // one is tinted and bordered with the accent; its text stays in the
+                    // ink, so hover can never repaint a fill under a light-on-dark word.
+                    Row {
+                        id: startActions
                         width: parent.width
-                        height: startActions.height + session.unit
-                        radius: session.radius
-                        color: session.panel
-                        border.width: 1
-                        border.color: session.line
+                        spacing: session.unit
 
-                        Row {
-                            id: startActions
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.margins: session.unit / 2
-                            spacing: session.unit / 2
+                        Rectangle {
+                            width: (parent.width - parent.spacing) / 2
+                            height: session.unit * 3.9
+                            radius: session.radius
+                            color: session.accentSoft
+                            border.width: newArea.containsMouse ? 3 : 2
+                            border.color: session.accent
 
-                            // The default way in is a card with the accent border, not a
-                            // filled bar: the reference stresses the choice, and a fill
-                            // under white text is where hover can make the text vanish.
-                            Rectangle {
-                                width: (parent.width - parent.spacing) / 2
-                                height: session.unit * 3.8
-                                radius: session.radiusControl
-                                color: newArea.containsMouse ? session.surfaceRaised
-                                                             : session.panel
-                                border.width: 2
-                                border.color: session.accent
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Nuevo proyecto")
+                            Accessible.onPressAction: start.newProject()
 
-                                Accessible.role: Accessible.Button
-                                Accessible.name: qsTr("Nuevo proyecto")
-                                Accessible.onPressAction: start.newProject()
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: session.unit * 0.7
+                                anchors.rightMargin: session.unit / 2
+                                spacing: session.unit / 2
 
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.margins: session.unit / 2
-                                    spacing: session.unit / 2
-
-                                    Image {
-                                        width: Math.round(session.unit * 1.8)
-                                        height: width
-                                        source: "image://theme/document-new?tone=accent"
-                                        smooth: true
-                                    }
-                                    Column {
-                                        width: parent.width - Math.round(session.unit * 1.8)
-                                               - parent.spacing
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 2
-                                        Text {
-                                            text: qsTr("Nuevo proyecto")
-                                            color: session.foreground
-                                            font.pixelSize: session.textLabel
-                                            font.bold: true
-                                            elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            text: qsTr("Una hoja vacía, A4 apaisado")
-                                            color: session.muted
-                                            font.pixelSize: session.textSmall
-                                            wrapMode: Text.WordWrap
-                                        }
-                                    }
+                                Image {
+                                    width: Math.round(session.unit * 1.8)
+                                    height: width
+                                    source: "image://theme/document-new?tone=accent"
+                                    smooth: true
                                 }
-
-                                MouseArea {
-                                    id: newArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: start.newProject()
+                                Column {
+                                    width: parent.width - Math.round(session.unit * 1.8)
+                                           - parent.spacing
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+                                    Text {
+                                        text: qsTr("Nuevo proyecto")
+                                        color: session.foreground
+                                        font.pixelSize: session.textLabel
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        text: qsTr("Una hoja vacía, A4 apaisado")
+                                        color: session.muted
+                                        font.pixelSize: session.textSmall
+                                        wrapMode: Text.WordWrap
+                                    }
                                 }
                             }
 
-                            Rectangle {
-                                width: (parent.width - parent.spacing) / 2
-                                height: session.unit * 3.8
-                                radius: session.radiusControl
-                                color: openArea.containsMouse ? session.surfaceRaised
-                                                              : session.background
-                                border.width: 1
-                                border.color: session.line
+                            MouseArea {
+                                id: newArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: start.newProject()
+                            }
+                        }
 
-                                Accessible.role: Accessible.Button
-                                Accessible.name: qsTr("Abrir…")
-                                Accessible.onPressAction: start.openProject()
+                        Rectangle {
+                            width: (parent.width - parent.spacing) / 2
+                            height: session.unit * 3.9
+                            radius: session.radius
+                            color: openArea.containsMouse ? session.surfaceRaised : session.panel
+                            border.width: 1
+                            border.color: openArea.containsMouse ? session.lineStrong
+                                                                 : session.line
 
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.margins: session.unit / 2
-                                    spacing: session.unit / 2
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Abrir…")
+                            Accessible.onPressAction: start.openProject()
 
-                                    Image {
-                                        width: Math.round(session.unit * 1.8)
-                                        height: width
-                                        source: "image://theme/document-open?tone=muted"
-                                        smooth: true
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: session.unit * 0.7
+                                anchors.rightMargin: session.unit / 2
+                                spacing: session.unit / 2
+
+                                Image {
+                                    width: Math.round(session.unit * 1.8)
+                                    height: width
+                                    source: "image://theme/document-open?tone=muted"
+                                    smooth: true
+                                }
+                                Column {
+                                    width: parent.width - Math.round(session.unit * 1.8)
+                                           - parent.spacing
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+                                    Text {
+                                        text: qsTr("Abrir…")
+                                        color: session.foreground
+                                        font.pixelSize: session.textLabel
+                                        elide: Text.ElideRight
                                     }
-                                    Column {
-                                        width: parent.width - Math.round(session.unit * 1.8)
-                                               - parent.spacing
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 2
-                                        Text {
-                                            text: qsTr("Abrir…")
-                                            color: session.foreground
-                                            font.pixelSize: session.textLabel
-                                            elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            text: qsTr("Un proyecto guardado")
-                                            color: session.muted
-                                            font.pixelSize: session.textSmall
-                                            wrapMode: Text.WordWrap
-                                        }
+                                    Text {
+                                        text: qsTr("Un proyecto guardado")
+                                        color: session.muted
+                                        font.pixelSize: session.textSmall
+                                        wrapMode: Text.WordWrap
                                     }
                                 }
+                            }
 
-                                MouseArea {
-                                    id: openArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: start.openProject()
-                                }
+                            MouseArea {
+                                id: openArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: start.openProject()
                             }
                         }
                     }
@@ -474,39 +457,29 @@ Rectangle {
                         wrapMode: Text.WordWrap
                     }
 
-                    Rectangle {
+                    // The cards are the content: the section heading is enough of a
+                    // group, so no box wraps them (the reference's examples read the
+                    // same way). The cards divide the page's width between them.
+                    Grid {
+                        id: templateGrid
                         width: parent.width
-                        height: templateGrid.height + session.unit
-                        radius: session.radius
-                        color: session.panel
-                        border.width: 1
-                        border.color: session.line
-
-                        Grid {
-                            id: templateGrid
-                            // As many columns as fit, never more than there are templates,
-                            // and the grid takes exactly the room of its cards so the
-                            // centring is the cards' centring and not an empty column.
-                            readonly property int columnsThatFit: Math.max(1, Math.floor(
-                                (parent.width - session.unit + session.unit / 2)
-                                / (session.unit * 12 + session.unit / 2)))
-                            readonly property int shownColumns: Math.min(
-                                start.templateCardCount, columnsThatFit)
-                            columns: shownColumns
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: shownColumns * session.unit * 12
-                                   + (shownColumns - 1) * session.unit / 2
-                            columnSpacing: session.unit / 2
-                            rowSpacing: session.unit / 2
+                        readonly property int minCardWidth: Math.round(session.unit * 10)
+                        readonly property int columnsThatFit: Math.max(1, Math.floor(
+                            (width + session.unit) / (minCardWidth + session.unit)))
+                        columns: Math.min(start.templateCardCount, columnsThatFit)
+                        columnSpacing: session.unit
+                        rowSpacing: session.unit
 
                             Repeater {
                                 model: start.templateDefinitions
                                 delegate: Button {
                                     id: templateCard
                                     objectName: "templateCard" + modelData.index
-                                    width: session.unit * 12
-                                    height: session.unit * 8.2
+                                    width: Math.floor((templateGrid.width
+                                                       - (templateGrid.columns - 1)
+                                                         * templateGrid.columnSpacing)
+                                                      / templateGrid.columns)
+                                    height: session.unit * 8
                                     padding: session.unit / 3
                                     Accessible.role: Accessible.Button
                                     Accessible.name: modelData.title
@@ -529,7 +502,7 @@ Rectangle {
                                             // circuit, and the words are the label under it.
                                             Rectangle {
                                                 width: parent.width
-                                                height: session.unit * 4.3
+                                                height: session.unit * 4.1
                                                 radius: session.radiusSmall
                                                 color: session.background
                                                 clip: true
@@ -579,7 +552,6 @@ Rectangle {
                                 }
                             }
                         }
-                    }
 
                     Text {
                         visible: start.templateError.length > 0
@@ -598,8 +570,19 @@ Rectangle {
                         font.bold: true
                         topPadding: session.unit / 4
                     }
+                    Text {
+                        text: session.recent.length > session.recentPage.length
+                              ? qsTr("Los proyectos que abras o guardes aparecerán aquí. "
+                                     + "Los demás, en Archivo ▸ Recientes.")
+                              : qsTr("Los proyectos que abras o guardes aparecerán aquí.")
+                        color: session.muted
+                        font.pixelSize: session.textSmall
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
 
                     Rectangle {
+                        visible: start.session.recent.length > 0
                         width: parent.width
                         height: recentColumn.height + session.unit
                         radius: session.radius
@@ -615,23 +598,13 @@ Rectangle {
                             anchors.margins: session.unit / 2
                             spacing: 0
 
-                            Text {
-                                visible: session.recent.length === 0
-                                width: parent.width
-                                text: qsTr("Los proyectos que abras o guardes aparecerán aquí.")
-                                color: session.muted
-                                font.pixelSize: session.textSmall
-                                topPadding: session.unit / 3
-                                bottomPadding: session.unit / 3
-                            }
-
                             Repeater {
                                 model: start.session.recentPage
                                 delegate: Rectangle {
                                     id: recentRow
                                     objectName: "recentRow" + modelData.slot
                                     width: parent.width
-                                    height: session.unit * 1.55
+                                    height: session.unit * 1.6
                                     color: recentArea.containsMouse && modelData.available
                                            ? session.surfaceRaised : "transparent"
 
@@ -719,12 +692,6 @@ Rectangle {
                         }
                     }
 
-                    Text {
-                        visible: session.recent.length > session.recentPage.length
-                        text: qsTr("Los demás están en Archivo ▸ Recientes.")
-                        color: session.muted
-                        font.pixelSize: session.textSmall
-                    }
                 }
 
                 ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }

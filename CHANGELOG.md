@@ -8,20 +8,22 @@ publicación.
 
 ### Inicio se lee en planos, con una acción principal — 2026-11-19
 
-- La página va sobre la ventana y cada grupo — **Empezar**, **Plantillas**, **Recientes** — es una
-  tarjeta elevada con su etiqueta encima, en lugar de una lista de contornos sobre un solo plano.
-- **Nuevo proyecto** es la tarjeta por defecto, marcada con el **borde de acento** (no con relleno,
-  para que el hover no repinte la superficie bajo su texto); **Abrir…** queda como secundaria.
-- Las tarjetas de plantilla son **foto y etiqueta**: una placa hundida con el dibujo, el nombre y
-  dos líneas de detalle, más un tooltip que dice qué abre. Celda de 12 × 8,2 `unit`, centrada.
-- El título de la página usa un paso nuevo del tema, `textDisplay`; el raíl muestra el atajo
-  (`Ctrl+N`, `Ctrl+O`, `Esc`) y separa sus grupos con una línea.
+- La página es un solo plano con **Empezar**, **Plantillas** y **Recientes** como etiquetas de
+  sección y cada elección como tarjeta propia; ninguna caja envuelve ya un grupo entero.
+- **Nuevo proyecto** es la tarjeta por defecto, teñida con `accentSoft` y con borde de acento;
+  su texto va en tinta, así el hover nunca repinta un relleno bajo una palabra clara.
+  **Abrir…** queda como tarjeta secundaria.
+- Las tarjetas de plantilla son **foto y etiqueta** y **reparten el ancho de la página**
+  (mínimo 10 `unit`, 8 `unit` de alto, ~252 px a 1280): placa hundida con el dibujo, el nombre,
+  dos líneas de detalle y un tooltip que dice qué abre.
+- El título de la página usa un paso nuevo del tema, `textDisplay` (≈1,5 × `unit`); el raíl
+  muestra el atajo (`Ctrl+N`, `Ctrl+O`, `Esc`) y separa sus grupos con una línea.
 - Nuevo testigo `onAccent` en el tema, tomado del texto resaltado del escritorio y con la mejor
   de blanco/negro cuando no alcanza 4,5:1; `--check-theme` lo mide e informa como `accent text`.
-  El relleno azul **no se repinta bajo el texto al pasar el ratón**: el hover es un anillo, que
-  era el riesgo de que el texto desapareciera.
-- El raíl estrena icono por fila, fila rellena con barra y palabra para la vista actual, y el
-  cursor de mano sobre las tarjetas de plantilla.
+  Lo usa la **fila activa del raíl**, rellena de acento, con icono y palabra medidos.
+- El raíl estrena icono por fila y el cursor de mano sobre las tarjetas de plantilla; cuando la
+  lista de recientes supera la página, el aviso a **Archivo ▸ Recientes** comparte la línea de
+  la sección en lugar de ocupar una fila aparte.
 - **Evidencia**: `--check-theme` con `accent text` ≥ 4,5:1 en claro y oscuro, `--check-qml` sin
   problemas, los pasos `--selftest` de plantillas y recientes sin cambios, y las capturas
   `assets/screenshots/start-view-hierarchy-{light,dark}.png`.

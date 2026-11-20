@@ -26,7 +26,7 @@ struct ThemeTokens {
     int textLabel = 12;
     /// The page title of a view that is not a document (Inicio): one display step above the
     /// label, still derived from the desktop font so a larger font grows it too.
-    int textDisplay = 22;
+    int textDisplay = 27;
     QColor background;
     QColor panel;
     QColor surfaceRaised;

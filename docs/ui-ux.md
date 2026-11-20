@@ -385,13 +385,14 @@ reachable from **Archivo ▸ Inicio**; with a project open the view covers the s
 region, the same width and the same tokens as the catalog; returning to the sheet returns the
 catalog with its remembered width.
 
-**The page is read in planes.** The rail and the page sit on the window; each group —
-**Empezar**, **Plantillas**, **Recientes** — is a `panel` card with a line and its label above
-it, and the actions inside are rows. **Nuevo proyecto** is the one filled accent action, and
-its text is the `onAccent` token, measured at 4.5:1 and never repainted underneath on hover:
-the hover is a ring, because a fill that changes under white text is a text that can vanish.
-**Abrir…** is the secondary row. The rail keeps the catalog's width and tokens, gives each
-row its symbol, and marks the current view with a filled row, an accent bar and the word.
+**The page is read in planes.** The rail and the page sit on the window, and the page is one
+plane: **Empezar**, **Plantillas** and **Recientes** are section labels, and each choice is a
+card of its own, as in the suite's other start pages — no box wraps a whole group. The
+default way in, **Nuevo proyecto**, is tinted with `accentSoft` and bordered with the accent;
+its text stays in the ink, so a hover cannot repaint a fill under a light-on-dark word.
+**Abrir…** is the quieter secondary card. The rail keeps the catalog's width and tokens,
+gives each row its symbol and its shortcut, and marks the current view with a filled accent
+row whose text and icon are the measured `onAccent`.
 
 **Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver** or with **Nuevo**. Inicio takes the whole region: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
 
@@ -409,13 +410,13 @@ row its symbol, and marks the current view with a filled row, an accent bar and 
   **Nuevo proyecto** remains empty.
 - **Aprender**: the shortcuts, what “conforme a ISO 1219” means, and the About panel.
 
-The template grid uses a **12 × `unit` wide cell** and a **12 × 8.2 `unit` card**; at the
-default 18 px unit that is a 216 × 148 px card. Each card is a picture and its label: a
-recessed plate with the drawing on it, the name in the label size and the detail in the small
-size, two lines at most. The grid adds half a unit between cards, chooses its column count
-from the available width and centres exactly the room its cards take. The default way in
-(**Nuevo proyecto**) is marked with the **accent border**, not with a fill, so hover never
-repaints the surface under its text.
+The example cards **divide the page's width between them**, with one unit between cards and
+a minimum of 10 × `unit` before the grid starts a second row; at the default 18 px unit and a
+1280 px window each is about 252 px wide and 8 × `unit` (144 px) tall. Each card is a picture
+and its label: a recessed plate with the drawing, the name in the label size and the detail in
+the small size, two lines at most, and a tooltip that names the circuit. The default way in
+(**Nuevo proyecto**) carries the accent tint and border, and its text is ink, never a light
+word over a fill that hover repaints.
 Each thumbnail calls the same Rust drawing and Qt replay path as the sheet, then keeps one
 512 × 288 RGBA image until the theme changes or the card is destroyed. Four fixed templates
 bound that cache at 2.25 MiB; no image is fetched. Template cards expose their title and
@@ -596,13 +597,13 @@ definition count and the mode text are the target, not in the bar yet.
 | `shadow` | the ink at low alpha, drawn once behind the paper, never a per-frame blur |
 | `text`, `text_muted`, `text_disabled` | `[Colors:Window] ForegroundNormal/Inactive` |
 | `accent`, `accent_hover` | `[Colors:Selection] BackgroundNormal` (49,91,239 here) |
-| `on_accent` | `[Colors:Selection] HighlightedText`, or the better of black and white when it cannot reach 4.5:1 on the accent |
+| `on_accent` | `[Colors:Selection] HighlightedText`, or the better of black and white when it cannot reach 4.5:1 on the accent; the ink of a filled accent control, such as the active rail row |
 | `danger`, `warning`, `ok` | `[Colors:Window] ForegroundNegative/Neutral/Positive` |
 | `work_line` | derived from `ok` by pressure ratio, not a new hue |
 | flow arrow on a line | same ink as the line; it carries the direction, never the state |
 | `grid_minor`, `grid_major` | `text_muted` at 22 % and 34 % opacity |
 | spacing | `grid_unit` (18 px in Breeze) and its multiples, with `unit` for the panel margins |
-| typography | `[General] font` family and point size; `textDisplay` is the page title of a view that is not a document, one display step above the label |
+| typography | `[General] font` family and point size; `textDisplay` is the page title of a view that is not a document, about 1.5 × the spacing unit and one display step above the label |
 | motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change |
 | icons | the ribbon's own line family, one ink; the rest of the window the desktop theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)) |
 

@@ -86,6 +86,10 @@ QColor ThemeIconProvider::colourFor(const QString &tone) const
     if (tone == QStringLiteral("accent")) {
         return tokens.accent;
     }
+    if (tone == QStringLiteral("onaccent")) {
+        // The ink a filled accent control carries, so an icon inside it stays legible.
+        return tokens.onAccent;
+    }
     return tokens.ink;
 }
 
