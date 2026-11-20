@@ -105,8 +105,13 @@ not start until the current pull request is merged.
    button never starts a drag. Evidence: the `--selftest` steps from
    `palette: the right button opens the menu` to
    `palette: one undo removes what the menu added`.
-5. **Inicio's visual hierarchy** — two planes, grouped cards, a primary action, rail rows with
-   icons and a visible active state, recents as one card, and the hand cursor over the cards.
+5. **Inicio's visual hierarchy** — delivered on `feat/start-view-hierarchy`: two planes,
+   grouped cards, a default action marked by the accent border, rail rows with icons and
+   shortcuts, a filled active row,
+   recents as one card, the hand cursor over the templates, and an `onAccent` token measured
+   at 4.5:1 whose fill never changes under the text on hover. Evidence: `--check-theme`
+   with `accent text`, `--check-qml`, the unchanged template and recent `--selftest` steps,
+   and `start-view-hierarchy-{light,dark}.png`.
 6. **Dropping an imprecise gesture** — a release outside the sheet places at the nearest valid
    point, and a two-step (tile, then click on the sheet) path exists for a hand that cannot drag.
 7. **Closing the last project returns to Inicio** — *open decision*: which gesture is "closing

@@ -24,6 +24,9 @@ struct ThemeTokens {
     int textSmall = 10;
     int textBody = 11;
     int textLabel = 12;
+    /// The page title of a view that is not a document (Inicio): one display step above the
+    /// label, still derived from the desktop font so a larger font grows it too.
+    int textDisplay = 22;
     QColor background;
     QColor panel;
     QColor surfaceRaised;
@@ -32,6 +35,8 @@ struct ThemeTokens {
     QColor inkDim;
     QColor inkMuted;
     QColor accent;
+    /// The ink that sits on `accent`: the desktop's highlighted text, measured against it.
+    QColor onAccent;
     QColor accentSoft;
     QColor line;
     QColor lineStrong;
@@ -81,6 +86,8 @@ struct Contrast {
     double lineRaised = 0.0;
     /// Text over the soft accent of a selected row or the active tab.
     double accentSoftText = 0.0;
+    /// Text over the filled accent of a primary button.
+    double accentText = 0.0;
     /// The paper's edge against the sunken workspace around it.
     double sheetEdge = 0.0;
 
@@ -89,7 +96,7 @@ struct Contrast {
     {
         return text >= 4.5 && dim >= 3.0 && accent >= 3.0 && raisedText >= 4.5
                && raisedDim >= 3.0 && line >= 3.0 && lineRaised >= 3.0
-               && accentSoftText >= 4.5 && sheetEdge >= 3.0;
+               && accentSoftText >= 4.5 && accentText >= 4.5 && sheetEdge >= 3.0;
     }
 };
 

@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Inicio se lee en planos, con una acción principal — 2026-11-19
+
+- La página va sobre la ventana y cada grupo — **Empezar**, **Plantillas**, **Recientes** — es una
+  tarjeta elevada con su etiqueta encima, en lugar de una lista de contornos sobre un solo plano.
+- **Nuevo proyecto** es la tarjeta por defecto, marcada con el **borde de acento** (no con relleno,
+  para que el hover no repinte la superficie bajo su texto); **Abrir…** queda como secundaria.
+- Las tarjetas de plantilla son **foto y etiqueta**: una placa hundida con el dibujo, el nombre y
+  dos líneas de detalle, más un tooltip que dice qué abre. Celda de 12 × 8,2 `unit`, centrada.
+- El título de la página usa un paso nuevo del tema, `textDisplay`; el raíl muestra el atajo
+  (`Ctrl+N`, `Ctrl+O`, `Esc`) y separa sus grupos con una línea.
+- Nuevo testigo `onAccent` en el tema, tomado del texto resaltado del escritorio y con la mejor
+  de blanco/negro cuando no alcanza 4,5:1; `--check-theme` lo mide e informa como `accent text`.
+  El relleno azul **no se repinta bajo el texto al pasar el ratón**: el hover es un anillo, que
+  era el riesgo de que el texto desapareciera.
+- El raíl estrena icono por fila, fila rellena con barra y palabra para la vista actual, y el
+  cursor de mano sobre las tarjetas de plantilla.
+- **Evidencia**: `--check-theme` con `accent text` ≥ 4,5:1 en claro y oscuro, `--check-qml` sin
+  problemas, los pasos `--selftest` de plantillas y recientes sin cambios, y las capturas
+  `assets/screenshots/start-view-hierarchy-{light,dark}.png`.
+
 ### Menú contextual en la paleta — 2026-11-19
 
 - **Clic derecho** sobre una ficha del catálogo abre un menú con **Añadir a la hoja**, que

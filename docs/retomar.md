@@ -108,7 +108,7 @@ Ramas locales ya fusionadas y pendientes de borrar: `feat/recent-page` y
 | Arranque | **Inicio**: la ventana abre en la página de inicio, no en un circuito. Sin cinta, sin barra de estado, sin catálogo ni dock derecho; el raíl ocupa su sitio y el título nombra el programa, nunca «sin título» |
 | Proyecto nuevo | **hoja vacía**: marco y A4 apaisado, cero componentes; la hoja dice «Arrastra símbolos a la hoja para empezar» y las lecturas físicas quedan ocultas hasta que haya modelo |
 | Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; Inicio lo ofrece como la primera de **cuatro plantillas** |
-| Página Inicio | **Nuevo proyecto**, **Abrir…**, cuatro plantillas propias con miniatura del renderizador, **recientes**, **Aprender** (Acerca de, Licencia) y **Volver**. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
+| Página Inicio | **dos planos**: la página en la ventana y cada grupo (**Empezar**, **Plantillas**, **Recientes**) en una tarjeta elevada con su etiqueta; **Nuevo proyecto** es la única acción rellena, con texto `onAccent` medido a 4,5:1; el raíl lleva icono por fila y marca la vista actual con fila rellena, barra y la palabra. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
 | Recientes | tope de **10** en `punchi-fluid-file` y de **5** en la página (`PF_RECENT_PAGE_LIMIT`); una ruta ausente queda en gris como `no disponible` con **quitar**, y la lista ya no poda al leerse |
 | Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
 | Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
@@ -146,7 +146,7 @@ entre #136 y #137).
 - Prueba: un paso `--selftest` que abra el menú, invoque la acción y compruebe un componente
   más y un solo deshacer.
 
-**2. `feat/start-view-hierarchy` — jerarquía visual de Inicio.**
+**2. `feat/start-view-hierarchy` — jerarquía visual de Inicio (implementado, pendiente de PR).**
 - Dos planos: la página sobre el fondo y cada grupo como tarjeta elevada con título y filas
   separadas por líneas finas, reutilizando `Card.qml` y los tokens (`surfaceRaised`,
   `surfaceSunken`, `line`, `accentSoft`, `shadow`, `unit`).

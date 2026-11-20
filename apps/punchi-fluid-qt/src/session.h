@@ -153,6 +153,8 @@ class FluidSession : public QObject
     Q_PROPERTY(QColor foreground READ foreground NOTIFY changed)
     Q_PROPERTY(QColor muted READ muted NOTIFY changed)
     Q_PROPERTY(QColor accent READ accent NOTIFY changed)
+    /// The ink for text on an accent-filled control, from the desktop's highlighted text.
+    Q_PROPERTY(QColor onAccent READ onAccent NOTIFY changed)
     Q_PROPERTY(QColor surfaceRaised READ surfaceRaised NOTIFY changed)
     Q_PROPERTY(QColor surfaceSunken READ surfaceSunken NOTIFY changed)
     Q_PROPERTY(QColor accentSoft READ accentSoft NOTIFY changed)
@@ -164,6 +166,8 @@ class FluidSession : public QObject
     Q_PROPERTY(int textSmall READ textSmall NOTIFY changed)
     Q_PROPERTY(int textBody READ textBody NOTIFY changed)
     Q_PROPERTY(int textLabel READ textLabel NOTIFY changed)
+    /// The page title of Inicio: one display step above the label.
+    Q_PROPERTY(int textDisplay READ textDisplay NOTIFY changed)
     /// Corner radii from the theme, so no widget rounds a corner with its own number.
     Q_PROPERTY(int radius READ radius NOTIFY changed)
     Q_PROPERTY(int radiusControl READ radiusControl NOTIFY changed)
@@ -352,6 +356,7 @@ public:
     QColor foreground() const { return m_tokens.ink; }
     QColor muted() const { return m_tokens.inkMuted; }
     QColor accent() const { return m_tokens.accent; }
+    QColor onAccent() const { return m_tokens.onAccent; }
     QColor surfaceRaised() const { return m_tokens.surfaceRaised; }
     QColor surfaceSunken() const { return m_tokens.surfaceSunken; }
     QColor accentSoft() const { return m_tokens.accentSoft; }
@@ -363,6 +368,7 @@ public:
     [[nodiscard]] int textSmall() const { return m_tokens.textSmall; }
     [[nodiscard]] int textBody() const { return m_tokens.textBody; }
     [[nodiscard]] int textLabel() const { return m_tokens.textLabel; }
+    [[nodiscard]] int textDisplay() const { return m_tokens.textDisplay; }
     [[nodiscard]] int radius() const { return m_tokens.radius; }
     [[nodiscard]] int radiusControl() const { return m_tokens.radiusControl; }
     [[nodiscard]] int radiusSmall() const { return m_tokens.radiusSmall; }

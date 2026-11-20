@@ -4,6 +4,10 @@
 // Inicio: the start view. It covers the sheet while no project is being worked on, with the
 // navigation in the catalog's place: new, open, the recent projects and what a reader needs
 // to begin. It is not a ribbon tab and not a fourth region (ADR 0031).
+//
+// The page is read in planes, like the settings of the desktop: the page on the window, and
+// each group on a raised card with its label above it. The rail marks where the reader is
+// with a filled row and a bar, and the words say it too: state is never colour alone.
 
 import QtQuick
 import QtQuick.Controls
@@ -45,26 +49,57 @@ Rectangle {
     Row {
         anchors.fill: parent
 
-        // The left rail takes the catalog's place while Inicio is open.
+        // The left rail takes the catalog's place while Inicio is open. It is the same
+        // region, width and tokens as the catalog, so returning to the sheet returns the
+        // catalog without the window jumping.
         Rectangle {
+            id: rail
             width: Math.round(session.unit * 10)
             height: parent.height
             color: session.panel
 
-            Column {
-                anchors.left: parent.left
+            Rectangle {
                 anchors.right: parent.right
-                anchors.top: parent.top
+                width: 1
+                height: parent.height
+                color: session.line
+            }
+
+            Column {
+                anchors.fill: parent
                 anchors.margins: session.unit / 2
                 spacing: session.unit / 3
 
                 Text {
+                    width: parent.width
+                    text: qsTr("Punchi Fluid Lab")
+                    color: session.foreground
+                    font.pixelSize: session.textBody
+                    font.bold: true
+                    elide: Text.ElideRight
+                }
+
+                Item {
                     visible: start.canReturn
                     width: parent.width
-                    text: qsTr("‹ Volver a la hoja")
-                    color: session.muted
-                    font.pixelSize: session.textBody
-                    padding: session.unit / 2
+                    height: session.unit * 1.6
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: session.unit / 3
+                        text: qsTr("‹ Volver a la hoja")
+                        color: session.muted
+                        font.pixelSize: session.textSmall
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: session.unit / 3
+                        text: "Esc"
+                        color: session.muted
+                        font.pixelSize: session.textSmall
+                    }
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
@@ -72,34 +107,111 @@ Rectangle {
                     }
                 }
 
+                Item { width: 1; height: session.unit / 3 }
+
                 Text {
                     width: parent.width
                     text: qsTr("Iniciar")
-                    color: session.foreground
-                    font.pixelSize: session.textLabel
+                    color: session.muted
+                    font.pixelSize: session.textSmall
                     font.bold: true
-                    padding: session.unit / 2
+                    padding: session.unit / 3
+                }
+
+                // Where the reader is, said with a filled row, a bar and the word.
+                Rectangle {
+                    objectName: "railHome"
+                    width: parent.width
+                    height: session.unit * 1.9
+                    radius: session.radiusControl
+                    color: session.accentSoft
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.leftMargin: session.unit / 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: session.unit / 5
+                        height: parent.height - session.unit / 2
+                        radius: width / 2
+                        color: session.accent
+                    }
+
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: session.unit / 2
+                        anchors.right: parent.right
+                        anchors.rightMargin: session.unit / 3
+                        spacing: session.unit / 3
+
+                        Image {
+                            width: Math.round(session.unit * 0.9)
+                            height: width
+                            source: "image://theme/go-home?tone=foreground"
+                            smooth: true
+                        }
+                        Text {
+                            width: parent.width - Math.round(session.unit * 0.9) - parent.spacing
+                            text: qsTr("Inicio")
+                            color: session.foreground
+                            font.pixelSize: session.textBody
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+                    }
                 }
 
                 Repeater {
                     model: [
-                        { label: qsTr("Nuevo proyecto"), action: "new" },
-                        { label: qsTr("Abrir…"), action: "open" }
+                        { label: qsTr("Nuevo proyecto"), icon: "document-new", action: "new",
+                          hint: "Ctrl+N" },
+                        { label: qsTr("Abrir…"), icon: "document-open", action: "open",
+                          hint: "Ctrl+O" }
                     ]
                     delegate: Rectangle {
                         width: parent.width
-                        height: session.unit * 1.6
+                        height: session.unit * 1.9
                         radius: session.radiusControl
                         color: railArea.containsMouse ? session.surfaceRaised : "transparent"
 
-                        Text {
+                        Accessible.role: Accessible.Button
+                        Accessible.name: modelData.label
+                        Accessible.onPressAction: modelData.action === "new"
+                                                    ? start.newProject() : start.openProject()
+
+                        Row {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.leftMargin: session.unit / 2
-                            text: modelData.label
-                            color: session.foreground
-                            font.pixelSize: session.textBody
+                            anchors.right: parent.right
+                            anchors.rightMargin: session.unit / 3
+                            spacing: session.unit / 3
+
+                            Image {
+                                width: Math.round(session.unit * 0.9)
+                                height: width
+                                source: "image://theme/" + modelData.icon + "?tone=muted"
+                                smooth: true
+                            }
+                            Text {
+                                width: parent.width - Math.round(session.unit * 0.9)
+                                       - parent.spacing
+                                text: modelData.label
+                                color: session.foreground
+                                font.pixelSize: session.textBody
+                                elide: Text.ElideRight
+                            }
                         }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.right: parent.right
+                            anchors.rightMargin: session.unit / 3
+                            text: modelData.hint
+                            color: session.muted
+                            font.pixelSize: session.textSmall
+                        }
+
                         MouseArea {
                             id: railArea
                             anchors.fill: parent
@@ -111,25 +223,61 @@ Rectangle {
                     }
                 }
 
-                Item { width: 1; height: session.unit / 2 }
+                Rectangle { width: parent.width; height: 1; color: session.line }
 
                 Text {
                     width: parent.width
                     text: qsTr("Aprender")
                     color: session.muted
                     font.pixelSize: session.textSmall
+                    font.bold: true
                     padding: session.unit / 3
                 }
+
                 Repeater {
-                    model: [qsTr("Acerca de"), qsTr("Licencia")]
-                    delegate: Text {
+                    model: [
+                        { label: qsTr("Acerca de"), icon: "x-office-address-book" },
+                        { label: qsTr("Licencia"), icon: "x-office-document" }
+                    ]
+                    delegate: Rectangle {
                         width: parent.width
-                        text: modelData
-                        color: session.foreground
-                        font.pixelSize: session.textBody
-                        padding: session.unit / 3
+                        height: session.unit * 1.9
+                        radius: session.radiusControl
+                        color: learnArea.containsMouse ? session.surfaceRaised : "transparent"
+
+                        Accessible.role: Accessible.Button
+                        Accessible.name: modelData.label
+                        Accessible.onPressAction: index === 0 ? start.aboutRequested()
+                                                              : start.licenceRequested()
+
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.leftMargin: session.unit / 2
+                            anchors.right: parent.right
+                            anchors.rightMargin: session.unit / 3
+                            spacing: session.unit / 3
+
+                            Image {
+                                width: Math.round(session.unit * 0.9)
+                                height: width
+                                source: "image://theme/" + modelData.icon + "?tone=muted"
+                                smooth: true
+                            }
+                            Text {
+                                width: parent.width - Math.round(session.unit * 0.9)
+                                       - parent.spacing
+                                text: modelData.label
+                                color: session.foreground
+                                font.pixelSize: session.textBody
+                                elide: Text.ElideRight
+                            }
+                        }
+
                         MouseArea {
+                            id: learnArea
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: index === 0 ? start.aboutRequested()
                                                    : start.licenceRequested()
@@ -139,9 +287,9 @@ Rectangle {
             }
         }
 
-        // The page: actions, authored templates, and projects already known.
+        // The page: the ways to start, the authored templates and the projects already known.
         Item {
-            width: parent.width - Math.round(session.unit * 10)
+            width: parent.width - rail.width
             height: parent.height
 
             Flickable {
@@ -154,75 +302,169 @@ Rectangle {
 
                 Column {
                     id: startContent
-                    x: session.unit * 1.2
-                    y: session.unit * 1.2
+                    x: session.unit
+                    y: session.unit
                     width: Math.max(0, startScroll.width - x * 2)
-                    spacing: session.unit / 2
+                    spacing: session.unit / 2.2
 
                     Text {
                         text: qsTr("Inicio")
                         color: session.foreground
-                        font.pixelSize: session.textLabel
+                        font.pixelSize: session.textDisplay
                         font.bold: true
                     }
                     Text {
-                        text: qsTr("Crea un proyecto, abre uno reciente o empieza desde el catálogo.")
+                        text: qsTr("Crea un proyecto, abre uno reciente o empieza desde una plantilla.")
                         color: session.muted
-                        font.pixelSize: session.textBody
+                        font.pixelSize: session.textSmall
                         width: parent.width
                         wrapMode: Text.WordWrap
                     }
 
-                    Row {
-                        spacing: session.unit
+                    // ----- Empezar ---------------------------------------------------
+                    Text {
+                        text: qsTr("Empezar")
+                        color: session.foreground
+                        font.pixelSize: session.textLabel
+                        font.bold: true
+                        topPadding: session.unit / 4
+                    }
 
-                        Repeater {
-                            model: [
-                                { title: qsTr("Nuevo proyecto"), detail: qsTr("Una hoja vacía, A4 apaisado") },
-                                { title: qsTr("Abrir…"), detail: qsTr("Un proyecto guardado") }
-                            ]
-                            delegate: Rectangle {
-                                width: session.unit * 12
-                                height: session.unit * 3.2
-                                radius: session.radius
-                                color: cardArea.containsMouse ? session.surfaceRaised : session.panel
-                                border.color: session.line
-                                border.width: 1
+                    Rectangle {
+                        width: parent.width
+                        height: startActions.height + session.unit
+                        radius: session.radius
+                        color: session.panel
+                        border.width: 1
+                        border.color: session.line
 
-                                Column {
+                        Row {
+                            id: startActions
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: session.unit / 2
+                            spacing: session.unit / 2
+
+                            // The default way in is a card with the accent border, not a
+                            // filled bar: the reference stresses the choice, and a fill
+                            // under white text is where hover can make the text vanish.
+                            Rectangle {
+                                width: (parent.width - parent.spacing) / 2
+                                height: session.unit * 3.8
+                                radius: session.radiusControl
+                                color: newArea.containsMouse ? session.surfaceRaised
+                                                             : session.panel
+                                border.width: 2
+                                border.color: session.accent
+
+                                Accessible.role: Accessible.Button
+                                Accessible.name: qsTr("Nuevo proyecto")
+                                Accessible.onPressAction: start.newProject()
+
+                                Row {
                                     anchors.fill: parent
                                     anchors.margins: session.unit / 2
-                                    spacing: session.unit / 4
-                                    Text {
-                                        text: modelData.title
-                                        color: session.foreground
-                                        font.pixelSize: session.textLabel
+                                    spacing: session.unit / 2
+
+                                    Image {
+                                        width: Math.round(session.unit * 1.8)
+                                        height: width
+                                        source: "image://theme/document-new?tone=accent"
+                                        smooth: true
                                     }
-                                    Text {
-                                        text: modelData.detail
-                                        color: session.muted
-                                        font.pixelSize: session.textSmall
-                                        width: parent.width
-                                        wrapMode: Text.WordWrap
+                                    Column {
+                                        width: parent.width - Math.round(session.unit * 1.8)
+                                               - parent.spacing
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+                                        Text {
+                                            text: qsTr("Nuevo proyecto")
+                                            color: session.foreground
+                                            font.pixelSize: session.textLabel
+                                            font.bold: true
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: qsTr("Una hoja vacía, A4 apaisado")
+                                            color: session.muted
+                                            font.pixelSize: session.textSmall
+                                            wrapMode: Text.WordWrap
+                                        }
                                     }
                                 }
+
                                 MouseArea {
-                                    id: cardArea
+                                    id: newArea
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: index === 0 ? start.newProject() : start.openProject()
+                                    onClicked: start.newProject()
+                                }
+                            }
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing) / 2
+                                height: session.unit * 3.8
+                                radius: session.radiusControl
+                                color: openArea.containsMouse ? session.surfaceRaised
+                                                              : session.background
+                                border.width: 1
+                                border.color: session.line
+
+                                Accessible.role: Accessible.Button
+                                Accessible.name: qsTr("Abrir…")
+                                Accessible.onPressAction: start.openProject()
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.margins: session.unit / 2
+                                    spacing: session.unit / 2
+
+                                    Image {
+                                        width: Math.round(session.unit * 1.8)
+                                        height: width
+                                        source: "image://theme/document-open?tone=muted"
+                                        smooth: true
+                                    }
+                                    Column {
+                                        width: parent.width - Math.round(session.unit * 1.8)
+                                               - parent.spacing
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+                                        Text {
+                                            text: qsTr("Abrir…")
+                                            color: session.foreground
+                                            font.pixelSize: session.textLabel
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: qsTr("Un proyecto guardado")
+                                            color: session.muted
+                                            font.pixelSize: session.textSmall
+                                            wrapMode: Text.WordWrap
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: openArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: start.openProject()
                                 }
                             }
                         }
                     }
 
+                    // ----- Plantillas ------------------------------------------------
                     Text {
                         text: qsTr("Plantillas")
                         color: session.foreground
                         font.pixelSize: session.textLabel
                         font.bold: true
-                        topPadding: session.unit / 2
+                        topPadding: session.unit / 4
                     }
                     Text {
                         text: qsTr("Elige un circuito de partida; podrás editarlo desde la hoja.")
@@ -232,77 +474,109 @@ Rectangle {
                         wrapMode: Text.WordWrap
                     }
 
-                    Grid {
-                        id: templateGrid
+                    Rectangle {
                         width: parent.width
-                        columns: Math.max(1, Math.floor((width + session.unit / 2)
-                                                        / (session.unit * 10 + session.unit / 2)))
-                        columnSpacing: session.unit / 2
-                        rowSpacing: session.unit / 2
+                        height: templateGrid.height + session.unit
+                        radius: session.radius
+                        color: session.panel
+                        border.width: 1
+                        border.color: session.line
 
-                        Repeater {
-                            id: templateRepeater
-                            model: start.templateDefinitions
-                            delegate: Button {
-                                id: templateCard
-                                objectName: "templateCard" + modelData.index
-                                width: session.unit * 10
-                                height: session.unit * 8
-                                padding: session.unit / 3
-                                Accessible.role: Accessible.Button
-                                Accessible.name: modelData.title
-                                Accessible.description: modelData.detail
+                        Grid {
+                            id: templateGrid
+                            // As many columns as fit, never more than there are templates,
+                            // and the grid takes exactly the room of its cards so the
+                            // centring is the cards' centring and not an empty column.
+                            readonly property int columnsThatFit: Math.max(1, Math.floor(
+                                (parent.width - session.unit + session.unit / 2)
+                                / (session.unit * 12 + session.unit / 2)))
+                            readonly property int shownColumns: Math.min(
+                                start.templateCardCount, columnsThatFit)
+                            columns: shownColumns
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: shownColumns * session.unit * 12
+                                   + (shownColumns - 1) * session.unit / 2
+                            columnSpacing: session.unit / 2
+                            rowSpacing: session.unit / 2
 
-                                contentItem: Item {
-                                    Column {
-                                        width: Math.max(0, Math.min(parent.width, parent.height)
-                                                        - session.unit / 2)
-                                        spacing: session.unit / 6
-                                        anchors.centerIn: parent
+                            Repeater {
+                                model: start.templateDefinitions
+                                delegate: Button {
+                                    id: templateCard
+                                    objectName: "templateCard" + modelData.index
+                                    width: session.unit * 12
+                                    height: session.unit * 8.2
+                                    padding: session.unit / 3
+                                    Accessible.role: Accessible.Button
+                                    Accessible.name: modelData.title
+                                    Accessible.description: modelData.detail
 
-                                        TemplatePreviewItem {
-                                            objectName: "templatePreview" + modelData.index
-                                            session: start.session
-                                            templateIndex: modelData.index
-                                            width: parent.width
-                                            height: session.unit * 3.4
-                                        }
+                                    HoverHandler { cursorShape: Qt.PointingHandCursor }
 
-                                        Text {
-                                            text: modelData.title
-                                            color: session.foreground
-                                            font.pixelSize: session.textBody
-                                            font.bold: true
-                                            width: parent.width
-                                            wrapMode: Text.WordWrap
-                                            maximumLineCount: 2
-                                            elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            text: modelData.detail
-                                            color: session.muted
-                                            font.pixelSize: session.textSmall
-                                            width: parent.width
-                                            elide: Text.ElideRight
+                                    ToolTip.visible: templateCard.hovered
+                                    ToolTip.delay: 600
+                                    ToolTip.text: modelData.title + " — " + modelData.detail
+
+                                    contentItem: Item {
+                                        Column {
+                                            anchors.fill: parent
+                                            anchors.margins: session.unit / 4
+                                            spacing: session.unit / 5
+
+                                            // The drawing sits on its own plate, as in the
+                                            // reference: the thumbnail is the picture of the
+                                            // circuit, and the words are the label under it.
+                                            Rectangle {
+                                                width: parent.width
+                                                height: session.unit * 4.3
+                                                radius: session.radiusSmall
+                                                color: session.background
+                                                clip: true
+
+                                                TemplatePreviewItem {
+                                                    objectName: "templatePreview" + modelData.index
+                                                    anchors.fill: parent
+                                                    anchors.margins: 3
+                                                    session: start.session
+                                                    templateIndex: modelData.index
+                                                }
+                                            }
+
+                                            Text {
+                                                text: modelData.title
+                                                color: session.foreground
+                                                font.pixelSize: session.textBody
+                                                font.bold: true
+                                                width: parent.width
+                                                elide: Text.ElideRight
+                                            }
+                                            Text {
+                                                text: modelData.detail
+                                                color: session.muted
+                                                font.pixelSize: session.textSmall
+                                                width: parent.width
+                                                wrapMode: Text.WordWrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
                                         }
                                     }
-                                }
 
-                                background: Rectangle {
-                                    width: parent.height
-                                    height: parent.height
-                                    anchors.centerIn: parent
-                                    radius: session.radius
-                                    color: templateCard.down ? session.surfaceSunken
-                                          : (templateCard.hovered ? session.surfaceRaised
-                                                                  : session.panel)
-                                    border.color: templateCard.activeFocus ? session.accent
-                                                                       : session.line
-                                    border.width: templateCard.activeFocus
-                                                  ? session.unit / 9 : session.unit / 18
-                                }
+                                    background: Rectangle {
+                                        anchors.fill: parent
+                                        radius: session.radius
+                                        color: templateCard.down ? session.surfaceSunken
+                                              : (templateCard.hovered ? session.surfaceRaised
+                                                                      : session.panel)
+                                        border.color: templateCard.activeFocus
+                                                      ? session.accent : session.line
+                                        border.width: templateCard.activeFocus
+                                                      ? session.unit / 9 : session.unit / 18
+                                    }
 
-                                onClicked: start.activateTemplate(modelData.index)
+                                    onClicked: start.activateTemplate(modelData.index)
+                                }
                             }
                         }
                     }
@@ -316,105 +590,140 @@ Rectangle {
                         wrapMode: Text.WordWrap
                     }
 
+                    // ----- Recientes -------------------------------------------------
                     Text {
                         text: qsTr("Recientes")
                         color: session.foreground
                         font.pixelSize: session.textLabel
-                        topPadding: session.unit / 2
+                        font.bold: true
+                        topPadding: session.unit / 4
                     }
-                    Text {
-                        visible: session.recent.length === 0
-                        text: qsTr("Los proyectos que abras o guardes aparecerán aquí.")
-                        color: session.muted
-                        font.pixelSize: session.textSmall
-                    }
-                    Repeater {
-                        model: start.session.recentPage
-                        delegate: Rectangle {
-                            id: recentRow
-                            objectName: "recentRow" + modelData.slot
-                            width: parent.width
-                            height: session.unit * 2
-                            radius: session.radiusControl
-                            color: recentArea.containsMouse && modelData.available
-                                   ? session.surfaceRaised : "transparent"
 
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.left: parent.left
-                                anchors.leftMargin: session.unit / 2
-                                anchors.right: forgetButton.left
-                                anchors.rightMargin: session.unit / 2
-                                spacing: 2
-                                Text {
-                                    text: modelData.name
-                                    color: modelData.available ? session.foreground
-                                                               : session.muted
-                                    font.pixelSize: session.textBody
-                                    elide: Text.ElideRight
-                                    width: parent.width
-                                }
-                                Text {
-                                    text: modelData.available
-                                          ? modelData.path
-                                          : qsTr("no disponible · %1").arg(modelData.path)
-                                    color: session.muted
-                                    font.pixelSize: session.textSmall
-                                    elide: Text.ElideMiddle
-                                    width: parent.width
-                                }
+                    Rectangle {
+                        width: parent.width
+                        height: recentColumn.height + session.unit
+                        radius: session.radius
+                        color: session.panel
+                        border.width: 1
+                        border.color: session.line
+
+                        Column {
+                            id: recentColumn
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: session.unit / 2
+                            spacing: 0
+
+                            Text {
+                                visible: session.recent.length === 0
+                                width: parent.width
+                                text: qsTr("Los proyectos que abras o guardes aparecerán aquí.")
+                                color: session.muted
+                                font.pixelSize: session.textSmall
+                                topPadding: session.unit / 3
+                                bottomPadding: session.unit / 3
                             }
 
-                            Button {
-                                id: forgetButton
-                                objectName: "recentForget" + modelData.slot
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.right: parent.right
-                                anchors.rightMargin: session.unit / 3
-                                height: session.unit * 1.5
-                                padding: session.unit / 3
-                                flat: true
-                                text: qsTr("quitar")
-                                Accessible.name: qsTr("Quitar de recientes: %1")
-                                                 .arg(modelData.name)
-                                onClicked: start.forgetRecent(modelData.slot)
+                            Repeater {
+                                model: start.session.recentPage
+                                delegate: Rectangle {
+                                    id: recentRow
+                                    objectName: "recentRow" + modelData.slot
+                                    width: parent.width
+                                    height: session.unit * 1.55
+                                    color: recentArea.containsMouse && modelData.available
+                                           ? session.surfaceRaised : "transparent"
 
-                                contentItem: Text {
-                                    text: forgetButton.text
-                                    color: forgetButton.hovered ? session.foreground
-                                                                : session.muted
-                                    font.pixelSize: session.textSmall
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                background: Rectangle {
-                                    radius: session.radiusSmall
-                                    color: forgetButton.hovered ? session.surfaceRaised
-                                                                : "transparent"
-                                    border.width: forgetButton.activeFocus ? 1 : 0
-                                    border.color: session.accent
-                                }
-                            }
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: session.unit / 3
+                                        anchors.right: forgetButton.left
+                                        anchors.rightMargin: session.unit / 3
+                                        spacing: 0
+                                        Text {
+                                            text: modelData.name
+                                            color: modelData.available ? session.foreground
+                                                                       : session.muted
+                                            font.pixelSize: session.textBody
+                                            elide: Text.ElideRight
+                                            width: parent.width
+                                        }
+                                        Text {
+                                            text: modelData.available
+                                                  ? modelData.path
+                                                  : qsTr("no disponible · %1")
+                                                    .arg(modelData.path)
+                                            color: session.muted
+                                            font.pixelSize: session.textSmall
+                                            elide: Text.ElideMiddle
+                                            width: parent.width
+                                        }
+                                    }
 
-                            MouseArea {
-                                id: recentArea
-                                anchors.fill: parent
-                                anchors.rightMargin: forgetButton.width + session.unit / 2
-                                hoverEnabled: true
-                                cursorShape: modelData.available ? Qt.PointingHandCursor
-                                                                 : Qt.ArrowCursor
-                                onClicked: if (modelData.available) {
-                                               start.openRecent(modelData.slot);
-                                           }
+                                    Button {
+                                        id: forgetButton
+                                        objectName: "recentForget" + modelData.slot
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: session.unit / 4
+                                        height: session.unit * 1.4
+                                        padding: session.unit / 3
+                                        flat: true
+                                        text: qsTr("quitar")
+                                        Accessible.name: qsTr("Quitar de recientes: %1")
+                                                         .arg(modelData.name)
+                                        onClicked: start.forgetRecent(modelData.slot)
+
+                                        contentItem: Text {
+                                            text: forgetButton.text
+                                            color: forgetButton.hovered ? session.foreground
+                                                                        : session.muted
+                                            font.pixelSize: session.textSmall
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        background: Rectangle {
+                                            radius: session.radiusSmall
+                                            color: forgetButton.hovered
+                                                   ? session.surfaceRaised : "transparent"
+                                            border.width: forgetButton.activeFocus ? 1 : 0
+                                            border.color: session.accent
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: recentArea
+                                        anchors.fill: parent
+                                        anchors.rightMargin: forgetButton.width
+                                                           + session.unit / 2
+                                        hoverEnabled: true
+                                        cursorShape: modelData.available
+                                                     ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        onClicked: if (modelData.available) {
+                                                       start.openRecent(modelData.slot);
+                                                   }
+                                    }
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.bottom: parent.bottom
+                                        height: 1
+                                        color: session.line
+                                        visible: index < session.recentPage.length - 1
+                                    }
+                                }
                             }
                         }
                     }
+
                     Text {
                         visible: session.recent.length > session.recentPage.length
                         text: qsTr("Los demás están en Archivo ▸ Recientes.")
                         color: session.muted
                         font.pixelSize: session.textSmall
-                        topPadding: session.unit / 6
                     }
                 }
 

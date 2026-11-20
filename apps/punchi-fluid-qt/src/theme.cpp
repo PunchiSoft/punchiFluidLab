@@ -138,6 +138,19 @@ ThemeTokens tokensFrom(const QPalette &palette)
     tokens.inkMuted =
         ensureContrast(blend(tokens.ink, tokens.background, 0.55), tokens.surfaceRaised, 3.0);
     tokens.accent = ensureContrast(palette.color(QPalette::Highlight), tokens.background, 3.0);
+    // A filled button carries the desktop's highlighted text. When that text cannot reach
+    // 4.5:1 on the accent — a mid-tone accent leaves white at about 3.7:1 and cannot be
+    // lightened further — the better of black and white takes over. One of the two always
+    // reaches 4.5:1 on any background, so a primary button is never the low-contrast place.
+    tokens.onAccent = palette.color(QPalette::HighlightedText);
+    if (contrastRatio(tokens.onAccent, tokens.accent) < 4.5) {
+        const QColor white(Qt::white);
+        const QColor black(Qt::black);
+        tokens.onAccent = contrastRatio(white, tokens.accent)
+                                  >= contrastRatio(black, tokens.accent)
+                              ? white
+                              : black;
+    }
     // A soft accent is a fill, so it is measured against the ink that sits on it.
     tokens.accentSoft = soften(tokens.accent, tokens.surfaceRaised, tokens.ink, 4.5);
     // The line that carries meaning is measured on the raised plane, the stricter case;
@@ -162,6 +175,7 @@ ThemeTokens tokensFrom(const QPalette &palette)
     tokens.textSmall = std::max(10, (tokens.unit * 55 + 50) / 100);
     tokens.textBody = std::max(11, (tokens.unit * 61 + 50) / 100);
     tokens.textLabel = std::max(12, (tokens.unit * 66 + 50) / 100);
+    tokens.textDisplay = std::max(20, (tokens.unit * 120 + 50) / 100);
     tokens.motionMs = motionFromDesktop();
     return tokens;
 }
@@ -177,6 +191,7 @@ Contrast measure(const ThemeTokens &tokens)
     contrast.line = contrastRatio(tokens.lineStrong, tokens.background);
     contrast.lineRaised = contrastRatio(tokens.lineStrong, tokens.surfaceRaised);
     contrast.accentSoftText = contrastRatio(tokens.ink, tokens.accentSoft);
+    contrast.accentText = contrastRatio(tokens.onAccent, tokens.accent);
     contrast.sheetEdge = contrastRatio(tokens.lineStrong, tokens.surfaceSunken);
     return contrast;
 }
@@ -193,6 +208,7 @@ QString describe(const Contrast &contrast)
         QStringLiteral("raised line %1:1 (needs 3.00)").arg(contrast.lineRaised, 0, 'f', 2),
         QStringLiteral("soft accent text %1:1 (needs 4.50)")
             .arg(contrast.accentSoftText, 0, 'f', 2),
+        QStringLiteral("accent text %1:1 (needs 4.50)").arg(contrast.accentText, 0, 'f', 2),
         QStringLiteral("sheet edge %1:1 (needs 3.00)").arg(contrast.sheetEdge, 0, 'f', 2),
     };
     return lines.join(QStringLiteral(", "));
