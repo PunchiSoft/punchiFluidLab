@@ -8,6 +8,10 @@ in [.agents/skills/README.md](.agents/skills/README.md).
 continuity note: state, history step by step, how to verify it, decisions, open questions
 and the prompt to continue in a new session.
 
+**The node register is [docs/work-tree.md](docs/work-tree.md)**: every reported problem is a
+node with its options, the code it touches and its state, so a session that loses context
+continues without re-deriving the thread.
+
 **Resuming work: [docs/next-steps.md](docs/next-steps.md)** is the work order — current
 state, the next milestone step by step, the files it touches, its acceptance tests and
 the questions that belong to the project owner.
