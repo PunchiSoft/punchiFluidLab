@@ -109,6 +109,15 @@ not start until the current pull request is merged.
 5. **Symbols**: stop and agree the correction procedure before moving A2/R1 in the latching
    relay, then add OR/AND; the symbol review still requires the owner to define the procedure.
 
+**Asked after item 2 (owner, 2026-11-19): the palette drag.** Carrying a tile to the sheet lost
+the gesture when the hand drifted diagonally, because the palette's scroll area took the
+pointer past its threshold and cancelled the carry. Delivered on `feat/palette-drag-grab`:
+the tile keeps the grab for the whole press, the palette scrolls with the wheel and its own
+bar, and the `--selftest` step `palette: a diagonal gesture still places the component`
+reproduces the cancelled carry and fails without the fix. Still queued as later slices:
+tolerance when the release lands outside the sheet, and a two-step (tile, then click on the
+sheet) placement for a hand that cannot drag.
+
 The interface has its own staged plan: [interface-plan.md](interface-plan.md). It is
 delivered as small branches — tokens, panels, ribbon, icons, catalog, workspace, adaptive
 shell, consistency — and each one is a pull request of its own; it changes no file format

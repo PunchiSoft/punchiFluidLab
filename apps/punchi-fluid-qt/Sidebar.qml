@@ -176,6 +176,10 @@ Item {
         contentHeight: groupsColumn.implicitHeight
         clip: true
 
+        // Carrying a tile owns the pointer, so the palette is scrolled with the wheel or
+        // this bar rather than by dragging on a symbol.
+        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
         Column {
             id: groupsColumn
             width: scroller.width
@@ -349,6 +353,14 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: session.editing ? Qt.OpenHandCursor
                                                                      : Qt.ArrowCursor
+                                        // The palette lives inside a Flickable, which takes
+                                        // the pointer as soon as the gesture looks like a
+                                        // scroll. A hand carrying a symbol to the sheet moves
+                                        // diagonally, so that steal cancelled the drag halfway
+                                        // and the preview vanished. The tile keeps the grab
+                                        // for the whole gesture; the palette still scrolls
+                                        // with the wheel and its own scroll bar.
+                                        preventStealing: true
 
                                         property bool dragging: false
 
