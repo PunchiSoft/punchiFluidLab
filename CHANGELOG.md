@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Un símbolo mide 20 mm, y su caja es cuadrada — 2026-11-19
+
+- La simbología sobre la hoja tiene un tamaño canónico: **20 mm de lado** para todo componente
+  y **44 × 20 mm** para el cilindro, cuyo barril es el único rectángulo. No crece con el papel
+  ni se encoge porque el circuito esté lleno; el ejemplo sembrado y las cuatro plantillas usan
+  la misma caja.
+- Se corrige la **deformación** de las plantillas: dos válvulas se colocaron en cajas de 1,2 : 1
+  y 1,5 : 1, y el renderizador estiraba el símbolo. El 3/2 de la captura del propietario salía
+  ancho; ahora todas las cajas no-cilindro son cuadradas y hay una prueba que lo exige.
+- El cálculo queda escrito en `docs/symbology.md` con su origen
+  (`schematic::layout`, `min(0.26·alto, 0.17·ancho, 20 mm)`) y su captura de referencia.
+- Nuevas opciones de captura `--example` y `--template N`, y abrir un documento desde la línea
+  de comandos ya no deja Inicio delante de la hoja.
+- **Evidencia**: `a_symbol_does_not_grow_with_the_paper`,
+  `the_four_start_templates_are_bounded_connected_starting_documents` (aspecto y tamaño),
+  `dragging_a_component_pulls_its_port_onto_the_other_end` sin cifras fijas, `--selftest` con
+  0 fallos y la captura `assets/screenshots/symbol-size-light.png`.
+
 ### Arrastrar de la paleta sin perder el gesto — 2026-11-19
 
 - La ficha de la paleta **conserva el puntero** durante todo el arrastre. Antes, el área

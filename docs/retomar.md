@@ -95,11 +95,13 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
 
-`main` está en **`a828d43`** tras fusionar las PR #135 (plantillas) y #136 (recientes). El
-trabajo actual es `feat/palette-drag-grab` (PR #137), autorizado en paralelo mientras se
-revisaba la anterior. `./scripts-dev/check.sh` sale **0** y `--selftest` termina con **0
-fallos**. Las capturas de Inicio están en `assets/screenshots/start-view-templates-{light,dark}.png`
-y `start-view-recents-{light,dark}.png`.
+`main` está en **`6938acf`** tras fusionar las PR #135 (plantillas), #136 (recientes) y #137
+(arrastre de la paleta). Hay una rama en curso, **`fix/template-symbols`**, todavía sin commit ni PR: fija
+el tamaño canónico del símbolo y corrige la deformación de las plantillas. El gate sale **0** y
+`--selftest` **0 fallos** en esa rama (verificado el 2026-11-19).
+
+Ramas locales ya fusionadas y pendientes de borrar: `feat/recent-page` y
+`feat/palette-drag-grab`.
 
 | Área | Estado real hoy |
 |---|---|
@@ -110,24 +112,85 @@ y `start-view-recents-{light,dark}.png`.
 | Recientes | tope de **10** en `punchi-fluid-file` y de **5** en la página (`PF_RECENT_PAGE_LIMIT`); una ruta ausente queda en gris como `no disponible` con **quitar**, y la lista ya no poda al leerse |
 | Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
 | Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
+| Tamaño de símbolo | **20 mm de lado** para todo componente y **44 × 20 mm** para el cilindro; el ejemplo y las cuatro plantillas lo usan, y una prueba rechaza una caja no cuadrada (salvo cilindros). La regla y su cálculo están en `docs/symbology.md` §«Size on the sheet», con la captura `assets/screenshots/symbol-size-light.png` |
 | Símbolos | **36 fichas** con hoja a **300 dpi**; `electrical.relay.latching` **falla** (A2/R1 chocan con sus terminales) y `throttle.fixed` sigue bloqueado por forma |
 | Skills nuevas | `untrusted-input-bounds`, `security-review`, `qt-lifetimes` (con `machine-resource-budget` cubren límites, superficie y vidas útiles) |
 
-**Lo inmediato, en este orden:**
+### Plan inmediato: orden, alcance y trampas
 
-1. **Plantillas con miniatura**: entregadas en la PR #135.
-2. **Recientes**: entregado en la PR #136 (tope de 5 en la página, ausente en gris
-   como `no disponible` y **quitar** por fila, con `pf_session_forget_recent_at`).
-3. **Cerrar el último proyecto vuelve a Inicio**, con la confirmación de cambios.
-4. Pulido del raíl: hover, foco visible, teclado y nombres accesibles.
-4b. **Arrastre de la paleta**: hecho en `feat/palette-drag-grab` (la ficha conserva el puntero
-   y la paleta se desplaza con rueda o barra). Quedan la tolerancia al soltar fuera de la hoja
-   y la colocación en dos pasos.
-5. Símbolos: mover **A2/R1** y nueva hoja a 300 dpi; después **OR/AND**.
+Cada punto es **una rama desde `main` actualizado y una PR**; no se empieza el siguiente hasta
+que el anterior está fusionado, salvo autorización explícita del propietario (como la que hubo
+entre #136 y #137).
+
+**0. `fix/template-symbols` — en curso, sin PR.**
+- Fija **20 mm** de caja (cilindro 44 × 20) y limita el cálculo del ejemplo con
+  `min(0.26·alto, 0.17·ancho, 20)`; el cálculo queda escrito en `docs/symbology.md`.
+- Corrige las válvulas de las plantillas que estaban en cajas de 1,2 : 1 y 1,5 : 1: el
+  renderizador estira el símbolo y el 3/2 salía ancho.
+- Añade `--example` y `--template N` para capturar la hoja, y abrir un documento desde la línea
+  de comandos ya no deja Inicio delante.
+- Pruebas: `a_symbol_does_not_grow_with_the_paper`,
+  `the_four_start_templates_are_bounded_connected_starting_documents` (tamaño y aspecto),
+  `dragging_a_component_pulls_its_port_onto_the_other_end` sin cifras fijas y el test de
+  exportación reescrito como «una hoja mayor no cambia la tinta».
+- **Trampa encontrada:** las pruebas que fijaban geometría de la rejilla (magnet, escala
+  área↔tamaño) dependían del tamaño viejo; se reescribieron para medir, no para recordar.
+
+**1. `feat/palette-context-menu` — menú sobre la ficha del catálogo.**
+- Clic derecho sobre una ficha abre un menú con **Añadir a la hoja**; `Mayús+F10` (o la tecla
+  Menú) abre el mismo menú desde el teclado, y la ficha expone su nombre accesible.
+- Coloca la pieza en el centro de la hoja con una sola entrada de deshacer, por la misma ruta
+  que ya usa la búsqueda (`sidebar.place(index)`).
+- El botón derecho **no** debe iniciar un arrastre: hoy `onPressed` arranca el arrastre con
+  cualquier botón; hay que condicionarlo a `Qt.LeftButton`.
+- Prueba: un paso `--selftest` que abra el menú, invoque la acción y compruebe un componente
+  más y un solo deshacer.
+
+**2. `feat/start-view-hierarchy` — jerarquía visual de Inicio.**
+- Dos planos: la página sobre el fondo y cada grupo como tarjeta elevada con título y filas
+  separadas por líneas finas, reutilizando `Card.qml` y los tokens (`surfaceRaised`,
+  `surfaceSunken`, `line`, `accentSoft`, `shadow`, `unit`).
+- Raíl con encabezado del programa y filas con icono + etiqueta, hover y foco visibles, y el
+  elemento activo con barra de acento **y** palabra de estado.
+- **Nuevo proyecto** como acción primaria rellena; **Abrir…** secundaria.
+- Plantillas con superficie elevada, miniatura sobre papel, título fuerte, detalle atenuado,
+  anillo de foco y **cursor de mano** (hoy no cambia al pasar).
+- Recientes como una sola tarjeta con separadores; «no disponible» como etiqueta de estado y
+  **quitar** con más contraste al pasar.
+- Capturas clara/oscura; cuidado con la altura real de Inicio (640 px a 1280×800): cinco filas
+  de recientes caben justas y cualquier adorno nuevo las desplaza.
+
+**3. `feat/palette-drop-tolerance` — soltar impreciso y colocación en dos pasos.**
+- Si el puntero se suelta fuera de la hoja, colocar en el punto válido más cercano dentro del
+  marco (y del cajetín), en vez de descartar.
+- Colocación en dos pasos para quien no puede arrastrar: activar una ficha y hacer clic en la
+  hoja; `Esc` cancela; una sola entrada de deshacer.
+- Prueba: soltar fuera del lienzo coloca dentro; el modo de dos pasos coloca donde se hace clic
+  y `Esc` no deja nada.
+
+**4. `feat/close-last-project` — cerrar el último proyecto vuelve a Inicio.**
+- Hoy **Cerrar circuito** se rechaza cuando queda uno, porque un proyecto sin circuitos no es
+  un proyecto. Falta decidir y escribir: cerrar el **proyecto** (Archivo ▸ Cerrar proyecto o la
+  ventana, según el caso) vuelve a Inicio con la confirmación de cambios sin guardar, sin
+  borrar el circuito por accidente.
+- Antes de programar, confirmar con el propietario qué gesto exacto es «cerrar el último
+  proyecto» y si debe ofrecer guardar, descartar o cancelar.
+
+**5. `feat/rail-polish` — raíl de Inicio.**
+- Hover, foco visible, recorrido con `Tab`, activación con `Enter`/espacio y nombres accesibles
+  en cada elemento; el estado nunca solo por color.
+
+**6. Símbolos: primero el procedimiento, después el dibujo.**
+- `electrical.relay.latching` falla a 300 dpi (A2/R1 chocan con sus terminales). **No se toca
+  sin acordar antes el procedimiento de corrección** (`docs/next-steps.md` §«Stop before the
+  symbols»).
+- Después, OR/AND; una hoja y una revisión por símbolo, sin lotes.
 
 **Decisiones vigentes:** ADR 0030 (el cajetín protege su caja) y ADR 0031 (Inicio y proyecto
 nuevo vacío) están **aceptadas**; la vista Inicio es estado de vista y nunca entra en el
-documento.
+documento. Desde 2026-11-19: el símbolo mide 20 mm (44 × 20 el cilindro), la página de Inicio
+lista cinco recientes y las plantillas se componen con archivos del catálogo, nunca con
+geometría escrita en código.
 
 ## 1. Qué es este proyecto
 

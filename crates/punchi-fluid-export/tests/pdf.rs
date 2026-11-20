@@ -191,15 +191,15 @@ fn the_drawing_lands_inside_the_content_rectangle() {
 }
 
 #[test]
-fn screen_and_paper_differ_only_in_scale() {
+fn a_bigger_sheet_does_not_change_the_ink() {
     let catalog = Catalog::builtin();
     let circuit = system();
 
-    // Both areas are above the numeral legibility floor, so the only difference left
-    // is the scale. Below the floor the drawing drops the numerals on purpose, which is
-    // a different drawing and a different test.
-    let small = Rect::from_min_size(Pt::new(0.0, 0.0), 300.0, 195.0);
-    let large = Rect::from_min_size(Pt::new(0.0, 0.0), 600.0, 390.0);
+    // A symbol is 20 mm on any paper, so a larger sheet moves the composition instead of
+    // scaling it. The ink must not follow the paper either: the same number of calls, the
+    // same stroke widths and the same text size on both. Scaling is the backend's job.
+    let small = Rect::from_min_size(Pt::new(0.0, 0.0), 277.0, 190.0);
+    let large = Rect::from_min_size(Pt::new(0.0, 0.0), 554.0, 380.0);
 
     let mut first = Recording::default();
     punchi_fluid_draw::draw(&mut first, small, &circuit, &catalog, &Ink::print());
@@ -224,10 +224,6 @@ fn screen_and_paper_differ_only_in_scale() {
                 },
             ) => {
                 assert_eq!(pa.len(), pb.len());
-                for (one, two) in pa.iter().zip(pb) {
-                    assert!((two.x - one.x * 2.0).abs() < 1.0e-3);
-                    assert!((two.y - one.y * 2.0).abs() < 1.0e-3);
-                }
                 assert!(
                     (sb.width - sa.width).abs() < 1.0e-6,
                     "a stroke is a width, not a scale"
@@ -244,11 +240,7 @@ fn screen_and_paper_differ_only_in_scale() {
                 assert_eq!(ta, tb);
                 assert_eq!(sa, sb);
             }
-            (one, two) => assert_eq!(
-                std::mem::discriminant(one),
-                std::mem::discriminant(two),
-                "the sequence of calls must match"
-            ),
+            _ => assert_eq!(std::mem::discriminant(a), std::mem::discriminant(b)),
         }
     }
 }

@@ -1948,25 +1948,28 @@ fn dragging_a_component_pulls_its_port_onto_the_other_end() {
         f32::midpoint(bounds[0], bounds[2]),
         f32::midpoint(bounds[1], bounds[3]),
     );
-    // The port sits at an offset from the centre, so aim the centre so the port would be
-    // two millimetres from the valve's axis. The grid then moves it up to five more; the
-    // magnet is six, and the offset is 8.02 mm, which no 10 mm grid position reaches.
+    // The port sits at an offset from the centre, so the move is aimed at the valve's axis.
+    // The magnet only reaches half a grid step plus one millimetre, so a move far from the
+    // axis must leave the hose bent and a move next to it must straighten it exactly. The
+    // offset is measured, never assumed: it depends on the box the symbol is drawn in.
     let offset_x = cylinder_port.0 - centre.0;
-    let target_x = valve_port.0 - offset_x + 2.0;
 
-    // The plain move is the control: the grid alone leaves the hose bent.
+    // The far move is the control: the grid alone leaves the hose visibly bent.
     // SAFETY: live session.
     assert_eq!(
-        unsafe { pf_session_move_component(session, cylinder, target_x, centre.1) },
+        unsafe {
+            pf_session_move_component(session, cylinder, valve_port.0 - offset_x + 15.0, centre.1)
+        },
         PF_OK
     );
-    let grid_port = port_of(session, cylinder, "1");
+    let far_port = port_of(session, cylinder, "1");
     assert!(
-        (grid_port.0 - valve_port.0).abs() > 0.5,
-        "the grid alone should not straighten the hose"
+        (far_port.0 - valve_port.0).abs() > 5.0,
+        "a move away from the axis does not straighten the hose"
     );
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    let target_x = valve_port.0 - offset_x + 1.5;
 
     // The drag snaps the port onto the other end's axis, off the grid.
     // SAFETY: live session.

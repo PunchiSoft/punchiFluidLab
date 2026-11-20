@@ -90,33 +90,32 @@ This short queue is the owner's immediate priority; it takes precedence over unr
 interface polish. Each item remains its own branch and pull request, and the next item does
 not start until the current pull request is merged.
 
-1. **Templates with thumbnails** — implemented on `feat/start-templates`: the worked example
-   first, followed by three authored teaching circuits; all previews use the shared renderer.
-   Evidence: `the_four_start_templates_load_clean_and_cannot_replace_a_working_document`,
-   `template_previews_use_the_renderer_and_refuse_unbounded_dimensions`, the start-view
-   `--selftest` (including the unsaved-work confirmation), and light/dark captures.
-2. **Recent projects** — implemented on `feat/recent-page`: the page lists at most
+1. **Templates with thumbnails** — delivered in #135: the worked example first, followed by
+   three authored teaching circuits; all previews use the shared renderer.
+2. **Recent projects** — delivered in #136: the page lists at most
    `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, a path whose file is gone stays in grey
    as **no disponible** with **quitar**, and `pf_session_forget_recent_at` removes one entry on
-   a copy before writing, so a refusal changes nothing. Evidence: `an_entry_whose_file_is_gone_is_kept_until_it_is_forgotten`,
-   `pruning_drops_the_entries_whose_file_is_gone`, the ABI tests
-   `a_missing_document_stays_in_the_list_until_it_is_removed`, the invariant
-   `the_page_never_asks_for_more_rows_than_the_list_remembers`,
-   and the `--selftest` steps from `recent: the page keeps a missing document` to
-   `recent: the page limit comes from the ABI`.
-3. **Closing the last project returns to Inicio**, with the existing unsaved-work confirmation.
-4. **Polish the navigation rail**: hover, visible focus, keyboard reachability and accessible names.
-5. **Symbols**: stop and agree the correction procedure before moving A2/R1 in the latching
-   relay, then add OR/AND; the symbol review still requires the owner to define the procedure.
+   a copy before writing.
+3. **Canonical symbol size** — in progress on `fix/template-symbols`: a 20 mm square box
+   (44 × 20 mm for a cylinder) on any paper, the templates' 1.2 : 1 and 1.5 : 1 boxes fixed,
+   the rule written in [symbology.md](symbology.md) with its capture, and a test that rejects a
+   stretched box.
+4. **Palette context menu** — right-click and `Shift+F10` on a tile, **Añadir a la hoja** at
+   the sheet centre, one undo, and the right button must not start a drag.
+5. **Inicio's visual hierarchy** — two planes, grouped cards, a primary action, rail rows with
+   icons and a visible active state, recents as one card, and the hand cursor over the cards.
+6. **Dropping an imprecise gesture** — a release outside the sheet places at the nearest valid
+   point, and a two-step (tile, then click on the sheet) path exists for a hand that cannot drag.
+7. **Closing the last project returns to Inicio** — *open decision*: which gesture is "closing
+   the project" (Archivo ▸ Cerrar proyecto, or the window) and whether the confirmation offers
+   save, discard and cancel. Today closing the only **circuit** is refused on purpose.
+8. **Polish the navigation rail**: hover, visible focus, keyboard reachability and accessible names.
+9. **Symbols**: stop and agree the correction procedure before moving A2/R1 in the latching
+   relay, then add OR/AND.
 
-**Asked after item 2 (owner, 2026-11-19): the palette drag.** Carrying a tile to the sheet lost
-the gesture when the hand drifted diagonally, because the palette's scroll area took the
-pointer past its threshold and cancelled the carry. Delivered on `feat/palette-drag-grab`:
-the tile keeps the grab for the whole press, the palette scrolls with the wheel and its own
-bar, and the `--selftest` step `palette: a diagonal gesture still places the component`
-reproduces the cancelled carry and fails without the fix. Still queued as later slices:
-tolerance when the release lands outside the sheet, and a two-step (tile, then click on the
-sheet) placement for a hand that cannot drag.
+**Delivered interaction slices.** The diagonal palette carry is fixed in #137: the tile keeps
+the grab for the whole press and the palette scrolls with the wheel and its own bar. That work
+left the tolerance and the two-step placement as item 6 above.
 
 The interface has its own staged plan: [interface-plan.md](interface-plan.md). It is
 delivered as small branches — tokens, panels, ribbon, icons, catalog, workspace, adaptive
