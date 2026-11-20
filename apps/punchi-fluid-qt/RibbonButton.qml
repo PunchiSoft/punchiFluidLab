@@ -76,6 +76,7 @@ Item {
             sourceSize.height: button.iconSide
             source: button.iconName.length > 0
                     ? "image://theme/" + button.iconName + "?tone=" + button.tone
+                      + "&v=" + session.themeRevision
                     : ""
         }
 
@@ -106,6 +107,7 @@ Item {
             sourceSize.height: button.smallIconSide
             source: button.iconName.length > 0
                     ? "image://theme/" + button.iconName + "?tone=" + button.tone
+                      + "&v=" + session.themeRevision
                     : ""
         }
 

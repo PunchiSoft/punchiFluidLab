@@ -44,6 +44,7 @@
 //! --save <file>        save the sheet and exit 0/1, without a window
 //! ```
 
+#include <QColor>
 #include <QGuiApplication>
 #include <QDir>
 #include <QFile>
@@ -52,6 +53,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPalette>
 #include <QWheelEvent>
 #include <QIcon>
 #include <QQmlApplicationEngine>
@@ -116,6 +118,126 @@ int grabAndExit(QQmlApplicationEngine &engine, const QString &path)
         QCoreApplication::exit(saved ? 0 : 1);
     });
     return 0;
+}
+
+/// `--check-icons`: every name the window asks for resolves, then the icon cache proves
+/// its bound, its eviction and its palette key. The start view is already open, so the
+/// cache carries the page's icons and not only the ribbon's.
+int runIconCheck(QQmlApplicationEngine &engine, ThemeIconProvider *provider)
+{
+    QObject *window = engine.rootObjects().isEmpty() ? nullptr
+                                                    : engine.rootObjects().constFirst();
+    QObject *ribbon = window != nullptr
+                          ? window->findChild<QObject *>(QStringLiteral("ribbon"))
+                          : nullptr;
+    if (ribbon == nullptr) {
+        std::fprintf(stderr, "--check-icons: the ribbon is not in the scene\n");
+        return 1;
+    }
+    QVariant listed;
+    if (!QMetaObject::invokeMethod(ribbon, "iconNames", Q_RETURN_ARG(QVariant, listed))) {
+        std::fprintf(stderr, "--check-icons: the ribbon has no icon list\n");
+        return 1;
+    }
+    ensureIconTheme();
+    std::fprintf(stderr, "theme=%s paths=%s\n", qUtf8Printable(QIcon::themeName()),
+                 qUtf8Printable(QIcon::themeSearchPaths().join(QLatin1Char(':'))));
+
+    QStringList names;
+    const QVariantList listedNames = listed.toList();
+    for (const QVariant &entry : listedNames) {
+        const QString name = entry.toString();
+        if (!names.contains(name)) {
+            names.append(name);
+        }
+    }
+    // The start view's own names, so a machine that lacks one of them fails here too.
+    const QStringList startNames = {
+        QStringLiteral("go-home"), QStringLiteral("x-office-address-book"),
+        QStringLiteral("x-office-document"), QStringLiteral("document-new"),
+        QStringLiteral("document-open"),
+    };
+    for (const QString &name : startNames) {
+        if (!names.contains(name)) {
+            names.append(name);
+        }
+    }
+
+    int project = 0;
+    int theme = 0;
+    int missing = 0;
+    for (const QString &name : names) {
+        const bool own = actionicons::has(name);
+        QIcon icon = QIcon::fromTheme(name + QStringLiteral("-symbolic"));
+        if (icon.isNull()) {
+            icon = QIcon::fromTheme(name);
+        }
+        const bool themed = !icon.isNull();
+        const char *source = own ? "project" : (themed ? "theme" : "missing");
+        std::fprintf(stderr, "  %-32s %s\n", qUtf8Printable(name), source);
+        project += own ? 1 : 0;
+        theme += (!own && themed) ? 1 : 0;
+        missing += (!own && !themed) ? 1 : 0;
+    }
+    std::fprintf(stderr, "icons: %d project, %d theme, %d missing\n", project, theme, missing);
+    if (provider == nullptr) {
+        std::fprintf(stderr, "icons: no provider to measure\n");
+        return 1;
+    }
+    // The measurement that sets the top: total entries and the largest count for one
+    // `(pixels, tone)` pair, the unit of the engineering budget.
+    std::fprintf(stderr, "icons: cache total %d, max group %d\n", provider->cacheSize(),
+                 provider->maxGroupSize());
+
+    int failures = missing;
+
+    // The oldest entry leaves when the top is reached: `QCache` is the LRU.
+    QSize probeSize;
+    provider->requestPixmap(QStringLiteral("lru-probe?tone=muted"), &probeSize, QSize(16, 16));
+    const bool inserted = provider->contains(QStringLiteral("lru-probe?tone=muted"), 16);
+    for (int index = 0; index <= ThemeIconProvider::kMaxCachedIcons; ++index) {
+        const QString id = QStringLiteral("cache-probe-") + QString::number(index)
+                           + QStringLiteral("?tone=muted");
+        provider->requestPixmap(id, &probeSize, QSize(16, 16));
+    }
+    const bool bounded = provider->cacheSize() == ThemeIconProvider::kMaxCachedIcons;
+    const bool evicted = !provider->contains(QStringLiteral("lru-probe?tone=muted"), 16);
+    std::fprintf(stderr, "icons: LRU insert %s, %d entries %s, oldest %s\n",
+                 inserted ? "ok" : "FAIL", provider->cacheSize(), bounded ? "ok" : "FAIL",
+                 evicted ? "evicted" : "FAIL");
+    failures += inserted ? 0 : 1;
+    failures += bounded ? 0 : 1;
+    failures += evicted ? 0 : 1;
+
+    // A palette change must produce a new key and a new raster, not a stale hit.
+    QString accentName;
+    for (const QString &name : actionicons::names()) {
+        if (actionicons::has(name)) {
+            accentName = name;
+            break;
+        }
+    }
+    if (accentName.isEmpty()) {
+        std::fprintf(stderr, "icons: no project icon for the palette probe\n");
+        ++failures;
+    } else {
+        const QString id = accentName + QStringLiteral("?tone=accent");
+        const QSize request(32, 32);
+        QSize measured;
+        const QPixmap before = provider->requestPixmap(id, &measured, request);
+        const QPalette original = QGuiApplication::palette();
+        QPalette changed = original;
+        changed.setColor(QPalette::Highlight, QColor(190, 40, 40));
+        QGuiApplication::setPalette(changed);
+        const QPixmap after = provider->requestPixmap(id, &measured, request);
+        const bool retinted = before.cacheKey() != after.cacheKey()
+                              && before.toImage() != after.toImage();
+        QGuiApplication::setPalette(original);
+        std::fprintf(stderr, "icons: palette probe %s\n", retinted ? "ok" : "FAIL");
+        failures += retinted ? 0 : 1;
+    }
+    std::fprintf(stderr, "icons: %d failure(s)\n", failures);
+    return failures == 0 ? 0 : 1;
 }
 
 } // namespace
@@ -259,51 +381,13 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     // The desktop's own icons, resolved through QIcon::fromTheme and tinted with the ink
-    // the theme layer picked. A name the theme lacks draws nothing at all.
-    engine.addImageProvider(QStringLiteral("theme"), new ThemeIconProvider);
+    // the theme layer picked. A name the theme lacks draws nothing at all. The provider is
+    // kept here only while the engine owns it; it is never deleted by this function.
+    auto *iconProvider = new ThemeIconProvider;
+    engine.addImageProvider(QStringLiteral("theme"), iconProvider);
     engine.loadFromModule("PunchiFluid", "Main");
     if (engine.rootObjects().isEmpty()) {
         return 1;
-    }
-
-    if (arguments.contains(QStringLiteral("--check-icons"))) {
-        QObject *ribbon = nullptr;
-        for (QObject *root : engine.rootObjects()) {
-            ribbon = root->findChild<QObject *>(QStringLiteral("ribbon"));
-        }
-        if (ribbon == nullptr) {
-            std::fprintf(stderr, "--check-icons: the ribbon is not in the scene\n");
-            return 1;
-        }
-        QVariant listed;
-        if (!QMetaObject::invokeMethod(ribbon, "iconNames", Q_RETURN_ARG(QVariant, listed))) {
-            std::fprintf(stderr, "--check-icons: the ribbon has no icon list\n");
-            return 1;
-        }
-        ensureIconTheme();
-        std::fprintf(stderr, "theme=%s paths=%s\n", qUtf8Printable(QIcon::themeName()),
-                     qUtf8Printable(QIcon::themeSearchPaths().join(QLatin1Char(':'))));
-        int project = 0;
-        int theme = 0;
-        int missing = 0;
-        const QVariantList names = listed.toList();
-        for (const QVariant &entry : names) {
-            const QString name = entry.toString();
-            const bool own = actionicons::has(name);
-            QIcon icon = QIcon::fromTheme(name + QStringLiteral("-symbolic"));
-            if (icon.isNull()) {
-                icon = QIcon::fromTheme(name);
-            }
-            const bool themed = !icon.isNull();
-            const char *source = own ? "project" : (themed ? "theme" : "missing");
-            std::fprintf(stderr, "  %-32s %s\n", qUtf8Printable(name), source);
-            project += own ? 1 : 0;
-            theme += (!own && themed) ? 1 : 0;
-            missing += (!own && !themed) ? 1 : 0;
-        }
-        std::fprintf(stderr, "icons: %d project, %d theme, %d missing\n", project, theme,
-                     missing);
-        return missing == 0 ? 0 : 1;
     }
 
     // The self test turns sheet millimetres into window pixels to drive its gestures, so it
@@ -403,17 +487,30 @@ int main(int argc, char *argv[])
     }
 
     // The program opens on Inicio; the automated runs that measure the window or drive the
-    // sheet keep it closed so they see the page they were written against (ADR 0031).
+    // sheet keep it closed so they see the page they were written against (ADR 0031). The
+    // icon cache and the start-view geometry are measured with the page open.
     const bool windowTest =
         arguments.contains(QStringLiteral("--selftest"))
         || arguments.contains(QStringLiteral("--check-layout"))
         || arguments.contains(QStringLiteral("--check-qml"))
         || arguments.contains(QStringLiteral("--check-theme"))
         || arguments.contains(QStringLiteral("--check-icons"));
+    const bool startViewMeasure = arguments.contains(QStringLiteral("--check-icons"))
+                                  || arguments.contains(QStringLiteral("--check-layout"));
     for (QObject *root : engine.rootObjects()) {
-        if (!windowTest && root->property("startViewOpen").isValid()) {
+        if ((startViewMeasure || !windowTest)
+            && root->property("startViewOpen").isValid()) {
             root->setProperty("startViewOpen", true);
         }
+    }
+
+    if (arguments.contains(QStringLiteral("--check-icons"))) {
+        // The page has to be laid out and its images requested before the cache is
+        // measured: one timer tick, then the probes run on the GUI thread.
+        QTimer::singleShot(600, &app, [&engine, iconProvider] {
+            QCoreApplication::exit(runIconCheck(engine, iconProvider));
+        });
+        return app.exec();
     }
 
     if (arguments.contains(QStringLiteral("--page-setup"))) {
@@ -843,6 +940,137 @@ int main(int argc, char *argv[])
             loop.exec();
         };
         int failures = 0;
+        // Inicio: the two way-in cards reserve a 2 x unit icon column and the template
+        // cards derive their height from their width, so the plate is 65 % of the card.
+        // The page is open here; the shell cases below need the sheet, so it closes after.
+        const auto startViewCase = [&](int width, int height) {
+            window->resize(width, height);
+            settle();
+            auto *start = window->findChild<QQuickItem *>(QStringLiteral("startView"));
+            bool ok = start != nullptr && start->isVisible();
+            QString detail;
+            if (ok) {
+                const qreal railIcon = std::round(unit * 1.1);
+                const qreal cardIcon = std::round(unit * 1.8);
+                auto *rail = start->findChild<QQuickItem *>(QStringLiteral("railHomeIcon"));
+                ok = rail != nullptr && std::abs(rail->width() - railIcon) <= 1.0;
+                const QStringList cardNames = { QStringLiteral("New"),
+                                                QStringLiteral("Open") };
+                for (const QString &name : cardNames) {
+                    auto *column = start->findChild<QQuickItem *>(
+                        QStringLiteral("startCard") + name + QStringLiteral("IconColumn"));
+                    auto *icon = start->findChild<QQuickItem *>(
+                        QStringLiteral("startCard") + name + QStringLiteral("Icon"));
+                    auto *text = start->findChild<QQuickItem *>(
+                        QStringLiteral("startCard") + name + QStringLiteral("Text"));
+                    if (column == nullptr || icon == nullptr || text == nullptr
+                        || text->parentItem() == nullptr) {
+                        ok = false;
+                        detail = QStringLiteral("missing card parts");
+                        continue;
+                    }
+                    const qreal textWidth = text->parentItem()->width()
+                                            - std::round(unit * 2) - unit / 2.0;
+                    bool cardOk = std::abs(column->width() - unit * 2) <= 1.0
+                                  && std::abs(icon->width() - cardIcon) <= 1.0
+                                  && std::abs(icon->x() + icon->width() * 0.5
+                                              - column->width() * 0.5) <= 1.0
+                                  && text->x() >= column->x() + column->width() - 0.5
+                                  && std::abs(text->x()
+                                              - (column->x() + column->width() + unit / 2.0))
+                                         <= 1.0
+                                  && std::abs(text->width() - textWidth) <= 1.0;
+                    for (QQuickItem *child : text->childItems()) {
+                        if (child->property("text").isValid()) {
+                            cardOk = cardOk
+                                     && child->property("contentWidth").toReal()
+                                            <= child->width() + 1.0;
+                        }
+                    }
+                    ok = ok && cardOk;
+                }
+                auto *repeater =
+                    start->findChild<QObject *>(QStringLiteral("templateRepeater"));
+                const int templateCount =
+                    repeater != nullptr ? repeater->property("count").toInt() : 0;
+                if (repeater == nullptr
+                    || templateCount != start->property("templateCardCount").toInt()) {
+                    ok = false;
+                    detail = QStringLiteral("template count %1").arg(templateCount);
+                }
+                // The delegates are reached through the visual tree: a Repeater's items do
+                // not answer `findChild` by object name, but its `itemAt` does.
+                for (int index = 0; index < templateCount; ++index) {
+                    QQuickItem *card = nullptr;
+                    const bool got = QMetaObject::invokeMethod(
+                        repeater, "itemAt", Q_RETURN_ARG(QQuickItem *, card),
+                        Q_ARG(int, index));
+                    QQuickItem *content =
+                        (got && card != nullptr)
+                            ? card->property("contentItem").value<QQuickItem *>()
+                            : nullptr;
+                    QQuickItem *column =
+                        content != nullptr ? content->childItems().value(0) : nullptr;
+                    QQuickItem *plate =
+                        column != nullptr ? column->childItems().value(0) : nullptr;
+                    QQuickItem *title =
+                        column != nullptr ? column->childItems().value(1) : nullptr;
+                    QQuickItem *note =
+                        column != nullptr ? column->childItems().value(2) : nullptr;
+                    QQuickItem *preview =
+                        plate != nullptr ? plate->childItems().value(0) : nullptr;
+                    if (card == nullptr || content == nullptr || column == nullptr
+                        || plate == nullptr || title == nullptr || note == nullptr
+                        || preview == nullptr) {
+                        ok = false;
+                        QString missing;
+                        if (card == nullptr) missing += QStringLiteral("card ");
+                        if (content == nullptr) missing += QStringLiteral("content ");
+                        if (column == nullptr) missing += QStringLiteral("column ");
+                        if (plate == nullptr) missing += QStringLiteral("plate ");
+                        if (title == nullptr) missing += QStringLiteral("title ");
+                        if (note == nullptr) missing += QStringLiteral("detail ");
+                        if (preview == nullptr) missing += QStringLiteral("preview ");
+                        detail = QStringLiteral("template %1 missing %2")
+                                     .arg(index)
+                                     .arg(missing);
+                        continue;
+                    }
+                    const qreal plateWidth = card->width() - 2.0 * (unit / 3.0)
+                                             - 2.0 * (unit / 4.0);
+                    const qreal plateHeight = plateWidth / (512.0 / 288.0);
+                    const qreal cardHeight = plateHeight / 0.65;
+                    const bool templateOk =
+                        std::abs(card->property("plateHeight").toReal() - plateHeight) <= 1.0
+                        && std::abs(plate->width() - plateWidth) <= 1.0
+                        && std::abs(plate->height() - plateHeight) <= 1.0
+                        && std::abs(card->height() - cardHeight) <= 1.0
+                        && plate->height() / card->height() >= 0.60
+                        && plate->height() / card->height() <= 0.70
+                        && std::abs(preview->width() - plate->width()) <= 1.0
+                        && std::abs(preview->height() - plate->height()) <= 1.0
+                        && std::abs(preview->width() / preview->height() - 512.0 / 288.0)
+                               <= 0.02
+                        && title->property("contentWidth").toReal() <= title->width() + 1.0
+                        && note->property("contentWidth").toReal() <= note->width() + 1.0
+                        && note->property("maximumLineCount").toInt() == 1;
+                    ok = ok && templateOk;
+                }
+            }
+            std::fprintf(stderr, "layout:  start view %4dx%-4d icons, cards and plates  %s%s\n",
+                         width, height, ok ? "ok" : "FAIL",
+                         detail.isEmpty()
+                             ? ""
+                             : qUtf8Printable(QStringLiteral(" (") + detail
+                                              + QStringLiteral(")")));
+            if (!ok) {
+                ++failures;
+            }
+        };
+        startViewCase(1280, 800);
+        startViewCase(1440, 900);
+        window->setProperty("startViewOpen", false);
+        settle();
         for (const LayoutCase &one : cases) {
             window->resize(one.width, one.height);
             settle();
@@ -1078,6 +1306,7 @@ int main(int argc, char *argv[])
             QQuickWindow *window = nullptr;
             SchematicItem *sheet = nullptr;
             FluidSession *session = nullptr;
+            ThemeIconProvider *icons = nullptr;
             int failures = 0;
             int step = 0;
             int valveIndex = -1;
@@ -1114,10 +1343,14 @@ int main(int argc, char *argv[])
             bool panelCanUndo = false;
             /// The sheet paints the fold costs, so a runaway animation is visible here.
             int panelPaints = 0;
+            /// The palette before the theme step, so the check leaves the desktop as it
+            /// found it.
+            QPalette paletteBeforeTheme;
         };
         auto *state = new SelfTest();
         state->window = window;
         state->sheet = window != nullptr ? window->findChild<SchematicItem *>() : nullptr;
+        state->icons = iconProvider;
         const auto sessions = window != nullptr ? window->findChildren<FluidSession *>()
                                                 : QList<FluidSession *>();
         state->session = sessions.isEmpty() ? nullptr : sessions.constFirst();
@@ -3740,6 +3973,45 @@ int main(int argc, char *argv[])
                   QStringLiteral("templates: Inicio is visible"));
             check(state->session->templateCount() == static_cast<int>(PF_TEMPLATE_COUNT),
                   QStringLiteral("templates: the ABI count reaches the session"));
+        });
+        // A palette change must replace the visible icons: the URL carries the revision,
+        // so QML asks the provider again instead of drawing the previous tint.
+        steps->push_back([state, check] {
+            QObject *icon = state->window->findChild<QObject *>(QStringLiteral("railHomeIcon"));
+            check(icon != nullptr, QStringLiteral("theme: the rail home icon is in the scene"));
+            if (icon == nullptr) {
+                return;
+            }
+            const QString before = icon->property("source").toUrl().toString();
+            check(before.contains(QStringLiteral("v=")
+                                  + QString::number(state->session->themeRevision())),
+                  QStringLiteral("theme: the icon URL carries the revision"));
+            state->paletteBeforeTheme = QGuiApplication::palette();
+            QPalette changed = state->paletteBeforeTheme;
+            changed.setColor(QPalette::Highlight, QColor(190, 40, 40));
+            QGuiApplication::setPalette(changed);
+            state->session->reloadTheme();
+        });
+        steps->push_back([state, check] {
+            QObject *icon = state->window->findChild<QObject *>(QStringLiteral("railHomeIcon"));
+            if (icon == nullptr) {
+                check(false, QStringLiteral("theme: the rail icon survives the change"));
+                return;
+            }
+            const int revision = state->session->themeRevision();
+            const QString source = icon->property("source").toUrl().toString();
+            check(source.contains(QStringLiteral("v=") + QString::number(revision)),
+                  QStringLiteral("theme: the icon URL carries the new revision"));
+            const qreal dpr = QGuiApplication::primaryScreen()
+                                  ? QGuiApplication::primaryScreen()->devicePixelRatio()
+                                  : 1.0;
+            const int pixels = qRound(state->session->unit() * 1.1 * dpr);
+            check(state->icons != nullptr
+                      && state->icons->contains(QStringLiteral("go-home?tone=onaccent"),
+                                                pixels),
+                  QStringLiteral("theme: the icon is requested again"));
+            QGuiApplication::setPalette(state->paletteBeforeTheme);
+            state->session->reloadTheme();
         });
         steps->push_back([state, check] {
             QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));

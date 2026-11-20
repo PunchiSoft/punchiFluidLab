@@ -53,7 +53,8 @@ Card {
             sourceSize.width: strip.session.unit
             sourceSize.height: strip.session.unit
             source: row.available && row.icon.length > 0
-                    ? "image://theme/" + row.icon + "?tone=foreground"
+                    ? "image://theme/" + row.icon + "?tone=foreground&v="
+                      + strip.session.themeRevision
                     : ""
         }
 

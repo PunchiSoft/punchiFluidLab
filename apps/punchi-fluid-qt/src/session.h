@@ -146,6 +146,9 @@ class FluidSession : public QObject
     Q_PROPERTY(int catalogProblems READ catalogProblems NOTIFY catalogChanged)
     Q_PROPERTY(QString contrastSummary READ contrastSummary NOTIFY changed)
     Q_PROPERTY(bool themePasses READ themePasses NOTIFY changed)
+    /// Increments on every palette application. QML appends it to the icon URLs so a theme
+    /// change invalidates the image cache instead of drawing the previous tint.
+    Q_PROPERTY(int themeRevision READ themeRevision NOTIFY themeRevisionChanged)
     Q_PROPERTY(bool settled READ settled NOTIFY settledChanged)
 
     Q_PROPERTY(QColor background READ background NOTIFY changed)
@@ -348,6 +351,7 @@ public:
     QString catalogDir() const { return m_catalogDir; }
     int catalogProblems() const;
     QString contrastSummary() const { return describe(m_contrast); }
+    int themeRevision() const { return m_themeRevision; }
     /// `true` when every pairing meets the criterion of `docs/ui-ux.md`.
     [[nodiscard]] bool themePasses() const { return m_contrast.passes(); }
 
@@ -575,8 +579,9 @@ public:
     Q_INVOKABLE void closeInspector();
     /// Back to t = 0.
     Q_INVOKABLE void restart();
-    /// Reads the desktop palette into the core. Called on start and on theme change.
-    Q_INVOKABLE void loadTheme();
+    /// Re-reads the desktop palette and restarts the cached icon rasters. Called by the
+    /// ribbon's scheme command and by the theme check.
+    Q_INVOKABLE void reloadTheme();
     /// A window view setting (panel state, auto-hide), stored per user and never in the
     /// document. A missing key returns `fallback`.
     Q_INVOKABLE QVariant viewSetting(const QString &key, const QVariant &fallback) const;
@@ -598,6 +603,8 @@ signals:
     void recentChanged();
     /// The drawing ink changed; cached rendered previews must be rebuilt.
     void themeChanged();
+    /// The icon URLs' revision changed; QML re-requests every `image://theme` source.
+    void themeRevisionChanged();
     void modeChanged();
     void inspectorChanged();
     void catalogChanged();
@@ -649,6 +656,9 @@ private:
     void refreshSelection();
     void advanceInternal(double dt, bool forced);
     void readCatalog();
+    /// Reads the desktop palette into the core. Called on start, on theme change and by
+    /// `reloadTheme`.
+    void loadTheme();
 
     /// One block field of the active circuit, or an empty string when there is none.
     QString blockField(uint32_t field) const;
@@ -700,6 +710,7 @@ private:
     QString m_catalogDir;
     ThemeTokens m_tokens;
     Contrast m_contrast;
+    int m_themeRevision = 0;
     bool m_settled = false;
     bool m_running = false;
     QTimer m_untilChangeTimer;

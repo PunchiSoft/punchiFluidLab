@@ -92,7 +92,12 @@ if [[ -d apps/punchi-fluid-qt/build ]] && command -v cmake >/dev/null; then
     export XDG_DATA_HOME="$ui_data_dir"
     "$app" --check-qml
     "$app" --check-theme
+    # The icon cache is measured with the start view open at every scale the window runs
+    # at: the number sets the bound and proves one raster per role, not the 22 px fallback.
     "$app" --check-icons
+    QT_SCALE_FACTOR=1.25 "$app" --check-icons
+    QT_SCALE_FACTOR=1.5 "$app" --check-icons
+    QT_SCALE_FACTOR=2 "$app" --check-icons
     "$app" --check-layout
     # The same layout at another device pixel ratio and with a larger desktop font: the
     # shell must move its boundaries, not break them.

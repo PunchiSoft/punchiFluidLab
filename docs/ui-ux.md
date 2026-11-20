@@ -411,17 +411,29 @@ row whose text and icon are the measured `onAccent`.
 - **Aprender**: the shortcuts, what “conforme a ISO 1219” means, and the About panel.
 
 The example cards **divide the page's width between them**, with one unit between cards and
-a minimum of 10 × `unit` before the grid starts a second row; at the default 18 px unit and a
-1280 px window each is about 252 px wide and 8 × `unit` (144 px) tall. Each card is a picture
-and its label: a recessed plate with the drawing, the name in the label size and the detail in
-the small size, two lines at most, and a tooltip that names the circuit. The default way in
-(**Nuevo proyecto**) carries the accent tint and border, and its text is ink, never a light
-word over a fill that hover repaints.
+a minimum of 10 × `unit` before the grid starts a second row. Each card's height follows its
+width: the plate is the content width over the raster's 512:288 aspect, and the card is the
+plate over 0.65, so the plate is 65 % of it and the proportion holds at every breakpoint. At
+the default 18 px unit and a 1280 px window a card is about 252 × 200 px with a plate of
+about 231 × 130 px. Each card is a picture and its label: the picture fills the plate width
+and keeps its aspect, with a transparent band for the 1.2 % difference between the 512 × 288
+raster and the authored 180 × 100 mm area; the plate is `panel` on a `surfaceRaised` card
+(`surfaceSunken` while pressed, `accent` border on hover and focus), and the name is
+`textLabel` with the detail on one elided line below it, both with the picture's left margin,
+plus a tooltip that names the circuit. The default way in (**Nuevo proyecto**) carries the
+accent tint and border, and its text is ink, never a light word over a fill that hover
+repaints.
 Each thumbnail calls the same Rust drawing and Qt replay path as the sheet, then keeps one
 512 × 288 RGBA image until the theme changes or the card is destroyed. Four fixed templates
-bound that cache at 2.25 MiB; no image is fetched. Template cards expose their title and
-description to assistive technology. Inicio is reachable from **Archivo ▸ Inicio**; other
-start-page actions still have keyboard and recent-list work remaining.
+bound that cache at 2.25 MiB; no image is fetched. The start-view icons follow **one raster
+rule with two sizes**: `Math.round(unit * 1.1)` on the rail and `Math.round(unit * 1.8)` on
+the two «Empezar» cards, each with `sourceSize` at that size so the provider rasterises it
+and `fillMode: Image.PreserveAspectFit`; the tone is always a theme token. Every
+`image://theme` URL carries `&v=<session.themeRevision>`: a palette change increments the
+revision and QML re-requests the icons, so the old tint never stays on screen. Template cards
+expose their title and description to assistive technology. Inicio is reachable from
+**Archivo ▸ Inicio**; other start-page actions still have keyboard and recent-list work
+remaining.
 
 ### 3. The sheet
 
