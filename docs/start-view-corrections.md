@@ -102,7 +102,14 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   undo history.
 - **Test**: `--selftest`: with a project open the Inicio tab exists, opens the page, and
   **Volver** returns to the sheet; the tab is not counted as a circuit.
-- **State**: open.
+- **State**: in progress.
+- **On `feat/start-view-home-tab`**: the strip has a fixed home control before the scroll,
+  outside `Flickable`, with the `go-home` icon, a tooltip, an accessible name and the
+  mirrored `accessibleLabel`; `Ctrl+Home` opens Inicio from the sheet and yields to a
+  focused text editor; the circuit tabs and the plus are named and keyboard reachable. The
+  `home:` selftest steps pass with 0 failures, the layout case proves the fixed home and
+  the scrolling plus at 1280 and 1440 (and at 1.25×, 1.5×, 2× and font 1.5×), and the
+  light/dark strip captures plus the Inicio capture reached from a project are attached.
 
 ## 6. Recents: the page's own bound and the missing file
 
