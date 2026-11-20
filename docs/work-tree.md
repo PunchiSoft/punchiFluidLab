@@ -67,7 +67,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-002 | Card text runs into its icon | `in progress` | [§2](start-view-corrections.md) |
 | P-003 | Template pictures are tiny and pale | `in progress` | [§3](start-view-corrections.md) |
 | P-004 | Recent rows overlap | `done` | [§4](start-view-corrections.md) |
-| P-005 | No way back to Inicio with a project open | `in progress` | [§5](start-view-corrections.md) — home control in the strip, `Ctrl+Home`, `Volver` for an empty project; `feat/start-view-home-tab`, `home:` selftest 0 failures, layout and captures |
+| P-005 | No way back to Inicio with a project open | `done` | [§5](start-view-corrections.md) — home control in the strip, `Ctrl+Home`, `Volver` for an empty project; merged as #146 |
 | P-006 | Recents have no page bound and do not mark a missing file | `in progress` | [§6](start-view-corrections.md) |
 | P-007 | Closing the last project does not return to Inicio | `planned` | [§7](start-view-corrections.md) |
 | P-008 | The rail is uneven and its focus is not the catalogue's | `in progress` | [§8](start-view-corrections.md) |
@@ -75,8 +75,33 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-010 | The shuttle and the two-pressure valve are missing (OR/AND) | `reported` | [capabilities F2](capabilities.md) and ADR 0029 |
 | P-012 | The theme icon cache is unbounded | `in progress` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) — bounded `QCache` on `feat/start-view-visual-pass-2`: cap 73, working set 58, max group 21, LRU and palette key |
 | P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
+| P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 
 ## A node, filled
+
+### P-018 — A port designation touches or covers the symbol
+
+- **Problem**: the service unit's numerals 1 and 2 were centred on the dashed frame, so
+  half of each glyph sat on the line and its halo erased the dash underneath.
+- **Evidence**: `preparation.service_unit-{light,dark,300}.png`; before the fix the
+  numerals straddled the frame.
+- **Touches**: `crates/punchi-fluid-catalog/src/schema.rs` (`envelope`),
+  `crates/punchi-fluid-catalog/src/lint.rs` (the ninth rule),
+  `crates/punchi-fluid-draw/src/symbol.rs` (`draw_numeral`, the test),
+  `assets/catalog/preparation.service_unit.toml`, `docs/symbology.md`, the review template
+  and record.
+- **Decision**: a declared `envelope` is the symbol's functional outer boundary; the
+  renderer places each numeral on the clear side of it, inside when the outside is too
+  tight. No glyph extents are invented: the test uses the anchor plus the cap.
+- **Stages**:
+  - **P-018a** `in progress` on `feat/port-numeral-clearance`: the envelope, the ninth
+    lint rule, `draw_numeral`, the general test helper, the docs and
+    `preparation.service_unit`.
+  - **P-018b** after P-018a merges, on `feat/port-numeral-clearance-rest`: the latching
+    relay, the 0.0/1.0 class, the gauge/designation overlap, the valves and the cylinders.
+- **Done when**: the service-unit test passes, the 300 dpi and light/dark captures show
+  the numerals clear, and the gate is green; P-018b extends the assertions to the rest.
+- **State**: `in progress` (P-018a); P-018b not started.
 
 ### P-011 — Example: the window title shows an empty document name
 

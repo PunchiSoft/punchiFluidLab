@@ -300,12 +300,20 @@ Automated (`symbol lint`, part of the catalog validation, milestone M1.5):
 - actuator declared for `actuation = toggle` or `momentary`;
 - no primitive outside the `0..=1` box, no zero-length line, no zero radius;
 - line class declared for every polyline;
+- a declared envelope lies inside `0..=1`, contains the body, every port and the frame
+  primitive; a missing envelope is allowed, a malformed one is not;
+- a port numeral is placed clear of the resolved outer boundary — the envelope, else the
+  body, else the 20 mm box — inside or outside but never on it, and clear of a primitive
+  line; the draw test proves `preparation.service_unit` today and P-018b extends it to the
+  rest of the inventory;
 - minimum legibility: stroke and gaps above the floor at the smallest palette size.
 
 Manual, once per symbol, signed off in the pull request:
 
 - the five checks above plus a side-by-side against the Part 1 symbol for that
   function, done by reading the standard — not by comparing with another program;
+- every port designation sits clear of the outer boundary, the body and the primitive
+  lines, inside or outside but never on a line, in both themes;
 - the symbol is legible at 24 px (palette) and at 300 dpi (PDF export);
 - a screenshot of the symbol in light and dark themes is attached to the PR.
 
@@ -328,6 +336,7 @@ palette and canvas size**, and the 300 dpi half is **open** until the export exi
 | One equal square per position, impossible to make ragged | **enforced** | the renderer splits the declared `body`; the lint checks the width |
 | Blocking mark on every closed port of a position | **enforced** | drawn from `blocked`, never authored |
 | Port numerals from the `port` table | **enforced** | `parts::draw_port_numeral`; the file has no shape to disagree with |
+| A port designation clear of the symbol | **enforced for `preparation.service_unit`; the general rule is in the drawing** | `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing`; P-018b extends it to the rest |
 | Flow path arrows along the connection | **enforced** | the path is routed from `connection`, the arrow points at its far end |
 | Spring and actuator as declared parts | **enforced** | `[spring]` / `[actuator]`, required by the lint |
 | Line classes with their own dash pattern | **enforced** | `line_class` on every line and polyline |

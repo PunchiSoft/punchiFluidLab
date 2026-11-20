@@ -28,6 +28,7 @@ Numbers, not adjectives. The drawing is checked against this table.
 | Actuator | side and form | |
 | Blocking marks | which ports, which position | |
 | Numerals | which sides carry them | |
+| Clearance | every numeral clear of the envelope/frame, the body and the primitive lines | |
 
 ## Evidence
 
@@ -46,6 +47,7 @@ One line per normative feature, answered, with the number that supports it.
 | Is the body one equal square per position? | |
 | Is every closed port of every position marked? | |
 | Do the numerals match the declared ports? | |
+| Is every numeral clear of the envelope/frame, the body and the primitive lines? | |
 | Does the arrow point at the far end of the connection? | |
 | Are spring and actuator on the declared sides? | |
 | Is the symbol legible at palette size? | |

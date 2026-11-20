@@ -14,6 +14,8 @@ use thiserror::Error;
 
 use crate::schema::{Actuation, Behaviour, ComponentDefinition, Primitive, PrimitiveKind};
 
+mod envelope;
+
 /// Position inside the symbol box where a drawn element may live.
 const BOX_MIN: f64 = 0.0;
 /// Upper bound of the symbol box.
@@ -83,6 +85,10 @@ pub enum LintError {
     /// A base primitive drawn inside the body the renderer owns.
     #[error("body: a base primitive lies inside the body, which the renderer draws")]
     BodyIntrusion,
+
+    /// The declared functional outer boundary is malformed or disagrees with the drawing.
+    #[error("envelope: {0}")]
+    Envelope(String),
 }
 
 /// Runs every rule over one definition.
@@ -98,17 +104,16 @@ pub fn lint(definition: &ComponentDefinition) -> Result<(), LintError> {
     check_geometry(definition)?;
     check_line_classes(definition)?;
 
-    let positions = match &definition.behaviour {
-        Behaviour::Valve { positions, .. } => positions.as_slice(),
-        _ => {
-            return check_parts(definition);
+    match &definition.behaviour {
+        Behaviour::Valve { positions, .. } => {
+            let body = check_body(definition, positions.len())?;
+            check_positions(definition, positions)?;
+            check_parts(definition)?;
+            check_intrusion(definition, body)?;
         }
-    };
-
-    let body = check_body(definition, positions.len())?;
-    check_positions(definition, positions)?;
-    check_parts(definition)?;
-    check_intrusion(definition, body)?;
+        _ => check_parts(definition)?,
+    }
+    envelope::check_envelope(definition)?;
     Ok(())
 }
 
@@ -374,6 +379,7 @@ fn check_intrusion(definition: &ComponentDefinition, body: [f64; 4]) -> Result<(
     Ok(())
 }
 
+/// Rule 9 lives in `envelope.rs`, so the parent stays under the architecture budget.
 fn bounding_box(primitive: &Primitive) -> Option<(f64, f64, f64, f64)> {
     let points = &primitive.points;
     match primitive.kind {
@@ -404,12 +410,13 @@ mod tests {
 
     /// The smallest conformant two-position valve: every rule passes on it, and each
     /// test below breaks exactly one thing.
-    const GOOD_VALVE: &str = r#"
+    pub(super) const GOOD_VALVE: &str = r#"
 schema = 2
 id = "valve.test"
 name = "test valve"
 category = "valve"
 body = [0.06, 0.28, 0.88, 0.44]
+envelope = [0.0, 0.0, 1.0, 1.0]
 
 [spring]
 side = "right"
@@ -463,11 +470,11 @@ to = "2"
 conductance = 1.0e-9
 "#;
 
-    fn parse(text: &str) -> ComponentDefinition {
+    pub(super) fn parse(text: &str) -> ComponentDefinition {
         toml::from_str(text).expect("the fixture parses")
     }
 
-    fn broken(from: &str, to: &str) -> LintError {
+    pub(super) fn broken(from: &str, to: &str) -> LintError {
         let text = GOOD_VALVE.replace(from, to);
         assert_ne!(text, GOOD_VALVE, "the fixture did not contain the fragment");
         lint(&parse(&text)).expect_err("the lint must reject this definition")

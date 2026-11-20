@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### Símbolos: las designaciones de puerto no tocan el símbolo — 2026-11-20
+
+- El catálogo estrena **`envelope`**, la frontera exterior funcional del símbolo en dos
+  esquinas normalizadas. La novena regla del lint exige que esté dentro de `0..=1`, que
+  contenga el cuerpo, todos los puertos y el primitivo del marco; un archivo sin envolvente
+  sigue siendo válido.
+- `draw_numeral` resuelve esa frontera como **envolvente, si no cuerpo, si no la caja de
+  20 mm** y coloca el numeral en el lado libre: fuera cuando la hoja deja sitio, dentro
+  cuando no lo deja, con `gap = max(1 mm, 6 % del alto)` más media altura de mayúscula.
+  La línea de conexión cruza la frontera; la designación no.
+- `preparation.service_unit` declara `[0.06, 0.12, 0.94, 0.88]`. El marco deja solo 1,2 mm
+  por fuera, así que los numerales 1 y 2 pasan **dentro del marco**, a 1,2 mm de la línea
+  discontinua y libres del filtro, el regulador y el reloj. Los demás símbolos conservan su
+  aserción para P-018b; el helper de la prueba ya es general.
+- La guía de simbología, la plantilla de revisión y el registro de la unidad de
+  mantenimiento recogen la regla de holgura; las capturas de 300 dpi y claro/oscuro se
+  regeneran.
+- **Evidencia**: `cargo test -p punchi-fluid-catalog -p punchi-fluid-draw` en verde, el
+  lint de símbolos sobre todo el catálogo, las capturas `preparation.service_unit-300.png`
+  y `-{light,dark}.png`, y `./scripts-dev/check.sh`.
+
 ### Inicio: una casa fija en la tira y Ctrl+Home — 2026-11-20
 
 - La tira de circuitos estrena un **control de Inicio fijo** a la izquierda, fuera del
