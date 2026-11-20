@@ -35,6 +35,11 @@ name_es = "Unidad de mantenimiento (FRL)"
 category = "accessory"
 summary = "Filters, regulates and lubricates the air before it enters the circuit."
 
+# The functional outer boundary: the two opposite corners of the dashed frame below. The
+# ports sit on its left and right edges, so the renderer reads the frame as the edge a
+# numeral must stay clear of.
+envelope = [0.06, 0.12, 0.94, 0.88]
+
 [[port]]
 id = "1"
 role = "supply"

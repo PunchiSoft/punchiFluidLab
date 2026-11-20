@@ -32,6 +32,25 @@ asset, no trace, no scan.
 | Legible at palette size | pass | `catalog-dark.png` |
 
 | Legible at 300 dpi | pass | `preparation.service_unit-300.png`: automated pass; the second reader's signature is still owed |
+
+## Correction of 2026-11-20 — P-018a, port designation clearance
+
+The numerals 1 and 2 were centred on the dashed frame's vertical segments, so each glyph
+straddled the line and its halo erased the dash under it. The file now declares the frame
+as the symbol's functional outer boundary,
+`envelope = [0.06, 0.12, 0.94, 0.88]`, and the renderer places each numeral against that
+boundary. The frame leaves only 1.2 mm outside its left and right edges, so both numerals
+go **inside** the frame, 1.2 mm clear of the dashed line, lateral to the connection and
+clear of the filter, the regulator and the dial.
+
+| Requirement | Result | Evidence |
+|---|---|---|
+| Numeral 1 inside the frame, clear of the dashed segment | pass | `preparation.service_unit-300.png`, 1.2 mm inside the left edge, above the working line |
+| Numeral 2 inside the frame, clear of the dashed segment | pass | `preparation.service_unit-300.png`, 1.2 mm inside the right edge, below the working line |
+| No numeral on the envelope, the body or a primitive line | pass | `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing` in `punchi-fluid-draw` |
+| 300 dpi sheet regenerated | pass | `preparation.service_unit-300.png`, 2026-11-20 |
+| Light and dark palette-size captures regenerated | pass | `preparation.service_unit-light.png`, `preparation.service_unit-dark.png`, 2026-11-20 |
+
 ## What is still open
 
 - **The lubricator is not drawn.** The unit's name says filter, regulator and lubricator, but

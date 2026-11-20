@@ -288,7 +288,26 @@ pub fn draw_connection(surface: &mut dyn Surface, at: Pt, rect: Rect, ink: &Ink)
     );
 }
 
-/// Numeral of a port, outside the symbol next to its stub.
+/// Numeral of a port, clear of the symbol beside its connection.
+/// The geometry shared by the three numeral placements.
+struct NumeralGeometry {
+    rect: Rect,
+    boundary: Rect,
+    centre: Pt,
+    point: Pt,
+    reach: f32,
+    clear: f32,
+    normal: f32,
+    gap: f32,
+    epsilon: f32,
+}
+
+///
+/// The numeral is placed against the symbol's **outer boundary**: the declared
+/// [`ComponentDefinition::envelope`] when there is one, else the body, else the whole
+/// box. It sits on the clear side of that boundary — outside when the sheet leaves room,
+/// inside when it does not — and never on the line: the connection may cross the
+/// boundary, the designation may not.
 pub fn draw_numeral(
     surface: &mut dyn Surface,
     rect: Rect,
@@ -304,111 +323,188 @@ pub fn draw_numeral(
         return;
     }
     let point = at(rect, port[0], port[1]);
-    let centre = rect.center();
+    let boundary = outer_boundary(rect, definition, body);
+    let centre = boundary.center();
     let reach = rect.height() * 0.14;
-    let anchor = match body {
-        // A side port joins the body through a horizontal stub, and its numeral belongs
-        // beyond the outer end of that stub. Anchoring it at the body edge — where a top or
-        // a bottom port is read — puts a side port's numeral inside the symbol, on top of
-        // the rod.
-        Some(body) if is_side_port(body, point) => point,
-        Some(body) => stub_end(rect, body, port),
-        None => point,
+    let clear = reach * 1.6;
+    let gap = (rect.height() * 0.06).max(1.0);
+    // The boundary-to-centre distance: the glyph keeps `gap` from the line and half its
+    // cap is on each side of the anchor.
+    let normal = gap + NUMERAL * 0.5;
+    let epsilon = 1.0e-3;
+
+    let level_y = point.y >= boundary.min.y - epsilon && point.y <= boundary.max.y + epsilon;
+    let level_x = point.x >= boundary.min.x - epsilon && point.x <= boundary.max.x + epsilon;
+    let on_side =
+        level_y && (point.x <= boundary.min.x + epsilon || point.x >= boundary.max.x - epsilon);
+    let on_top_or_bottom =
+        level_x && (point.y <= boundary.min.y + epsilon || point.y >= boundary.max.y - epsilon);
+
+    let geometry = NumeralGeometry {
+        rect,
+        boundary,
+        centre,
+        point,
+        reach,
+        clear,
+        normal,
+        gap,
+        epsilon,
     };
-    let offset = match body {
-        Some(body) if is_side_port(body, point) => {
-            let (dx, dy) = centre.to(anchor);
-            let length = dx.hypot(dy);
-            if length > f32::EPSILON {
-                Pt::new(dx / length * reach, dy / length * reach)
-            } else {
-                Pt::new(reach, 0.0)
-            }
-        }
-        Some(body) => {
-            // A top or a bottom port: the designation sits level with the body edge, beside
-            // its own stub and **towards the body**, on the side the body still has room for.
-            // Two reasons for each half of that: a numeral pushed past the end of the body
-            // reads as belonging to whatever comes next on the sheet, and one written past
-            // the far end of the stub sits exactly where the pipe arrives, so its halo cuts
-            // the pipe in two.
-            // A numeral belongs on the side of its stub where no other port is written: the
-            // ports of a two-position valve are all drawn on one square, so the body's middle
-            // is not a useful reference for "outward", and two numerals written between their
-            // stubs read as one port with two names.
-            let below = point.y >= centre.y;
-            let mut nearest: Option<(f32, f32)> = None;
-            for other in &definition.port {
-                let other_point = at(rect, other.position[0], other.position[1]);
-                if (other_point.y >= centre.y) != below {
-                    continue;
-                }
-                let gap = (other_point.x - point.x).abs();
-                if gap <= f32::EPSILON {
-                    continue;
-                }
-                if nearest.is_none_or(|(closest, _)| gap < closest) {
-                    nearest = Some((gap, if other_point.x > point.x { -1.0 } else { 1.0 }));
-                }
-            }
-            let side = if let Some((_, away)) = nearest {
-                away
-            } else {
-                let outward = if point.x < body.center().x { -1.0 } else { 1.0 };
-                let room = if outward < 0.0 {
-                    point.x - body.min.x
-                } else {
-                    body.max.x - point.x
-                };
-                if room > reach * 1.1 {
-                    outward
-                } else {
-                    -outward
-                }
-            };
-            // Clear of the body, **lateral to its own stub**: a numeral written past the far end
-            // of the stub sits where the pipe arrives and its halo cuts the pipe in two, and one
-            // written towards the body lands inside it. This is the band between the two.
-            let clear = reach * 1.6;
-            Pt::new(side * clear, if below { reach * 0.9 } else { -reach * 0.9 })
-        }
-        None => {
-            // A flat component declares no body, so there is no edge to sit beside: the numeral
-            // goes **lateral** to the stub instead of past its end. A pipe arrives at the end
-            // of a stub, and a numeral written there has its halo cut through the pipe.
-            let (dx, dy) = centre.to(anchor);
-            let length = dx.hypot(dy);
-            let clear = reach * 1.6;
-            if length <= f32::EPSILON {
-                Pt::new(clear, 0.0)
-            } else {
-                let mut lateral = Pt::new(-dy / length * clear, dx / length * clear);
-                let beside = Pt::new(anchor.x + lateral.x, anchor.y + lateral.y);
-                if beside.x < rect.min.x || beside.x > rect.max.x {
-                    lateral = Pt::new(-lateral.x, -lateral.y);
-                }
-                lateral
-            }
-        }
+    let placed = if on_side {
+        side_numeral(&geometry)
+    } else if on_top_or_bottom {
+        top_bottom_numeral(&geometry, definition, port)
+    } else {
+        inside_numeral(&geometry)
     };
-    haloed_text(
-        surface,
-        Pt::new(anchor.x + offset.x, anchor.y + offset.y),
-        id,
-        NUMERAL,
-        ink.line,
-        ink.background,
-    );
+    haloed_text(surface, placed, id, NUMERAL, ink.line, ink.background);
 }
 
-/// Whether a port sits to the left or the right of the body, level with it.
+/// A side port joins the symbol through a horizontal stub; place the numeral on the
+/// clear side of the boundary, perpendicular to it.
+fn side_numeral(geometry: &NumeralGeometry) -> Pt {
+    let outside = if geometry.point.x < geometry.centre.x {
+        -1.0
+    } else {
+        1.0
+    };
+    let outside_room = if outside < 0.0 {
+        geometry.boundary.min.x - geometry.rect.min.x
+    } else {
+        geometry.rect.max.x - geometry.boundary.max.x
+    };
+    // The whole glyph has to fit outside: `gap` plus the cap. If it does not, the
+    // inside is the only clear space (the service-unit frame leaves 1.2 mm).
+    let direction = if outside_room + geometry.epsilon < geometry.gap + NUMERAL {
+        -outside
+    } else {
+        outside
+    };
+    let edge = if outside < 0.0 {
+        geometry.boundary.min.x
+    } else {
+        geometry.boundary.max.x
+    };
+    let (dx, dy) = geometry.centre.to(geometry.point);
+    let length = dx.hypot(dy);
+    let lateral = if length > f32::EPSILON {
+        Pt::new(-dy / length * geometry.clear, dx / length * geometry.clear)
+    } else {
+        Pt::new(geometry.clear, 0.0)
+    };
+    let mut at = Pt::new(
+        edge + direction * geometry.normal + lateral.x,
+        geometry.point.y + lateral.y,
+    );
+    if at.y - NUMERAL * 0.5 < geometry.rect.min.y || at.y + NUMERAL * 0.5 > geometry.rect.max.y {
+        at.y = geometry.point.y - lateral.y;
+    }
+    at
+}
+
+/// A top or bottom port is read beside its stub, on the side of the boundary that has
+/// room; the lateral shift stays off the neighbouring stubs.
+fn top_bottom_numeral(
+    geometry: &NumeralGeometry,
+    definition: &ComponentDefinition,
+    port: [f64; 2],
+) -> Pt {
+    let below = geometry.point.y >= geometry.centre.y;
+    let outward = if below { 1.0 } else { -1.0 };
+    let outside_room = if below {
+        geometry.rect.max.y - geometry.boundary.max.y
+    } else {
+        geometry.boundary.min.y - geometry.rect.min.y
+    };
+    let direction = if outside_room + geometry.epsilon < geometry.gap + NUMERAL {
+        -outward
+    } else {
+        outward
+    };
+    let edge = if below {
+        geometry.boundary.max.y
+    } else {
+        geometry.boundary.min.y
+    };
+    let anchor = stub_end(geometry.rect, geometry.boundary, port);
+    let mut nearest: Option<(f32, f32)> = None;
+    for other in &definition.port {
+        let other_point = at(geometry.rect, other.position[0], other.position[1]);
+        if (other_point.y >= geometry.centre.y) != below {
+            continue;
+        }
+        let distance = (other_point.x - geometry.point.x).abs();
+        if distance <= f32::EPSILON {
+            continue;
+        }
+        if nearest.is_none_or(|(closest, _)| distance < closest) {
+            nearest = Some((
+                distance,
+                if other_point.x > geometry.point.x {
+                    -1.0
+                } else {
+                    1.0
+                },
+            ));
+        }
+    }
+    let side = if let Some((_, away)) = nearest {
+        away
+    } else {
+        let outward = if geometry.point.x < geometry.boundary.center().x {
+            -1.0
+        } else {
+            1.0
+        };
+        let room = if outward < 0.0 {
+            geometry.point.x - geometry.boundary.min.x
+        } else {
+            geometry.boundary.max.x - geometry.point.x
+        };
+        if room > geometry.reach * 1.1 {
+            outward
+        } else {
+            -outward
+        }
+    };
+    Pt::new(
+        anchor.x + side * geometry.clear,
+        edge + direction * geometry.normal,
+    )
+}
+
+/// The port is already inside the boundary: keep the numeral lateral to the stub and off
+/// the line, flipping it when the box would clip it.
+fn inside_numeral(geometry: &NumeralGeometry) -> Pt {
+    let (dx, dy) = geometry.centre.to(geometry.point);
+    let length = dx.hypot(dy);
+    let lateral = if length <= f32::EPSILON {
+        Pt::new(geometry.clear, 0.0)
+    } else {
+        let mut lateral = Pt::new(-dy / length * geometry.clear, dx / length * geometry.clear);
+        let beside = Pt::new(geometry.point.x + lateral.x, geometry.point.y + lateral.y);
+        if beside.x < geometry.rect.min.x || beside.x > geometry.rect.max.x {
+            lateral = Pt::new(-lateral.x, -lateral.y);
+        }
+        if beside.y < geometry.rect.min.y || beside.y > geometry.rect.max.y {
+            lateral.y = -lateral.y;
+        }
+        lateral
+    };
+    Pt::new(geometry.point.x + lateral.x, geometry.point.y + lateral.y)
+}
+
+/// The outer boundary a port numeral is placed against.
 ///
-/// Those are the ports that join a horizontal stub; the top and the bottom ones join a
-/// vertical stub and are read next to the body's edge.
-fn is_side_port(body: Rect, point: Pt) -> bool {
-    let level = (body.min.y..=body.max.y).contains(&point.y);
-    let outside = point.x < body.min.x || point.x > body.max.x;
-    level && outside
+/// The declared envelope is the symbol's functional edge, the body is the renderer's box
+/// for a valve, and the whole 20 mm box is the fallback for a flat symbol with neither.
+fn outer_boundary(rect: Rect, definition: &ComponentDefinition, body: Option<Rect>) -> Rect {
+    definition
+        .envelope
+        .map(|[x1, y1, x2, y2]| Rect::from_corners(at(rect, x1, y1), at(rect, x2, y2)))
+        .or(body)
+        .unwrap_or(rect)
 }
 
 fn axis(body: Rect, side: Side) -> (Pt, Pt) {
@@ -1925,6 +2021,218 @@ mod tests {
             }
         }
         points
+    }
+
+    /// A numeral a recording drew, as its identifier, anchor and cap height.
+    ///
+    /// The halo is the same text in a larger size; the glyph is the run at [`NUMERAL`],
+    /// which is the one the reader sees and the only one the clearance rule is about.
+    fn numerals(calls: &[crate::surface::Call]) -> Vec<(String, Pt, f32)> {
+        calls
+            .iter()
+            .filter_map(|call| {
+                let crate::surface::Call::Text { at, text, size, .. } = call else {
+                    return None;
+                };
+                ((*size - NUMERAL).abs() < 1.0e-3).then(|| (text.clone(), *at, *size))
+            })
+            .collect()
+    }
+
+    /// The box a numeral occupies, from its anchor and cap height.
+    ///
+    /// `Surface::text` returns no extents and `Call::Text` stores only the anchor and the
+    /// cap. A digit is narrower than it is tall, so one cap each way is conservative: a
+    /// box this size that stays clear is a glyph that stays clear.
+    fn numeral_box(at: Pt, cap: f32) -> Rect {
+        Rect::from_center_size(at, cap, cap)
+    }
+
+    /// `true` when a segment touches a rectangle (Liang–Barsky clip, edges included).
+    fn segment_hits_rect(a: Pt, b: Pt, rect: Rect) -> bool {
+        let (dx, dy) = (b.x - a.x, b.y - a.y);
+        let p = [-dx, dx, -dy, dy];
+        let q = [
+            a.x - rect.min.x,
+            rect.max.x - a.x,
+            a.y - rect.min.y,
+            rect.max.y - a.y,
+        ];
+        let mut enter = 0.0_f32;
+        let mut leave = 1.0_f32;
+        for index in 0..4 {
+            if p[index].abs() < 1.0e-9 {
+                if q[index] < 0.0 {
+                    return false;
+                }
+                continue;
+            }
+            let ratio = q[index] / p[index];
+            if p[index] < 0.0 {
+                if ratio > leave {
+                    return false;
+                }
+                enter = enter.max(ratio);
+            } else {
+                if ratio < enter {
+                    return false;
+                }
+                leave = leave.min(ratio);
+            }
+        }
+        true
+    }
+
+    /// `true` when a circle touches a rectangle.
+    fn circle_hits_rect(centre: Pt, radius: f32, rect: Rect) -> bool {
+        let nearest = Pt::new(
+            centre.x.clamp(rect.min.x, rect.max.x),
+            centre.y.clamp(rect.min.y, rect.max.y),
+        );
+        centre.to(nearest).0.hypot(centre.to(nearest).1) <= radius
+    }
+
+    type DrawnStrokes = (Vec<(Pt, Pt)>, Vec<(Pt, f32)>);
+
+    /// Segments and circles a base symbol draws, in millimetres of its box.
+    fn drawn_strokes(rect: Rect, definition: &ComponentDefinition) -> DrawnStrokes {
+        let mut strokes = Vec::new();
+        let mut circles = Vec::new();
+        for primitive in &definition.symbol {
+            let points: Vec<Pt> = primitive
+                .points
+                .chunks_exact(2)
+                .map(|pair| at(rect, pair[0], pair[1]))
+                .collect();
+            match primitive.kind {
+                PrimitiveKind::Line | PrimitiveKind::Polyline => {
+                    strokes.extend(points.windows(2).map(|pair| (pair[0], pair[1])));
+                }
+                PrimitiveKind::Polygon => {
+                    strokes.extend(points.windows(2).map(|pair| (pair[0], pair[1])));
+                    if let (Some(first), Some(last)) = (points.first(), points.last()) {
+                        strokes.push((*last, *first));
+                    }
+                }
+                PrimitiveKind::Rect => {
+                    if let Some(rect) = rect_from(rect, &primitive.points) {
+                        let corners = [
+                            Pt::new(rect.min.x, rect.min.y),
+                            Pt::new(rect.max.x, rect.min.y),
+                            Pt::new(rect.max.x, rect.max.y),
+                            Pt::new(rect.min.x, rect.max.y),
+                        ];
+                        for index in 0..4 {
+                            strokes.push((corners[index], corners[(index + 1) % 4]));
+                        }
+                    }
+                }
+                PrimitiveKind::Circle => {
+                    if let [cx, cy, radius] = primitive.points.as_slice() {
+                        #[allow(clippy::cast_possible_truncation)]
+                        let centre = at(rect, *cx, *cy);
+                        #[allow(clippy::cast_possible_truncation)]
+                        let radius = *radius as f32 * rect.width().min(rect.height());
+                        circles.push((centre, radius));
+                    }
+                }
+                PrimitiveKind::Arc => {
+                    // No built-in envelope carrier uses an arc. Keep the helper total by
+                    // walking the arc as short chords instead of ignoring it.
+                    if primitive.points.len() >= 5 {
+                        #[allow(clippy::cast_possible_truncation)]
+                        let centre = at(rect, primitive.points[0], primitive.points[1]);
+                        #[allow(clippy::cast_possible_truncation)]
+                        let radius = primitive.points[2] as f32 * rect.width().min(rect.height());
+                        #[allow(clippy::cast_possible_truncation)]
+                        let start = primitive.points[3] as f32;
+                        #[allow(clippy::cast_possible_truncation)]
+                        let end = primitive.points[4] as f32;
+                        let steps = 24;
+                        let mut previous = None;
+                        for step in 0..=steps {
+                            #[allow(clippy::cast_precision_loss)]
+                            let angle =
+                                (start + (end - start) * step as f32 / steps as f32).to_radians();
+                            let point = Pt::new(
+                                centre.x + radius * angle.cos(),
+                                centre.y + radius * angle.sin(),
+                            );
+                            if let Some(from) = previous {
+                                strokes.push((from, point));
+                            }
+                            previous = Some(point);
+                        }
+                    }
+                }
+            }
+        }
+        (strokes, circles)
+    }
+
+    /// Edges of a rectangle as segments, so a boundary can be checked like a drawn line.
+    fn rect_edges(rect: Rect) -> Vec<(Pt, Pt)> {
+        let corners = [
+            Pt::new(rect.min.x, rect.min.y),
+            Pt::new(rect.max.x, rect.min.y),
+            Pt::new(rect.max.x, rect.max.y),
+            Pt::new(rect.min.x, rect.max.y),
+        ];
+        (0..4)
+            .map(|index| (corners[index], corners[(index + 1) % 4]))
+            .collect()
+    }
+
+    #[test]
+    fn the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog
+            .get("preparation.service_unit")
+            .expect("the built-in service unit exists")
+            .clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut recording = Recording::default();
+        draw_component(&mut recording, rect, &definition, 0, 0.0, &Ink::print());
+
+        let numerals = numerals(recording.calls());
+        assert_eq!(numerals.len(), 2, "the two ports carry one numeral each");
+
+        let boundary = outer_boundary(rect, &definition, None);
+        let gap = (rect.height() * 0.06).max(1.0);
+        let (strokes, circles) = drawn_strokes(rect, &definition);
+        for (id, anchor, cap) in &numerals {
+            let glyph = numeral_box(*anchor, *cap);
+            assert!(
+                boundary.expand(-1.0e-3).contains(glyph.min)
+                    && boundary.expand(-1.0e-3).contains(glyph.max),
+                "numeral {id} leaves the envelope {boundary:?}: {glyph:?}"
+            );
+            // The glyph keeps the same gap from the frame the placement asked for: the
+            // frame is the dashed line the numeral used to sit on.
+            let near = glyph.expand(gap - 1.0e-3);
+            for (from, to) in rect_edges(boundary) {
+                assert!(
+                    !segment_hits_rect(from, to, near),
+                    "numeral {id} is not clear of the frame edge {from:?}–{to:?}: {near:?}"
+                );
+            }
+            assert!(
+                rect.contains(glyph.min) && rect.contains(glyph.max),
+                "numeral {id} leaves the 20 mm box: {glyph:?}"
+            );
+            for (from, to) in &strokes {
+                assert!(
+                    !segment_hits_rect(*from, *to, glyph),
+                    "numeral {id} touches a primitive {from:?}–{to:?}: {glyph:?}"
+                );
+            }
+            for (centre, radius) in &circles {
+                assert!(
+                    !circle_hits_rect(*centre, *radius, glyph),
+                    "numeral {id} touches the dial at {centre:?} r {radius}: {glyph:?}"
+                );
+            }
+        }
     }
 
     #[test]
