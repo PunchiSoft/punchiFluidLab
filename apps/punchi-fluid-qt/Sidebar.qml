@@ -20,6 +20,9 @@ Item {
     /// `true` per category key while the group is open; missing means open.
     property var expanded: ({})
     property string searchText: ""
+    /// The catalog entry the context menu will add, and how it is called.
+    property int contextIndex: -1
+    property string contextName: ""
     /// Entries that match the current search; the footer and the empty state read it.
     readonly property int matchCount: {
         const text = sidebar.searchText;
@@ -112,6 +115,41 @@ Item {
             map[key] = session.viewSetting("catalog/group-" + key, true);
         }
         expanded = map;
+    }
+
+    /// The context menu of a tile. One instance for the palette: the tile names the entry,
+    /// the menu adds it, and the same command is reachable from the pointer and the keyboard.
+    Menu {
+        id: paletteMenu
+        objectName: "paletteMenu"
+        // Adding to the sheet is an edit, so the menu is only offered while editing.
+        enabled: session.editing
+
+        function addToSheet() {
+            if (sidebar.contextIndex < 0) {
+                return;
+            }
+            sidebar.place(sidebar.contextIndex);
+            close();
+        }
+
+        MenuItem {
+            objectName: "paletteAddToSheet"
+            text: qsTr("Añadir a la hoja")
+            Accessible.name: qsTr("Añadir %1 a la hoja").arg(sidebar.contextName)
+            enabled: paletteMenu.enabled
+            onTriggered: paletteMenu.addToSheet()
+        }
+    }
+
+    /// Opens the menu for one entry at a point of the sidebar.
+    function openContextMenu(index, name, at) {
+        if (!session.editing) {
+            return;
+        }
+        contextIndex = index;
+        contextName = name;
+        paletteMenu.popup(at);
     }
 
     Shortcut {
@@ -363,14 +401,18 @@ Item {
                                         preventStealing: true
 
                                         property bool dragging: false
+                                        // The right button belongs to the menu, so it has to
+                                        // reach this area without starting a carry.
+                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                                        onClicked: {
-                                            tile.forceActiveFocus();
-                                            sidebar.selectedIndex = modelData.index;
-                                            sidebar.selectedName = modelData.name;
-                                        }
+                                        onClicked: if (mouse.button === Qt.LeftButton) {
+                                                       tile.forceActiveFocus();
+                                                       sidebar.selectedIndex = modelData.index;
+                                                       sidebar.selectedName = modelData.name;
+                                                   }
 
-                                        onPressed: if (session.editing) {
+                                        onPressed: if (session.editing
+                                                       && mouse.button === Qt.LeftButton) {
                                                        dragging = true;
                                                        tile.forceActiveFocus();
                                                        window.dragCatalog = modelData.index;
@@ -382,6 +424,13 @@ Item {
                                                                    mapToItem(null, mouse.x, mouse.y);
                                                            }
                                         onReleased: {
+                                            if (mouse.button === Qt.RightButton) {
+                                                tile.forceActiveFocus();
+                                                sidebar.openContextMenu(
+                                                    modelData.index, modelData.name,
+                                                    mapToItem(sidebar, mouse.x, mouse.y));
+                                                return;
+                                            }
                                             if (!dragging) {
                                                 return;
                                             }
@@ -395,6 +444,21 @@ Item {
                                         onCanceled: {
                                             dragging = false;
                                             window.dragCatalog = -1;
+                                        }
+
+                                        // The keyboard path to the same menu: Shift+F10 or the
+                                        // Menu key on the focused tile.
+                                        Keys.onPressed: function (event) {
+                                            const menuKey = event.key === Qt.Key_Menu
+                                                || (event.key === Qt.Key_F10
+                                                    && event.modifiers & Qt.ShiftModifier);
+                                            if (!menuKey) {
+                                                return;
+                                            }
+                                            sidebar.openContextMenu(
+                                                modelData.index, modelData.name,
+                                                mapToItem(sidebar, width / 2, height / 2));
+                                            event.accepted = true;
                                         }
                                     }
                                 }

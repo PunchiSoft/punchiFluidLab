@@ -1956,6 +1956,40 @@ int main(int argc, char *argv[])
             }
         });
 
+        // The same tile has a context menu: the right button adds the entry to the sheet
+        // without carrying it, and the command is one undo.
+        steps->push_back([state, check, send] {
+            state->components = pf_session_component_count(state->session->handle());
+            send(QEvent::MouseButtonPress, state->paletteScene, Qt::RightButton,
+                 Qt::RightButton);
+            send(QEvent::MouseButtonRelease, state->paletteScene, Qt::RightButton,
+                 Qt::NoButton);
+            QObject *menu = state->window->findChild<QObject *>(QStringLiteral("paletteMenu"));
+            check(menu != nullptr && menu->property("opened").toBool(),
+                  QStringLiteral("palette: the right button opens the menu"));
+            check(state->window->property("dragCatalog").toInt() == -1,
+                  QStringLiteral("palette: the right button does not start a carry"));
+        });
+        steps->push_back([state, check] {
+            QObject *menu = state->window->findChild<QObject *>(QStringLiteral("paletteMenu"));
+            if (menu == nullptr) {
+                return;
+            }
+            const bool invoked = QMetaObject::invokeMethod(menu, "addToSheet");
+            check(invoked, QStringLiteral("palette: the menu command runs"));
+            const uint32_t now = pf_session_component_count(state->session->handle());
+            check(now == state->components + 1,
+                  QStringLiteral("palette: the context menu adds the entry to the sheet"));
+            QObject *item = state->window->findChild<QObject *>(
+                QStringLiteral("paletteAddToSheet"));
+            check(item != nullptr, QStringLiteral("palette: the menu names its command"));
+            check(pf_session_can_undo(state->session->handle()) == 1,
+                  QStringLiteral("palette: adding from the menu is one undo"));
+            state->session->undo();
+            check(pf_session_component_count(state->session->handle()) == state->components,
+                  QStringLiteral("palette: one undo removes what the menu added"));
+        });
+
         // Unsaved work is known, marked in the title and copied for safety. A crash costs
         // the work since the last copy, and a close asks before losing the rest. The sheet
         // has been edited by the steps above, so the baseline is a save, not an assumption.

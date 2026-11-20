@@ -100,8 +100,11 @@ not start until the current pull request is merged.
    (44 × 20 mm for a cylinder) on any paper, the templates' 1.2 : 1 and 1.5 : 1 boxes fixed,
    the rule written in [symbology.md](symbology.md) with its capture, and a test that rejects a
    stretched box.
-4. **Palette context menu** — right-click and `Shift+F10` on a tile, **Añadir a la hoja** at
-   the sheet centre, one undo, and the right button must not start a drag.
+4. **Palette context menu** — delivered on `feat/palette-context-menu`: right-click and
+   `Shift+F10` on a tile, **Añadir a la hoja** at the sheet centre, one undo, and the right
+   button never starts a drag. Evidence: the `--selftest` steps from
+   `palette: the right button opens the menu` to
+   `palette: one undo removes what the menu added`.
 5. **Inicio's visual hierarchy** — two planes, grouped cards, a primary action, rail rows with
    icons and a visible active state, recents as one card, and the hand cursor over the cards.
 6. **Dropping an imprecise gesture** — a release outside the sheet places at the nearest valid

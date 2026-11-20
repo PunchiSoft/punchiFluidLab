@@ -271,6 +271,10 @@ The panel that lists the reasons for each skipped file is still target.
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.
 - **Dragging a tile owns the pointer until the release.** The palette sits in a scroll area, and a scroll area that takes the gesture past its threshold cancels the carry: the preview disappears halfway when the hand drifts diagonally. The tile prevents that steal, so the gesture survives any path over the panel, the docks and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. Releasing outside the sheet still cancels, and the two-step and tolerance work is recorded as the next slice in [capabilities.md](capabilities.md).
+- **Right-click or `Shift+F10` on a tile opens its menu**, with **Añadir a la hoja**: the entry is
+  placed at the centre of the sheet through the same path as the search, as one undo. The menu
+  is offered while editing, names the entry it will add for assistive technology, and the right
+  button never starts a carry.
 - **Drag from the sidebar to the sheet** creates a component, snapped to the grid step (5 mm by default).
   The component being carried is drawn with its own symbol while it moves, so the drop
   is not a leap of faith. A component dropped before the first frame is kept: the

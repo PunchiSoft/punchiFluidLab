@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Menú contextual en la paleta — 2026-11-19
+
+- **Clic derecho** sobre una ficha del catálogo abre un menú con **Añadir a la hoja**, que
+  coloca el componente en el centro de la hoja con una sola entrada de deshacer.
+- El mismo menú se abre con **`Mayús+F10`** o la tecla Menú sobre la ficha enfocada, y el
+  elemento anuncia qué componente va a añadir a la tecnología de asistencia.
+- El **botón derecho ya no inicia un arrastre**: el arrastre queda para el izquierdo y el menú
+  solo se ofrece en modo edición.
+- **Evidencia**: los pasos `--selftest` desde `palette: the right button opens the menu` hasta
+  `palette: one undo removes what the menu added`, con 0 fallos.
+
 ### Un símbolo mide 20 mm, y su caja es cuadrada — 2026-11-19
 
 - La simbología sobre la hoja tiene un tamaño canónico: **20 mm de lado** para todo componente
