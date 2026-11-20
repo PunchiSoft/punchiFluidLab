@@ -77,6 +77,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 | P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
+| P-022 | The branch of a tee bends instead of staying straight | `in progress` | `fix/tee-gauge-route`: a junction port takes its edge from the component or pipe it faces, the check passes the same hint, and the selftest tee probe and the captures prove the straight branch |
 
 ## A node, filled
 
@@ -144,6 +145,56 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   the `--selftest` zone steps pass, the A3/A4 captures and 300 dpi exports show the corrected
   grid, and the owner confirms the diff.
 - **State**: `in progress` on `fix/reference-zone-axes`; `done` after the owner merges.
+
+### P-022 — The branch of a tee bends instead of staying straight
+
+- **Problem**: a gauge above a tee connected with a horizontal stub and then a vertical one:
+  the dot sat at the meeting point but the T was bent. Every junction port is at the centre,
+  so `port_edge`'s first minimum was `Left` for all three and the branch left horizontally.
+- **Evidence**: the owner's vertical case reported on 2026-11-20; before the fix the branch
+  routed down, sideways and down again. After the fix the selftest prints
+  `tee probe branch=2 left=0 right=1 old=-1`; `p022-gauge-on-tee-{light,dark}.png` and the
+  300 dpi page show the straight stub; the five tests named below pin the edge, the branch,
+  the two halves, an ordinary port and the check/draw parity.
+- **Touches**: `crates/punchi-fluid-draw/src/placed/edge.rs` (`EDGE_TIE_MM`,
+  `port_edge_towards`, `turned_edge`; split from `placed.rs` to stay under the 800-line
+  architecture budget), `crates/punchi-fluid-draw/src/placed.rs` (the re-export and
+  `draw_pipe`), `crates/punchi-fluid-draw/src/placed_routing_tests.rs`,
+  `crates/punchi-fluid-check/src/lib.rs` (`pipe_ends`) and its `tests.rs`,
+  `crates/punchi-fluid-ffi/src/lib.rs` (`pipe_route`),
+  `apps/punchi-fluid-qt/src/main.cpp` (the selftest fixture and the `pipe_at` probes), the
+  ADR, capabilities, UI, work-tree, next-steps and changelog entries.
+- **Options**:
+  1. Keep the bend and document it. **Pro**: no code. **Con**: the owner's example is a valid
+     T, and a bent stub is a drawing error, not a style.
+  2. Give each junction port an explicit edge in the catalog. **Pro**: one place names the
+     intent. **Con**: a schema and catalog change for one ambiguous case, and a tee on a
+     vertical line or a gauge below would still be wrong.
+  3. Resolve the tie from the other endpoint. **Pro**: no schema change; an ordinary port and
+     a corner keep exactly the `port_edge` result, and the check can pass the same hint.
+     **Con**: the gesture helpers keep the bare edge (recorded below).
+  4. Add a direct-path fast path at the top of `route_between_boxes_avoiding`. **Con**: it
+     touches every pipe in the project, and the first review could not demonstrate the
+     detour it was meant to remove.
+- **Decision**: option 3, on 2026-11-20. `port_edge_towards` applies the hint only when all
+  four nearest-edge distances tie within `EDGE_TIE_MM` (the exact-centre junction); otherwise
+  it returns the `port_edge` result, including its first-minimum corner order. A missing or
+  coincident hint falls back to the port id in the placement's local frame. `draw_pipe`,
+  `pipe_route` and `pipe_ends` pass the hint; `pipe_is_elbow`, `magnet_centre` and
+  `straighten_pipe` keep the bare edge on purpose, so the drag/straighten refusal is
+  unchanged and is a future node. No document, catalog, solver or format change, and no new
+  ADR: this restores the intended T.
+- **Stages**: one branch, `fix/tee-gauge-route` — (1) `port_edge_towards` and its unit tests
+  with no call-site change; (2) the three call sites, the route/parity fixture and the
+  crossing assertion; (3) the selftest fixture, the documents and the captures, then the gate.
+- **Done when**: `port_edge_towards_resolves_the_centre_from_the_hint`,
+  `an_ordinary_port_keeps_its_edge`, `a_gauge_above_a_tee_gets_a_straight_vertical_stub`,
+  `the_two_halves_of_a_spliced_pipe_stay_straight` and
+  `the_check_route_matches_the_drawn_route_on_a_tee` are green with the existing junction and
+  splice tests; `--selftest` exits 0 with `branch=2 left=0 right=1 old=-1`; `--check-layout`,
+  `--check-qml`, `--check-theme` and `--check-icons` pass; `./scripts-dev/check.sh` is green;
+  the light/dark and 300 dpi captures show the straight branch; the owner confirms the diff.
+- **State**: `in progress` on `fix/tee-gauge-route`; `done` after the owner merges.
 
 ### P-011 — Example: the window title shows an empty document name
 

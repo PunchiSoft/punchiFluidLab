@@ -54,7 +54,7 @@ use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
 use punchi_fluid_draw::placed::{
-    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_point,
+    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_edge_towards, port_point,
     route_between_boxes_avoiding,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
@@ -7803,6 +7803,12 @@ fn hose_pressure(network: Option<&Network>, component: Option<usize>, id: &str) 
 /// A pipe whose components or ports cannot be found is not drawable and has no geometry:
 /// the caller skips it rather than drawing a line to nowhere.
 /// `true` when the two ports leave on perpendicular edges, so the route has one bend.
+///
+/// This keeps the bare [`port_edge`] on purpose. A junction's ports sit at the centre,
+/// so the tie still reads `Left` and a tee branch is classified as a perpendicular pair
+/// here even though [`port_edge_towards`] draws it straight. The drag and straighten
+/// gestures therefore keep their current refusal (P-022); changing them is a future
+/// node, not part of the routing fix.
 fn pipe_is_elbow(document: &Document, catalog: &Catalog, index: usize) -> bool {
     let Some(connection) = document.connections().get(index) else {
         return false;
@@ -7846,10 +7852,22 @@ fn pipe_route(document: &Document, catalog: &Catalog, index: usize) -> Option<Ve
     let boxes: Vec<Rect> = document.placements().iter().map(Placement::rect).collect();
     Some(route_between_boxes_avoiding(
         start,
-        port_edge(from_definition, &connection.from.port),
+        port_edge_towards(
+            from.rect(),
+            from.orientation,
+            from_definition,
+            &connection.from.port,
+            Some(end),
+        ),
         from.rect(),
         end,
-        port_edge(to_definition, &connection.to.port),
+        port_edge_towards(
+            to.rect(),
+            to.orientation,
+            to_definition,
+            &connection.to.port,
+            Some(start),
+        ),
         to.rect(),
         &boxes,
         [from_index, to_index],

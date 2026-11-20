@@ -13,6 +13,10 @@ use punchi_fluid_catalog::{Catalog, ComponentDefinition, PortRole};
 use crate::orient::{Orientation, Turned};
 use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
 
+mod edge;
+
+pub use edge::{EDGE_TIE_MM, port_edge_towards};
+
 /// One end of a pipe: a component of the sheet and one of its ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PipeEnd<'a> {
@@ -335,10 +339,22 @@ fn draw_pipe(
 
     let points = route_between_boxes_avoiding(
         start,
-        port_edge(from_definition, pipe.from.port),
+        port_edge_towards(
+            from.rect,
+            from.orientation,
+            from_definition,
+            pipe.from.port,
+            Some(end),
+        ),
         from.rect,
         end,
-        port_edge(to_definition, pipe.to.port),
+        port_edge_towards(
+            to.rect,
+            to.orientation,
+            to_definition,
+            pipe.to.port,
+            Some(start),
+        ),
         to.rect,
         boxes,
         [pipe.from.placement, pipe.to.placement],

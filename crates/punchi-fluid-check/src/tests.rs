@@ -5,7 +5,9 @@
 
 use super::*;
 use punchi_fluid_doc::{Endpoint, Placement};
-use punchi_fluid_draw::Orientation;
+use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed};
+use punchi_fluid_draw::symbol::Ink;
+use punchi_fluid_draw::{Call, Orientation, Recording, draw_placed};
 
 fn catalog() -> Catalog {
     Catalog::builtin()
@@ -319,4 +321,133 @@ fn the_same_document_always_reports_the_same_list() {
     let second = check(&document, &catalog(), sheet(), 0);
     assert_eq!(first, second);
     assert!(first.len() >= 2);
+}
+
+fn place_sized(document: &mut Document, id: &str, x: f32, y: f32, width: f32, height: f32) -> u64 {
+    let index = document.place(Placement::new(id, Pt::new(x, y), width, height));
+    document.placements()[index].id()
+}
+
+/// The owner's fixture: a straight restrictor line with a pressure gauge above its
+/// middle and a T junction where the gauge meets it.
+fn gauge_on_tee() -> (Document, u64, u64, u64) {
+    let mut document = Document::new();
+    let left = place_sized(&mut document, "throttle.fixed", 80.0, 80.0, 20.0, 20.0);
+    let right = place_sized(&mut document, "throttle.fixed", 120.0, 80.0, 20.0, 20.0);
+    let gauge = place_sized(&mut document, "gauge.pressure", 100.0, 55.0, 22.0, 22.0);
+    join(&mut document, (left, "2"), (right, "1"));
+    let spliced = document.splice(
+        0,
+        Placement::new("junction.tee", Pt::new(100.0, 80.0), 8.0, 8.0),
+        Endpoint::new(gauge, "1"),
+    );
+    assert!(spliced, "the fixture splice is accepted");
+    (document, left, right, gauge)
+}
+
+#[test]
+fn the_two_halves_of_a_spliced_pipe_stay_straight() {
+    // The splice reconnects the old ends to ports 1 and 2. Their new edge is the side
+    // they face, and the old line ran horizontally: a bend here would mean the hint was
+    // taken from the wrong end.
+    let (document, _, _, _) = gauge_on_tee();
+    let catalog = catalog();
+    for index in [0, 1] {
+        let path = pipe_path(&document, &catalog, index).expect("a half of the spliced line");
+        assert_eq!(path.len(), 2, "pipe {index} has a bend: {path:?}");
+        for pair in path.windows(2) {
+            assert!(
+                (pair[0].y - pair[1].y).abs() < 1e-4,
+                "pipe {index} leaves its row: {path:?}"
+            );
+        }
+        assert!(
+            path.iter().all(|point| (point.y - 80.0).abs() < 1e-4),
+            "pipe {index} is the old line: {path:?}"
+        );
+    }
+}
+
+#[test]
+fn the_check_route_matches_the_drawn_route_on_a_tee() {
+    // The drawing and the inspection must call the same route with the same boxes and
+    // the same edge hint. One Document, both consumers, one polyline per pipe.
+    let (document, _, _, _) = gauge_on_tee();
+    let catalog = catalog();
+    let placed: Vec<Placed<'_>> = document
+        .placements()
+        .iter()
+        .enumerate()
+        .map(|(index, placement)| Placed {
+            index,
+            catalog_id: placement.catalog_id.as_str(),
+            rect: placement.rect(),
+            extension: 0.0,
+            valve_position: 0,
+            reading: None,
+            series: None,
+            contact_closed: None,
+            orientation: placement.orientation,
+            designation: placement.designation.as_deref(),
+        })
+        .collect();
+    let pipes: Vec<Pipe<'_>> = document
+        .connections()
+        .iter()
+        .filter_map(|connection| {
+            let from = document.index_of(connection.from.placement)?;
+            let to = document.index_of(connection.to.placement)?;
+            Some(Pipe {
+                from: PipeEnd {
+                    placement: from,
+                    port: connection.from.port.as_str(),
+                },
+                to: PipeEnd {
+                    placement: to,
+                    port: connection.to.port.as_str(),
+                },
+                offset_mm: connection.offset_mm(),
+                pressure_ratio: 0.0,
+                class: connection.class(),
+            })
+        })
+        .collect();
+    let mut recording = Recording::default();
+    draw_placed(
+        &mut recording,
+        &placed,
+        &pipes,
+        &catalog,
+        &Ink::print(),
+        &[],
+    );
+    let drawn: Vec<&[Pt]> = recording
+        .calls()
+        .iter()
+        .filter_map(|call| match call {
+            Call::Line { points, .. } => Some(points.as_slice()),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        drawn.len() >= pipes.len(),
+        "every pipe draws one line: {drawn:?}"
+    );
+    for (index, line) in drawn.iter().take(pipes.len()).enumerate() {
+        let expected = pipe_path(&document, &catalog, index).expect("the check has the route");
+        assert_eq!(
+            *line,
+            expected.as_slice(),
+            "pipe {index} differs between the sheet and the check"
+        );
+    }
+
+    let findings = check(&document, &catalog, sheet(), 0);
+    assert!(
+        !findings.iter().any(|finding| matches!(
+            finding.kind,
+            FindingKind::PipeThroughComponent | FindingKind::OverlappingPipes
+        )),
+        "the tee has no crossing to report: {findings:?}"
+    );
 }

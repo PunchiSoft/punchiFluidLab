@@ -2199,6 +2199,73 @@ int main(int argc, char *argv[])
                   QStringLiteral("T junction: one undo undoes the whole junction"));
         });
 
+        // The owner's T, built from an empty sheet so the coordinates and the pipe
+        // indices are fixed here rather than found by sweeping the worked example:
+        //   component 0: throttle.fixed at (80, 80), box 20x20, port 2 at (90, 80)
+        //   component 1: throttle.fixed at (120, 80), port 1 at (110, 80)
+        //   component 2: gauge.pressure at (100, 55), box 22x22, port 1 at (100, 66)
+        //   pipe 0: throttle 2 -> throttle 1, the straight horizontal line at y = 80
+        //   pipe 0 is spliced at (100, 80); component 3 is the junction, box 8x8, and
+        //   the gauge joins its port 3. The branch is pipe 2.
+        steps->push_back([state, check, session] {
+            state->session->newDocument();
+            const auto catalogIndex = [session](const QString &id) {
+                for (const QVariant &entry : session->catalog()) {
+                    const QVariantMap row = entry.toMap();
+                    if (row.value(QStringLiteral("id")).toString() == id) {
+                        return row.value(QStringLiteral("index")).toInt();
+                    }
+                }
+                return -1;
+            };
+            const int throttle = catalogIndex(QStringLiteral("throttle.fixed"));
+            const int gauge = catalogIndex(QStringLiteral("gauge.pressure"));
+            check(throttle >= 0 && gauge >= 0,
+                  QStringLiteral("tee stub: the catalog has the gauge and a restrictor"));
+            if (throttle < 0 || gauge < 0) {
+                return;
+            }
+            const int left = state->session->placeComponent(throttle, 80.0, 80.0);
+            const int right = state->session->placeComponent(throttle, 120.0, 80.0);
+            const int meter = state->session->placeComponent(gauge, 100.0, 55.0);
+            check(left == 0 && right == 1 && meter == 2,
+                  QStringLiteral("tee stub: the pieces take the fixed indices"));
+            check(state->session->connectPorts(left, QStringLiteral("2"), right,
+                                               QStringLiteral("1")),
+                  QStringLiteral("tee stub: the horizontal line is one straight pipe"));
+            check(state->session->splicePipeAt(0, 100.0, 80.0, meter, QStringLiteral("1")),
+                  QStringLiteral("tee stub: the gauge lands on the line as a T"));
+            check(pf_session_connection_count(state->session->handle()) == 3
+                      && pf_session_component_count(state->session->handle()) == 4,
+                  QStringLiteral("tee stub: two halves, the branch and the junction"));
+        });
+        steps->push_back([state, check] {
+            // pf_session_pipe_at is the hit test the pointer uses, so the probe reads
+            // exactly the route the sheet draws. 0.5 mm is the ABI's minimum reach.
+            const int branch =
+                pf_session_pipe_at(state->session->handle(), 100.0F, 73.0F, 0.5F);
+            const int left = pf_session_pipe_at(state->session->handle(), 95.0F, 80.0F, 0.5F);
+            const int right =
+                pf_session_pipe_at(state->session->handle(), 105.0F, 80.0F, 0.5F);
+            // The old route went from the gauge down to y = 68 and left to x = 94 before
+            // turning down to the junction. A point on that horizontal lead must miss the
+            // branch now; the probe that used to return it is the regression.
+            const int old =
+                pf_session_pipe_at(state->session->handle(), 95.0F, 68.0F, 0.5F);
+            std::fprintf(stderr,
+                         "selftest: tee probe branch=%d left=%d right=%d old=%d\n", branch,
+                         left, right, old);
+            check(branch == 2,
+                  QStringLiteral("tee stub: the vertical branch is pipe 2"));
+            check(left == 0 && right == 1,
+                  QStringLiteral("tee stub: the two halves are pipes 0 and 1"));
+            check(old < 0,
+                  QStringLiteral("tee stub: the old horizontal lead is no longer a pipe"));
+            state->session->newDocument();
+            check(state->session->loadExample(),
+                  QStringLiteral("tee stub: the worked example is restored"));
+        });
+
         // Dragging out of the palette, which is how a circuit is actually drawn. The drop is
         // driven through the sidebar's own mouse area, so the mapping from the palette to the
         // sheet is the one the user gets.

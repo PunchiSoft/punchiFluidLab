@@ -267,6 +267,9 @@ The panel that lists the reasons for each skipped file is still target.
   over one), drag, release on another port. The pipe being drawn is a dashed line in the
   accent colour, so the gesture is never invisible; a release that does not land on a port
   cancels it. Pipes are routed as an orthogonal run with one jog, drawn in the line ink.
+- **A junction is the one place where the edge is ambiguous**: its ports share the centre,
+  so the route takes the edge from the component or pipe the hose faces — a gauge above a
+  tee leaves through its bottom port in a straight vertical stub instead of a jog.
 - A connection is refused, never silently dropped, when it would join a port to itself,
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.

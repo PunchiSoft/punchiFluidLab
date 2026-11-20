@@ -6,6 +6,27 @@ publicación.
 
 ## Unreleased
 
+### Corrección: el ramal de una T — 2026-11-20
+
+- **El ramal de una T sale recto**: los tres puertos de `junction.tee` están en el centro, así
+  que `port_edge` empataba en las cuatro distancias y devolvía `Left`; un manómetro por encima
+  recibía un codo. `port_edge_towards` (`placed/edge.rs`) resuelve el empate **solo** cuando
+  las cuatro distancias coinciden dentro de `EDGE_TIE_MM` y toma el lado que mira al otro
+  extremo; un puerto ordinario y una esquina conservan exactamente el resultado anterior.
+- **El dibujo y la comprobación comparten el borde**: `draw_pipe`, `pipe_route` y `pipe_ends`
+  pasan la pista, así que la inspección mide la misma ruta que la hoja y no inventa un cruce.
+  Las dos mitades del tubo partido siguen rectas y el punto de la unión no cambia; el nodo y
+  el símbolo son los mismos.
+- **`pipe_is_elbow`, `magnet_centre` y `straighten_pipe` conservan el borde sin pista** a
+  propósito: el gesto de arrastrar y enderezar mantiene su negativa actual para un ramal de T,
+  y cambiarlo es otro nodo.
+- **Evidencia**: las pruebas `port_edge_towards_resolves_the_centre_from_the_hint`,
+  `an_ordinary_port_keeps_its_edge`, `a_gauge_above_a_tee_gets_a_straight_vertical_stub`,
+  `the_two_halves_of_a_spliced_pipe_stay_straight` y
+  `the_check_route_matches_the_drawn_route_on_a_tee`; el paso `--selftest` que imprime
+  `tee probe branch=2 left=0 right=1 old=-1`; `--selftest`, `--check-layout`, `--check-qml`,
+  `--check-theme` y `--check-icons` en verde; las capturas claro/oscuro y la página de 300 dpi.
+
 ### Corrección: las zonas de la hoja — 2026-11-20
 
 - **Los ejes estaban cambiados**: la cuadrícula de ISO 5457 §4.4 ponía los números en las
