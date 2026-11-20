@@ -175,7 +175,7 @@ ThemeTokens tokensFrom(const QPalette &palette)
     tokens.textSmall = std::max(10, (tokens.unit * 55 + 50) / 100);
     tokens.textBody = std::max(11, (tokens.unit * 61 + 50) / 100);
     tokens.textLabel = std::max(12, (tokens.unit * 66 + 50) / 100);
-    tokens.textDisplay = std::max(20, (tokens.unit * 120 + 50) / 100);
+    tokens.textDisplay = std::max(24, (tokens.unit * 150 + 50) / 100);
     tokens.motionMs = motionFromDesktop();
     return tokens;
 }

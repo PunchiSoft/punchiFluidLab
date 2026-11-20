@@ -95,20 +95,20 @@ QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
 
 ### 0.3 Estado al 2026-11-19 (lo último, y lo que manda)
 
-`main` está en **`6938acf`** tras fusionar las PR #135 (plantillas), #136 (recientes) y #137
-(arrastre de la paleta). Hay una rama en curso, **`fix/template-symbols`**, todavía sin commit ni PR: fija
-el tamaño canónico del símbolo y corrige la deformación de las plantillas. El gate sale **0** y
+`main` está en **`fbb01cd`** tras fusionar las PR #135 (plantillas), #136 (recientes), #137
+(arrastre de la paleta), #138 (tamaño del símbolo y plantillas) y #139 (menú contextual de la
+paleta). Hay una rama en curso, **`feat/start-view-hierarchy`**, con su PR **#140** abierta y
+pendiente de que la fusione el propietario: la jerarquía visual de Inicio. El gate sale **0** y
 `--selftest` **0 fallos** en esa rama (verificado el 2026-11-19).
 
-Ramas locales ya fusionadas y pendientes de borrar: `feat/recent-page` y
-`feat/palette-drag-grab`.
+No quedan ramas locales fusionadas pendientes de borrar.
 
 | Área | Estado real hoy |
 |---|---|
 | Arranque | **Inicio**: la ventana abre en la página de inicio, no en un circuito. Sin cinta, sin barra de estado, sin catálogo ni dock derecho; el raíl ocupa su sitio y el título nombra el programa, nunca «sin título» |
 | Proyecto nuevo | **hoja vacía**: marco y A4 apaisado, cero componentes; la hoja dice «Arrastra símbolos a la hoja para empezar» y las lecturas físicas quedan ocultas hasta que haya modelo |
 | Ejemplo | ya **no se siembra**: es fixture de las pruebas y se carga con `pf_session_load_example`; Inicio lo ofrece como la primera de **cuatro plantillas** |
-| Página Inicio | **dos planos**: la página en la ventana y cada grupo (**Empezar**, **Plantillas**, **Recientes**) en una tarjeta elevada con su etiqueta; **Nuevo proyecto** es la única acción rellena, con texto `onAccent` medido a 4,5:1; el raíl lleva icono por fila y marca la vista actual con fila rellena, barra y la palabra. Las tarjetas siguen una celda de 10 × 8 `unit`, con tarjeta cuadrada de 8 × 8 `unit` y media `unit` entre celdas |
+| Página Inicio | **una página plana** con **Empezar**, **Plantillas** y **Recientes** como etiquetas de sección y cada elección como tarjeta propia (sin caja envolviendo el grupo); **Nuevo proyecto** va teñido con `accentSoft` y borde de acento, con texto en tinta; el raíl lleva icono y atajo por fila, y la vista actual es una fila de acento rellena con texto e icono `onAccent` medidos. Las tarjetas de ejemplo reparten el ancho (mínimo 10 `unit`, 8 `unit` de alto, ~252 px a 1280) |
 | Recientes | tope de **10** en `punchi-fluid-file` y de **5** en la página (`PF_RECENT_PAGE_LIMIT`); una ruta ausente queda en gris como `no disponible` con **quitar**, y la lista ya no poda al leerse |
 | Cinta | el grupo **Circuito** son comandos (Nuevo, Renombrar, Cerrar), no la lista; teclas `Ctrl+T/W/Q`, `Ctrl+Shift+Tab`; un archivo es **proyecto** y una hoja es **circuito** |
 | Cajetín | protege **su propio rectángulo**, no una banda; falta `under_title_block` cuando se activa encima de un dibujo |
@@ -122,43 +122,36 @@ Cada punto es **una rama desde `main` actualizado y una PR**; no se empieza el s
 que el anterior está fusionado, salvo autorización explícita del propietario (como la que hubo
 entre #136 y #137).
 
-**0. `fix/template-symbols` — en curso, sin PR.**
+**0. `fix/template-symbols` — fusionada como PR #138.**
 - Fija **20 mm** de caja (cilindro 44 × 20) y limita el cálculo del ejemplo con
   `min(0.26·alto, 0.17·ancho, 20)`; el cálculo queda escrito en `docs/symbology.md`.
-- Corrige las válvulas de las plantillas que estaban en cajas de 1,2 : 1 y 1,5 : 1: el
-  renderizador estira el símbolo y el 3/2 salía ancho.
 - Añade `--example` y `--template N` para capturar la hoja, y abrir un documento desde la línea
   de comandos ya no deja Inicio delante.
-- Pruebas: `a_symbol_does_not_grow_with_the_paper`,
-  `the_four_start_templates_are_bounded_connected_starting_documents` (tamaño y aspecto),
-  `dragging_a_component_pulls_its_port_onto_the_other_end` sin cifras fijas y el test de
-  exportación reescrito como «una hoja mayor no cambia la tinta».
 - **Trampa encontrada:** las pruebas que fijaban geometría de la rejilla (magnet, escala
   área↔tamaño) dependían del tamaño viejo; se reescribieron para medir, no para recordar.
 
-**1. `feat/palette-context-menu` — menú sobre la ficha del catálogo (implementado, pendiente de PR).**
-- Clic derecho sobre una ficha abre un menú con **Añadir a la hoja**; `Mayús+F10` (o la tecla
-  Menú) abre el mismo menú desde el teclado, y la ficha expone su nombre accesible.
-- Coloca la pieza en el centro de la hoja con una sola entrada de deshacer, por la misma ruta
-  que ya usa la búsqueda (`sidebar.place(index)`).
-- El botón derecho **no** debe iniciar un arrastre: hoy `onPressed` arranca el arrastre con
-  cualquier botón; hay que condicionarlo a `Qt.LeftButton`.
-- Prueba: un paso `--selftest` que abra el menú, invoque la acción y compruebe un componente
-  más y un solo deshacer.
+**1. `feat/palette-context-menu` — fusionada como PR #139.**
+- Clic derecho sobre una ficha abre **Añadir a la hoja**; `Mayús+F10` abre el mismo menú desde
+  el teclado. Coloca en el centro de la hoja con un solo deshacer y el botón derecho no
+  arranca un arrastre.
 
-**2. `feat/start-view-hierarchy` — jerarquía visual de Inicio (implementado, pendiente de PR).**
-- Dos planos: la página sobre el fondo y cada grupo como tarjeta elevada con título y filas
-  separadas por líneas finas, reutilizando `Card.qml` y los tokens (`surfaceRaised`,
-  `surfaceSunken`, `line`, `accentSoft`, `shadow`, `unit`).
-- Raíl con encabezado del programa y filas con icono + etiqueta, hover y foco visibles, y el
-  elemento activo con barra de acento **y** palabra de estado.
-- **Nuevo proyecto** como acción primaria rellena; **Abrir…** secundaria.
-- Plantillas con superficie elevada, miniatura sobre papel, título fuerte, detalle atenuado,
-  anillo de foco y **cursor de mano** (hoy no cambia al pasar).
-- Recientes como una sola tarjeta con separadores; «no disponible» como etiqueta de estado y
-  **quitar** con más contraste al pasar.
-- Capturas clara/oscura; cuidado con la altura real de Inicio (640 px a 1280×800): cinco filas
-  de recientes caben justas y cualquier adorno nuevo las desplaza.
+**2. `feat/start-view-hierarchy` — jerarquía visual de Inicio (implementado; PR #140 abierta, pendiente de fusión).**
+- Una **página plana** con **Empezar**, **Plantillas** y **Recientes** como etiquetas de sección
+  y cada elección como tarjeta propia: ninguna caja envuelve un grupo entero.
+- **Nuevo proyecto** es la tarjeta por defecto, teñida con `accentSoft` y con borde de acento;
+  su texto va en tinta, así el hover no repinta el relleno bajo una palabra clara. **Abrir…**
+  es la tarjeta secundaria.
+- Plantillas como **foto y etiqueta** que reparten el ancho de la página (mínimo 10 `unit`,
+  8 `unit` de alto, ~252 px a 1280), con placa hundida, nombre, dos líneas de detalle y tooltip;
+  **cursor de mano** sobre ellas.
+- Raíl con icono y atajo por fila; la vista actual es una **fila de acento rellena** con texto
+  e icono `onAccent` medidos. Añadido el testigo `onAccent` y el paso `accent text` de
+  `--check-theme`.
+- Recientes como una sola tarjeta con separadores; si la lista supera la página, el aviso a
+  **Archivo ▸ Recientes** comparte la línea de la sección. Las cinco filas caben en los 640 px
+  reales de Inicio.
+- **Pendiente declarado:** el raíl sigue siendo solo de puntero; el recorrido con `Tab` y el
+  anillo de foco son el paso 5 (`feat/rail-polish`).
 
 **3. `feat/palette-drop-tolerance` — soltar impreciso y colocación en dos pasos.**
 - Si el puntero se suelta fuera de la hoja, colocar en el punto válido más cercano dentro del
