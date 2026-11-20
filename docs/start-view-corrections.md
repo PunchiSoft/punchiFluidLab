@@ -25,7 +25,10 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   `muted`, `onaccent`), never a literal. Check the provider caches by name, size and
   scheme ([qt-lifetimes](../.agents/skills/qt-lifetimes/SKILL.md)).
 - **Test**: capture at 1440 and 1280 in both schemes; `--check-icons` stays at 0 missing.
-- **State**: open.
+- **State**: in progress.
+- **After #143**: the tones come from the theme and the provider keys by name, size and
+  scheme, but one size rule, `sourceSize` and `fillMode` remain, since two sizes (0.9× and
+  1.8× `unit`) still upscale from the provider's 22 px fallback.
 
 ## 2. The start card's text runs into its icon
 
@@ -37,7 +40,9 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   anchored **after** it; both cards share the same internal margins, and the description
   is a second line of the same column, not a separate one.
 - **Test**: capture; no text overlaps a border or an icon at 1280 and 1440.
-- **State**: open.
+- **State**: in progress.
+- **After #143**: the icon column, the `unit / 2` gap and the text column after it were
+  delivered, but the column is 1.8× `unit` instead of the fixed 2× `unit`.
 
 ## 3. Template thumbnails are tiny and washed out
 
@@ -51,7 +56,10 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   muted. The title and the one-line description sit below it with the same left margin as
   the picture. Cards keep one proportion at every breakpoint.
 - **Test**: capture at both widths; each of the four pictures is legible without zoom.
-- **State**: open.
+- **State**: in progress.
+- **After #143**: the picture follows the card's content width, but it still takes about
+  51 % of the height instead of 60–70 %, and the 180×100 mm raster is stretched to the item
+  rect, so the aspect is not preserved.
 
 ## 4. Recent rows overlap
 
@@ -65,7 +73,9 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   theme's sizes. The button is vertically centred and never overlaps the text.
 - **Test**: a session with two recents, one of them missing, shows two rows; a capture
   proves no overlap; a test checks the number of rows and the label.
-- **State**: open.
+- **State**: done.
+- **After #143**: one row per entry at 1.6× `unit` with the name and the path stacked, the
+  «no disponible · …» form kept and the button centred; nothing remains.
 
 ## 5. No way back to Inicio from a project
 
@@ -93,7 +103,10 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   scrolls if the top ever grows. The bound is a constant, not a literal in QML.
 - **Test**: `untrusted-input-bounds`'s one-past-the-limit test in the page (eleven
   entries, ten shown); a missing file is greyed and removable.
-- **State**: open.
+- **State**: in progress.
+- **After #143**: a missing path is greyed, named and removable, but the page still renders
+  the ABI's five-entry `PF_RECENT_PAGE_LIMIT` slice with no list scroll; it must declare its
+  own constant of ten, the whole `MAX_RECENT` list (owner decision, 2026-11-20).
 
 ## 7. Closing the last project should return to Inicio
 
@@ -117,7 +130,10 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   rail's width from `session.unit`.
 - **Test**: `Tab` walks the rail; a keyboard-only run reaches Nuevo, Abrir, About and
   Licence; capture in both schemes.
-- **State**: open.
+- **State**: in progress.
+- **After #143**: hover comes from `surfaceRaised` and most items are 1.9× `unit`, but
+  «Volver» is 1.6× `unit`, the separator sits inside the margins, and the rail has no focus
+  ring, keyboard reach or `Accessible.name`.
 
 ## Order
 
