@@ -53,7 +53,7 @@ certification.
 | Other margins | 10 mm on the top, right and bottom |
 | Frame | Continuous line, 0.7 mm, around the drawing space |
 | Centring marks | Four, at the ends of the symmetry axes: a continuous line of 0.7 mm, starting at the frame and extending 10 mm beyond it (ISO 5457 §4.3). No arrow and no triangle; on the 20 mm filing edge the line stops inside the margin instead of reaching the paper |
-| Reference zones | Optional in ISO 5457; drawn from A3 upwards (see below) |
+| Reference zones | Optional in ISO 5457; four sides from A3 upwards and the standard's two sides on A4 (see below) |
 
 The centring marks are **not a free form**, and this page records the requirement rather
 than inventing one. ISO 5457 §4.3 asks for four marks at the ends of the axes of symmetry,
@@ -76,21 +76,38 @@ the 180 × 65 mm proposal is an A3 template.
 ## The reference zones
 
 The guide recommends the reference grid for large sheets and multi-sheet sets: it lets a
-note, a valve or a terminal be located as **B3** instead of described by position. This build
-draws it:
+note, a valve or a terminal be located as **B3** instead of described by position. The clause
+divides the drawing space into fields of at most 50 mm and names them with capital letters
+read from the top downwards and numerals read from left to right; the letters `I` and `O` are
+left out. On both sides of the sheet for A3 and larger; for A4, only the top and right sides.
+This build draws it:
 
-- **From A3 upwards** (`A3`, `A2`, `A1`, `A0`, and a custom sheet whose short side reaches
-  297 mm). **A4 and the two American sheets keep a clean sheet**, because a one-page sketch
-  does not need a grid it will never use.
-- The drawing space is divided into fields of **at most 50 mm**.
-- **Numerals** `1`, `2`, … run down the left and right bands, one per row.
-- **Letters** `A`, `B`, … run across the top and bottom bands, one per column.
+- **A3 and larger** (`A3`, `A2`, `A1`, `A0`, and a custom sheet whose short side reaches
+  297 mm): **letters** `A`, `B`, … run top to bottom down the left and right bands, one per
+  row, and **numerals** `1`, `2`, … run left to right across the top and bottom bands, one
+  per column. `I` and `O` are skipped, so the rows are `A`…`H`, `J`, `K`, `L`, `M`, `N`, `P`,
+  …; a custom sheet long enough to need more than 24 rows continues `AA`, `AB`, … over the
+  same 24 letters.
+- **A4**, portrait and landscape, carries the standard's A4 form: numerals on the **top band
+  only** and letters on the **right band only**. The left and bottom bands stay clean, and
+  the right band sits beside the bottom-right block without being covered by it.
+- **A5, Letter, Legal and Oficio keep a clean sheet**, because a one-page sketch does not
+  need a grid it will never use.
+- The drawing space is divided into fields of **at most 50 mm**, uniformly: there is no
+  shorter last field.
 - Characters are **3.5 mm** high and the division rules are **0.35 mm**.
 - Both the rules and the characters stay **inside the margin bands**: the drawing space
-  itself receives no extra ink. The centring marks remain drawn over them.
+  itself receives no extra ink. A label gives way along its band to keep at least 1 mm from a
+  centring mark, by no more than half a field; below 4.5 mm of band the labels and rules are
+  omitted instead of printed on the paper's edge.
 
-The export and the canvas implement the same rule, and two export tests pin it: A3 carries
-the letters and numerals, A4 carries none, and no reference rule enters the drawing space.
+The export and the canvas implement the same rule, and export tests pin it positionally:
+`a3_gets_the_reference_zones_on_four_sides`, `a4_gets_its_reference_zones_on_top_and_right`,
+`the_row_labels_skip_i_and_o`, `a_custom_sheet_labels_beyond_z_as_aa_without_i_or_o`,
+`every_zone_label_keeps_clear_of_the_centring_marks`,
+`a_margin_too_narrow_for_the_labels_draws_none` and
+`reference_rules_and_characters_never_enter_the_drawing_space`. The canvas reads the same
+labels through its `--selftest` zone steps.
 
 ## The title block
 

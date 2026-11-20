@@ -53,7 +53,79 @@ QString blockValue(const FluidSession &session, uint32_t field)
     default: return {};
     }
 }
+
+/// Cap height of a reference-zone character, in millimetres (ISO 5457 / NCh 15).
+constexpr qreal kZoneCharacterMm = 3.5;
+/// Distance a label centre keeps from a centring mark, in millimetres.
+constexpr qreal kZoneClearanceMm = 1.0;
+/// A band narrower than the character plus its clearance cannot hold a label.
+constexpr qreal kZoneBandMm = kZoneCharacterMm + kZoneClearanceMm;
+
+/// Places a label centre clear of a centring mark, or returns `false` when it cannot move.
+///
+/// A centring mark crosses the middle of its band, so only the coordinate along the band
+/// gives way. The label keeps half its cap height plus the clearance from the line and
+/// never travels further than half a field, which would make it read as its neighbour's.
+bool clearOfMark(qreal centre, qreal mark, qreal field, qreal *placed)
+{
+    if (!std::isfinite(centre) || !std::isfinite(mark) || !std::isfinite(field)
+        || field <= 0.0) {
+        return false;
+    }
+    const qreal clearance = kZoneCharacterMm * 0.5 + kZoneClearanceMm;
+    if (std::abs(centre - mark) >= clearance) {
+        *placed = centre;
+        return true;
+    }
+    const qreal wanted = centre >= mark ? mark + clearance : mark - clearance;
+    if (std::abs(wanted - centre) <= field * 0.5
+        && std::abs(wanted - mark) >= kZoneClearanceMm) {
+        *placed = wanted;
+        return true;
+    }
+    return false;
+}
 } // namespace
+
+ZoneBands sheetZoneBands(const QString &paperName, qreal sheetWidthMm, qreal sheetHeightMm)
+{
+    if (paperName == QLatin1String("A4")) {
+        return ZoneBands::A4;
+    }
+    if (std::min(sheetWidthMm, sheetHeightMm) >= 297.0 - 0.01) {
+        return ZoneBands::FourSides;
+    }
+    return ZoneBands::None;
+}
+
+int sheetFieldCount(qreal lengthMm)
+{
+    if (!std::isfinite(lengthMm) || lengthMm <= 0.0) {
+        return 1;
+    }
+    return std::max(1, static_cast<int>(std::ceil(lengthMm / 50.0)));
+}
+
+QString sheetRowLabel(int index)
+{
+    // The 24 field letters of ISO 5457 §4.4. A custom sheet can reach 2000 mm, which is 40
+    // fields, so the sequence continues with AA, AB, … over the same letters; no label ever
+    // contains a forbidden I or O.
+    static const char letters[] = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    constexpr int base = 24;
+    QString label;
+    int value = std::max(index, 0);
+    do {
+        label.prepend(QChar(letters[value % base]));
+        value = value / base - 1;
+    } while (value >= 0);
+    return label;
+}
+
+QString sheetColumnLabel(int index)
+{
+    return QString::number(std::max(index, 0) + 1);
+}
 
 void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &fit,
                     qreal sheetWidth, qreal sheetHeight)
@@ -153,68 +225,86 @@ void drawSheetFrame(QPainter *painter, const FluidSession &session, const Fit &f
 
         const qreal scale = fit.pixelsPerMm;
 
-        // ISO 5457 / NCh 13.Of93 reference zones, from A3 upwards: the drawing space is
-        // divided into fields of at most 50 mm, numerals down the left and right bands and
-        // letters across the top and bottom, 3.5 mm characters with 0.35 mm rules. They
-        // stay in the margin bands, never in the drawing space. A4 keeps its clean sheet.
-        if (std::min(sheetWidth, sheetHeight) >= 297.0 - 0.01) {
+        // ISO 5457 / NCh 13.Of93 reference zones. A3 and larger carry numerals left to
+        // right along the top and bottom bands and letters top to bottom along the left and
+        // right bands; A4 carries the standard's two-sided form, numerals on the top band
+        // only and letters on the right band only. 3.5 mm characters with 0.35 mm rules,
+        // all inside the margin bands and never in the drawing space. A5 and the non-ISO
+        // sheets keep a clean sheet.
+        const ZoneBands bands =
+            sheetZoneBands(session.sheetPaperName(), sheetWidth, sheetHeight);
+        const qreal narrowest =
+            std::min({left, top, sheetWidth - right, sheetHeight - bottom});
+        if (bands != ZoneBands::None && narrowest >= kZoneBandMm) {
             QColor reference = session.tokens().inkMuted;
             reference.setAlphaF(0.85F);
             painter->setPen(QPen(reference, std::max<qreal>(1.0, 0.35 * scale)));
-            const qreal fieldLimit = 50.0;
-            const int columns =
-                std::max(1, static_cast<int>(std::ceil((right - left) / fieldLimit)));
-            const int rows = std::max(1, static_cast<int>(std::ceil((bottom - top)
-                                                                     / fieldLimit)));
+            const int columns = sheetFieldCount(right - left);
+            const int rows = sheetFieldCount(bottom - top);
             const qreal stepX = (right - left) / columns;
             const qreal stepY = (bottom - top) / rows;
+            const bool four = bands == ZoneBands::FourSides;
+            const qreal markX = sheetWidth * 0.5;
+            const qreal markY = sheetHeight * 0.5;
             QFont font = painter->font();
             font.setPixelSize(std::max(1, qRound(3.5 * scale)));
             painter->setFont(font);
-
-            const auto letter = [](int index) {
-                QString name;
-                int value = index;
-                do {
-                    name.prepend(QChar('A' + value % 26));
-                    value = value / 26 - 1;
-                } while (value >= 0);
-                return name;
-            };
 
             for (int column = 1; column < columns; ++column) {
                 const qreal x = fit.originX + (left + column * stepX) * scale;
                 painter->drawLine(QPointF(x, fit.originY),
                                   QPointF(x, fit.originY + top * scale));
-                painter->drawLine(QPointF(x, fit.originY + bottom * scale),
-                                  QPointF(x, fit.originY + sheetHeight * scale));
+                if (four) {
+                    painter->drawLine(QPointF(x, fit.originY + bottom * scale),
+                                      QPointF(x, fit.originY + sheetHeight * scale));
+                }
             }
             for (int row = 1; row < rows; ++row) {
                 const qreal y = fit.originY + (top + row * stepY) * scale;
-                painter->drawLine(QPointF(fit.originX, y),
-                                  QPointF(fit.originX + left * scale, y));
+                if (four) {
+                    painter->drawLine(QPointF(fit.originX, y),
+                                      QPointF(fit.originX + left * scale, y));
+                }
                 painter->drawLine(QPointF(fit.originX + right * scale, y),
                                   QPointF(fit.originX + sheetWidth * scale, y));
             }
 
-            const auto centred = [&](const QRectF &area, const QString &label) {
-                painter->drawText(area, Qt::AlignCenter, label);
+            const auto centred = [&](qreal centreX, qreal centreY, qreal width, qreal height,
+                                     const QString &label) {
+                painter->drawText(
+                    QRectF(centreX - width * 0.5, centreY - height * 0.5, width, height),
+                    Qt::AlignCenter, label);
             };
-            for (int row = 0; row < rows; ++row) {
-                const QString number = QString::number(row + 1);
-                const qreal y = fit.originY + (top + row * stepY) * scale;
-                centred(QRectF(fit.originX, y, left * scale, stepY * scale), number);
-                centred(QRectF(fit.originX + right * scale, y,
-                               (sheetWidth - right) * scale, stepY * scale),
-                        number);
-            }
             for (int column = 0; column < columns; ++column) {
-                const QString name = letter(column);
-                const qreal x = fit.originX + (left + column * stepX) * scale;
-                centred(QRectF(x, fit.originY, stepX * scale, top * scale), name);
-                centred(QRectF(x, fit.originY + bottom * scale, stepX * scale,
-                               (sheetHeight - bottom) * scale),
-                        name);
+                const qreal centre = left + (column + 0.5) * stepX;
+                qreal x = centre;
+                if (!clearOfMark(centre, markX, stepX, &x)) {
+                    continue;
+                }
+                const QString number = sheetColumnLabel(column);
+                centred(fit.originX + x * scale, fit.originY + top * 0.5 * scale,
+                        stepX * scale, top * scale, number);
+                if (four) {
+                    centred(fit.originX + x * scale,
+                            fit.originY
+                                + (bottom + (sheetHeight - bottom) * 0.5) * scale,
+                            stepX * scale, (sheetHeight - bottom) * scale, number);
+                }
+            }
+            for (int row = 0; row < rows; ++row) {
+                const qreal centre = top + (row + 0.5) * stepY;
+                qreal y = centre;
+                if (!clearOfMark(centre, markY, stepY, &y)) {
+                    continue;
+                }
+                const QString name = sheetRowLabel(row);
+                if (four) {
+                    centred(fit.originX + left * 0.5 * scale, fit.originY + y * scale,
+                            left * scale, stepY * scale, name);
+                }
+                centred(fit.originX + (right + (sheetWidth - right) * 0.5) * scale,
+                        fit.originY + y * scale, (sheetWidth - right) * scale,
+                        stepY * scale, name);
             }
         }
 

@@ -76,6 +76,7 @@
 #include "icons.h"
 #include "punchi_fluid.h"
 #include "session.h"
+#include "sheetframe.h"
 #include "sounds.h"
 #include "theme.h"
 
@@ -3489,6 +3490,31 @@ int main(int argc, char *argv[])
             state->session->undo();
             check(std::abs(state->session->sheetMarginTop() - 10.0) < 0.01,
                   QStringLiteral("sheet: undo returns the ISO margin"));
+        });
+
+        // The reference zones read from the same helpers the canvas draws from: the axes
+        // are not swapped (letters name rows), I and O are skipped, and A4 is two-sided.
+        steps->push_back([check] {
+            check(sheetZoneBands(QStringLiteral("A3"), 420.0, 297.0) == ZoneBands::FourSides
+                      && sheetRowLabel(0) == QStringLiteral("A")
+                      && sheetRowLabel(7) == QStringLiteral("H")
+                      && sheetRowLabel(8) == QStringLiteral("J")
+                      && sheetRowLabel(13) == QStringLiteral("P")
+                      && sheetRowLabel(16) == QStringLiteral("S")
+                      && sheetRowLabel(8) != QStringLiteral("I")
+                      && sheetRowLabel(13) != QStringLiteral("O")
+                      && sheetColumnLabel(0) == QStringLiteral("1"),
+                  QStringLiteral(
+                      "zones: A3 names the rows with letters and the columns with numerals"));
+        });
+        steps->push_back([check] {
+            check(sheetZoneBands(QStringLiteral("A4"), 297.0, 210.0) == ZoneBands::A4
+                      && sheetZoneBands(QStringLiteral("A4"), 210.0, 297.0) == ZoneBands::A4
+                      && sheetZoneBands(QStringLiteral("Letter"), 279.4, 215.9)
+                          == ZoneBands::None
+                      && sheetZoneBands(QStringLiteral("Personalizado"), 297.0, 420.0)
+                          == ZoneBands::FourSides,
+                  QStringLiteral("zones: A4 uses only the top and right bands"));
         });
 
         // The page controls keep the common name beside the normalised one, and the

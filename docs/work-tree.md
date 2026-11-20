@@ -76,6 +76,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-012 | The theme icon cache is unbounded | `in progress` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) — bounded `QCache` on `feat/start-view-visual-pass-2`: cap 73, working set 58, max group 21, LRU and palette key |
 | P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
+| P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
 
 ## A node, filled
 
@@ -102,6 +103,47 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 - **Done when**: the service-unit test passes, the 300 dpi and light/dark captures show
   the numerals clear, and the gate is green; P-018b extends the assertions to the rest.
 - **State**: `in progress` (P-018a); P-018b not started.
+
+### P-020 — The reference zones name the rows and columns backwards
+
+- **Problem**: on A3 and larger the grid put **numerals in the vertical bands and letters in
+  the horizontal ones**, so a note such as B3 named a different field than the standard; the
+  default A4 sheet carried no grid at all.
+- **Evidence**: the owner's A3 observation on 2026-11-20; the A3 canvas capture with `A`–`H`
+  across and `1`–`6` down; the positional tests below and the A3/A4 captures in the EGM
+  evidence folder (`p020-a3-landscape-{light,dark}.png`, `p020-a3-portrait-…`,
+  `p020-a4-landscape-…`, `p020-a4-portrait-…`, `p020-a0-landscape-light.png`,
+  `p020-custom-450-symmetric-light.png`).
+- **Touches**: `crates/punchi-fluid-export/src/reference_zones.rs` (`draw_reference_zones`,
+  `row_label`, the tests), `crates/punchi-fluid-export/src/sheet.rs` (the frame and legend
+  around them), `crates/punchi-fluid-export/src/page.rs`
+  (`has_reference_zones` / `uses_large_block`), `crates/punchi-fluid-export/src/block_layout.rs`,
+  `crates/punchi-fluid-export/tests/png.rs`, `apps/punchi-fluid-qt/src/sheetframe.{h,cpp}`,
+  `apps/punchi-fluid-qt/src/main.cpp`, `docs/reference/title-block.md`,
+  `docs/designs/title-block-and-sheet.md`, `docs/capabilities.md`, `docs/ui-ux.md`,
+  `docs/next-steps.md`, `assets/screenshots/README.md`, `CHANGELOG.md`.
+- **Options**:
+  1. Keep the swapped convention as a documented deviation. **Pro**: no code. **Con**: a grid
+     read by notes is wrong, which is worse than no grid; the owner asked for the standard.
+  2. Fix the export only. **Pro**: the printed page is right. **Con**: the canvas would print
+     one grid and show another, the divergence ADR 0003 exists to prevent.
+  3. Fix both devices with four sides on every sheet. **Pro**: one rule. **Con**: four sides
+     on A4 is the noise the original design rejected, and the standard asks for two.
+  4. Fix both devices, four sides from A3 upwards, the standard's **two-sided** form on A4.
+     **Pro**: the standard's form and a referenceable default sheet. **Con**: A4's block gate
+     has to split so its fitted 170 × 45 mm block does not grow.
+- **Decision**: option 4, chosen by the owner on 2026-11-20: letters on the vertical bands
+  read top to bottom, numerals on the horizontal ones left to right, `I` and `O` skipped, and
+  A4 with numerals on the top band and letters on the right band only. The geometry stays
+  duplicated between Rust and C++ on purpose, with no new dependency edge; `--selftest`
+  compares the label sequence. The A0 17-vs-16 field count stays an open question and is not
+  changed here.
+- **Stages**: one branch, `fix/reference-zone-axes` — the export, the canvas, the positional
+  and clearance tests, the documents and the captures, then the gate.
+- **Done when**: `cargo test -p punchi-fluid-export` and `./scripts-dev/check.sh` are green,
+  the `--selftest` zone steps pass, the A3/A4 captures and 300 dpi exports show the corrected
+  grid, and the owner confirms the diff.
+- **State**: `in progress` on `fix/reference-zone-axes`; `done` after the owner merges.
 
 ### P-011 — Example: the window title shows an empty document name
 

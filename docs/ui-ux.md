@@ -513,10 +513,12 @@ schematic simulator lives by, and the one the reference tool uses:
   only; the file keeps `letter`, `legal` and `oficio`. A sheet per circuit is not there yet
   ([ADR 0026](adr/0026-the-sheet-is-the-paper.md)).
 - **The frame carries the four centring marks** at the midpoints of the sheet, a 0.7 mm
-  line outward and a small arrow, and the **reference zones** of ISO 5457 / NCh 13.Of93
-  from A3 upwards: 50 mm fields, numerals down the left and right bands, letters across the
-  top and bottom, 3.5 mm characters and 0.35 mm rules, all inside the margin bands. A4
-  stays clean. [reference/title-block.md](reference/title-block.md) records the sheet and
+  continuous line outward with no arrow, and the **reference zones** of ISO 5457 / NCh 13.Of93:
+  four sides from A3 upwards (50 mm fields, letters `A`, `B`, … down the left and right bands
+  and numerals `1`, `2`, … across the top and bottom, skipping `I` and `O`) and the
+  standard's two-sided form on A4 (numerals on the top band, letters on the right band);
+  3.5 mm characters and 0.35 mm rules, all inside the margin bands. A5 and the non-ISO
+  sheets stay clean. [reference/title-block.md](reference/title-block.md) records the sheet and
   the **control-diagram** block (industrial 180 × 65 mm on A3, 170 × 45 mm on A4; school and
   technical shorter; IEC 61082-1 with ISO 7200 fields, scale `S/E`).
   A schematic is not to scale, so the block has no material, unit or projection.

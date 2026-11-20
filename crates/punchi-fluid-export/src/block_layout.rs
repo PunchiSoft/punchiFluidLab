@@ -10,7 +10,7 @@
 
 use punchi_fluid_core::{ContentModel, TitleBlock, TitleField};
 
-use crate::page::{PaperSize, is_large_sheet};
+use crate::page::{PaperSize, uses_large_block};
 
 /// One cell of a template row. The sheet number is derived, not a [`TitleField`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -175,7 +175,7 @@ fn model_rows(model: ContentModel) -> (Vec<RowSpec>, f32) {
 /// Nominal size of a model on `paper`: 170 × 35/40/45 up to A4, 180 × 40/50/65 from A3.
 #[must_use]
 pub fn model_size_mm(paper: PaperSize, model: ContentModel) -> (f32, f32) {
-    let large = is_large_sheet(paper);
+    let large = uses_large_block(paper);
     let width = if large { 180.0 } else { 170.0 };
     let height = match (model, large) {
         (ContentModel::School, false) => 35.0,

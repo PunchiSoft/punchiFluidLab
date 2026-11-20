@@ -55,53 +55,111 @@ fn a3_landscape_at_300_dpi_produces_a_4961_by_3508_png() {
 fn the_margin_band_holds_no_ink() {
     let catalog = Catalog::builtin();
     let block = punchi_fluid_export::block_with_review_state("A circuit", "2026-11-06");
-    let page = Page::a4(block.clone());
     let dpi = 150.0;
-    let mut surface = PngSurface::new(page.rect(), dpi).expect("the page is allowed");
-    punchi_fluid_export::sheet::draw(&mut surface, &page, &block);
-    punchi_fluid_draw::draw(
-        &mut surface,
-        page.drawing_rect(),
-        &system(),
-        &catalog,
-        &Ink::print(),
-    );
-
     let scale = dpi / 25.4;
-    // The frame is stroked *on* the content boundary, so half its width falls outside
-    // it. The margin that must be white is the paper up to that stroke. The four sides
-    // differ under ISO 5457, so each band is measured against its own margin.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let side = |mm: f32| ((mm * scale).floor() as u32).saturating_sub(4);
-    let left = side(page.margins.left);
-    let right = side(page.margins.right);
-    let top = side(page.margins.top);
-    let bottom = side(page.margins.bottom);
-    let pixmap = surface.pixmap();
-    let mark_x = pixmap.width() as f32 * 0.5;
-    let mark_y = pixmap.height() as f32 * 0.5;
-    // ISO 5457 puts the centring marks in the margin, at the middle of each side: that ink
-    // is intended, everything else in the band must be white.
     let clear = 3.0 * scale;
-    let mut darkest = 255_u8;
-    for y in 0..pixmap.height() {
-        for x in 0..pixmap.width() {
-            let outside =
-                x < left || y < top || x >= pixmap.width() - right || y >= pixmap.height() - bottom;
-            if !outside {
-                continue;
-            }
-            if (x as f32 - mark_x).abs() < clear || (y as f32 - mark_y).abs() < clear {
-                continue;
-            }
-            if let Some(pixel) = pixmap.pixel(x, y) {
-                darkest = darkest.min(pixel.demultiply().red());
+
+    // Draws a page and returns the darkest pixel of a band, leaving out the centring
+    // marks. `band` picks the region; the mark that legitimately crosses it is skipped.
+    let darkest = |paper: PaperSize, band: &str| {
+        let page = Page {
+            paper,
+            ..Page::a4(block.clone())
+        };
+        let mut surface = PngSurface::new(page.rect(), dpi).expect("the page is allowed");
+        punchi_fluid_export::sheet::draw(&mut surface, &page, &block);
+        punchi_fluid_draw::draw(
+            &mut surface,
+            page.drawing_rect(),
+            &system(),
+            &catalog,
+            &Ink::print(),
+        );
+        let left = side(page.margins.left);
+        let right = side(page.margins.right);
+        let top = side(page.margins.top);
+        let bottom = side(page.margins.bottom);
+        let pixmap = surface.pixmap();
+        let mark_x = pixmap.width() as f32 * 0.5;
+        let mark_y = pixmap.height() as f32 * 0.5;
+        let mut darkest = 255_u8;
+        for y in 0..pixmap.height() {
+            for x in 0..pixmap.width() {
+                let in_left = x < left;
+                let in_right = x >= pixmap.width() - right;
+                let in_top = y < top;
+                let in_bottom = y >= pixmap.height() - bottom;
+                let outside = in_left || in_right || in_top || in_bottom;
+                if !outside {
+                    continue;
+                }
+                let wanted = match band {
+                    "left" => in_left,
+                    "right" => in_right,
+                    "top" => in_top,
+                    "bottom" => in_bottom,
+                    _ => outside,
+                };
+                if !wanted {
+                    continue;
+                }
+                // ISO 5457 puts the centring marks in the margin at the middle of each
+                // side: that ink is intended. A horizontal mark crosses the left and right
+                // bands; a vertical one crosses the top and bottom bands.
+                if (in_left || in_right) && (y as f32 - mark_y).abs() < clear {
+                    continue;
+                }
+                if (in_top || in_bottom) && (x as f32 - mark_x).abs() < clear {
+                    continue;
+                }
+                if let Some(pixel) = pixmap.pixel(x, y) {
+                    darkest = darkest.min(pixel.demultiply().red());
+                }
             }
         }
+        darkest
+    };
+
+    // The sheets without reference zones keep every band clean but the marks.
+    for paper in [
+        PaperSize::A5,
+        PaperSize::Letter,
+        PaperSize::Legal,
+        PaperSize::Oficio,
+    ] {
+        let value = darkest(paper, "all");
+        assert!(
+            value > 250,
+            "{}: the margin band must stay white, found a pixel at {value}",
+            paper.label()
+        );
     }
+
+    // A4 now carries the standard's two-sided grid. Its top and right bands are meant to
+    // be inked; the left and bottom bands must stay clean, because A4 is not four-sided.
+    let left = darkest(PaperSize::A4, "left");
     assert!(
-        darkest > 250,
-        "the margin band must stay white, found a pixel at {darkest}"
+        left > 250,
+        "A4: the left band must stay white, found a pixel at {left}"
+    );
+    let bottom = darkest(PaperSize::A4, "bottom");
+    assert!(
+        bottom > 250,
+        "A4: the bottom band must stay white, found a pixel at {bottom}"
+    );
+    // The two bands it keeps must carry the grid: a clean sheet here would pass the two
+    // assertions above while losing the zones altogether.
+    let top = darkest(PaperSize::A4, "top");
+    assert!(
+        top < 250,
+        "A4: the top band carries the numerals, found a blank band at {top}"
+    );
+    let right = darkest(PaperSize::A4, "right");
+    assert!(
+        right < 250,
+        "A4: the right band carries the letters, found a blank band at {right}"
     );
 }
 

@@ -138,11 +138,13 @@ impl Page {
     /// `true` when the sheet carries the optional reference zones.
     ///
     /// ISO 5457 makes the zones optional; the Chilean guide recommends them for large
-    /// sheets and multi-sheet sets. This project draws them from A3 upwards and keeps A4
-    /// clean, so a one-sheet sketch is not covered in a grid it does not need.
+    /// sheets and multi-sheet sets. This project draws the four-sided grid from A3 upwards
+    /// and the standard's two-sided form on A4. A5 and the non-ISO sheets keep a clean
+    /// sheet. The gate is separate from the block's: enabling the A4 zones must not grow
+    /// its 170 × 45 mm block into the A3 template.
     #[must_use]
     pub fn has_reference_zones(&self) -> bool {
-        is_large_sheet(self.paper)
+        has_reference_zones(self.paper)
     }
 
     /// Column the parts list occupies, or an empty rectangle when there is no list.
@@ -210,13 +212,23 @@ impl Page {
     }
 }
 
-/// `true` when `paper` is A3 or larger.
+/// `true` when `paper` carries the reference zones.
 ///
-/// The threshold decides two things together: the guide's 180 × 65 mm block and the
-/// optional reference zones. A custom sheet joins A3 as soon as its short side reaches
-/// 297 mm.
+/// A3 and larger get the four-sided grid of ISO 5457 §4.4; A4 gets the standard's A4 form,
+/// numerals on the top band and letters on the right band. A5 and the non-ISO sheets draw
+/// none, and a custom sheet joins A3 only when its short side reaches 297 mm.
 #[must_use]
-pub fn is_large_sheet(paper: PaperSize) -> bool {
+pub fn has_reference_zones(paper: PaperSize) -> bool {
+    paper == PaperSize::A4 || uses_large_block(paper)
+}
+
+/// `true` when `paper` uses the guide's 180 × 65 mm block.
+///
+/// The threshold is A3 and larger, plus a custom sheet whose short side reaches 297 mm.
+/// The reference zones have their own gate, [`has_reference_zones`]: the two questions were
+/// one until A4 got its two-sided grid.
+#[must_use]
+pub fn uses_large_block(paper: PaperSize) -> bool {
     match paper {
         PaperSize::A3 | PaperSize::A2 | PaperSize::A1 | PaperSize::A0 => true,
         PaperSize::Custom {
@@ -469,12 +481,12 @@ mod tests {
     }
 
     #[test]
-    fn the_reference_zones_are_drawn_from_a3_upwards() {
-        // The optional zones of ISO 5457: on for a large or multi-sheet set, off on A4 so
-        // the one-sheet sketch stays clean.
+    fn the_reference_zones_start_at_a4_and_grow_at_a3() {
+        // ISO 5457 §4.4: A4 uses the two-sided form and A3 and larger the four-sided grid;
+        // A5 and the non-ISO sheets keep a clean sheet.
         for (paper, expected) in [
             (PaperSize::A5, false),
-            (PaperSize::A4, false),
+            (PaperSize::A4, true),
             (PaperSize::Letter, false),
             (PaperSize::Legal, false),
             (PaperSize::Oficio, false),
@@ -496,6 +508,29 @@ mod tests {
                 paper.label()
             );
         }
+    }
+
+    #[test]
+    fn a4_keeps_its_fitted_block_when_zones_are_enabled() {
+        // The zones and the block were one gate until A4 got its two-sided grid: enabling
+        // the zones must not turn its 170 × 45 mm block into the 180 × 65 mm A3 template.
+        let a4 = Page::a4(TitleBlock::default());
+        assert!(a4.has_reference_zones());
+        let (width, height) = a4.block_size_mm();
+        assert!((width - 170.0).abs() < 0.01, "{width}");
+        assert!((height - 45.0).abs() < 0.01, "{height}");
+        assert!((a4.title_rect().width() - 170.0).abs() < 0.01);
+        assert!((a4.title_rect().height() - 45.0).abs() < 0.01);
+
+        let a3 = Page {
+            paper: PaperSize::A3,
+            orientation: Orientation::Portrait,
+            ..a4
+        };
+        assert!(a3.has_reference_zones());
+        let (width, height) = a3.block_size_mm();
+        assert!((width - 180.0).abs() < 0.01, "{width}");
+        assert!((height - 65.0).abs() < 0.01, "{height}");
     }
 
     #[test]
