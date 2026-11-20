@@ -63,16 +63,17 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 
 | Id | Problem | State | Detail |
 |---|---|---|---|
-| P-001 | The start-view icons read as smudges | `planned` | [start-view-corrections §1](start-view-corrections.md) |
-| P-002 | Card text runs into its icon | `planned` | [§2](start-view-corrections.md) |
-| P-003 | Template pictures are tiny and pale | `planned` | [§3](start-view-corrections.md) |
-| P-004 | Recent rows overlap | `planned` | [§4](start-view-corrections.md) |
+| P-001 | The start-view icons read as smudges | `in progress` | [start-view-corrections §1](start-view-corrections.md) |
+| P-002 | Card text runs into its icon | `in progress` | [§2](start-view-corrections.md) |
+| P-003 | Template pictures are tiny and pale | `in progress` | [§3](start-view-corrections.md) |
+| P-004 | Recent rows overlap | `done` | [§4](start-view-corrections.md) |
 | P-005 | No way back to Inicio with a project open | `planned` | [§5](start-view-corrections.md) |
-| P-006 | Recents have no page bound and do not mark a missing file | `planned` | [§6](start-view-corrections.md) |
+| P-006 | Recents have no page bound and do not mark a missing file | `in progress` | [§6](start-view-corrections.md) |
 | P-007 | Closing the last project does not return to Inicio | `planned` | [§7](start-view-corrections.md) |
-| P-008 | The rail is uneven and its focus is not the catalogue's | `planned` | [§8](start-view-corrections.md) |
+| P-008 | The rail is uneven and its focus is not the catalogue's | `in progress` | [§8](start-view-corrections.md) |
 | P-009 | `electrical.relay.latching`: A2 and R1 collide at 300 dpi | `reported` | [review record](../assets/symbols/review/electrical.relay.latching.md) |
 | P-010 | The shuttle and the two-pressure valve are missing (OR/AND) | `reported` | [capabilities F2](capabilities.md) and ADR 0029 |
+| P-012 | The theme icon cache is unbounded | `reported` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) at `:131` and `:167` — a `QHash` keyed by name, tone, pixels and DPR with no eviction |
 
 ## A node, filled
 
@@ -88,3 +89,31 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 - **Stages**: the binding, a capture, one `--selftest` check.
 - **Done when**: the capture shows the program name and the check passes.
 - **State**: `done` (delivered with the start view).
+
+## Reconciliation after #143 (2026-11-20)
+
+Read against `015ec77`: the files were checked, not the branch name. P-009, P-010 and
+P-011 are untouched by it.
+
+- **P-001** `in progress`: the tones come from the theme and the provider keys by name,
+  size and scheme; one size rule, `sourceSize` and `fillMode` remain, so two sizes still
+  upscale from the provider's 22 px fallback.
+- **P-002** `in progress`: the icon column, the `unit / 2` gap and the text column after
+  it were delivered; the column is 1.8× `unit`, not the fixed 2× `unit`.
+- **P-003** `in progress`: the picture follows the card's content width; it still takes
+  about 51 % of the card height and the 180×100 mm raster is stretched to the item rect,
+  so the aspect is not preserved.
+- **P-004** `done`: one row per entry at 1.6× `unit`, name and path stacked, the
+  «no disponible · …» form kept and the button centred; nothing remains.
+- **P-006** `in progress`: a missing path is greyed, named and removable; the page
+  declares no bound of its own, renders the ABI's five-entry page and the list does not
+  scroll.
+- **P-008** `in progress`: hover comes from `surfaceRaised` and most items are 1.9×
+  `unit`; «Volver» is 1.6× `unit`, the separator sits inside the margins, and the rail has
+  no focus ring, keyboard reach or `Accessible.name`.
+- **P-012** `reported`: the provider's `QHash`, keyed by name, tone, pixels and DPR,
+  inserts without a cap or an eviction rule.
+
+Order: **A** this reconciliation, docs only, `check-docs.sh`; **B** P-001 and P-012 with
+P-002 and P-003, the visual pass; **C** P-005 and P-007, behaviour; **D** P-006 and P-008,
+closing the page. B, C and D each take their own branch, gate and pull request.
