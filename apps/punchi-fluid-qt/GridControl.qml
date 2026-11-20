@@ -65,8 +65,9 @@ Item {
                         height: 14
                         sourceSize.width: 14
                         sourceSize.height: 14
-                        source: session.grid ? "image://theme/view-visible?tone=foreground"
-                                             : "image://theme/view-hidden?tone=muted"
+                        source: (session.grid ? "image://theme/view-visible?tone=foreground"
+                                              : "image://theme/view-hidden?tone=muted")
+                                + "&v=" + session.themeRevision
                     }
 
                     Text {

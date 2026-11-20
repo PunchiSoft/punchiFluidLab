@@ -88,7 +88,17 @@ void TemplatePreviewItem::paint(QPainter *painter)
     if (m_image.isNull() && !m_attempted) {
         renderCache();
     }
-    if (!m_image.isNull()) {
-        painter->drawImage(boundingRect(), m_image);
+    if (m_image.isNull()) {
+        return;
     }
+    // Keep the drawing's aspect inside the plate: the plate is authored at the raster's
+    // 512:288 ratio, so this fills the width; a mismatch leaves a transparent letterbox
+    // instead of stretching the symbol.
+    const QRectF bounds = boundingRect();
+    const QSizeF imageSize = QSizeF(m_image.size());
+    const QSizeF scaled = imageSize.scaled(bounds.size(), Qt::KeepAspectRatio);
+    const QRectF target(bounds.center().x() - scaled.width() * 0.5,
+                        bounds.center().y() - scaled.height() * 0.5, scaled.width(),
+                        scaled.height());
+    painter->drawImage(target, m_image);
 }

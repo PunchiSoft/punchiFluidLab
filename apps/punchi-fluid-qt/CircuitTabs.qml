@@ -142,6 +142,7 @@ Rectangle {
                         sourceSize.height: 16
                         source: "image://theme/x-office-document?tone="
                                 + (tab.active ? "foreground" : "muted")
+                                + "&v=" + tabs.session.themeRevision
                     }
 
                     Text {

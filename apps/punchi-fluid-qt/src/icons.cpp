@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QDir>
+#include <QHash>
 #include <QImage>
 #include <QPainter>
 #include <QScreen>
@@ -13,6 +14,8 @@
 #include <QStandardPaths>
 #include <QUrlQuery>
 #include <QtGlobal>
+
+#include <algorithm>
 
 #include "actionicons.h"
 #include "theme.h"
@@ -75,6 +78,48 @@ void ensureIconTheme()
 ThemeIconProvider::ThemeIconProvider()
     : QQuickImageProvider(QQuickImageProvider::Pixmap)
 {
+    m_cache.setMaxCost(kMaxCachedIcons);
+}
+
+QString ThemeIconProvider::cacheKey(const QString &name, const QString &tone, int pixels) const
+{
+    const qreal dpr = QGuiApplication::primaryScreen()
+                          ? QGuiApplication::primaryScreen()->devicePixelRatio()
+                          : 1.0;
+    const int dprKey = qRound(dpr * 100.0);
+    // The palette is part of the key: a cache hit under the old ink or accent would draw
+    // the previous scheme after the desktop changed it.
+    return name + u'|' + tone + u'|' + QString::number(pixels) + u'|'
+           + QString::number(dprKey) + u'|'
+           + QString::number(QGuiApplication::palette().cacheKey());
+}
+
+bool ThemeIconProvider::contains(const QString &id, int pixels) const
+{
+    const int queryAt = id.indexOf(u'?');
+    const QString name = queryAt < 0 ? id : id.left(queryAt);
+    QUrlQuery query(queryAt < 0 ? QString() : id.mid(queryAt + 1));
+    const QString tone = query.queryItemValue(QStringLiteral("tone"));
+    return m_cache.contains(cacheKey(name, tone, pixels));
+}
+
+int ThemeIconProvider::maxGroupSize() const
+{
+    QHash<QString, int> groups;
+    int largest = 0;
+    const QList<QString> keys = m_cache.keys();
+    for (const QString &key : keys) {
+        // `name | tone | pixels | dpr | palette`; the name is the only part that could in
+        // principle contain the separator, so the three right-hand parts are read first.
+        const QStringList parts = key.split(u'|');
+        if (parts.size() < 4) {
+            continue;
+        }
+        const QString group = parts.at(parts.size() - 3) + u'|' + parts.at(parts.size() - 4);
+        const int count = ++groups[group];
+        largest = std::max(largest, count);
+    }
+    return largest;
 }
 
 QColor ThemeIconProvider::colourFor(const QString &tone) const
@@ -105,15 +150,9 @@ QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size, const Q
     const int requested = requestedSize.isValid() ? requestedSize.width() : 0;
     const int pixels = requested > kMinPixels ? requested : 22;
     const QString tone = query.queryItemValue(QStringLiteral("tone"));
-    const qreal dpr = QGuiApplication::primaryScreen()
-                          ? QGuiApplication::primaryScreen()->devicePixelRatio()
-                          : 1.0;
-    const int dprKey = qRound(dpr * 100.0);
 
-    const QString key =
-        name + u'|' + tone + u'|' + QString::number(pixels) + u'|' + QString::number(dprKey);
-    const auto cached = m_cache.constFind(key);
-    if (cached != m_cache.constEnd()) {
+    const QString key = cacheKey(name, tone, pixels);
+    if (QPixmap *cached = m_cache.object(key)) {
         if (size != nullptr) {
             const qreal ratio = cached->devicePixelRatio() > 0.0 ? cached->devicePixelRatio()
                                                                 : 1.0;
@@ -128,7 +167,7 @@ QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size, const Q
     // its physical size and clip the item, so the ratio stays out of the pixmap.)
     if (actionicons::has(name)) {
         QPixmap pixmap = actionicons::render(name, pixels, 1.0, colourFor(tone));
-        m_cache.insert(key, pixmap);
+        m_cache.insert(key, new QPixmap(pixmap), 1);
         if (size != nullptr) {
             *size = pixmap.size();
         }
@@ -164,7 +203,7 @@ QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size, const Q
         painter.end();
     }
 
-    m_cache.insert(key, pixmap);
+    m_cache.insert(key, new QPixmap(pixmap), 1);
     if (size != nullptr) {
         *size = pixmap.size();
     }

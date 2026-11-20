@@ -878,6 +878,11 @@ void FluidSession::readCatalog()
     emit catalogChanged();
 }
 
+void FluidSession::reloadTheme()
+{
+    loadTheme();
+}
+
 void FluidSession::loadTheme()
 {
     if (!qGuiApp) {
@@ -943,6 +948,10 @@ void FluidSession::applyPalette(const QPalette &palette)
         ink.background = toRgb(m_tokens.panel);
         pf_session_set_ink(m_session, &ink);
     }
+    // Before `themeChanged`, so the icon URLs carry the new revision when the previews
+    // invalidate, and with its own signal: `changed` fires on every simulation tick.
+    ++m_themeRevision;
+    emit themeRevisionChanged();
     emit themeChanged();
     emit changed();
 }

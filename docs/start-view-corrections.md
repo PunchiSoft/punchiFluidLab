@@ -19,16 +19,22 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   `image://theme/<name>?tone=…` (the rail rows, the two start cards, the About and
   Licence rows); the provider lives in `apps/punchi-fluid-qt/src/theme.cpp` and its QML
   image provider.
-- **Fix**: one size rule for every start-view icon (`Math.round(session.unit * 1.1)`),
-  `sourceSize` set to the same value so the provider rasterises at the right density,
-  `fillMode: Image.PreserveAspectRatio`, and the tone taken from the theme (`accent`,
+- **Fix**: one raster rule, two sizes: `Math.round(session.unit * 1.1)` on the rail rows
+  and `Math.round(session.unit * 1.8)` on the two «Empezar» cards, `sourceSize` set to the
+  same value so the provider rasterises at the right density,
+  `fillMode: Image.PreserveAspectFit`, and the tone taken from the theme (`accent`,
   `muted`, `onaccent`), never a literal. Check the provider caches by name, size and
   scheme ([qt-lifetimes](../.agents/skills/qt-lifetimes/SKILL.md)).
 - **Test**: capture at 1440 and 1280 in both schemes; `--check-icons` stays at 0 missing.
 - **State**: in progress.
-- **After #143**: the tones come from the theme and the provider keys by name, size and
-  scheme, but one size rule, `sourceSize` and `fillMode` remain, since two sizes (0.9× and
-  1.8× `unit`) still upscale from the provider's 22 px fallback.
+- **After #143**: the tones came from the theme and the provider keyed by name, size and
+  scheme; two sizes (0.9× and 1.8× `unit`) still upscaled from the provider's 22 px
+  fallback.
+- **On `feat/start-view-visual-pass-2`**: one raster rule and two sizes (1.1× `unit` on the
+  rail, 1.8× `unit` on the cards), `sourceSize` and `Image.PreserveAspectFit` on all five
+  images, and every URL carries `&v=<themeRevision>`. Evidence: `--check-icons` is 0
+  missing at 1×, 1.25×, 1.5× and 2× with the cache bounded, and the four captures at 1280
+  and 1440 in both schemes.
 
 ## 2. The start card's text runs into its icon
 
@@ -42,7 +48,10 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
 - **Test**: capture; no text overlaps a border or an icon at 1280 and 1440.
 - **State**: in progress.
 - **After #143**: the icon column, the `unit / 2` gap and the text column after it were
-  delivered, but the column is 1.8× `unit` instead of the fixed 2× `unit`.
+  delivered, but the column was 1.8× `unit` instead of the fixed 2× `unit`.
+- **On `feat/start-view-visual-pass-2`**: the icon column is the fixed 2× `unit`, the
+  1.8× `unit` icon is centred in it, and the text column starts after the `unit / 2` gap;
+  the captures at 1280 and 1440 show no text over the icon or the border.
 
 ## 3. Template thumbnails are tiny and washed out
 
@@ -57,9 +66,12 @@ are translated to this project's tokens first ([ui-ux.md](ui-ux.md) §2.3).
   the picture. Cards keep one proportion at every breakpoint.
 - **Test**: capture at both widths; each of the four pictures is legible without zoom.
 - **State**: in progress.
-- **After #143**: the picture follows the card's content width, but it still takes about
-  51 % of the height instead of 60–70 %, and the 180×100 mm raster is stretched to the item
-  rect, so the aspect is not preserved.
+- **After #143**: the picture followed the card's content width, but it still took about
+  51 % of the height instead of 60–70 %, and the 180×100 mm raster was stretched to the item
+  rect, so the aspect was not preserved.
+- **On `feat/start-view-visual-pass-2`**: the height follows the width, the plate is 65 % of
+  the card, the picture fills the plate width with `Qt::KeepAspectRatio`, and the detail is
+  one elided line; `--check-layout` proves the geometry at 1280 and 1440.
 
 ## 4. Recent rows overlap
 

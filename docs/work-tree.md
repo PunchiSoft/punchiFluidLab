@@ -73,7 +73,8 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-008 | The rail is uneven and its focus is not the catalogue's | `in progress` | [§8](start-view-corrections.md) |
 | P-009 | `electrical.relay.latching`: A2 and R1 collide at 300 dpi | `reported` | [review record](../assets/symbols/review/electrical.relay.latching.md) |
 | P-010 | The shuttle and the two-pressure valve are missing (OR/AND) | `reported` | [capabilities F2](capabilities.md) and ADR 0029 |
-| P-012 | The theme icon cache is unbounded | `reported` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) at `:131` and `:167` — a `QHash` keyed by name, tone, pixels and DPR with no eviction |
+| P-012 | The theme icon cache is unbounded | `in progress` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) — bounded `QCache` on `feat/start-view-visual-pass-2`: cap 73, working set 58, max group 21, LRU and palette key |
+| P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
 
 ## A node, filled
 
@@ -117,3 +118,12 @@ P-011 are untouched by it.
 Order: **A** this reconciliation, docs only, `check-docs.sh`; **B** P-001 and P-012 with
 P-002 and P-003, the visual pass; **C** P-005 and P-007, behaviour; **D** P-006 and P-008,
 closing the page. B, C and D each take their own branch, gate and pull request.
+
+## Implementation in progress (2026-11-20)
+
+`feat/start-view-visual-pass-2`, from `1afef86`; P-001, P-002, P-003, P-012 and P-013 are
+implemented, and the register moves them to `done` after the merge. Evidence: `--check-icons`
+is 0 missing at 1×, 1.25×, 1.5× and 2× (cache total 58, max group 21, LRU and palette probes
+ok); `--check-layout` is ok at 1280 and 1440 and at 1.25×, 1.5× and font 1.5×; `--selftest`
+theme steps ok; `--report-paints 2` is one paint; `--check-qml` is 0; four captures at 1280
+and 1440 in both schemes.

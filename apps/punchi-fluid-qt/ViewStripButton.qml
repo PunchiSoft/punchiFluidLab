@@ -54,7 +54,8 @@ Item {
         sourceSize.width: session.unit
         sourceSize.height: session.unit
         source: button.iconName.length > 0
-                ? "image://theme/" + button.iconName + "?tone=foreground"
+                ? "image://theme/" + button.iconName + "?tone=foreground&v="
+                  + session.themeRevision
                 : ""
     }
 

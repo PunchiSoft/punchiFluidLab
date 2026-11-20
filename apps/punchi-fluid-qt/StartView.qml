@@ -16,6 +16,10 @@ import PunchiFluid
 Rectangle {
     id: start
     property FluidSession session
+    /// One raster rule, two sizes: the rail's rows and the two «Empezar» cards each ask
+    /// the provider for the raster they draw, instead of upscaling the 22 px fallback.
+    readonly property int railIconSize: Math.round(session.unit * 1.1)
+    readonly property int cardIconSize: Math.round(session.unit * 1.8)
     /// `false` while there is nothing to go back to.
     property bool canReturn: true
     readonly property var templateDefinitions: [
@@ -138,13 +142,18 @@ Rectangle {
                         spacing: session.unit / 3
 
                         Image {
-                            width: Math.round(session.unit * 0.9)
+                            objectName: "railHomeIcon"
+                            width: start.railIconSize
                             height: width
-                            source: "image://theme/go-home?tone=onaccent"
+                            sourceSize.width: start.railIconSize
+                            sourceSize.height: start.railIconSize
+                            fillMode: Image.PreserveAspectFit
+                            source: "image://theme/go-home?tone=onaccent&v="
+                                    + session.themeRevision
                             smooth: true
                         }
                         Text {
-                            width: parent.width - Math.round(session.unit * 0.9) - parent.spacing
+                            width: parent.width - start.railIconSize - parent.spacing
                             text: qsTr("Inicio")
                             color: session.onAccent
                             font.pixelSize: session.textBody
@@ -181,14 +190,17 @@ Rectangle {
                             spacing: session.unit / 3
 
                             Image {
-                                width: Math.round(session.unit * 0.9)
+                                width: start.railIconSize
                                 height: width
-                                source: "image://theme/" + modelData.icon + "?tone=muted"
+                                sourceSize.width: start.railIconSize
+                                sourceSize.height: start.railIconSize
+                                fillMode: Image.PreserveAspectFit
+                                source: "image://theme/" + modelData.icon + "?tone=muted&v="
+                                        + session.themeRevision
                                 smooth: true
                             }
                             Text {
-                                width: parent.width - Math.round(session.unit * 0.9)
-                                       - parent.spacing
+                                width: parent.width - start.railIconSize - parent.spacing
                                 text: modelData.label
                                 color: session.foreground
                                 font.pixelSize: session.textBody
@@ -252,14 +264,17 @@ Rectangle {
                             spacing: session.unit / 3
 
                             Image {
-                                width: Math.round(session.unit * 0.9)
+                                width: start.railIconSize
                                 height: width
-                                source: "image://theme/" + modelData.icon + "?tone=muted"
+                                sourceSize.width: start.railIconSize
+                                sourceSize.height: start.railIconSize
+                                fillMode: Image.PreserveAspectFit
+                                source: "image://theme/" + modelData.icon + "?tone=muted&v="
+                                        + session.themeRevision
                                 smooth: true
                             }
                             Text {
-                                width: parent.width - Math.round(session.unit * 0.9)
-                                       - parent.spacing
+                                width: parent.width - start.railIconSize - parent.spacing
                                 text: modelData.label
                                 color: session.foreground
                                 font.pixelSize: session.textBody
@@ -333,6 +348,7 @@ Rectangle {
                         spacing: session.unit
 
                         Rectangle {
+                            objectName: "startCardNew"
                             width: (parent.width - parent.spacing) / 2
                             height: session.unit * 3.9
                             radius: session.radius
@@ -350,14 +366,26 @@ Rectangle {
                                 anchors.rightMargin: session.unit / 2
                                 spacing: session.unit / 2
 
-                                Image {
-                                    width: Math.round(session.unit * 1.8)
-                                    height: width
-                                    source: "image://theme/document-new?tone=accent"
-                                    smooth: true
+                                Item {
+                                    objectName: "startCardNewIconColumn"
+                                    width: Math.round(session.unit * 2)
+                                    height: parent.height
+                                    Image {
+                                        objectName: "startCardNewIcon"
+                                        anchors.centerIn: parent
+                                        width: start.cardIconSize
+                                        height: width
+                                        sourceSize.width: start.cardIconSize
+                                        sourceSize.height: start.cardIconSize
+                                        fillMode: Image.PreserveAspectFit
+                                        source: "image://theme/document-new?tone=accent&v="
+                                                + session.themeRevision
+                                        smooth: true
+                                    }
                                 }
                                 Column {
-                                    width: parent.width - Math.round(session.unit * 1.8)
+                                    objectName: "startCardNewText"
+                                    width: parent.width - Math.round(session.unit * 2)
                                            - parent.spacing
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 2
@@ -366,12 +394,14 @@ Rectangle {
                                         color: session.foreground
                                         font.pixelSize: session.textLabel
                                         font.bold: true
+                                        width: parent.width
                                         elide: Text.ElideRight
                                     }
                                     Text {
                                         text: qsTr("Una hoja vacía, A4 apaisado")
                                         color: session.muted
                                         font.pixelSize: session.textSmall
+                                        width: parent.width
                                         wrapMode: Text.WordWrap
                                     }
                                 }
@@ -387,6 +417,7 @@ Rectangle {
                         }
 
                         Rectangle {
+                            objectName: "startCardOpen"
                             width: (parent.width - parent.spacing) / 2
                             height: session.unit * 3.9
                             radius: session.radius
@@ -405,14 +436,26 @@ Rectangle {
                                 anchors.rightMargin: session.unit / 2
                                 spacing: session.unit / 2
 
-                                Image {
-                                    width: Math.round(session.unit * 1.8)
-                                    height: width
-                                    source: "image://theme/document-open?tone=muted"
-                                    smooth: true
+                                Item {
+                                    objectName: "startCardOpenIconColumn"
+                                    width: Math.round(session.unit * 2)
+                                    height: parent.height
+                                    Image {
+                                        objectName: "startCardOpenIcon"
+                                        anchors.centerIn: parent
+                                        width: start.cardIconSize
+                                        height: width
+                                        sourceSize.width: start.cardIconSize
+                                        sourceSize.height: start.cardIconSize
+                                        fillMode: Image.PreserveAspectFit
+                                        source: "image://theme/document-open?tone=muted&v="
+                                                + session.themeRevision
+                                        smooth: true
+                                    }
                                 }
                                 Column {
-                                    width: parent.width - Math.round(session.unit * 1.8)
+                                    objectName: "startCardOpenText"
+                                    width: parent.width - Math.round(session.unit * 2)
                                            - parent.spacing
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 2
@@ -420,12 +463,14 @@ Rectangle {
                                         text: qsTr("Abrir…")
                                         color: session.foreground
                                         font.pixelSize: session.textLabel
+                                        width: parent.width
                                         elide: Text.ElideRight
                                     }
                                     Text {
                                         text: qsTr("Un proyecto guardado")
                                         color: session.muted
                                         font.pixelSize: session.textSmall
+                                        width: parent.width
                                         wrapMode: Text.WordWrap
                                     }
                                 }
@@ -471,6 +516,7 @@ Rectangle {
                         rowSpacing: session.unit
 
                             Repeater {
+                                objectName: "templateRepeater"
                                 model: start.templateDefinitions
                                 delegate: Button {
                                     id: templateCard
@@ -479,7 +525,15 @@ Rectangle {
                                                        - (templateGrid.columns - 1)
                                                          * templateGrid.columnSpacing)
                                                       / templateGrid.columns)
-                                    height: session.unit * 8
+                                    // The height follows the width: the plate takes the
+                                    // content width and its own 512:288 aspect, and the card
+                                    // is the plate over 0.65, so the picture is 65 % of it.
+                                    readonly property real plateWidth: width
+                                                                       - 2 * (session.unit / 3)
+                                                                       - 2 * (session.unit / 4)
+                                    readonly property real plateHeight: plateWidth
+                                                                        / (512.0 / 288.0)
+                                    height: plateHeight / 0.65
                                     padding: session.unit / 3
                                     Accessible.role: Accessible.Button
                                     Accessible.name: modelData.title
@@ -501,36 +555,37 @@ Rectangle {
                                             // reference: the thumbnail is the picture of the
                                             // circuit, and the words are the label under it.
                                             Rectangle {
+                                                objectName: "templatePlate" + modelData.index
                                                 width: parent.width
-                                                height: session.unit * 4.1
+                                                height: templateCard.plateHeight
                                                 radius: session.radiusSmall
-                                                color: session.background
+                                                color: session.panel
                                                 clip: true
 
                                                 TemplatePreviewItem {
                                                     objectName: "templatePreview" + modelData.index
                                                     anchors.fill: parent
-                                                    anchors.margins: 3
                                                     session: start.session
                                                     templateIndex: modelData.index
                                                 }
                                             }
 
                                             Text {
+                                                objectName: "templateTitle" + modelData.index
                                                 text: modelData.title
                                                 color: session.foreground
-                                                font.pixelSize: session.textBody
+                                                font.pixelSize: session.textLabel
                                                 font.bold: true
                                                 width: parent.width
                                                 elide: Text.ElideRight
                                             }
                                             Text {
+                                                objectName: "templateDetail" + modelData.index
                                                 text: modelData.detail
                                                 color: session.muted
                                                 font.pixelSize: session.textSmall
                                                 width: parent.width
-                                                wrapMode: Text.WordWrap
-                                                maximumLineCount: 2
+                                                maximumLineCount: 1
                                                 elide: Text.ElideRight
                                             }
                                         }
@@ -540,9 +595,9 @@ Rectangle {
                                         anchors.fill: parent
                                         radius: session.radius
                                         color: templateCard.down ? session.surfaceSunken
-                                              : (templateCard.hovered ? session.surfaceRaised
-                                                                      : session.panel)
+                                                                 : session.surfaceRaised
                                         border.color: templateCard.activeFocus
+                                                      || templateCard.hovered
                                                       ? session.accent : session.line
                                         border.width: templateCard.activeFocus
                                                       ? session.unit / 9 : session.unit / 18

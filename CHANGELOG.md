@@ -6,6 +6,37 @@ publicación.
 
 ## Unreleased
 
+### Inicio: iconos nítidos, tarjetas derivadas y tema que refresca — 2026-11-20
+
+- Los iconos de Inicio siguen **una sola regla de raster con dos tamaños**: `1,1 × unit` en el
+  raíl y `1,8 × unit` en las dos tarjetas de **Empezar**, con `sourceSize` al mismo tamaño y
+  `fillMode: Image.PreserveAspectFit`, y el tono siempre tomado del tema. Ya no se amplía el
+  fallback de 22 px.
+- Las dos tarjetas de **Empezar** reservan una columna de icono fija de `2 × unit`, con el
+  icono de `1,8 × unit` centrado, el hueco de `unit / 2` y el texto después; a 1280 y a 1440
+  ninguna palabra toca el icono ni el borde, y ambas tarjetas comparten la misma geometría
+  interna.
+- Las tarjetas de plantilla **derivan la altura de su ancho**: la placa es el ancho de
+  contenido sobre la proporción 512:288 y la tarjeta es la placa dividida por 0,65, así que la
+  imagen ocupa el 65 % de la tarjeta y la proporción se mantiene en todo breakpoint. A 1280
+  la tarjeta mide unos 252 × 200 px y la placa unos 231 × 130 px.
+- El dibujo llena el ancho de la placa y conserva su proporción (`Qt::KeepAspectRatio`), con
+  la banda transparente del 1,2 % entre el raster 512 × 288 y el área de 180 × 100 mm; el
+  detalle queda en una sola línea con elipsis y el título usa `textLabel`.
+- La placa es `panel` sobre una tarjeta `surfaceRaised` (`surfaceSunken` al pulsar, borde de
+  acento al pasar y al enfocar), así que se lee como papel hundido dentro de la tarjeta.
+- Todas las URL `image://theme` llevan `&v=<session.themeRevision>`: un cambio de paleta
+  incrementa la revisión y vuelve a pedir los iconos, de modo que nunca queda el tinte
+  anterior.
+- La caché de iconos tiene un **tope medido**: 73 entradas (conjunto de trabajo 58, grupo
+  máximo 21 por tamaño y tinte), con desalojo LRU y la paleta en la clave, para que un cambio
+  de tema no devuelva un raster viejo.
+- **Evidencia**: `--check-icons` con 0 iconos ausentes a 1×, 1,25×, 1,5× y 2× y las cuatro
+  medidas `cache total 58, max group 21`; `--check-layout` correcto a 1280 y 1440, también a
+  1,25×, 1,5× y fuente 1,5×; los pasos de tema de `--selftest`; `--report-paints 2` con una
+  sola pintura; `--check-qml` sin problemas; las capturas de 1280 y 1440 en claro y oscuro, y
+  `start-view-hierarchy-{light,dark}.png`.
+
 ### Inicio se lee en planos, con una acción principal — 2026-11-19
 
 - La página es un solo plano con **Empezar**, **Plantillas** y **Recientes** como etiquetas de

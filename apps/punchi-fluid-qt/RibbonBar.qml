@@ -571,7 +571,7 @@ Rectangle {
         } else if (id === "reset") {
             session.restart();
         } else if (id === "scheme") {
-            session.loadTheme();
+            session.reloadTheme();
         } else if (id === "zoom-in") {
             session.zoomIn();
         } else if (id === "zoom-out") {
