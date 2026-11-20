@@ -7,8 +7,8 @@
 # reading is text from the model: this file declares the restriction the meter adds and the
 # full scale of the number, never the number itself (ADR 0014).
 #
-# Conductance of a meter that does not strangle a small circuit: about 84 normal litres per
-# minute against a 6 bar supply, so the number moves with a throttle instead of sitting at
+# Conductance of a meter that does not strangle a small circuit: about 60 normal litres per
+# minute against a 4 bar supply, so the number moves with a throttle instead of sitting at
 # full scale all the time.
 
 schema = 3

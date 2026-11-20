@@ -41,7 +41,7 @@ evidencia) y [next-steps.md](next-steps.md) (orden de trabajo). En corto:
 | Redacción del circuito | colocar, mover, borrar, deshacer/rehacer, conectar puerto a puerto, seleccionar y borrar un tubo, **reencaminar un tubo arrastrando su segmento**, T automática al soltar sobre un tubo, copiar/pegar/duplicar (Ctrl+C/V/D y Mayús+arrastrar), **girar y reflejar** (`Alt+R`, `Alt+M`, `Ctrl` y doble clic), **selección múltiple** (Mayús y clic, rectángulo elástico, Ctrl+E) con arrastrar/copiar/borrar/alinear en grupo y un solo deshacer |
 | Propiedades | **por instancia**: presión, conductancia, carrera, émbolo, vástago, masa y **designación** (el nombre, dibujado bajo el símbolo); Aplicar es un solo deshacer. Faltan resumen, accionamiento, posición inicial, ángulo de montaje, fugas y amortiguamiento |
 | Simulación | **la hoja es la red**: `punchi-fluid-solver::network` construye volúmenes y restricciones desde el documento; válvula 5/2 y cilindro de doble efecto como archivos; T y estrangulador; el clic acciona la válvula pulsada; tubos coloreados por presión |
-| Presión | manométrica de punta a punta: 0,00 bar en reposo, 6,00 bar con la fuente de 6 bar |
+| Presión | manométrica de punta a punta: 0,00 bar en reposo, 4,00 bar con la fuente de 4 bar |
 | Archivo | Nuevo/Abrir/Guardar/Guardar como (Ctrl+N/O/S/Shift+S), formato de hoja versionado con escritura atómica, `--save` y `--open` sin ventana, **documentos recientes** (los últimos diez, en Archivo); **aviso de cambios sin guardar** (título con `•`, confirmación al cerrar o abrir otro) y **copia de seguridad** cada 30 s que se ofrece al arrancar |
 | Proyecto | **un documento con varios circuitos**: formato 6, lista de circuitos, selector en Archivo, añadir/renombrar, hoja activa, guardado/apertura de todos y la fuente de cada registrador; la novena falta es un tubo que une dos circuitos |
 | Exportación | **desde la ventana y sin ventana**, con **lista de piezas** en la hoja: Archivo ▸ Exportar escribe PDF, PNG (300 dpi) o **SVG** de la hoja que está en pantalla; el grupo Hoja ofrece A5–A0, Letter, Legal y Oficio, apaisado incluido; `--export` hace lo mismo sin ventana; la fecha es la del día y el dibujo se escala para encajar, con la escala escrita en el bloque. Con panel de **márgenes, tamaño personalizado, resolución y lista de piezas** |
@@ -85,7 +85,7 @@ Cómo comprobarlo sin ventana:
 ```bash
 ./scripts-dev/check.sh
 apps/punchi-fluid-qt/build/punchi-fluid --probe                 # 0,00 bar y 0,0 mm en reposo
-apps/punchi-fluid-qt/build/punchi-fluid --toggle --step 30 --probe  # 6,00 bar y 100,0 mm
+apps/punchi-fluid-qt/build/punchi-fluid --toggle --step 30 --probe  # 4,00 bar y 100,0 mm
 apps/punchi-fluid-qt/build/punchi-fluid --save /tmp/c.pfluid
 apps/punchi-fluid-qt/build/punchi-fluid --open /tmp/c.pfluid --probe
 QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --selftest
@@ -431,7 +431,7 @@ Para no tener que deducirlo leyendo `pneumatic.rs`:
 | Constante específica del aire | `287.058 J/(kg·K)` |
 | Temperatura | `293.15 K` (estándar) |
 | Atmósfera | `101 325 Pa` |
-| Suministro de fábrica | `6 bar` manométricos → `700 000 Pa` absolutos |
+| Suministro de fábrica | `4 bar` manométricos → `500 000 Pa` absolutos |
 | Conductancia de la válvula 3/2 | `1.0e-9 m³/(s·Pa)` por camino |
 | Relación crítica `b` | `0.3` |
 | Cilindro: diámetro / carrera | `20 mm` / `100 mm` |

@@ -79,6 +79,7 @@ the default; dropping it is the exception.
 | F1 | The title block protects its own box | `covered` | the block's footprint, not a band: the strip beside it takes symbols and a collision is a fault |
 | F1 | Give a component a designation | `covered` | a name per placement, edited in the properties panel, drawn under the symbol and saved with the sheet; 40 characters, trimmed, no control characters |
 | F2 | The sheet is the network the solver runs | `covered` | built from the document; a 5/2 valve file drives a double-acting cylinder; junction and throttle are part of the graph |
+| F2 | A supply starts at 4 bar | `covered` | the three built-in definitions (`supply.compressor`, `supply.compressor_adjustable`, `supply.network`) declare **4 bar gauge**, the industry default chosen by the owner; a new placement, the four templates and the worked example read it, while an explicit per-placement pressure wins; an older sheet with no edit reads the catalog default, so a document that needs 6 bar carries the edit. No format change |
 | F2 | Pipes coloured by pressure while running | `covered` | each hose takes the pressure of its port; at atmosphere it keeps the neutral ink |
 | F2 | The shuttle and the two-pressure valve | `missing` | entry below |
 | F3 | Pressure gauge: a dial that reads the line it is connected to | `covered` | one file with `behaviour = "gauge"`, a scale and one working port; two tests and a symbol review |

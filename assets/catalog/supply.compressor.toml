@@ -13,8 +13,8 @@
 
 schema = 3
 id = "supply.compressor"
-name = "Compressor, 6 bar"
-name_es = "Compresor, 6 bar"
+name = "Compressor, 4 bar"
+name_es = "Compresor, 4 bar"
 category = "supply"
 summary = "Makes the compressed air that feeds the circuit."
 
@@ -25,7 +25,7 @@ position = [0.5, 0.06]
 
 [behaviour]
 type = "supply"
-pressure_bar = 6.0
+pressure_bar = 4.0
 
 [[symbol]]
 kind = "circle"

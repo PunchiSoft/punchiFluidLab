@@ -12,8 +12,8 @@
 
 schema = 3
 id = "supply.network"
-name = "Compressed air network, 6 bar"
-name_es = "Red de aire comprimido, 6 bar"
+name = "Compressed air network, 4 bar"
+name_es = "Red de aire comprimido, 4 bar"
 category = "supply"
 summary = "The compressed-air network arrives here."
 
@@ -24,7 +24,7 @@ position = [0.5, 0.08]
 
 [behaviour]
 type = "supply"
-pressure_bar = 6.0
+pressure_bar = 4.0
 
 # An equilateral triangle with its apex up, as the reference draws the air source: the
 # delivery leaves through the apex and the stem goes up to the connection. Half the base is

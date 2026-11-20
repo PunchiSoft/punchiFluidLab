@@ -1295,8 +1295,10 @@ mod tests {
             network.position() * 1000.0,
             cylinder.stroke * 1000.0
         );
+        // The built-in compressor is the 4 bar catalog default, so the chamber settles at
+        // 4 bar gauge: absolute pressure is atmosphere plus 4e5 Pa.
         assert!(
-            network.pressure_pa() > network.atmosphere_pa() + 5.0e5,
+            network.pressure_pa() > network.atmosphere_pa() + 3.9e5,
             "the chamber is at supply pressure, not {} bar",
             network.pressure_pa() / 1e5
         );
@@ -1320,8 +1322,9 @@ mod tests {
         let cylinder = network
             .port_pressure(2, "1")
             .expect("the cylinder port is in the model");
+        // The same 4 bar supply reaches the cylinder port, so the gauge reads near 4 bar.
         assert!(
-            cylinder > atmosphere + 5.0e5,
+            cylinder > atmosphere + 3.9e5,
             "the gauge reads {:.2} bar",
             (cylinder - atmosphere) / 1e5
         );
