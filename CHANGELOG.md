@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### Presión de alimentación: 4 bar por defecto — 2026-11-20
+
+- Las tres definiciones neumáticas de fábrica declaran **4 bar manométricos**:
+  `supply.compressor`, `supply.compressor_adjustable` y `supply.network`. El compresor es la
+  fuente por defecto del solver y la que colocan las cuatro plantillas, así que también
+  cambia de nombre (`Compresor, 4 bar`, `Red de aire comprimido, 4 bar`, …). La presión es un
+  valor del catálogo, no un campo nuevo del documento: no hay cambio de formato.
+- **Un valor explícito manda.** Un documento que guardó `pressure_bar = 6.0` en una
+  colocación conserva 6 bar al reabrirlo, y el modelo lo usa.
+- **Un documento antiguo sin edición cambia a 4 bar.** La presión nunca se guardó si el
+  usuario no la editó, así que al abrirlo lee el nuevo valor del catálogo; es el cambio de
+  comportamiento deliberado de este hito. Un circuito que necesite 6 bar debe llevar la
+  edición por colocación.
+- Las plantillas, el ejemplo trabajado, las referencias del manómetro y del cilindro y el
+  comentario de conductancia del caudalímetro (unos 60 l/min normales a 4 bar) se actualizan
+  con el mismo cálculo y las mismas tolerancias; la escala del manómetro y los límites no
+  cambian.
+- **Evidencia**: `a_new_supply_is_four_bar`,
+  `an_explicit_six_bar_edit_is_kept_when_the_file_is_reopened` y
+  `an_old_supply_without_an_edit_reads_the_new_default`, las pruebas de plantillas, ejemplo
+  y manómetro, las referencias de presión del solver, el smoke del CLI y `--selftest` en
+  verde, y `./scripts-dev/check.sh`.
+
 ### Corrección: el ramal de una T — 2026-11-20
 
 - **El ramal de una T sale recto**: los tres puertos de `junction.tee` están en el centro, así

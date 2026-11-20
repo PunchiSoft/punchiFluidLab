@@ -12,7 +12,7 @@ today, kept here so a translator does not invent a second vocabulary.
 | absolute pressure | presión absoluta | Pressure measured from vacuum. The model stores absolute pressure. | Pa |
 | gauge pressure | presión manométrica | Pressure above the local atmosphere; the number the status bar and the gauge show. | bar |
 | atmosphere | atmósfera | The reference pressure for gauge pressure; `101 325 Pa` in the model. | Pa |
-| supply | suministro | A source that holds a pressure, for example the 6 bar workshop compressor. | ISO 5598 |
+| supply | suministro | A source that holds a pressure, for example the 4 bar workshop compressor. | ISO 5598 |
 | working line | línea de trabajo | A line that carries air between components during normal operation. | ISO 1219 |
 | pilot line | línea de pilotaje | A line that carries a signal, not the working flow. | ISO 1219 |
 | exhaust | escape | A line or port that releases air to the atmosphere. | ISO 1219 |

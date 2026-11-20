@@ -30,7 +30,7 @@ symbol the sheet will draw. Scroll it and drag a row onto the sheet.
 
 Place these three, left to right:
 
-- **Compresor, 6 bar** — the supply.
+- **Compresor, 4 bar** — the supply.
 - **Válvula 3/2, retorno por muelle** — the valve.
 - **Cilindro de simple efecto, 20/100** — the actuator.
 

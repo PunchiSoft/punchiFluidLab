@@ -21,27 +21,27 @@ use punchi_fluid::{
     PF_BLOCK_CHECKED, PF_BLOCK_DATE, PF_BLOCK_EQUIPMENT, PF_BLOCK_FIELD_SHEET,
     PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL, PF_BLOCK_NONE, PF_BLOCK_NORMS,
     PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED, PF_BLOCK_PROJECT, PF_BLOCK_REVISION,
-    PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT, PF_EDIT_BORE, PF_EDIT_ROD, PF_EDIT_STROKE,
-    PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF, PF_EXPORT_SVG,
-    PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW, PF_QUANTITY_POSITION,
-    PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PF_TEMPLATE_COUNT, PfAbi, PfBlockLayout, PfCall,
-    PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk, PfPoint, PfSession,
-    PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds, pf_export_paper_count,
-    pf_export_paper_name, pf_export_paper_size_mm, pf_session_active_circuit,
-    pf_session_add_circuit, pf_session_advance, pf_session_align_selection, pf_session_autosave,
-    pf_session_block, pf_session_block_customized, pf_session_block_layout, pf_session_block_model,
-    pf_session_block_preset, pf_session_block_remark, pf_session_block_visible,
-    pf_session_build_frame, pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog,
-    pf_session_catalog_problems, pf_session_chart_candidate, pf_session_chart_candidate_count,
-    pf_session_chart_source, pf_session_check, pf_session_circuit_count, pf_session_circuit_id,
-    pf_session_circuit_name, pf_session_clear_chart_source, pf_session_component_count,
-    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
-    pf_session_component_orientation, pf_session_component_rect,
-    pf_session_component_valve_position, pf_session_component_valve_spring_return,
-    pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
-    pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
-    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
-    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
+    PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT, PF_EDIT_BORE, PF_EDIT_PRESSURE,
+    PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF,
+    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
+    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PF_TEMPLATE_COUNT, PfAbi,
+    PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk,
+    PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds,
+    pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
+    pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
+    pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
+    pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
+    pf_session_block_remark, pf_session_block_visible, pf_session_build_frame,
+    pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_catalog_problems,
+    pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
+    pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
+    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
+    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
+    pf_session_component_rect, pf_session_component_valve_position,
+    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
+    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
+    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
+    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
     pf_session_forget_recent_at, pf_session_free, pf_session_grid_step, pf_session_hit_component,
     pf_session_hit_valve, pf_session_indicator_active, pf_session_is_modified,
     pf_session_last_error, pf_session_load_example, pf_session_load_template,
@@ -416,6 +416,18 @@ fn a_new_document_is_an_empty_sheet_and_the_example_loads_on_request() {
     // SAFETY: live session, an empty document.
     assert_eq!(unsafe { pf_session_load_example(session) }, PF_OK);
     assert!(unsafe { pf_session_component_count(session) } >= 4);
+    // The worked example is the shared catalog's supply, so it now runs at 4 bar.
+    let mut edits = PfEditSet::default();
+    // SAFETY: live session and a writable structure.
+    assert_eq!(
+        unsafe { pf_session_component_edits(session, 0, &raw mut edits) },
+        PF_OK
+    );
+    assert!(
+        (edits.pressure_bar - 4.0).abs() < 1e-9,
+        "the example's supply reads {} bar, not 4",
+        edits.pressure_bar
+    );
     // A second call is refused: the example cannot be duplicated behind the reader's back.
     // SAFETY: live session.
     assert_ne!(unsafe { pf_session_load_example(session) }, PF_OK);
@@ -447,6 +459,20 @@ fn the_four_start_templates_load_clean_and_cannot_replace_a_working_document() {
             expected_pipes[index as usize]
         );
         assert_eq!(unsafe { pf_session_is_modified(session) }, 0);
+        // Every template places a supply, and a new placement reads the 4 bar default.
+        let supply = component_with(session, "supply.");
+        assert_ne!(supply, u32::MAX, "template {index} places no supply");
+        let mut edits = PfEditSet::default();
+        // SAFETY: live session and a writable structure.
+        assert_eq!(
+            unsafe { pf_session_component_edits(session, supply, &raw mut edits) },
+            PF_OK
+        );
+        assert!(
+            (edits.pressure_bar - 4.0).abs() < 1e-9,
+            "template {index} places its supply at {} bar, not 4",
+            edits.pressure_bar
+        );
     }
 
     let before = unsafe { pf_session_component_count(session) };
@@ -1631,6 +1657,164 @@ fn a_supply_pressure_edit_reaches_the_gas() {
 }
 
 #[test]
+fn a_new_supply_is_four_bar() {
+    // The owner chose 4 bar gauge as the industry default on 2026-11-20. A new placement
+    // reads the catalog value, so all three built-in supplies have to start there.
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null(), "a session must always be created");
+
+    for id in [
+        "supply.compressor",
+        "supply.compressor_adjustable",
+        "supply.network",
+    ] {
+        // SAFETY: live session, a catalog index and sheet coordinates.
+        let index =
+            unsafe { pf_session_place_component(session, catalog_index(session, id), 40.0, 40.0) };
+        assert!(index >= 0, "`{id}` could not be placed");
+        let index = u32::try_from(index).unwrap_or_default();
+        let mut edits = PfEditSet::default();
+        // SAFETY: live session and a writable structure.
+        assert_eq!(
+            unsafe { pf_session_component_edits(session, index, &raw mut edits) },
+            PF_OK
+        );
+        assert_ne!(edits.mask & PF_EDIT_PRESSURE, 0, "`{id}` has no pressure");
+        assert!(
+            (edits.pressure_bar - 4.0).abs() < 1e-9,
+            "`{id}` starts at {} bar, not at the 4 bar default",
+            edits.pressure_bar
+        );
+    }
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn an_explicit_six_bar_edit_is_kept_when_the_file_is_reopened() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("seis-bar.pfluid");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).unwrap_or_default();
+
+    let session = session();
+    let edit = PfEditSet {
+        mask: PF_EDIT_PRESSURE,
+        pressure_bar: 6.0,
+        ..PfEditSet::default()
+    };
+    // SAFETY: live session and a readable structure.
+    assert_eq!(
+        unsafe { pf_session_set_component_edits(session, 0, &raw const edit) },
+        PF_OK
+    );
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_save(session, encoded.as_ptr()) }, PF_OK);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+
+    // The explicit value is the document's, not a copy of the catalog default.
+    let session = self::session();
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(session, encoded.as_ptr()) }, PF_OK);
+    let mut edits = PfEditSet::default();
+    // SAFETY: live session and a writable structure.
+    assert_eq!(
+        unsafe { pf_session_component_edits(session, 0, &raw mut edits) },
+        PF_OK
+    );
+    assert!(
+        (edits.pressure_bar - 6.0).abs() < 1e-9,
+        "the explicit 6 bar edit was not kept: {} bar",
+        edits.pressure_bar
+    );
+
+    // The gas reads the reopened edit: 6 bar gauge is 6e5 Pa above atmosphere.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    for _ in 0..60 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    let mut telemetry = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut telemetry) },
+        PF_OK
+    );
+    let gauge = (telemetry.pressure_pa - 101_325.0) / 1e5;
+    assert!(
+        (gauge - 6.0).abs() < 0.05,
+        "the chamber settles at {gauge:.2} bar, not at the reopened 6 bar"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn an_old_supply_without_an_edit_reads_the_new_default() {
+    // A sheet written before this change carries a supply but no per-placement pressure.
+    // The value was never stored, so opening it reads the catalog default; that deliberately
+    // changes the circuit to 4 bar, and a document that needs 6 bar must carry the edit.
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("sin-edicion.pfluid");
+    std::fs::write(
+        &path,
+        r#"{
+  "format": 3,
+  "title": "Un documento anterior",
+  "placement": [
+    { "id": 1, "catalog": "supply.compressor", "x": 40.0, "y": 40.0, "width": 20.0, "height": 20.0 },
+    { "id": 2, "catalog": "valve.3_2.spring_return", "x": 100.0, "y": 80.0, "width": 20.0, "height": 20.0 },
+    { "id": 3, "catalog": "cylinder.single_acting_20_100", "x": 160.0, "y": 80.0, "width": 44.0, "height": 20.0 }
+  ],
+  "pipe": [
+    { "from": 1, "from_port": "1", "to": 2, "to_port": "1" },
+    { "from": 2, "from_port": "2", "to": 3, "to_port": "1" }
+  ]
+}"#,
+    )
+    .expect("the old sheet is written");
+    let encoded = CString::new(path.to_string_lossy().as_bytes()).unwrap_or_default();
+
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null(), "a session must always be created");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(unsafe { pf_session_open(session, encoded.as_ptr()) }, PF_OK);
+    let mut edits = PfEditSet::default();
+    // SAFETY: live session and a writable structure.
+    assert_eq!(
+        unsafe { pf_session_component_edits(session, 0, &raw mut edits) },
+        PF_OK
+    );
+    assert!(
+        (edits.pressure_bar - 4.0).abs() < 1e-9,
+        "the unedited supply reads {} bar, not the new 4 bar default",
+        edits.pressure_bar
+    );
+
+    // It runs at 4 bar: 4e5 Pa above atmosphere.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_press_valve(session) }, PF_OK);
+    for _ in 0..60 {
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_advance(session, 0.016) }, PF_OK);
+    }
+    let mut telemetry = PfTelemetry::default();
+    // SAFETY: live session, writable output.
+    assert_eq!(
+        unsafe { pf_session_telemetry(session, &raw mut telemetry) },
+        PF_OK
+    );
+    let gauge = (telemetry.pressure_pa - 101_325.0) / 1e5;
+    assert!(
+        (gauge - 4.0).abs() < 0.05,
+        "the old sheet settles at {gauge:.2} bar, not at the new 4 bar default"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
 fn a_pressure_gauge_reads_the_line_it_is_connected_to() {
     let session = session();
     let gauge = catalog_index(session, "gauge.pressure");
@@ -1695,8 +1879,8 @@ fn a_pressure_gauge_reads_the_line_it_is_connected_to() {
     );
     let value: f32 = reading.trim_end_matches(" bar").parse().unwrap_or_default();
     assert!(
-        (1.0..=10.0).contains(&value),
-        "the gauge reads `{reading}`, not a pressure on its 0..10 bar scale"
+        (3.5..=4.5).contains(&value),
+        "the gauge reads `{reading}`, not the 4 bar line it is connected to"
     );
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };

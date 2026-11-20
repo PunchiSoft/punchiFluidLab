@@ -60,6 +60,31 @@ fn builtin_catalog_loads_without_problems() {
 }
 
 #[test]
+fn a_new_supply_is_four_bar() {
+    // 4 bar gauge is the product default the owner chose on 2026-11-20. The three built-in
+    // supplies are the catalog value a new placement reads, so they have to agree.
+    let catalog = Catalog::builtin();
+    for id in [
+        "supply.compressor",
+        "supply.compressor_adjustable",
+        "supply.network",
+    ] {
+        let definition = catalog.get(id).expect("the built-in supply exists");
+        assert!(
+            matches!(definition.behaviour, Behaviour::Supply { .. }),
+            "{id} is not a supply"
+        );
+        let Behaviour::Supply { pressure_bar } = definition.behaviour else {
+            continue;
+        };
+        assert!(
+            (pressure_bar - 4.0).abs() < f64::EPSILON,
+            "{id} declares {pressure_bar} bar, not the 4 bar default"
+        );
+    }
+}
+
+#[test]
 fn user_directory_adds_and_overrides_definitions() {
     let dir = tempfile::tempdir().expect("temp dir");
     write(dir.path(), "valve.toml", EXTRA_VALVE);

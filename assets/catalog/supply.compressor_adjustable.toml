@@ -13,8 +13,8 @@
 
 schema = 3
 id = "supply.compressor_adjustable"
-name = "Adjustable compressor, 6 bar"
-name_es = "Compresor ajustable, 6 bar"
+name = "Adjustable compressor, 4 bar"
+name_es = "Compresor ajustable, 4 bar"
 category = "supply"
 summary = "Makes the compressed air, with an adjustable delivery."
 
@@ -25,7 +25,7 @@ position = [0.5, 0.06]
 
 [behaviour]
 type = "supply"
-pressure_bar = 6.0
+pressure_bar = 4.0
 
 [[symbol]]
 kind = "circle"

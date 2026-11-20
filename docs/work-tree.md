@@ -78,6 +78,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 | P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
 | P-022 | The branch of a tee bends instead of staying straight | `in progress` | `fix/tee-gauge-route`: a junction port takes its edge from the component or pipe it faces, the check passes the same hint, and the selftest tee probe and the captures prove the straight branch |
+| P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
 
 ## A node, filled
 
@@ -195,6 +196,46 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   `--check-qml`, `--check-theme` and `--check-icons` pass; `./scripts-dev/check.sh` is green;
   the light/dark and 300 dpi captures show the straight branch; the owner confirms the diff.
 - **State**: `in progress` on `fix/tee-gauge-route`; `done` after the owner merges.
+
+### P-025 — The supply starts at 4 bar
+
+- **Problem**: the built-in supplies declared 6 bar, so a new circuit was designed around a
+  pressure the owner does not want as the workshop default; 4 bar with 10 mm tubing is the
+  industry case he teaches.
+- **Evidence**: the owner's request of 2026-11-20; the three catalog files declared
+  `pressure_bar = 6.0`, the four templates place `supply.compressor`, and the worked example
+  ran at 6 bar.
+- **Touches**: `assets/catalog/supply.compressor.toml`,
+  `assets/catalog/supply.compressor_adjustable.toml`, `assets/catalog/supply.network.toml`,
+  the names they expose, `assets/catalog/flow.meter.toml` (its conductance reference),
+  `crates/punchi-fluid-catalog/src/catalog_tests.rs`,
+  `crates/punchi-fluid-solver/src/network.rs` (the two pressure references),
+  `crates/punchi-fluid-ffi/tests/abi.rs` (the new tests, the templates, the example and the
+  gauge), `assets/catalog/README.md`, `docs/capabilities.md`, `docs/reference/catalog.md`
+  if it names the default, `docs/guides/`, the glossary, the interface mock, this register
+  and `CHANGELOG.md`.
+- **Options**:
+  1. Change the catalog default only. **Pro**: one field per supply; a per-placement edit
+     already exists. **Con**: an old document with no edit changes behaviour, which has to be
+     stated and tested.
+  2. Store 4 bar in every placement. **Con**: a format change and a migration for a value
+     that is already a catalog default.
+  3. Add a per-document supply pressure. **Con**: a new document field outside this node's
+     scope.
+- **Decision**: option 1, on 2026-11-20. The pressure is a catalog value; the existing
+  per-placement edit still wins. The third supply (`supply.compressor`) is the solver's
+  `DEFAULT_SUPPLY` and the one every template places, so it changes with the two the spec
+  names; leaving it at 6 bar would leave the product default at 6. A document with an
+  explicit `pressure_bar = 6.0` keeps it; one with no edit reads 4 bar, because the value
+  was never stored, and needs the edit to stay at 6. No format change and no new field.
+- **Stages**: one branch, `chore/supply-four-bar` — the three catalog files, the names, the
+  flow-meter reference, the tests, the docs and the changelog, then the gate.
+- **Done when**: `a_new_supply_is_four_bar`,
+  `an_explicit_six_bar_edit_is_kept_when_the_file_is_reopened`,
+  `an_old_supply_without_an_edit_reads_the_new_default`, the template/example tests, the
+  gauge test and the solver pressure references are green; `./scripts-dev/check.sh` passes;
+  the owner confirms the diff.
+- **State**: `in progress` on `chore/supply-four-bar`; `done` after the owner merges.
 
 ### P-011 — Example: the window title shows an empty document name
 

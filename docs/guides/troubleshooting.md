@@ -39,7 +39,7 @@ port itself, not on the line beside it, and release on the other port.
 
 ### The cylinder does not move
 
-1. Check the supply pressure in the properties of the compressor; the default is 6 bar.
+1. Check the supply pressure in the properties of the compressor; the default is 4 bar.
 2. Check the valve position: a spring-return valve is in its rest position until you hold
    it.
 3. Run **Editar ▸ Comprobar**. An open working port, a pipe through a component or an

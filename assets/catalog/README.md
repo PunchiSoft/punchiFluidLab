@@ -142,7 +142,7 @@ Exactly one `[behaviour]` table, tagged with `type`.
 ```toml
 [behaviour]
 type = "supply"
-pressure_bar = 6.0
+pressure_bar = 4.0
 ```
 
 ```toml

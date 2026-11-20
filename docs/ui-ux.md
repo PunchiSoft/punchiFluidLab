@@ -32,7 +32,7 @@ the protagonist: no dialog in front of it unless the user opened it.
 ├──────────────────────┬────────────────────────────────────────────────────────┤
 │ 🔍 Buscar…           │                                                        │
 │ ▾ Alimentación       │                                                        │
-│   ⬤ Aire 6 bar       │                                                        │
+│   ⬤ Aire 4 bar       │                                                        │
 │ ▾ Válvulas           │              hoja de simulación                        │
 │   ⧉ 3/2 muelle       │        (rejilla, símbolos, tuberías, instrumentos)      │
 │   ⧉ 5/2 palanca      │                                                        │
@@ -41,7 +41,7 @@ the protagonist: no dialog in front of it unless the user opened it.
 │ ▾ Instrumentos       │                                                        │
 │   ◔ Manómetro        │                                                        │
 ├──────────────────────┴────────────────────────────────────────────────────────┤
-│ t 2.506 s · p 4.99 bar · x 100.0 mm · v 0.00 m/s · 14 definiciones · en marcha │ status
+│ t 2.506 s · p 4.00 bar · x 100.0 mm · v 0.00 m/s · 14 definiciones · en marcha │ status
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
