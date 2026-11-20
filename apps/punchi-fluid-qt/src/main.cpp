@@ -1090,6 +1090,7 @@ int main(int argc, char *argv[])
             QPointF fromScene;
             QPointF toScene;
             QPointF routeScene;
+            QPointF routeTo;
             int routePipe = -1;
             float routeOffset = 0.0F;
             /// The view gestures: the pointer the wheel is aimed at, the sheet point under
@@ -1706,24 +1707,30 @@ int main(int argc, char *argv[])
                         continue;
                     }
                     // Only a hose with two jogs has a segment to drag: one bend is
-                    // already the shortest orthogonal route. Ask the core by trying the
-                    // drag on a scratch edit and taking it back at once; a point that
-                    // leaves the route where it was must not undo the previous edit.
+                    // already the shortest orthogonal route. The drag is measured in
+                    // millimetres of the sheet, not in pixels: the fit scale changes with
+                    // the window and the font, and a gesture that depends on it fails on
+                    // another machine. The core is asked on a scratch edit first, and the
+                    // edit is taken back at once.
                     float scratch = 0.0F;
                     pf_session_pipe_offset(state->session->handle(),
                                            static_cast<uint32_t>(hit), &scratch);
+                    const double reach = 15.0;
                     if (pf_session_route_pipe(state->session->handle(),
-                                              static_cast<uint32_t>(hit), x, y)
+                                              static_cast<uint32_t>(hit), x + reach,
+                                              y + reach)
                         == PF_OK) {
                         float after = 0.0F;
                         pf_session_pipe_offset(state->session->handle(),
                                                static_cast<uint32_t>(hit), &after);
-                        if (std::abs(after - scratch) > 0.001F) {
+                        if (std::abs(after - scratch) > 0.5F) {
                             state->session->undo();
+                            state->routePipe = hit;
+                            state->routeScene = toScene(QPointF(x, y));
+                            state->routeTo = toScene(QPointF(x + reach, y + reach));
+                            break;
                         }
-                        state->routePipe = hit;
-                        state->routeScene = toScene(QPointF(x, y));
-                        break;
+                        state->session->undo();
                     }
                 }
             }
@@ -1737,12 +1744,11 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonPress, state->routeScene, Qt::LeftButton, Qt::LeftButton);
         });
         steps->push_back([state, send] {
-            send(QEvent::MouseMove, state->routeScene + QPointF(60.0, 30.0), Qt::NoButton,
-                 Qt::LeftButton);
+            send(QEvent::MouseMove, state->routeTo, Qt::NoButton, Qt::LeftButton);
         });
         steps->push_back([state, check, send] {
-            send(QEvent::MouseButtonRelease, state->routeScene + QPointF(60.0, 30.0),
-                 Qt::LeftButton, Qt::NoButton);
+            send(QEvent::MouseButtonRelease, state->routeTo, Qt::LeftButton,
+                 Qt::NoButton);
             float offset = 0.0F;
             pf_session_pipe_offset(state->session->handle(),
                                    static_cast<uint32_t>(state->routePipe), &offset);
