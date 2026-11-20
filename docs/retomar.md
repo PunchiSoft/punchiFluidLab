@@ -136,7 +136,7 @@ entre #136 y #137).
 - **Trampa encontrada:** las pruebas que fijaban geometría de la rejilla (magnet, escala
   área↔tamaño) dependían del tamaño viejo; se reescribieron para medir, no para recordar.
 
-**1. `feat/palette-context-menu` — menú sobre la ficha del catálogo.**
+**1. `feat/palette-context-menu` — menú sobre la ficha del catálogo (implementado, pendiente de PR).**
 - Clic derecho sobre una ficha abre un menú con **Añadir a la hoja**; `Mayús+F10` (o la tecla
   Menú) abre el mismo menú desde el teclado, y la ficha expone su nombre accesible.
 - Coloca la pieza en el centro de la hoja con una sola entrada de deshacer, por la misma ruta
