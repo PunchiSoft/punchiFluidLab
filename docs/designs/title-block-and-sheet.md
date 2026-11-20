@@ -35,7 +35,9 @@ where a schematic is normally read horizontally.
   combo's Sin cajetín), chosen from the Cajetín tab or the docked editor, with the fields
   kept when it is hidden.
 - **A4 landscape by default**, portrait one command away.
-- **Reference zones** of 50 mm with letters and numerals from A3 upwards; absent on A4.
+- **Reference zones** of 50 mm with letters and numerals, four sides from A3 upwards and the
+  standard's **two-sided A4 form** (numerals on the top band, letters on the right) from
+  2026-11-20; A5 and the non-ISO sheets stay clean.
 - The canvas and the export draw the same block; the drawing area reserves the block band
   so nothing is hidden under it.
 
@@ -113,8 +115,11 @@ undo entry and marks the document modified.
 - One fixed 180 × 65 block: rejected, too tall on A4.
 - Keeping the two-band 32 mm block: rejected, does not carry the guide's fields.
 - Forcing the block on every sheet: rejected by the owner; it is optional.
-- Reference zones on every paper: rejected, A4 becomes noise; the guide recommends them for
-  large sheets.
+- Reference zones on every paper: the original design rejected **four sides on A4** because
+  the extra grid becomes noise on a one-page sketch; the guide recommends the zones for large
+  sheets. On **2026-11-20** the owner chose the standard's **two-sided A4 form** instead —
+  numerals on the top band and letters on the right band — so the default sheet can be cited
+  by zone while the two empty bands stay clean. A5 and the non-ISO sheets still take none.
 
 ## Verification
 

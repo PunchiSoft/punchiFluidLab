@@ -6,6 +6,31 @@ publicación.
 
 ## Unreleased
 
+### Corrección: las zonas de la hoja — 2026-11-20
+
+- **Los ejes estaban cambiados**: la cuadrícula de ISO 5457 §4.4 ponía los números en las
+  bandas verticales y las letras en las horizontales, así que una nota como B3 señalaba otro
+  campo. Ahora las **letras** `A`, `B`, … bajan por las bandas izquierda y derecha, de arriba
+  abajo, y los **números** `1`, `2`, … corren por las bandas superior e inferior, de izquierda
+  a derecha, en A3 y mayores. El lienzo y la exportación cambian juntos.
+- **`I` y `O` no se usan** en las letras de fila, como exige la norma: la secuencia es `A`…`H`,
+  `J`…`N`, `P`…`Z`. Una hoja personalizada que pasa de 24 filas continúa `AA`, `AB`, … sin
+  `I` ni `O`; el conteo de campos de A0 (17 en el código, 16 en la tabla de la norma) queda
+  como cuestión abierta y no se toca aquí.
+- **A4 estrena la forma de dos lados**: decisión del propietario del **2026-11-20**, la hoja
+  por defecto también se puede citar por zona. A4 lleva números solo en la banda superior y
+  letras solo en la derecha, en las dos orientaciones; las bandas izquierda e inferior quedan
+  limpias. A5, Letter, Legal y Oficio siguen sin cuadrícula.
+- **El cajetín de A4 no crece**: `is_large_sheet` se separa en `has_reference_zones` y
+  `uses_large_block`, así que encender las zonas de A4 no convierte su bloque de 170 × 45 mm
+  en la plantilla de 180 × 65 mm de A3.
+- Las etiquetas **ceden ante las marcas de centrado** (al menos 1 mm, como mucho medio campo)
+  y una banda de menos de 4,5 mm no dibuja ni etiquetas ni reglas, en vez de imprimir un
+  glifo fuera del papel.
+- **Evidencia**: `cargo test -p punchi-fluid-export` en verde, los pasos `zones:` de
+  `--selftest`, `./scripts-dev/check.sh`, las capturas A3/A4 en claro y oscuro, A0 y hoja
+  personalizada, y las páginas de 300 dpi de A3 y A4 en las dos orientaciones.
+
 ### Símbolos: las designaciones de puerto no tocan el símbolo — 2026-11-20
 
 - El catálogo estrena **`envelope`**, la frontera exterior funcional del símbolo en dos

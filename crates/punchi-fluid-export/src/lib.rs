@@ -13,6 +13,7 @@ pub mod page;
 pub mod parts;
 pub mod pdf;
 pub mod png;
+mod reference_zones;
 pub mod sheet;
 pub mod svg;
 mod title_block;

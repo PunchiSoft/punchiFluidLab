@@ -32,7 +32,8 @@ Images of the running application, used by the README and by pull request review
 | `paneles-ver-dark.png` | The same group on a dark desktop, to check the marks and the commands in both themes |
 | `ribbon-menu-light.png` | The ribbon folded at 1000 px with **Menú** open: the commands in one scrollable card with its shadow, bounded above the status bar |
 | `ribbon-menu-dark.png` | The same folded menu on a dark desktop, to check the card, the border and the shadow in both themes |
-| `a3-reference-zones-light.png` | An **A3 landscape** paper card on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones, with numerals down the left and right bands and letters across the top and bottom, all inside the margins |
+| `a3-reference-zones-light.png` | An **A3 landscape** paper card on a light desktop: the optional ISO 5457 / NCh 13.Of93 reference zones on four sides, with letters down the left and right bands and numerals across the top and bottom, all inside the margins |
+| `a4-reference-zones-light.png` | The default **A4 landscape** paper card on a light desktop: the standard's two-sided A4 form, numerals `1`–`6` on the top band and letters `A`–`D` on the right band only, with the left and bottom bands clean inside the margins |
 | `zoom-light.png` | The same raised paper at 150 % (`--zoom 1.5`), the status bar reading `Zoom 150 %`: the capture for the wheel zoom and pan review |
 | `zoom-dark.png` | The same magnified paper on a dark desktop, to show the readout, the card edge and the shadow in both themes |
 | `layout-compact-light.png` | The **compact** window at 900 × 640: the catalog and the right dock folded to their **24 px rails** and the sheet keeping the whole width, so the drawing is not squeezed |
@@ -201,10 +202,14 @@ XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a4-portrait.pfluid \
   --tab 3 --block --block-model 2 --grab /tmp/title-block-portrait-light.png
-# The A3 sheet with its reference zones: open a saved A3 document first.
+# The A3 sheet with its four-sided reference zones: open a saved A3 document first.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a3.pfluid \
   --grab /tmp/a3-reference-zones-light.png
+# The default A4 sheet with its two-sided reference zones.
+XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
+  apps/punchi-fluid-qt/build/punchi-fluid --theme light --open /tmp/plano-a4.pfluid \
+  --grab /tmp/a4-reference-zones-light.png
 # The icon family at 16, 24 and 32 px, light and dark.
 XDG_DATA_HOME=/tmp/punchi-capture QT_QPA_PLATFORM=offscreen \
   apps/punchi-fluid-qt/build/punchi-fluid --theme light --icon-sheet /tmp/action-icons-light.png
