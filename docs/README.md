@@ -23,6 +23,7 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 | are changing a symbol | [symbology.md](symbology.md) and [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md) |
 | are changing the interface | [ui-ux.md](ui-ux.md) |
 | are reworking the window's panels, ribbon, icons or catalog | [interface-plan.md](interface-plan.md) and [ui-ux.md](ui-ux.md) |
+| are fixing the start page | [start-view-corrections.md](start-view-corrections.md) and [ui-ux.md](ui-ux.md) |
 | are changing the sheet frame or the title block | [reference/title-block.md](reference/title-block.md) and [ADR 0026](adr/0026-the-sheet-is-the-paper.md) |
 | are reviewing a change | [capabilities.md](capabilities.md), the phase in [next-steps.md](next-steps.md), and the ADR it touches |
 | want to know why the system is shaped this way | [architecture.md](architecture.md) and the [ADR index](adr/README.md) |
@@ -64,6 +65,7 @@ A document that is not simply current carries a status line under its title:
 | [work-queue.md](work-queue.md) | process | current | The parity run's queue: one entry per capability, its state and its acceptance test |
 | [next-steps.md](next-steps.md) | process | current | The work order: where the project stands, the next phase, the files and the tests |
 | [interface-plan.md](interface-plan.md) | process | target | The staged plan for panels, the ribbon and its icons, the catalog palette, the workspace frame and the adaptive shell |
+| [start-view-corrections.md](start-view-corrections.md) | record | current | Every known defect of Inicio, one entry each, with the file, symbol and test to touch |
 | [capabilities.md](capabilities.md) | process | current | The coverage ledger: what a student must be able to do, its state and its evidence |
 | [plan.md](plan.md) | process | current | The milestones and their acceptance criteria, with the status of each |
 | [architecture.md](architecture.md) | explanation | current | The system map: crates, data flow, extension points, debts |
