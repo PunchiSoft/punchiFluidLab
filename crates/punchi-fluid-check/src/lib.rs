@@ -32,7 +32,7 @@ use punchi_fluid_doc::Document;
 mod placement;
 
 use placement::placement_faults;
-use punchi_fluid_draw::placed::{port_edge, port_point, route_between_boxes_avoiding};
+use punchi_fluid_draw::placed::{port_edge_towards, port_point, route_between_boxes_avoiding};
 use punchi_fluid_draw::surface::{Pt, Rect};
 
 use electrical::short_circuits;
@@ -541,10 +541,22 @@ fn pipe_ends(
     )?;
     Some((
         start,
-        port_edge(from_definition, &connection.from.port),
+        port_edge_towards(
+            from.rect(),
+            from.orientation,
+            from_definition,
+            &connection.from.port,
+            Some(end),
+        ),
         from.rect(),
         end,
-        port_edge(to_definition, &connection.to.port),
+        port_edge_towards(
+            to.rect(),
+            to.orientation,
+            to_definition,
+            &connection.to.port,
+            Some(start),
+        ),
         to.rect(),
     ))
 }

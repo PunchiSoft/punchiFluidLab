@@ -50,6 +50,14 @@ hose being drawn. The junction is also offered in the palette, which the referen
 does not do — a documented improvement: a user who wants to lay out a branch before
 drawing its third hose can.
 
+The shared-point ports take their edge from the component or pipe they face. Because
+all three ports sit at the centre, the nearest-edge rule is a tie there; the drawing
+resolves it from the other end of the hose, so a gauge above the tee leaves through its
+bottom port in a straight vertical stub instead of bending around the junction. The
+check passes the same hint and measures the same edge, so the inspection and the print
+agree. The node model and the symbol are unchanged: this is a routing rule, not a
+fourth port and not a new document node.
+
 ## Consequences
 
 - `Behaviour` gains a unit variant. Every exhaustive `match` on it must handle it; the

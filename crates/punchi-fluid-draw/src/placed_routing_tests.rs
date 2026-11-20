@@ -4,7 +4,7 @@
 //! Tests for the route between two ports.
 
 use super::*;
-use punchi_fluid_catalog::Catalog;
+use punchi_fluid_catalog::{Behaviour, Catalog, Category, Kinematics, Origin, Port};
 
 #[test]
 fn perpendicular_ports_are_joined_with_one_bend() {
@@ -287,4 +287,201 @@ fn a_dragged_offset_still_takes_its_own_shape() {
     );
     assert_eq!(points.len(), 4, "{points:?}");
     assert!((points[1].y - 45.0).abs() < 1e-6, "the middle moved to 45");
+}
+
+#[test]
+fn port_edge_towards_resolves_the_centre_from_the_hint() {
+    // The three ports of a junction are all at the centre: the hint is what says which
+    // side the hose leaves towards. The old function answered Left for every one.
+    let catalog = Catalog::builtin();
+    let tee = catalog.get("junction.tee").expect("a tee");
+    let rect = Rect::from_center_size(Pt::new(100.0, 80.0), 8.0, 8.0);
+    let at = Pt::new(100.0, 80.0);
+    assert_eq!(
+        port_edge_towards(
+            rect,
+            Orientation::NONE,
+            tee,
+            "3",
+            Some(Pt::new(100.0, 60.0))
+        ),
+        PortEdge::Top,
+        "a gauge above the tee leaves through the top"
+    );
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE, tee, "3", Some(Pt::new(80.0, 80.0))),
+        PortEdge::Left
+    );
+    assert_eq!(
+        port_edge_towards(
+            rect,
+            Orientation::NONE,
+            tee,
+            "3",
+            Some(Pt::new(120.0, 80.0))
+        ),
+        PortEdge::Right
+    );
+    assert_eq!(
+        port_edge_towards(
+            rect,
+            Orientation::NONE,
+            tee,
+            "3",
+            Some(Pt::new(100.0, 100.0))
+        ),
+        PortEdge::Bottom
+    );
+    // Equal horizontal and vertical reach is the vertical case: a diagonal drag would
+    // otherwise leave the route's axis to whichever comparison came first.
+    assert_eq!(
+        port_edge_towards(
+            rect,
+            Orientation::NONE,
+            tee,
+            "3",
+            Some(Pt::new(120.0, 60.0))
+        ),
+        PortEdge::Top,
+        "a diagonal hint is vertical"
+    );
+    // A coincident hint is no hint: the splice convention answers instead.
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE, tee, "3", Some(at)),
+        PortEdge::Top
+    );
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE, tee, "1", None),
+        PortEdge::Left
+    );
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE, tee, "2", None),
+        PortEdge::Right
+    );
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE, tee, "3", None),
+        PortEdge::Top
+    );
+    // The convention is in the placement's local frame, so a turn moves it.
+    assert_eq!(
+        port_edge_towards(rect, Orientation::new(1, false), tee, "1", None),
+        PortEdge::Top,
+        "a left port turned clockwise is the top one"
+    );
+    assert_eq!(
+        port_edge_towards(rect, Orientation::NONE.reflected(), tee, "1", None),
+        PortEdge::Right,
+        "a mirror swaps the left port to the right"
+    );
+    // An id this convention does not name keeps the old answer.
+    assert_eq!(
+        port_edge_towards(
+            rect,
+            Orientation::NONE,
+            tee,
+            "9",
+            Some(Pt::new(100.0, 60.0))
+        ),
+        port_edge(tee, "9")
+    );
+}
+
+#[test]
+fn an_ordinary_port_keeps_its_edge() {
+    // A port near one edge has a unique answer already; the hint must not move it, or
+    // every hose in the project would drift.
+    let catalog = Catalog::builtin();
+    let unit = catalog
+        .get("preparation.service_unit_simple")
+        .expect("a unit");
+    let rect = Rect::from_center_size(Pt::new(100.0, 80.0), 30.0, 30.0);
+    for port in ["1", "2"] {
+        assert_eq!(
+            port_edge_towards(rect, Orientation::NONE, unit, port, Some(Pt::new(0.0, 0.0))),
+            port_edge(unit, port),
+            "the hint changed port {port}"
+        );
+    }
+
+    // A corner port ties two edges at the same distance. `port_edge` keeps the first
+    // minimum, and the new function must preserve exactly that even with a hint.
+    let corner = ComponentDefinition {
+        schema: 3,
+        id: "test.corner".to_owned(),
+        name: "Corner".to_owned(),
+        name_es: None,
+        category: Category::Accessory,
+        summary: None,
+        disabled: false,
+        port: vec![Port {
+            id: "1".to_owned(),
+            role: PortRole::Working,
+            position: [0.0, 0.0],
+            show_numeral: true,
+        }],
+        symbol: Vec::new(),
+        body: None,
+        envelope: None,
+        spring: None,
+        return_part: None,
+        actuator: None,
+        behaviour: Behaviour::Junction,
+        kinematics: Kinematics::None,
+        source: None,
+        origin: Origin::Builtin,
+    };
+    assert_eq!(port_edge(&corner, "1"), PortEdge::Left);
+    assert_eq!(
+        port_edge_towards(
+            Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0),
+            Orientation::NONE,
+            &corner,
+            "1",
+            Some(Pt::new(50.0, 40.0))
+        ),
+        PortEdge::Left,
+        "the corner keeps the first minimum"
+    );
+}
+
+#[test]
+fn a_gauge_above_a_tee_gets_a_straight_vertical_stub() {
+    // The owner's sheet: a horizontal line with the junction under the gauge. The gauge's
+    // only port is at the bottom of its dial, and the branch leaves the tee's top, so the
+    // whole stub is one vertical run — no horizontal lead around the junction.
+    let catalog = Catalog::builtin();
+    let gauge = catalog.get("gauge.pressure").expect("a gauge");
+    let tee = catalog.get("junction.tee").expect("a tee");
+    let gauge_rect = Rect::from_center_size(Pt::new(100.0, 55.0), 22.0, 22.0);
+    let tee_rect = Rect::from_center_size(Pt::new(100.0, 80.0), 8.0, 8.0);
+    let start = port_point(gauge_rect, Orientation::NONE, gauge, "1").expect("the gauge port");
+    let end = port_point(tee_rect, Orientation::NONE, tee, "3").expect("the branch port");
+    assert!((start.x - 100.0).abs() < 1e-4 && (start.y - 66.0).abs() < 1e-4);
+    assert!((end.x - 100.0).abs() < 1e-4 && (end.y - 80.0).abs() < 1e-4);
+    let points = route_between_boxes_avoiding(
+        start,
+        port_edge_towards(gauge_rect, Orientation::NONE, gauge, "1", Some(end)),
+        gauge_rect,
+        end,
+        port_edge_towards(tee_rect, Orientation::NONE, tee, "3", Some(start)),
+        tee_rect,
+        &[gauge_rect, tee_rect],
+        [0, 1],
+        0.0,
+    );
+    assert_eq!(
+        points.len(),
+        2,
+        "the branch is one straight run: {points:?}"
+    );
+    assert!(
+        points.iter().all(|point| (point.x - 100.0).abs() < 1e-4),
+        "every point shares the gauge's x: {points:?}"
+    );
+    for pair in points.windows(2) {
+        assert!(
+            (pair[0].x - pair[1].x).abs() < 1e-4,
+            "a segment leaves the vertical: {points:?}"
+        );
+    }
 }
