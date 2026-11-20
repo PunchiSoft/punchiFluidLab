@@ -23,6 +23,19 @@ pub const PREPARATION_ID: &str = "preparation.service_unit";
 /// Identifier of the cylinder of the fixed circuit.
 pub const CYLINDER_ID: &str = punchi_fluid_solver::pneumatic::DEFAULT_CYLINDER;
 
+/// Canonical side of a symbol box on the sheet, in millimetres.
+///
+/// A schematic symbol is read by shape, not by area: it does not grow with the paper and it
+/// does not shrink because a placed circuit is dense. Twenty millimetres is the size the
+/// project draws and reviews at: on A4 landscape a symbol takes about a fifteenth of the
+/// width, four of them fit across a row with room for hoses, and the port numerals stay
+/// above the legibility floor at 300 dpi. A cylinder keeps a barrel, so its box is
+/// `CYLINDER_RATIO` times wider.
+pub const SYMBOL_BOX_MM: f32 = 20.0;
+
+/// Width over height of a cylinder's box, whose barrel is a rectangle by definition.
+pub const CYLINDER_RATIO: f32 = 2.2;
+
 /// Where the four components of the worked example sit, in millimetres of the drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Layout {
@@ -42,10 +55,12 @@ pub struct Layout {
 /// canvas or a thumbnail does not produce a smudge.
 #[must_use]
 pub fn layout(area: Rect) -> Option<Layout> {
-    // The width fraction is what keeps the four boxes inside a portrait sheet: three
-    // squares plus the cylinder's 2.2 make 5.2 squares across, and a wider one would push
-    // the valve into the cylinder or the row past the frame.
-    let square = (area.height() * 0.26).min(area.width() * 0.17);
+    // The width fraction keeps the four boxes inside a portrait sheet; the cap is the rule:
+    // a symbol does not grow with the paper. Three squares plus the cylinder's 2.2 make 5.2
+    // boxes across, which fits A4 landscape with room for the hoses.
+    let square = (area.height() * 0.26)
+        .min(area.width() * 0.17)
+        .min(SYMBOL_BOX_MM);
     if square < 8.0 {
         return None;
     }
@@ -61,7 +76,8 @@ pub fn layout(area: Rect) -> Option<Layout> {
     // another shape would stretch its diamonds and its dial.
     let preparation = Rect::from_center_size(area.point_at(0.38, 0.82), square, square);
     let valve = Rect::from_center_size(area.point_at(0.64, 0.58), square, square);
-    let cylinder = Rect::from_center_size(area.point_at(0.76, 0.22), square * 2.2, square);
+    let cylinder =
+        Rect::from_center_size(area.point_at(0.76, 0.22), square * CYLINDER_RATIO, square);
     Some(Layout {
         supply,
         preparation,
@@ -420,6 +436,21 @@ mod tests {
     fn a_small_area_produces_no_layout() {
         assert!(layout(Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0)).is_none());
         assert!(layout(Rect::from_min_size(Pt::new(0.0, 0.0), 180.0, 120.0)).is_some());
+    }
+
+    #[test]
+    fn a_symbol_does_not_grow_with_the_paper() {
+        // The same composition on A4 and on A3 has the same symbol, because a symbol is read
+        // by shape: a sheet twice as wide does not make a valve twice as big. The cap is the
+        // rule, and it is what keeps the templates and the worked example at one size.
+        for (width, height) in [(277.0, 190.0), (400.0, 277.0)] {
+            let area = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
+            let placed = layout(area).expect("the area is big enough");
+            assert!((placed.valve.width() - SYMBOL_BOX_MM).abs() < 0.01);
+            assert!((placed.valve.height() - SYMBOL_BOX_MM).abs() < 0.01);
+            assert!((placed.cylinder.width() - SYMBOL_BOX_MM * CYLINDER_RATIO).abs() < 0.01);
+            assert!((placed.cylinder.height() - SYMBOL_BOX_MM).abs() < 0.01);
+        }
     }
 
     #[test]

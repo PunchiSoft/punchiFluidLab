@@ -132,11 +132,12 @@ fn worked_example(area: Rect) -> Option<Composition> {
 }
 
 fn double_acting(area: Rect) -> Composition {
-    let unit = area.width().min(area.height()) / 7.0;
+    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
     (
         vec![
             Part::at(area, unit, "supply.compressor", 0.10, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "valve.5_2.spring_return", 0.43, 0.58, 1.5, 1.0),
+            Part::at(area, unit, "valve.5_2.spring_return", 0.43, 0.58, 1.0, 1.0),
             Part::at(
                 area,
                 unit,
@@ -152,13 +153,14 @@ fn double_acting(area: Rect) -> Composition {
 }
 
 fn air_preparation(area: Rect) -> Composition {
-    let unit = area.width().min(area.height()) / 7.0;
+    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
     (
         vec![
             Part::at(area, unit, "supply.compressor", 0.10, 0.76, 1.0, 1.0),
             Part::at(area, unit, "filter.air", 0.29, 0.76, 1.0, 1.0),
             Part::at(area, unit, "preparation.service_unit", 0.48, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "valve.3_2.spring_return", 0.68, 0.53, 1.2, 1.0),
+            Part::at(area, unit, "valve.3_2.spring_return", 0.68, 0.53, 1.0, 1.0),
             Part::at(
                 area,
                 unit,
@@ -174,12 +176,13 @@ fn air_preparation(area: Rect) -> Composition {
 }
 
 fn electrical_control(area: Rect) -> Composition {
-    let unit = area.width().min(area.height()) / 7.0;
+    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
     (
         vec![
             Part::at(area, unit, "supply.compressor", 0.10, 0.77, 1.0, 1.0),
             Part::at(area, unit, "preparation.service_unit", 0.30, 0.77, 1.0, 1.0),
-            Part::at(area, unit, "valve.3_2.solenoid", 0.55, 0.77, 1.2, 1.0),
+            Part::at(area, unit, "valve.3_2.solenoid", 0.55, 0.77, 1.0, 1.0),
             Part::at(
                 area,
                 unit,
@@ -190,7 +193,7 @@ fn electrical_control(area: Rect) -> Composition {
                 1.0,
             ),
             Part::at(area, unit, "electrical.supply", 0.15, 0.20, 1.0, 1.0),
-            Part::at(area, unit, "electrical.contact", 0.43, 0.20, 1.2, 1.0),
+            Part::at(area, unit, "electrical.contact", 0.43, 0.20, 1.0, 1.0),
         ],
         &ELECTRICAL_CONTROL_WIRES,
     )
@@ -281,12 +284,31 @@ mod tests {
             let document = document(index, &catalog, area).expect("template should build");
             assert_eq!(document.placements().len(), components);
             assert_eq!(document.connections().len(), pipes);
-            assert!(document.placements().iter().all(|part| {
-                part.rect().min.x >= area.min.x
-                    && part.rect().max.x <= area.max.x
-                    && part.rect().min.y >= area.min.y
-                    && part.rect().max.y <= area.max.y
-            }));
+            for part in document.placements() {
+                assert!(
+                    part.rect().min.x >= area.min.x
+                        && part.rect().max.x <= area.max.x
+                        && part.rect().min.y >= area.min.y
+                        && part.rect().max.y <= area.max.y
+                );
+                // A box that is not the canonical size stretches the symbol: a 3/2 valve in
+                // a 1.2 : 1 box is a drawing that is not the symbol. The cylinder is the
+                // only rectangle, because its barrel is one.
+                let ratio = part.width / part.height;
+                if part.catalog_id.starts_with("cylinder.") {
+                    assert!((ratio - punchi_fluid_draw::CYLINDER_RATIO).abs() < 0.01);
+                    assert!((part.height - punchi_fluid_draw::SYMBOL_BOX_MM).abs() < 0.01);
+                } else {
+                    assert!(
+                        (ratio - 1.0).abs() < 0.001,
+                        "{} is not square: {} x {}",
+                        part.catalog_id,
+                        part.width,
+                        part.height
+                    );
+                    assert!((part.width - punchi_fluid_draw::SYMBOL_BOX_MM).abs() < 0.01);
+                }
+            }
         }
     }
 

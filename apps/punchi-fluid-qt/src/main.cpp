@@ -38,6 +38,8 @@
 //! --margin-list        open the margin gallery on the Disposición tab
 //! --grid-step N        set the grid step in millimetres, for a capture
 //! --probe              print the numbers the status bar shows, then exit 1
+//! --example            load the worked example, for a capture of the seeded sheet
+//! --template N         start from one of the four templates, for a capture of it
 //! --open <file>        open a saved sheet before anything else
 //! --save <file>        save the sheet and exit 0/1, without a window
 //! ```
@@ -454,12 +456,50 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (arguments.contains(QStringLiteral("--example"))) {
+        for (FluidSession *session : sessions()) {
+            if (!session->loadExample()) {
+                std::fprintf(stderr, "--example failed: %s\n",
+                             qUtf8Printable(session->lastError()));
+            }
+        }
+    }
+
+    const QString templateArg = value(QStringLiteral("--template"));
+    if (!templateArg.isEmpty()) {
+        bool ok = false;
+        const int index = templateArg.toInt(&ok);
+        if (!ok || index < 0 || index >= static_cast<int>(PF_TEMPLATE_COUNT)) {
+            std::fprintf(stderr, "--template takes 0 to %u\n", PF_TEMPLATE_COUNT - 1);
+            return 2;
+        }
+        for (FluidSession *session : sessions()) {
+            session->newDocument();
+            if (!session->loadTemplate(index)) {
+                std::fprintf(stderr, "--template failed: %s\n",
+                             qUtf8Printable(session->lastError()));
+            }
+        }
+    }
+
     const QString openPath = value(QStringLiteral("--open"));
     if (!openPath.isEmpty()) {
         for (FluidSession *session : sessions()) {
             if (!session->openFrom(openPath)) {
                 std::fprintf(stderr, "--open failed: %s\n",
                              qUtf8Printable(session->lastError()));
+            }
+        }
+    }
+
+    // A document asked for on the command line is what the window shows: opening a file,
+    // loading the example or a template is the reader choosing the sheet over Inicio.
+    if (arguments.contains(QStringLiteral("--example"))
+        || arguments.contains(QStringLiteral("--template"))
+        || !openPath.isEmpty()) {
+        for (QObject *root : engine.rootObjects()) {
+            if (root->property("startViewOpen").isValid()) {
+                root->setProperty("startViewOpen", false);
             }
         }
     }

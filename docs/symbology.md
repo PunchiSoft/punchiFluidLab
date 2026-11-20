@@ -105,6 +105,16 @@ Rules that hold for all of them:
 - **A square stays a square.** The regulator's body is drawn as an upright square of equal
   sides, and the filter and the lubricator as squares turned 45°: four equal sides, diagonals
   meeting at the centre. The proportions are the shape's, not an accident of the box.
+- **Twenty millimetres, whatever the paper.** A symbol is read by shape, so its box is a
+  project size and not a fraction of the sheet: **20 mm square** for every component and
+  **44 × 20 mm** for a cylinder, whose barrel is the one rectangle. A3 does not make a valve
+  bigger and a crowded A4 does not make it smaller. The worked example composes with
+  `min(0.26 · height, 0.17 · width, 20 mm)`, so a thumbnail shrinks below the rule and a full
+  sheet stops at it ([`schematic::layout`](../crates/punchi-fluid-draw/src/schematic.rs)).
+  A box that is not that size stretches the drawing: a 3/2 valve placed in a 1.2 : 1 box came
+  out wide, which is a drawing that is not the symbol. The templates and the worked example
+  are checked for the aspect ratio, and the capture `assets/screenshots/symbol-size-light.png`
+  records it with the 10 mm grid, where one box is two cells across.
 - **The line stops at the symbol.** A working line is not drawn through the inside of a
   diamond or a square: what is inside those shapes is their own symbol, and a line across it
   reads as two overlapping drawings.
