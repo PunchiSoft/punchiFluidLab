@@ -9,15 +9,13 @@
 //! never leaves the parser. A future release migrates older sheets instead of refusing
 //! them.
 
-use std::collections::BTreeMap;
-use std::fs;
-use std::path::Path;
-
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use crate::paper::StoredSheet;
 
 mod closure;
+mod io;
 mod migrate;
 
 use closure::{identifier_is_valid, is_closed};
@@ -286,6 +284,10 @@ pub enum SheetError {
     /// The file is larger than the reader will load.
     #[error("the sheet is larger than {MAX_BYTES} bytes")]
     TooLarge,
+
+    /// The path names something other than a regular file.
+    #[error("the sheet is not a regular file")]
+    NotRegular,
 
     /// The file could not be read or written.
     #[error("sheet I/O failed: {0}")]
@@ -640,20 +642,6 @@ impl Sheet {
         Ok(ids)
     }
 
-    /// Reads a sheet from a file.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SheetError::TooLarge`] before reading when the file exceeds
-    /// [`MAX_BYTES`], plus the errors of [`Self::parse`].
-    pub fn read(path: &Path) -> Result<Self, SheetError> {
-        let size = fs::metadata(path)?.len();
-        if size > MAX_BYTES {
-            return Err(SheetError::TooLarge);
-        }
-        Self::parse(&fs::read_to_string(path)?)
-    }
-
     /// Parses and validates a sheet from text.
     ///
     /// # Errors
@@ -689,19 +677,6 @@ impl Sheet {
     pub fn to_json(&self) -> Result<String, SheetError> {
         self.validate()?;
         Ok(serde_json::to_string_pretty(self)?)
-    }
-
-    /// Writes the sheet atomically: a temporary file in the same folder, then a rename.
-    ///
-    /// # Errors
-    ///
-    /// Returns the errors of [`Self::to_json`] and [`SheetError::Io`].
-    pub fn write(&self, path: &Path) -> Result<(), SheetError> {
-        let text = self.to_json()?;
-        let temporary = path.with_extension("pfluid.tmp");
-        fs::write(&temporary, text)?;
-        fs::rename(&temporary, path)?;
-        Ok(())
     }
 }
 
