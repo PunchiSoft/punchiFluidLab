@@ -387,6 +387,9 @@ Item {
 
                                     MouseArea {
                                         id: tilePointer
+                                        // The selftest drives this area by name: a helper
+                                        // that guesses by size would pick any large control.
+                                        objectName: "paletteTile"
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         cursorShape: session.editing ? Qt.OpenHandCursor

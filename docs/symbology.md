@@ -260,6 +260,31 @@ from another program or from the standard was traced.
 - **The body of a symbol is solid**; only the wires carry the class. A symbol drawn entirely
   in dots is a symbol that looks like a wire.
 
+### Pipe widths (the tube)
+
+A pneumatic connection carries a nominal outside diameter, and the drawing shows it as the
+pipe's **stroke**. The width is a **series**, not a continuous map, so two tube sizes that a
+reader must tell apart differ by a visible step at 300 dpi, and the ISO 5457 frame stays a
+different class of line:
+
+| Tube | Width |
+|---|---|
+| unspecified (an older sheet) | 0.42 mm |
+| 4–5 mm | 0.25 mm |
+| 6–8 mm | 0.35 mm |
+| 10 mm and more | 0.50 mm |
+| an electrical wire | the class stroke, unchanged |
+
+The largest pipe width is **0.50 mm**, kept below the **0.7 mm** frame on purpose: a pipe that
+reaches the frame's weight competes with the sheet's own border. The series is the project's
+nominal practice list; ISO 1219 does not define tube outside diameters ([the series and the
+parts rows](reference/tube.md)). The **class pattern is unchanged** — working solid, pilot
+dashed, drain dashed — and the width changes only the stroke. The port stubs belong to the
+symbol and do not thicken; the selection ring keeps the base `LINE` weight. An electrical
+wire is not a tube: the renderer checks the electrical case before the width, so the wire
+keeps its dotted class stroke and never takes a pipe width. The electrical connection itself
+is deferred ([P-026](work-tree.md#p-026--the-electrical-connection-does-not-work-as-planned)).
+
 ### Circuit diagrams (Part 2/3)
 
 - Components are grouped and numbered, and the diagram carries an identification
@@ -317,6 +342,18 @@ Manual, once per symbol, signed off in the pull request:
 - the symbol is legible at 24 px (palette) and at 300 dpi (PDF export);
 - a screenshot of the symbol in light and dark themes is attached to the PR.
 
+Manual, once per pipe-width or line-class change — the `symbol lint` does not inspect
+connection strokes, so this list is the control:
+
+- a 4, 6, 10 and 16 mm pipe draws at 0.25, 0.35 and 0.50 mm (the first two sizes share one
+  step when they fall in the same band), measured on the 300 dpi page within one device
+  pixel;
+- the widest pipe stays visibly below the 0.7 mm frame on the same page;
+- the working, pilot and drain patterns survive every width;
+- an electrical wire keeps its dotted class stroke and carries no tube width;
+- the port stubs keep the symbol's own weight and the selection ring keeps `LINE`;
+- the light and dark captures of the 4/10/16 mm sheet are attached to the PR.
+
 ## Correcting what is wrong comes first
 
 **Owner's decision, 2026-11-15.** The next pass over the symbols is a **correction**, not an
@@ -340,6 +377,7 @@ palette and canvas size**, and the 300 dpi half is **open** until the export exi
 | Flow path arrows along the connection | **enforced** | the path is routed from `connection`, the arrow points at its far end |
 | Spring and actuator as declared parts | **enforced** | `[spring]` / `[actuator]`, required by the lint |
 | Line classes with their own dash pattern | **enforced** | `line_class` on every line and polyline |
+| Pipe stroke from the tube size, capped below the frame | **enforced, reviewed by hand** | `tube_width_mm` and `the_line_width_is_the_series_width_below_the_frame`; the manual checklist and the 4/10/16 mm captures in `specs/evidence/` |
 | Flow direction shown on a line that carries air | **enforced** | solid arrowhead on the line, straight from the sign of the flow |
 | Junction dots at three-way junctions | **not drawn** | needs pipes (M4) |
 | Title block on the sheet itself | **not drawn** | M2 |

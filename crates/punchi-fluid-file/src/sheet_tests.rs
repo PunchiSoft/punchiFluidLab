@@ -61,6 +61,7 @@ fn sheet() -> Sheet {
             to_port: String::from("2"),
             offset_tenths: 25,
             class: StoredClass::Working,
+            tube_od_hundredths: None,
         }],
         active: 0,
     }
@@ -111,6 +112,71 @@ fn bounds_are_checked_before_the_document_is_trusted() {
         ..StoredEdits::default()
     });
     assert!(sheet.validate().is_err(), "the rod must fit the bore");
+}
+
+#[test]
+fn the_tube_size_round_trips_and_a_format_twelve_sheet_reads_as_unspecified() {
+    let mut current = sheet();
+    current.pipe[0].tube_od_hundredths = Some(1000);
+    let text = current.to_json().expect("valid");
+    assert!(text.contains("\"tube_od_hundredths\": 1000"), "{text}");
+    let parsed = Sheet::parse(&text).expect("a format 13 sheet reads");
+    assert_eq!(parsed.pipe[0].tube_od_hundredths, Some(1000));
+    assert_eq!(parsed.format, SHEET_VERSION);
+
+    // What format 12 wrote: the same pipe without the key.
+    let mut older = sheet();
+    older.pipe[0].tube_od_hundredths = None;
+    let text = older
+        .to_json()
+        .expect("valid")
+        .replace("\"format\": 13", "\"format\": 12");
+    assert!(!text.contains("tube_od_hundredths"), "{text}");
+    let read = Sheet::parse(&text).expect("a format 12 sheet reads");
+    assert_eq!(read.format, SHEET_VERSION, "reading it upgrades it");
+    assert_eq!(read.pipe[0].tube_od_hundredths, None);
+    // An unspecified pipe writes no key, so a sheet that had none keeps looking the same.
+    assert!(
+        !read
+            .to_json()
+            .expect("valid")
+            .contains("tube_od_hundredths")
+    );
+}
+
+#[test]
+fn a_tube_outside_the_bounds_is_refused() {
+    let mut sheet = sheet();
+    sheet.pipe[0].tube_od_hundredths = Some(1000);
+    let valid = sheet.to_json().expect("valid");
+    for value in ["0", "99", "5001", "65000"] {
+        let text = valid.replace(
+            "\"tube_od_hundredths\": 1000",
+            &format!("\"tube_od_hundredths\": {value}"),
+        );
+        assert!(
+            matches!(Sheet::parse(&text), Err(SheetError::Invalid(_))),
+            "{value} should be refused"
+        );
+    }
+    // A string and a float are not an integer count of hundredths, so serde refuses them
+    // before the range check.
+    for value in ["\"1000\"", "1000.5"] {
+        let text = valid.replace(
+            "\"tube_od_hundredths\": 1000",
+            &format!("\"tube_od_hundredths\": {value}"),
+        );
+        assert!(
+            matches!(Sheet::parse(&text), Err(SheetError::Parse(_))),
+            "{value} should be refused"
+        );
+    }
+    sheet.pipe[0].tube_od_hundredths = Some(5001);
+    assert!(sheet.validate().is_err());
+    sheet.pipe[0].tube_od_hundredths = Some(5000);
+    assert!(sheet.validate().is_ok());
+    sheet.pipe[0].tube_od_hundredths = Some(100);
+    assert!(sheet.validate().is_ok());
 }
 
 #[test]
@@ -257,7 +323,7 @@ fn a_version_nine_sheet_gains_the_industrial_model() {
     // Format 9 already had the twelve fields but no model or visibility.
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 12", "\"format\": 9")
+        .replace("\"format\": 13", "\"format\": 9")
         .replace("\"model\": \"industrial\",", "");
     let read = Sheet::parse(&json).expect("a version 9 sheet reads");
     assert_eq!(read.format, SHEET_VERSION);
@@ -273,7 +339,7 @@ fn a_version_eleven_sheet_reads_its_retired_model_names() {
         let json = sheet()
             .to_json()
             .expect("valid")
-            .replace("\"format\": 12", "\"format\": 11")
+            .replace("\"format\": 13", "\"format\": 11")
             .replace(
                 "\"model\": \"industrial\",",
                 &format!("\"model\": \"{retired}\","),
@@ -366,7 +432,7 @@ fn the_block_position_is_checked_and_round_trips() {
 fn a_version_ten_sheet_maps_the_old_positions_and_gains_the_note() {
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 12", "\"format\": 10")
+        .replace("\"format\": 13", "\"format\": 10")
         .replace("\"position\": \"bottom-right\"", "\"position\": \"left\"");
     let read = Sheet::parse(&json).expect("a version 10 sheet reads");
     assert_eq!(read.circuits[0].block.position, "bottom-right");

@@ -13,11 +13,16 @@ pub mod component;
 pub mod network;
 pub mod paper;
 pub mod title_block;
+pub mod tube;
 pub mod units;
 
 pub use component::{Component, ComponentKind, Port, PortId, PortKind};
 pub use network::{Circuit, Connection, NodeId};
 pub use paper::{Margins, Orientation, PaperSize, Sheet};
+pub use tube::{
+    DEFAULT_TUBE_HUNDREDTHS, MAX_TUBE_HUNDREDTHS, MIN_TUBE_HUNDREDTHS, Nominal, TUBE_SIZES,
+    TubeSize,
+};
 
 /// The most circuits one project may hold.
 ///

@@ -9,7 +9,7 @@
 //! grid around the boxes for a path that goes round instead. The check and the drawing both
 //! call this one function, so what is inspected is what is printed.
 
-use crate::placed::PortEdge;
+use crate::placed::{Pipe, Placed, PortEdge, pipe_route};
 use crate::surface::{Pt, Rect};
 
 /// Distance a hose keeps from a symbol box, in millimetres.
@@ -493,4 +493,37 @@ fn simplify(points: Vec<Pt>) -> Vec<Pt> {
         }
     }
     out
+}
+
+/// Length of the route a pipe draws, in whole millimetres.
+///
+/// The parts list wants the length a technician sees on the sheet, so this sums the
+/// polyline the drawing uses — port leads included — and rounds to the nearest millimetre.
+/// It is not a cut length: it carries no bend allowance, fittings or waste. An electrical
+/// wire has no route length: it is not tubing, and the caller gets `None`.
+#[must_use]
+pub fn route_length_mm(
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
+    catalog: &punchi_fluid_catalog::Catalog,
+    pipe_index: usize,
+) -> Option<u32> {
+    let pipe = pipes.get(pipe_index)?;
+    let boxes: Vec<Rect> = placements.iter().map(|placed| placed.rect).collect();
+    let route = pipe_route(placements, &boxes, pipe, catalog)?;
+    if route.electrical {
+        return None;
+    }
+    let mut length = 0.0_f64;
+    for pair in route.points.windows(2) {
+        let (dx, dy) = pair[0].to(pair[1]);
+        length += f64::from(dx.hypot(dy));
+    }
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a drawn route is bounded by the sheet and its length fits in u32"
+    )]
+    let rounded = length.round().clamp(0.0, f64::from(u32::MAX)) as u32;
+    Some(rounded)
 }

@@ -229,6 +229,7 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
         let index = document.connections().len() - 1;
         document.seed_pipe_circuit(index, pipe.circuit);
         document.seed_route(index, pipe.offset_tenths);
+        document.seed_pipe_tube(index, pipe.tube_od_hundredths);
     }
     Ok(document)
 }

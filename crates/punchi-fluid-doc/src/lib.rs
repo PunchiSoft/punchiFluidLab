@@ -391,6 +391,11 @@ pub struct Connection {
     offset: i32,
     /// Class of the line, which decides its pattern.
     class: LineClass,
+    /// Nominal outside diameter of a pneumatic pipe, in hundredths of a millimetre.
+    ///
+    /// `None` is "unspecified": an older sheet, or an electrical wire, which has no tube.
+    /// Integer hundredths keep `Eq`/`Hash`, so the history compares two pipes exactly.
+    tube_od_hundredths: Option<u16>,
 }
 
 impl Connection {
@@ -411,6 +416,15 @@ impl Connection {
     #[must_use]
     pub const fn class(&self) -> LineClass {
         self.class
+    }
+
+    /// Nominal outside diameter of this pipe, in hundredths of a millimetre.
+    ///
+    /// `None` means the size is not specified, which is what an older sheet and an
+    /// electrical wire carry.
+    #[must_use]
+    pub const fn tube_od_hundredths(&self) -> Option<u16> {
+        self.tube_od_hundredths
     }
 
     /// The middle segment's displacement from the automatic route, in millimetres.
@@ -479,6 +493,12 @@ enum Change {
         index: usize,
         from: LineClass,
         to: LineClass,
+    },
+    /// A pipe was given another tube size, or had it taken away.
+    Tubed {
+        index: usize,
+        from: Option<u16>,
+        to: Option<u16>,
     },
     /// A recorder was bound to a source, or unbound.
     Sourced {
@@ -878,9 +898,11 @@ impl Document {
     ///
     /// Refuses the three things that are not pipes: an end joined to itself, a duplicate
     /// in either direction, and a component that is not on the sheet. A refusal is
-    /// `false`, never a silent success.
-    pub fn connect(&mut self, from: Endpoint, to: Endpoint) -> bool {
-        let Some(index) = self.add_connection(from, to) else {
+    /// `false`, never a silent success. `tube` is the nominal outside diameter in
+    /// hundredths of a millimetre, or `None` for a wire or an unspecified pipe; the caller
+    /// decides which value a new pneumatic pipe starts with.
+    pub fn connect(&mut self, from: Endpoint, to: Endpoint, tube: Option<u16>) -> bool {
+        let Some(index) = self.add_connection(from, to, tube) else {
             return false;
         };
         let connection = self.connections[index].clone();
@@ -893,7 +915,7 @@ impl Document {
     /// The seed is not something the user did, so undo must not take it apart. A pipe
     /// added here also survives the first undo of an edit made on top of it.
     pub fn seed_connect(&mut self, from: Endpoint, to: Endpoint) -> bool {
-        self.add_connection(from, to).is_some()
+        self.add_connection(from, to, None).is_some()
     }
 
     /// Gives a seeded pipe its circuit without recording an edit.
@@ -936,6 +958,51 @@ impl Document {
         true
     }
 
+    /// Gives a seeded pipe its tube size without recording an edit.
+    ///
+    /// A size read from a file belongs to the starting state: opening a document must not
+    /// fill the history with the sizes it already had. The value is stored verbatim,
+    /// including `None`, so a format-12 sheet is not silently given the 10 mm default.
+    pub fn seed_pipe_tube(&mut self, index: usize, tube: Option<u16>) -> bool {
+        let Some(connection) = self.connections.get_mut(index) else {
+            return false;
+        };
+        if let Some(tube) = tube
+            && !punchi_fluid_core::tube::is_valid_tube(tube)
+        {
+            return false;
+        }
+        connection.tube_od_hundredths = tube;
+        true
+    }
+
+    /// Gives a pipe another tube size, as one undoable change.
+    ///
+    /// `None` takes the size away, which is how an old pipe or an electrical wire reads.
+    /// A value outside the documented range is refused; the ABI checks it before this
+    /// point, and the document keeps the same bound so no caller can slip past it.
+    pub fn set_pipe_tube(&mut self, index: usize, tube: Option<u16>) -> bool {
+        let Some(connection) = self.connections.get_mut(index) else {
+            return false;
+        };
+        if let Some(tube) = tube
+            && !punchi_fluid_core::tube::is_valid_tube(tube)
+        {
+            return false;
+        }
+        if connection.tube_od_hundredths == tube {
+            return false;
+        }
+        let from = connection.tube_od_hundredths;
+        connection.tube_od_hundredths = tube;
+        self.record(Change::Tubed {
+            index,
+            from,
+            to: tube,
+        });
+        true
+    }
+
     /// Gives a seeded pipe its route without recording an edit.
     ///
     /// A route read from a file belongs to the starting state: opening a document must not
@@ -948,7 +1015,12 @@ impl Document {
         true
     }
 
-    fn add_connection(&mut self, from: Endpoint, to: Endpoint) -> Option<usize> {
+    fn add_connection(
+        &mut self,
+        from: Endpoint,
+        to: Endpoint,
+        tube_od_hundredths: Option<u16>,
+    ) -> Option<usize> {
         if from == to
             || self.index_of(from.placement).is_none()
             || self.index_of(to.placement).is_none()
@@ -974,6 +1046,7 @@ impl Document {
             from,
             to,
             offset: 0,
+            tube_od_hundredths,
         };
         let index = self.connections.len();
         self.connections.push(connection);
@@ -1010,9 +1083,10 @@ impl Document {
         let index = self.place(junction);
         let junction_id = self.placements[index].id();
         let port = |id: &str| Endpoint::new(junction_id, id);
-        let spliced = self.connect(connection.from.clone(), port("1"))
-            && self.connect(port("2"), connection.to.clone())
-            && self.connect(port("3"), attach);
+        let tube = connection.tube_od_hundredths;
+        let spliced = self.connect(connection.from.clone(), port("1"), tube)
+            && self.connect(port("2"), connection.to.clone(), tube)
+            && self.connect(port("3"), attach, tube);
         if !spliced {
             let taken: Vec<Change> = self.undo.split_off(mark);
             for one in taken.iter().rev() {
@@ -1621,6 +1695,11 @@ impl Document {
                     connection.class = *to;
                 }
             }
+            Change::Tubed { index, to, .. } => {
+                if let Some(connection) = self.connections.get_mut(*index) {
+                    connection.tube_od_hundredths = *to;
+                }
+            }
             Change::Sourced { index, to, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.source = *to;
@@ -1714,6 +1793,11 @@ impl Document {
                     connection.class = *from;
                 }
             }
+            Change::Tubed { index, from, .. } => {
+                if let Some(connection) = self.connections.get_mut(*index) {
+                    connection.tube_od_hundredths = *from;
+                }
+            }
             Change::Sourced { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.source = *from;
@@ -1780,6 +1864,77 @@ mod tests {
     }
 
     #[test]
+    fn splitting_a_tube_keeps_its_size_on_the_three_connections() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 90.0, 10.0));
+        let c = document.place(placement("c", 10.0, 90.0));
+        let (a, b, c) = (
+            document.placements()[a].id(),
+            document.placements()[b].id(),
+            document.placements()[c].id(),
+        );
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1600)));
+        assert!(document.splice(
+            0,
+            placement("junction.tee", 50.0, 10.0),
+            Endpoint::new(c, "1"),
+        ));
+        // A split is the same hose cut in three, not three new hoses: a 16 mm line stays
+        // 16 mm instead of silently falling back to the default.
+        assert_eq!(document.connections().len(), 3);
+        assert!(
+            document
+                .connections()
+                .iter()
+                .all(|pipe| pipe.tube_od_hundredths() == Some(1600))
+        );
+    }
+
+    #[test]
+    fn setting_a_tube_size_is_one_undo() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 90.0, 10.0));
+        let (a, b) = (document.placements()[a].id(), document.placements()[b].id());
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
+
+        assert!(document.set_pipe_tube(0, Some(1600)));
+        assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1600));
+        // The same value twice is not an edit, so it is refused rather than recorded.
+        assert!(!document.set_pipe_tube(0, Some(1600)));
+        // The bound is the document's too, not only the ABI's.
+        assert!(!document.set_pipe_tube(0, Some(0)));
+        assert!(!document.set_pipe_tube(0, Some(50)));
+        assert!(!document.set_pipe_tube(0, Some(5001)));
+        // Taking the size away is an edit like any other.
+        assert!(document.set_pipe_tube(0, None));
+        assert_eq!(document.connections()[0].tube_od_hundredths(), None);
+
+        assert!(document.undo());
+        assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1600));
+        assert!(document.undo());
+        assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1000));
+        assert!(document.redo());
+        assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1600));
+    }
+
+    #[test]
+    fn a_seeded_tube_is_not_an_edit_and_an_old_pipe_stays_unspecified() {
+        let mut document = Document::new();
+        document.seed(vec![placement("a", 10.0, 10.0), placement("b", 90.0, 10.0)]);
+        let (a, b) = (document.placements()[0].id(), document.placements()[1].id());
+        assert!(document.seed_connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert_eq!(document.connections()[0].tube_od_hundredths(), None);
+        assert!(document.seed_pipe_tube(0, None));
+        assert!(!document.can_undo());
+        assert!(document.seed_pipe_tube(0, Some(1600)));
+        assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1600));
+        assert!(!document.seed_pipe_tube(0, Some(99)));
+        assert!(!document.can_undo());
+    }
+
+    #[test]
     fn a_junction_splits_a_pipe_and_the_whole_splice_undoes_as_one() {
         let mut document = Document::new();
         let a = document.place(placement("a", 10.0, 10.0));
@@ -1790,7 +1945,7 @@ mod tests {
             document.placements()[b].id(),
             document.placements()[c].id(),
         );
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
         let pipes = document.connections().len();
 
         // One gesture: the pipe a-b becomes a-to-junction and junction-to-b, and c arrives.
@@ -1832,7 +1987,7 @@ mod tests {
         let a = document.place(placement("a", 10.0, 10.0));
         let b = document.place(placement("b", 90.0, 10.0));
         let (a, b) = (document.placements()[a].id(), document.placements()[b].id());
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
 
         // An attachment on a component that is not on the sheet is refused, and the splice
         // must not leave a junction placed and a pipe cut in half behind it.
@@ -1893,7 +2048,7 @@ mod tests {
         document.place(placement("valve", 40.0, 0.0));
         let (a, b) = (document.placements()[0].id(), document.placements()[1].id);
 
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
         assert_eq!(document.connections().len(), 1);
         assert!(document.undo());
         assert!(document.connections().is_empty());
@@ -1907,9 +2062,9 @@ mod tests {
         document.place(placement("a", 0.0, 0.0));
         document.place(placement("b", 40.0, 0.0));
         let (a, b) = (document.placements()[0].id(), document.placements()[1].id());
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "2")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "2"), Some(1000)));
         assert!(
-            !document.connect(Endpoint::new(b, "2"), Endpoint::new(a, "1")),
+            !document.connect(Endpoint::new(b, "2"), Endpoint::new(a, "1"), Some(1000)),
             "the reverse of an existing pipe is the same pipe"
         );
         assert_eq!(document.connections().len(), 1);
@@ -1920,8 +2075,8 @@ mod tests {
         let mut document = Document::new();
         document.place(placement("a", 0.0, 0.0));
         let a = document.placements()[0].id();
-        assert!(!document.connect(Endpoint::new(a, "1"), Endpoint::new(a, "1")));
-        assert!(!document.connect(Endpoint::new(a, "1"), Endpoint::new(9999, "1")));
+        assert!(!document.connect(Endpoint::new(a, "1"), Endpoint::new(a, "1"), Some(1000)));
+        assert!(!document.connect(Endpoint::new(a, "1"), Endpoint::new(9999, "1"), Some(1000)));
         assert!(document.connections().is_empty());
     }
 
@@ -1932,8 +2087,16 @@ mod tests {
         document.place(placement("b", 40.0, 0.0));
         document.place(placement("c", 80.0, 0.0));
         let ids: Vec<u64> = document.placements().iter().map(Placement::id).collect();
-        document.connect(Endpoint::new(ids[0], "1"), Endpoint::new(ids[1], "1"));
-        document.connect(Endpoint::new(ids[1], "2"), Endpoint::new(ids[2], "1"));
+        document.connect(
+            Endpoint::new(ids[0], "1"),
+            Endpoint::new(ids[1], "1"),
+            Some(1000),
+        );
+        document.connect(
+            Endpoint::new(ids[1], "2"),
+            Endpoint::new(ids[2], "1"),
+            Some(1000),
+        );
         assert_eq!(document.connections().len(), 2);
 
         document.remove(1);
@@ -2064,7 +2227,7 @@ mod tests {
         let a = document.place(placement("a", 10.0, 10.0));
         let b = document.place(placement("b", 90.0, 10.0));
         let (a, b) = (document.placements()[a].id(), document.placements()[b].id());
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
         assert!(close(document.connections()[0].offset_mm(), 0.0));
 
         // The whole drag is one number, and the numbers are tenths of a millimetre.
@@ -2087,7 +2250,7 @@ mod tests {
         let a = document.place(placement("a", 10.0, 10.0));
         let b = document.place(placement("b", 90.0, 10.0));
         let (a, b) = (document.placements()[a].id(), document.placements()[b].id());
-        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
         assert!(document.route_to(0, 30.0));
         assert!(document.move_to(1, Pt::new(90.0, 60.0)));
         assert!(document.undo());
@@ -2203,7 +2366,8 @@ mod tests {
         let c = document.place(placement("c", 70.0, 10.0));
         assert!(document.connect(
             Endpoint::new(document.placements()[a].id(), "1"),
-            Endpoint::new(document.placements()[b].id(), "1")
+            Endpoint::new(document.placements()[b].id(), "1"),
+            Some(1000)
         ));
         let copies = document.duplicate_many(&[a, b, c], (10.0, 10.0));
         assert_eq!(copies.len(), 3);

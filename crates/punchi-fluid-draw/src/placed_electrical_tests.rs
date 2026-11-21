@@ -53,6 +53,7 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
         offset_mm: 0.0,
         class: LineClass::Working,
         pressure_ratio: 0.0,
+        tube_od_hundredths: None,
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &pipes, &catalog, &Ink::print(), &[]);
@@ -106,6 +107,7 @@ fn a_pneumatic_hose_keeps_its_own_class() {
         offset_mm: 0.0,
         class: LineClass::Working,
         pressure_ratio: 0.0,
+        tube_od_hundredths: Some(1000),
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &pipes, &catalog, &Ink::print(), &[]);

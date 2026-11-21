@@ -35,6 +35,7 @@ fn a_pipe_between_two_circuits_is_the_ninth_fault() {
     assert!(document.connect(
         punchi_fluid_doc::Endpoint::new(supply, "1"),
         punchi_fluid_doc::Endpoint::new(valve, "1"),
+        Some(1000)
     ));
 
     let findings = check(&document, &catalog(), sheet(), 1);
@@ -80,6 +81,7 @@ mod termination_tests {
         assert!(document.connect(
             punchi_fluid_doc::Endpoint::new(supply_id, "1"),
             punchi_fluid_doc::Endpoint::new(valve_id, "1"),
+            Some(1000)
         ));
 
         let open = check(&document, &catalog(), sheet(), 0);
@@ -99,6 +101,7 @@ mod termination_tests {
         assert!(document.connect(
             punchi_fluid_doc::Endpoint::new(valve_id, "2"),
             punchi_fluid_doc::Endpoint::new(plug_id, "1"),
+            Some(1000)
         ));
 
         let capped = check(&document, &catalog(), sheet(), 0);
@@ -180,6 +183,7 @@ mod connection_tests {
         assert!(document.connect(
             punchi_fluid_doc::Endpoint::new(supply, "1"),
             punchi_fluid_doc::Endpoint::new(contact_id, "1"),
+            Some(1000)
         ));
 
         let findings = check(&document, &catalog(), sheet(), 0);
@@ -210,6 +214,7 @@ mod connection_tests {
         assert!(document.connect(
             punchi_fluid_doc::Endpoint::new(rail, "L"),
             punchi_fluid_doc::Endpoint::new(contact_id, "1"),
+            Some(1000)
         ));
         let supply = document.place(Placement::new(
             "supply.compressor",
@@ -228,6 +233,7 @@ mod connection_tests {
         assert!(document.connect(
             punchi_fluid_doc::Endpoint::new(supply, "1"),
             punchi_fluid_doc::Endpoint::new(valve, "1"),
+            Some(1000)
         ));
 
         let findings = check(&document, &catalog(), sheet(), 0);
@@ -292,6 +298,7 @@ mod short_circuit_tests {
         assert!(document.connect(
             Endpoint::new(supply_id, "L"),
             Endpoint::new(contact_id, "1"),
+            Some(1000)
         ));
         (supply, supply_id, contact_id)
     }
@@ -303,6 +310,7 @@ mod short_circuit_tests {
         assert!(document.connect(
             Endpoint::new(contact_id, "2"),
             Endpoint::new(supply_id, "N"),
+            Some(1000)
         ));
 
         let findings = check(&document, &catalog_with_closed_contact(), sheet(), 0);
@@ -352,7 +360,11 @@ mod short_circuit_tests {
             ((supply_id, "L"), (relay_id, "11")),
             ((relay_id, "14"), (supply_id, "N")),
         ] {
-            assert!(document.connect(Endpoint::new(from.0, from.1), Endpoint::new(to.0, to.1)));
+            assert!(document.connect(
+                Endpoint::new(from.0, from.1),
+                Endpoint::new(to.0, to.1),
+                Some(1000)
+            ));
         }
 
         let findings = check(&document, &catalog(), sheet(), 0);
@@ -375,6 +387,7 @@ mod short_circuit_tests {
         assert!(document.connect(
             Endpoint::new(contact_id, "2"),
             Endpoint::new(supply_id, "N"),
+            Some(1000)
         ));
 
         let findings = check(&document, &catalog(), sheet(), 0);

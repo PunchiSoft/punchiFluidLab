@@ -66,6 +66,16 @@ Rectangle {
             color: session.muted
             font.pixelSize: 13
         }
+        // The tube of the selected pipe, when it has one. An old pipe says so instead of
+        // hiding the fact that the tubing it needs is unknown; an electrical wire has no
+        // tube and therefore no reading at all.
+        Text {
+            objectName: "pipeTubeReading"
+            visible: session.selectedPipe >= 0 && !session.selectedPipeElectrical
+            text: qsTr("Tubo %1").arg(session.selectedPipeTubeLabel)
+            color: session.foreground
+            font.pixelSize: 13
+        }
         // Which paper the drawing is on, and its size in millimetres. Without it the sheet
         // is an unnamed rectangle and the frame has no measurement to trust.
         Text {

@@ -8,7 +8,7 @@ use punchi_fluid_catalog::Catalog;
 use punchi_fluid_draw::placed::{Placed, draw_placed};
 use punchi_fluid_draw::{Orientation, Pt, Rect};
 use punchi_fluid_export::page::{Page, PaperSize};
-use punchi_fluid_export::parts::PartsList;
+use punchi_fluid_export::parts::{PartsList, TubeRowInput};
 use punchi_fluid_export::{TitleBlock, print_ink, render_pdf_with, render_svg_with};
 
 fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
@@ -40,6 +40,11 @@ fn page_with_parts() -> Page {
             ("cylinder.single_acting_20_100", Some("1A")),
             ("supply.compressor", None),
         ],
+        [TubeRowInput {
+            od: Some(1000),
+            class: punchi_fluid_draw::LineClass::Working,
+            length_mm: 3_400,
+        }],
     ));
     page
 }
@@ -59,6 +64,12 @@ fn the_sheet_becomes_a_vector_document() {
     assert!(svg.contains("Cilindro"), "with the catalog name");
     assert!(svg.contains("1A"), "and the designation");
     assert!(svg.contains("A circuit"), "the title block");
+    assert!(svg.contains("Tubo 10 mm"), "the tube row");
+    assert!(svg.contains("3,4 m"), "its drawn length");
+    assert!(
+        svg.contains("recorrido dibujado"),
+        "the note says the length is the drawn route"
+    );
     assert!(svg.trim_end().ends_with("</svg>"));
 }
 
@@ -71,7 +82,13 @@ fn the_same_page_is_the_same_text_on_both_devices() {
     let svg = render_svg_with(&page, &block, draw_a_cylinder).expect("the SVG renders");
     let pdf = render_pdf_with(&page, &block, draw_a_cylinder).expect("the PDF renders");
     let pdf_text = decode_pdf_text(&pdf);
-    for text in ["A circuit", "2026-11-12", "Cilindro", "lista de piezas"] {
+    for text in [
+        "A circuit",
+        "2026-11-12",
+        "Cilindro",
+        "lista de piezas",
+        "Tubo 10 mm",
+    ] {
         assert!(svg.contains(text), "the SVG is missing {text}");
         assert!(
             pdf_text.contains(text),

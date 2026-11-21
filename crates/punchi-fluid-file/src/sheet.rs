@@ -24,14 +24,15 @@ use crate::paper::StoredSheet;
 /// paper, its orientation and its frame. 8 added the control-diagram title block of each
 /// circuit, 9 gave that block the project, equipment, scale and norms of the Chilean guide,
 /// 10 added its content model and per-field visibility, 11 moved the positions to
-/// top-right/bottom-right/bottom-full and added the free note, and 12 renamed the
-/// content-model names from `escolar`/`tecnico` to `school`/`technical`. An older file
-/// reads because every addition has an obvious default: an unturned symbol, an unnamed
-/// component, one circuit, an unbound recorder, a working line, an unframed A4 that is
-/// exactly the area the older release drew on, and a block whose title is the circuit
-/// title, whose revision is `A`, whose scale is `S/E`, whose model is the full industrial
-/// block and whose note is empty.
-pub const SHEET_VERSION: u32 = 12;
+/// top-right/bottom-right/bottom-full and added the free note, 12 renamed the
+/// content-model names from `escolar`/`tecnico` to `school`/`technical`, and 13 gave a
+/// pneumatic pipe its tube diameter. An older file reads because every addition has an
+/// obvious default: an unturned symbol, an unnamed component, one circuit, an unbound
+/// recorder, a working line, an unframed A4 that is exactly the area the older release
+/// drew on, a block whose title is the circuit title, whose revision is `A`, whose scale is
+/// `S/E`, whose model is the full industrial block and whose note is empty, and a pipe
+/// whose tube is unspecified.
+pub const SHEET_VERSION: u32 = 13;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -195,6 +196,13 @@ pub struct StoredPipe {
     /// Line class; absent when it is a working line, which is what every older file means.
     #[serde(default, skip_serializing_if = "is_working_class")]
     pub class: StoredClass,
+    /// Nominal outside diameter of a pneumatic pipe, in hundredths of a millimetre.
+    ///
+    /// Absent means unspecified: a sheet written before format 13, or an electrical wire,
+    /// which has no tube at all. A format-12 reader tolerates the key if a hand-written file
+    /// carries it, but no writer of that release produced it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tube_od_hundredths: Option<u16>,
 }
 
 /// Skips the class of a pipe that is a plain working line.
@@ -354,6 +362,18 @@ impl Sheet {
         }
         let ids = self.validate_placements()?;
         self.validate_sources(&ids)?;
+        self.validate_pipes(&circuit_ids, &ids)?;
+        Ok(())
+    }
+
+    /// Checks every pipe joins two components on the sheet and keeps its bounds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SheetError::Invalid`] for a pipe in another circuit, an unknown
+    /// component, a self-join, an empty port, an out-of-range offset or an out-of-range
+    /// tube size.
+    fn validate_pipes(&self, circuit_ids: &[u32], ids: &[u64]) -> Result<(), SheetError> {
         for pipe in &self.pipe {
             if self.format >= 4 && !circuit_ids.contains(&pipe.circuit) {
                 return Err(SheetError::Invalid(String::from(
@@ -378,6 +398,15 @@ impl Sheet {
             if pipe.offset_tenths.unsigned_abs() > 10_000 {
                 return Err(SheetError::Invalid(String::from(
                     "a pipe is routed more than a metre from the automatic elbow",
+                )));
+            }
+            if let Some(tube) = pipe.tube_od_hundredths
+                && !punchi_fluid_core::tube::is_valid_tube(tube)
+            {
+                return Err(SheetError::Invalid(format!(
+                    "a pipe has a tube outside {}..={} hundredths of a millimetre",
+                    punchi_fluid_core::tube::MIN_TUBE_HUNDREDTHS,
+                    punchi_fluid_core::tube::MAX_TUBE_HUNDREDTHS
                 )));
             }
         }
@@ -671,6 +700,10 @@ impl Sheet {
                 model.clone_into(&mut circuit.block.model);
             }
         }
+        // 12 → 13: the tube diameter of a pneumatic pipe. The serde default already gives an
+        // absent field `None`, which is "unspecified" and keeps the old 0.42 mm width; the
+        // writer never adds the key for an unspecified pipe, so an old sheet re-saved by
+        // this build still looks as it did.
         self.format = SHEET_VERSION;
         Ok(())
     }

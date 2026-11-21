@@ -53,6 +53,7 @@ fn project() -> Sheet {
         to_port: String::from("1"),
         offset_tenths: 0,
         class: StoredClass::Working,
+        tube_od_hundredths: None,
     });
     sheet
 }

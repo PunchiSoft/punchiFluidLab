@@ -124,7 +124,7 @@ a second, short table beside it, because they are not commands of a tab.
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
-| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje) |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
@@ -183,9 +183,22 @@ instead of printing an empty page.
 
 **Conducto acts on the selected hose.** A pilot line and a drain line differ by their
 pattern before anyone reads a label, so the class is a property of the pipe, the drawing
-takes the dashes from it and the file keeps it. The three commands are disabled until a
-hose is selected, and the electrical class is not offered until the electrical library
-exists.
+takes the dashes from it and the file keeps it. The three class commands are disabled until
+a hose is selected. The electrical class is not offered as a pipe property: a wire takes it
+from its two terminals, and that wire is not a tube.
+
+**The tube is part of the hose, not of the page.** **Conducto ▸ Diámetro** opens a gallery
+with **Métrica** (4, 5, 6, 8, 10, 12, 14, 16, 20, 25, 32, 40 and 50 mm), **Pulgada**
+(1/8", 5/32", 3/16", 1/4", 5/16", 3/8", 1/2", 5/8", 3/4" and 1") and **Sin especificar**;
+the metric and inch entries are separate, so 10 mm is never 3/8". The entry in force is
+marked by the value, a check and a border, never colour alone. Choosing one applies the size
+to the selected pipe as **one undo**, and `Alt+D` opens the gallery from any tab (bringing
+**Editar** forward). A new pneumatic pipe starts at **10 mm**, a documented constant rather
+than a page setting; an older sheet reads **Sin especificar**; an electrical wire has no
+diameter and shows no reading. The status bar prints `Tubo 10 mm` or
+`Tubo Sin especificar`. The line thickens through the 0.25 / 0.35 / 0.5 mm series, capped
+below the sheet frame, and the parts list names the tube with its drawn length
+([reference/tube.md](reference/tube.md), [symbology.md](symbology.md#pipe-widths-the-tube)).
 
 **Repartir measures gaps between symbol boxes, not centres.** A wide cylinder and a narrow
 valve look evenly spaced on centres and are not; the command follows what a reader sees and

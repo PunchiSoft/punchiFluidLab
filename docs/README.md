@@ -39,7 +39,7 @@ small and a deep tree makes a link harder to write, not easier to find.
 |---|---|---|
 | Tutorial | Teach by doing, for a reader who has never used the program | [guides/first-circuit.md](guides/first-circuit.md) |
 | How-to | Solve one task | [guides/export-a-drawing.md](guides/export-a-drawing.md), [guides/troubleshooting.md](guides/troubleshooting.md) |
-| Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [reference/title-block.md](reference/title-block.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
+| Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/tube.md](reference/tube.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [reference/title-block.md](reference/title-block.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
 | Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
 | Decision | Record one choice and its consequences | [adr/](adr/README.md) |
@@ -75,6 +75,7 @@ A document that is not simply current carries a status line under its title:
 | [symbology.md](symbology.md) | explanation | current | The ISO 1219 contract, the renderer guarantees and the review checklist |
 | [engineering.md](engineering.md) | explanation | current | Modularisation, memory budget, security model and GitHub practice |
 | [reference/sheet-format.md](reference/sheet-format.md) | reference | current | The `.pfluid` format: fields, bounds, versions and migrations |
+| [reference/tube.md](reference/tube.md) | reference | current | The tube of a pneumatic connection: the value, the metric and inch series, the drawn width series and the parts rows |
 | [reference/cli.md](reference/cli.md) | reference | current | `check`, `validate` and `simulate`: formats, exit codes and the JSON contract |
 | [reference/catalog.md](reference/catalog.md) | reference | current | The catalog at a glance, with the authoring guide as the canonical reference |
 | [guides/first-circuit.md](guides/first-circuit.md) | tutorial | current | Draw, connect, run, check and save a first circuit |

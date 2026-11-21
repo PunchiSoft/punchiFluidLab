@@ -44,6 +44,13 @@ class FluidSession : public QObject
     Q_PROPERTY(int selected READ selected NOTIFY documentChanged)
     /// The selected pipe, or `-1`; a pipe and a component are never both selected.
     Q_PROPERTY(int selectedPipe READ selectedPipe NOTIFY documentChanged)
+    /// The selected pipe's nominal outside diameter in hundredths, `0` unspecified and
+    /// `-1` no pipe. A property, not only an invokable, so a binding follows an edit.
+    Q_PROPERTY(int selectedPipeTube READ selectedPipeTube NOTIFY documentChanged)
+    /// `true` when the selected pipe is an electrical wire: it has no tube to show.
+    Q_PROPERTY(bool selectedPipeElectrical READ selectedPipeElectrical NOTIFY documentChanged)
+    /// What the status bar prints for the selected pipe; empty for a wire.
+    Q_PROPERTY(QString selectedPipeTubeLabel READ pipeTubeLabel NOTIFY documentChanged)
     Q_PROPERTY(int selectionCount READ selectionCount NOTIFY documentChanged)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY viewChanged)
     Q_PROPERTY(bool grid READ grid WRITE setGrid NOTIFY viewChanged)
@@ -468,8 +475,22 @@ public:
     Q_INVOKABLE void spaceSelection(int axis);
     /// Gives the selected pipe a line class: 0 working, 1 pilot, 2 drain.
     Q_INVOKABLE void setPipeClass(int lineClass);
+    /// The nominal outside diameter of a pipe, in hundredths of a millimetre: `0` when the
+    /// size is unspecified and `-1` when there is no such pipe.
+    Q_INVOKABLE int pipeTube(int pipeIndex) const;
+    /// Gives a pipe a diameter; `0` takes it away. A wire refuses it.
+    Q_INVOKABLE void setPipeTube(int pipeIndex, int hundredths);
+    /// `true` when both ends of the pipe are electrical terminals: a wire has no tube.
+    Q_INVOKABLE bool pipeIsElectrical(int pipeIndex) const;
+    /// The nominal series, metric first, as `{ od, label, nominal }` entries.
+    Q_INVOKABLE QVariantList tubeSizes() const;
+    /// What the status bar prints for the selected pipe: `10 mm`, `Sin especificar`, or
+    /// empty when there is no pipe or it is an electrical wire.
+    Q_INVOKABLE QString pipeTubeLabel() const;
     /// The selected pipe, or `-1`.
     int selectedPipe() const;
+    int selectedPipeTube() const { return pipeTube(selectedPipe()); }
+    bool selectedPipeElectrical() const { return pipeIsElectrical(selectedPipe()); }
     Q_INVOKABLE int componentAt(double xMm, double yMm);
 
     /// The port nearest to a point, if one is within `toleranceMm`.
@@ -686,6 +707,11 @@ private:
     bool m_editing = true;
     int m_componentCount = 0;
     int m_selected = -1;
+    /// The pipe selection is a second, separate selection: `selected` mirrors the
+    /// component and does not move when the reader clicks a hose. It is tracked here so
+    /// `refreshDocument` tells the status bar and the gallery that the pipe changed,
+    /// instead of staying silent because the component count and selection did not.
+    int m_selectedPipe = -1;
     bool m_canUndo = false;
     bool m_canRedo = false;
     bool m_inspectorOpen = false;

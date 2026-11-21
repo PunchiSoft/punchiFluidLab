@@ -2271,13 +2271,13 @@ int main(int argc, char *argv[])
         // sheet is the one the user gets.
         steps->push_back([state, check, send] {
             // The palette tiles live inside a Grid, whose delegates are children of its
-            // content item rather than of the window, so the tree is walked by hand.
+            // content item rather than of the window, so the tree is walked by hand. The
+            // tile names its own pointer area: the scene holds other large controls (the
+            // tube gallery), so guessing by size picks the wrong one.
             QQuickItem *row = nullptr;
             std::function<void(QQuickItem *)> seek = [&](QQuickItem *item) {
-                // A MouseArea written inline in QML gets a generated class name
-                // (QQuickMouseArea_QML_3), so the test asks by inheritance, not by name.
-                if (row == nullptr && item->isVisible() && item->inherits("QQuickMouseArea")
-                    && item->width() > 80.0 && item->height() > 50.0) {
+                if (row == nullptr && item->isVisible()
+                    && item->objectName() == QStringLiteral("paletteTile")) {
                     row = item;
                     return;
                 }
@@ -2286,7 +2286,8 @@ int main(int argc, char *argv[])
                 }
             };
             seek(state->window->contentItem());
-            check(row != nullptr, QStringLiteral("palette: the catalog row is found"));
+            check(row != nullptr,
+                  QStringLiteral("palette: the catalog row is found"));
             if (row == nullptr) {
                 return;
             }
@@ -2975,6 +2976,111 @@ int main(int argc, char *argv[])
             check(pf_session_pipe_class(state->session->handle(), 0) == 0,
                   QStringLiteral("pipe class: a working line is the default again"));
             state->session->selectPipe(-1);
+        });
+
+        // The tube diameter: a pneumatic hose starts at 10 mm, the gallery takes it to
+        // 16 mm as one undo, and the status bar names the size. An old pipe says it is
+        // unspecified instead of hiding the tubing it needs.
+        steps->push_back([state, check] {
+            state->session->selectPipe(0);
+            check(state->session->pipeTube(0) == 1000,
+                  QStringLiteral("tube: a pneumatic hose starts at 10 mm"));
+            state->session->setPipeTube(0, 1600);
+            check(state->session->pipeTube(0) == 1600,
+                  QStringLiteral("tube: the hose takes 16 mm"));
+            QObject *reading =
+                state->window->findChild<QObject *>(QStringLiteral("pipeTubeReading"));
+            check(reading != nullptr
+                      && reading->property("visible").toBool()
+                      && reading->property("text").toString().contains(QStringLiteral("16 mm")),
+                  QStringLiteral("tube: the status bar shows 16 mm"));
+            state->session->undo();
+            check(state->session->pipeTube(0) == 1000,
+                  QStringLiteral("tube: one undo returns the 10 mm"));
+            // An old sheet has no size, and the status says so instead of showing 10 mm.
+            state->session->setPipeTube(0, 0);
+            check(state->session->pipeTube(0) == 0,
+                  QStringLiteral("tube: a pipe can be left unspecified"));
+            reading = state->window->findChild<QObject *>(QStringLiteral("pipeTubeReading"));
+            check(reading != nullptr
+                      && reading->property("text").toString().contains(
+                          QStringLiteral("Sin especificar")),
+                  QStringLiteral("tube: the status says Sin especificar"));
+            state->session->setPipeTube(0, 1000);
+            state->session->selectPipe(-1);
+        });
+
+        // A pipe the user makes gets the documented default too.
+        steps->push_back([state, check] {
+            int supply = -1;
+            int valve = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                const QString id = row.value(QStringLiteral("id")).toString();
+                if (id == QStringLiteral("supply.compressor")) {
+                    supply = row.value(QStringLiteral("index")).toInt();
+                }
+                if (id == QStringLiteral("valve.3_2.spring_return")) {
+                    valve = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(supply >= 0 && valve >= 0,
+                  QStringLiteral("tube: the catalog offers a supply and a valve"));
+            const int supply_index =
+                supply >= 0 ? state->session->placeComponent(supply, 110.0, 40.0) : -1;
+            const int valve_index =
+                valve >= 0 ? state->session->placeComponent(valve, 150.0, 40.0) : -1;
+            const int before = static_cast<int>(state->session->connectionCount());
+            check(state->session->connectPorts(supply_index, QStringLiteral("1"), valve_index,
+                                               QStringLiteral("1")),
+                  QStringLiteral("tube: a new pipe can be made"));
+            check(state->session->connectionCount() == before + 1
+                      && state->session->pipeTube(before) == 1000,
+                  QStringLiteral("tube: the new pipe is 10 mm"));
+            state->session->removeComponent(valve_index);
+            state->session->removeComponent(supply_index);
+        });
+
+        // An electrical wire is not a tube: it has no diameter and the status shows none.
+        steps->push_back([state, check] {
+            int rail = -1;
+            int button = -1;
+            const QVariantList entries = state->session->catalog();
+            for (const QVariant &entry : entries) {
+                const QVariantMap row = entry.toMap();
+                const QString id = row.value(QStringLiteral("id")).toString();
+                if (id == QStringLiteral("electrical.supply")) {
+                    rail = row.value(QStringLiteral("index")).toInt();
+                }
+                if (id == QStringLiteral("electrical.contact")) {
+                    button = row.value(QStringLiteral("index")).toInt();
+                }
+            }
+            check(rail >= 0 && button >= 0,
+                  QStringLiteral("tube: the catalog offers the control parts"));
+            const int rail_index =
+                rail >= 0 ? state->session->placeComponent(rail, 40.0, 110.0) : -1;
+            const int button_index =
+                button >= 0 ? state->session->placeComponent(button, 90.0, 110.0) : -1;
+            const int before = static_cast<int>(state->session->connectionCount());
+            check(state->session->connectPorts(rail_index, QStringLiteral("L"), button_index,
+                                               QStringLiteral("1")),
+                  QStringLiteral("tube: the wire can be made"));
+            const int wire = before;
+            check(state->session->connectionCount() == before + 1
+                      && state->session->pipeTube(wire) == 0,
+                  QStringLiteral("tube: an electrical wire has no diameter"));
+            check(state->session->pipeIsElectrical(wire),
+                  QStringLiteral("tube: the wire is recognised by its port roles"));
+            state->session->selectPipe(wire);
+            QObject *reading =
+                state->window->findChild<QObject *>(QStringLiteral("pipeTubeReading"));
+            check(reading != nullptr && !reading->property("visible").toBool(),
+                  QStringLiteral("tube: a wire shows no size in the status bar"));
+            state->session->selectPipe(-1);
+            state->session->removeComponent(button_index);
+            state->session->removeComponent(rail_index);
         });
 
         // The two terminations are files like everything else: they are placed, inspected
@@ -4097,8 +4203,8 @@ int main(int argc, char *argv[])
         steps->push_back([state, check] {
             QQuickItem *mouse = nullptr;
             std::function<void(QQuickItem *)> seek = [&](QQuickItem *item) {
-                if (mouse == nullptr && item->isVisible() && item->inherits("QQuickMouseArea")
-                    && item->width() > 80.0 && item->height() > 50.0) {
+                if (mouse == nullptr && item->isVisible()
+                    && item->objectName() == QStringLiteral("paletteTile")) {
                     mouse = item;
                     return;
                 }
@@ -4107,7 +4213,8 @@ int main(int argc, char *argv[])
                 }
             };
             seek(state->window->contentItem());
-            check(mouse != nullptr, QStringLiteral("catalog: a tile is in the scene"));
+            check(mouse != nullptr,
+                  QStringLiteral("catalog: a tile is in the scene"));
             if (mouse != nullptr) {
                 if (QQuickItem *tile = mouse->parentItem(); tile != nullptr) {
                     tile->forceActiveFocus();

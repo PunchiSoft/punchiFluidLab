@@ -1862,15 +1862,18 @@ void FluidSession::refreshDocument()
     const bool sheetChanged = refreshSheet();
     const int count = static_cast<int>(pf_session_component_count(m_session));
     const int selected = pf_session_selected(m_session);
+    const int selectedPipe = pf_session_selected_pipe(m_session);
     const bool canUndo = pf_session_can_undo(m_session) == 1;
     const bool canRedo = pf_session_can_redo(m_session) == 1;
     const bool modified = pf_session_is_modified(m_session) == 1;
-    if (count == m_componentCount && selected == m_selected && canUndo == m_canUndo
-        && canRedo == m_canRedo && modified == m_modified && !sheetChanged) {
+    if (count == m_componentCount && selected == m_selected
+        && selectedPipe == m_selectedPipe && canUndo == m_canUndo && canRedo == m_canRedo
+        && modified == m_modified && !sheetChanged) {
         return;
     }
     m_componentCount = count;
     m_selected = selected;
+    m_selectedPipe = selectedPipe;
     m_canUndo = canUndo;
     m_canRedo = canRedo;
     m_modified = modified;
@@ -2136,6 +2139,90 @@ void FluidSession::alignSelection(int edge)
 int FluidSession::selectedPipe() const
 {
     return m_session ? pf_session_selected_pipe(m_session) : -1;
+}
+
+int FluidSession::pipeTube(int pipeIndex) const
+{
+    if (!m_session || pipeIndex < 0) {
+        return -1;
+    }
+    return pf_session_pipe_tube(m_session, static_cast<uint32_t>(pipeIndex));
+}
+
+void FluidSession::setPipeTube(int pipeIndex, int hundredths)
+{
+    if (!m_session || pipeIndex < 0) {
+        return;
+    }
+    if (pf_session_set_pipe_tube(m_session, static_cast<uint32_t>(pipeIndex), hundredths)
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo cambiar el diámetro");
+        emit changed();
+        return;
+    }
+    // The size is a pipe property, not a count or a selection: `refreshDocument` alone sees
+    // no difference in what it mirrors and would stay silent, leaving the status bar and the
+    // gallery reading the previous diameter. The change is always real here, so one signal
+    // is right.
+    refreshDocument();
+    emit documentChanged();
+    emit changed();
+}
+
+bool FluidSession::pipeIsElectrical(int pipeIndex) const
+{
+    return m_session && pipeIndex >= 0
+           && pf_session_pipe_is_electrical(m_session, static_cast<uint32_t>(pipeIndex)) == 1;
+}
+
+QVariantList FluidSession::tubeSizes() const
+{
+    QVariantList list;
+    const int count = pf_tube_size_count();
+    for (int index = 0; index < count; ++index) {
+        char label[32] = {};
+        const int written = pf_tube_size_label(static_cast<uint32_t>(index), label,
+                                               static_cast<uint32_t>(sizeof label));
+        if (written < 0) {
+            continue;
+        }
+        QVariantMap entry;
+        entry.insert(QStringLiteral("od"), pf_tube_size_od(static_cast<uint32_t>(index)));
+        entry.insert(QStringLiteral("label"), QString::fromUtf8(label, written));
+        entry.insert(QStringLiteral("nominal"),
+                     pf_tube_size_nominal(static_cast<uint32_t>(index)));
+        list.append(entry);
+    }
+    return list;
+}
+
+QString FluidSession::pipeTubeLabel() const
+{
+    const int pipe = selectedPipe();
+    if (!m_session || pipe < 0 || pipeIsElectrical(pipe)) {
+        return {};
+    }
+    const int od = pipeTube(pipe);
+    if (od <= 0) {
+        return QStringLiteral("Sin especificar");
+    }
+    // The named entries keep their name (`10 mm`, `3/8"`); a hand-written value shows the
+    // measurement with the decimal comma the interface uses.
+    const QVariantList sizes = tubeSizes();
+    for (const QVariant &entry : sizes) {
+        const QVariantMap row = entry.toMap();
+        if (row.value(QStringLiteral("od")).toInt() == od) {
+            return row.value(QStringLiteral("label")).toString();
+        }
+    }
+    const int whole = od / 100;
+    const int fraction = od % 100;
+    if (fraction == 0) {
+        return QStringLiteral("%1 mm").arg(whole);
+    }
+    return QStringLiteral("%1,%2 mm").arg(whole).arg(fraction, 2, 10, QLatin1Char('0'));
 }
 
 void FluidSession::setPipeClass(int lineClass)

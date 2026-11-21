@@ -37,7 +37,7 @@ use std::fmt::Write as _;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
-use punchi_fluid_catalog::{Behaviour, Catalog};
+use punchi_fluid_catalog::{Behaviour, Catalog, PortRole};
 use punchi_fluid_check::check_with_reserved;
 use punchi_fluid_core::paper::{
     Margins as PaperMargins, Orientation as PaperOrientation, PaperSize, Sheet as PaperSheet,
@@ -55,7 +55,7 @@ use punchi_fluid_doc::{
 };
 use punchi_fluid_draw::placed::{
     Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_edge_towards, port_point,
-    route_between_boxes_avoiding,
+    route_between_boxes_avoiding, route_length_mm,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -384,7 +384,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 10;
+pub const PF_ABI_VERSION: u32 = 11;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -2010,6 +2010,7 @@ impl PfSession {
                         punchi_fluid_file::sheet::StoredClass::Working
                     }
                 },
+                tube_od_hundredths: connection.tube_od_hundredths(),
             })
             .collect();
         let circuits = self
@@ -2112,6 +2113,9 @@ impl PfSession {
                     punchi_fluid_file::sheet::StoredClass::Drain => LineClass::Drain,
                 },
             );
+            // The size is read verbatim: an old sheet has no key and stays unspecified,
+            // which is not the same as a new pipe's documented 10 mm.
+            document.seed_pipe_tube(index, pipe.tube_od_hundredths);
         }
         self.document = document;
         let (width, height) = self.document.sheet().size_mm();
@@ -2518,10 +2522,19 @@ impl PfSession {
         else {
             return;
         };
-        let _ = self.document.seed_connect(
+        if !self.document.seed_connect(
             punchi_fluid_doc::Endpoint::new(from_id, from.1),
             punchi_fluid_doc::Endpoint::new(to_id, to.1),
-        );
+        ) {
+            return;
+        }
+        // The starting circuit is pneumatic: every hose it draws starts at the documented
+        // 10 mm, the same default a new pipe made by the user gets. A seed is not an edit,
+        // so the size does not fill the undo history.
+        let pipe = self.document.connections().len() - 1;
+        let _ = self
+            .document
+            .seed_pipe_tube(pipe, Some(punchi_fluid_core::DEFAULT_TUBE_HUNDREDTHS));
     }
 
     /// Hit test against the layout of the last built frame, so the click target is
@@ -4870,7 +4883,13 @@ impl PfSession {
             parts: if options.flags & PF_EXPORT_PARTS_LIST == 0 {
                 None
             } else {
-                Some(parts_list(&self.document, &self.catalog, circuit))
+                Some(parts_list(
+                    &self.document,
+                    &self.catalog,
+                    &placed,
+                    &pipes,
+                    circuit,
+                ))
             },
             ..punchi_fluid_export::Page::a4(block.clone())
         };
@@ -4913,13 +4932,15 @@ impl PfSession {
     }
 }
 
-/// The parts list of one circuit: what it holds, grouped by definition.
+/// The parts list of one circuit: what it holds, grouped by definition, and its tubing.
 fn parts_list(
     document: &Document,
     catalog: &Catalog,
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
     circuit: u32,
 ) -> punchi_fluid_export::PartsList {
-    let placements = document
+    let placement_rows = document
         .placements()
         .iter()
         .filter(|placement| placement.circuit == circuit)
@@ -4929,7 +4950,17 @@ fn parts_list(
                 placement.designation.as_deref(),
             )
         });
-    punchi_fluid_export::PartsList::group(catalog, placements)
+    // One input per drawn pneumatic pipe. The route length is the drawing's own polyline,
+    // and an electrical wire gives none, so it never reaches a tube row.
+    let tubes = pipes.iter().enumerate().filter_map(|(index, pipe)| {
+        let length_mm = route_length_mm(placements, pipes, catalog, index)?;
+        Some(punchi_fluid_export::parts::TubeRowInput {
+            od: pipe.tube_od_hundredths,
+            class: pipe.class,
+            length_mm,
+        })
+    });
+    punchi_fluid_export::PartsList::group(catalog, placement_rows, tubes)
 }
 
 /// The title block for an export: the circuit's own fields, with the defaults the paper
@@ -6673,6 +6704,194 @@ pub unsafe extern "C" fn pf_session_set_pipe_class(
     })
 }
 
+/// Nominal outside diameter of one pneumatic pipe, in hundredths of a millimetre.
+///
+/// Returns `0` when the pipe's size is unspecified and `-1` when there is no such pipe.
+/// The value is what the sheet stores: an old sheet has no size, and an electrical wire has
+/// no tube at all.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_pipe_tube(session: *const PfSession, index: u32) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return -1;
+    };
+    let Some(connection) = session.document.connections().get(index as usize) else {
+        return -1;
+    };
+    match connection.tube_od_hundredths() {
+        Some(od) => i32::from(od),
+        None => 0,
+    }
+}
+
+/// `true` when both ends of a pipe are electrical terminals.
+///
+/// The sheet format cannot store the electrical class (it writes `Working`), so the port
+/// roles in the catalog are the only authority: a wire is what two terminals make.
+fn pipe_is_electrical(session: &PfSession, connection: &punchi_fluid_doc::Connection) -> bool {
+    let role = |endpoint: &punchi_fluid_doc::Endpoint| {
+        session
+            .document
+            .placements()
+            .iter()
+            .find(|placement| placement.id() == endpoint.placement)
+            .and_then(|placement| session.catalog.get(placement.catalog_id.as_str()))
+            .and_then(|definition| {
+                definition
+                    .port
+                    .iter()
+                    .find(|candidate| candidate.id == endpoint.port)
+            })
+            .map(|candidate| candidate.role)
+    };
+    matches!(
+        (role(&connection.from), role(&connection.to)),
+        (Some(PortRole::Electrical), Some(PortRole::Electrical))
+    )
+}
+
+/// `1` when both ends of a pipe are electrical terminals, `0` otherwise.
+///
+/// A wire has no tube and therefore no size to show; the front end asks this before it
+/// prints one. The sheet format cannot store the electrical class, so the catalog's port
+/// roles are the only authority.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_pipe_is_electrical(
+    session: *const PfSession,
+    index: u32,
+) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return 0;
+    };
+    let Some(connection) = session.document.connections().get(index as usize) else {
+        return 0;
+    };
+    i32::from(pipe_is_electrical(session, connection))
+}
+
+/// Gives one pneumatic pipe a nominal outside diameter, as one undoable change.
+///
+/// `hundredths` is the diameter in hundredths of a millimetre; `0` takes the size away,
+/// which is how an old pipe or a custom sheet reads. Returns `0` on success, `1` when the
+/// pipe does not exist, the value is outside `100..=5000`, or the pipe is an electrical
+/// wire, which carries no tube.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_pipe_tube(
+    session: *mut PfSession,
+    index: u32,
+    hundredths: i32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds the contract.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return 1;
+        };
+        let Some(connection) = session.document.connections().get(index as usize) else {
+            session.error = cstring("that pipe does not exist");
+            return 1;
+        };
+        if pipe_is_electrical(session, connection) {
+            session.error = cstring("an electrical wire has no tube");
+            return 1;
+        }
+        let tube = if hundredths == 0 {
+            None
+        } else {
+            let Ok(od) = u16::try_from(hundredths) else {
+                session.error = cstring("the tube diameter is outside the accepted range");
+                return 1;
+            };
+            if !punchi_fluid_core::tube::is_valid_tube(od) {
+                session.error = cstring("the tube diameter is outside the accepted range");
+                return 1;
+            }
+            Some(od)
+        };
+        let from = connection.tube_od_hundredths();
+        if !session.document.set_pipe_tube(index as usize, tube) {
+            session.error = if from == tube {
+                cstring("the pipe already has that tube")
+            } else {
+                cstring("the tube size could not be changed")
+            };
+            return 1;
+        }
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// How many nominal tube sizes the series offers.
+#[unsafe(no_mangle)]
+pub extern "C" fn pf_tube_size_count() -> i32 {
+    i32::try_from(punchi_fluid_core::TUBE_SIZES.len()).unwrap_or(0)
+}
+
+/// Outside diameter of the entry at `index`, in hundredths of a millimetre, or `-1`.
+#[unsafe(no_mangle)]
+pub extern "C" fn pf_tube_size_od(index: u32) -> i32 {
+    match punchi_fluid_core::TUBE_SIZES.get(index as usize) {
+        Some(size) => i32::from(size.hundredths),
+        None => -1,
+    }
+}
+
+/// `0` for a metric entry, `1` for an inch entry, `-1` when the index does not exist.
+#[unsafe(no_mangle)]
+pub extern "C" fn pf_tube_size_nominal(index: u32) -> i32 {
+    match punchi_fluid_core::TUBE_SIZES.get(index as usize) {
+        Some(size) => match size.nominal {
+            punchi_fluid_core::Nominal::Metric => 0,
+            punchi_fluid_core::Nominal::Inch => 1,
+        },
+        None => -1,
+    }
+}
+
+/// Label of the entry at `index`, NUL-terminated UTF-8 in `out`.
+///
+/// Returns the number of bytes written, or a negative code when the index does not exist
+/// or the buffer is too small. The series lives once, in the core; the front end builds its
+/// menu from these calls instead of a second list that could drift.
+///
+/// # Safety
+///
+/// `out` must be null or point to `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_tube_size_label(index: u32, out: *mut c_char, capacity: u32) -> i32 {
+    guard(|| {
+        if out.is_null() || capacity == 0 {
+            return PF_ERR_NULL;
+        }
+        let Some(size) = punchi_fluid_core::TUBE_SIZES.get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let bytes = size.label.as_bytes();
+        let capacity = capacity as usize;
+        if bytes.len() + 1 > capacity {
+            return PF_ERR_MODEL;
+        }
+        // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+        let buffer = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+        buffer[..bytes.len()].copy_from_slice(bytes);
+        buffer[bytes.len()] = 0;
+        i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
 /// Copies the whole selection in place, displaced by a delta, and selects the copies.
 ///
 /// This is the Shift+drag gesture when more than one component is marked.
@@ -6995,6 +7214,7 @@ fn scene<'a>(
                 },
                 offset_mm: connection.offset_mm(),
                 class: connection.class(),
+                tube_od_hundredths: connection.tube_od_hundredths(),
                 pressure_ratio: hose_pressure(
                     system,
                     placement_part.get(from_document).copied().flatten(),
@@ -8013,9 +8233,36 @@ pub unsafe extern "C" fn pf_session_connect(
         else {
             return session.fail("that component does not exist");
         };
+        // The tube is a property of a pneumatic pipe. The two ends decide: the sheet format
+        // cannot store the electrical class, so the roles in the catalog are what says a
+        // wire is a wire, and a wire has no tube at all.
+        let role = |index: u32, port: &str| {
+            session
+                .document
+                .placements()
+                .get(index as usize)
+                .and_then(|placement| session.catalog.get(placement.catalog_id.as_str()))
+                .and_then(|definition| {
+                    definition
+                        .port
+                        .iter()
+                        .find(|candidate| candidate.id == port)
+                })
+                .map(|candidate| candidate.role)
+        };
+        let electrical = matches!(
+            (role(from_index, from_port), role(to_index, to_port)),
+            (Some(PortRole::Electrical), Some(PortRole::Electrical))
+        );
+        let tube = if electrical {
+            None
+        } else {
+            Some(punchi_fluid_core::DEFAULT_TUBE_HUNDREDTHS)
+        };
         if session.document.connect(
             punchi_fluid_doc::Endpoint::new(from, from_port),
             punchi_fluid_doc::Endpoint::new(to, to_port),
+            tube,
         ) {
             session.rebuild_model();
             PF_OK
