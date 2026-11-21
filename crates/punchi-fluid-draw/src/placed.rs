@@ -387,8 +387,16 @@ fn draw_exhaust_jet(
         PortEdge::Top => Pt::new(0.0, -1.0),
         PortEdge::Bottom => Pt::new(0.0, 1.0),
     };
+    // A closure fitted to the port owns the mouth: the air leaves through the silencer's
+    // own symbol, so the marks start past its box instead of crossing it.
+    let mouth = if placed.closures.iter().any(|(port, _)| *port == mark.port) {
+        CLOSURE_MM
+    } else {
+        0.0
+    };
     // Fixed distances, not a loop over an index: the jet is three marks, no allocation.
     for distance in [2.0_f32, 4.5, 7.0] {
+        let distance = distance + mouth;
         let point = Pt::new(at.x + direction.x * distance, at.y + direction.y * distance);
         symbol::draw_flow_arrow(surface, point, direction, flow::PULSE_HEAD_MM, ink.line);
     }

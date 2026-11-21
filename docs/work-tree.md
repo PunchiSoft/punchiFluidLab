@@ -329,8 +329,9 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 - **Done when**: the solver test, the drawing test (a venting port draws marks outside the
   symbol, a plugged one draws none), the ABI frame test at two phases, the captures and the
   gate are green; the owner confirms.
-- **State**: in progress on `feat/exhaust-visible` — the solver reading is done; the ABI and
-  the drawing are next.
+- **State**: the solver reading and the drawing merged as #161; this slice moves the jet's
+  mouth to the silencer's own box (`a_silencer_owns_the_mouth_of_the_jet`) and is in
+  progress on `feat/silencer-mouth`. `done` after the owner merges.
 
 ### P-036 — The transport disappears when the ribbon folds
 

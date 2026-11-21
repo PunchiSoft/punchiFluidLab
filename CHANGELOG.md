@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Escape: el chorro sale de la boca del silenciador — 2026-11-21
+
+- **Con un silenciador en el puerto de escape, las puntas del aire salen pasada su caja**,
+  no de detrás del símbolo: el cierre es la boca y el aire lo atraviesa. Un puerto tapado
+  sigue sin dibujar nada y uno libre sigue saliendo del puerto. Prueba
+  `a_silencer_owns_the_mouth_of_the_jet`; el caudal del escape y el chorro entraron en #161.
+  Nodo P-037.
+
 ### Cinta: el transporte sigue visible al plegarse — 2026-11-21
 
 - **Con la cinta plegada (≤1280 px), la fila de pestañas lleva Iniciar/Pausa, Paso y Detener**
