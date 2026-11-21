@@ -67,8 +67,23 @@ Rectangle {
     property bool paperListRequested: false
     property bool marginListRequested: false
     /// The loaded Diámetro control, so the window shortcut can open its list even when the
-    /// user is on another tab. It is null while Editar is not on screen.
-    property var tubeControl: null
+    /// user is on another tab. The body's control stays loaded when a group collapses; a
+    /// flyout copy is used only while it is open, so a closed flyout cannot leave the
+    /// shortcut pointing at a destroyed control.
+    readonly property var tubeControl: flyoutTubeControl || bodyTubeControl
+    /// The two instances of the control: the body keeps one even when its group collapses,
+    /// and the flyout owns one while it is open. Alt+D reaches whichever is visible.
+    property var bodyTubeControl: null
+    property var flyoutTubeControl: null
+    /// The measured groups of the open tab, by index, so the row can decide its collapse
+    /// set before it lays the groups out. Each entry is `{ title, expanded, compact }`.
+    property var groupMetrics: ({})
+    /// The capture hook: `--ribbon-flyout` names a collapsed group to open after layout.
+    property string flyoutRequest: ""
+    /// The collapse order is a product decision, from the least to the most used (P-028).
+    readonly property var collapsePriority: [
+        "Repartir", "Alinear", "Paleta", "Historial", "Circuito", "Componente", "Conducto"
+    ]
 
     color: session.background
     // The collapsed menu hangs below the tab row, over the sheet. Without a plane of its
@@ -404,6 +419,118 @@ Rectangle {
         return group.items || [];
     }
 
+    /// `--ribbon-flyout` names a group; a short timer lets the row measure and collapse
+    /// before the flyout opens, so the capture shows the real resting layout.
+    Timer {
+        id: flyoutRequestTimer
+        interval: 80
+        repeat: false
+        onTriggered: ribbon.openGroupFlyout(ribbon.flyoutRequest)
+    }
+
+    onFlyoutRequestChanged: if (ribbon.flyoutRequest.length > 0) {
+                               flyoutRequestTimer.restart();
+                           }
+
+    /// The row stores what each group measures before the collapse is decided. Replacing
+    /// the map is what wakes the `collapsedTitles` binding; mutating it would not.
+    function recordGroupMetrics(index, title, expanded, compact) {
+        const next = {};
+        const keys = Object.keys(ribbon.groupMetrics);
+        for (let i = 0; i < keys.length; ++i) {
+            next[keys[i]] = ribbon.groupMetrics[keys[i]];
+        }
+        next[index] = { title: title, expanded: expanded, compact: compact };
+        ribbon.groupMetrics = next;
+    }
+
+    /// The groups the open tab has to collapse so the one row fits its content. A group
+    /// with no command has nothing to put in a flyout, so it is not collapsible: Paleta's
+    /// note stays on the row and the next priority takes its turn. The order is greedy and
+    /// deterministic, from the least to the most used.
+    function computeCollapsedTitles() {
+        const groups = ribbon.tabs[ribbon.current].groups || [];
+        const entries = [];
+        for (let i = 0; i < groups.length; ++i) {
+            const measured = ribbon.groupMetrics[i];
+            if (!measured) {
+                return [];
+            }
+            entries.push({ title: measured.title, expanded: measured.expanded,
+                           compact: measured.compact, group: groups[i] });
+        }
+        let total = 0;
+        for (let i = 0; i < entries.length; ++i) {
+            total += entries[i].expanded;
+        }
+        const available = ribbon.width - 6;
+        const ordered = [];
+        for (let p = 0; p < ribbon.collapsePriority.length; ++p) {
+            const want = ribbon.collapsePriority[p];
+            for (let i = 0; i < entries.length; ++i) {
+                if (entries[i].title === want && ordered.indexOf(entries[i]) < 0) {
+                    ordered.push(entries[i]);
+                }
+            }
+        }
+        // A tab whose groups are not in the Editar table (the other tabs) collapses from
+        // the right, so the leftmost, always-present groups stay readable.
+        for (let i = entries.length - 1; i >= 0; --i) {
+            if (ordered.indexOf(entries[i]) < 0) {
+                ordered.push(entries[i]);
+            }
+        }
+        const collapsed = [];
+        for (let i = 0; i < ordered.length; ++i) {
+            if (total <= available) {
+                break;
+            }
+            const entry = ordered[i];
+            // A group with no command has nothing to put in a flyout, so it keeps its
+            // (narrow) note on the row and the next priority takes its turn.
+            if (!ribbon.groupHasCommands(entry.group)) {
+                continue;
+            }
+            if (entry.expanded <= entry.compact) {
+                continue;
+            }
+            total -= entry.expanded - entry.compact;
+            collapsed.push(entry.title);
+        }
+        return collapsed;
+    }
+
+    function groupHasCommands(group) {
+        if (!group) {
+            return false;
+        }
+        return ribbon.groupActions(group).length > 0;
+    }
+
+    readonly property var collapsedTitles: ribbon.computeCollapsedTitles()
+
+    function groupIsCollapsed(title) {
+        return ribbon.collapsedTitles.indexOf(title) >= 0;
+    }
+
+    /// The live delegate of a group, for `Alt+D` and the capture hook.
+    function groupFor(title) {
+        const kids = groupsRow.children;
+        for (let i = 0; i < kids.length; ++i) {
+            if (kids[i].objectName === "ribbonGroup" && kids[i].title === title) {
+                return kids[i];
+            }
+        }
+        return null;
+    }
+
+    function openGroupFlyout(title) {
+        const group = ribbon.groupFor(title);
+        if (group) {
+            group.openFlyout();
+        }
+    }
+
     function invoke(id) {
         // A command ends the minimized body: the panel was a visit to the commands, not a
         // new resting state.
@@ -673,6 +800,11 @@ Rectangle {
         if (out.indexOf("open-menu-symbolic") < 0) {
             out.push("open-menu-symbolic");
         }
+        // The collapsed-group chevron is not a tab command but it is a theme icon the
+        // ribbon asks for, so the icon check covers it.
+        if (out.indexOf("pan-down") < 0) {
+            out.push("pan-down");
+        }
         return out;
     }
 
@@ -836,6 +968,7 @@ Rectangle {
     // ---- body ---------------------------------------------------------------
     Item {
         id: body
+        objectName: "ribbonBody"
         anchors.top: tabRow.bottom
         anchors.left: parent.left
         anchors.leftMargin: ribbon.minimized ? ribbon.bodyInsetLeft : 0
@@ -884,61 +1017,15 @@ Rectangle {
                 model: ribbon.tabs[ribbon.current].groups
 
                 delegate: RibbonGroup {
+                    required property int index
                     required property var modelData
                     objectName: "ribbonGroup"
                     session: ribbon.session
+                    ribbonBar: ribbon
+                    groupData: modelData
+                    groupIndex: index
                     title: modelData.title
-
-                    // A group whose control is a combo or a gallery. The item is a child of
-                    // the group's Row, so the group measures itself around it.
-                    Loader {
-                        visible: !!modelData.custom
-                        sourceComponent: modelData.custom === "page-setup" ? pageSetupGroup
-                                       : modelData.custom === "recent" ? recentGroup
-                                       : modelData.custom === "tube" ? tubeGroup
-                                       : null
-                        onItemChanged: if (item && item.objectName === "tubeSizeControl") {
-                                           ribbon.tubeControl = item;
-                                       }
-                    }
-
-                    Repeater {
-                        model: modelData.items || []
-
-                        delegate: RibbonButton {
-                            required property var modelData
-                            session: ribbon.session
-                            label: modelData.label
-                            iconName: modelData.icon || ""
-                            hint: modelData.hint || ""
-                            large: modelData.big === true
-                            available: modelData.enabled === undefined || modelData.enabled === true
-                            selected: modelData.current === true
-                            tone: "foreground"
-                            onTriggered: ribbon.invoke(modelData.id)
-                        }
-                    }
-
-                    // A tab whose commands do not exist yet says so once, rather than
-                    // showing grey buttons that teach the user nothing.
-                    Item {
-                        visible: !!modelData.note
-                        // A fixed width, not one derived from the wrapped text: a text that
-                        // wraps needs the width it is measured with, and asking each for
-                        // the other is a binding loop.
-                        width: visible ? 180 : 0
-                        height: 62
-
-                        Text {
-                            id: noteText
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            text: modelData.note || ""
-                            color: session.muted
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                    }
+                    collapsed: ribbon.groupIsCollapsed(modelData.title)
                 }
             }
         }
@@ -1016,44 +1103,21 @@ Rectangle {
         color: session.line
     }
 
-    Component {
-        id: pageSetupGroup
-
-        ConfigurarPaginaGroup {
-            objectName: "pageSetupGroup"
-            session: ribbon.session
-            paperListRequested: ribbon.paperListRequested
-            marginListRequested: ribbon.marginListRequested
-            onPageSetupRequested: function (section) {
-                ribbon.pageSetupRequested(section);
-            }
-        }
-    }
-
-    Component {
-        id: recentGroup
-
-        RecentCombo {
-            objectName: "recentGroup"
-            session: ribbon.session
-            showLabel: false
-        }
-    }
-
-    Component {
-        id: tubeGroup
-
-        TubeSizeControl {
-            objectName: "tubeSizeControl"
-            session: ribbon.session
-        }
-    }
-
-    /// The window shortcut `Alt+D`: bring the Editar tab up, then open the list.
+    /// The window shortcut `Alt+D`: bring the Editar tab up, then open the list. When the
+    /// Conducto group is collapsed the control lives in its flyout, so the flyout opens
+    /// first and the diameter gallery follows it instead of pointing at a hidden control.
     function openTubeMenu() {
         ribbon.current = 1;
         Qt.callLater(function () {
-            if (ribbon.tubeControl) {
+            const conducto = ribbon.groupFor("Conducto");
+            if (conducto && conducto.collapsed) {
+                conducto.openFlyout();
+                Qt.callLater(function () {
+                    if (ribbon.flyoutTubeControl) {
+                        ribbon.flyoutTubeControl.openPopup();
+                    }
+                });
+            } else if (ribbon.tubeControl) {
                 ribbon.tubeControl.openPopup();
             }
         });

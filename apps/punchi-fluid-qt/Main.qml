@@ -12,8 +12,10 @@ import PunchiFluid
 
 Window {
     id: window
-    width: 1280
-    height: 800
+    // The first-run size comes from the screen (defaultWindowSize): this pair is the 1080p
+    // result and only the fallback for a window that has no screen yet.
+    width: 1440
+    height: 900
     minimumWidth: 900
     minimumHeight: 600
     visible: true
@@ -341,7 +343,9 @@ Window {
         window.ribbonMinimized = session.viewSetting("panel/ribbonMinimized", false);
         window.viewStripFolded = session.viewSetting("view/stripFolded", false);
         session.blockVisible = session.viewSetting("view/blockVisible", true);
-        window.restoreGeometry();
+        if (!window.restoreGeometry()) {
+            window.openAtDefaultSize();
+        }
         window.viewStateReady = true;
     }
 
@@ -521,30 +525,95 @@ Window {
         session.setViewSetting("window/y", window.y);
     }
 
+    /// The screen's usable area. QML's ScreenInfo exposes the available size as
+    /// `desktopAvailableWidth`/`Height` and the origin as `virtualX`/`virtualY`; that pair
+    /// is the available geometry the rules below work on.
+    function availableArea(target) {
+        if (target === null || target === undefined) {
+            return null;
+        }
+        return {
+            x: target.virtualX,
+            y: target.virtualY,
+            width: target.desktopAvailableWidth,
+            height: target.desktopAvailableHeight
+        };
+    }
+
+    /// The first window's size for a screen: 1440×900 on a 1080p area, the largest that
+    /// fits minus a two-unit margin on a smaller one, never below the 900×600 minimum.
+    /// Pure, so `--selftest` proves the pairs without depending on the machine's screen.
+    function defaultWindowSize(areaWidth, areaHeight, unit) {
+        const margin = 2 * unit;
+        return {
+            width: Math.max(window.minimumWidth, Math.min(1440, areaWidth - margin)),
+            height: Math.max(window.minimumHeight, Math.min(900, areaHeight - margin))
+        };
+    }
+
+    /// A remembered size obeys the same margin as the first one but not the 1440×900 cap:
+    /// a user who widened the window keeps that width while it still fits the screen.
+    function clampWindowSize(width, height, areaWidth, areaHeight, unit) {
+        const margin = 2 * unit;
+        return {
+            width: Math.max(window.minimumWidth, Math.min(width, areaWidth - margin)),
+            height: Math.max(window.minimumHeight, Math.min(height, areaHeight - margin))
+        };
+    }
+
+    /// First run, or a profile with no remembered size: open at this screen's default size
+    /// and centre the window in its available area.
+    function openAtDefaultSize() {
+        const area = window.availableArea(window.screen);
+        if (area === null) {
+            return;
+        }
+        const size = window.defaultWindowSize(area.width, area.height, session.unit);
+        window.width = size.width;
+        window.height = size.height;
+        window.x = Math.round(area.x + (area.width - size.width) / 2);
+        window.y = Math.round(area.y + (area.height - size.height) / 2);
+    }
+
+    /// The saved size and place, as view state. The size is clamped to the current screen
+    /// with the same margin as the first window, so a window saved on a large monitor
+    /// reopens inside a small laptop; a place is only restored when it still lands on a
+    /// screen. Returns false when no size was saved, so the caller opens at the default.
     function restoreGeometry() {
         const width = Number(session.viewSetting("window/width", 0));
         const height = Number(session.viewSetting("window/height", 0));
-        if (isFinite(width) && width >= window.minimumWidth) {
-            window.width = width;
-        }
-        if (isFinite(height) && height >= window.minimumHeight) {
-            window.height = height;
+        const storedWidth = isFinite(width) && width > 0;
+        const storedHeight = isFinite(height) && height > 0;
+        const area = window.availableArea(window.screen);
+        if (storedWidth || storedHeight) {
+            let restoredWidth = storedWidth ? width : window.width;
+            let restoredHeight = storedHeight ? height : window.height;
+            if (area !== null) {
+                const size = window.clampWindowSize(restoredWidth, restoredHeight,
+                                                    area.width, area.height, session.unit);
+                restoredWidth = size.width;
+                restoredHeight = size.height;
+            } else {
+                restoredWidth = Math.max(window.minimumWidth, restoredWidth);
+                restoredHeight = Math.max(window.minimumHeight, restoredHeight);
+            }
+            window.width = restoredWidth;
+            window.height = restoredHeight;
         }
         // A place is only restored when it still lands on a screen: a laptop undocked from
         // a second monitor must not reopen the window where nothing can reach it.
         const x = Number(session.viewSetting("window/x", NaN));
         const y = Number(session.viewSetting("window/y", NaN));
-        const target = window.screen;
-        if (!isFinite(x) || !isFinite(y) || target === null || target === undefined) {
-            return;
+        if (!isFinite(x) || !isFinite(y) || area === null) {
+            return storedWidth || storedHeight;
         }
-        const area = target.availableGeometry;
         const reachable = x < area.x + area.width - 160 && y < area.y + area.height - 120
                        && x + window.width > area.x + 160 && y + window.height > area.y + 120;
         if (reachable) {
             window.x = x;
             window.y = y;
         }
+        return storedWidth || storedHeight;
     }
 
     // A copy of the work every thirty seconds while it is unsaved, so a crash costs half a

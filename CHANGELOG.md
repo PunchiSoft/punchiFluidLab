@@ -6,6 +6,50 @@ publicación.
 
 ## Unreleased
 
+### Ventana: la cinta se ve a 1366×768 — 2026-11-21
+
+- **1366×768 es el suelo de soporte** (el portátil de entrada y educación del mercado al
+  que apunta el proyecto): la cinta sigue **desplegada en una sola fila con sus siete
+  grupos**, no se sustituye por el menú reducido. Un grupo que no cabe se convierte en un
+  **botón con su nombre y un chevrón**, y sus comandos se abren en un **flyout no modal**;
+  el alto de la cinta no cambia (121 px con la unidad por defecto) y la hoja conserva su
+  sitio.
+- **La prioridad de plegado es un contrato de producto**, de menos a más usado:
+  **Repartir, Alinear, Paleta, Historial, Circuito, Componente, Conducto**. Un grupo sin
+  comandos —la nota de Paleta— no se pliega, porque no tiene nada que llevar al flyout. El
+  conjunto medido es **1366 → Historial, Alinear, Repartir**; **1440 y 1600 → Alinear,
+  Repartir**; **1920 → ninguno**. Por debajo de 1280 se mantiene el plegado global de
+  P-027; a 125 % de escala un panel de 1366 mide ~1093 lógicos y se registra como el caso
+  plegado esperado, sin esconderlo.
+- **El flyout conserva todos los comandos y sus etiquetas**: es el mismo contenido del
+  grupo expandido, abre con `Enter` o `Space`, se cierra con `Esc` o un clic fuera, toma el
+  foco y cada elemento mantiene su nombre accesible. `Alt+D` sigue alcanzando el
+  **Diámetro** del grupo Conducto, esté expandido o en su flyout.
+- **`--check-layout` gana la matriz de la cinta**: 1280×800 plegado y 1366×768, 1440×900,
+  1600×900 y 1920×1080 desplegados, con siete grupos en orden, ningún borde derecho fuera
+  del contenido, el inferior dentro del cuerpo, las etiquetas de los expandidos, los
+  comandos del flyout de cada plegado, la altura de 121 px y el suelo de la hoja A4. La
+  **exención del límite conocido a 1440 se elimina**: cualquier desbordamiento falla.
+  También corre con `QT_SCALE_FACTOR` 1,25/1,5/2 y `--font-scale 1.5`.
+- **`--selftest` fija el conjunto exacto**: a 1366 la cinta está desplegada, hay siete
+  grupos y se pliegan **Historial, Alinear y Repartir**; un `Enter` real sobre el botón de
+  Alinear abre su flyout con comandos; a 1920 los siete están expandidos; a 1280 el plegado
+  sigue apareciendo. El tamaño de ventana y el plegado recordado se restauran después.
+- **La primera ventana conoce la pantalla**: sin tamaño guardado abre a **1440×900** en una
+  pantalla de 1080p y, en una menor, al mayor tamaño que cabe en el área disponible menos un
+  margen de dos unidades, nunca por debajo de 900×600 y centrada. Así un panel de 1366×768
+  abre ~1330×732 (por encima del pliegue de 1280), 1280×800 queda por debajo y a 125 % el
+  área lógica se reduce hasta el formulario plegado. Un tamaño recordado se **recorta a la
+  pantalla actual** con el mismo margen y mínimo, no solo al mínimo: una ventana guardada en
+  un monitor de 1920 vuelve a abrir dentro de un portátil de 1366. `--selftest` prueba las
+  parejas 1920×1080 → 1440×900, 1366×768 y 1280×800 con áreas sintéticas, y el recorte de un
+  1920×1080 guardado a 1366×768, sin depender de la pantalla de la máquina.
+- **Evidencia**: `--check-layout` en 0 fallos en la matriz y en las escalas; los pasos
+  `ribbon: 1366 …`, `… Enter …`, `… 1920 …` y `… 1280 …` de `--selftest`; `--check-qml`,
+  `--check-theme` y `--check-icons` en verde; las capturas
+  `p028-ribbon-1366x768-{light,dark}.png`, `…-1440x900-…`, `…-1920x1080-…` y una de
+  1366×768 con el flyout abierto; `./scripts-dev/check.sh`.
+
 ### Cierre de puerto: tapón y silenciador — 2026-11-21
 
 - **Un cierre pertenece al puerto, no a la hoja**: un tapón ciego o un silenciador se
