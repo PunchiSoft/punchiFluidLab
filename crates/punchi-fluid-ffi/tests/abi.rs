@@ -75,6 +75,7 @@ use punchi_fluid::{
 };
 
 use punchi_fluid_draw::placed::tube_width_mm;
+use punchi_fluid_draw::{CYLINDER_RATIO, SYMBOL_BOX_MM};
 
 fn session() -> *mut PfSession {
     // SAFETY: a null directory asks for the built-in catalog, which is what a front end
@@ -1365,6 +1366,37 @@ fn a_spring_valve_is_only_actuated_while_it_is_held() {
         released.valve_position, 0,
         "the spring returns the spool on release"
     );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_dropped_valve_and_cylinder_take_the_template_box() {
+    let session = self::session();
+    let valve = catalog_index(session, "valve.3_2.spring_return");
+    let cylinder = catalog_index(session, "cylinder.single_acting_20_100");
+    // SAFETY: live session and finite coordinates.
+    let valve = unsafe { pf_session_place_component(session, valve, 80.0, 30.0) };
+    // SAFETY: live session and finite coordinates.
+    let cylinder = unsafe { pf_session_place_component(session, cylinder, 140.0, 60.0) };
+    assert!(valve >= 0 && cylinder >= 0, "both components are placed");
+
+    let valve = component_box(session, u32::try_from(valve).unwrap_or_default());
+    let cylinder = component_box(session, u32::try_from(cylinder).unwrap_or_default());
+    let box_of = |rect: [f32; 4]| (rect[2] - rect[0], rect[3] - rect[1]);
+
+    let (width, height) = box_of(valve);
+    assert!(
+        (width - SYMBOL_BOX_MM).abs() < 0.01 && (height - SYMBOL_BOX_MM).abs() < 0.01,
+        "a dropped valve is the template's {SYMBOL_BOX_MM} mm square, not {width} x {height}"
+    );
+    let (width, height) = box_of(cylinder);
+    let cylinder_width = SYMBOL_BOX_MM * CYLINDER_RATIO;
+    assert!(
+        (width - cylinder_width).abs() < 0.01 && (height - SYMBOL_BOX_MM).abs() < 0.01,
+        "a dropped cylinder is the template's {cylinder_width} x {SYMBOL_BOX_MM} mm box, not {width} x {height}"
+    );
+
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
 }
@@ -2698,9 +2730,12 @@ fn every_reported_fault_has_a_place_to_point_at() {
         "the starting circuit is clean"
     );
 
-    // A second supply dropped on the sheet hangs in the air: its port has no pipe.
+    // A second pneumatic supply dropped on the sheet hangs in the air: its port has no
+    // pipe. It is looked up by id, not by palette position: an electrical supply has no
+    // pneumatic port to leave open.
+    let supply = catalog_index(session, "supply.compressor");
     // SAFETY: live session.
-    assert!(unsafe { pf_session_place_component(session, 0, 30.0, 110.0) } >= 0);
+    assert!(unsafe { pf_session_place_component(session, supply, 30.0, 110.0) } >= 0);
     let faults = check(session, &mut report);
     assert!(faults > 0, "an unconnected port is a fault");
     let faults = u32::try_from(faults).expect("a fault count is not negative");

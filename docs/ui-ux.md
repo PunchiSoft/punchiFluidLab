@@ -352,6 +352,10 @@ The panel that lists the reasons for each skipped file is still target.
   The component being carried is drawn with its own symbol while it moves, so the drop
   is not a leap of faith. A component dropped before the first frame is kept: the
   starting circuit is added around it, never in its place.
+- **A dropped component takes the same box as the templates**: the canonical 20 mm symbol
+  square, and the actuator the wider barrel box (`CYLINDER_RATIO`, 2.2, so 44 × 20 mm).
+  The symbol is read by shape, so how it arrived never changes its size, and a circuit
+  built by dragging reads at the size the start page shows.
 - The document is the sheet: a click selects, dragging moves (one undo entry per drag,
   not per pixel), `Supr` removes, `Ctrl+Z` and `Ctrl+Shift+Z` walk the history, which is
   bounded at 100 entries. The starting circuit is not an edit and cannot be undone.
