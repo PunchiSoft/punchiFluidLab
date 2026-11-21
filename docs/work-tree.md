@@ -304,6 +304,34 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   page; no allocation per frame is confirmed by review; and the owner confirms the diff.
 - **State**: `in progress` on `feat/air-flow-animation`; `done` after the owner merges.
 
+### P-037 — The air leaving an exhaust port is invisible
+
+- **Problem**: the valve's exhaust port (3 in a 3/2, 3 and 5 in a 5/2) releases air to the
+  atmosphere and the sheet says nothing: a student sees the cylinder move but not where the
+  air goes, and a silencer on that port changes nothing on screen. A plugged port looks the
+  same as an open one.
+- **Evidence**: the owner's request of 2026-11-21 («el escape debería salir a la atmósfera
+  por el puerto 3… o interactuar con el silenciador»), and the solver test
+  `the_exhaust_port_reports_the_air_it_releases`.
+- **Touches**: `crates/punchi-fluid-solver/src/network.rs` (the `ExhaustPort` reading and its
+  average), `crates/punchi-fluid-ffi` (the scene passes the reading to the drawing),
+  `crates/punchi-fluid-draw` (the jet at the port, in the same stream language),
+  `docs/ui-ux.md`, `docs/capabilities.md` and `CHANGELOG.md`.
+- **Options**: 1. show the internal path inside the valve. **Con**: the owner rejected it —
+  the numbered ports and the active square already say which path is open. 2. a jet leaving
+  the exhaust port, drawn outward from the port's edge, with the silencer as its mouth.
+  **Pro**: it answers the question the student asks, with the existing stream primitive, no
+  new geometry. 3. a text reading beside the port. **Con**: the sheet is a drawing, not a
+  panel.
+- **Decision**: option 2. The reading is the solver's net flow through the port's atmosphere
+  boundary; the drawing shows it only when it is above the flow floor; a plug draws nothing;
+  a silencer draws the jet from its own mouth.
+- **Done when**: the solver test, the drawing test (a venting port draws marks outside the
+  symbol, a plugged one draws none), the ABI frame test at two phases, the captures and the
+  gate are green; the owner confirms.
+- **State**: in progress on `feat/exhaust-visible` — the solver reading is done; the ABI and
+  the drawing are next.
+
 ### P-036 — The transport disappears when the ribbon folds
 
 - **Problem**: at 1280 px and below the ribbon folds to its tab row and the transport —
