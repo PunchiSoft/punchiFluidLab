@@ -155,7 +155,7 @@ Rectangle {
                 {
                     title: qsTr("Circuito"),
                     items: [
-                        { id: "check", label: qsTr("Comprobar"), icon: "dialog-ok-apply", hint: qsTr("busca faltas antes de simular"), big: true }
+                        { id: "check", label: qsTr("Comprobar"), icon: "check", hint: qsTr("busca faltas antes de simular"), big: true }
                     ]
                 },
                 {
@@ -179,21 +179,20 @@ Rectangle {
                         { id: "align-bottom", label: qsTr("Abajo"), icon: "align-vertical-bottom", hint: qsTr("sobre el objeto más bajo"), enabled: session.selectionCount > 1 },
                         // A hose between two ports on the same axis is straight only when
                         // the other coordinate matches; this moves one end onto it.
-                        { id: "align-ports", label: qsTr("Puertos"), icon: "align-horizontal-center", hint: qsTr("mueve el otro extremo para dejar la manguera recta · Alt+A"), enabled: session.selectedPipe >= 0 }
+                        { id: "align-ports", label: qsTr("Puertos"), icon: "align-ports", hint: qsTr("mueve el otro extremo para dejar la manguera recta · Alt+A"), enabled: session.selectedPipe >= 0 }
                     ]
                 },
                 {
                     // A pipe is read by its dashes before anyone reads a label. The class
                     // is a property of the pipe, so the buttons act on the selected one.
-                    // The three share the line icon on purpose: the theme has no dashed
-                    // one, and inventing a second shape for a dash would be worse than
-                    // letting the label say which class the button gives.
+                    // Each class has its own drawing with the sheet's pattern, so the
+                    // button shows the line it gives instead of relying on the label.
                     title: qsTr("Conducto"),
                     custom: "tube",
                     items: [
-                        { id: "pipe-working", label: qsTr("Trabajo"), icon: "draw-line", hint: qsTr("línea llena, la del aire que trabaja"), enabled: session.selectedPipe >= 0 },
-                        { id: "pipe-pilot", label: qsTr("Pilotaje"), icon: "draw-line", hint: qsTr("línea discontinua, la que manda"), enabled: session.selectedPipe >= 0 },
-                        { id: "pipe-drain", label: qsTr("Drenaje"), icon: "draw-line", hint: qsTr("discontinua larga, la que evacua"), enabled: session.selectedPipe >= 0 }
+                        { id: "pipe-working", label: qsTr("Trabajo"), icon: "pipe-working", hint: qsTr("línea llena, la del aire que trabaja"), enabled: session.selectedPipe >= 0 },
+                        { id: "pipe-pilot", label: qsTr("Pilotaje"), icon: "pipe-pilot", hint: qsTr("línea discontinua, la que manda"), enabled: session.selectedPipe >= 0 },
+                        { id: "pipe-drain", label: qsTr("Drenaje"), icon: "pipe-drain", hint: qsTr("discontinua larga, la que evacua"), enabled: session.selectedPipe >= 0 }
                     ]
                 },
                 {
@@ -303,9 +302,9 @@ Rectangle {
                 {
                     title: qsTr("Velocidad"),
                     items: [
-                        { id: "speed-0.25", label: "0,25×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 0.25) < 0.001, big: true },
-                        { id: "speed-1", label: "1×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 1.0) < 0.001, big: true },
-                        { id: "speed-2", label: "2×", icon: "speedometer", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 2.0) < 0.001, big: true }
+                        { id: "speed-0.25", label: "0,25×", icon: "speed-0.25", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 0.25) < 0.001, big: true },
+                        { id: "speed-1", label: "1×", icon: "speed-1", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 1.0) < 0.001, big: true },
+                        { id: "speed-2", label: "2×", icon: "speed-2", hint: qsTr("velocidad de simulación"), current: Math.abs(session.speed - 2.0) < 0.001, big: true }
                     ]
                 },
                 { title: qsTr("Estado"), note: session.untilChangeRunning ? qsTr("hasta cambio") : (session.editing ? qsTr("edición") : (session.running ? qsTr("en marcha") : qsTr("en pausa"))) }
@@ -774,6 +773,7 @@ Rectangle {
                     label: ribbon.tubeControl
                            ? qsTr("Diámetro: %1").arg(ribbon.tubeControl.shown)
                            : qsTr("Diámetro"),
+                    icon: "tube-diameter",
                     hint: qsTr("abre la serie métrica y la de pulgadas · Alt+D")
                 });
             }
@@ -799,6 +799,11 @@ Rectangle {
         }
         if (out.indexOf("open-menu-symbolic") < 0) {
             out.push("open-menu-symbolic");
+        }
+        // The diameter row is generated by the tube group, not listed in its items, so
+        // the icon it shows is declared here for the same check.
+        if (out.indexOf("tube-diameter") < 0) {
+            out.push("tube-diameter");
         }
         // The collapsed-group chevron is not a tab command but it is a theme icon the
         // ribbon asks for, so the icon check covers it.

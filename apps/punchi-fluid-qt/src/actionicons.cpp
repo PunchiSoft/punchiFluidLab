@@ -9,6 +9,7 @@
 #include <QPointF>
 
 #include <algorithm>
+#include <cmath>
 
 namespace actionicons {
 namespace {
@@ -33,7 +34,7 @@ const QStringList &allNames()
         QStringLiteral("edit-rename"),
         QStringLiteral("object-rotate-right"),
         QStringLiteral("document-open-recent"),
-        QStringLiteral("dialog-ok-apply"),
+        QStringLiteral("check"),
         QStringLiteral("edit-copy"),
         QStringLiteral("edit-paste"),
         QStringLiteral("edit-duplicate"),
@@ -49,8 +50,11 @@ const QStringList &allNames()
         QStringLiteral("align-horizontal-right"),
         QStringLiteral("align-vertical-top"),
         QStringLiteral("align-vertical-bottom"),
-        QStringLiteral("align-horizontal-center"),
-        QStringLiteral("draw-line"),
+        QStringLiteral("align-ports"),
+        QStringLiteral("pipe-working"),
+        QStringLiteral("pipe-pilot"),
+        QStringLiteral("pipe-drain"),
+        QStringLiteral("tube-diameter"),
         QStringLiteral("distribute-horizontal-equal"),
         QStringLiteral("distribute-vertical-equal"),
         QStringLiteral("view-list-details"),
@@ -67,7 +71,9 @@ const QStringList &allNames()
         QStringLiteral("media-skip-forward"),
         QStringLiteral("media-playback-stop"),
         QStringLiteral("view-refresh"),
-        QStringLiteral("speedometer"),
+        QStringLiteral("speed-0.25"),
+        QStringLiteral("speed-1"),
+        QStringLiteral("speed-2"),
         QStringLiteral("open-menu-symbolic"),
     };
     return names;
@@ -208,6 +214,61 @@ void circularArrow(QPainter &painter, int startDegrees, int spanDegrees, qreal t
     painter.drawLine(QPointF(tipX, tipY), QPointF(bX, bY));
 }
 
+/// A pipe of one class: the sheet's `LineClass::pattern` as a dash and a gap in stroke
+/// widths (working solid, pilot 1.6/0.9, drain 2.6/1.3), plus the same flow chevron for
+/// the three. The pattern is the class; the arrow is the air. A dashed stroke is cut flat
+/// because a round cap adds half a stroke at each end and would close the pilot gap at
+/// 16 px, where the class has to survive.
+void pipeLine(QPainter &painter, const QColor &ink, int pipeClass)
+{
+    QPen pen(ink, kStroke, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    if (pipeClass == 1) {
+        pen.setDashPattern({1.6, 0.9});
+        pen.setCapStyle(Qt::FlatCap);
+    } else if (pipeClass == 2) {
+        pen.setDashPattern({2.6, 1.3});
+        pen.setCapStyle(Qt::FlatCap);
+    }
+    painter.setPen(pen);
+    painter.drawLine(QPointF(3.5, 12.0), QPointF(15.8, 12.0));
+
+    // The same flow chevron for the three: a filled triangle merges with the line into a
+    // plus at 16 px, while two strokes still read as the direction of the air.
+    painter.setPen(QPen(ink, kStroke, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.drawLine(QPointF(16.3, 8.6), QPointF(20.4, 12.0));
+    painter.drawLine(QPointF(16.3, 15.4), QPointF(20.4, 12.0));
+}
+
+/// One gauge mark: a radial tick inside the arc, from the rim towards the centre.
+void gaugeTick(QPainter &painter, int degrees)
+{
+    constexpr qreal pi = 3.14159265358979323846;
+    const qreal radians = degrees * pi / 180.0;
+    painter.drawLine(QPointF(12.0 + 10.0 * std::cos(radians),
+                             16.0 - 10.0 * std::sin(radians)),
+                     QPointF(12.0 + 5.5 * std::cos(radians),
+                             16.0 - 5.5 * std::sin(radians)));
+}
+
+/// A gauge arc with one, two or four marks. The multiplier is the label and the tooltip;
+/// hand-drawn digits are not legible at 16 px and are not a stroked path. The arc and the
+/// ticks take most of the box so the count survives the small render.
+void speedGauge(QPainter &painter, int ticks)
+{
+    painter.drawArc(QRectF(2.0, 6.0, 20.0, 20.0), 0 * 16, 180 * 16);
+    if (ticks == 1) {
+        gaugeTick(painter, 90);
+    } else if (ticks == 2) {
+        gaugeTick(painter, 45);
+        gaugeTick(painter, 135);
+    } else {
+        gaugeTick(painter, 36);
+        gaugeTick(painter, 72);
+        gaugeTick(painter, 108);
+        gaugeTick(painter, 144);
+    }
+}
+
 void draw(const QString &name, QPainter &painter, const QColor &ink)
 {
     if (name == QStringLiteral("document-new")) {
@@ -276,9 +337,12 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawEllipse(QPointF(12.0, 12.0), 8.0, 8.0);
         painter.drawLine(QPointF(12.0, 7.0), QPointF(12.0, 12.0));
         painter.drawLine(QPointF(12.0, 12.0), QPointF(16.0, 12.0));
-    } else if (name == QStringLiteral("dialog-ok-apply")) {
-        painter.drawLine(QPointF(5.0, 12.0), QPointF(10.0, 17.0));
-        painter.drawLine(QPointF(10.0, 17.0), QPointF(19.0, 7.0));
+    } else if (name == QStringLiteral("check")) {
+        // Checking the circuit, not a dialog button: the outline is the drawing and the
+        // mark says what the command does to it.
+        painter.drawRoundedRect(QRectF(4.0, 5.0, 16.0, 14.0), 2.5, 2.5);
+        painter.drawLine(QPointF(8.0, 12.0), QPointF(11.0, 15.0));
+        painter.drawLine(QPointF(11.0, 15.0), QPointF(16.5, 9.0));
     } else if (name == QStringLiteral("edit-copy")) {
         page(painter, 4.0, 6.0, 15.0, 20.0, 3.0);
         page(painter, 8.0, 3.0, 19.0, 17.0, 3.0);
@@ -336,19 +400,31 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.drawLine(QPointF(4.0, 20.0), QPointF(20.0, 20.0));
         painter.drawRect(QRectF(6.0, 7.0, 4.0, 10.0));
         painter.drawRect(QRectF(14.0, 11.0, 4.0, 6.0));
-    } else if (name == QStringLiteral("align-horizontal-center")) {
-        painter.drawLine(QPointF(12.0, 3.0), QPointF(12.0, 21.0));
-        painter.drawRect(QRectF(7.0, 6.0, 10.0, 4.0));
-        painter.drawRect(QRectF(9.0, 14.0, 6.0, 4.0));
-    } else if (name == QStringLiteral("draw-line")) {
-        QPainterPath route;
-        route.moveTo(4.0, 18.0);
-        route.lineTo(12.0, 18.0);
-        route.lineTo(20.0, 6.0);
-        painter.drawPath(route);
+    } else if (name == QStringLiteral("align-ports")) {
+        // Two ports on one axis: a stub from each edge and a filled dot at the point that
+        // has to line up. It is not a centre alignment and it has no rectangles.
+        painter.drawLine(QPointF(2.8, 12.0), QPointF(8.5, 12.0));
+        painter.drawLine(QPointF(15.5, 12.0), QPointF(21.2, 12.0));
         painter.setBrush(ink);
-        painter.drawEllipse(QPointF(12.0, 18.0), 1.6, 1.6);
+        painter.drawEllipse(QPointF(8.5, 12.0), 1.3, 1.3);
+        painter.drawEllipse(QPointF(15.5, 12.0), 1.3, 1.3);
         painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("pipe-working")) {
+        pipeLine(painter, ink, 0);
+    } else if (name == QStringLiteral("pipe-pilot")) {
+        pipeLine(painter, ink, 1);
+    } else if (name == QStringLiteral("pipe-drain")) {
+        pipeLine(painter, ink, 2);
+    } else if (name == QStringLiteral("tube-diameter")) {
+        // A tube seen from the side with its inner diameter as a dimension between the
+        // walls, the way the Conducto group reads a pipe.
+        painter.drawLine(QPointF(3.5, 7.5), QPointF(20.5, 7.5));
+        painter.drawLine(QPointF(3.5, 16.5), QPointF(20.5, 16.5));
+        painter.drawLine(QPointF(12.0, 7.5), QPointF(12.0, 16.5));
+        painter.drawLine(QPointF(9.0, 10.0), QPointF(12.0, 7.5));
+        painter.drawLine(QPointF(15.0, 10.0), QPointF(12.0, 7.5));
+        painter.drawLine(QPointF(9.0, 14.0), QPointF(12.0, 16.5));
+        painter.drawLine(QPointF(15.0, 14.0), QPointF(12.0, 16.5));
     } else if (name == QStringLiteral("distribute-horizontal-equal")) {
         painter.drawRect(QRectF(4.0, 5.0, 4.0, 14.0));
         painter.drawRect(QRectF(10.0, 5.0, 4.0, 14.0));
@@ -464,12 +540,12 @@ void draw(const QString &name, QPainter &painter, const QColor &ink)
         painter.setBrush(Qt::NoBrush);
     } else if (name == QStringLiteral("view-refresh")) {
         circularArrow(painter, 30, 280, 16.6, 17.4, 12.4, 18.0, 16.6, 13.2);
-    } else if (name == QStringLiteral("speedometer")) {
-        painter.drawArc(QRectF(4.0, 8.0, 16.0, 16.0), 0 * 16, 180 * 16);
-        painter.drawLine(QPointF(12.0, 16.0), QPointF(17.0, 9.5));
-        painter.setBrush(ink);
-        painter.drawEllipse(QPointF(12.0, 16.0), 1.5, 1.5);
-        painter.setBrush(Qt::NoBrush);
+    } else if (name == QStringLiteral("speed-0.25")) {
+        speedGauge(painter, 1);
+    } else if (name == QStringLiteral("speed-1")) {
+        speedGauge(painter, 2);
+    } else if (name == QStringLiteral("speed-2")) {
+        speedGauge(painter, 4);
     } else if (name == QStringLiteral("open-menu-symbolic")) {
         painter.drawLine(QPointF(5.0, 7.0), QPointF(19.0, 7.0));
         painter.drawLine(QPointF(5.0, 12.0), QPointF(19.0, 12.0));
