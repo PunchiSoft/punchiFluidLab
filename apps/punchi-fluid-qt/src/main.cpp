@@ -4133,7 +4133,6 @@ int main(int argc, char *argv[])
             state->session->undo();
             check(state->session->circuits().size() == before,
                   QStringLiteral("circuits: undo removes the added empty tab"));
-            const int active = state->session->activeCircuit();
             check(tabs->property("canCloseCircuit").toBool()
                       == (state->session->circuits().size() > 1),
                   QStringLiteral("circuits: close control visibility follows the last-tab rule"));
