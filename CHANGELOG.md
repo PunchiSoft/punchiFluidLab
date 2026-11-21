@@ -6,6 +6,37 @@ publicación.
 
 ## Unreleased
 
+### Inicio: la página llena la ventana y cuenta lo que ofrece — 2026-11-21
+
+- **La página de Inicio llena la ventana hasta el suelo de 1366×768**: la región restaba el
+  alto de la cinta y de la barra de estado aunque estuvieran ocultas, así que la página
+  terminaba a unos 600 px y las filas de recientes quedaban cortadas. Ahora resta una barra
+  solo mientras es visible, y `--check-layout` comprueba en 1280, 1366, 1440 y 1600 que la
+  página mide lo mismo que la ventana y empieza en su esquina. La página sigue siendo un
+  `Flickable`: a 1366 las cinco filas se alcanzan desplazándose, no recortadas por una región
+  mal medida.
+- **Tres plantillas ofrecidas, no cuatro**: las tarjetas de válvula 3/2, válvula 5/2 y
+  preparación del aire siguen siendo el render real; la tarjeta eléctrica no se ofrece
+  mientras P-026 difiere la conexión, pero `Template::ElectricalControl` y
+  `PF_TEMPLATE_COUNT = 4` quedan en la ABI. La prueba de ventana comprueba que la tarjeta 3
+  no existe y que las otras tres abren su circuito.
+- **Recientes honestos**: cinco filas (el resto, en **Archivo ▸ Recientes**), con nombre,
+  carpeta, tiempo **modificado** relativo (absoluto en el tooltip) y **tamaño real** leídos de
+  `QFileInfo`, sin abrir ni parsear el archivo. Un documento que ya no está dice **no
+  encontrado** y conserva **quitar**, que lo olvida de la lista y nunca borra el archivo. Sin
+  recientes, el estado vacío dice el paso siguiente.
+- **Volver a la hoja** sustituye a «Volver» y es enfocable con `Enter`/`Espacio`; `Esc`
+  abandona la página antes de tocar lo que hay detrás.
+- **Documentación**: `docs/ui-ux.md` §2.3 (tres plantillas, las cinco filas y la pista,
+  modificado/tamaño, faltante/`quitar`, estado vacío, `Volver a la hoja`, `Esc`), la
+  enmienda de la ADR 0031 (cuarta tarjeta oculta hasta P-026, recientes en `recent.json` y no
+  en `QSettings`, miniatura y hora de apertura en P-034b), los nodos P-034a/P-034b y la
+  corrección de las filas P-012/P-013 ya fusionadas en #145.
+- **Evidencia**: capturas a 1366×768 en claro y oscuro con las filas, una fila faltante con
+  `recent.json` temporal bajo un `XDG_DATA_HOME` aislado, el detalle de las tres tarjetas y
+  el estado vacío en `specs/evidence/20261121-p034a-*.png`. Sin cambio de ABI, diagramas,
+  simbología ISO 1219, hoja, zoom, relleno activo ni formato `.pfl`.
+
 ### Iconos: las clases de conducto y las velocidades se leen — 2026-11-21
 
 - **Nueve dibujos propios en la familia de acciones** (`actionicons.cpp`): los tres

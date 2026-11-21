@@ -257,7 +257,8 @@ public:
     Q_INVOKABLE QStringList paperNames();
     /// The documents opened or saved recently, newest first: `path`, `name` and `available`.
     QVariantList recent() const { return m_recent; }
-    /// The page's slice of that list: `slot`, `path`, `name` and `available`.
+    /// The page's slice of that list: `slot`, `path`, `name`, `available`, plus `modified`
+    /// (QDateTime) and `size` (bytes) stat'd once per row, at most `recentPageLimit` times.
     QVariantList recentPage() const { return m_recentPage; }
     [[nodiscard]] int recentPageLimit() const
     {

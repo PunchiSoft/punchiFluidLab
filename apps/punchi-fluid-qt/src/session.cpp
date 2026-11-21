@@ -1646,8 +1646,12 @@ void FluidSession::refreshRecent()
         entry.insert(QStringLiteral("available"), available);
         m_recent.append(entry);
         // The page lists a prefix of the same list, so its row and its slot never drift
-        // apart when an entry is removed.
+        // apart when an entry is removed. Only the five rows the page shows pay for the
+        // file's modified time and size: one QFileInfo per row, no file opened or parsed.
         if (m_recentPage.size() < recentPageLimit()) {
+            const QFileInfo info(path);
+            entry.insert(QStringLiteral("modified"), info.lastModified());
+            entry.insert(QStringLiteral("size"), info.size());
             m_recentPage.append(entry);
         }
     }

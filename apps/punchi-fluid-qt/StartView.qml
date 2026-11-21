@@ -22,13 +22,82 @@ Rectangle {
     readonly property int cardIconSize: Math.round(session.unit * 1.8)
     /// `false` while there is nothing to go back to.
     property bool canReturn: true
+    // Three cards are offered. The compiled fourth template (ElectricalControl) stays in the
+    // ABI until P-026 lands; listing it here would offer a circuit the start page cannot
+    // teach yet, and removing it from the ABI would change PF_TEMPLATE_COUNT for a card that
+    // returns. Index 3 is deliberately absent.
     readonly property var templateDefinitions: [
         { index: 0, title: qsTr("Válvula 3/2"), detail: qsTr("Cilindro de simple efecto") },
         { index: 1, title: qsTr("Válvula 5/2"), detail: qsTr("Cilindro de doble efecto") },
-        { index: 2, title: qsTr("Preparación del aire"), detail: qsTr("Filtro, unidad y válvula") },
-        { index: 3, title: qsTr("Control eléctrico"), detail: qsTr("Pulsador y válvula solenoide") }
+        { index: 2, title: qsTr("Preparación del aire"), detail: qsTr("Filtro, unidad y válvula") }
     ]
     readonly property int templateCardCount: templateDefinitions.length
+
+    /// The folder a remembered path lives in, for the row's second line.
+    function folderOf(path) {
+        const cut = path.lastIndexOf("/");
+        return cut > 0 ? path.substring(0, cut) : path;
+    }
+
+    /// A short, honest size: the file is only stat'd, never opened.
+    function fileSize(bytes) {
+        if (bytes < 1024) {
+            return qsTr("%1 B").arg(bytes);
+        }
+        if (bytes < 1024 * 1024) {
+            return qsTr("%1 KB").arg((bytes / 1024).toFixed(1));
+        }
+        return qsTr("%1 MB").arg((bytes / (1024 * 1024)).toFixed(1));
+    }
+
+    /// "hace 20 minutos", "ayer, 16:45"; an older file says its date. The tooltip carries
+    /// the absolute time, so the relative line is never the only answer.
+    function relativeTime(when) {
+        if (!when || isNaN(when.getTime())) {
+            return qsTr("fecha desconocida");
+        }
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const day = new Date(when.getFullYear(), when.getMonth(), when.getDate());
+        const days = Math.round((midnight - day) / 86400000);
+        const seconds = Math.max(0, Math.floor((now - when) / 1000));
+        if (days === 0) {
+            if (seconds < 60) {
+                return qsTr("hace un momento");
+            }
+            if (seconds < 3600) {
+                return qsTr("hace %1 minutos").arg(Math.floor(seconds / 60));
+            }
+            return qsTr("hace %1 horas").arg(Math.floor(seconds / 3600));
+        }
+        if (days === 1) {
+            return qsTr("ayer, %1").arg(Qt.formatTime(when, "HH:mm"));
+        }
+        return Qt.formatDateTime(when, "dd/MM/yyyy");
+    }
+
+    /// The description assistive technology reads and the tooltip that opens on hover:
+    /// folder, time and size, never mixed into the name itself.
+    function recentDescription(entry) {
+        if (!entry.available) {
+            return qsTr("%1 · no encontrado").arg(folderOf(entry.path));
+        }
+        return qsTr("%1 · %2 · %3")
+                .arg(folderOf(entry.path))
+                .arg(relativeTime(entry.modified))
+                .arg(fileSize(entry.size));
+    }
+
+    function recentTooltip(entry) {
+        if (!entry.available) {
+            return qsTr("%1\nNo encontrado: quítalo de la lista; el archivo no se toca.")
+                    .arg(entry.path);
+        }
+        return qsTr("%1\nModificado: %2\n%3 bytes")
+                .arg(entry.path)
+                .arg(Qt.formatDateTime(entry.modified, "dd/MM/yyyy HH:mm"))
+                .arg(entry.size);
+    }
 
     signal newProject()
     signal openProject()
@@ -84,9 +153,29 @@ Rectangle {
                 }
 
                 Item {
+                    id: returnRow
+                    objectName: "startReturn"
                     visible: start.canReturn
                     width: parent.width
-                    height: session.unit * 1.6
+                    height: session.unit * 1.9
+                    activeFocusOnTab: true
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Volver a la hoja")
+                    Accessible.onPressAction: start.returnRequested()
+
+                    Keys.onReturnPressed: start.returnRequested()
+                    Keys.onSpacePressed: start.returnRequested()
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: session.radiusControl
+                        color: returnRow.activeFocus ? session.surfaceRaised
+                                                     : (returnArea.containsMouse
+                                                        ? session.surfaceRaised : "transparent")
+                        border.width: returnRow.activeFocus ? 1 : 0
+                        border.color: session.accent
+                    }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -97,7 +186,9 @@ Rectangle {
                         font.pixelSize: session.textSmall
                     }
                     MouseArea {
+                        id: returnArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: start.returnRequested()
                     }
@@ -294,6 +385,7 @@ Rectangle {
 
             Flickable {
                 id: startScroll
+                objectName: "startScroll"
                 anchors.fill: parent
                 contentWidth: width
                 contentHeight: startContent.y + startContent.implicitHeight + startContent.y
@@ -334,146 +426,154 @@ Rectangle {
                     // is one plane and each choice is a surface of its own. The default
                     // one is tinted and bordered with the accent; its text stays in the
                     // ink, so hover can never repaint a fill under a light-on-dark word.
+                    // Both ways in are buttons, not a Rectangle with a MouseArea: Enter and
+                    // Space work without a pointer, the focus ring is the border, and the
+                    // name and the one-line description reach assistive technology.
                     Row {
                         id: startActions
                         width: parent.width
                         spacing: session.unit
 
-                        Rectangle {
+                        Button {
+                            id: newCard
                             objectName: "startCardNew"
                             width: (parent.width - parent.spacing) / 2
                             height: session.unit * 3.9
-                            radius: session.radius
-                            color: session.accentSoft
-                            border.width: newArea.containsMouse ? 3 : 2
-                            border.color: session.accent
-
+                            padding: 0
                             Accessible.role: Accessible.Button
                             Accessible.name: qsTr("Nuevo proyecto")
+                            Accessible.description: qsTr("Una hoja vacía, A4 apaisado")
                             Accessible.onPressAction: start.newProject()
+                            onClicked: start.newProject()
 
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: session.unit * 0.7
-                                anchors.rightMargin: session.unit / 2
-                                spacing: session.unit / 2
+                            HoverHandler { cursorShape: Qt.PointingHandCursor }
 
-                                Item {
-                                    objectName: "startCardNewIconColumn"
-                                    width: Math.round(session.unit * 2)
-                                    height: parent.height
-                                    Image {
-                                        objectName: "startCardNewIcon"
-                                        anchors.centerIn: parent
-                                        width: start.cardIconSize
-                                        height: width
-                                        sourceSize.width: start.cardIconSize
-                                        sourceSize.height: start.cardIconSize
-                                        fillMode: Image.PreserveAspectFit
-                                        source: "image://theme/document-new?tone=accent&v="
-                                                + session.themeRevision
-                                        smooth: true
+                            contentItem: Item {
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: session.unit * 0.7
+                                    anchors.rightMargin: session.unit / 2
+                                    spacing: session.unit / 2
+
+                                    Item {
+                                        objectName: "startCardNewIconColumn"
+                                        width: Math.round(session.unit * 2)
+                                        height: parent.height
+                                        Image {
+                                            objectName: "startCardNewIcon"
+                                            anchors.centerIn: parent
+                                            width: start.cardIconSize
+                                            height: width
+                                            sourceSize.width: start.cardIconSize
+                                            sourceSize.height: start.cardIconSize
+                                            fillMode: Image.PreserveAspectFit
+                                            source: "image://theme/document-new?tone=accent&v="
+                                                    + session.themeRevision
+                                            smooth: true
+                                        }
                                     }
-                                }
-                                Column {
-                                    objectName: "startCardNewText"
-                                    width: parent.width - Math.round(session.unit * 2)
-                                           - parent.spacing
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 2
-                                    Text {
-                                        text: qsTr("Nuevo proyecto")
-                                        color: session.foreground
-                                        font.pixelSize: session.textLabel
-                                        font.bold: true
-                                        width: parent.width
-                                        elide: Text.ElideRight
-                                    }
-                                    Text {
-                                        text: qsTr("Una hoja vacía, A4 apaisado")
-                                        color: session.muted
-                                        font.pixelSize: session.textSmall
-                                        width: parent.width
-                                        wrapMode: Text.WordWrap
+                                    Column {
+                                        objectName: "startCardNewText"
+                                        width: parent.width - Math.round(session.unit * 2)
+                                               - parent.spacing
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+                                        Text {
+                                            text: qsTr("Nuevo proyecto")
+                                            color: session.foreground
+                                            font.pixelSize: session.textLabel
+                                            font.bold: true
+                                            width: parent.width
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: qsTr("Una hoja vacía, A4 apaisado")
+                                            color: session.muted
+                                            font.pixelSize: session.textSmall
+                                            width: parent.width
+                                            wrapMode: Text.WordWrap
+                                        }
                                     }
                                 }
                             }
 
-                            MouseArea {
-                                id: newArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: start.newProject()
+                            background: Rectangle {
+                                radius: session.radius
+                                color: session.accentSoft
+                                border.width: newCard.activeFocus || newCard.hovered ? 3 : 2
+                                border.color: session.accent
                             }
                         }
 
-                        Rectangle {
+                        Button {
+                            id: openCard
                             objectName: "startCardOpen"
                             width: (parent.width - parent.spacing) / 2
                             height: session.unit * 3.9
-                            radius: session.radius
-                            color: openArea.containsMouse ? session.surfaceRaised : session.panel
-                            border.width: 1
-                            border.color: openArea.containsMouse ? session.lineStrong
-                                                                 : session.line
-
+                            padding: 0
                             Accessible.role: Accessible.Button
                             Accessible.name: qsTr("Abrir…")
+                            Accessible.description: qsTr("Un proyecto guardado")
                             Accessible.onPressAction: start.openProject()
+                            onClicked: start.openProject()
 
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: session.unit * 0.7
-                                anchors.rightMargin: session.unit / 2
-                                spacing: session.unit / 2
+                            HoverHandler { cursorShape: Qt.PointingHandCursor }
 
-                                Item {
-                                    objectName: "startCardOpenIconColumn"
-                                    width: Math.round(session.unit * 2)
-                                    height: parent.height
-                                    Image {
-                                        objectName: "startCardOpenIcon"
-                                        anchors.centerIn: parent
-                                        width: start.cardIconSize
-                                        height: width
-                                        sourceSize.width: start.cardIconSize
-                                        sourceSize.height: start.cardIconSize
-                                        fillMode: Image.PreserveAspectFit
-                                        source: "image://theme/document-open?tone=muted&v="
-                                                + session.themeRevision
-                                        smooth: true
+                            contentItem: Item {
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: session.unit * 0.7
+                                    anchors.rightMargin: session.unit / 2
+                                    spacing: session.unit / 2
+
+                                    Item {
+                                        objectName: "startCardOpenIconColumn"
+                                        width: Math.round(session.unit * 2)
+                                        height: parent.height
+                                        Image {
+                                            objectName: "startCardOpenIcon"
+                                            anchors.centerIn: parent
+                                            width: start.cardIconSize
+                                            height: width
+                                            sourceSize.width: start.cardIconSize
+                                            sourceSize.height: start.cardIconSize
+                                            fillMode: Image.PreserveAspectFit
+                                            source: "image://theme/document-open?tone=muted&v="
+                                                    + session.themeRevision
+                                            smooth: true
+                                        }
                                     }
-                                }
-                                Column {
-                                    objectName: "startCardOpenText"
-                                    width: parent.width - Math.round(session.unit * 2)
-                                           - parent.spacing
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 2
-                                    Text {
-                                        text: qsTr("Abrir…")
-                                        color: session.foreground
-                                        font.pixelSize: session.textLabel
-                                        width: parent.width
-                                        elide: Text.ElideRight
-                                    }
-                                    Text {
-                                        text: qsTr("Un proyecto guardado")
-                                        color: session.muted
-                                        font.pixelSize: session.textSmall
-                                        width: parent.width
-                                        wrapMode: Text.WordWrap
+                                    Column {
+                                        objectName: "startCardOpenText"
+                                        width: parent.width - Math.round(session.unit * 2)
+                                               - parent.spacing
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+                                        Text {
+                                            text: qsTr("Abrir…")
+                                            color: session.foreground
+                                            font.pixelSize: session.textLabel
+                                            width: parent.width
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: qsTr("Un proyecto guardado")
+                                            color: session.muted
+                                            font.pixelSize: session.textSmall
+                                            width: parent.width
+                                            wrapMode: Text.WordWrap
+                                        }
                                     }
                                 }
                             }
 
-                            MouseArea {
-                                id: openArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: start.openProject()
+                            background: Rectangle {
+                                radius: session.radius
+                                color: openCard.activeFocus || openCard.hovered
+                                       ? session.surfaceRaised : session.panel
+                                border.width: openCard.activeFocus ? 2 : 1
+                                border.color: openCard.activeFocus || openCard.hovered
+                                              ? session.lineStrong : session.line
                             }
                         }
                     }
@@ -618,14 +718,54 @@ Rectangle {
                         topPadding: session.unit / 4
                     }
                     Text {
+                        visible: session.recent.length > 0
+                        // The page shows five; the ribbon's Recientes group lists all ten. The
+                        // hint is what keeps rows six to ten reachable, so it is not optional.
                         text: session.recent.length > session.recentPage.length
-                              ? qsTr("Los proyectos que abras o guardes aparecerán aquí. "
+                              ? qsTr("Los cinco últimos proyectos. "
                                      + "Los demás, en Archivo ▸ Recientes.")
                               : qsTr("Los proyectos que abras o guardes aparecerán aquí.")
                         color: session.muted
                         font.pixelSize: session.textSmall
                         width: parent.width
                         wrapMode: Text.WordWrap
+                    }
+
+                    // The empty page says the next step instead of showing a blank table.
+                    Rectangle {
+                        visible: session.recent.length === 0
+                        width: parent.width
+                        height: emptyColumn.implicitHeight + session.unit
+                        radius: session.radius
+                        color: session.panel
+                        border.width: 1
+                        border.color: session.line
+
+                        Column {
+                            id: emptyColumn
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: session.unit * 0.75
+                            spacing: session.unit / 4
+
+                            Text {
+                                text: qsTr("Aún no hay proyectos recientes")
+                                color: session.foreground
+                                font.pixelSize: session.textBody
+                                font.bold: true
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                text: qsTr("Crea un proyecto nuevo o abre un archivo; "
+                                           + "aparecerá aquí.")
+                                color: session.muted
+                                font.pixelSize: session.textSmall
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                            }
+                        }
                     }
 
                     Rectangle {
@@ -646,39 +786,108 @@ Rectangle {
                             spacing: 0
 
                             Repeater {
+                                objectName: "recentRepeater"
                                 model: start.session.recentPage
-                                delegate: Rectangle {
+                                delegate: Item {
                                     id: recentRow
                                     objectName: "recentRow" + modelData.slot
                                     width: parent.width
-                                    height: session.unit * 1.6
-                                    color: recentArea.containsMouse && modelData.available
-                                           ? session.surfaceRaised : "transparent"
+                                    height: session.unit * 2.6
 
-                                    Column {
-                                        anchors.verticalCenter: parent.verticalCenter
+                                    Button {
+                                        id: openButton
+                                        objectName: "recentOpen" + modelData.slot
                                         anchors.left: parent.left
-                                        anchors.leftMargin: session.unit / 3
-                                        anchors.right: forgetButton.left
-                                        anchors.rightMargin: session.unit / 3
-                                        spacing: 0
-                                        Text {
-                                            text: modelData.name
-                                            color: modelData.available ? session.foreground
-                                                                       : session.muted
-                                            font.pixelSize: session.textBody
-                                            elide: Text.ElideRight
-                                            width: parent.width
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width - forgetButton.width
+                                               - session.unit / 2
+                                        padding: 0
+                                        Accessible.role: Accessible.Button
+                                        Accessible.name: modelData.name
+                                        Accessible.description:
+                                            start.recentDescription(modelData)
+                                        Accessible.onPressAction: if (modelData.available) {
+                                                                       start.openRecent(modelData.slot);
+                                                                   }
+                                        onClicked: if (modelData.available) {
+                                                       start.openRecent(modelData.slot);
+                                                   }
+
+                                        HoverHandler {
+                                            cursorShape: modelData.available
+                                                         ? Qt.PointingHandCursor
+                                                         : Qt.ArrowCursor
                                         }
-                                        Text {
-                                            text: modelData.available
-                                                  ? modelData.path
-                                                  : qsTr("no disponible · %1")
-                                                    .arg(modelData.path)
-                                            color: session.muted
-                                            font.pixelSize: session.textSmall
-                                            elide: Text.ElideMiddle
-                                            width: parent.width
+
+                                        ToolTip.visible: openButton.hovered
+                                        ToolTip.delay: 600
+                                        ToolTip.text: start.recentTooltip(modelData)
+
+                                        contentItem: Item {
+                                            Row {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: session.unit / 3
+                                                anchors.rightMargin: session.unit / 3
+                                                spacing: session.unit / 2
+
+                                                Image {
+                                                    width: Math.round(session.unit * 1.3)
+                                                    height: width
+                                                    sourceSize.width: width
+                                                    sourceSize.height: width
+                                                    fillMode: Image.PreserveAspectFit
+                                                    source: "image://theme/x-office-document"
+                                                            + "?tone=muted&v="
+                                                            + session.themeRevision
+                                                    smooth: true
+                                                }
+                                                Column {
+                                                    width: parent.width
+                                                           - Math.round(session.unit * 1.3)
+                                                           - parent.spacing
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    spacing: 1
+                                                    Text {
+                                                        text: modelData.name
+                                                        color: modelData.available
+                                                               ? session.foreground
+                                                               : session.muted
+                                                        font.pixelSize: session.textBody
+                                                        width: parent.width
+                                                        elide: Text.ElideRight
+                                                    }
+                                                    Text {
+                                                        text: start.folderOf(modelData.path)
+                                                        color: session.muted
+                                                        font.pixelSize: session.textSmall
+                                                        width: parent.width
+                                                        elide: Text.ElideMiddle
+                                                    }
+                                                    Text {
+                                                        objectName: "recentState" + modelData.slot
+                                                        text: modelData.available
+                                                              ? start.relativeTime(
+                                                                    modelData.modified)
+                                                                + " · " + start.fileSize(
+                                                                    modelData.size)
+                                                              : qsTr("no encontrado")
+                                                        color: session.muted
+                                                        font.pixelSize: session.textSmall
+                                                        width: parent.width
+                                                        elide: Text.ElideRight
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        background: Rectangle {
+                                            radius: session.radiusSmall
+                                            anchors.fill: parent
+                                            color: openButton.hovered && modelData.available
+                                                   ? session.surfaceRaised : "transparent"
+                                            border.width: openButton.activeFocus ? 1 : 0
+                                            border.color: session.accent
                                         }
                                     }
 
@@ -711,19 +920,6 @@ Rectangle {
                                             border.width: forgetButton.activeFocus ? 1 : 0
                                             border.color: session.accent
                                         }
-                                    }
-
-                                    MouseArea {
-                                        id: recentArea
-                                        anchors.fill: parent
-                                        anchors.rightMargin: forgetButton.width
-                                                           + session.unit / 2
-                                        hoverEnabled: true
-                                        cursorShape: modelData.available
-                                                     ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                        onClicked: if (modelData.available) {
-                                                       start.openRecent(modelData.slot);
-                                                   }
                                     }
 
                                     Rectangle {

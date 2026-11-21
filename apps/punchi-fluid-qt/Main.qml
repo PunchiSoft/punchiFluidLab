@@ -677,7 +677,7 @@ Window {
 
     Shortcut {
         sequence: "Esc"
-        enabled: session.handMode
+        enabled: session.handMode && !window.startViewOpen
         onActivated: session.setHandMode(false)
     }
 
@@ -757,10 +757,16 @@ Window {
     Shortcut {
         sequence: "Escape"
         onActivated: {
-            window.dragCatalog = -1;
-            window.renameCircuitOpen = false;
-            window.closeHelp();
-            session.closeInspector();
+            // Inicio is the front view while it is open, and Esc is the reference's way
+            // back: it leaves the page before it touches anything behind it.
+            if (window.startViewOpen) {
+                window.startViewOpen = false;
+            } else {
+                window.dragCatalog = -1;
+                window.renameCircuitOpen = false;
+                window.closeHelp();
+                session.closeInspector();
+            }
         }
     }
     Shortcut {
@@ -990,7 +996,13 @@ Window {
         Item {
             id: region
             width: parent.width
-            height: parent.height - ribbon.height - status.height
+            // A hidden ribbon or status bar is skipped by the Column, so it must not take
+            // height from the region either: over Inicio both are hidden and the page fills
+            // the window down to the support floor (rows clipped at the 600 px minimum was
+            // this arithmetic, not the grab).
+            height: parent.height
+                    - (ribbon.visible ? ribbon.height : 0)
+                    - (status.visible ? status.height : 0)
 
             DockPanel {
                 id: catalogDock
