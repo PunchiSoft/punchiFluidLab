@@ -7,7 +7,11 @@
 # whole toolkit change because nothing compared the two, so this compares them.
 set -euo pipefail
 
-ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+# The real tree is the default. `ROOT` exists so the fixture driver can prove the
+# documentation checks on a temporary tree without touching this one; every resolve is
+# bounded to it.
+DEFAULT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT_DIR=$(cd -- "${ROOT:-$DEFAULT_ROOT}" && pwd)
 cd "$ROOT_DIR"
 
 DOCS=(
@@ -43,7 +47,7 @@ FORBIDDEN=(
 status=0
 
 for term in "${FORBIDDEN[@]}"; do
-    if hits=$(git grep -l -i --fixed-strings -- "$term" -- . ':!scripts-dev/check-docs.sh'); then
+    if hits=$(git -C "$ROOT_DIR" grep -l -i --fixed-strings -- "$term" -- . ':!scripts-dev/check-docs.sh' 2>/dev/null); then
         echo "check-docs: '$term' still appears in:" >&2
         echo "$hits" | sed 's/^/  /' >&2
         status=1
@@ -147,14 +151,91 @@ done
 # the repository does not keep.
 if ! python3 - <<'PY'
 from pathlib import Path
+from urllib.parse import unquote
+import os
 import re
 import sys
 
-root = Path(".")
+root = Path(".").resolve()
 docs = sorted(Path("docs").rglob("*.md"))
 index = Path("docs/README.md").read_text(encoding="utf-8")
 adr_index = Path("docs/adr/README.md").read_text(encoding="utf-8")
 problems = []
+
+
+def anchors(path):
+    """The anchors GitHub derives from a document's ATX headings."""
+    found = set()
+    seen = {}
+    fence = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.lstrip()
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            continue
+        if stripped.startswith(("```", "~~~")):
+            fence = stripped[:3]
+            continue
+        match = re.match(r"^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$", line)
+        if not match:
+            continue
+        text = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", match.group(2))
+        text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+        text = re.sub(r"<[^>]+>", "", text).replace("`", "")
+        text = re.sub(r"[*_~]", "", text).strip().lower()
+        slug = "".join(ch for ch in text if ch.isalnum() or ch in " -_").replace(" ", "-")
+        if slug in seen:
+            seen[slug] += 1
+            found.add(f"{slug}-{seen[slug]}")
+        else:
+            seen[slug] = 0
+            found.add(slug)
+    return found
+
+
+def check_links(file):
+    text = file.read_text(encoding="utf-8")
+    fence = None
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            continue
+        if stripped.startswith(("```", "~~~")):
+            fence = stripped[:3]
+            continue
+        # A link inside an inline code span is an example, not a link.
+        line = re.sub(r"`[^`]*`", "", line)
+        for match in re.finditer(r"!?\[[^\]]*\]\(([^)\n]+)\)", line):
+            raw = match.group(1).strip()
+            if not raw:
+                continue
+            target = raw.split()[0]
+            if target.startswith("<") and target.endswith(">"):
+                target = target[1:-1]
+            if target.startswith(("http://", "https://", "mailto:", "//")):
+                continue
+            path, separator, fragment = target.partition("#")
+            path = unquote(path)
+            fragment = unquote(fragment)
+            if re.match(r"^[A-Za-z]:[\\/]", path) or path.startswith(("/", "\\")):
+                problems.append(f"{file}: link {target} is absolute; links stay inside the tree")
+                continue
+            candidate = (file.parent / path).resolve() if path else file.resolve()
+            try:
+                candidate.relative_to(root)
+            except ValueError:
+                problems.append(f"{file}: link {target} points outside the tree")
+                continue
+            if not candidate.exists():
+                problems.append(f"{file}: broken link {target}")
+                continue
+            if separator and fragment and candidate.is_file() and candidate.suffix.lower() == ".md":
+                if fragment not in anchors(candidate):
+                    problems.append(f"{file}: link {target} has an unknown anchor #{fragment}")
+
 
 for doc in docs:
     if doc == Path("docs/README.md"):
@@ -171,14 +252,32 @@ for doc in docs:
         problems.append(f"{doc} is not linked from {label}")
 
 files = [Path("README.md"), Path("README.es.md"), Path("AGENTS.md"), *docs]
-for file in files:
-    text = file.read_text(encoding="utf-8")
-    for match in re.finditer(r"\[[^\]]*\]\(([^)#]+)(#[^)]*)?\)", text):
-        target = match.group(1).strip()
-        if not target or target.startswith(("http://", "https://", "mailto:")):
+skills_dir = Path(".agents/skills")
+skills_readme = skills_dir / "README.md"
+skill_files = sorted(skills_dir.rglob("*.md"))
+
+# A skill that no catalog row reaches is invisible, and a frontmatter name that differs from
+# its folder breaks every dispatch by name.
+if not skills_readme.is_file():
+    problems.append(".agents/skills/README.md is missing")
+else:
+    catalog = skills_readme.read_text(encoding="utf-8")
+    for folder in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
+        skill = folder / "SKILL.md"
+        if not skill.is_file():
+            problems.append(f"{folder}: no SKILL.md")
             continue
-        if not (file.parent / target).resolve().exists():
-            problems.append(f"{file}: broken link {target}")
+        if f"]({folder.name}/SKILL.md)" not in catalog:
+            problems.append(f"{folder}: no row in .agents/skills/README.md")
+        frontmatter = re.match(r"^---\s*\n(.*?)\n---\s*\n", skill.read_text(encoding="utf-8"), re.S)
+        name = re.search(r"^name:\s*(\S+)\s*$", frontmatter.group(1), re.M) if frontmatter else None
+        if name is None:
+            problems.append(f"{skill}: no name in the frontmatter")
+        elif name.group(1) != folder.name:
+            problems.append(f"{skill}: name '{name.group(1)}' does not match the folder '{folder.name}'")
+
+for file in [*files, *skill_files]:
+    check_links(file)
 
 numbers = []
 for adr in sorted(Path("docs/adr").glob("*.md")):

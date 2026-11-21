@@ -87,6 +87,10 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-027 | The ribbon's horizontal groups overflow at 1280/1440 | `in progress` | [P-027](#p-027--the-ribbons-horizontal-groups-overflow-at-12801440) on `fix/ribbon-collapse-1280`: the fold at 1280, the reachable Diámetro, the layout check and the 1440 known limit |
 | P-028 | The ribbon's group row must fit 1366×768 unfolded | `in progress` | [P-028](#p-028--the-ribbons-group-row-fits-1366768) on `fix/ribbon-1366`: one row with per-group collapse, the measured set, the layout matrix, the flyout, the screen-aware first window and the captures |
 | P-029 | `canvasitem.cpp` grew past the input-path budget with the port menu | `reported` | [P-029](#p-029--canvasitemcpp-grew-past-the-input-path-budget): the double click and the release no-op put it at 812 lines; split the input path instead of keeping the `BIG_ALLOWED` exemption |
+| P-030 | The documentation diagrams are ASCII instead of editorial SVG | `planned` | [P-030](#p-030--the-documentation-diagrams-become-editorial-svg): the `diagram-design` fork with a Punchi profile, accessible SVG and a recorded origin; the ISO 1219 symbols and the real captures are untouched |
+| P-031 | Nothing guards English titles and file names outside the documented exceptions | `planned` | [P-031](#p-031--english-and-translation-are-guarded): `check-language.sh`, the exception list in `docs/style.md` and a fixture; no runtime, UI or documentation content change |
+| P-032 | Visual work has no single route to its documents, commands and evidence | `in progress` | [P-032](#p-032--a-punchi-visual-language-skill) on `docs/visual-language-skill`: the skill and its five references, the catalog row, the skill and anchor checks with their fixture, and the changelog; the diagrams and the ISO symbology are untouched |
+| P-033 | The icon family's inventory and gaps are not documented | `planned` | [P-033](#p-033--the-simulator-owns-its-icon-family): the inventory in `docs/reference/icons.md`, the shared-shape gaps and the small-size proof; after P-032; the ISO 1219 symbols and the diagrams are untouched |
 
 ## A node, filled
 
@@ -442,6 +446,107 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   one row at the three widths and a flyout at 1366; `./scripts-dev/check.sh` is green; the
   owner confirms the diff.
 - **State**: `in progress` on `fix/ribbon-1366`; `done` after the owner merges.
+
+### P-030 — The documentation diagrams become editorial SVG
+
+- **Problem**: the documentation explains the system with ASCII diagrams, starting with
+  “The shape” in `docs/architecture.md`. They are hard to read, render differently in every
+  viewer and cannot carry the project's visual language.
+- **Evidence**: `specs/PLAN.md` 3b; the ASCII blocks in `docs/architecture.md` and the
+  documents that repeat them.
+- **Touches**: `docs/` only, plus the generated SVG files and their origin/licence record.
+  It does not touch `crates/punchi-fluid-draw`, `assets/symbols`, the schematic, the
+  exported page or the real captures in the README.
+- **Decision**: replace the blocks with editorial SVG generated from the
+  `diagram-design` fork (MIT) under a Punchi profile: the project's tokens, the desktop
+  fonts, the project grid and no shadows. Each figure carries `role="img"` with `title` and
+  `desc`, reaches the project's contrast contract, and records its origin and licence. The
+  prose remains the source of truth and the SVG is regenerated from it; the text is not
+  replaced by a picture.
+- **Stages**: one documentation branch per document group, starting with
+  `docs/architecture.md`; the text and the figure travel together.
+- **Done when**: the named diagrams have an accessible SVG, the origin and licence are
+  recorded, `./scripts-dev/check-docs.sh` is green, and the ISO 1219 symbols, the review
+  record and the drawing engine are untouched.
+- **State**: `planned`; after P-021a and P-028, and independent of P-031 and P-032.
+
+### P-031 — English and translation are guarded
+
+- **Problem**: the English audit of 2026-11-21 found no Spanish titles or file names
+  outside the documented exceptions, but nothing in the gate keeps it that way. A new
+  Spanish heading or file name would land silently.
+- **Evidence**: `specs/reports/language-audit-2026-11-21.md`; the exceptions in `AGENTS.md`
+  (`docs/retomar.md`, `CHANGELOG.md`, `README.es.md` and the user-facing interface strings).
+- **Touches**: a new `scripts-dev/check-language.sh` and its fixture, the exception list in
+  `docs/style.md`, and the gate in `scripts-dev/check.sh`. It does not touch code, the UI or
+  the current documentation.
+- **Decision**: add the guard, not a rewrite. The script fails on a Spanish title or file
+  name outside the documented list and prints the file and line; the list lives in
+  `docs/style.md`; the fixture proves a failure and a pass.
+- **Stages**: one tooling branch: script, fixture, style note and the gate hook.
+- **Done when**: the gate runs the guard, the fixture proves both answers, the real tree
+  passes and the exceptions are documented in one place.
+- **State**: `planned`; the audit is done, the guard is not.
+
+### P-032 — A Punchi visual-language skill
+
+- **Problem**: the project has the canonical visual documents — `docs/ui-ux.md`, the theme
+  adapter, ADR 0028, the ribbon node and the layout skill — but no single route from a
+  visual request to the document to read, the command to run and the evidence to attach.
+  The risk is a second copy of the values in a skill or a chat.
+- **Invariants**: **the documentation diagrams (P-030) and the ISO 1219 symbology and its
+  review record (P-018b, the 300 dpi review) are untouched.** This node does not edit
+  `crates/punchi-fluid-draw`, `assets/symbols`, the schematic, the exported page,
+  `docs/symbology.md` or the review record; it owns chrome-and-documentation procedure.
+- **Evidence**: `specs/visual-language.md`; the skill, its five references and the extended
+  `check-docs.sh` on `docs/visual-language-skill`; the fixture driver.
+- **Touches**: `.agents/skills/punchi-visual-language/` (the skill and five references),
+  `.agents/skills/README.md` (the catalog row), `scripts-dev/check-docs.sh` (skill links,
+  rows, names, anchors and the `ROOT`-bounded resolve), the new
+  `scripts-dev/test-check-docs.sh`, `scripts-dev/check.sh` (the hook), this register and
+  `CHANGELOG.md`.
+- **Decision**: the skill is procedure and links only. It routes by task (a control, a
+  token, an icon, the ribbon, a layout and a review) to the canonical home, the command and
+  the evidence, and it carries no literal width, size, contrast, motion or icon geometry.
+  The layout row routes to `qt-adaptive-layout`; the icon row routes to ADR 0028 and P-033's
+  inventory until `docs/reference/icons.md` lands. The documentation check validates
+  relative links, the catalog row, the frontmatter `name` and the `#fragment` against the
+  destination's headings, and the fixture proves the failures on a temporary tree. The
+  path-resolution security review is recorded in the pull request and in the skill's
+  `review.md`.
+- **Stages**: one documentation-and-tooling branch, `docs/visual-language-skill`: the skill,
+  the catalog row, the check extension, the fixture and the hook, the nodes and the
+  changelog. No runtime file.
+- **Done when**: `./scripts-dev/test-check-docs.sh`, `./scripts-dev/check-docs.sh` and
+  `./scripts-dev/check.sh` exit 0; the fixture proves a broken link, a missing row, a wrong
+  anchor and a path escape; the skill's links and anchors resolve; the diagrams, the ISO
+  symbols and the exported page are untouched; the owner confirms the diff.
+- **State**: `in progress` on `docs/visual-language-skill`; `done` after the owner merges.
+
+### P-033 — The simulator owns its icon family
+
+- **Problem**: the ribbon's line family exists in `actionicons.cpp`, but its inventory is
+  not a document and some commands share a drawing that loses the meaning: the duct classes
+  share `draw-line`, the speeds share `speedometer`, `check` uses a generic tick,
+  `align-ports` is not a port and `tube-diameter` has no drawing. The code and the docs also
+  disagree on the count.
+- **Evidence**: `specs/icon-family.md`; the 2026-11-21 inventory of `actionicons.cpp`, the
+  command table and `--check-icons`.
+- **Touches**: `apps/punchi-fluid-qt/src/actionicons.cpp`, the ribbon command table, a new
+  `docs/reference/icons.md`, the icon checks and the small-size/dark evidence. It does not
+  touch `crates/punchi-fluid-draw`, `assets/symbols`, the ISO 1219 geometry, the schematic,
+  the exported page or the review record.
+- **Decision**: keep the project-owned family of ADR 0028 and document it. Tabler, Lucide or
+  Fluent are inspiration, never a source; an external set would need an ADR and a licence
+  record. The inventory covers the real drawings, the render sizes the window uses and the
+  gaps, with the shared-shape fixes first, the diameter next and the polish last; the proof
+  reads the small render in both schemes and at a higher density.
+- **Stages**: the inventory document, then the priority fixes, each on its own branch; the
+  guide is P-032.
+- **Done when**: `docs/reference/icons.md` matches `actionicons.cpp`, `--check-icons` has no
+  gap, the changed drawings read at the small size in light and dark, and the ISO 1219
+  symbols and the diagrams are untouched.
+- **State**: `planned`; after P-032 and after the owner approves the P0 set.
 
 ### P-025 — The supply starts at 4 bar
 
