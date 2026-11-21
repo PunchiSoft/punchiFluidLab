@@ -1199,33 +1199,109 @@ int main(int argc, char *argv[])
                      drawer ? "ok" : "FAIL");
         window->setProperty("catalogOverlay", false);
 
-        // The ribbon folds to its tab row and the open tab's groups float over the sheet:
-        // the fold must remove height and the panel must not put it back.
+        // The ribbon folds at 1280 and keeps its unfolded row at 1440 (P-027). At 1280 the
+        // folded form is the one measured: the group row is off screen and the menu that
+        // carries every command must stay inside the content. At 1440 the row is still
+        // wider than the window; that overflow is the known limit this node records, so it
+        // is reported and not counted as a failure.
         auto *ribbon = window->findChild<QQuickItem *>(QStringLiteral("ribbon"));
-        if (ribbon == nullptr) {
-            std::fprintf(stderr, "layout: no ribbon\n");
+        auto *groupsRow = window->findChild<QQuickItem *>(QStringLiteral("ribbonGroupsRow"));
+        auto *ribbonMenu = window->findChild<QQuickItem *>(QStringLiteral("ribbonMenu"));
+        if (ribbon == nullptr || groupsRow == nullptr || ribbonMenu == nullptr) {
+            std::fprintf(stderr, "layout: no ribbon, group row or folded menu\n");
             return 1;
         }
-        window->resize(1280, 800);
+        ribbon->setProperty("current", 1);
+        ribbon->setProperty("minimized", false);
+        ribbon->setProperty("bodyOpen", false);
+        ribbon->setProperty("menuOpen", false);
+        window->resize(1440, 900);
         settle();
-        const qreal unfolded = ribbon->height();
+        const bool unfolded = !ribbon->property("collapsed").toBool()
+                              && ribbon->property("bodyShown").toBool();
+        qreal rowRight = 0.0;
+        int groupCount = 0;
+        for (QQuickItem *group : groupsRow->childItems()) {
+            if (group->objectName() != QLatin1String("ribbonGroup") || !group->isVisible()) {
+                continue;
+            }
+            ++groupCount;
+            rowRight = qMax(rowRight,
+                            group->mapToItem(ribbon, QPointF(group->width(), 0.0)).x());
+        }
+        const bool rowFits = rowRight <= ribbon->width() + 0.5;
+        if (!unfolded || groupCount == 0) {
+            ++failures;
+        }
+        std::fprintf(stderr,
+                     "layout:  ribbon 1440 groups reach %.0f of %.0f  %s  %s\n",
+                     rowRight, ribbon->width(),
+                     unfolded && groupCount > 0 ? "unfolded" : "FAIL: not unfolded",
+                     rowFits ? "the row fits"
+                             : "known limit (P-027: the 1440 row overflows)");
+
+        // The fold control at the wide width: it removes height and the open panel must not
+        // put it back or take room from the sheet.
+        const qreal unfoldedHeight = ribbon->height();
         const qreal wideSheet = sheet->width();
         ribbon->setProperty("minimized", true);
         settle();
-        const qreal folded = ribbon->height();
+        const qreal foldedHeight = ribbon->height();
         ribbon->setProperty("bodyOpen", true);
         settle();
-        const bool minimizedOk = folded < unfolded && ribbon->height() == folded
+        const bool minimizedOk = foldedHeight < unfoldedHeight
+                                 && ribbon->height() == foldedHeight
                                  && sheet->width() == wideSheet;
         if (!minimizedOk) {
             ++failures;
         }
         std::fprintf(stderr,
                      "layout:  ribbon unfolded %.0f, folded %.0f, body open %.0f, sheet %.0f  %s\n",
-                     unfolded, folded, ribbon->height(), sheet->width(),
+                     unfoldedHeight, foldedHeight, ribbon->height(), sheet->width(),
                      minimizedOk ? "ok" : "FAIL");
         ribbon->setProperty("bodyOpen", false);
         ribbon->setProperty("minimized", false);
+
+        // 1280: the folded form is measured, and the Conducto group including the P-024a
+        // Diámetro is reachable through the menu instead of clipped past the right edge.
+        window->resize(1280, 800);
+        settle();
+        const bool collapsed = ribbon->property("collapsed").toBool()
+                               && !ribbon->property("bodyShown").toBool();
+        ribbon->setProperty("menuOpen", true);
+        settle();
+        QVariant flat;
+        const bool listed = QMetaObject::invokeMethod(ribbon, "flatActions",
+                                                      Q_RETURN_ARG(QVariant, flat));
+        const QVariantList actions = listed ? flat.toList() : QVariantList();
+        bool hasWorking = false;
+        bool hasPilot = false;
+        bool hasDrain = false;
+        bool hasDiameter = false;
+        for (const QVariant &action : actions) {
+            const QString id = action.toMap().value(QStringLiteral("id")).toString();
+            hasWorking = hasWorking || id == QLatin1String("pipe-working");
+            hasPilot = hasPilot || id == QLatin1String("pipe-pilot");
+            hasDrain = hasDrain || id == QLatin1String("pipe-drain");
+            hasDiameter = hasDiameter || id == QLatin1String("tube-diameter");
+        }
+        auto *tubeControl = ribbon->property("tubeControl").value<QObject *>();
+        const bool menuFits = ribbonMenu->isVisible() && ribbonMenu->x() >= 0.0
+                              && ribbonMenu->x() + ribbonMenu->width()
+                                     <= ribbon->width() + 0.5;
+        const bool foldedOk = collapsed && menuFits && listed && hasWorking && hasPilot
+                              && hasDrain && hasDiameter && tubeControl != nullptr;
+        if (!foldedOk) {
+            ++failures;
+        }
+        std::fprintf(stderr,
+                     "layout:  ribbon 1280 folded, menu %.0f at %.0f, Conducto %s, "
+                     "Diámetro %s  %s\n",
+                     ribbonMenu->width(), ribbonMenu->x(),
+                     hasWorking && hasPilot && hasDrain ? "reachable" : "missing",
+                     hasDiameter && tubeControl != nullptr ? "reachable" : "missing",
+                     foldedOk ? "ok" : "FAIL");
+        ribbon->setProperty("menuOpen", false);
         settle();
 
         // The window's own geometry is view state too: a saved size comes back, and the
@@ -1429,6 +1505,8 @@ int main(int argc, char *argv[])
             int homeCircuits = 0;
             int homeActive = -1;
             bool homeCanUndo = false;
+            /// The remembered ribbon fold, restored after the 1280/1440 width check.
+            bool ribbonMinimized = false;
         };
         auto *state = new SelfTest();
         state->window = window;
@@ -3569,6 +3647,54 @@ int main(int argc, char *argv[])
             state->session->undo();
             check(state->session->circuits().size() == before,
                   QStringLiteral("ribbon: the added circuit leaves with the undo"));
+        });
+
+        // The ribbon folds at 1280 (P-027): the tab row is what is on screen and the menu
+        // carries the Conducto group, including the P-024a Diámetro, instead of clipping it
+        // past the right edge. At 1440 the unfolded row is back. The window's size and the
+        // remembered fold are restored for the gestures that follow.
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            check(ribbon != nullptr && ribbon->property("collapsed").toBool()
+                      && !ribbon->property("bodyShown").toBool(),
+                  QStringLiteral("ribbon: 1280 folds to the tab row"));
+            if (ribbon == nullptr) {
+                return;
+            }
+            state->ribbonMinimized = state->window->property("ribbonMinimized").toBool();
+            ribbon->setProperty("menuOpen", true);
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            if (ribbon == nullptr) {
+                check(false, QStringLiteral("ribbon: Conducto and Diámetro reachable at 1280"));
+                return;
+            }
+            QVariant flat;
+            const bool listed = QMetaObject::invokeMethod(ribbon, "flatActions",
+                                                          Q_RETURN_ARG(QVariant, flat));
+            bool tube = false;
+            bool diameter = false;
+            const QVariantList actions = listed ? flat.toList() : QVariantList();
+            for (const QVariant &action : actions) {
+                const QString id = action.toMap().value(QStringLiteral("id")).toString();
+                tube = tube || id == QLatin1String("pipe-working");
+                diameter = diameter || id == QLatin1String("tube-diameter");
+            }
+            QObject *control = ribbon->property("tubeControl").value<QObject *>();
+            check(listed && tube && diameter && control != nullptr,
+                  QStringLiteral("ribbon: Conducto and Diámetro reachable at 1280"));
+            ribbon->setProperty("menuOpen", false);
+            state->window->setProperty("ribbonMinimized", false);
+            state->window->resize(1440, 900);
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            check(ribbon != nullptr && !ribbon->property("collapsed").toBool()
+                      && ribbon->property("bodyShown").toBool(),
+                  QStringLiteral("ribbon: 1440 shows the unfolded row"));
+            state->window->resize(1280, 800);
+            state->window->setProperty("ribbonMinimized", state->ribbonMinimized);
         });
 
         steps->push_back([state, check] {
