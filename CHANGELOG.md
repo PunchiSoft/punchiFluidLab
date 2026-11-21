@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### Decisión: la ventana pasa a Rust — 2026-11-21
+
+- **La aplicación será un solo binario Rust.** La [ADR 0035](docs/adr/0035-the-window-is-rust.md)
+  sustituye a la ADR 0005: la ventana, sus regiones y su entrada son crates Rust,
+  `punchi-fluid-ffi` y `apps/punchi-fluid-qt` se retiran y no se publica ABI en C. El dibujo
+  es el mismo de siempre —`punchi-fluid-draw` detrás de `Surface`— y el PNG, el PDF y el SVG
+  siguen siendo Rust.
+- **La interfaz deja de ser adaptable y pasa a ser fija**, al tamaño mínimo declarado en
+  `ui-ux.md` y a una escala; las reglas de plegado y los nodos que las pagaron (P-027,
+  P-028) quedan obsoletos.
+- **La iconografía es un asunto aparte de la simbología.** Los iconos de acción serán
+  archivos SVG en `assets/icons`; la simbología ISO 1219, `assets/symbols` y su revisión no
+  se tocan.
+- **El toolkit se elige con evidencia**, en un spike con cinco criterios —texto en sitio con
+  IME, accesibilidad y orden de teclado, un icono a 16 px teñido por el tema, un fotograma de
+  200 componentes y una página impresa desde el PDF de Rust— y en una ADR posterior.
+
 ### Documento: abrir y guardar no siguen trampas — 2026-11-21
 
 - **Abrir exige un fichero regular y una lectura acotada**: el tamaño que declara el sistema
