@@ -3,6 +3,9 @@
 
 //! Tests for the saved sheet and its migrations.
 
+use std::fs;
+use std::path::Path;
+
 use super::*;
 use crate::paper::{StoredMargins, StoredPaper, StoredSheet};
 use punchi_fluid_core::paper::{Margins, Orientation, PaperSize};
@@ -672,4 +675,91 @@ fn a_sheet_whose_frame_leaves_no_drawing_space_is_refused() {
         height_mm: 10.0,
     };
     assert!(sheet.validate().is_err(), "a paper outside the bounds");
+}
+
+#[test]
+fn a_stale_temporary_is_replaced_instead_of_refused() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    let temporary = path.with_extension("pfluid.tmp");
+    fs::write(&temporary, "restos de un guardado que falló").expect("a stale temporary");
+    sheet()
+        .write(&path)
+        .expect("writes over the stale temporary");
+    assert!(!temporary.exists());
+    assert_eq!(Sheet::read(&path).expect("reads"), sheet());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_symlink_at_the_temporary_name_does_not_redirect_the_save() {
+    use std::os::unix::fs::symlink;
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    let victim = directory.path().join("victima.txt");
+    fs::write(&victim, "intacto").expect("a victim file");
+    symlink(&victim, path.with_extension("pfluid.tmp")).expect("a planted symlink");
+    sheet().write(&path).expect("writes");
+    assert_eq!(fs::read_to_string(&victim).expect("reads"), "intacto");
+    assert_eq!(Sheet::read(&path).expect("reads"), sheet());
+}
+
+#[cfg(unix)]
+#[test]
+fn saving_keeps_the_permissions_of_the_document_it_replaces() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    fs::write(&path, "{}").expect("a private document");
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).expect("0600");
+    sheet().write(&path).expect("writes");
+    let mode = fs::metadata(&path).expect("metadata").permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600, "a save must not widen the permissions");
+}
+
+#[test]
+fn a_folder_at_the_temporary_name_is_refused_and_kept() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    let temporary = path.with_extension("pfluid.tmp");
+    fs::create_dir(&temporary).expect("a folder in the way");
+    let error = sheet().write(&path).expect_err("refuses");
+    assert!(matches!(error, SheetError::Io(_)));
+    assert!(temporary.is_dir(), "the folder is not deleted");
+    assert!(!path.exists());
+}
+
+#[test]
+fn a_failed_rename_leaves_no_temporary_behind() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("circuito.pfluid");
+    fs::create_dir(&path).expect("a folder where the document should be");
+    let error = sheet().write(&path).expect_err("refuses");
+    assert!(matches!(error, SheetError::Io(_)));
+    assert!(!path.with_extension("pfluid.tmp").exists());
+}
+
+#[test]
+fn a_device_is_refused_instead_of_read() {
+    let zero = Path::new("/dev/zero");
+    if !zero.exists() {
+        return;
+    }
+    assert!(matches!(
+        Sheet::read(zero).expect_err("refuses"),
+        SheetError::NotRegular
+    ));
+}
+
+#[test]
+fn a_file_over_the_limit_is_refused_before_it_is_read() {
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let path = directory.path().join("grande.pfluid");
+    let file = fs::File::create(&path).expect("creates");
+    file.set_len(MAX_BYTES + 1).expect("a sparse file");
+    drop(file);
+    assert!(matches!(
+        Sheet::read(&path).expect_err("refuses"),
+        SheetError::TooLarge
+    ));
 }

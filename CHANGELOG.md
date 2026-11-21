@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Documento: abrir y guardar no siguen trampas — 2026-11-21
+
+- **Abrir exige un fichero regular y una lectura acotada**: el tamaño que declara el sistema
+  ya no se da por bueno. Se comprueba que es un fichero normal antes de abrirlo y otra vez
+  por el descriptor que se lee, y la lectura se corta en `MAX_BYTES + 1` bytes, así que un
+  FIFO, `/dev/zero` o un fichero que crece mientras se lee se rechazan con `NotRegular` o
+  `TooLarge` en vez de agotar la memoria o dejar la ventana esperando.
+- **Guardar crea el temporal en exclusiva**: `create_new` sobre `<documento>.pfluid.tmp`,
+  desenlazando antes un temporal huérfano y sin seguir un enlace simbólico plantado;
+  conserva los permisos del documento que sustituye (un `0600` sigue siendo `0600`),
+  fuerza el fichero con `sync_all` antes del `rename` y borra el temporal cuando algo
+  falla. Pruebas `a_symlink_at_the_temporary_name_does_not_redirect_the_save`,
+  `saving_keeps_the_permissions_of_the_document_it_replaces`,
+  `a_failed_rename_leaves_no_temporary_behind`, `a_device_is_refused_instead_of_read` y
+  `a_file_over_the_limit_is_refused_before_it_is_read`. Nodo P-038.
+
 ### Escape: el chorro sale de la boca del silenciador — 2026-11-21
 
 - **Con un silenciador en el puerto de escape, las puntas del aire salen pasada su caja**,

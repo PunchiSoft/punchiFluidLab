@@ -112,9 +112,9 @@ to leak but local content — and nothing may leave the machine.
 
 | Threat | Control |
 |---|---|
-| Malicious catalog or document file | unknown keys rejected, every number range-checked, file ≤ 1 MiB, ≤ 512 nodes, no recursion in the format, no path from the file to the filesystem |
+| Malicious catalog or document file | unknown keys rejected, every number range-checked, a sheet read only from a regular file and through a bounded reader, file ≤ 1 MiB, ≤ 512 nodes, no recursion in the format, no path from the file to the filesystem |
 | Huge export exhausting memory | paper whitelist, DPI 72–600, one page, ≤ 80 Mpx, checked before allocating |
-| Overwriting a file by accident | atomic write (temp + rename), refuse to overwrite without explicit confirmation, never write outside the chosen path |
+| Overwriting a file by accident | atomic write (temp + rename), the temporary created with `create_new` and never through a planted symlink, the document's permissions kept, flushed before the rename and removed on failure; refuse to overwrite without explicit confirmation, never write outside the chosen path |
 | Metadata leaking the machine | no path, user name or host name in PDF metadata; title sanitised of control characters and bounded to 200 characters |
 | Symbol files pulled from the network | none: symbols are local files, no download, no update check |
 | Dependency compromise | `Cargo.lock` committed, `cargo-deny` (advisories, licences, sources) and `cargo-audit` in CI, dependabot PRs reviewed by a human, no build scripts from untrusted crates without review |

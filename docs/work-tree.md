@@ -94,8 +94,55 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-033 | The icon family's inventory and gaps are not documented | `planned` | [P-033](#p-033--the-simulator-owns-its-icon-family): the inventory in `docs/reference/icons.md`, the shared-shape gaps and the small-size proof; after P-032; the ISO 1219 symbols and the diagrams are untouched |
 | P-034a | Inicio does not look like the program nor tell the truth about what it offers | `in progress` | [P-034](#p-034--inicio-tells-the-truth): three offered templates, five honest recent rows, missing/`quitar`, the empty state, `Volver a la hoja`, `Esc`, and the page filling 1366×768; on `feat/start-view-visual` |
 | P-034b | The start view has no domain chip, recent thumbnails or opened time | `planned` | [P-034](#p-034--inicio-tells-the-truth): the template domain model, a preview-by-path entry with a bound and a one-past test, and a `recent.json` version change with its migration; after P-034a |
+| P-038 | Saving follows a symlink at the temporary name and opening trusts the size a file declares | `in progress` | [P-038](#p-038--a-save-can-be-redirected-and-an-open-can-be-made-to-read-for-ever): `fix/sheet-io-hardening` |
+| P-039 | The sheet parser leaves the project title, positions, physical magnitudes and pipe ports unbounded | `reported` | [P-039](#p-039--the-sheet-parser-leaves-four-values-unbounded): the rest of the 2026-11-21 review, after P-038 |
 
 ## A node, filled
+
+### P-038 — A save can be redirected and an open can be made to read for ever
+
+- **Problem**: saving wrote `<documento>.pfluid.tmp` with `fs::write`, which follows a
+  symbolic link planted at that name, and then renamed the link over the document: the save
+  truncated someone else's file. Opening trusted `metadata().len()`, a claim: a FIFO or a
+  device declares zero bytes, passes the limit and is read without a bound, hanging the
+  window or exhausting memory. The same write dropped the document's permissions, left the
+  temporary behind when the rename failed and never flushed before publishing.
+- **Evidence**: the security review of `crates/punchi-fluid-file/src/sheet.rs` of
+  2026-11-21, findings 1, 2, 6 and 7; both paths are reachable from `pf_session_save`,
+  `pf_session_autosave`, `pf_session_open` and `pf_session_recover`.
+- **Touches**: `crates/punchi-fluid-file/src/sheet.rs` (read, write and three helpers),
+  `sheet_tests.rs` (seven tests), `docs/engineering.md` (the two threat rows) and
+  `CHANGELOG.md`. No dependency moves.
+- **Options**: 1. open with `O_NONBLOCK` so a FIFO cannot block the open. **Con**: needs
+  `libc` as a direct dependency for one flag. 2. check `metadata` before opening (so a pipe
+  is not opened at all), check again through the descriptor, and read through
+  `take(MAX_BYTES + 1)`. **Pro**: no dependency, and the decision is made about the
+  descriptor that is read. **Con**: a file swapped between the check and the open is still
+  opened; the window is a local writer's, and the read is bounded either way.
+- **Decision**: option 2. The temporary is created with `create_new` after unlinking a stale
+  entry (`symlink_metadata`, so the unlink removes the link and never its target), inherits
+  the replaced document's mode or `0600`, is flushed with `sync_all`, and is removed on any
+  failure. The folder is flushed after the rename as best effort.
+- **Done when**: the seven tests pass, the crate and the workspace gate are green, and the
+  owner merges.
+- **State**: `in progress` on `fix/sheet-io-hardening`.
+
+### P-039 — The sheet parser leaves four values unbounded
+
+- **Problem**: the same review found values that pass validation without a bound: the
+  project `title` (no length, no control characters), `x`/`y` (only finite), the per-instance
+  magnitudes of `edit` (only finite and positive, so `1e300` reaches the solver), and
+  `from_port`/`to_port` (no identifier rule, unlike the closures). Two smaller defects:
+  an unknown `quantity` is embedded in its error message without a bound, and
+  `paper_sheet` substitutes the legacy A4 instead of reporting a value that never validated.
+  The four collection limits (`MAX_PLACEMENTS`, `MAX_PIPES`, `MAX_CIRCUITS`, `MAX_BYTES`)
+  also lack their one-past test.
+- **Evidence**: the review of 2026-11-21, findings 3, 4, 5, 8, 9, 10 and 11.
+- **Touches**: `crates/punchi-fluid-file/src/sheet.rs` and `sheet_tests.rs`; the limits live
+  in that crate, so no other crate changes.
+- **Decision**: not taken yet. It is a second change after P-038 merges, because one branch
+  carries one thing.
+- **State**: `reported`.
 
 ### P-018 — A port designation touches or covers the symbol
 

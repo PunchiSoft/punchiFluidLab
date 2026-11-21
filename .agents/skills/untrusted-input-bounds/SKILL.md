@@ -65,6 +65,7 @@ not have it.
 | Recent rows on Inicio | 5 | `punchi-fluid-ffi` | `PF_RECENT_PAGE_LIMIT` compared with the list bound in the gate |
 | Recent path | 4096 bytes | `punchi-fluid-file` | a longer path is refused |
 | Recent list file | 64 KB | `punchi-fluid-file` | a larger file is refused |
+| Sheet document | 8 MiB (`MAX_BYTES`) | `punchi-fluid-file` | read only from a regular file, through a bounded reader; a device and one byte past the limit are refused |
 | Circuits per project | 32 | `punchi-fluid-core` | refused opening and adding |
 | Undo depth | the document's | `punchi-fluid-doc` | bounded steps |
 | Catalog keys and numbers | per field | `punchi-fluid-catalog` | one test per rule |
