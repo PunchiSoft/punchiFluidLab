@@ -51,10 +51,13 @@ a popup about the program, never a command of the circuit, so no command exists 
 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
-`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; below 1240 px wide the ribbon collapses into a
-single menu button (a ribbon needs width to work). **Today** the window applies that one
-breakpoint and keeps the catalog at 248 px and the right panels at 360 px; the three modes
-of *The window adapts* below are target ([interface-plan.md](interface-plan.md) stage 6).
+`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; at
+1280 px wide and below the ribbon collapses into a single menu button (a ribbon needs width
+to work). **Today** the window applies that one breakpoint and keeps the catalog at 248 px
+and the right panels at 360 px; the three modes of *The window adapts* below are target
+([interface-plan.md](interface-plan.md) stage 6). The unfolded row still measures about
+1875 px, so at 1440 it overflows as well; that is the remaining question (P-027), not a
+mechanism of this breakpoint.
 
 ### 1. Ribbon (top)
 
@@ -105,9 +108,10 @@ Depth comes from the palette, never from a new hue.
   says so in one line. A grey button that teaches nothing is worse than a missing one.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
   pause and on keyboard focus, and the same string is the accessible description.
-- Below 1240 px the body folds away: the tabs stay, and one **Menú** button opens the
-  commands of the open tab. A ribbon without width is a maze; the menu scrolls when the
-  window cannot hold every command, so none is out of reach.
+- At 1280 px and below the body folds away: the tabs stay, and one **Menú** button opens
+  the commands of the open tab, the Conducto group's **Diámetro** included. A ribbon
+  without width is a maze; the menu scrolls when the window cannot hold every command, so
+  none is out of reach.
 - **The two help links are text at the right end of the tab row**, with the same weight
   as the tabs: **Acerca de** opens a popup with the name, the core's version, "versión en
   desarrollo, sin publicar", a one-line description, the repository and the issue tracker,

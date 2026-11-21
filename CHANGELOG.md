@@ -6,6 +6,28 @@ publicación.
 
 ## Unreleased
 
+### Ventana: el ribbon colapsa a 1280 — 2026-11-21
+
+- La cinta se pliega a **1280 px de ancho o menos**, no a 1240: en esa medida la fila de
+  grupos de **Editar** (~1875 px) empieza a cortarse por la derecha, y el grupo **Conducto**
+  quedaba fuera de alcance. Por encima de 1280 se mantiene la fila desplegada de siempre.
+- **El menú de la cinta gana la fila `Diámetro: …`**: el control de P-024a es un control, no
+  un comando, así que la lista aplanada no lo tenía; ahora la misma galería **Métrica /
+  Pulgada / Sin especificar** se abre desde el menú y desde `Alt+D`, con el valor en vigor en
+  la fila. La barra de estado no cambia.
+- **`--check-layout` ve el alcance horizontal**: a 1280 mide la forma plegada y comprueba que
+  el menú cabe en el contenido y que Conducto —trabajo, pilotaje, drenaje— y Diámetro son
+  alcanzables; a 1440 informa que la fila desplegada mide ~1875 px y **no cabe**, como
+  **límite conocido** de este nodo, no como fallo silencioso. `--selftest` gana el paso de
+  1280 plegado y 1440 desplegado.
+- **El desbordamiento a 1440 queda fuera**: la fila no cabe ni a 1440 ni con los grupos
+  actuales; scroll, menú «más» o salto de fila serían otro nodo, que el propietario aún no
+  ha abierto. **No hay cambio de documento ni de formato.**
+- **Evidencia**: `--check-layout` en 0 fallos a 1280×800 y 1440×900, con `QT_SCALE_FACTOR`
+  1,25/1,5/2 y `--font-scale 1.5`; los pasos `ribbon: 1280 …` y `ribbon: 1440 …` de
+  `--selftest`; `--check-qml` en 0 y `--check-theme` en verde; capturas a 1280 y 1440 en
+  claro y oscuro con el Conducto/Diámetro plegado y la hoja visible; `./scripts-dev/check.sh`.
+
 ### Tubo por conexión: 10 mm por defecto — 2026-11-20
 
 - Cada conducto **neumático** guarda su **diámetro exterior nominal** como `Option<u16>` en

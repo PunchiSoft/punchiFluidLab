@@ -39,8 +39,9 @@ Rectangle {
     /// `page`, `size` or `margins`, and only decides which field takes the focus.
     signal pageSetupRequested(string section)
 
-    /// Below this width a ribbon is worse than a menu, so it folds away.
-    readonly property bool collapsed: width < 1240
+    /// At this width and below a ribbon is worse than a menu, so it folds away: 1280 is the
+    /// common small-laptop width and the Editar row no longer fits before it (P-027).
+    readonly property bool collapsed: width <= 1280
     /// The tab row grows with the font and the spacing unit; at the default unit it is the
     /// 34 px the ribbon was drawn with.
     readonly property int tabHeight: Math.max(2 * session.unit - 2,
@@ -552,6 +553,10 @@ Rectangle {
             session.setPipeClass(1);
         } else if (id === "pipe-drain") {
             session.setPipeClass(2);
+        } else if (id === "tube-diameter") {
+            // The folded ribbon reaches the same gallery the body's control owns; the tab
+            // switch is already Editar, where the row appears.
+            ribbon.openTubeMenu();
         } else if (id === "space-across") {
             session.spaceSelection(0);
         } else if (id === "space-down") {
@@ -631,6 +636,19 @@ Rectangle {
             const items = groupActions(groups[g]);
             for (let i = 0; i < items.length; ++i) {
                 out.push(items[i]);
+            }
+            // The tube diameter is a control, not a command, so the flattened list has no
+            // row for it. The folded ribbon still has to reach it: one row opens the same
+            // gallery, with the size in force in its name. The control itself stays loaded
+            // in the hidden body, so Alt+D and this row share it.
+            if (groups[g].custom === "tube") {
+                out.push({
+                    id: "tube-diameter",
+                    label: ribbon.tubeControl
+                           ? qsTr("Diámetro: %1").arg(ribbon.tubeControl.shown)
+                           : qsTr("Diámetro"),
+                    hint: qsTr("abre la serie métrica y la de pulgadas · Alt+D")
+                });
             }
         }
         return out;
@@ -856,6 +874,7 @@ Rectangle {
 
         Row {
             id: groupsRow
+            objectName: "ribbonGroupsRow"
             anchors.left: parent.left
             anchors.leftMargin: 6
             anchors.top: parent.top
@@ -866,6 +885,7 @@ Rectangle {
 
                 delegate: RibbonGroup {
                     required property var modelData
+                    objectName: "ribbonGroup"
                     session: ribbon.session
                     title: modelData.title
 
@@ -940,6 +960,7 @@ Rectangle {
 
     Rectangle {
         id: menu
+        objectName: "ribbonMenu"
         visible: ribbon.collapsed && ribbon.menuOpen
         anchors.top: tabRow.bottom
         anchors.left: parent.left

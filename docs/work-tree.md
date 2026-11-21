@@ -82,6 +82,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-024a | A pneumatic connection does not carry its tube size | `in progress` | [P-024a](#p-024a--a-pneumatic-connection-carries-its-tube-size) on `feat/tube-size`: format 13, the width series, the parts rows, the Conducto gallery; the physics is P-024b |
 | P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
 | P-026 | The electrical connection does not work as planned | `deferred` | [P-026](#p-026--the-electrical-connection-does-not-work-as-planned): the owner's decision of 2026-11-20; not in the current queue and not touched by P-024a |
+| P-027 | The ribbon's horizontal groups overflow at 1280/1440 | `in progress` | [P-027](#p-027--the-ribbons-horizontal-groups-overflow-at-12801440) on `fix/ribbon-collapse-1280`: the fold at 1280, the reachable Diámetro, the layout check and the 1440 known limit |
 
 ## A node, filled
 
@@ -259,6 +260,47 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   width series and no parts row.
 - **Done when**: a future node reopens it with an approved spec.
 - **State**: `deferred`; not in the current queue.
+
+### P-027 — The ribbon's horizontal groups overflow at 1280/1440
+
+- **Problem**: the **Editar** groups in a row measure about 1875 px (Historial 144,
+  Circuito 95, Componente 506, Alinear 403, Conducto 337, Repartir 188, Paleta 202) while
+  the content is ~1274 px at 1280×800 and ~1434 px at 1440×900. The compact breakpoint was
+  1240, so at 1280 the ribbon unfolded and the Conducto group started past the right edge;
+  P-024a's **Diámetro** was among the controls the user could not reach.
+- **Evidence**: `editar-light.png` at 1280 already cuts the group, so the overflow
+  pre-dates P-024a; the spec `specs/ribbon-collapse-1280.md`; after the fix the
+  `--check-layout` lines for the 1440 reach and the 1280 folded menu, the `--selftest`
+  `ribbon: 1280 …` and `ribbon: 1440 …` steps, and the 1280/1440 light/dark captures in the
+  EGM evidence folder.
+- **Touches**: `apps/punchi-fluid-qt/RibbonBar.qml` (the breakpoint, the folded menu's
+  Diámetro row, the measured object names), `apps/punchi-fluid-qt/src/main.cpp`
+  (`--check-layout` and the `--selftest` step), `docs/ui-ux.md`, `docs/next-steps.md`, this
+  register and `CHANGELOG.md`.
+- **Options**:
+  1. Collapse at 1100. **Pro**: none for this case. **Con**: 1280 is the common small
+     laptop width and the fold would come after the clipping starts.
+  2. Horizontal scroll or a “more” menu. **Con**: a new overflow model and a second place
+     to find every command; the owner rejected both.
+  3. Wrap the groups onto a second row. **Con**: the ribbon's height changes and takes room
+     from the sheet.
+  4. Collapse at 1280 and record the 1440 overflow as a later node. **Pro**: one breakpoint
+     where the fold is needed; no second mechanism. **Con**: the unfolded row still does not
+     fit at 1440.
+- **Decision**: option 4, chosen by the owner on 2026-11-21. At ≤1280 the tab row and the
+  **Menú** are the ribbon; the menu gains one **Diámetro: …** row so the Conducto group,
+  P-024a's control included, is reachable instead of clipped. `Alt+D` and the status bar do
+  not change. At >1280 the current unfolded row stays; its overflow at 1440 is this node's
+  known limit and the next node's question.
+- **Stages**: one branch, `fix/ribbon-collapse-1280` — the breakpoint, the folded menu row,
+  the layout check's 1440 known limit and 1280 folded measurement, the selftest steps, the
+  four documents, the captures and the gate.
+- **Done when**: `--check-layout` is 0 failures at 1280×800, 1440×900, `QT_SCALE_FACTOR`
+  1.25/1.5/2 and `--font-scale 1.5`; the 1280 folded form and the 1440 known limit are
+  printed; the `--selftest` 1280/1440 steps pass; `--check-qml` is 0 and `--check-theme`
+  green; the light/dark captures at 1280/1440 show the folded Diámetro and the sheet;
+  `./scripts-dev/check.sh` is green; the owner confirms the diff.
+- **State**: `in progress` on `fix/ribbon-collapse-1280`; `done` after the owner merges.
 
 ### P-025 — The supply starts at 4 bar
 
