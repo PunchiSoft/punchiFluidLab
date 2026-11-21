@@ -4,6 +4,7 @@
 - **Date:** 2026-11-14
 - **Deciders:** project owner, implementation session
 - **Context crates:** `apps/punchi-fluid-qt`
+- **Current inventory:** [reference/icons.md](../reference/icons.md) — the drawings, their commands and the deferred duplicates
 
 ## Context
 

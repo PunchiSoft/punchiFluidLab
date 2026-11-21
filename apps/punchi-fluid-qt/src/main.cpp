@@ -13,8 +13,9 @@
 //! --check-theme        print the contrast ratios and exit 1 when one fails
 //! --check-layout       resize through the shell's modes; exits 1 when one is wrong
 //! --font-scale N       multiply the desktop font, to prove a larger-font run
-//! --check-icons        report every ribbon icon as project, theme or missing
+//! --check-icons        report every ribbon icon and command coverage as project, theme or missing
 //! --icon-sheet <file>  render the project icons at 16, 24 and 32 px, for a review
+//! --scale <n>          multiply the icon sheet's sizes and image (default 1; manual render)
 //! --check-sounds       prove the packaged samples decode; exits 1 when one does not
 //! --selftest           replay every sheet gesture with real events; exits 1 on failure
 //! --block              open the title-block editor, for a capture of it
@@ -123,6 +124,118 @@ int grabAndExit(QQmlApplicationEngine &engine, const QString &path)
     return 0;
 }
 
+/// `--check-icons` reverse direction: a command in the ribbon table without a drawing is a
+/// coverage hole. The table also holds entries that are not commands — the two custom
+/// groups whose controls build their own commands, the three note-only groups and the two
+/// help links — and they are the documented allowlist in `docs/reference/icons.md`. Any
+/// new iconless entry fails here, so the document and the table cannot drift.
+int checkRibbonCoverage(QObject *ribbon)
+{
+    const QVariantList tabs = ribbon->property("tabs").toList();
+    const QVariantList helpLinks = ribbon->property("helpLinks").toList();
+    if (tabs.isEmpty() || helpLinks.isEmpty()) {
+        std::fprintf(stderr, "--check-icons: the ribbon table is empty\n");
+        return 1;
+    }
+
+    QStringList iconless;
+    int commands = 0;
+    int withoutDrawing = 0;
+    int badGroup = 0;
+    for (const QVariant &tabEntry : tabs) {
+        const QVariantMap tab = tabEntry.toMap();
+        const QVariantList groups = tab.value(QStringLiteral("groups")).toList();
+        for (const QVariant &groupEntry : groups) {
+            const QVariantMap group = groupEntry.toMap();
+            const QString custom = group.value(QStringLiteral("custom")).toString();
+            const bool hasItems = !group.value(QStringLiteral("items")).toList().isEmpty();
+            QVariant listed;
+            if (!QMetaObject::invokeMethod(ribbon, "groupActions",
+                                           Q_RETURN_ARG(QVariant, listed),
+                                           Q_ARG(QVariant, groupEntry))) {
+                std::fprintf(stderr, "--check-icons: cannot read the group %s\n",
+                             qUtf8Printable(group.value(QStringLiteral("title")).toString()));
+                ++badGroup;
+                continue;
+            }
+            if (!custom.isEmpty() && !hasItems) {
+                iconless.append(QStringLiteral("custom:") + custom);
+            } else if (custom.isEmpty() && !hasItems) {
+                iconless.append(QStringLiteral("note:")
+                                + group.value(QStringLiteral("title")).toString());
+            }
+            // The generated page-setup and recent commands come from the same function the
+            // ribbon draws, so the check follows the code instead of a copy of the table.
+            const QVariantList actions = listed.toList();
+            for (const QVariant &actionEntry : actions) {
+                const QVariantMap action = actionEntry.toMap();
+                const QString id = action.value(QStringLiteral("id")).toString();
+                const QString icon = action.value(QStringLiteral("icon")).toString();
+                ++commands;
+                if (icon.isEmpty()) {
+                    iconless.append(QStringLiteral("command:") + id);
+                    continue;
+                }
+                if (!actionicons::has(icon)) {
+                    ++withoutDrawing;
+                    std::fprintf(stderr,
+                                 "icons: command %-24s asks for %s, no project drawing\n",
+                                 qUtf8Printable(id), qUtf8Printable(icon));
+                }
+            }
+        }
+    }
+    for (const QVariant &helpEntry : helpLinks) {
+        const QVariantMap help = helpEntry.toMap();
+        if (help.value(QStringLiteral("icon")).toString().isEmpty()) {
+            iconless.append(QStringLiteral("help:")
+                            + help.value(QStringLiteral("id")).toString());
+        }
+    }
+
+    // The documented allowlist: the custom groups have no icon of their own because their
+    // controls build the commands, the notes carry text only and the help links are window
+    // chrome. A new name here updates docs/reference/icons.md in the same change.
+    const QStringList allowed {
+        QStringLiteral("custom:page-setup"),
+        QStringLiteral("custom:recent"),
+        QStringLiteral("help:about"),
+        QStringLiteral("help:license"),
+    };
+    constexpr int allowedNotes = 3;
+    int notes = 0;
+    int undocumented = 0;
+    for (const QString &entry : iconless) {
+        if (entry.startsWith(QStringLiteral("note:"))) {
+            ++notes;
+        } else if (!allowed.contains(entry)) {
+            ++undocumented;
+            std::fprintf(stderr, "icons: iconless entry \"%s\" is not documented\n",
+                         qUtf8Printable(entry));
+        }
+    }
+    int allowedMissing = 0;
+    for (const QString &entry : allowed) {
+        if (!iconless.contains(entry)) {
+            ++allowedMissing;
+            std::fprintf(stderr, "icons: documented iconless entry \"%s\" is gone\n",
+                         qUtf8Printable(entry));
+        }
+    }
+    if (notes != allowedNotes) {
+        std::fprintf(stderr, "icons: %d note-only groups, the document says %d\n", notes,
+                     allowedNotes);
+        ++undocumented;
+    }
+
+    std::fprintf(stderr,
+                 "icons: command table %d entries, %d without a drawing, %d bad group(s)\n",
+                 commands, withoutDrawing, badGroup);
+    std::fprintf(stderr, "icons: iconless entries (allowlist): %s\n",
+                 qUtf8Printable(iconless.join(QStringLiteral(", "))));
+    return withoutDrawing + badGroup + undocumented + allowedMissing;
+}
+
 /// `--check-icons`: every name the window asks for resolves, then the icon cache proves
 /// its bound, its eviction and its palette key. The start view is already open, so the
 /// cache carries the page's icons and not only the ribbon's.
@@ -193,6 +306,10 @@ int runIconCheck(QQmlApplicationEngine &engine, ThemeIconProvider *provider)
                  provider->maxGroupSize());
 
     int failures = missing;
+
+    // The reverse direction: a ribbon command with no drawing, or an iconless table entry
+    // outside the documented allowlist, fails the same check.
+    failures += checkRibbonCoverage(ribbon);
 
     // The oldest entry leaves when the top is reached: `QCache` is the LRU.
     QSize probeSize;
@@ -324,9 +441,23 @@ int main(int argc, char *argv[])
 
     const QString iconSheet = value(QStringLiteral("--icon-sheet"));
     if (!iconSheet.isEmpty()) {
+        // The review capture is a manual render, not a gate check: `--scale 2` renders the
+        // icons and the image at twice the size, so the evidence is a real 2x raster and
+        // not an upscaled one.
+        qreal scale = 1.0;
+        const QString scaleText = value(QStringLiteral("--scale"));
+        if (!scaleText.isEmpty()) {
+            bool scaleOk = false;
+            scale = scaleText.toDouble(&scaleOk);
+            if (!scaleOk || scale < 0.5 || scale > 4.0) {
+                std::fprintf(stderr, "--scale takes a factor from 0.5 to 4, not \"%s\"\n",
+                             qUtf8Printable(scaleText));
+                return 2;
+            }
+        }
         const ThemeTokens tokens = tokensFrom(QGuiApplication::palette());
         const QStringList names = actionicons::names();
-        constexpr int cell = 56;
+        const int cell = qRound(56 * scale);
         constexpr int perRow = 12;
         const int rowsPerSize = (names.size() + perRow - 1) / perRow;
         const int columns = std::min(static_cast<int>(names.size()), perRow);
@@ -335,7 +466,8 @@ int main(int argc, char *argv[])
         QPainter painter(&image);
         painter.setRenderHint(QPainter::Antialiasing, true);
         for (int sizeRow = 0; sizeRow < 3; ++sizeRow) {
-            const int pixels = sizeRow == 0 ? 16 : (sizeRow == 1 ? 24 : 32);
+            const int base = sizeRow == 0 ? 16 : (sizeRow == 1 ? 24 : 32);
+            const int pixels = qRound(base * scale);
             for (int index = 0; index < names.size(); ++index) {
                 const int row = sizeRow * rowsPerSize + index / perRow;
                 const int col = index % perRow;
@@ -350,8 +482,9 @@ int main(int argc, char *argv[])
                          qUtf8Printable(iconSheet));
             return 1;
         }
-        std::fprintf(stderr, "icon sheet: %d icons at 16, 24 and 32 px in %s\n",
-                     static_cast<int>(names.size()), qUtf8Printable(iconSheet));
+        std::fprintf(stderr, "icon sheet: %d icons at 16, 24 and 32 px (scale %g) in %s\n",
+                     static_cast<int>(names.size()), static_cast<double>(scale),
+                     qUtf8Printable(iconSheet));
         return 0;
     }
 

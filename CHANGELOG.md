@@ -6,6 +6,40 @@ publicación.
 
 ## Unreleased
 
+### Iconos: las clases de conducto y las velocidades se leen — 2026-11-21
+
+- **Nueve dibujos propios en la familia de acciones** (`actionicons.cpp`): los tres
+  conductos llevan el patrón de su clase como lo dibuja la hoja —trabajo sólido, pilotaje
+  con la discontinuidad corta 1,6/0,9 y drenaje con la larga 2,6/1,3 de
+  `LineClass::pattern`, en anchos de trazo— y la misma flecha de flujo; las tres
+  velocidades son un arco de indicador con una, dos y cuatro marcas, sin dígitos
+  dibujados (el multiplicador queda en la etiqueta); `check` es el contorno del circuito
+  con la marca; `align-ports` son dos bocas sobre un eje; y `tube-diameter` es una sección
+  de tubo con la flecha de diámetro. Caja de 24 unidades, trazo de 2, extremos y uniones
+  redondeados, una sola tinta del tema, sin SVG ni segundo color; los diagramas, la hoja,
+  el zoom, la geometría ISO 1219 y el relleno de la posición activa no cambian.
+- **La cinta apunta a los ids nuevos**: Trabajo, Pilotaje y Drenaje dejan `draw-line`;
+  0,25×, 1× y 2× dejan `speedometer`; Comprobar deja `dialog-ok-apply`; Puertos deja
+  `align-horizontal-center`; y la fila generada del diámetro recibe su icono.
+- **`--icon-sheet --scale <n>`** multiplica los tamaños dibujados y la imagen (por defecto
+  1) para que la evidencia 2× sea un ráster real; sigue siendo un render manual, no un
+  check de la puerta.
+- **Inventario y cobertura de la familia** (`docs/reference/icons.md`): una fila por dibujo
+  con su comando, metáfora, grupo, tamaño y estado; las reglas de la familia enlazan la
+  ADR 0028 sin repetir sus valores; y los duplicados diferidos quedan con su razón
+  (`document-properties` ×3, `edit-undo` como restablecer, las dos casas y los dos
+  restablecimientos, `go-bottom` en dos posiciones y el `x-office-document` de Vertical).
+  El recuento publicado es **55 dibujos**, el conjunto que devuelve `actionicons::names()`,
+  no el de comandos.
+- **`--check-icons` comprueba también la dirección inversa**: cada comando de la tabla de
+  la cinta resuelve a un dibujo propio, y las entradas sin icono son exactamente la lista
+  documentada —los grupos personalizados Configurar página y Recientes, las notas Paleta,
+  Contraste y Estado, y los enlaces Acerca de y Licencia—; una entrada nueva falla. Se
+  retiran los cuatro dibujos huérfanos (`draw-line`, `speedometer`, `dialog-ok-apply`,
+  `align-horizontal-center`), que ya no usa ningún comando.
+- **La documentación deja de fijar 46 iconos**: `docs/capabilities.md` habla de la familia
+  y enlaza el inventario, y la ADR 0028 enlaza el inventario actual.
+
 ### Colocación: el símbolo conserva su caja — 2026-11-21
 
 - **Un componente arrastrado desde el catálogo ocupa la misma caja que las plantillas**:
