@@ -304,6 +304,31 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   page; no allocation per frame is confirmed by review; and the owner confirms the diff.
 - **State**: `in progress` on `feat/air-flow-animation`; `done` after the owner merges.
 
+### P-036 — The transport disappears when the ribbon folds
+
+- **Problem**: at 1280 px and below the ribbon folds to its tab row and the transport —
+  Iniciar, Pausa, Paso, Detener — lived only inside the **Menú**. The owner ran the window at
+  that width, had a circuit on the sheet, and could not start the simulation; `ui-ux.md`
+  says the transport is **always visible**.
+- **Evidence**: the owner's report of 2026-11-21 («hay circuito pero Iniciar no responde»),
+  the 1200×800 capture before the change (no transport in the row) and the one after it
+  (Menú · Iniciar · Paso · Detener).
+- **Touches**: `apps/punchi-fluid-qt/RibbonBar.qml` (the folded row and the three buttons),
+  `apps/punchi-fluid-qt/src/main.cpp` (`--check-layout` asserts the cluster at 1280),
+  `docs/ui-ux.md` (the fold paragraph) and `CHANGELOG.md`.
+- **Options**: 1. put the transport in the menu (today). **Con**: two clicks and a scroll for
+  the action a lesson uses most. 2. a second, floating transport bar. **Con**: a second
+  transport that can disagree with the ribbon. 3. three compact buttons in the folded tab
+  row, play and pause sharing one control. **Pro**: always visible, one definition, no new
+  region. **Con**: the row loses ~150 px at 1280.
+- **Decision**: option 3. The folded row carries play/pause (one button whose label, icon
+  and action follow the session), Paso and Detener; the menu keeps the rest, Restablecer and
+  «Hasta cambio» included.
+- **Done when**: `--check-layout` reports `transport visible` at 1280 and fails when the
+  cluster is missing or hidden; the 1200×800 capture shows the three buttons; the selftest is
+  green; the owner confirms the diff.
+- **State**: in progress on `feat/collapsed-transport`; `done` after the owner merges.
+
 ### P-024a — A pneumatic connection carries its tube size
 
 - **Problem**: a hose was drawn at one fixed stroke and the parts list had no tube rows

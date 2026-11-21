@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Cinta: el transporte sigue visible al plegarse — 2026-11-21
+
+- **Con la cinta plegada (≤1280 px), la fila de pestañas lleva Iniciar/Pausa, Paso y Detener**
+  junto al botón Menú. Hasta ahora el transporte vivía solo dentro del menú, y con un
+  circuito en la hoja no había forma evidente de arrancar la simulación: `ui-ux.md` dice que
+  el transporte está siempre visible. Play y pausa comparten un control que cambia etiqueta,
+  icono y acción según la sesión; el menú conserva el resto (Restablecer, Hasta cambio y las
+  velocidades).
+- **`--check-layout` lo vigila**: a 1280 comprueba que el grupo está visible y que el menú
+  sigue alcanzando Conducto y Diámetro; si el grupo desaparece o se oculta, falla. Captura a
+  1200×800 con Menú · Iniciar · Paso · Detener. Nodo P-036.
+
 ### Caudal: el aire se ve moverse por los tubos — 2026-11-21
 
 - **La hoja dibuja el aire que el modelo mueve como una corriente de puntas**: varias flechas

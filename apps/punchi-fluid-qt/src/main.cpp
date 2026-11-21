@@ -1621,20 +1621,28 @@ int main(int argc, char *argv[])
             hasDiameter = hasDiameter || id == QLatin1String("tube-diameter");
         }
         auto *tubeControl = ribbon->property("tubeControl").value<QObject *>();
+        // The transport is not a menu entry: ui-ux says it is always visible, so the folded
+        // row must carry play/pause, step and stop without opening anything.
+        auto *transport = ribbon->findChild<QObject *>(QStringLiteral("ribbonTransport"));
+        const bool transportShown = transport != nullptr
+                                    && transport->property("visible").toBool()
+                                    && transport->children().size() >= 3;
         const bool menuFits = ribbonMenu->isVisible() && ribbonMenu->x() >= 0.0
                               && ribbonMenu->x() + ribbonMenu->width()
                                      <= ribbon->width() + 0.5;
         const bool foldedOk = collapsed && menuFits && listed && hasWorking && hasPilot
-                              && hasDrain && hasDiameter && tubeControl != nullptr;
+                              && hasDrain && hasDiameter && tubeControl != nullptr
+                              && transportShown;
         if (!foldedOk) {
             ++failures;
         }
         std::fprintf(stderr,
                      "layout:  ribbon 1280 folded, menu %.0f at %.0f, Conducto %s, "
-                     "Diámetro %s  %s\n",
+                     "Diámetro %s, transport %s  %s\n",
                      ribbonMenu->width(), ribbonMenu->x(),
                      hasWorking && hasPilot && hasDrain ? "reachable" : "missing",
                      hasDiameter && tubeControl != nullptr ? "reachable" : "missing",
+                     transportShown ? "visible" : "missing",
                      foldedOk ? "ok" : "FAIL");
         ribbon->setProperty("menuOpen", false);
         settle();

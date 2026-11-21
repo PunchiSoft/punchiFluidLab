@@ -914,6 +914,7 @@ Rectangle {
 
         // A ribbon has no width to spare below the threshold: it folds into one menu.
         RibbonButton {
+            id: menuToggle
             visible: ribbon.collapsed
             anchors.left: tabsRow.right
             anchors.leftMargin: 8
@@ -925,6 +926,55 @@ Rectangle {
             large: false
             tone: "foreground"
             onTriggered: ribbon.menuOpen = !ribbon.menuOpen
+        }
+
+        // The transport survives the fold. ui-ux says it is always visible, and the menu is
+        // for the rest of the commands: a student who cannot find Iniciar cannot simulate.
+        // Play and pause share one control so three buttons keep the row short at 1280.
+        Row {
+            objectName: "ribbonTransport"
+            visible: ribbon.collapsed
+            anchors.left: menuToggle.right
+            anchors.leftMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            RibbonButton {
+                session: ribbon.session
+                label: session.running ? qsTr("Pausa") : qsTr("Iniciar")
+                accessibleName: label
+                iconName: session.running ? "media-playback-pause" : "media-playback-start"
+                hint: session.running ? qsTr("F8 · detiene donde está")
+                                      : qsTr("F9 · anima el modelo")
+                large: false
+                tone: "foreground"
+                onTriggered: session.running ? session.pauseSimulation()
+                                             : session.startSimulation()
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Paso")
+                accessibleName: label
+                iconName: "media-seek-forward"
+                hint: qsTr("F10 · un cuadro y se queda en pausa")
+                large: false
+                tone: "foreground"
+                available: !session.editing && !session.untilChangeRunning
+                onTriggered: session.stepForward()
+            }
+
+            RibbonButton {
+                session: ribbon.session
+                label: qsTr("Detener")
+                accessibleName: label
+                iconName: "media-playback-stop"
+                hint: qsTr("F5 · vuelve al modo edición")
+                large: false
+                tone: "foreground"
+                available: !session.editing
+                onTriggered: session.stopSimulation()
+            }
         }
 
         // Folding the ribbon to its tab row and bringing it back: the same control in both
