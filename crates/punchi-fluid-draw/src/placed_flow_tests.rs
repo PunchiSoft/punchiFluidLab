@@ -367,3 +367,57 @@ fn an_exhaust_port_draws_the_air_leaving_it() {
     draw_placed(&mut surface, &[quiet], &[], &catalog, &ink, &[]);
     assert_eq!(outside(&surface), 0, "no flow, no jet");
 }
+
+#[test]
+fn a_silencer_owns_the_mouth_of_the_jet() {
+    // A closure fitted to the exhaust port is drawn between the symbol and the air. The
+    // marks start past its box, so the air leaves the silencer and not its host.
+    let catalog = Catalog::builtin();
+    let ink = Ink::print();
+    let silencer = catalog
+        .get("silencer.pneumatic")
+        .expect("the silencer is built in");
+    let valve = placed(
+        0,
+        "valve.3_2.spring_return",
+        Rect::from_center_size(Pt::new(40.0, 40.0), 20.0, 20.0),
+    );
+    let mark = ExhaustMark {
+        port: "3",
+        flow_l_min: 20.0,
+    };
+    let mut bare = valve;
+    bare.exhausts = std::slice::from_ref(&mark);
+    let closures = [("3", silencer)];
+    let mut fitted = valve;
+    fitted.exhausts = std::slice::from_ref(&mark);
+    fitted.closures = &closures;
+
+    let first_jet = |surface: &Recording| {
+        surface.calls().iter().find_map(|call| match call {
+            Call::Polygon { points, fill, .. }
+                if *fill == Some(ink.line)
+                    && !points.is_empty()
+                    && points.iter().all(|point| point.y > valve.rect.max.y + 0.5) =>
+            {
+                Some(
+                    points
+                        .iter()
+                        .map(|point| point.y)
+                        .fold(f32::INFINITY, f32::min),
+                )
+            }
+            _ => None,
+        })
+    };
+    let mut surface = Recording::default();
+    draw_placed(&mut surface, &[bare], &[], &catalog, &ink, &[]);
+    let open = first_jet(&surface).expect("the bare port vents");
+    let mut surface = Recording::default();
+    draw_placed(&mut surface, &[fitted], &[], &catalog, &ink, &[]);
+    let through = first_jet(&surface).expect("the silencer vents");
+    assert!(
+        through > open + CLOSURE_MM * 0.5,
+        "the marks start past the closure: {open:.2} against {through:.2}"
+    );
+}
