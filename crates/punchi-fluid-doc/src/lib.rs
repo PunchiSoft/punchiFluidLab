@@ -13,6 +13,8 @@
 //! name. When it overflows the oldest entry is dropped, so the oldest states cannot be
 //! reached again — the behaviour every editor has.
 
+use std::collections::BTreeMap;
+
 use punchi_fluid_core::paper::Sheet;
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
@@ -23,6 +25,12 @@ use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 /// note: 40 characters fit beside a symbol and stop a pasted paragraph from covering the
 /// drawing.
 pub const MAX_DESIGNATION: usize = 40;
+
+/// Longest accepted port or closure identifier.
+///
+/// It matches `punchi_fluid_file::sheet::MAX_ID`; the format crate does not depend on the
+/// document crate, so the number is stated in both and tested here.
+pub const MAX_ID: usize = 128;
 
 /// Most entries the undo history keeps.
 pub const HISTORY_LIMIT: usize = 100;
@@ -277,6 +285,12 @@ pub struct Placement {
     /// `None` is "not bound yet", which the inspector shows as an incomplete instrument;
     /// the drawing says so instead of charting a flat zero.
     pub source: Option<Source>,
+    /// Closure chosen on a port, by port id: `"3" -> "silencer.pneumatic"`.
+    ///
+    /// An absent key is an open port. One closure per port in this node, and the map is
+    /// not part of [`PlacementEdits`]: a closure is a port-level decision, not a numeric
+    /// override of the definition.
+    pub port_closures: BTreeMap<String, String>,
 }
 
 impl Placement {
@@ -294,6 +308,7 @@ impl Placement {
             orientation: Orientation::NONE,
             designation: None,
             source: None,
+            port_closures: BTreeMap::new(),
         }
     }
 
@@ -320,6 +335,7 @@ impl Placement {
             orientation: Orientation::NONE,
             designation: None,
             source: None,
+            port_closures: BTreeMap::new(),
         }
     }
 
@@ -499,6 +515,13 @@ enum Change {
         index: usize,
         from: Option<u16>,
         to: Option<u16>,
+    },
+    /// A port was given a closure, or had it taken away.
+    Closured {
+        index: usize,
+        port: String,
+        from: Option<String>,
+        to: Option<String>,
     },
     /// A recorder was bound to a source, or unbound.
     Sourced {
@@ -1003,6 +1026,96 @@ impl Document {
         true
     }
 
+    /// Sets or clears the closure of one port, as a single undoable change.
+    ///
+    /// The document is the last line for what it can decide alone: the placement exists,
+    /// the port id is a plausible identifier, the closure is `None` or one of the ids the
+    /// caller resolved from the catalog, and no pipe ends on the port. It cannot know the
+    /// placement's catalog definition, so the caller also checks that the port exists and
+    /// that its role accepts the closure.
+    ///
+    /// `allowed` is the list of closure ids the port's role accepts. An empty list with a
+    /// `Some` closure refuses it, which is how a mechanical or electrical port ends up
+    /// with no menu.
+    pub fn set_port_closure(
+        &mut self,
+        index: usize,
+        port: &str,
+        closure: Option<&str>,
+        allowed: &[&str],
+    ) -> bool {
+        if !port_identifier_is_valid(port) {
+            return false;
+        }
+        if let Some(closure) = closure
+            && (!port_identifier_is_valid(closure) || !allowed.contains(&closure))
+        {
+            return false;
+        }
+        let Some(placement) = self.placements.get(index) else {
+            return false;
+        };
+        let id = placement.id;
+        if self.connections.iter().any(|connection| {
+            connection.from == Endpoint::new(id, port) || connection.to == Endpoint::new(id, port)
+        }) {
+            return false;
+        }
+        let Some(placement) = self.placements.get_mut(index) else {
+            return false;
+        };
+        let from = placement.port_closures.get(port).cloned();
+        let to = closure.map(str::to_owned);
+        if from == to {
+            return false;
+        }
+        match &to {
+            Some(closure) => {
+                placement
+                    .port_closures
+                    .insert(port.to_owned(), closure.clone());
+            }
+            None => {
+                placement.port_closures.remove(port);
+            }
+        }
+        self.record(Change::Closured {
+            index,
+            port: port.to_owned(),
+            from,
+            to,
+        });
+        true
+    }
+
+    /// Gives a seeded placement the closure of a port, with no history entry.
+    ///
+    /// The file loader has already checked the shape; this repeats the same bound so a
+    /// caller cannot seed a value the document would refuse. The id is stored verbatim:
+    /// the catalog is not here to resolve it, and the load path reports an unknown one.
+    pub fn seed_port_closure(&mut self, index: usize, port: &str, closure: &str) -> bool {
+        if !port_identifier_is_valid(port) || !port_identifier_is_valid(closure) {
+            return false;
+        }
+        let Some(placement) = self.placements.get_mut(index) else {
+            return false;
+        };
+        placement
+            .port_closures
+            .insert(port.to_owned(), closure.to_owned());
+        true
+    }
+
+    /// The closure of one port, if it has one.
+    #[must_use]
+    pub fn port_closure(&self, index: usize, port: &str) -> Option<&str> {
+        self.placements
+            .get(index)?
+            .port_closures
+            .get(port)
+            .map(String::as_str)
+    }
+
     /// Gives a seeded pipe its route without recording an edit.
     ///
     /// A route read from a file belongs to the starting state: opening a document must not
@@ -1021,9 +1134,19 @@ impl Document {
         to: Endpoint,
         tube_od_hundredths: Option<u16>,
     ) -> Option<usize> {
-        if from == to
-            || self.index_of(from.placement).is_none()
-            || self.index_of(to.placement).is_none()
+        if from == to {
+            return None;
+        }
+        let from_index = self.index_of(from.placement)?;
+        let to_index = self.index_of(to.placement)?;
+        // A closed port has no pipe: the closure is how the user terminates the line, and
+        // silently deleting the hose that was there would lose their work without a word.
+        if self.placements[from_index]
+            .port_closures
+            .contains_key(&from.port)
+            || self.placements[to_index]
+                .port_closures
+                .contains_key(&to.port)
         {
             return None;
         }
@@ -1073,6 +1196,12 @@ impl Document {
     /// The whole splice is one entry in the history. It returns `false` and changes nothing
     /// when any of the joins is refused, so a half-spliced pipe can never be left behind.
     pub fn splice(&mut self, pipe: usize, junction: Placement, attach: Endpoint) -> bool {
+        // A tee's ports are its three joins: a closure on one of them would make the
+        // splice's own `connect` calls fail halfway, and the batch would roll back. Refuse
+        // the seeded closure before touching the pipe.
+        if !junction.port_closures.is_empty() {
+            return false;
+        }
         let Some(connection) = self.connections.get(pipe).cloned() else {
             return false;
         };
@@ -1635,6 +1764,27 @@ impl Document {
         self.redo.clear();
     }
 
+    /// Removes a placement and the pipes it carried, shared by the redo arm.
+    fn drop_placement(&mut self, index: usize, orphans: &[(usize, Connection)]) {
+        if index < self.placements.len() {
+            self.placements.remove(index);
+        }
+        self.connections
+            .retain(|connection| !orphans.iter().any(|(_, orphan)| orphan == connection));
+    }
+
+    /// Removes a circuit and everything it holds, shared by the undo arm.
+    fn forget_circuit(&mut self, circuit: &Circuit) {
+        self.circuits.retain(|candidate| candidate.id != circuit.id);
+        self.placements
+            .retain(|placement| placement.circuit != circuit.id);
+        self.connections
+            .retain(|connection| connection.circuit != circuit.id);
+        if self.active == circuit.id {
+            self.active = self.circuits.first().map_or(0, |candidate| candidate.id);
+        }
+    }
+
     fn apply(&mut self, change: &Change) {
         match change {
             Change::Batch(changes) => {
@@ -1645,18 +1795,7 @@ impl Document {
             Change::Added { index, placement } => {
                 insert_at(&mut self.placements, *index, placement.clone());
             }
-            Change::Removed {
-                index,
-                orphans,
-                placement,
-            } => {
-                if *index < self.placements.len() {
-                    self.placements.remove(*index);
-                }
-                self.connections
-                    .retain(|connection| !orphans.iter().any(|(_, orphan)| orphan == connection));
-                let _ = placement;
-            }
+            Change::Removed { index, orphans, .. } => self.drop_placement(*index, orphans),
             Change::Moved { index, to, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.centre = *to;
@@ -1698,6 +1837,13 @@ impl Document {
             Change::Tubed { index, to, .. } => {
                 if let Some(connection) = self.connections.get_mut(*index) {
                     connection.tube_od_hundredths = *to;
+                }
+            }
+            Change::Closured {
+                index, port, to, ..
+            } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    set_closure(placement, port, to.as_ref());
                 }
             }
             Change::Sourced { index, to, .. } => {
@@ -1798,20 +1944,20 @@ impl Document {
                     connection.tube_od_hundredths = *from;
                 }
             }
+            Change::Closured {
+                index, port, from, ..
+            } => {
+                if let Some(placement) = self.placements.get_mut(*index) {
+                    set_closure(placement, port, from.as_ref());
+                }
+            }
             Change::Sourced { index, from, .. } => {
                 if let Some(placement) = self.placements.get_mut(*index) {
                     placement.source = *from;
                 }
             }
             Change::CircuitAdded { circuit, .. } => {
-                self.circuits.retain(|candidate| candidate.id != circuit.id);
-                self.placements
-                    .retain(|placement| placement.circuit != circuit.id);
-                self.connections
-                    .retain(|connection| connection.circuit != circuit.id);
-                if self.active == circuit.id {
-                    self.active = self.circuits.first().map_or(0, |circuit| circuit.id);
-                }
+                self.forget_circuit(circuit);
             }
             Change::CircuitRemoved { index, circuit, .. } => {
                 insert_at(&mut self.circuits, *index, circuit.clone());
@@ -1832,6 +1978,28 @@ impl Document {
             }
         }
     }
+}
+
+/// Applies or removes one port closure, shared by the undo and redo arms.
+fn set_closure(placement: &mut Placement, port: &str, closure: Option<&String>) {
+    match closure {
+        Some(closure) => {
+            placement
+                .port_closures
+                .insert(port.to_owned(), closure.clone());
+        }
+        None => {
+            placement.port_closures.remove(port);
+        }
+    }
+}
+
+/// `true` when a port id or a closure id is a plausible identifier.
+///
+/// Non-empty, ASCII and at most [`MAX_ID`] bytes: the same shape the file reader enforces,
+/// so a value the document accepts cannot be one the sheet would reject.
+fn port_identifier_is_valid(value: &str) -> bool {
+    !value.is_empty() && value.len() <= MAX_ID && value.is_ascii()
 }
 
 /// `true` when two batches move exactly the same placements, in the same order.
@@ -1932,6 +2100,110 @@ mod tests {
         assert_eq!(document.connections()[0].tube_od_hundredths(), Some(1600));
         assert!(!document.seed_pipe_tube(0, Some(99)));
         assert!(!document.can_undo());
+    }
+
+    #[test]
+    fn setting_a_port_closure_is_one_undo() {
+        let mut document = Document::new();
+        document.place(placement("valve.3_2.spring_return", 10.0, 10.0));
+        let allowed = ["plug.blind", "silencer.pneumatic"];
+
+        assert!(
+            !document.set_port_closure(0, "3", None, &allowed),
+            "nothing to clear is not an edit"
+        );
+        assert!(document.set_port_closure(0, "3", Some("silencer.pneumatic"), &allowed));
+        assert_eq!(document.port_closure(0, "3"), Some("silencer.pneumatic"));
+        // The same closure twice is not an edit.
+        assert!(!document.set_port_closure(0, "3", Some("silencer.pneumatic"), &allowed));
+        // Only an id the caller resolved for the role is accepted.
+        assert!(!document.set_port_closure(0, "3", Some("throttle.fixed"), &allowed));
+        // The shape the file will see is refused here too.
+        let too_long = "x".repeat(MAX_ID + 1);
+        assert!(!document.set_port_closure(0, &too_long, Some("plug.blind"), &allowed));
+        assert!(!document.set_port_closure(0, "3", Some("é"), &allowed));
+        assert!(!document.set_port_closure(0, "3", Some(""), &allowed));
+
+        assert!(document.undo());
+        assert_eq!(document.port_closure(0, "3"), None);
+        assert!(document.redo());
+        assert_eq!(document.port_closure(0, "3"), Some("silencer.pneumatic"));
+
+        // Clearing is one edit and one undo, like setting it.
+        assert!(document.set_port_closure(0, "3", None, &allowed));
+        assert_eq!(document.port_closure(0, "3"), None);
+        assert!(document.undo());
+        assert_eq!(document.port_closure(0, "3"), Some("silencer.pneumatic"));
+        assert!(document.redo());
+        assert_eq!(document.port_closure(0, "3"), None);
+
+        // And setting it again starts a fresh entry, not a silent reuse of the old one.
+        assert!(document.set_port_closure(0, "3", Some("plug.blind"), &allowed));
+        assert_eq!(document.port_closure(0, "3"), Some("plug.blind"));
+    }
+
+    #[test]
+    fn a_pipe_on_a_closed_port_is_refused() {
+        let mut document = Document::new();
+        let a = document.place(placement("valve.3_2.spring_return", 0.0, 0.0));
+        let b = document.place(placement("cylinder.single_acting_20_100", 50.0, 0.0));
+        let (a, b) = (document.placements()[a].id(), document.placements()[b].id());
+        assert!(document.seed_port_closure(0, "2", "plug.blind"));
+        assert!(!document.connect(Endpoint::new(a, "2"), Endpoint::new(b, "1"), Some(1000)));
+        assert!(document.connections().is_empty());
+        // The seed shares the rule, so a file cannot get past what the gesture cannot do.
+        assert!(!document.seed_connect(Endpoint::new(a, "2"), Endpoint::new(b, "1")));
+
+        // The other way round: a pipe already there blocks the closure.
+        assert!(document.connect(Endpoint::new(a, "3"), Endpoint::new(b, "1"), Some(1000)));
+        assert!(!document.set_port_closure(0, "3", Some("plug.blind"), &["plug.blind"]));
+        assert!(document.disconnect(0));
+        assert!(document.set_port_closure(0, "3", Some("plug.blind"), &["plug.blind"]));
+        assert_eq!(document.port_closure(0, "3"), Some("plug.blind"));
+    }
+
+    #[test]
+    fn a_duplicate_keeps_its_closures() {
+        let mut document = Document::new();
+        document.seed(vec![placement("valve.3_2.spring_return", 10.0, 10.0)]);
+        assert!(document.seed_port_closure(0, "3", "silencer.pneumatic"));
+        assert!(!document.can_undo(), "a seed is not an edit");
+
+        let copy = document.duplicate(0, None).expect("a copy");
+        assert_eq!(document.port_closure(copy, "3"), Some("silencer.pneumatic"));
+        let placed = document.place_copy(document.placements()[0].clone(), None);
+        assert_eq!(
+            document.port_closure(placed, "3"),
+            Some("silencer.pneumatic")
+        );
+        assert_ne!(
+            document.placements()[0].id(),
+            document.placements()[copy].id()
+        );
+    }
+
+    #[test]
+    fn a_junction_carries_no_closure() {
+        let mut document = Document::new();
+        let a = document.place(placement("a", 10.0, 10.0));
+        let b = document.place(placement("b", 90.0, 10.0));
+        let c = document.place(placement("c", 10.0, 90.0));
+        let (a, b, c) = (
+            document.placements()[a].id(),
+            document.placements()[b].id(),
+            document.placements()[c].id(),
+        );
+        assert!(document.connect(Endpoint::new(a, "1"), Endpoint::new(b, "1"), Some(1000)));
+
+        let mut junction = placement("junction.tee", 50.0, 10.0);
+        junction
+            .port_closures
+            .insert(String::from("1"), String::from("plug.blind"));
+        assert!(!document.splice(0, junction, Endpoint::new(c, "1")));
+        assert_eq!(document.len(), 3, "the junction was not left behind");
+        assert_eq!(document.connections().len(), 1, "the pipe is whole");
+        assert_eq!(document.connections()[0].from, Endpoint::new(a, "1"));
+        assert_eq!(document.connections()[0].to, Endpoint::new(b, "1"));
     }
 
     #[test]

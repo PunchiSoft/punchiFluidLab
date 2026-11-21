@@ -28,6 +28,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         contact_closed: None,
         orientation: Orientation::NONE,
         designation: Some("1A"),
+        closures: &[],
     }];
     draw_placed(surface, &placed, &[], &catalog, &print_ink(), &[]);
 }
@@ -40,6 +41,12 @@ fn page_with_parts() -> Page {
             ("cylinder.single_acting_20_100", Some("1A")),
             ("supply.compressor", None),
         ],
+        [(
+            "valve.3_2.spring_return",
+            Some("1V1"),
+            "3",
+            "silencer.pneumatic",
+        )],
         [TubeRowInput {
             od: Some(1000),
             class: punchi_fluid_draw::LineClass::Working,
@@ -63,6 +70,8 @@ fn the_sheet_becomes_a_vector_document() {
     assert!(svg.contains("lista de piezas"), "the parts list is text");
     assert!(svg.contains("Cilindro"), "with the catalog name");
     assert!(svg.contains("1A"), "and the designation");
+    assert!(svg.contains("Silenciador"), "the closure row");
+    assert!(svg.contains("escape 3"), "with its parent's port");
     assert!(svg.contains("A circuit"), "the title block");
     assert!(svg.contains("Tubo 10 mm"), "the tube row");
     assert!(svg.contains("3,4 m"), "its drawn length");
@@ -87,6 +96,8 @@ fn the_same_page_is_the_same_text_on_both_devices() {
         "2026-11-12",
         "Cilindro",
         "lista de piezas",
+        "Silenciador",
+        "escape 3",
         "Tubo 10 mm",
     ] {
         assert!(svg.contains(text), "the SVG is missing {text}");

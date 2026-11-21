@@ -116,6 +116,9 @@ class FluidSession : public QObject
     Q_PROPERTY(int checkCount READ checkCount NOTIFY inspectorChanged)
     Q_PROPERTY(QString inspectorText READ inspectorText NOTIFY inspectorChanged)
     Q_PROPERTY(QVariantList inspectorFields READ inspectorFields NOTIFY inspectorChanged)
+    /// The selected component's port closures, read-only: one `{ port, label, closure }`
+    /// row per closed port, for the properties panel.
+    Q_PROPERTY(QVariantList inspectorClosures READ inspectorClosures NOTIFY inspectorChanged)
     /// The sources a selected recorder can chart, as `placement`, `quantity` and `label`.
     Q_PROPERTY(QVariantList chartCandidates READ chartCandidates NOTIFY inspectorChanged)
     /// Identity of the charted placement, or `-1` when the recorder is not bound.
@@ -503,6 +506,25 @@ public:
     bool connectPorts(int fromIndex, const QString &fromPort, int toIndex, const QString &toPort);
     /// Where a port sits, in millimetres of the sheet.
     bool portPoint(int index, const QString &port, QPointF *point) const;
+    /// Where a port sits, in millimetres of the sheet, for QML; a null point when there is
+    /// no such port.
+    Q_INVOKABLE QPointF portPosition(int index, const QString &port) const;
+    /// `true` when the placement belongs to the circuit the sheet shows.
+    bool portInActiveCircuit(int index) const;
+    /// The ports a closure menu offers: supply, working and exhaust, never mechanical or
+    /// electrical, as `{ id, role, label, hasPipe, closure }`.
+    Q_INVOKABLE QVariantList portClosurePorts(int index) const;
+    /// The closure choices a port accepts from the session's catalog, as
+    /// `{ id, name, plug, available }`; `available` follows the port's role.
+    Q_INVOKABLE QVariantList portClosures(int index, const QString &port) const;
+    /// The closure fitted to a port: its catalog id, empty when none.
+    Q_INVOKABLE QString portClosure(int index, const QString &port) const;
+    /// `true` when a pipe ends on the port, so a closure would need it removed first.
+    Q_INVOKABLE bool portHasPipe(int index, const QString &port) const;
+    /// Fits a closure to a port, or clears it with an empty id. One undoable change.
+    Q_INVOKABLE void setPortClosure(int index, const QString &port, const QString &closureId);
+    /// The port's display label, `escape 3`, as the menu and the panel read it.
+    Q_INVOKABLE QString portLabel(int index, const QString &port) const;
     int connectionCount() const;
     /// The view: how far the sheet is magnified and whether its grid shows. Both are
     /// view state, not document state, so neither touches the undo history.
@@ -573,6 +595,8 @@ public:
     bool inspectorOpen() const { return m_inspectorOpen; }
     QString inspectorText() const { return m_inspectorText; }
     QVariantList inspectorFields() const { return m_inspectorFields; }
+    /// The inspected component's closures, one row per closed port; empty when none.
+    QVariantList inspectorClosures() const;
     /// Opens the properties of one placement: what its definition and its own edits say.
     Q_INVOKABLE void inspectComponent(int index);
     /// Opens the properties of the selected component, or of the first valve.

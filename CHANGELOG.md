@@ -6,6 +6,73 @@ publicación.
 
 ## Unreleased
 
+### Cierre de puerto: tapón y silenciador — 2026-11-21
+
+- **Un cierre pertenece al puerto, no a la hoja**: un tapón ciego o un silenciador se
+  monta en un puerto del componente y el documento lo guarda en un mapa
+  `port_closures` (id de puerto → id de catálogo), una entrada por puerto. Un puerto de
+  escape acepta **Sin cierre**, **Tapón** o **Silenciador**; uno de suministro o trabajo
+  acepta **Sin cierre** o **Tapón**; uno mecánico o eléctrico no acepta ninguno y no abre
+  menú. El cierre es una decisión de puerto, no una edición numérica de la definición:
+  tiene su propio `Change::Closured` y **un solo deshacer**.
+- **Un puerto cerrado queda terminado**: el documento rechaza un conducto que acabe en
+  él, el lienzo no empieza uno allí y el lector del archivo marca la hoja como malformada
+  (`a pipe ends on a closed port`). El menú deshabilita **Tapón** y **Silenciador**
+  mientras haya una manguera y pide quitarla primero: no se borra nada en silencio.
+- **El solver solo termina un escape**: un tapón en un escape deja el aire atrapado y su
+  presión no decae; un silenciador sustituye el venteo libre por una restricción con su
+  conductancia declarada; un escape sin cierre sigue venteando libre. Un tapón en un
+  puerto de trabajo o suministro no cambia la red —el puerto ya estaba sellado— y su
+  efecto es el rechazo del conducto, el dibujo y la fila de piezas. Una definición de
+  cierre que no se puede resolver **no adivina**: mantiene el borde libre y se reporta.
+- **El cierre se dibuja en el puerto**, fuera del cuerpo y sobre el borde de salida, con
+  el símbolo ISO 1219 propio de la definición (la barra del tapón, el cono del
+  silenciador). Su propia numeración `1` **no se dibuja** para que no parezca un
+  componente etiquetado; la numeración del puerto anfitrión sigue visible y se mantiene
+  libre de la caja del cierre. La huella dibujada crece con el cierre y el cierre no es un
+  elemento seleccionable con anillo propio.
+- **La lista de piezas nombra el padre y el puerto**: una fila plana tras los componentes
+  y antes de los tubos, por ejemplo `Silenciador · 1V1 · escape 3` o
+  `Tapón ciego · 1V1 · escape 5`; dos válvulas con la misma etiqueta y el mismo puerto
+  comparten fila con cantidad 2. `MAX_ROWS` cuenta componentes, después cierres y después
+  tubos, y cada clase tiene su contador de omitidos.
+- **Formato 14**: `StoredPlacement.port_closures` es opcional y se omite cuando está
+  vacío, así que una hoja de formato 13 se lee con todos los puertos abiertos y una de
+  formato 14 sin cierres solo difiere en el número de versión. Los límites: `MAX_PORTS`
+  (64) por componente en el catálogo y en el archivo, y un id de puerto o de cierre no
+  vacío, ASCII y de 128 bytes como máximo (`MAX_ID`); cada límite tiene su prueba de uno
+  por encima.
+- **El menú de puerto es no modal**: una **pulsación repetida** sobre un puerto (doble
+  clic) o **`Alt+C`** sobre el componente seleccionado abre un `Popup` anclado al puerto,
+  con el nombre del puerto (`escape 3`), un selector de los puertos cerrables y las
+  opciones **Sin cierre / Tapón / Silenciador**, la actual marcada con una marca y texto,
+  y cierre con `Esc` o un clic fuera. La primera pulsación sigue armando el conducto; la
+  segunda se atiende **antes** del gesto de tubo, y soltar donde se pulsó ya no intenta
+  conectar el puerto consigo mismo. El panel **Propiedades** gana un bloque de solo
+  lectura **Cierres de puerto** y se refresca con el cambio, sin una segunda inspección.
+- **La paleta deja de ofrecer los dos cierres** como componentes: `plug.blind` y
+  `silencer.pneumatic` son definiciones de cierre y el menú las ajusta a un puerto. Siguen
+  en el catálogo del ABI —con su índice intacto— para que una hoja antigua que ya coloca
+  uno cargue y simule como antes; el filtro vive en `readCatalog()`, no en QML, y el
+  recuento y la búsqueda del panel leen la misma lista.
+- **ABI 12**: enumeración de puertos y roles, consulta y cambio de cierre, consulta de
+  manguera en el puerto y enumeración de las definiciones de cierre con la sesión (para
+  incluir un catálogo de usuario). Un rechazo devuelve un `PF_ERR_*` negativo con el
+  mensaje en `last_error`; un id vacío quita el cierre; un puerto eléctrico o mecánico lo
+  rechaza.
+- **La conexión eléctrica queda fuera y diferida como P-026**: un puerto eléctrico no
+  ofrece cierre, el menú lo oculta y no se escribe fila de piezas. No se usa, arregla,
+  esconde ni prueba aquí.
+- **La cadena es P-021b**: el regulador de caudal, el conjunto silenciador + regulador y
+  el menú completo siguen en su propio nodo, con el siguiente formato libre y una
+  migración explícita del id único a una cadena de un elemento. P-021a no promete el 15.
+- **Evidencia**: las pruebas del documento, el formato, el solver, el dibujo, el check, la
+  exportación y el ABI; los pasos `close: …` de `--selftest` (26 sondas de cierre, 0
+  fallos); `--check-qml`, `--check-theme` y `--check-layout` en verde; la página de 300 dpi
+  con las filas `Silenciador · 1V1 · escape 3` y `Tapón ciego · 1V1 · escape 5`;
+  las capturas en claro y oscuro del cierre dibujado en el puerto con la numeración
+  visible; `./scripts-dev/check.sh`.
+
 ### Ventana: el ribbon colapsa a 1280 — 2026-11-21
 
 - La cinta se pliega a **1280 px de ancho o menos**, no a 1240: en esa medida la fila de

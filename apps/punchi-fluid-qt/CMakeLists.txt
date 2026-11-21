@@ -77,6 +77,7 @@ qt_add_qml_module(punchi-fluid
         PanelToggle.qml
         PaperCombo.qml
         PaperPreview.qml
+        PortClosureMenu.qml
         RecentCombo.qml
         RibbonBar.qml
         RibbonButton.qml

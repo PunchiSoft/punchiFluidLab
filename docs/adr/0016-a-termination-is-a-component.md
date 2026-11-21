@@ -1,6 +1,6 @@
 # 0016 — A termination is a component: a plug closes, a silencer vents
 
-- **Status:** accepted
+- **Status:** accepted; amended by [0033](0033-a-port-closure-belongs-to-the-port.md)
 - **Date:** 2026-11-12
 - **Context crates:** `punchi-fluid-catalog`, `punchi-fluid-solver`, `punchi-fluid-check`, `punchi-fluid-ffi`
 

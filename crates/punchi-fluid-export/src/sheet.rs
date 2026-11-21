@@ -170,32 +170,83 @@ fn draw_parts(surface: &mut dyn Surface, page: &Page) {
         );
         y += 4.4;
     }
-    // The tubes close the list: one row per size and class, with the length of the route
-    // the drawing shows. The note says what that length is, because a reader must not take
-    // it for a cut list with a bend allowance it does not have.
-    for row in &parts.tubes {
+    draw_closure_rows(surface, parts, quantity_x, name_x, &mut y);
+    draw_tube_rows(surface, parts, quantity_x, name_x, &mut y);
+}
+
+/// Draws the fitted closures and their cut note, from the current vertical position.
+fn draw_closure_rows(
+    surface: &mut dyn Surface,
+    parts: &crate::parts::PartsList,
+    quantity_x: f32,
+    name_x: f32,
+    y: &mut f32,
+) {
+    // A closure is a fitted accessory, not a free placement: its row names the closure, the
+    // component that carries it and the port, in the same columns as the components.
+    for row in &parts.closures {
         surface.text(
-            Pt::new(quantity_x, y),
+            Pt::new(quantity_x, *y),
+            &row.quantity.to_string(),
+            VALUE,
+            Colour::BLACK,
+            Anchor::Start,
+        );
+        surface.text(
+            Pt::new(name_x, *y),
             &row.text(),
             LABEL,
             Colour::BLACK,
             Anchor::Start,
         );
-        y += 4.4;
+        *y += 4.4;
+    }
+    if parts.omitted_closures > 0 {
+        surface.text(
+            Pt::new(name_x, *y),
+            &format!("… y {} cierres más", parts.omitted_closures),
+            LABEL,
+            Colour::new(90, 90, 90),
+            Anchor::Start,
+        );
+        *y += 4.4;
+    }
+}
+
+/// Draws the tube rows and their cut-list note, from the current vertical position.
+fn draw_tube_rows(
+    surface: &mut dyn Surface,
+    parts: &crate::parts::PartsList,
+    quantity_x: f32,
+    name_x: f32,
+    y: &mut f32,
+) {
+    // The tubes close the list: one row per size and class, with the length of the route
+    // the drawing shows. The note says what that length is, because a reader must not take
+    // it for a cut list with a bend allowance it does not have.
+    for row in &parts.tubes {
+        surface.text(
+            Pt::new(quantity_x, *y),
+            &row.text(),
+            LABEL,
+            Colour::BLACK,
+            Anchor::Start,
+        );
+        *y += 4.4;
     }
     if !parts.tubes.is_empty() {
         surface.text(
-            Pt::new(name_x, y),
+            Pt::new(name_x, *y),
             "longitud = recorrido dibujado, sin desvíos, racores ni merma",
             LABEL * 0.8,
             MUTED,
             Anchor::Start,
         );
-        y += 3.6;
+        *y += 3.6;
     }
     if parts.omitted_tubes > 0 {
         surface.text(
-            Pt::new(name_x, y),
+            Pt::new(name_x, *y),
             &format!("… y {} tubos más", parts.omitted_tubes),
             LABEL,
             Colour::new(90, 90, 90),
@@ -351,6 +402,7 @@ mod tests {
                 ("cylinder.single_acting_20_100", Some("1A2")),
                 ("supply.compressor", None),
             ],
+            [],
             [],
         ));
         let block = page.title_block.clone().unwrap_or_default();

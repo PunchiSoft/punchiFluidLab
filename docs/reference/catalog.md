@@ -44,6 +44,17 @@ The `behaviour` is the one closed enum, and a new variant is the exception that 
 (ADR 0002, ADR 0008). Everything a file can express with the existing behaviours is a file,
 not code.
 
+### The two closures are definitions, not palette placements
+
+`plug.blind` and `silencer.pneumatic` are **closure definitions**: a placement fits one to a
+port (an exhaust accepts a silencer, a pneumatic port accepts a plug), and the sheet stores
+the choice per port in `port_closures` ([ADR 0033](../adr/0033-a-port-closure-belongs-to-the-port.md)).
+They are not offered as tiles in the palette, because a closure is part of the port and not
+a box with a hose of its own. They remain in the catalog and in the ABI catalog, so an old
+sheet that already placed one still opens, simulates and prints it as the component it was
+saved as. The roles and the choices are in [ui-ux.md](../ui-ux.md) and
+[sheet-format.md](sheet-format.md).
+
 ## What the loader checks
 
 - `schema` is 2 or 3; an unknown key is an error, not a default (a typo in a key is caught).

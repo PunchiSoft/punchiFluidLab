@@ -128,6 +128,7 @@ fn write_review_images(catalog: &Catalog) {
                     contact_closed: None,
                     orientation: punchi_fluid_draw::Orientation::NONE,
                     designation: None,
+                    closures: &[],
                 };
                 punchi_fluid_draw::draw_placed(&mut surface, &[placed], &[], catalog, &ink, &[]);
             } else {

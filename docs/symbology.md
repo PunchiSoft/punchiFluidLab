@@ -238,6 +238,20 @@ checked and reads nothing.
 - **Neither symbol claims a property the model does not have.** The plug is the closed
   port, not a valve; the silencer's file states a conductance and the review states that
   the noise is not modelled.
+- **A closure is drawn at the port it belongs to**, outside the host body and along the
+  port's outward edge, with the closure definition's own hand-drawn symbol. The closure is
+  a small accessory box (10 mm) whose own port faces the host, so the plug's bar or the
+  silencer's cone starts at the connection and points away from the body; it grows the
+  drawn footprint but is not a separate selectable item and has no selection ring of its
+  own. The closure's **own port numeral is suppressed** — the plug or the cone must not
+  read as a labelled component — while the **host port's numeral stays visible** and is
+  kept clear of the closure box. The closure is drawn after the body, on top of the port
+  stub, never underneath it.
+- **Manual review, once per closure-at-a-port change.** The symbol lint does not inspect
+  this composite: the reviewer checks in light and dark, and on the 300 dpi page, that the
+  closure sits outside the body on the port's edge, that the host numeral is legible and
+  not covered, and that the closure's own `1` is absent. The captures are the ones named
+  in the P-021a evidence; the two source symbols keep their own review records.
 
 ### The electrical control circuit
 

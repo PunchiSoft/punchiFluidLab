@@ -34,6 +34,7 @@ fn sheet() -> Sheet {
                 mirrored: false,
                 designation: None,
                 source: None,
+                port_closures: BTreeMap::default(),
             },
             StoredPlacement {
                 id: 2,
@@ -51,6 +52,7 @@ fn sheet() -> Sheet {
                 mirrored: true,
                 designation: Some(String::from("1A1")),
                 source: None,
+                port_closures: BTreeMap::default(),
             },
         ],
         pipe: vec![StoredPipe {
@@ -120,7 +122,7 @@ fn the_tube_size_round_trips_and_a_format_twelve_sheet_reads_as_unspecified() {
     current.pipe[0].tube_od_hundredths = Some(1000);
     let text = current.to_json().expect("valid");
     assert!(text.contains("\"tube_od_hundredths\": 1000"), "{text}");
-    let parsed = Sheet::parse(&text).expect("a format 13 sheet reads");
+    let parsed = Sheet::parse(&text).expect("a format 14 sheet reads");
     assert_eq!(parsed.pipe[0].tube_od_hundredths, Some(1000));
     assert_eq!(parsed.format, SHEET_VERSION);
 
@@ -130,7 +132,7 @@ fn the_tube_size_round_trips_and_a_format_twelve_sheet_reads_as_unspecified() {
     let text = older
         .to_json()
         .expect("valid")
-        .replace("\"format\": 13", "\"format\": 12");
+        .replace("\"format\": 14", "\"format\": 12");
     assert!(!text.contains("tube_od_hundredths"), "{text}");
     let read = Sheet::parse(&text).expect("a format 12 sheet reads");
     assert_eq!(read.format, SHEET_VERSION, "reading it upgrades it");
@@ -177,6 +179,107 @@ fn a_tube_outside_the_bounds_is_refused() {
     assert!(sheet.validate().is_ok());
     sheet.pipe[0].tube_od_hundredths = Some(100);
     assert!(sheet.validate().is_ok());
+}
+
+#[test]
+fn the_closure_round_trips_and_an_old_sheet_has_none() {
+    let mut sheet = sheet();
+    sheet.placement[1]
+        .port_closures
+        .insert(String::from("3"), String::from("silencer.pneumatic"));
+    let text = sheet.to_json().expect("valid");
+    assert!(text.contains("\"port_closures\""), "{text}");
+    assert!(text.contains("\"3\": \"silencer.pneumatic\""), "{text}");
+    let parsed = Sheet::parse(&text).expect("a format 14 sheet reads");
+    assert_eq!(parsed, sheet);
+
+    // A placement with no closure writes no key at all, so a sheet from before the field
+    // looks the same after this build saves it.
+    let mut open = self::sheet();
+    open.placement[1].port_closures.clear();
+    let text = open.to_json().expect("valid");
+    assert!(!text.contains("port_closures"), "{text}");
+    let older = text.replace("\"format\": 14", "\"format\": 13");
+    let read = Sheet::parse(&older).expect("a format 13 sheet reads");
+    assert_eq!(read.format, SHEET_VERSION, "reading it upgrades it");
+    assert!(read.placement[1].port_closures.is_empty());
+}
+
+#[test]
+fn a_port_closure_outside_the_bounds_is_refused() {
+    let mut sheet = sheet();
+    let too_long = "x".repeat(MAX_ID + 1);
+    sheet.placement[0]
+        .port_closures
+        .insert(too_long.clone(), String::from("plug.blind"));
+    assert!(matches!(sheet.validate(), Err(SheetError::Invalid(_))));
+    sheet.placement[0].port_closures.clear();
+    sheet.placement[0]
+        .port_closures
+        .insert(String::from("é"), String::from("plug.blind"));
+    assert!(sheet.validate().is_err(), "a non-ASCII port id");
+    sheet.placement[0].port_closures.clear();
+    sheet.placement[0]
+        .port_closures
+        .insert(String::from("3"), String::new());
+    assert!(sheet.validate().is_err(), "an empty closure id");
+    sheet.placement[0].port_closures.clear();
+    sheet.placement[0]
+        .port_closures
+        .insert(String::from("3"), too_long);
+    assert!(sheet.validate().is_err(), "a closure id that is too long");
+
+    // At most MAX_PORTS entries; the map itself already prevents a second entry for one
+    // port. One past the limit is refused, the limit itself is accepted.
+    let mut bounded = self::sheet();
+    for index in 0..=MAX_PORTS {
+        bounded.placement[0]
+            .port_closures
+            .insert(format!("p{index}"), String::from("plug.blind"));
+    }
+    assert!(matches!(bounded.validate(), Err(SheetError::Invalid(_))));
+    bounded.placement[0]
+        .port_closures
+        .remove(&format!("p{MAX_PORTS}"));
+    assert!(bounded.validate().is_ok(), "{:?}", bounded.validate());
+
+    // A JSON object with the same port twice is refused by the reader instead of silently
+    // keeping the last value.
+    let text = self::sheet().to_json().expect("valid");
+    let duplicate = text.replace(
+        "\"catalog\": \"supply.compressor\"",
+        "\"catalog\": \"supply.compressor\", \"port_closures\": \
+         {\"3\": \"plug.blind\", \"3\": \"silencer.pneumatic\"}",
+    );
+    assert!(matches!(
+        Sheet::parse(&duplicate),
+        Err(SheetError::Parse(_))
+    ));
+}
+
+#[test]
+fn a_pipe_on_a_closed_port_is_a_malformed_sheet() {
+    let mut sheet = sheet();
+    // The default pipe ends on component 1, port 1; close exactly that port.
+    sheet.placement[0]
+        .port_closures
+        .insert(String::from("1"), String::from("plug.blind"));
+    assert!(matches!(
+        sheet.validate(),
+        Err(SheetError::Invalid(message)) if message.contains("closed port")
+    ));
+
+    // A format-13 sheet has no closures key, so the same pipe is on an open port and is
+    // still valid; only a format-14 closure makes it malformed.
+    let mut open = sheet;
+    open.placement[0].port_closures.clear();
+    let text = open
+        .to_json()
+        .expect("valid")
+        .replace("\"format\": 14", "\"format\": 13");
+    let read = Sheet::parse(&text).expect("a format 13 sheet with the pipe reads");
+    assert!(read.placement[0].port_closures.is_empty());
+    assert_eq!(read.pipe.len(), 1);
 }
 
 #[test]
@@ -323,7 +426,7 @@ fn a_version_nine_sheet_gains_the_industrial_model() {
     // Format 9 already had the twelve fields but no model or visibility.
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 13", "\"format\": 9")
+        .replace("\"format\": 14", "\"format\": 9")
         .replace("\"model\": \"industrial\",", "");
     let read = Sheet::parse(&json).expect("a version 9 sheet reads");
     assert_eq!(read.format, SHEET_VERSION);
@@ -339,7 +442,7 @@ fn a_version_eleven_sheet_reads_its_retired_model_names() {
         let json = sheet()
             .to_json()
             .expect("valid")
-            .replace("\"format\": 13", "\"format\": 11")
+            .replace("\"format\": 14", "\"format\": 11")
             .replace(
                 "\"model\": \"industrial\",",
                 &format!("\"model\": \"{retired}\","),
@@ -432,7 +535,7 @@ fn the_block_position_is_checked_and_round_trips() {
 fn a_version_ten_sheet_maps_the_old_positions_and_gains_the_note() {
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 13", "\"format\": 10")
+        .replace("\"format\": 14", "\"format\": 10")
         .replace("\"position\": \"bottom-right\"", "\"position\": \"left\"");
     let read = Sheet::parse(&json).expect("a version 10 sheet reads");
     assert_eq!(read.circuits[0].block.position, "bottom-right");

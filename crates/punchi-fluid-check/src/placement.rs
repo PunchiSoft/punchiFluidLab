@@ -63,7 +63,7 @@ pub(crate) fn placement_faults(
     findings
 }
 
-fn contains_rect(outer: Rect, inner: Rect) -> bool {
+pub(crate) fn contains_rect(outer: Rect, inner: Rect) -> bool {
     inner.min.x >= outer.min.x
         && inner.min.y >= outer.min.y
         && inner.max.x <= outer.max.x
@@ -75,7 +75,7 @@ fn contains_rect(outer: Rect, inner: Rect) -> bool {
 /// The bounds are compared before they are turned into a `Rect`, because building one from
 /// two corners normalises them: two boxes far apart would produce a rectangle that spans
 /// the gap between them and a positive area out of nothing.
-fn intersect(a: Rect, b: Rect) -> Option<Rect> {
+pub(crate) fn intersect(a: Rect, b: Rect) -> Option<Rect> {
     let min_x = a.min.x.max(b.min.x);
     let min_y = a.min.y.max(b.min.y);
     let max_x = a.max.x.min(b.max.x);

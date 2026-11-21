@@ -1110,8 +1110,20 @@ pub fn draw_valve(
     active: usize,
     ink: &Ink,
 ) {
+    draw_valve_with(surface, rect, definition, active, ink, true);
+}
+
+/// The valve, with or without the numerals its ports declare.
+fn draw_valve_with(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    definition: &ComponentDefinition,
+    active: usize,
+    ink: &Ink,
+    numerals: bool,
+) {
     let Some([bx, by, bw, bh]) = definition.body else {
-        draw_flat(surface, rect, definition, ink);
+        draw_flat_with(surface, rect, definition, ink, numerals);
         return;
     };
     #[allow(clippy::cast_possible_truncation)]
@@ -1152,7 +1164,7 @@ pub fn draw_valve(
             surface.line(&[from, to], Stroke::new(LINE, ink.line));
         }
         draw_connection(surface, from, rect, ink);
-        if port.show_numeral {
+        if numerals && port.show_numeral {
             draw_numeral(
                 surface,
                 rect,
@@ -1310,6 +1322,17 @@ pub fn draw_flat(
     definition: &ComponentDefinition,
     ink: &Ink,
 ) {
+    draw_flat_with(surface, rect, definition, ink, true);
+}
+
+/// The flat symbol, with or without the numerals its ports declare.
+fn draw_flat_with(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    definition: &ComponentDefinition,
+    ink: &Ink,
+    numerals: bool,
+) {
     draw_primitives(surface, rect, &definition.symbol, ink.line, LINE);
     // A junction is a filled dot and nothing else (ISO 1219-1): its ports are one point, so
     // three numerals would be drawn on top of each other and read as a smudge.
@@ -1331,7 +1354,7 @@ pub fn draw_flat(
             rect,
             ink,
         );
-        if port.show_numeral {
+        if numerals && port.show_numeral {
             draw_numeral(
                 surface,
                 rect,
@@ -1513,11 +1536,40 @@ pub fn draw_component(
     extension: f32,
     ink: &Ink,
 ) {
+    draw_component_with(surface, rect, definition, active, extension, ink, true);
+}
+
+/// The same symbol without the numerals of its own ports.
+///
+/// A closure fitted to a host port is an accessory of that port, not a component with
+/// labels of its own: its `1` would sit beside the host's numeral and read as a second
+/// component. The host keeps its numerals; only the closure's are silent.
+pub fn draw_component_without_numerals(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    definition: &ComponentDefinition,
+    active: usize,
+    extension: f32,
+    ink: &Ink,
+) {
+    draw_component_with(surface, rect, definition, active, extension, ink, false);
+}
+
+/// The one dispatcher, with the numeral decision explicit.
+fn draw_component_with(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    definition: &ComponentDefinition,
+    active: usize,
+    extension: f32,
+    ink: &Ink,
+    numerals: bool,
+) {
     if definition.body.is_some() {
-        draw_valve(surface, rect, definition, active, ink);
+        draw_valve_with(surface, rect, definition, active, ink, numerals);
         return;
     }
-    draw_flat(surface, rect, definition, ink);
+    draw_flat_with(surface, rect, definition, ink, numerals);
     if definition.kinematics == Kinematics::LinearActuator {
         draw_cylinder(surface, rect, definition, extension, ink);
     }

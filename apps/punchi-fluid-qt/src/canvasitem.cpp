@@ -329,12 +329,35 @@ void SchematicItem::mousePressEvent(QMouseEvent *event)
             }
         }
         // A port under the pointer is the start of a pipe, exactly as the reference does
-        // it: press on one connection, drag, release on another.
+        // it: press on one connection, drag, release on another. A repeated press is the
+        // port menu instead, and it comes before the pipe start so the second press never
+        // begins a second gesture; a drag the first press started is cancelled here.
         int portIndex = -1;
         QString port;
-        if (m_session->portAt(sheet.x(), sheet.y(), kPortToleranceMm, &portIndex, &port)) {
+        const bool overPort =
+            m_session->portAt(sheet.x(), sheet.y(), kPortToleranceMm, &portIndex, &port)
+            && m_session->portInActiveCircuit(portIndex);
+        if (overPort) {
+            // Mechanical and electrical ports take no closure, so a repeated press there
+            // opens nothing; it still must not fall through into a pipe start.
+            const bool closable = !m_session->portClosures(portIndex, port).isEmpty();
+            if (turned) {
+                m_connecting = -1;
+                m_connectPort.clear();
+                m_lastPressMs = 0;
+                unsetCursor();
+                update();
+                if (closable) {
+                    emit portMenuRequested(portIndex, port, event->position());
+                }
+                event->accept();
+                return;
+            }
+            // A closed port is not a pipe target: the document refuses the pipe, so the
+            // canvas does not start one the user cannot complete.
             QPointF start;
-            if (m_session->portPoint(portIndex, port, &start)) {
+            if (m_session->portClosure(portIndex, port).isEmpty()
+                && m_session->portPoint(portIndex, port, &start)) {
                 m_connecting = portIndex;
                 m_connectPort = port;
                 m_connectFrom = start;
@@ -703,7 +726,12 @@ void SchematicItem::mouseReleaseEvent(QMouseEvent *event)
         QString targetPort;
         if (m_session
             && m_session->portAt(sheet.x(), sheet.y(), kPortToleranceMm, &targetIndex, &targetPort)) {
-            m_session->connectPorts(m_connecting, m_connectPort, targetIndex, targetPort);
+            // A release on the port the press started from is not a connection: a click
+            // without a drag must not flash "cannot join a port to itself" in the status
+            // bar, and the first release of a double click is exactly that click.
+            if (targetIndex != m_connecting || targetPort != m_connectPort) {
+                m_session->connectPorts(m_connecting, m_connectPort, targetIndex, targetPort);
+            }
         } else if (m_session) {
             // No port under the pointer: a hose released on a hose leaves a T where it
             // landed, which is the gesture the reference documents. A crossing is not a

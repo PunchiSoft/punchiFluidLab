@@ -168,6 +168,13 @@ impl Catalog {
 /// buffer; 6 000 samples is 60 s at 100 Hz, or a minute at ten times the default rate.
 pub const MAX_RECORDER_SAMPLES: usize = 6_000;
 
+/// Most ports a component definition may carry.
+///
+/// The document stores one node per port and one closure per port, so a file that asks
+/// for thousands of ports would multiply both without adding a usable symbol. 64 is far
+/// beyond any hand-drawn component and still bounds the maps the sheet reads.
+pub const MAX_PORTS: usize = 64;
+
 /// Checks that a parsed file describes a component that can be simulated.
 fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     check_identity(definition, path)?;
@@ -575,6 +582,15 @@ fn check_identity(definition: &ComponentDefinition, path: &Path) -> Result<(), C
 }
 
 fn check_ports(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
+    if definition.port.len() > MAX_PORTS {
+        return Err(invalid(
+            path,
+            &format!(
+                "a component may have at most {MAX_PORTS} ports, found {}",
+                definition.port.len()
+            ),
+        ));
+    }
     if definition.port.is_empty() && !matches!(definition.behaviour, Behaviour::Recorder { .. }) {
         return Err(invalid(path, "a component needs at least one port"));
     }

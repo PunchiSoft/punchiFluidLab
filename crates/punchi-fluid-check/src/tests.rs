@@ -405,6 +405,7 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
             contact_closed: None,
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
+            closures: &[],
         })
         .collect();
     let pipes: Vec<Pipe<'_>> = document
@@ -466,5 +467,117 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
             FindingKind::PipeThroughComponent | FindingKind::OverlappingPipes
         )),
         "the tee has no crossing to report: {findings:?}"
+    );
+}
+
+#[test]
+fn a_silencer_on_a_non_exhaust_port_is_a_finding() {
+    let mut document = Document::new();
+    place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
+    assert!(document.seed_port_closure(0, "2", "silencer.pneumatic"));
+    let findings = check(&document, &catalog(), sheet(), 0);
+    let bad: Vec<&Finding> = findings
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::BadPortClosure)
+        .collect();
+    assert_eq!(
+        bad.len(),
+        1,
+        "working port 2 cannot carry a silencer: {findings:?}"
+    );
+    assert_eq!(bad[0].component, Some(0));
+    assert_eq!(bad[0].pipe, None);
+    // Port 1 is still open; the closed working port 2 is terminated and must not add a
+    // second open report.
+    let open = findings
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::OpenConnection)
+        .count();
+    assert_eq!(
+        open, 1,
+        "the closed working port is still reported open: {findings:?}"
+    );
+}
+
+#[test]
+fn a_plug_terminates_a_working_port_and_is_not_reported_open() {
+    let mut document = Document::new();
+    place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
+    let before = check(&document, &catalog(), sheet(), 0)
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::OpenConnection)
+        .count();
+    assert!(document.seed_port_closure(0, "2", "plug.blind"));
+    let after = check(&document, &catalog(), sheet(), 0);
+    let open = after
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::OpenConnection)
+        .count();
+    assert_eq!(open, before - 1, "{after:?}");
+    assert!(
+        !after
+            .iter()
+            .any(|finding| finding.kind == FindingKind::BadPortClosure),
+        "a plug fits every pneumatic port: {after:?}"
+    );
+}
+
+#[test]
+fn an_electrical_port_has_no_closure() {
+    let mut document = Document::new();
+    place(&mut document, "electrical.button.mushroom", 60.0, 60.0);
+    assert!(document.seed_port_closure(0, "1", "plug.blind"));
+    let findings = check(&document, &catalog(), sheet(), 0);
+    assert!(
+        findings
+            .iter()
+            .any(|finding| finding.kind == FindingKind::BadPortClosure),
+        "an electrical terminal cannot be capped: {findings:?}"
+    );
+}
+
+#[test]
+fn a_port_closure_outside_the_sheet_is_reported_at_its_box() {
+    let mut document = Document::new();
+    // The valve's own box ends on the sheet's bottom edge; its exhaust closure hangs below
+    // it and leaves the paper, which the component rule alone cannot see.
+    place(&mut document, "valve.3_2.spring_return", 100.0, 122.0);
+    assert!(document.seed_port_closure(0, "3", "silencer.pneumatic"));
+    let findings = check(&document, &catalog(), sheet(), 0);
+    let outside: Vec<&Finding> = findings
+        .iter()
+        .filter(|finding| finding.kind == FindingKind::OutsideSheet && finding.component == Some(0))
+        .collect();
+    assert_eq!(
+        outside.len(),
+        1,
+        "the component is inside, the closure is not: {findings:?}"
+    );
+    assert!(
+        outside[0].at.y > 130.0,
+        "the closure point is off the sheet: {:?}",
+        outside[0].at
+    );
+}
+
+#[test]
+fn a_port_closure_under_the_title_block_is_reported() {
+    let mut document = Document::new();
+    place(&mut document, "valve.3_2.spring_return", 100.0, 60.0);
+    assert!(document.seed_port_closure(0, "3", "silencer.pneumatic"));
+    // The block starts exactly where the host ends, so only the closure enters it.
+    let block = Rect::from_corners(Pt::new(90.0, 68.0), Pt::new(120.0, 90.0));
+    let findings = check_with_reserved(&document, &catalog(), sheet(), 0, &[block]);
+    assert!(
+        findings.iter().any(|finding| {
+            finding.kind == FindingKind::UnderTitleBlock && finding.component == Some(0)
+        }),
+        "the closure enters the block: {findings:?}"
+    );
+    assert!(
+        !check(&document, &catalog(), sheet(), 0)
+            .iter()
+            .any(|finding| finding.kind == FindingKind::UnderTitleBlock),
+        "without a block there is nothing to enter"
     );
 }

@@ -204,6 +204,31 @@ diameter and shows no reading. The status bar prints `Tubo 10 mm` or
 below the sheet frame, and the parts list names the tube with its drawn length
 ([reference/tube.md](reference/tube.md), [symbology.md](symbology.md#pipe-widths-the-tube)).
 
+**The port menu: a closure belongs to the port.** A blind plug or a silencer is fitted
+to a port, not dropped on the sheet as a component with its own hose. **A repeated press
+on a port** (a double click) opens a non-modal menu anchored at that port; **`Alt+C`** is
+the keyboard path and opens it on the selected component's first closable port. The menu
+names the port in the display form (`escape 3`), lists the placement's closable ports so
+one menu serves the whole component, and offers **Sin cierre**, **Tapón** and — only on an
+exhaust — **Silenciador**. The current choice is marked with a check **and** text, and
+choosing another is one undo. `Esc` or a click outside closes it.
+
+- **A hose wins.** While the port carries a pipe, **Tapón** and **Silenciador** are
+  disabled and the menu says the hose must be removed first: nothing is deleted silently.
+  The canvas does not start a pipe on a closed port either, and the document refuses the
+  connection with its own message.
+- **Mechanical and electrical ports are excluded.** They have no closure, no menu and no
+  parts row; the electrical connection waits for P-026, and the menu hides the section
+  rather than showing a choice that does nothing.
+- **A single press still starts a pipe.** The first press arms the pipe; a release that
+  ends where it started is a no-op, not a self-connection error. The repeated press is
+  handled before the pipe branch, so the second click never begins a second gesture.
+- **The Propiedades panel only reads the closures.** For the selected component it shows
+  a **Cierres de puerto** block with one line per port, `escape 3 · silenciador`; the
+  editing stays in the menu, and the panel changes when the menu applies a choice without
+  a second inspection call. The keyboard path is `Alt+C`, disabled while a text field or
+  the start view owns the keyboard.
+
 **Repartir measures gaps between symbol boxes, not centres.** A wide cylinder and a narrow
 valve look evenly spaced on centres and are not; the command follows what a reader sees and
 keeps the outermost symbols where they are, so the sheet keeps its extent. Three or more
@@ -274,6 +299,13 @@ The panel that lists the reasons for each skipped file is still target.
   field; the footer names the folder in use and the number of skipped files.
 - The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
+- **A closure is not a palette entry.** `plug.blind` and `silencer.pneumatic` are closure
+  definitions: the menu fits one to a port and the file stores the choice per port, so the
+  palette hides them instead of offering a box with its own hose. They stay in the ABI
+  catalog, so an old sheet that already places one still opens and simulates; only the
+  palette row is gone, and the catalog index the row would have kept is untouched.
+  The filter is in the session (`readCatalog`), not in QML, so the row index and the search
+  count cannot drift ([ADR 0033](adr/0033-a-port-closure-belongs-to-the-port.md)).
 - Search filters by `name`, `id` and a few synonyms; `Ctrl+F` focuses it; typing
   selects the first match and `Enter` starts placing it.
 - The footer names the folder the core reads and the skipped files; a panel that lists the
@@ -511,8 +543,9 @@ schematic simulator lives by, and the one the reference tool uses:
   ports and positions — and edits the numbers the model uses: supply pressure, valve or
   throttle conductance, and a cylinder's stroke, bore, rod and moving mass. Apply is one
   undo entry and the model is rebuilt from the document, so a larger cylinder in one
-  circuit leaves the catalog alone. Name, summary, actuation/spring and the remaining
-  cylinder parameters are still read-only; the ledger in
+  circuit leaves the catalog alone. A read-only **Cierres de puerto** block lists each port
+  with a closure, `escape 3 · silenciador`; the edit itself is the port menu. Name, summary,
+  actuation/spring and the remaining cylinder parameters are still read-only; the ledger in
   [capabilities.md](capabilities.md) names them.
 
 - Infinite scrollable surface with a configurable grid. The **Configurar página** panel

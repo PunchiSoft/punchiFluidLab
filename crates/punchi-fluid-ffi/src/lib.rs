@@ -37,7 +37,7 @@ use std::fmt::Write as _;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
-use punchi_fluid_catalog::{Behaviour, Catalog, PortRole};
+use punchi_fluid_catalog::{Behaviour, Catalog, ComponentDefinition, PortRole};
 use punchi_fluid_check::check_with_reserved;
 use punchi_fluid_core::paper::{
     Margins as PaperMargins, Orientation as PaperOrientation, PaperSize, Sheet as PaperSheet,
@@ -63,7 +63,9 @@ use punchi_fluid_draw::{Layout, Orientation, dashes};
 use punchi_fluid_file::paper::StoredSheet;
 use punchi_fluid_file::recent::RecentList;
 use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
-use punchi_fluid_solver::network::{Network, NetworkPart, PartBehaviour, PortAddress};
+use punchi_fluid_solver::network::{
+    Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
+};
 use punchi_fluid_solver::pneumatic::Telemetry;
 
 mod templates;
@@ -384,7 +386,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 11;
+pub const PF_ABI_VERSION: u32 = 12;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -1084,13 +1086,17 @@ impl PfSession {
         preview_calls.clear();
         preview_points.clear();
         preview_text.clear();
+        let closures = closure_pairs(&document, catalog);
         let (placed, pipes) = scene(
             &document,
             catalog,
-            None,
-            &[],
-            document.active_circuit(),
+            SceneState {
+                system: None,
+                placement_part: &[],
+                circuit: document.active_circuit(),
+            },
             &empty_charts,
+            &closures,
             ContactStates {
                 contacts: &empty_contacts,
                 relays: &empty_relays,
@@ -1376,9 +1382,47 @@ impl PfSession {
                 PortAddress::new(to, connection.to.port.clone()),
             ));
         }
+        // A closure is a port termination, not a placement of its own. Only an exhaust
+        // gets one: a working or supply port is already sealed without a pipe, so a plug
+        // there would be a silent no-op. An unresolved closure adds no edge; the check is
+        // what reports it, and the port keeps today's boundary.
+        let mut terminations = Vec::new();
+        for (index, placement) in self.document.placements().iter().enumerate() {
+            if placement.circuit != circuit || placement.port_closures.is_empty() {
+                continue;
+            }
+            let Some(part) = part_of.get(index).copied().flatten() else {
+                continue;
+            };
+            let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+                continue;
+            };
+            for (port, closure_id) in &placement.port_closures {
+                let Some(role) = definition
+                    .port
+                    .iter()
+                    .find(|candidate| &candidate.id == port)
+                    .map(|candidate| candidate.role)
+                else {
+                    continue;
+                };
+                if role != PortRole::Exhaust {
+                    continue;
+                }
+                let Some(closure) = self.catalog.get(closure_id) else {
+                    continue;
+                };
+                let termination = match closure.behaviour {
+                    Behaviour::Plug => PortTermination::Closed,
+                    Behaviour::Silencer { conductance } => PortTermination::Vent { conductance },
+                    _ => continue,
+                };
+                terminations.push((PortAddress::new(part, port.clone()), termination));
+            }
+        }
         self.placement_part = part_of;
         self.placement_valve = valve_of;
-        match Network::build(&parts, &pipes) {
+        match Network::build(&parts, &pipes, &terminations) {
             Ok(network) if network.cylinder().is_some() => {
                 self.system = Some(network);
                 self.error = CString::default();
@@ -1910,13 +1954,17 @@ impl PfSession {
         } = self;
 
         let circuit = document.active_circuit();
+        let closures = closure_pairs(document, catalog);
         let (placed, pipes) = scene(
             document,
             catalog,
-            system.as_ref(),
-            placement_part,
-            circuit,
+            SceneState {
+                system: system.as_ref(),
+                placement_part,
+                circuit,
+            },
             charts,
+            &closures,
             ContactStates {
                 contacts,
                 relays,
@@ -1987,6 +2035,7 @@ impl PfSession {
                             placement: source.placement,
                             quantity: source.quantity.as_str().to_owned(),
                         }),
+                    port_closures: placement.port_closures.clone(),
                 }
             })
             .collect();
@@ -2064,6 +2113,7 @@ impl PfSession {
                     Some(punchi_fluid_doc::Source::new(source.placement, quantity))
                 });
                 placement.designation.clone_from(&stored.designation);
+                placement.port_closures.clone_from(&stored.port_closures);
                 placement
             })
             .collect();
@@ -3786,6 +3836,29 @@ pub unsafe extern "C" fn pf_session_active_circuit(session: *const PfSession) ->
     })
 }
 
+/// The circuit one placement belongs to, or a negative error.
+///
+/// The sheet shows one circuit at a time; a front end that wants to act on a placement
+/// compares this with `pf_session_active_circuit` instead of guessing from a hit test.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_component_circuit(
+    session: *const PfSession,
+    index: u32,
+) -> i32 {
+    // SAFETY: the caller upholds the contract.
+    let Some(session) = (unsafe { borrow_shared(session) }) else {
+        return PF_ERR_NULL;
+    };
+    let Some(placement) = session.document.placements().get(index as usize) else {
+        return PF_ERR_MODEL;
+    };
+    i32::try_from(placement.circuit).unwrap_or(PF_ERR_MODEL)
+}
+
 /// Switches the sheet to another circuit. A view change, not an edit.
 ///
 /// # Safety
@@ -4861,73 +4934,90 @@ impl PfSession {
         // its own: the block takes the name of the file being written, which is what the user
         // called the drawing, and the name of the circuit in view.
         let block = export_block(&self.document, target, date);
-        let circuit = self.document.active_circuit();
-        let (placed, pipes) = scene(
-            &self.document,
-            &self.catalog,
-            self.system.as_ref(),
-            &self.placement_part,
-            circuit,
-            &self.charts,
-            ContactStates {
-                contacts: &self.contacts,
-                relays: &self.relays,
-                indicators: &self.indicators,
-            },
-        );
-        let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
-        let mut page = punchi_fluid_export::Page {
-            paper,
-            orientation,
-            margins,
-            parts: if options.flags & PF_EXPORT_PARTS_LIST == 0 {
-                None
-            } else {
-                Some(parts_list(
-                    &self.document,
-                    &self.catalog,
-                    &placed,
-                    &pipes,
-                    circuit,
-                ))
-            },
-            ..punchi_fluid_export::Page::a4(block.clone())
-        };
-        if punchi_fluid_export::drawing_area(&page, &block).is_err() {
-            return self.fail("the page leaves no room for the drawing");
-        }
-        // The renderer takes the block explicitly; keep the page's own copy in step so a
-        // caller that reads the page sees the same fields.
-        page.title_block = Some(block.clone());
-        let draw = |surface: &mut dyn punchi_fluid_draw::Surface, area: punchi_fluid_draw::Rect| {
-            let Some(bounds) = bounds else {
-                return;
-            };
-            // The page hands the drawing the area the frame leaves free; the fit maps the
-            // drawing's own bounds onto it, so a large circuit shrinks instead of being
-            // cropped and a small one stays at its size in the middle of the page.
-            let mut fitted = punchi_fluid_draw::surface::Scaled::fit(surface, bounds, area);
-            punchi_fluid_draw::draw_placed(
-                &mut fitted,
-                &placed,
-                &pipes,
+        // The closure list and the placed list borrow the document and the catalog, so they
+        // live only inside this block; the error is owned and reported after they are gone.
+        let written: Result<(), String> = {
+            let closures = closure_pairs(&self.document, &self.catalog);
+            let circuit = self.document.active_circuit();
+            let (placed, pipes) = scene(
+                &self.document,
                 &self.catalog,
-                &punchi_fluid_export::print_ink(),
-                &[],
+                SceneState {
+                    system: self.system.as_ref(),
+                    placement_part: &self.placement_part,
+                    circuit,
+                },
+                &self.charts,
+                &closures,
+                ContactStates {
+                    contacts: &self.contacts,
+                    relays: &self.relays,
+                    indicators: &self.indicators,
+                },
             );
-        };
-        let path = std::path::Path::new(target);
-        let written = match kind {
-            PF_EXPORT_PDF => punchi_fluid_export::render_pdf_with(&page, &block, draw)
-                .and_then(|bytes| write_atomically(path, "pdf", &bytes)),
-            PF_EXPORT_SVG => punchi_fluid_export::render_svg_with(&page, &block, draw)
-                .and_then(|text| write_atomically(path, "svg", text.as_bytes())),
-            _ => punchi_fluid_export::render_png_with(&page, &block, options.dpi.max(72.0), draw)
-                .and_then(|bytes| write_atomically(path, "png", &bytes)),
+            let bounds = punchi_fluid_draw::placed::bounds_placed(&placed, &pipes, &self.catalog);
+            let mut page = punchi_fluid_export::Page {
+                paper,
+                orientation,
+                margins,
+                parts: if options.flags & PF_EXPORT_PARTS_LIST == 0 {
+                    None
+                } else {
+                    Some(parts_list(
+                        &self.document,
+                        &self.catalog,
+                        &placed,
+                        &pipes,
+                        circuit,
+                    ))
+                },
+                ..punchi_fluid_export::Page::a4(block.clone())
+            };
+            if punchi_fluid_export::drawing_area(&page, &block).is_err() {
+                Err(String::from("the page leaves no room for the drawing"))
+            } else {
+                // The renderer takes the block explicitly; keep the page's own copy in step so
+                // a caller that reads the page sees the same fields.
+                page.title_block = Some(block.clone());
+                let draw = |surface: &mut dyn punchi_fluid_draw::Surface,
+                            area: punchi_fluid_draw::Rect| {
+                    let Some(bounds) = bounds else {
+                        return;
+                    };
+                    // The page hands the drawing the area the frame leaves free; the fit
+                    // maps the drawing's own bounds onto it, so a large circuit shrinks
+                    // instead of being cropped and a small one stays at its size in the
+                    // middle of the page.
+                    let mut fitted = punchi_fluid_draw::surface::Scaled::fit(surface, bounds, area);
+                    punchi_fluid_draw::draw_placed(
+                        &mut fitted,
+                        &placed,
+                        &pipes,
+                        &self.catalog,
+                        &punchi_fluid_export::print_ink(),
+                        &[],
+                    );
+                };
+                let path = std::path::Path::new(target);
+                match kind {
+                    PF_EXPORT_PDF => punchi_fluid_export::render_pdf_with(&page, &block, draw)
+                        .and_then(|bytes| write_atomically(path, "pdf", &bytes)),
+                    PF_EXPORT_SVG => punchi_fluid_export::render_svg_with(&page, &block, draw)
+                        .and_then(|text| write_atomically(path, "svg", text.as_bytes())),
+                    _ => punchi_fluid_export::render_png_with(
+                        &page,
+                        &block,
+                        options.dpi.max(72.0),
+                        draw,
+                    )
+                    .and_then(|bytes| write_atomically(path, "png", &bytes)),
+                }
+                .map_err(|cause| cause.to_string())
+            }
         };
         match written {
             Ok(()) => PF_OK,
-            Err(cause) => self.fail(&cause.to_string()),
+            Err(message) => self.fail(&message),
         }
     }
 }
@@ -4950,6 +5040,22 @@ fn parts_list(
                 placement.designation.as_deref(),
             )
         });
+    // One input per port closure of the circuit: the parent's catalog id and designation,
+    // the bare port id and the closure's catalog id. The list resolves the display labels.
+    let closures = document
+        .placements()
+        .iter()
+        .filter(|placement| placement.circuit == circuit)
+        .flat_map(|placement| {
+            placement.port_closures.iter().map(move |(port, closure)| {
+                (
+                    placement.catalog_id.as_str(),
+                    placement.designation.as_deref(),
+                    port.as_str(),
+                    closure.as_str(),
+                )
+            })
+        });
     // One input per drawn pneumatic pipe. The route length is the drawing's own polyline,
     // and an electrical wire gives none, so it never reaches a tube row.
     let tubes = pipes.iter().enumerate().filter_map(|(index, pipe)| {
@@ -4960,7 +5066,7 @@ fn parts_list(
             length_mm,
         })
     });
-    punchi_fluid_export::PartsList::group(catalog, placement_rows, tubes)
+    punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes)
 }
 
 /// The title block for an export: the circuit's own fields, with the defaults the paper
@@ -7120,6 +7226,15 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
     }
 }
 
+/// The model state a drawn scene reads: which circuit is in view, the network that runs
+/// it, and the part each placement became in that network.
+#[derive(Clone, Copy)]
+struct SceneState<'a> {
+    circuit: u32,
+    system: Option<&'a Network>,
+    placement_part: &'a [Option<usize>],
+}
+
 /// The run state a frame reads for its moving contacts: the clicked buttons and the relays
 /// the net settled on.
 #[derive(Clone, Copy)]
@@ -7129,20 +7244,48 @@ struct ContactStates<'a> {
     indicators: &'a std::collections::HashMap<u64, bool>,
 }
 
+/// Resolves every placement's port closures to borrowed `(port id, definition)` pairs.
+///
+/// The document stores bare ids and has no catalog; this is the one place that turns them
+/// into the definitions the drawing and the parts list need. A closure whose id does not
+/// resolve is left out of the drawing and reported by the check, never guessed.
+fn closure_pairs<'a>(
+    document: &'a Document,
+    catalog: &'a Catalog,
+) -> Vec<Vec<(&'a str, &'a ComponentDefinition)>> {
+    document
+        .placements()
+        .iter()
+        .map(|placement| {
+            placement
+                .port_closures
+                .iter()
+                .filter_map(|(port, closure)| Some((port.as_str(), catalog.get(closure.as_str())?)))
+                .collect()
+        })
+        .collect()
+}
+
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for
 /// each, and the hoses with their route offsets.
 ///
 /// The screen and the exported page both call this, so what is printed is what is on the sheet
-/// and not a second construction that could drift from it.
+/// and not a second construction that could drift from it. `closures` is parallel to the
+/// document's placements and is built by [`closure_pairs`]; the caller owns it for as long as
+/// the returned [`Placed`] list lives.
 fn scene<'a>(
     document: &'a Document,
     catalog: &'a Catalog,
-    system: Option<&'a Network>,
-    placement_part: &[Option<usize>],
-    circuit: u32,
+    state: SceneState<'a>,
     charts: &'a std::collections::HashMap<u64, Chart>,
+    closures: &'a [Vec<(&'a str, &'a ComponentDefinition)>],
     states: ContactStates<'_>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
+    let SceneState {
+        circuit,
+        system,
+        placement_part,
+    } = state;
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
     let mut scene_of = vec![None; document.placements().len()];
@@ -7187,6 +7330,7 @@ fn scene<'a>(
             contact_closed: contact_closed(placement, states.contacts, states.relays),
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
+            closures: closures.get(index).map_or(&[], Vec::as_slice),
         });
     }
     let pipes: Vec<Pipe<'a>> = document
@@ -8429,6 +8573,410 @@ pub unsafe extern "C" fn pf_session_port_point(
         target[0] = point.x;
         target[1] = point.y;
         PF_OK
+    })
+}
+
+/// The ABI code of a port role: `0` supply, `1` working, `2` exhaust, `3` mechanical, `4`
+/// electrical.
+fn role_code(role: PortRole) -> i32 {
+    match role {
+        PortRole::Supply => 0,
+        PortRole::Working => 1,
+        PortRole::Exhaust => 2,
+        PortRole::Mechanical => 3,
+        PortRole::Electrical => 4,
+    }
+}
+
+/// The definitions a closure may resolve to, in catalog order: plugs and silencers only.
+fn closure_definitions(catalog: &Catalog) -> impl Iterator<Item = &ComponentDefinition> {
+    catalog.iter().filter(|definition| {
+        matches!(
+            definition.behaviour,
+            Behaviour::Plug | Behaviour::Silencer { .. }
+        )
+    })
+}
+
+/// The closure ids one port role accepts, resolved from the session's catalog.
+///
+/// A plug closes any pneumatic port; a silencer only vents an exhaust. A mechanical or an
+/// electrical port takes none at all, which is how the menu stays hidden there.
+fn closure_choices(catalog: &Catalog, role: PortRole) -> Vec<&str> {
+    if matches!(role, PortRole::Mechanical | PortRole::Electrical) {
+        return Vec::new();
+    }
+    closure_definitions(catalog)
+        .filter(|definition| match definition.behaviour {
+            Behaviour::Plug => true,
+            Behaviour::Silencer { .. } => role == PortRole::Exhaust,
+            _ => false,
+        })
+        .map(|definition| definition.id.as_str())
+        .collect()
+}
+
+/// Copies `text` into a caller's buffer as NUL-terminated UTF-8, returning its length.
+///
+/// # Safety
+///
+/// `out` must point to `capacity` writable bytes.
+unsafe fn write_c_string(out: *mut c_char, capacity: u32, text: &str) -> i32 {
+    let bytes = text.as_bytes();
+    let capacity = capacity as usize;
+    if capacity == 0 || bytes.len() + 1 > capacity {
+        return PF_ERR_MODEL;
+    }
+    // SAFETY: the caller promised `capacity` writable bytes and the length was checked.
+    let target = unsafe { std::slice::from_raw_parts_mut(out.cast::<u8>(), capacity) };
+    target[..bytes.len()].copy_from_slice(bytes);
+    target[bytes.len()] = 0;
+    i32::try_from(bytes.len()).unwrap_or(PF_ERR_MODEL)
+}
+
+/// `true` when a pipe ends on the port of the placement at `index`.
+fn port_has_pipe(session: &PfSession, index: usize, port: &str) -> bool {
+    let Some(placement) = session.document.placements().get(index) else {
+        return false;
+    };
+    let id = placement.id();
+    session.document.connections().iter().any(|connection| {
+        (connection.from.placement == id && connection.from.port == port)
+            || (connection.to.placement == id && connection.to.port == port)
+    })
+}
+
+/// How many ports the catalog gives one placement, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_count(session: *const PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        i32::try_from(definition.port.len()).unwrap_or(PF_ERR_MODEL)
+    })
+}
+
+/// The id of one port of a placement, as NUL-terminated UTF-8; returns its length.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_id(
+    session: *const PfSession,
+    index: u32,
+    slot: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(port) = definition.port.get(slot as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised `capacity` writable bytes.
+        unsafe { write_c_string(out, capacity, &port.id) }
+    })
+}
+
+/// The role of one port: `0` supply, `1` working, `2` exhaust, `3` mechanical, `4`
+/// electrical, or a negative error.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `port` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_role(
+    session: *const PfSession,
+    index: u32,
+    port: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if port.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(port) = unsafe { CStr::from_ptr(port) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        definition
+            .port
+            .iter()
+            .find(|candidate| candidate.id == port)
+            .map_or(PF_ERR_MODEL, |candidate| role_code(candidate.role))
+    })
+}
+
+/// The closure fitted to one port: its catalog id, empty when it has none.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `port` must be null or a
+/// NUL-terminated string; `out` must be null or point to `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_closure(
+    session: *const PfSession,
+    index: u32,
+    port: *const c_char,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if port.is_null() || out.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(port) = unsafe { CStr::from_ptr(port) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        if !definition.port.iter().any(|candidate| candidate.id == port) {
+            return PF_ERR_MODEL;
+        }
+        let closure = session
+            .document
+            .port_closure(index as usize, port)
+            .unwrap_or("");
+        // SAFETY: the caller promised `capacity` writable bytes.
+        unsafe { write_c_string(out, capacity, closure) }
+    })
+}
+
+/// Fits a closure to a port, or clears it with an empty id. One undoable change.
+///
+/// The role and the allowed ids come from the session's catalog; the document is the last
+/// line for the port shape, the allowed set and the pipe. A mechanical or electrical port
+/// refuses, and so does a port that still carries a hose.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `port` and `catalog_id` must be null
+/// or NUL-terminated strings.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_set_port_closure(
+    session: *mut PfSession,
+    index: u32,
+    port: *const c_char,
+    catalog_id: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds every contract above.
+        let Some(session) = (unsafe { borrow(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if port.is_null() || catalog_id.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: both were promised NUL-terminated by the caller.
+        let (Ok(port), Ok(catalog_id)) = (
+            unsafe { CStr::from_ptr(port) }.to_str(),
+            unsafe { CStr::from_ptr(catalog_id) }.to_str(),
+        ) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return session.fail("that component does not exist");
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return session.fail("the component's definition is not in the catalog");
+        };
+        let Some(role) = definition
+            .port
+            .iter()
+            .find(|candidate| candidate.id == port)
+            .map(|candidate| candidate.role)
+        else {
+            return session.fail("that port does not exist");
+        };
+        if matches!(role, PortRole::Mechanical | PortRole::Electrical) {
+            return session.fail("a mechanical or electrical port takes no closure");
+        }
+        let allowed = closure_choices(&session.catalog, role);
+        let closure = (!catalog_id.is_empty()).then_some(catalog_id);
+        if !session
+            .document
+            .set_port_closure(index as usize, port, closure, &allowed)
+        {
+            if port_has_pipe(session, index as usize, port) {
+                return session.fail("remove the hose from the port before fitting a closure");
+            }
+            return session.fail("that closure cannot be fitted to this port");
+        }
+        session.rebuild_model();
+        session.error = CString::default();
+        PF_OK
+    })
+}
+
+/// `1` when a pipe ends on the port, `0` when none does, negative on an unknown port.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `port` must be null or a
+/// NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_session_port_has_pipe(
+    session: *const PfSession,
+    index: u32,
+    port: *const c_char,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if port.is_null() {
+            return PF_ERR_NULL;
+        }
+        // SAFETY: the caller promised a NUL-terminated string.
+        let Ok(port) = unsafe { CStr::from_ptr(port) }.to_str() else {
+            return PF_ERR_MODEL;
+        };
+        let Some(placement) = session.document.placements().get(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        let Some(definition) = session.catalog.get(&placement.catalog_id) else {
+            return PF_ERR_MODEL;
+        };
+        if !definition.port.iter().any(|candidate| candidate.id == port) {
+            return PF_ERR_MODEL;
+        }
+        i32::from(port_has_pipe(session, index as usize, port))
+    })
+}
+
+/// How many closure definitions the session's catalog offers.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_closure_count(session: *const PfSession) -> u32 {
+    // SAFETY: the caller promises a live session pointer.
+    unsafe { borrow_shared(session) }.map_or(0, |session| {
+        closure_definitions(&session.catalog).count() as u32
+    })
+}
+
+/// The catalog id of one closure definition, as NUL-terminated UTF-8.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_closure_id(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(definition) = closure_definitions(&session.catalog).nth(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised `capacity` writable bytes.
+        unsafe { write_c_string(out, capacity, &definition.id) }
+    })
+}
+
+/// The display name of one closure definition, as NUL-terminated UTF-8.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer; `out` must be null or point to
+/// `capacity` writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_closure_name(
+    session: *const PfSession,
+    index: u32,
+    out: *mut c_char,
+    capacity: u32,
+) -> i32 {
+    guard(|| {
+        // SAFETY: the caller upholds both contracts.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        if out.is_null() {
+            return PF_ERR_NULL;
+        }
+        let Some(definition) = closure_definitions(&session.catalog).nth(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        // SAFETY: the caller promised `capacity` writable bytes.
+        unsafe { write_c_string(out, capacity, definition.display_name()) }
+    })
+}
+
+/// `1` for a plug, `0` for a silencer, negative on an unknown definition.
+///
+/// # Safety
+///
+/// `session` must be null or a live session pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pf_closure_is_plug(session: *const PfSession, index: u32) -> i32 {
+    guard(|| {
+        // SAFETY: the caller promises a live session pointer.
+        let Some(session) = (unsafe { borrow_shared(session) }) else {
+            return PF_ERR_NULL;
+        };
+        let Some(definition) = closure_definitions(&session.catalog).nth(index as usize) else {
+            return PF_ERR_MODEL;
+        };
+        i32::from(matches!(definition.behaviour, Behaviour::Plug))
     })
 }
 

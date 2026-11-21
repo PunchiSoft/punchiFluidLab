@@ -28,6 +28,7 @@ fn project() -> Sheet {
         mirrored: false,
         designation: None,
         source: None,
+        port_closures: BTreeMap::default(),
     });
     sheet.placement.push(StoredPlacement {
         id: 2,
@@ -42,6 +43,7 @@ fn project() -> Sheet {
         mirrored: false,
         designation: None,
         source: None,
+        port_closures: BTreeMap::default(),
     });
     // A pipe whose ends belong to different circuits is accepted by the format: the
     // check is what reports it, so the loader must not hide it.
@@ -139,6 +141,7 @@ fn a_recorder_source_round_trips_and_is_validated() {
             placement: 2,
             quantity: String::from("pressure"),
         }),
+        port_closures: BTreeMap::default(),
     });
     let text = sheet.to_json().expect("valid");
     let parsed = Sheet::parse(&text).expect("parses");

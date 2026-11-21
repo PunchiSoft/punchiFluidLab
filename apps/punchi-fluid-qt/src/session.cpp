@@ -100,6 +100,20 @@ QString blockFieldLabel(uint32_t field)
     }
 }
 
+/// The Spanish name of a port role, the one the panel and the parts list print beside the
+/// port's own id. Mechanical and electrical never reach a closure menu.
+QString portRoleLabel(int role)
+{
+    switch (role) {
+    case 0: return QStringLiteral("suministro");
+    case 1: return QStringLiteral("trabajo");
+    case 2: return QStringLiteral("escape");
+    case 3: return QStringLiteral("mecánico");
+    case 4: return QStringLiteral("eléctrico");
+    default: return {};
+    }
+}
+
 /// The fields of one content model, in print order.
 void modelFields(int model, const uint32_t **fields, int *count)
 {
@@ -391,6 +405,54 @@ void FluidSession::inspectComponent(int index)
     m_inspectorFields.prepend(name);
     m_inspectorOpen = true;
     emit inspectorChanged();
+}
+
+QVariantList FluidSession::inspectorClosures() const
+{
+    QVariantList rows;
+    const int index = m_inspectorIndex >= 0 ? m_inspectorIndex : m_selected;
+    if (!m_session || index < 0) {
+        return rows;
+    }
+    // The display names come from the session's catalog, so a user definition reads as the
+    // same name the menu offers.
+    QHash<QString, QString> names;
+    const uint32_t closures = pf_closure_count(m_session);
+    for (uint32_t slot = 0; slot < closures; ++slot) {
+        char id[128] = {};
+        const int idLength = pf_closure_id(m_session, slot, id, sizeof(id));
+        if (idLength < 0) {
+            continue;
+        }
+        char name[256] = {};
+        const int nameLength = pf_closure_name(m_session, slot, name, sizeof(name));
+        names.insert(QString::fromUtf8(id, idLength),
+                     nameLength < 0 ? QString::fromUtf8(id, idLength)
+                                    : QString::fromUtf8(name, nameLength));
+    }
+    const int ports = pf_session_port_count(m_session, static_cast<uint32_t>(index));
+    if (ports < 0) {
+        return rows;
+    }
+    for (int slot = 0; slot < ports; ++slot) {
+        char id[64] = {};
+        const int length = pf_session_port_id(m_session, static_cast<uint32_t>(index),
+                                              static_cast<uint32_t>(slot), id, sizeof(id));
+        if (length < 0) {
+            continue;
+        }
+        const QString port = QString::fromUtf8(id, length);
+        const QString closure = portClosure(index, port);
+        if (closure.isEmpty()) {
+            continue;
+        }
+        QVariantMap row;
+        row.insert(QStringLiteral("port"), port);
+        row.insert(QStringLiteral("label"), portLabel(index, port));
+        row.insert(QStringLiteral("closure"), names.value(closure, closure));
+        rows.append(row);
+    }
+    return rows;
 }
 
 void FluidSession::inspectValve()
@@ -835,8 +897,16 @@ void FluidSession::readCatalog()
     m_catalog.clear();
     for (uint32_t index = 0; index < catalog.items_len; ++index) {
         const PfCatalogItem &item = catalog.items[index];
+        const QString id = field(item.id_at, item.id_len);
+        // A plug and a silencer are closure definitions, not placements: the port menu fits
+        // them to a port. They stay in the ABI catalog, so an old sheet still loads and
+        // their ABI index is untouched; the sidebar and its search both read this list, so
+        // hiding them here keeps the row index and the counts consistent.
+        if (id == QStringLiteral("plug.blind") || id == QStringLiteral("silencer.pneumatic")) {
+            continue;
+        }
         QVariantMap row;
-        row.insert(QStringLiteral("id"), field(item.id_at, item.id_len));
+        row.insert(QStringLiteral("id"), id);
         row.insert(QStringLiteral("name"), field(item.name_at, item.name_len));
         row.insert(QStringLiteral("category"), static_cast<int>(item.category));
         row.insert(QStringLiteral("index"), static_cast<int>(index));
@@ -2730,6 +2800,176 @@ bool FluidSession::portPoint(int index, const QString &port, QPointF *point) con
     }
     *point = QPointF(at[0], at[1]);
     return true;
+}
+
+QPointF FluidSession::portPosition(int index, const QString &port) const
+{
+    QPointF point;
+    if (!portPoint(index, port, &point)) {
+        return {};
+    }
+    return point;
+}
+
+bool FluidSession::portInActiveCircuit(int index) const
+{
+    if (!m_session || index < 0) {
+        return false;
+    }
+    // The menu must not set a closure on a hidden circuit the user cannot see. The ABI
+    // answers for one placement, so the comparison is exact and needs no hit test.
+    return pf_session_component_circuit(m_session, static_cast<uint32_t>(index))
+        == pf_session_active_circuit(m_session);
+}
+
+QVariantList FluidSession::portClosurePorts(int index) const
+{
+    QVariantList rows;
+    if (!m_session || index < 0) {
+        return rows;
+    }
+    const int ports = pf_session_port_count(m_session, static_cast<uint32_t>(index));
+    if (ports < 0) {
+        return rows;
+    }
+    for (int slot = 0; slot < ports; ++slot) {
+        char id[64] = {};
+        const int length = pf_session_port_id(m_session, static_cast<uint32_t>(index),
+                                              static_cast<uint32_t>(slot), id, sizeof(id));
+        if (length < 0) {
+            continue;
+        }
+        const QString port = QString::fromUtf8(id, length);
+        const QByteArray name = port.toUtf8();
+        const int role = pf_session_port_role(m_session, static_cast<uint32_t>(index),
+                                              name.constData());
+        // Mechanical and electrical ports take no closure, so the menu never lists them.
+        if (role < 0 || role > 2) {
+            continue;
+        }
+        QVariantMap row;
+        row.insert(QStringLiteral("id"), port);
+        row.insert(QStringLiteral("role"), role);
+        row.insert(QStringLiteral("label"), portLabel(index, port));
+        row.insert(QStringLiteral("hasPipe"), portHasPipe(index, port));
+        row.insert(QStringLiteral("closure"), portClosure(index, port));
+        rows.append(row);
+    }
+    return rows;
+}
+
+QVariantList FluidSession::portClosures(int index, const QString &port) const
+{
+    QVariantList rows;
+    if (!m_session || index < 0 || port.isEmpty()) {
+        return rows;
+    }
+    const QByteArray name = port.toUtf8();
+    const int role = pf_session_port_role(m_session, static_cast<uint32_t>(index),
+                                          name.constData());
+    // A mechanical or an electrical port has no closure and no menu: an empty list is how
+    // the canvas and the popup tell them apart from a pneumatic port.
+    if (role < 0 || role > 2) {
+        return rows;
+    }
+    const uint32_t count = pf_closure_count(m_session);
+    for (uint32_t slot = 0; slot < count; ++slot) {
+        char id[128] = {};
+        const int idLength = pf_closure_id(m_session, slot, id, sizeof(id));
+        if (idLength < 0) {
+            continue;
+        }
+        char label[256] = {};
+        const int labelLength = pf_closure_name(m_session, slot, label, sizeof(label));
+        const bool plug = pf_closure_is_plug(m_session, slot) == 1;
+        QVariantMap row;
+        row.insert(QStringLiteral("id"), QString::fromUtf8(id, idLength));
+        row.insert(QStringLiteral("name"),
+                   labelLength < 0 ? QString::fromUtf8(id, idLength)
+                                   : QString::fromUtf8(label, labelLength));
+        row.insert(QStringLiteral("plug"), plug);
+        // A plug closes any pneumatic port; a silencer only vents an exhaust.
+        row.insert(QStringLiteral("available"), plug || role == 2);
+        rows.append(row);
+    }
+    return rows;
+}
+
+QString FluidSession::portClosure(int index, const QString &port) const
+{
+    if (!m_session || index < 0 || port.isEmpty()) {
+        return {};
+    }
+    const QByteArray name = port.toUtf8();
+    char id[128] = {};
+    const int length = pf_session_port_closure(m_session, static_cast<uint32_t>(index),
+                                               name.constData(), id, sizeof(id));
+    return length < 0 ? QString() : QString::fromUtf8(id, length);
+}
+
+bool FluidSession::portHasPipe(int index, const QString &port) const
+{
+    if (!m_session || index < 0 || port.isEmpty()) {
+        return false;
+    }
+    const QByteArray name = port.toUtf8();
+    return pf_session_port_has_pipe(m_session, static_cast<uint32_t>(index),
+                                    name.constData()) == 1;
+}
+
+QString FluidSession::portLabel(int index, const QString &port) const
+{
+    if (!m_session || index < 0 || port.isEmpty()) {
+        return port;
+    }
+    const QByteArray name = port.toUtf8();
+    const int role = pf_session_port_role(m_session, static_cast<uint32_t>(index),
+                                          name.constData());
+    const QString label = portRoleLabel(role);
+    return label.isEmpty() ? port : QStringLiteral("%1 %2").arg(label, port);
+}
+
+void FluidSession::setPortClosure(int index, const QString &port, const QString &closureId)
+{
+    if (!m_session || index < 0 || port.isEmpty()) {
+        return;
+    }
+    if (!portInActiveCircuit(index)) {
+        m_error = QStringLiteral("el puerto no está en el circuito que se muestra");
+        emit changed();
+        return;
+    }
+    if (portHasPipe(index, port)) {
+        m_error = QStringLiteral("quita el tubo del puerto antes de poner un cierre");
+        emit changed();
+        return;
+    }
+    const QByteArray name = port.toUtf8();
+    const QByteArray closure = closureId.toUtf8();
+    if (pf_session_set_port_closure(m_session, static_cast<uint32_t>(index), name.constData(),
+                                    closure.constData())
+        != PF_OK) {
+        const char *message = pf_session_last_error(m_session);
+        m_error = message ? QString::fromUtf8(message)
+                          : QStringLiteral("no se pudo cambiar el cierre");
+        emit changed();
+        return;
+    }
+    m_error.clear();
+    // The panel refresh is this change's own job: the closure is not a component count, a
+    // selection or a pipe, so `refreshDocument` alone sees nothing and early-returns.
+    if (m_inspectorOpen && m_inspectorIndex == index) {
+        char buffer[1600] = {};
+        if (pf_session_describe_component(m_session, static_cast<uint32_t>(index), buffer,
+                                          sizeof(buffer))
+            >= 0) {
+            m_inspectorText = QString::fromUtf8(buffer);
+        }
+    }
+    refreshDocument();
+    emit documentChanged();
+    emit inspectorChanged();
+    emit changed();
 }
 
 int FluidSession::connectionCount() const

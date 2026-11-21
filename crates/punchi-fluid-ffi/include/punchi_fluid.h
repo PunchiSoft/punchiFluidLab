@@ -21,7 +21,7 @@ extern "C" {
 #define PF_MAX_CIRCUITS 32u
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 11u
+#define PF_ABI_VERSION 12u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -287,6 +287,8 @@ int32_t pf_session_circuit_id(const PfSession *session, uint32_t index);
 int32_t pf_session_circuit_name(const PfSession *session, uint32_t index, char *out,
                                 uint32_t capacity);
 int32_t pf_session_active_circuit(const PfSession *session);
+/* The circuit one placement belongs to, or a negative error. */
+int32_t pf_session_component_circuit(const PfSession *session, uint32_t index);
 /* Switching is a view change, not an undoable edit. */
 int32_t pf_session_select_circuit(PfSession *session, uint32_t id);
 /* Adds an empty circuit and makes it active; returns its identity or a negative error. */
@@ -453,6 +455,43 @@ int32_t pf_session_port_at(const PfSession *session, float x_mm, float y_mm, flo
 /* Where a port sits, in millimetres of the sheet, as x y. */
 int32_t pf_session_port_point(const PfSession *session, uint32_t index, const char *port,
                               float *out);
+
+/* How many ports the catalog gives a placement, or a negative error. */
+int32_t pf_session_port_count(const PfSession *session, uint32_t index);
+
+/* The id of one port, as NUL-terminated UTF-8; returns its length. */
+int32_t pf_session_port_id(const PfSession *session, uint32_t index, uint32_t slot, char *out,
+                           uint32_t capacity);
+
+/*
+ * A port's role: 0 supply, 1 working, 2 exhaust, 3 mechanical, 4 electrical; negative
+ * when the placement or the port does not exist.
+ */
+int32_t pf_session_port_role(const PfSession *session, uint32_t index, const char *port);
+
+/*
+ * The closure fitted to a port: its catalog id, empty when none, negative when the
+ * placement or the port does not exist.
+ */
+int32_t pf_session_port_closure(const PfSession *session, uint32_t index, const char *port,
+                                char *out, uint32_t capacity);
+
+/*
+ * Fits a closure to a port, or clears it with an empty id. One undoable change; an
+ * electrical or mechanical port refuses, and so does a port that still carries a hose.
+ */
+int32_t pf_session_set_port_closure(PfSession *session, uint32_t index, const char *port,
+                                    const char *catalog_id);
+
+/* 1 when a pipe ends on the port, 0 when none does, negative on an unknown port. */
+int32_t pf_session_port_has_pipe(const PfSession *session, uint32_t index, const char *port);
+
+/* The closure definitions the session's catalog offers: plugs and silencers only. */
+uint32_t pf_closure_count(const PfSession *session);
+int32_t pf_closure_id(const PfSession *session, uint32_t index, char *out, uint32_t capacity);
+int32_t pf_closure_name(const PfSession *session, uint32_t index, char *out, uint32_t capacity);
+/* 1 for a plug, 0 for a silencer, negative on an unknown definition. */
+int32_t pf_closure_is_plug(const PfSession *session, uint32_t index);
 
 /* Draws a pipe between two ports. */
 int32_t pf_session_connect(PfSession *session, uint32_t from_index, const char *from_port,
