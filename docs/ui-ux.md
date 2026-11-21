@@ -51,13 +51,27 @@ a popup about the program, never a command of the circuit, so no command exists 
 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
-`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600; at
-1280 px wide and below the ribbon collapses into a single menu button (a ribbon needs width
-to work). **Today** the window applies that one breakpoint and keeps the catalog at 248 px
-and the right panels at 360 px; the three modes of *The window adapts* below are target
-([interface-plan.md](interface-plan.md) stage 6). The unfolded row still measures about
-1875 px, so at 1440 it overflows as well; that is the remaining question (P-027), not a
-mechanism of this breakpoint.
+`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600.
+**1366×768 is the support floor** (the entry and education laptop): there the ribbon is
+**one row of the seven groups**, and a group that does not fit becomes a titled button
+that opens its commands in a non-modal flyout instead of being clipped. The collapse
+priority, from the least to the most used, is **Repartir, Alinear, Paleta, Historial,
+Circuito, Componente, Conducto**; a group with no command — Paleta's note — is skipped
+because it has nothing to fly out. The measured set per width is:
+
+| Width | Collapsed groups |
+|---|---|
+| 1366 | Historial, Alinear, Repartir |
+| 1440 and 1600 | Alinear, Repartir |
+| 1920 | none |
+
+At 1280 px wide and below the ribbon folds into a single **Menú** button (a ribbon needs
+width to work), and at 125 % scaling a 1366-wide panel is ~1093 logical pixels, so it is
+the folded form there too; that is the recorded case, not an exception. The ribbon height does not
+change (121 px at the default unit), so the sheet below keeps its room and the A4 page is
+not covered. **Today** the window applies that one breakpoint and keeps the catalog at
+248 px and the right panels at 360 px; the three modes of *The window adapts* below are
+target ([interface-plan.md](interface-plan.md) stage 6).
 
 ### 1. Ribbon (top)
 
@@ -108,6 +122,13 @@ Depth comes from the palette, never from a new hue.
   says so in one line. A grey button that teaches nothing is worse than a missing one.
 - Every command has a shortcut and a hint that names it; the hint appears on hover after a
   pause and on keyboard focus, and the same string is the accessible description.
+- **A group that does not fit collapses to its own title button** (P-028), not to an
+  icon and not to a global menu: at 1366 the row stays unfolded with the seven names, and
+  the collapsed group's **name plus a chevron** is the button. Its flyout is non-modal,
+  opens with `Enter`/`Space`, closes on `Esc` or a click outside, takes the focus and
+  carries the same commands as the expanded group, each with its label and accessible
+  name. `Alt+D` still reaches the Conducto group's **Diámetro**, whether that group is
+  expanded or in its flyout.
 - At 1280 px and below the body folds away: the tabs stay, and one **Menú** button opens
   the commands of the open tab, the Conducto group's **Diámetro** included. A ribbon
   without width is a maze; the menu scrolls when the window cannot hold every command, so
@@ -394,9 +415,17 @@ before a panel is allowed to cover it:
   (never over the panels' headers), closing after a command or `Esc`. The state is
   remembered with the panels. Below the collapse threshold the ribbon already folds to
   **Menú** instead.
+- **The first window is screen-aware** (P-028): with no remembered size it opens at
+  **1440×900** on a 1080p screen. On a smaller screen it takes the largest size that fits
+  the available area minus a two-unit margin, never below 900 × 600, and it is centred in
+  the area. A 1366×768 panel therefore opens about **1330×732**, above the 1280 fold;
+  1280×800 opens below it, and at 125 % the logical area shrinks and the folded form
+  applies.
 - **The window remembers its size and place**, and only when the place still lands on a
-  screen: a laptop undocked from a second monitor must not reopen off-screen. A maximized
-  window keeps the size it had before. The minimum is 900 × 600.
+  screen: a laptop undocked from a second monitor must not reopen off-screen. A remembered
+  size is **clamped to the current screen** with the same margin and minimum, not only to
+  the minimum, so a window saved on a 1920 monitor reopens inside a 1366 laptop. A
+  maximized window keeps the size it had before. The minimum is 900 × 600.
 - **The mode boundaries follow the spacing unit**, which follows the desktop font, so a
   larger font moves them. The ribbon's own text and heights are still literals; turning
   them into tokens is stage 7.
@@ -414,10 +443,13 @@ before a panel is allowed to cover it:
   mixing them produces geometry conflicts and binding cycles.
 - **Today** the stage is built: `layoutMode` derives the three modes from the content
   minimums, the sheet never drops below 480 px, the compact window folds both panels to
-  their 24 px rails and opens them as drawers, the ribbon folds to its tab row, and the
-  window remembers its size and place. `--check-layout` proves it at seven widths, with the
-  drawer open, with the ribbon folded and with the geometry restored, at 1.25×, 1.5× and
-  2× density and with a 1.5× font ([interface-plan.md](interface-plan.md) stage 6a).
+  their 24 px rails and opens them as drawers, the ribbon folds to its tab row, the window
+  opens at the screen-aware size and remembers its size and place. `--check-layout` proves
+  it at seven widths, with the drawer open, with the ribbon folded and with the geometry
+  restored, at 1.25×, 1.5× and 2× density and with a 1.5× font
+  ([interface-plan.md](interface-plan.md) stage 6a). `--selftest` proves the first-window
+  sizes and the restored clamp with synthetic screen areas, so it does not depend on the
+  machine's own screen.
 
 ### 2.3 The start view: Inicio
 

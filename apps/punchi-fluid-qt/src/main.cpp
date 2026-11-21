@@ -25,6 +25,7 @@
 //! --place ID           place a catalog entry by index or id, for a capture
 //! --spot X,Y           place it at that point of the sheet, in millimetres
 //! --menu               open the collapsed ribbon menu, for a capture
+//! --ribbon-flyout GROUP  open a collapsed group's flyout, for a capture
 //! --catalog-closed     start with the catalog folded, for a capture of the rail
 //! --catalog-width N    set the catalog width in pixels, for a capture of the tiles
 //! --overlay catalog|right  open a compact panel over the sheet, for a capture of it
@@ -422,8 +423,9 @@ int main(int argc, char *argv[])
 
     const bool paperList = arguments.contains(QStringLiteral("--paper-list"));
     const bool marginList = arguments.contains(QStringLiteral("--margin-list"));
+    const QString ribbonFlyout = value(QStringLiteral("--ribbon-flyout"));
     if (arguments.contains(QStringLiteral("--tab")) || arguments.contains(QStringLiteral("--menu"))
-        || paperList || marginList) {
+        || paperList || marginList || !ribbonFlyout.isEmpty()) {
         const QString tab = value(QStringLiteral("--tab"));
         QObject *ribbon = nullptr;
         for (QObject *root : engine.rootObjects()) {
@@ -444,9 +446,17 @@ int main(int argc, char *argv[])
         } else if (paperList || marginList) {
             // The page controls and the launcher live in Archivo.
             ribbon->setProperty("current", 0);
+        } else if (!ribbonFlyout.isEmpty()) {
+            // A collapsed group belongs to the Editar table, the tab P-028 measures.
+            ribbon->setProperty("current", 1);
         }
         if (arguments.contains(QStringLiteral("--menu"))) {
             ribbon->setProperty("menuOpen", true);
+        }
+        if (!ribbonFlyout.isEmpty()) {
+            // The ribbon's timer waits for the row to measure and collapse before it opens
+            // the group, so the capture shows the resting layout with its flyout.
+            ribbon->setProperty("flyoutRequest", ribbonFlyout);
         }
         if (paperList) {
             ribbon->setProperty("paperListRequested", true);
@@ -1199,46 +1209,218 @@ int main(int argc, char *argv[])
                      drawer ? "ok" : "FAIL");
         window->setProperty("catalogOverlay", false);
 
-        // The ribbon folds at 1280 and keeps its unfolded row at 1440 (P-027). At 1280 the
-        // folded form is the one measured: the group row is off screen and the menu that
-        // carries every command must stay inside the content. At 1440 the row is still
-        // wider than the window; that overflow is the known limit this node records, so it
-        // is reported and not counted as a failure.
+        // The ribbon is one row with per-group collapse (P-028). The matrix proves the
+        // support floor and the wider resolutions: seven groups in order, nothing past the
+        // content edge or the body's bottom, every expanded group still labelled, every
+        // collapsed group's flyout opening its commands, and the ribbon height unchanged.
+        // Below 1280 the P-027 fold is the fallback and is checked separately.
         auto *ribbon = window->findChild<QQuickItem *>(QStringLiteral("ribbon"));
         auto *groupsRow = window->findChild<QQuickItem *>(QStringLiteral("ribbonGroupsRow"));
+        auto *ribbonBody = window->findChild<QQuickItem *>(QStringLiteral("ribbonBody"));
         auto *ribbonMenu = window->findChild<QQuickItem *>(QStringLiteral("ribbonMenu"));
-        if (ribbon == nullptr || groupsRow == nullptr || ribbonMenu == nullptr) {
-            std::fprintf(stderr, "layout: no ribbon, group row or folded menu\n");
+        if (ribbon == nullptr || groupsRow == nullptr || ribbonBody == nullptr
+            || ribbonMenu == nullptr) {
+            std::fprintf(stderr, "layout: no ribbon, group row, body or folded menu\n");
             return 1;
         }
         ribbon->setProperty("current", 1);
         ribbon->setProperty("minimized", false);
         ribbon->setProperty("bodyOpen", false);
         ribbon->setProperty("menuOpen", false);
-        window->resize(1440, 900);
-        settle();
-        const bool unfolded = !ribbon->property("collapsed").toBool()
-                              && ribbon->property("bodyShown").toBool();
-        qreal rowRight = 0.0;
-        int groupCount = 0;
-        for (QQuickItem *group : groupsRow->childItems()) {
-            if (group->objectName() != QLatin1String("ribbonGroup") || !group->isVisible()) {
-                continue;
+
+        const auto visibleGroups = [groupsRow] {
+            QList<QQuickItem *> found;
+            for (QQuickItem *group : groupsRow->childItems()) {
+                if (group->objectName() == QLatin1String("ribbonGroup") && group->isVisible()) {
+                    found.append(group);
+                }
             }
-            ++groupCount;
-            rowRight = qMax(rowRight,
-                            group->mapToItem(ribbon, QPointF(group->width(), 0.0)).x());
-        }
-        const bool rowFits = rowRight <= ribbon->width() + 0.5;
-        if (!unfolded || groupCount == 0) {
+            return found;
+        };
+        const QStringList ribbonOrder = {
+            QStringLiteral("Historial"), QStringLiteral("Circuito"),
+            QStringLiteral("Componente"), QStringLiteral("Alinear"),
+            QStringLiteral("Conducto"), QStringLiteral("Repartir"),
+            QStringLiteral("Paleta"),
+        };
+        const bool nominalMetrics = std::abs(unit - 18.0) < 0.1;
+        qreal ribbonBaseline = 0.0;
+        qreal sheetFloorAt1366 = 0.0;
+        const auto ribbonCase = [&](int width, int height, bool folded) {
+            window->resize(width, height);
+            settle();
+            bool ok = true;
+            QString detail;
+            const bool collapsed = ribbon->property("collapsed").toBool();
+            const bool bodyShown = ribbon->property("bodyShown").toBool();
+            if (folded) {
+                ok = collapsed && !bodyShown;
+                if (!ok) {
+                    detail = QStringLiteral("expected the folded form");
+                }
+            } else {
+                ok = !collapsed && bodyShown;
+                if (!ok) {
+                    detail = QStringLiteral("expected the one-row form");
+                }
+                const qreal ribbonHeight = ribbon->height();
+                if (ribbonBaseline <= 0.0) {
+                    ribbonBaseline = ribbonHeight;
+                }
+                if (std::abs(ribbonHeight - ribbonBaseline) > 0.5) {
+                    ok = false;
+                    detail = QStringLiteral("height %1 vs baseline %2")
+                                 .arg(ribbonHeight).arg(ribbonBaseline);
+                }
+                if (nominalMetrics && std::abs(ribbonHeight - 121.0) > 0.5) {
+                    ok = false;
+                    detail = QStringLiteral("height %1, not 121").arg(ribbonHeight);
+                }
+                const QPointF sheetTop =
+                    sheet->mapToItem(window->contentItem(), QPointF(0.0, 0.0));
+                const double sheetHeight = sheet->height();
+                if (sheetTop.y() < ribbonHeight - 0.5 || sheetHeight < 200.0) {
+                    ok = false;
+                    detail = QStringLiteral("A4 region at %1 with height %2")
+                                 .arg(sheetTop.y()).arg(sheetHeight);
+                }
+                if (width == 1366) {
+                    sheetFloorAt1366 = sheetHeight;
+                }
+                const QList<QQuickItem *> groups = visibleGroups();
+                QStringList titles;
+                QStringList collapsedTitles;
+                qreal rowRight = 0.0;
+                for (QQuickItem *group : groups) {
+                    const QString title = group->property("title").toString();
+                    titles.append(title);
+                    const qreal right =
+                        group->mapToItem(ribbon, QPointF(group->width(), 0.0)).x();
+                    const qreal bottom =
+                        group->mapToItem(ribbon, QPointF(0.0, group->height())).y();
+                    rowRight = qMax(rowRight, right);
+                    if (right > ribbon->width() + 0.5 || bottom > ribbonBody->height()
+                                                            + ribbonBody->y() + 0.5) {
+                        ok = false;
+                        detail = QStringLiteral("%1 reaches %2 of %3, bottom %4")
+                                     .arg(title).arg(right).arg(ribbon->width()).arg(bottom);
+                    }
+                    const bool groupCollapsed = group->property("collapsed").toBool();
+                    const int commands = group->property("commandCount").toInt();
+                    const bool note = group->property("hasNote").toBool();
+                    if (groupCollapsed) {
+                        collapsedTitles.append(title);
+                        if (title.isEmpty() || commands < 1) {
+                            ok = false;
+                            detail = QStringLiteral("%1 collapsed without a command title")
+                                         .arg(title);
+                            continue;
+                        }
+                        QMetaObject::invokeMethod(group, "openFlyout");
+                        settle();
+                        // The Popup builds its content lazily and the commands live inside
+                        // a Component, so walking the QObject tree misses them. The group
+                        // counts the buttons it actually shows.
+                        QVariant flyoutCount;
+                        const bool counted = QMetaObject::invokeMethod(
+                            group, "flyoutCommandCount",
+                            Q_RETURN_ARG(QVariant, flyoutCount));
+                        const int flyoutCommands = counted ? flyoutCount.toInt() : 0;
+                        if (!group->property("flyoutOpen").toBool() || flyoutCommands < 1) {
+                            ok = false;
+                            detail = QStringLiteral("%1 flyout open %2, actions %3")
+                                         .arg(title)
+                                         .arg(group->property("flyoutOpen").toBool() ? 1 : 0)
+                                         .arg(flyoutCommands);
+                        }
+                        QMetaObject::invokeMethod(group, "closeFlyout");
+                        settle();
+                        if (group->property("flyoutOpen").toBool()) {
+                            ok = false;
+                            detail = QStringLiteral("%1 flyout did not close").arg(title);
+                        }
+                    } else if (commands < 1 && !note) {
+                        ok = false;
+                        detail = QStringLiteral("%1 expanded without a label").arg(title);
+                    }
+                }
+                if (groups.size() != 7 || titles != ribbonOrder) {
+                    ok = false;
+                    detail = QStringLiteral("%1 groups: %2")
+                                 .arg(groups.size()).arg(titles.join(QStringLiteral(", ")));
+                }
+                if (nominalMetrics && width == 1920 && !collapsedTitles.isEmpty()) {
+                    ok = false;
+                    detail = QStringLiteral("1920 collapses %1")
+                                 .arg(collapsedTitles.join(QStringLiteral(", ")));
+                }
+                if (nominalMetrics && width == 1366
+                    && (!collapsedTitles.contains(QStringLiteral("Repartir"))
+                        || !collapsedTitles.contains(QStringLiteral("Alinear")))) {
+                    ok = false;
+                    detail = QStringLiteral("1366 collapses %1")
+                                 .arg(collapsedTitles.join(QStringLiteral(", ")));
+                }
+                std::fprintf(stderr,
+                             "layout:  ribbon %4dx%-4d one row, %d groups, collapsed [%s], "
+                             "height %.0f, sheet %.0f  %s%s\n",
+                             width, height, static_cast<int>(groups.size()),
+                             qUtf8Printable(collapsedTitles.join(QStringLiteral(", "))),
+                             ribbonHeight, sheetHeight, ok ? "ok" : "FAIL",
+                             detail.isEmpty()
+                                 ? ""
+                                 : qUtf8Printable(QStringLiteral(" (") + detail
+                                                  + QStringLiteral(")")));
+            }
+            if (folded) {
+                std::fprintf(stderr, "layout:  ribbon %4dx%-4d folded to the tab row  %s\n",
+                             width, height, ok ? "ok" : "FAIL");
+            }
+            if (!ok) {
+                ++failures;
+            }
+        };
+        ribbonCase(1280, 800, true);
+        ribbonCase(1366, 768, false);
+        ribbonCase(1440, 900, false);
+        ribbonCase(1600, 900, false);
+        ribbonCase(1920, 1080, false);
+
+        // The support floor keeps room for the A4 page: the one-row ribbon is 121 px at the
+        // default unit, and the sheet region below it must not shrink under the old floor.
+        if (nominalMetrics
+            && (sheetFloorAt1366 <= 0.0 || sheetFloorAt1366 < 480.0)) {
+            std::fprintf(stderr,
+                         "layout:  ribbon 1366x768 leaves the sheet %.0f, below 480  FAIL\n",
+                         sheetFloorAt1366);
             ++failures;
         }
-        std::fprintf(stderr,
-                     "layout:  ribbon 1440 groups reach %.0f of %.0f  %s  %s\n",
-                     rowRight, ribbon->width(),
-                     unfolded && groupCount > 0 ? "unfolded" : "FAIL: not unfolded",
-                     rowFits ? "the row fits"
-                             : "known limit (P-027: the 1440 row overflows)");
+
+        // A 1366 panel at 125 % scaling has about 1093 logical pixels, so the fold is the
+        // expected form there. It is a recorded case, not hidden: the matrix above runs at
+        // the logical sizes the window actually receives.
+        bool scaleOk = false;
+        const double qtScale = qEnvironmentVariable("QT_SCALE_FACTOR").toDouble(&scaleOk);
+        if (scaleOk && qtScale > 1.0) {
+            window->resize(qRound(1366.0 / qtScale), qRound(768.0 / qtScale));
+            settle();
+            const bool folded = ribbon->property("collapsed").toBool()
+                                && !ribbon->property("bodyShown").toBool();
+            std::fprintf(stderr,
+                         "layout:  ribbon 1366 panel at %.2f scale, logical %dx%d, %s  %s\n",
+                         qtScale, window->width(), window->height(),
+                         folded ? "folded" : "one row", folded ? "ok" : "FAIL");
+            if (!folded) {
+                ++failures;
+            }
+            // The recorded scale case leaves the window small; the fold control below is
+            // measured at the wide width the matrix ended on. The panels animate, and at 2x
+            // one settle can still catch them between widths, so the resize is allowed to
+            // finish before the sheet is measured.
+            window->resize(1920, 1080);
+            settle();
+            settle();
+        }
 
         // The fold control at the wide width: it removes height and the open panel must not
         // put it back or take room from the sheet.
@@ -1250,14 +1432,15 @@ int main(int argc, char *argv[])
         ribbon->setProperty("bodyOpen", true);
         settle();
         const bool minimizedOk = foldedHeight < unfoldedHeight
-                                 && ribbon->height() == foldedHeight
-                                 && sheet->width() == wideSheet;
+                                 && std::abs(ribbon->height() - foldedHeight) <= 0.5
+                                 && std::abs(sheet->width() - wideSheet) <= 0.5;
         if (!minimizedOk) {
             ++failures;
         }
         std::fprintf(stderr,
-                     "layout:  ribbon unfolded %.0f, folded %.0f, body open %.0f, sheet %.0f  %s\n",
-                     unfoldedHeight, foldedHeight, ribbon->height(), sheet->width(),
+                     "layout:  ribbon unfolded %.2f (sheet %.2f), folded %.2f, body open %.2f, "
+                     "sheet %.2f  %s\n",
+                     unfoldedHeight, wideSheet, foldedHeight, ribbon->height(), sheet->width(),
                      minimizedOk ? "ok" : "FAIL");
         ribbon->setProperty("bodyOpen", false);
         ribbon->setProperty("minimized", false);
@@ -1304,8 +1487,10 @@ int main(int argc, char *argv[])
         ribbon->setProperty("menuOpen", false);
         settle();
 
-        // The window's own geometry is view state too: a saved size comes back, and the
-        // minimum height is the one the contract states, not the 560 it used to be.
+        // The window's own geometry is view state too: a saved size comes back inside the
+        // current screen, clamped to the available area minus the unit margin and to the
+        // 900x600 minimum, so a window saved on a large monitor still opens on a small
+        // one (P-028 §1b). The minimum height is the one the contract states.
         window->resize(1180, 740);
         settle();
         QMetaObject::invokeMethod(window, "saveGeometry");
@@ -1313,15 +1498,29 @@ int main(int argc, char *argv[])
         settle();
         QMetaObject::invokeMethod(window, "restoreGeometry");
         settle();
-        const bool sizeBack = window->width() == 1180 && window->height() == 740;
+        const QRect area = window->screen() != nullptr
+                               ? window->screen()->availableGeometry()
+                               : QRect();
+        const int areaWidth = area.isValid() ? area.width() : 1180;
+        const int areaHeight = area.isValid() ? area.height() : 740;
+        const int margin = static_cast<int>(2.0 * unit);
+        const int expectedWidth =
+            std::max(static_cast<int>(window->minimumWidth()),
+                     std::min(1180, areaWidth - margin));
+        const int expectedHeight =
+            std::max(static_cast<int>(window->minimumHeight()),
+                     std::min(740, areaHeight - margin));
+        const bool sizeBack = window->width() == expectedWidth
+                              && window->height() == expectedHeight;
         const bool tallEnough = window->minimumHeight() >= 600.0;
         if (!sizeBack || !tallEnough) {
             ++failures;
         }
         std::fprintf(stderr,
-                     "layout:  geometry %dx%d, minimum height %d  %s\n", window->width(),
-                     window->height(), window->minimumHeight(),
-                     sizeBack && tallEnough ? "ok" : "FAIL");
+                     "layout:  geometry %dx%d (saved 1180x740 on %dx%d), minimum height %d"
+                     "  %s\n",
+                     window->width(), window->height(), areaWidth, areaHeight,
+                     window->minimumHeight(), sizeBack && tallEnough ? "ok" : "FAIL");
         std::fprintf(stderr, "layout: %d failure(s)\n", failures);
         return failures == 0 ? 0 : 1;
     }
@@ -3903,6 +4102,168 @@ int main(int argc, char *argv[])
                   QStringLiteral("ribbon: 1440 shows the unfolded row"));
             state->window->resize(1280, 800);
             state->window->setProperty("ribbonMinimized", state->ribbonMinimized);
+        });
+
+        // The support floor (P-028): at 1366 the ribbon is one row with the seven groups and
+        // the measured collapse set, and a real Enter on a collapsed group's titled button
+        // opens its flyout. At 1920 every group is expanded; at 1280 the P-027 fold is still
+        // the fallback. The window's size and remembered fold are restored afterwards.
+        steps->push_back([state, check] {
+            state->ribbonMinimized = state->window->property("ribbonMinimized").toBool();
+            state->window->resize(1366, 768);
+            check(state->window->width() == 1366 && state->window->height() == 768,
+                  QStringLiteral("ribbon: the window reaches 1366x768"));
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            check(ribbon != nullptr && !ribbon->property("collapsed").toBool()
+                      && ribbon->property("bodyShown").toBool(),
+                  QStringLiteral("ribbon: 1366 keeps the one-row ribbon"));
+            QQuickItem *groupsRow =
+                state->window->findChild<QQuickItem *>(QStringLiteral("ribbonGroupsRow"));
+            QStringList titles;
+            QStringList collapsedTitles;
+            QQuickItem *alinear = nullptr;
+            if (groupsRow != nullptr) {
+                for (QQuickItem *group : groupsRow->childItems()) {
+                    if (group->objectName() != QLatin1String("ribbonGroup")
+                        || !group->isVisible()) {
+                        continue;
+                    }
+                    const QString title = group->property("title").toString();
+                    titles.append(title);
+                    if (group->property("collapsed").toBool()) {
+                        collapsedTitles.append(title);
+                    }
+                    if (title == QLatin1String("Alinear")) {
+                        alinear = group;
+                    }
+                }
+            }
+            const QStringList order = {
+                QStringLiteral("Historial"), QStringLiteral("Circuito"),
+                QStringLiteral("Componente"), QStringLiteral("Alinear"),
+                QStringLiteral("Conducto"), QStringLiteral("Repartir"),
+                QStringLiteral("Paleta"),
+            };
+            const QStringList collapsed = {
+                QStringLiteral("Historial"), QStringLiteral("Alinear"),
+                QStringLiteral("Repartir"),
+            };
+            check(ribbon != nullptr && titles == order,
+                  QStringLiteral("ribbon: 1366 shows the seven groups"));
+            check(collapsedTitles == collapsed,
+                  QStringLiteral("ribbon: 1366 collapses Historial, Alinear and Repartir"));
+            QQuickItem *button =
+                alinear != nullptr
+                    ? alinear->findChild<QQuickItem *>(QStringLiteral("ribbonGroupButton"))
+                    : nullptr;
+            if (button != nullptr && button->isVisible()) {
+                button->forceActiveFocus();
+            }
+            check(button != nullptr && button->isVisible() && button->hasActiveFocus(),
+                  QStringLiteral("ribbon: 1366 focuses Alinear's group button"));
+        });
+        steps->push_back([state, check] {
+            QQuickItem *groupsRow =
+                state->window->findChild<QQuickItem *>(QStringLiteral("ribbonGroupsRow"));
+            QQuickItem *alinear = nullptr;
+            if (groupsRow != nullptr) {
+                for (QQuickItem *group : groupsRow->childItems()) {
+                    if (group->objectName() == QLatin1String("ribbonGroup")
+                        && group->property("title").toString() == QLatin1String("Alinear")) {
+                        alinear = group;
+                    }
+                }
+            }
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+            QVariant commands;
+            const bool counted = alinear != nullptr
+                                 && QMetaObject::invokeMethod(
+                                     alinear, "flyoutCommandCount",
+                                     Q_RETURN_ARG(QVariant, commands));
+            check(alinear != nullptr && alinear->property("flyoutOpen").toBool() && counted
+                      && commands.toInt() > 0,
+                  QStringLiteral("ribbon: Enter opens Alinear's flyout with its commands"));
+            if (alinear != nullptr) {
+                QMetaObject::invokeMethod(alinear, "closeFlyout");
+            }
+            state->window->resize(1920, 1080);
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            QQuickItem *groupsRow =
+                state->window->findChild<QQuickItem *>(QStringLiteral("ribbonGroupsRow"));
+            int groups = 0;
+            int collapsed = 0;
+            if (groupsRow != nullptr) {
+                for (QQuickItem *group : groupsRow->childItems()) {
+                    if (group->objectName() != QLatin1String("ribbonGroup")
+                        || !group->isVisible()) {
+                        continue;
+                    }
+                    ++groups;
+                    if (group->property("collapsed").toBool()) {
+                        ++collapsed;
+                    }
+                }
+            }
+            check(ribbon != nullptr && !ribbon->property("collapsed").toBool()
+                      && groups == 7 && collapsed == 0,
+                  QStringLiteral("ribbon: 1920 expands all seven groups"));
+            state->window->resize(1280, 800);
+        });
+        steps->push_back([state, check] {
+            QObject *ribbon = state->window->findChild<QObject *>(QStringLiteral("ribbon"));
+            check(ribbon != nullptr && ribbon->property("collapsed").toBool()
+                      && !ribbon->property("bodyShown").toBool(),
+                  QStringLiteral("ribbon: 1280 still folds to the tab row"));
+            state->window->setProperty("ribbonMinimized", state->ribbonMinimized);
+        });
+
+        // The first window (P-028 §1b): the size is computed from the screen area, not from
+        // the machine's own screen, so these probes feed synthetic areas and the unit the
+        // rule names. 1366 opens above the 1280 fold; 1280 is the recorded folded case; a
+        // remembered 1920x1080 is clamped to the 1366 area with the same margin.
+        const auto defaultSize = [state](int areaWidth, int areaHeight, int unit) {
+            QVariant result;
+            const bool called = QMetaObject::invokeMethod(
+                state->window, "defaultWindowSize", Q_RETURN_ARG(QVariant, result),
+                Q_ARG(QVariant, areaWidth), Q_ARG(QVariant, areaHeight),
+                Q_ARG(QVariant, unit));
+            return called ? result.toMap() : QVariantMap();
+        };
+        steps->push_back([check, defaultSize] {
+            const QVariantMap size = defaultSize(1920, 1080, 18);
+            check(size.value(QStringLiteral("width")).toInt() == 1440
+                      && size.value(QStringLiteral("height")).toInt() == 900,
+                  QStringLiteral("window: 1920x1080 gives 1440x900"));
+        });
+        steps->push_back([check, defaultSize] {
+            const QVariantMap size = defaultSize(1366, 768, 18);
+            check(size.value(QStringLiteral("width")).toInt() == 1330
+                      && size.value(QStringLiteral("width")).toInt() > 1280
+                      && size.value(QStringLiteral("height")).toInt() == 732,
+                  QStringLiteral("window: 1366x768 fits above the fold"));
+        });
+        steps->push_back([check, defaultSize] {
+            const QVariantMap size = defaultSize(1280, 800, 18);
+            check(size.value(QStringLiteral("width")).toInt() == 1244
+                      && size.value(QStringLiteral("width")).toInt() < 1280
+                      && size.value(QStringLiteral("height")).toInt() == 764,
+                  QStringLiteral("window: 1280x800 is the folded pair"));
+        });
+        steps->push_back([state, check] {
+            QVariant result;
+            const bool called = QMetaObject::invokeMethod(
+                state->window, "clampWindowSize", Q_RETURN_ARG(QVariant, result),
+                Q_ARG(QVariant, 1920), Q_ARG(QVariant, 1080),
+                Q_ARG(QVariant, 1366), Q_ARG(QVariant, 768), Q_ARG(QVariant, 18));
+            const QVariantMap size = result.toMap();
+            check(called && size.value(QStringLiteral("width")).toInt() == 1330
+                      && size.value(QStringLiteral("height")).toInt() == 732,
+                  QStringLiteral("window: restored 1920x1080 fits 1366x768"));
         });
 
         steps->push_back([state, check] {

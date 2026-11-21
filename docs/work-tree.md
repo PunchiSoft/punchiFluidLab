@@ -85,6 +85,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
 | P-026 | The electrical connection does not work as planned | `deferred` | [P-026](#p-026--the-electrical-connection-does-not-work-as-planned): the owner's decision of 2026-11-20; not in the current queue and not touched by P-024a |
 | P-027 | The ribbon's horizontal groups overflow at 1280/1440 | `in progress` | [P-027](#p-027--the-ribbons-horizontal-groups-overflow-at-12801440) on `fix/ribbon-collapse-1280`: the fold at 1280, the reachable Diámetro, the layout check and the 1440 known limit |
+| P-028 | The ribbon's group row must fit 1366×768 unfolded | `in progress` | [P-028](#p-028--the-ribbons-group-row-fits-1366768) on `fix/ribbon-1366`: one row with per-group collapse, the measured set, the layout matrix, the flyout, the screen-aware first window and the captures |
 | P-029 | `canvasitem.cpp` grew past the input-path budget with the port menu | `reported` | [P-029](#p-029--canvasitemcpp-grew-past-the-input-path-budget): the double click and the release no-op put it at 812 lines; split the input path instead of keeping the `BIG_ALLOWED` exemption |
 
 ## A node, filled
@@ -393,6 +394,54 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   green; the light/dark captures at 1280/1440 show the folded Diámetro and the sheet;
   `./scripts-dev/check.sh` is green; the owner confirms the diff.
 - **State**: `in progress` on `fix/ribbon-collapse-1280`; `done` after the owner merges.
+
+### P-028 — The ribbon's group row fits 1366×768
+
+- **Problem**: P-027 made the ribbon fold at 1280 but left the unfolded row measuring about
+  1875 px. At 1366×768 — the support floor, the entry and education laptop — the content
+  is about 1360 px, so Conducto, Repartir and Paleta were clipped past the right edge and
+  the Conducto group's **Diámetro** could not be reached. The owner's requirement is that
+  the ribbon stays visible and **unfolded** at 1366, not replaced by the reduced menu.
+- **Evidence**: the owner's requirement and his choice of the group-collapse pattern after
+  using it in Inventor; the P-027 measurements; the spec `specs/ribbon-1366.md`. After the
+  fix, `--check-layout` prints the one-row ribbon at 1280 folded, 1366, 1440, 1600 and
+  1920 with seven groups and the measured collapse set; `--selftest` proves the 1366 row,
+  the `Enter` flyout, the 1920 expansion and the 1280 fold; the window probe proves
+  1920×1080 → 1440×900, 1366×768 → 1330×732, 1280×800 → 1244×764 and a restored 1920×1080
+  clamped to 1366×768; the captures are `p028-ribbon-1366x768-*`, `…-1440x900-*` and
+  `…-1920x1080-*`, light and dark, plus the 1366 flyout.
+- **Touches**: `apps/punchi-fluid-qt/RibbonBar.qml` (the one-row layout and the collapse
+  priority), `apps/punchi-fluid-qt/RibbonGroup.qml` (the collapsed titled button and the
+  flyout from the same content), `apps/punchi-fluid-qt/Main.qml` (the first window's
+  screen-aware size and the restored clamp), `apps/punchi-fluid-qt/src/main.cpp`
+  (`--check-layout` matrix, the `--selftest` steps, the `--ribbon-flyout` capture hook),
+  `docs/ui-ux.md`, `docs/next-steps.md`, this register and `CHANGELOG.md`.
+- **Options**:
+  1. Two rows of groups. **Con**: rejected by the owner; it is the least common pattern and
+     takes ~82 px from the sheet.
+  2. Icon-only controls. **Con**: rejected; the labels are what a student reads.
+  3. One row with per-group collapse. **Pro**: the seven names stay visible, the height
+     stays 121 px, every command keeps a labelled home. **Chosen** by the owner.
+- **Decision**: when the row exceeds the content, collapse greedily in the order
+  **Repartir, Alinear, Paleta, Historial, Circuito, Componente, Conducto**. A group with no
+  command — Paleta's note — is skipped because it has nothing to fly out. The measured set
+  is **1366 → Historial, Alinear, Repartir**; **1440/1600 → Alinear, Repartir**;
+  **1920 → none**. The collapsed group is its name plus a chevron; its non-modal flyout
+  opens with `Enter`/`Space`, closes on `Esc` or a click outside, and carries the same
+  commands with their accessible names. The 1440 known-limit exemption is removed. The
+  **first window is screen-aware**: 1440×900 on 1080p, the largest size that fits minus a
+  two-unit margin on a smaller screen, never below 900×600 and centred; a remembered size is
+  clamped to the current screen, so a 1920 window reopens inside a 1366 laptop.
+- **Stages**: one branch, `fix/ribbon-1366` — the layout and the group modes, the check
+  matrix, the selftest steps and the window probe, the four documents, the captures and the
+  gate.
+- **Done when**: `--check-layout` is 0 failures at 1280 folded and at 1366/1440/1600/1920
+  unfolded, at `QT_SCALE_FACTOR` 1.25/1.5/2 and `--font-scale 1.5`; the `--selftest`
+  `ribbon: 1366 …`, `… Enter …`, `… 1920 …` and `… 1280 …` steps and the `window: …` size
+  steps pass; `--check-qml` is 0 and `--check-theme` green; the light/dark captures show the
+  one row at the three widths and a flyout at 1366; `./scripts-dev/check.sh` is green; the
+  owner confirms the diff.
+- **State**: `in progress` on `fix/ribbon-1366`; `done` after the owner merges.
 
 ### P-025 — The supply starts at 4 bar
 

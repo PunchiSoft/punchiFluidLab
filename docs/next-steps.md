@@ -433,7 +433,7 @@ Answer these before the milestone that needs them; each one changes what gets bu
 |---|---|---|---|
 | 1 | `git init` and first commit in this folder? | before M1 | keep working without git |
 | 2 | Confirm the current edition of the fluid-power port-identification standard (only ISO 1219-1/2/3 could be verified from this machine) | M1.5 | use 1/2/4/3/5/12/14 and say so in the review |
-| 3 | Ribbon at 1100 px, or collapse at 1280? **Answered 2026-11-21: collapse at 1280** (P-027); the unfolded row's ~1875 px overflow at 1440 is a separate follow-up | M1 | collapse at 1280; the 1440 overflow is a later node |
+| 3 | Ribbon at 1100 px, or collapse at 1280? **Answered 2026-11-21: collapse at 1280** (P-027); the unfolded row's ~1875 px overflow at 1440 is **closed by P-028** on `fix/ribbon-1366`, which keeps one row with per-group collapse from 1366×768 | M1 | collapse at 1280; the 1440 overflow is a later node |
 | 4 | Default sheet and export: A4 landscape, 300 dpi, title block with the guide's fields? | M2 | yes to all; landscape chosen on 2026-11-14 |
 | 5 | Should the export include a symbol legend and the pressure/position readouts, or a clean diagram only? | M2 | legend yes, readouts no |
 | 6 | Left sidebar fixed width or user-resizable with a saved preference? | M1 | resizable, saved in the session state |
