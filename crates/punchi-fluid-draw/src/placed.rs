@@ -42,6 +42,11 @@ pub struct Pipe<'a> {
     pub pressure_ratio: f32,
     /// Class of the line: working, pilot or drain, which decides its pattern.
     pub class: LineClass,
+    /// Nominal outside diameter of a pneumatic pipe, in hundredths of a millimetre.
+    ///
+    /// `None` is an old sheet or an electrical wire; the width then stays the one the
+    /// drawing always used. The size is stored, not measured: its physics is P-024b.
+    pub tube_od_hundredths: Option<u16>,
 }
 use crate::control_drawing::{indicator_rays, moving_bar};
 use crate::symbol::{self, Ink};
@@ -319,24 +324,69 @@ fn draw_pipe(
     catalog: &Catalog,
     ink: &Ink,
 ) {
-    let (Some(from), Some(to)) = (
-        placements.get(pipe.from.placement),
-        placements.get(pipe.to.placement),
-    ) else {
+    let Some(route) = pipe_route(placements, boxes, pipe, catalog) else {
         return;
     };
-    let (Some(from_definition), Some(to_definition)) =
-        (catalog.get(from.catalog_id), catalog.get(to.catalog_id))
-    else {
-        return;
+    // The neutral ink at atmosphere, the working colour at supply pressure. The status
+    // bar carries the number too, so pressure is never told by colour alone.
+    let colour = blend(ink.line, ink.work, pipe.pressure_ratio);
+    // An all-electrical hose is drawn with the electrical class: the wire says what it is
+    // before anyone reads a label, and a student who has just placed a contact does not
+    // have to choose a class for the first wire of the control circuit. Its stroke stays
+    // the one it always had; only a pneumatic pipe follows the tube.
+    let class = if route.electrical {
+        LineClass::Electrical
+    } else {
+        pipe.class
     };
-    let (Some(start), Some(end)) = (
-        port_point(from.rect, from.orientation, from_definition, pipe.from.port),
-        port_point(to.rect, to.orientation, to_definition, pipe.to.port),
-    ) else {
-        return;
+    let width = if route.electrical {
+        symbol::LINE * 1.2
+    } else {
+        tube_width_mm(pipe.tube_od_hundredths)
     };
+    // The pattern is the class's, never a literal: a pilot or drain line is read by its
+    // dashes before anyone reads its label.
+    surface.line(&route.points, Stroke::new(width, colour).with_class(class));
+}
 
+/// The width a pneumatic pipe draws at, from its nominal outside diameter.
+///
+/// The series is the drawing's, not a continuous map: 0.25, 0.35 and 0.50 mm are visibly
+/// different at 300 dpi, and the cap stays below the 0.7 mm frame so a pipe never competes
+/// with the sheet's own border. `None` keeps the width the drawing always used for an old
+/// sheet; an electrical wire never reaches here.
+#[must_use]
+pub fn tube_width_mm(tube: Option<u16>) -> f32 {
+    match tube {
+        None => symbol::LINE * 1.2,
+        Some(od) if od < 600 => 0.25,
+        Some(od) if od < 1000 => 0.35,
+        Some(_) => 0.50,
+    }
+}
+
+/// The route a pipe takes, and whether its two ports make it an electrical wire.
+pub(crate) struct PipeRoute {
+    pub(crate) points: Vec<Pt>,
+    pub(crate) electrical: bool,
+}
+
+/// Builds the polyline of one pipe from the same router the sheet draws with.
+pub(crate) fn pipe_route(
+    placements: &[Placed<'_>],
+    boxes: &[Rect],
+    pipe: &Pipe<'_>,
+    catalog: &Catalog,
+) -> Option<PipeRoute> {
+    let from = placements.get(pipe.from.placement)?;
+    let to = placements.get(pipe.to.placement)?;
+    let from_definition = catalog.get(from.catalog_id)?;
+    let to_definition = catalog.get(to.catalog_id)?;
+    let start = port_point(from.rect, from.orientation, from_definition, pipe.from.port)?;
+    let end = port_point(to.rect, to.orientation, to_definition, pipe.to.port)?;
+    let electrical = pipe.class == LineClass::Electrical
+        || (pipe.class == LineClass::Working
+            && is_electrical(from_definition, pipe.from.port, to_definition, pipe.to.port));
     let points = route_between_boxes_avoiding(
         start,
         port_edge_towards(
@@ -360,25 +410,7 @@ fn draw_pipe(
         [pipe.from.placement, pipe.to.placement],
         pipe.offset_mm,
     );
-    // The neutral ink at atmosphere, the working colour at supply pressure. The status
-    // bar carries the number too, so pressure is never told by colour alone.
-    let colour = blend(ink.line, ink.work, pipe.pressure_ratio);
-    // An all-electrical hose is drawn with the electrical class: the wire says what it is
-    // before anyone reads a label, and a student who has just placed a contact does not
-    // have to choose a class for the first wire of the control circuit.
-    let class = if pipe.class == LineClass::Working
-        && is_electrical(from_definition, pipe.from.port, to_definition, pipe.to.port)
-    {
-        LineClass::Electrical
-    } else {
-        pipe.class
-    };
-    // The pattern is the class's, never a literal: a pilot or drain line is read by its
-    // dashes before anyone reads its label.
-    surface.line(
-        &points,
-        Stroke::new(symbol::LINE * 1.2, colour).with_class(class),
-    );
+    Some(PipeRoute { points, electrical })
 }
 
 /// The edge of its box a port sits on, which is the direction the hose leaves in.
@@ -453,7 +485,8 @@ fn is_electrical(
 }
 
 pub use crate::route::{
-    route, route_between, route_between_boxes, route_between_boxes_avoiding, route_offset,
+    route, route_between, route_between_boxes, route_between_boxes_avoiding, route_length_mm,
+    route_offset,
 };
 
 /// Mixes two colours; `amount` is clamped to `0..=1`.
@@ -672,6 +705,7 @@ mod tests {
             },
             offset_mm: 10.0,
             pressure_ratio: 0.0,
+            tube_od_hundredths: Some(1000),
         }];
 
         let bounds = bounds_placed(&placements, &pipes, &catalog).expect("a drawing has bounds");
@@ -740,3 +774,7 @@ mod selection_tests {
         assert!(accent, "the selected symbol carries the accent");
     }
 }
+
+#[cfg(test)]
+#[path = "placed_tube_tests.rs"]
+mod tube_tests;

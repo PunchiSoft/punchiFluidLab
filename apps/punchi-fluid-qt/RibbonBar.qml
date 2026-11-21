@@ -65,6 +65,9 @@ Rectangle {
     /// Capture and review hooks: open a list as soon as its control exists.
     property bool paperListRequested: false
     property bool marginListRequested: false
+    /// The loaded Diámetro control, so the window shortcut can open its list even when the
+    /// user is on another tab. It is null while Editar is not on screen.
+    property var tubeControl: null
 
     color: session.background
     // The collapsed menu hangs below the tab row, over the sheet. Without a plane of its
@@ -170,6 +173,7 @@ Rectangle {
                     // one, and inventing a second shape for a dash would be worse than
                     // letting the label say which class the button gives.
                     title: qsTr("Conducto"),
+                    custom: "tube",
                     items: [
                         { id: "pipe-working", label: qsTr("Trabajo"), icon: "draw-line", hint: qsTr("línea llena, la del aire que trabaja"), enabled: session.selectedPipe >= 0 },
                         { id: "pipe-pilot", label: qsTr("Pilotaje"), icon: "draw-line", hint: qsTr("línea discontinua, la que manda"), enabled: session.selectedPipe >= 0 },
@@ -871,7 +875,11 @@ Rectangle {
                         visible: !!modelData.custom
                         sourceComponent: modelData.custom === "page-setup" ? pageSetupGroup
                                        : modelData.custom === "recent" ? recentGroup
+                                       : modelData.custom === "tube" ? tubeGroup
                                        : null
+                        onItemChanged: if (item && item.objectName === "tubeSizeControl") {
+                                           ribbon.tubeControl = item;
+                                       }
                     }
 
                     Repeater {
@@ -1009,5 +1017,24 @@ Rectangle {
             session: ribbon.session
             showLabel: false
         }
+    }
+
+    Component {
+        id: tubeGroup
+
+        TubeSizeControl {
+            objectName: "tubeSizeControl"
+            session: ribbon.session
+        }
+    }
+
+    /// The window shortcut `Alt+D`: bring the Editar tab up, then open the list.
+    function openTubeMenu() {
+        ribbon.current = 1;
+        Qt.callLater(function () {
+            if (ribbon.tubeControl) {
+                ribbon.tubeControl.openPopup();
+            }
+        });
     }
 }

@@ -85,6 +85,7 @@ qt_add_qml_module(punchi-fluid
         SoundFeedback.qml
         StartView.qml
         StatusBar.qml
+        TubeSizeControl.qml
 )
 
 # The licence travels inside the binary too: the About popup shows the whole GPL text, and

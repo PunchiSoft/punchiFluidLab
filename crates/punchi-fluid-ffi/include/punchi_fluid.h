@@ -21,7 +21,7 @@ extern "C" {
 #define PF_MAX_CIRCUITS 32u
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 10u
+#define PF_ABI_VERSION 11u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -485,10 +485,36 @@ int32_t pf_session_remove_selected_pipe(PfSession *session);
 /* The line class of a pipe: 0 working, 1 pilot, 2 drain. One undo per change. */
 int32_t pf_session_pipe_class(const PfSession *session, uint32_t index);
 int32_t pf_session_set_pipe_class(PfSession *session, uint32_t index, uint32_t line_class);
+/*
+ * A pneumatic pipe's nominal outside diameter, in hundredths of a millimetre. `0` means
+ * unspecified and `-1` means there is no such pipe. An electrical wire carries no tube.
+ */
+int32_t pf_session_pipe_tube(const PfSession *session, uint32_t index);
+/*
+ * `1` when both ends of the pipe are electrical terminals: a wire has no tube to show.
+ */
+int32_t pf_session_pipe_is_electrical(const PfSession *session, uint32_t index);
+/*
+ * Sets that diameter: `0` takes it away. Returns `0` on success and `1` when the pipe does
+ * not exist, the value is outside 100..=5000, or the pipe is an electrical wire. One undo.
+ */
+int32_t pf_session_set_pipe_tube(PfSession *session, uint32_t index, int32_t hundredths);
 /* Drags the middle segment of a pipe so it passes through a point; one undo per drag. */
 int32_t pf_session_route_pipe(PfSession *session, uint32_t index, float x_mm, float y_mm);
 /* How far that segment sits from the automatic route, in millimetres. */
 int32_t pf_session_pipe_offset(const PfSession *session, uint32_t index, float *out);
+
+/*
+ * The nominal tube series: the metric entries first, then the inch ones. The list lives
+ * once, in the core, and a front end builds its menu by enumerating it here.
+ */
+int32_t pf_tube_size_count(void);
+/* Outside diameter of one entry, in hundredths of a millimetre, or -1. */
+int32_t pf_tube_size_od(uint32_t index);
+/* 0 metric, 1 inch, -1 when the index does not exist. */
+int32_t pf_tube_size_nominal(uint32_t index);
+/* The entry's label as NUL-terminated UTF-8: bytes written, or a negative code. */
+int32_t pf_tube_size_label(uint32_t index, char *out, uint32_t capacity);
 
 /* The valve's box of the last built frame, as x0 y0 x1 y1 in millimetres. */
 int32_t pf_session_valve_rect(const PfSession *session, float *out);

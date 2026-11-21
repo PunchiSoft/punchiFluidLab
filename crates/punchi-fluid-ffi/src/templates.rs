@@ -261,9 +261,14 @@ pub(crate) fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Docu
         ) {
             return Err(String::from("a connection in this template is invalid"));
         }
+        let pipe = document.connections().len() - 1;
         if wire.class != LineClass::Working {
-            let pipe = document.connections().len() - 1;
             let _ = document.seed_pipe_class(pipe, wire.class);
+        }
+        // A pneumatic pipe starts at the documented 10 mm; the electrical control
+        // template's wire is not a tube and stays unspecified.
+        if wire.class != LineClass::Electrical {
+            let _ = document.seed_pipe_tube(pipe, Some(punchi_fluid_core::DEFAULT_TUBE_HUNDREDTHS));
         }
     }
     Ok(document)

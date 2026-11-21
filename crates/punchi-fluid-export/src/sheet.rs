@@ -163,7 +163,40 @@ fn draw_parts(surface: &mut dyn Surface, page: &Page) {
     if parts.omitted > 0 {
         surface.text(
             Pt::new(name_x, y),
-            &format!("… y {} más", parts.omitted),
+            &format!("… y {} piezas más", parts.omitted),
+            LABEL,
+            Colour::new(90, 90, 90),
+            Anchor::Start,
+        );
+        y += 4.4;
+    }
+    // The tubes close the list: one row per size and class, with the length of the route
+    // the drawing shows. The note says what that length is, because a reader must not take
+    // it for a cut list with a bend allowance it does not have.
+    for row in &parts.tubes {
+        surface.text(
+            Pt::new(quantity_x, y),
+            &row.text(),
+            LABEL,
+            Colour::BLACK,
+            Anchor::Start,
+        );
+        y += 4.4;
+    }
+    if !parts.tubes.is_empty() {
+        surface.text(
+            Pt::new(name_x, y),
+            "longitud = recorrido dibujado, sin desvíos, racores ni merma",
+            LABEL * 0.8,
+            MUTED,
+            Anchor::Start,
+        );
+        y += 3.6;
+    }
+    if parts.omitted_tubes > 0 {
+        surface.text(
+            Pt::new(name_x, y),
+            &format!("… y {} tubos más", parts.omitted_tubes),
             LABEL,
             Colour::new(90, 90, 90),
             Anchor::Start,
@@ -318,6 +351,7 @@ mod tests {
                 ("cylinder.single_acting_20_100", Some("1A2")),
                 ("supply.compressor", None),
             ],
+            [],
         ));
         let block = page.title_block.clone().unwrap_or_default();
         let mut recording = Recording::default();

@@ -22,12 +22,12 @@ use punchi_fluid::{
     PF_BLOCK_MODEL_INDUSTRIAL, PF_BLOCK_MODEL_SCHOOL, PF_BLOCK_NONE, PF_BLOCK_NORMS,
     PF_BLOCK_NUMBER, PF_BLOCK_OWNER, PF_BLOCK_PREPARED, PF_BLOCK_PROJECT, PF_BLOCK_REVISION,
     PF_BLOCK_SCALE, PF_BLOCK_TITLE, PF_BLOCK_TOP_RIGHT, PF_EDIT_BORE, PF_EDIT_PRESSURE,
-    PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_LIMIT, PF_ERR_MODEL, PF_EXPORT_CUSTOM_PAPER, PF_EXPORT_PDF,
-    PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK, PF_QUANTITY_FLOW,
-    PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER, PF_TEMPLATE_COUNT, PfAbi,
-    PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet, PfExportOptions, PfFrame, PfInk,
-    PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi, pf_export_paper_bounds,
-    pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
+    PF_EDIT_ROD, PF_EDIT_STROKE, PF_ERR_LIMIT, PF_ERR_MODEL, PF_ERR_NULL, PF_EXPORT_CUSTOM_PAPER,
+    PF_EXPORT_PDF, PF_EXPORT_SVG, PF_HAS_STROKE, PF_KIND_LINE, PF_KIND_TEXT, PF_OK,
+    PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER,
+    PF_TEMPLATE_COUNT, PfAbi, PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet,
+    PfExportOptions, PfFrame, PfInk, PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi,
+    pf_export_paper_bounds, pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
     pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
     pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
     pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
@@ -48,25 +48,29 @@ use punchi_fluid::{
     pf_session_mirror_selected, pf_session_move_component, pf_session_move_selection,
     pf_session_new, pf_session_new_document, pf_session_open, pf_session_open_recent,
     pf_session_paste, pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class,
-    pf_session_pipe_offset, pf_session_place_component, pf_session_placement_id,
-    pf_session_port_point, pf_session_press_component_valve, pf_session_press_valve,
-    pf_session_preview, pf_session_preview_template, pf_session_recent_available,
-    pf_session_recent_count, pf_session_recent_path, pf_session_recover, pf_session_redo,
-    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
-    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
-    pf_session_rename_circuit, pf_session_reset_block_visibility, pf_session_restart,
-    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
-    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
-    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
-    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
-    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
-    pf_session_set_chart_source, pf_session_set_component_designation,
-    pf_session_set_component_edits, pf_session_set_grid_step, pf_session_set_pipe_class,
-    pf_session_set_recent_file, pf_session_set_sheet, pf_session_sheet, pf_session_space_selection,
-    pf_session_straighten_pipe, pf_session_telemetry, pf_session_toggle_contact,
-    pf_session_toggle_select, pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
-    pf_session_valve_spring_return,
+    pf_session_pipe_offset, pf_session_pipe_tube, pf_session_place_component,
+    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
+    pf_session_press_valve, pf_session_preview, pf_session_preview_template,
+    pf_session_recent_available, pf_session_recent_count, pf_session_recent_path,
+    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
+    pf_session_release_valve, pf_session_remove_circuit, pf_session_remove_component,
+    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
+    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
+    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
+    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
+    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
+    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
+    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
+    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
+    pf_session_set_pipe_class, pf_session_set_pipe_tube, pf_session_set_recent_file,
+    pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_straighten_pipe,
+    pf_session_telemetry, pf_session_toggle_contact, pf_session_toggle_select,
+    pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
+    pf_session_valve_spring_return, pf_tube_size_count, pf_tube_size_label, pf_tube_size_nominal,
+    pf_tube_size_od,
 };
+
+use punchi_fluid_draw::placed::tube_width_mm;
 
 fn session() -> *mut PfSession {
     // SAFETY: a null directory asks for the built-in catalog, which is what a front end
@@ -148,6 +152,70 @@ fn port_of(session: *mut PfSession, index: u32, port: &str) -> (f32, f32) {
         PF_OK
     );
     (out[0], out[1])
+}
+
+/// Places a supply and a contact and joins them with one wire; returns the wire's index.
+///
+/// The two ports are `PortRole::Electrical`, which is what makes the pipe a wire: the file
+/// format cannot store the electrical class, and the roles are the only authority.
+fn electrical_wire(session: *mut PfSession, at: (f32, f32)) -> u32 {
+    let rail = catalog_index(session, "electrical.supply");
+    let button = catalog_index(session, "electrical.contact");
+    // SAFETY: live session and finite coordinates.
+    let rail = unsafe { pf_session_place_component(session, rail, at.0, at.1) };
+    let button = unsafe { pf_session_place_component(session, button, at.0 + 50.0, at.1) };
+    assert!(rail >= 0 && button >= 0, "the control circuit is placed");
+    let rail = u32::try_from(rail).unwrap_or_default();
+    let button = u32::try_from(button).unwrap_or_default();
+    let l = CString::new("L").unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let pipe = unsafe { pf_session_connection_count(session) };
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_connect(session, rail, l.as_ptr(), button, one.as_ptr()) },
+        PF_OK
+    );
+    pipe
+}
+
+/// Writes the active circuit as an SVG page with its parts list and returns the text.
+///
+/// `None` means the fixture could not write the page; the callers assert on it so a broken
+/// export still fails the test with a message instead of a silent empty page.
+fn export_svg(session: *mut PfSession, name: &str) -> Option<String> {
+    let directory = tempfile::tempdir().ok()?;
+    let path = directory.path().join(name);
+    let encoded = CString::new(path.to_str().unwrap_or_default()).ok()?;
+    let date = CString::new("2026-11-20").ok()?;
+    // SAFETY: live session, NUL-terminated path and date, A4 is index 1.
+    let code = unsafe {
+        pf_session_export(
+            session,
+            encoded.as_ptr(),
+            PF_EXPORT_SVG,
+            1,
+            0,
+            300.0,
+            date.as_ptr(),
+        )
+    };
+    assert_eq!(
+        code,
+        PF_OK,
+        "{}",
+        // SAFETY: live session.
+        unsafe { CStr::from_ptr(pf_session_last_error(session)) }.to_string_lossy()
+    );
+    std::fs::read_to_string(path.to_str().unwrap_or_default()).ok()
+}
+
+/// The one tube row of `size` in an SVG page, if the parts list printed it.
+fn tube_row(svg: &str, size: &str) -> Option<String> {
+    let marker = format!("Tubo {size} · ");
+    let start = svg.find(&marker)?;
+    let tail = &svg[start..];
+    let end = tail.find('<').unwrap_or(tail.len());
+    Some(tail[..end].trim().to_owned())
 }
 
 #[test]
@@ -3934,6 +4002,300 @@ fn a_pipe_takes_another_line_class_and_keeps_it_in_the_file() {
     assert_eq!(unsafe { pf_session_redo(original) }, PF_OK);
     // SAFETY: live session.
     assert_eq!(unsafe { pf_session_pipe_class(original, 0) }, 1);
+    // SAFETY: both sessions are still alive.
+    unsafe {
+        pf_session_free(reopened);
+        pf_session_free(original);
+    }
+}
+
+#[test]
+fn a_new_pneumatic_connection_is_ten_millimetres_and_an_electrical_wire_has_no_tube() {
+    let session = session();
+    let pipes = unsafe { pf_session_connection_count(session) };
+    assert!(pipes >= 3, "the example draws its pneumatic circuit");
+    for index in 0..pipes {
+        // SAFETY: live session.
+        assert_eq!(
+            unsafe { pf_session_pipe_tube(session, index) },
+            1000,
+            "the seeded pipe {index} is not 10 mm"
+        );
+    }
+
+    // A pipe the user makes starts at the same documented 10 mm.
+    let supply = catalog_index(session, "supply.compressor");
+    let valve = catalog_index(session, "valve.3_2.spring_return");
+    // SAFETY: live session and finite coordinates.
+    let supply = unsafe { pf_session_place_component(session, supply, 120.0, 40.0) };
+    let valve = unsafe { pf_session_place_component(session, valve, 160.0, 40.0) };
+    assert!(supply >= 0 && valve >= 0);
+    let supply = u32::try_from(supply).unwrap_or_default();
+    let valve = u32::try_from(valve).unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    let before = unsafe { pf_session_connection_count(session) };
+    // SAFETY: live session and a NUL-terminated port.
+    assert_eq!(
+        unsafe { pf_session_connect(session, supply, one.as_ptr(), valve, one.as_ptr()) },
+        PF_OK
+    );
+    let pipe = before;
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 1000);
+
+    // The bound: a pipe that does not exist has no size at all.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, 9_999) }, -1);
+
+    // A valid change is one undo.
+    // SAFETY: live session.
+    assert_eq!(
+        unsafe { pf_session_set_pipe_tube(session, pipe, 1600) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 1600);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 1000);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_redo(session) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 1600);
+
+    // Every value outside `100..=5000` is refused, and the pipe keeps its size.
+    for value in [99, 5001, 65000, -1, -1600] {
+        // SAFETY: live session.
+        assert_eq!(
+            unsafe { pf_session_set_pipe_tube(session, pipe, value) },
+            1,
+            "{value} must be refused"
+        );
+    }
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 1600);
+    // `0` takes the size away, and both ends of the range are accepted.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_set_pipe_tube(session, pipe, 0) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, 0);
+    for value in [100, 5000] {
+        // SAFETY: live session.
+        assert_eq!(
+            unsafe { pf_session_set_pipe_tube(session, pipe, value) },
+            PF_OK
+        );
+        // SAFETY: live session.
+        assert_eq!(unsafe { pf_session_pipe_tube(session, pipe) }, value);
+    }
+
+    // The wire: no tube, and the setter refuses it with a reason.
+    let wire = electrical_wire(session, (40.0, 80.0));
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, wire) }, 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_set_pipe_tube(session, wire, 1600) }, 1);
+    // SAFETY: live session.
+    let error = unsafe { CStr::from_ptr(pf_session_last_error(session)) }.to_string_lossy();
+    assert!(
+        error.contains("electrical"),
+        "the refusal says why: {error}"
+    );
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, wire) }, 0);
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_tube_series_abi_enumerates_metric_and_inch_entries() {
+    let count = pf_tube_size_count();
+    assert_eq!(count, 23, "13 metric entries and 10 inch ones");
+    for index in 0..count {
+        let index_u32 = u32::try_from(index).unwrap_or_default();
+        let nominal = pf_tube_size_nominal(index_u32);
+        assert_eq!(
+            nominal,
+            i32::from(index >= 13),
+            "entry {index} is in the wrong group"
+        );
+        assert!(pf_tube_size_od(index_u32) >= 100);
+    }
+    // 10 mm and 3/8" are separate entries with separate stored values.
+    assert_eq!(pf_tube_size_od(4), 1000);
+    assert_eq!(pf_tube_size_nominal(4), 0);
+    assert_eq!(pf_tube_size_od(13), 318);
+    assert_eq!(pf_tube_size_nominal(13), 1);
+    let missing = u32::try_from(count).unwrap_or_default();
+    assert_eq!(pf_tube_size_od(missing), -1);
+    assert_eq!(pf_tube_size_nominal(missing), -1);
+
+    let mut buffer = [0 as c_char; 16];
+    // SAFETY: a writable buffer of the stated capacity.
+    assert_eq!(unsafe { pf_tube_size_label(4, buffer.as_mut_ptr(), 16) }, 5);
+    // SAFETY: the call above wrote a NUL-terminated label.
+    assert_eq!(
+        unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_string_lossy(),
+        "10 mm"
+    );
+    // SAFETY: a writable buffer of the stated capacity.
+    assert_eq!(
+        unsafe { pf_tube_size_label(13, buffer.as_mut_ptr(), 16) },
+        4
+    );
+    // SAFETY: the call above wrote a NUL-terminated label.
+    assert_eq!(
+        unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_string_lossy(),
+        "1/8\""
+    );
+    // A short buffer and a missing entry are refused, not truncated.
+    // SAFETY: a writable buffer of the stated capacity.
+    assert_eq!(
+        unsafe { pf_tube_size_label(4, buffer.as_mut_ptr(), 3) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: a writable buffer of the stated capacity.
+    assert_eq!(
+        unsafe { pf_tube_size_label(missing, buffer.as_mut_ptr(), 16) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: a null output is refused before anything is written.
+    assert_eq!(
+        unsafe { pf_tube_size_label(4, ptr::null_mut(), 16) },
+        PF_ERR_NULL
+    );
+}
+
+#[test]
+fn an_electrical_connection_has_no_tube_and_no_tube_row() {
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null());
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_new_document(session) }, PF_OK);
+    let wire = electrical_wire(session, (40.0, 40.0));
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_pipe_tube(session, wire) }, 0);
+
+    let exported = export_svg(session, "control.svg");
+    assert!(exported.is_some(), "the SVG page is written");
+    let svg = exported.unwrap_or_default();
+    assert!(svg.contains("lista de piezas"), "the list is printed");
+    assert!(
+        !svg.contains("Tubo"),
+        "an electrical wire is not tubing and must not print a tube row"
+    );
+    assert!(
+        !svg.contains("sin especificar"),
+        "the wire must not become an unspecified tube either"
+    );
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_parts_list_has_a_tube_row_with_the_drawn_length() {
+    let session = unsafe { pf_session_new(ptr::null()) };
+    assert!(!session.is_null());
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_new_document(session) }, PF_OK);
+    let supply = catalog_index(session, "supply.compressor");
+    let cylinder = catalog_index(session, "cylinder.single_acting_20_100");
+    // Far apart, so the drawn route is longer than a decimetre and the row cannot be
+    // mistaken for a rounding of a short stub.
+    // SAFETY: live session and finite coordinates.
+    let supply = unsafe { pf_session_place_component(session, supply, 30.0, 30.0) };
+    let cylinder = unsafe { pf_session_place_component(session, cylinder, 150.0, 220.0) };
+    assert!(supply >= 0 && cylinder >= 0);
+    let supply = u32::try_from(supply).unwrap_or_default();
+    let cylinder = u32::try_from(cylinder).unwrap_or_default();
+    let one = CString::new("1").unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated port.
+    assert_eq!(
+        unsafe { pf_session_connect(session, supply, one.as_ptr(), cylinder, one.as_ptr()) },
+        PF_OK
+    );
+
+    let exported = export_svg(session, "tubing.svg");
+    assert!(exported.is_some(), "the SVG page is written");
+    let svg = exported.unwrap_or_default();
+    let row = tube_row(&svg, "10 mm").expect("the 10 mm pipe has a row");
+    assert!(
+        row.contains("trabajo"),
+        "the row names the line class: {row}"
+    );
+    assert!(row.ends_with(" m"), "the row carries a length: {row}");
+    assert!(
+        !row.contains("< 0,1 m"),
+        "a route across the sheet is longer than a decimetre: {row}"
+    );
+    assert!(
+        svg.contains("recorrido dibujado"),
+        "the page says the length is the drawn route"
+    );
+
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn an_old_pipe_reads_as_unspecified_and_keeps_its_width() {
+    let original = session();
+    let pipes = unsafe { pf_session_connection_count(original) };
+    assert!(pipes > 0);
+    for index in 0..pipes {
+        // SAFETY: live session.
+        assert_eq!(
+            unsafe { pf_session_set_pipe_tube(original, index, 0) },
+            PF_OK
+        );
+    }
+    let directory = tempfile::tempdir().expect("a temporary folder");
+    let current = directory.path().join("current.pfluid");
+    let current = CString::new(current.to_str().unwrap_or_default()).expect("a path");
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_save(original, current.as_ptr()) },
+        PF_OK
+    );
+    let text = std::fs::read_to_string(
+        // SAFETY: the path is a valid NUL-terminated C string.
+        unsafe { CStr::from_ptr(current.as_ptr()) }
+            .to_str()
+            .unwrap_or_default(),
+    )
+    .expect("the sheet is written");
+    assert!(text.contains("\"format\": 13"), "this build writes 13");
+    assert!(
+        !text.contains("tube_od_hundredths"),
+        "an unspecified pipe writes no key"
+    );
+
+    // What a format-12 release wrote: the same sheet without the key.
+    let older = text.replace("\"format\": 13", "\"format\": 12");
+    let older_path = directory.path().join("older.pfluid");
+    std::fs::write(&older_path, older).expect("the older sheet is written");
+    let older_path = CString::new(older_path.to_str().unwrap_or_default()).expect("a path");
+    let reopened = unsafe { pf_session_new(ptr::null()) };
+    assert!(!reopened.is_null());
+    // SAFETY: live session and a NUL-terminated path.
+    assert_eq!(
+        unsafe { pf_session_open(reopened, older_path.as_ptr()) },
+        PF_OK
+    );
+    for index in 0..pipes {
+        // SAFETY: live session.
+        assert_eq!(
+            unsafe { pf_session_pipe_tube(reopened, index) },
+            0,
+            "an old pipe {index} reads as unspecified, not as 10 mm"
+        );
+    }
+    // `None` keeps the stroke the drawing has always used, which is below any named width.
+    assert!((tube_width_mm(None) - 0.42).abs() < 1e-6);
+
     // SAFETY: both sessions are still alive.
     unsafe {
         pf_session_free(reopened);

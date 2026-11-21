@@ -720,6 +720,11 @@ Window {
         sequence: "Alt+M"
         onActivated: session.mirrorSelected()
     }
+    // The tube diameter of the selected pipe: Alt+D opens the nominal series from any tab.
+    Shortcut {
+        sequence: "Alt+D"
+        onActivated: ribbon.openTubeMenu()
+    }
     // The keyboard path for the port magnet: a hose between two ports on the same axis is
     // straight once the other coordinate matches, and this moves one end onto it.
     Shortcut {

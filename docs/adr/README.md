@@ -43,6 +43,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0029](0029-a-two-pressure-valve-decides-by-pressure.md) | A two-pressure valve decides by pressure, not by position | accepted | 2026-11-18 |
 | [0030](0030-the-block-protects-its-own-box.md) | The title block protects its own box, not a band | accepted | 2026-11-18 |
 | [0031](0031-the-program-opens-on-a-start-view.md) | The program opens on a start view, and a new project is empty | accepted | 2026-11-19 |
+| [0032](0032-a-connection-carries-its-tube-size.md) | A connection carries its tube size | accepted | 2026-11-20 |
 
 ## When a decision needs an ADR
 

@@ -28,7 +28,8 @@ pull requests.
    so a fresh session reads this file and continues.
 
 A node is `reported` until it has a plan, `planned` until the owner approves the order,
-`in progress`, `done`, or `blocked` with the reason written.
+`in progress`, `done`, or `blocked` with the reason written. A node the owner sets aside is
+`deferred` with the decision and the node that replaces it; it is not in the current queue.
 
 ## What a node holds
 
@@ -78,7 +79,9 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 | P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
 | P-022 | The branch of a tee bends instead of staying straight | `in progress` | `fix/tee-gauge-route`: a junction port takes its edge from the component or pipe it faces, the check passes the same hint, and the selftest tee probe and the captures prove the straight branch |
+| P-024a | A pneumatic connection does not carry its tube size | `in progress` | [P-024a](#p-024a--a-pneumatic-connection-carries-its-tube-size) on `feat/tube-size`: format 13, the width series, the parts rows, the Conducto gallery; the physics is P-024b |
 | P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
+| P-026 | The electrical connection does not work as planned | `deferred` | [P-026](#p-026--the-electrical-connection-does-not-work-as-planned): the owner's decision of 2026-11-20; not in the current queue and not touched by P-024a |
 
 ## A node, filled
 
@@ -196,6 +199,66 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   `--check-qml`, `--check-theme` and `--check-icons` pass; `./scripts-dev/check.sh` is green;
   the light/dark and 300 dpi captures show the straight branch; the owner confirms the diff.
 - **State**: `in progress` on `fix/tee-gauge-route`; `done` after the owner merges.
+
+### P-024a — A pneumatic connection carries its tube size
+
+- **Problem**: a hose was drawn at one fixed stroke and the parts list had no tube rows
+  and no length, so a drawing could not say which tubing a circuit needs.
+- **Evidence**: the owner's request of 2026-11-20 (“the tube diameter is not specified when
+  connecting; the line should thicken with the tubing; metric and inch sizes, 10 mm by
+  default; 16 mm and more exist”); the approved spec `specs/tube-size.md`; the format-13
+  captures `p024a-tube-4-10-16-{light,dark,300}.png` in the EGM evidence folder.
+- **Touches**: `crates/punchi-fluid-core/src/tube.rs` (the series and the bounds),
+  `crates/punchi-fluid-file/src/sheet.rs` (format 13 and the migration),
+  `crates/punchi-fluid-doc/src/lib.rs` (the connection value, `Change::Tubed`, the splice),
+  `crates/punchi-fluid-draw/src/placed.rs` (`tube_width_mm`, `route_length_mm`),
+  `crates/punchi-fluid-export/src/parts.rs` (`TubeRow`), `src/page.rs`, `src/sheet.rs`,
+  `crates/punchi-fluid-ffi` (the tube ABI and the series enumeration),
+  `apps/punchi-fluid-qt` (`TubeSizeControl.qml`, the Conducto group, the status bar,
+  `Alt+D`), `docs/adr/0032-a-connection-carries-its-tube-size.md`,
+  `docs/reference/tube.md`, `docs/symbology.md`, `docs/ui-ux.md`, `docs/capabilities.md`,
+  this register and `CHANGELOG.md`.
+- **Options**:
+  1. Store the diameter as `f32`. **Con**: `Connection` and `StoredPipe` derive `Eq`/`Hash`
+     for the undo history, and a float breaks that; the offset already uses integer tenths.
+  2. One metric/inch table with nominal pairs. **Con**: 1/4" is 6.35 mm, not 6 mm; the
+     entries must stay separate and the stored value exact.
+  3. A continuous width map. **Con**: 0.04 mm steps are invisible at 300 dpi and the frame
+     stops being a different class.
+  4. Integer hundredths, a series of three widths capped below the frame, and separate
+     metric and inch entries. **Pro**: exact equality, visible steps, the frame stays apart.
+- **Decision**: option 4, approved by the owner on 2026-11-20 (“procede”): pneumatic only,
+  the electrical connection deferred, 10 mm, integer hundredths, the width series, the parts
+  rows and format 13 (P-021 takes 14). ADR 0032 records it; the physics is P-024b and the
+  solver is untouched.
+- **Stages**: one branch, `feat/tube-size` — (1) the core series; (2) the format 13 and its
+  bounds; (3) the document value, the default, the seeds and the splice; (4) the stroke and
+  the route length; (5) the parts rows and the page; (6) the ABI and the series enumeration;
+  (7) the Qt gallery, the status bar and `Alt+D`; (8) the docs, the conformance review and
+  the captures, then the gate.
+- **Done when**: the P-024a tests named in `docs/capabilities.md` are green (the series, the
+  10 mm default, the old sheet, the bounds, the width series, the electrical exception, the
+  patterns, the splice, the parts rows, the route length, one undo, the ABI); `--selftest`
+  exits 0 with the `tube: …` steps and `--check-theme`, `--check-layout` and `--check-qml`
+  pass; `./scripts-dev/check.sh` is green; the 4/10/16 mm light/dark and 300 dpi captures
+  show the widths and the frame separation; the owner confirms the diff.
+- **State**: `in progress` on `feat/tube-size`; `done` after the owner merges.
+
+### P-026 — The electrical connection does not work as planned
+
+- **Problem**: the electrical wire — its class, its stroke and its drawn route — does not
+  behave as the design intended, so it cannot be relied on as a tube or as a measured line.
+- **Evidence**: the owner's decision of 2026-11-20, recorded in `specs/tube-size.md`; the
+  P-024a implementation deliberately leaves the wire's class, stroke and drawing untouched.
+- **Touches**: none yet; it is not in the current queue. The node exists so a later session
+  finds the decision instead of reopening it as a missing tube.
+- **Options**: (not opened) the owner reopens the node with its own spec, review and tests
+  when the electrical connection is taken up again.
+- **Decision**: **deferred** by the owner on 2026-11-20. It stays at the margin until a
+  future effort; P-024a does not use, fix, hide or test it, and a wire has no tube size, no
+  width series and no parts row.
+- **Done when**: a future node reopens it with an approved spec.
+- **State**: `deferred`; not in the current queue.
 
 ### P-025 — The supply starts at 4 bar
 

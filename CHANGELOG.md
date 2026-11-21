@@ -6,6 +6,55 @@ publicación.
 
 ## Unreleased
 
+### Tubo por conexión: 10 mm por defecto — 2026-11-20
+
+- Cada conducto **neumático** guarda su **diámetro exterior nominal** como `Option<u16>` en
+  **centésimas de milímetro** (`100..=5000`), con **10 mm por defecto**; una hoja antigua lee
+  sus tubos como **sin especificar** y un cable eléctrico no tiene tubo. El valor entero
+  conserva `Eq`/`Hash` en el documento y en el archivo, así que el historial compara dos
+  conductos de forma exacta.
+- **Formato 13**: `StoredPipe` estrena `tube_od_hundredths`, opcional y omitido cuando el
+  conducto no lo especifica. Una hoja de formato 12 se lee con todos los tubos sin
+  especificar y conserva su ancho histórico de 0,42 mm; la migración es el valor por defecto
+  de serde. Un valor fuera de los límites —`0`, `99`, `5001`, `65000`, una cadena o un
+  decimal— se rechaza con mensaje, y el límite superior tiene su prueba de uno por encima.
+  **P-021 toma el formato 14.**
+- **La serie es práctica nominal del proyecto, no una tabla ISO**: métrica de 4 a 50 mm y en
+  pulgadas de 1/8" a 1", como entradas separadas (10 mm no es 3/8", 6 mm no es 1/4"); un
+  valor dentro de los límites que no está en la lista se muestra como medida (`10,50 mm`).
+  La fuente y los límites están en `docs/reference/tube.md`.
+- **El trazo sale de una serie de anchos**, no de un mapa continuo: 0,25 mm para 4–5 mm,
+  0,35 mm para 6–8 mm y 0,50 mm para 10 mm y más; un tubo sin especificar conserva 0,42 mm.
+  El máximo de 0,50 mm queda **por debajo del marco ISO 5457 de 0,7 mm**, para que el borde
+  de la hoja siga siendo otra clase de línea, y el patrón de la clase —trabajo llena,
+  pilotaje y drenaje discontinuas— no cambia. Los codos del puerto pertenecen al símbolo y no
+  engrosan; el anillo de selección conserva `LINE`.
+- **La lista de piezas** añade una fila por `(diámetro, clase)` con la **longitud de la ruta
+  dibujada** en milímetros enteros, incluidos los tramos de puerto: `Tubo 10 mm · trabajo ·
+  3,4 m`, `< 0,1 m` por debajo de un decímetro. Un tubo sin especificar tiene su propia fila
+  —el técnico ve que el tubo existe y que su medida es desconocida— y un cable eléctrico no
+  tiene ninguna. `MAX_ROWS` cuenta componentes y tubos, los componentes primero, y los
+  contadores de omitidos dicen qué se recortó. La página impresa aclara que la longitud es la
+  ruta dibujada, sin tolerancia de curvatura, racores ni desperdicio.
+- **Conducto ▸ Diámetro** (`Alt+D`) abre la galería **Métrica / Pulgada / Sin especificar**
+  con la entrada en vigor marcada por el valor, una marca y un borde, nunca solo por color;
+  el cambio sobre el conducto seleccionado es **un solo deshacer**. La barra de estado lee
+  `Tubo 10 mm` o `Tubo Sin especificar`, y un cable eléctrico no muestra medida. La serie la
+  enumera el ABI (`pf_tube_size_*`), no una lista copiada en QML, y `PF_ABI_VERSION` sube con
+  el par `pf_session_pipe_tube` / `pf_session_set_pipe_tube` y
+  `pf_session_pipe_is_electrical`.
+- **La conexión eléctrica queda fuera y diferida como P-026** por decisión del propietario:
+  no se usa, arregla, esconde ni prueba aquí; su clase, su trazo y su dibujo no cambian.
+- **La física es P-024b**: conductancia, volumen, caída de presión, velocidad y aviso de
+  dimensionado necesitan su referencia y su tolerancia, así que el solver conserva su modelo
+  actual de conducto y el dibujo no insinúa una física que no tiene.
+- **Evidencia**: las pruebas de la serie y los límites, el ida y vuelta del formato 13 y la
+  lectura del 12, el ancho por serie y el cable eléctrico, los patrones de clase, la herencia
+  del tubo al dividir, la fila de piezas y la longitud de ruta, un solo deshacer, la
+  enumeración del ABI y los pasos `tube: …` de `--selftest`; `--check-theme`,
+  `--check-layout` y `--check-qml` en verde; las capturas de 4/10/16 mm en claro y oscuro y
+  la página de 300 dpi; `./scripts-dev/check.sh`.
+
 ### Presión de alimentación: 4 bar por defecto — 2026-11-20
 
 - Las tres definiciones neumáticas de fábrica declaran **4 bar manométricos**:

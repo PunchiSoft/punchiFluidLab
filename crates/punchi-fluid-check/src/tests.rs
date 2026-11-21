@@ -24,7 +24,11 @@ fn place(document: &mut Document, id: &str, x: f32, y: f32) -> u64 {
 
 fn join(document: &mut Document, from: (u64, &str), to: (u64, &str)) {
     assert!(
-        document.connect(Endpoint::new(from.0, from.1), Endpoint::new(to.0, to.1)),
+        document.connect(
+            Endpoint::new(from.0, from.1),
+            Endpoint::new(to.0, to.1),
+            Some(1000)
+        ),
         "the test pipe was refused"
     );
 }
@@ -229,7 +233,11 @@ fn a_component_between_the_ports_is_routed_around() {
     // The throttle sits between them, right on the straight run.
     place(&mut document, "throttle.fixed", 90.0, 60.0);
     assert!(
-        document.connect(Endpoint::new(supply, "1"), Endpoint::new(valve, "1")),
+        document.connect(
+            Endpoint::new(supply, "1"),
+            Endpoint::new(valve, "1"),
+            Some(1000)
+        ),
         "the pipe must exist"
     );
     let findings = check(&document, &catalog(), sheet(), 0);
@@ -249,7 +257,11 @@ fn a_dragged_pipe_through_a_third_component_is_reported() {
     // The throttle sits between them, right on the run.
     place(&mut document, "throttle.fixed", 90.0, 60.0);
     assert!(
-        document.connect(Endpoint::new(supply, "1"), Endpoint::new(valve, "1")),
+        document.connect(
+            Endpoint::new(supply, "1"),
+            Endpoint::new(valve, "1"),
+            Some(1000)
+        ),
         "the pipe must exist for the check to have anything to look at"
     );
     // The automatic route goes round the throttle now; a stored offset is the user's own
@@ -270,7 +282,11 @@ fn a_dragged_hose_through_its_own_end_is_reported() {
     let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 100.0);
     let cylinder = place(&mut document, "cylinder.single_acting_20_100", 90.0, 40.0);
     assert!(
-        document.connect(Endpoint::new(valve, "2"), Endpoint::new(cylinder, "1")),
+        document.connect(
+            Endpoint::new(valve, "2"),
+            Endpoint::new(cylinder, "1"),
+            Some(1000)
+        ),
         "the hose must exist"
     );
     // Move the jog into the cylinder's body: the hose now crosses the component it ends on,
@@ -409,6 +425,7 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
                 offset_mm: connection.offset_mm(),
                 pressure_ratio: 0.0,
                 class: connection.class(),
+                tube_od_hundredths: connection.tube_od_hundredths(),
             })
         })
         .collect();

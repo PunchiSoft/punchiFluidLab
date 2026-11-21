@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 6. The implementation is
+Status: current, format 13. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,14 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `12` | `1` to `12` | always `12` |
+| `format` | `13` | `1` to `13` | always `13` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (12)`; it is never guessed.
+  understands (13)`; it is never guessed.
+- **Version 13** added the tube diameter of a pneumatic pipe
+  (`tube_od_hundredths`). The field is optional and omitted when the pipe is unspecified, so
+  a format-12 sheet reads with every pipe unspecified and keeps its historical drawn width;
+  the migration is the serde default alone (P-024a).
 - **Version 12** renamed the `model` of a block from the Spanish `escolar`/`tecnico` to
   `school`/`technical`. A format 11 file is read as the model it named and saved with the
   English name.
@@ -60,6 +64,7 @@ document is used.
 | Symbol box side | greater than 0 and at most 2 000 mm | `MAX_SIDE_MM` |
 | Designation | 1 to 40 characters, trimmed, no control characters | `MAX_DESIGNATION` |
 | Pipe offset | at most 10 000 tenths of a millimetre (1 m) | — |
+| Tube diameter | 100..=5000 hundredths of a millimetre (1–50 mm), integer | `MAX_TUBE_HUNDREDTHS` |
 
 Unknown keys are rejected at every level. A duplicate circuit id, a duplicate placement id,
 a pipe to a placement that is not in the project, or a pipe from a component to itself is an
@@ -175,7 +180,8 @@ rule, refused by the ABI rather than written into the file.
   "to": 2,
   "to_port": "1",
   "offset_tenths": 25,
-  "class": "pilot"
+  "class": "pilot",
+  "tube_od_hundredths": 1000
 }
 ```
 
@@ -186,6 +192,7 @@ rule, refused by the ABI rather than written into the file.
 | `from_port`, `to_port` | string | yes | Port ids declared by the definition; non-empty, at most 128 bytes. |
 | `offset_tenths` | integer | no, default `0` | Offset of the middle segment from the automatic route, in tenths of a millimetre. Bounded to ±10 000. |
 | `class` | string | no, default `working` | `working`, `pilot` or `drain`; decides the dash pattern. A working line is omitted. |
+| `tube_od_hundredths` | integer | no | Nominal outside diameter of a **pneumatic** pipe in hundredths of a millimetre, bounded 100–5000. Omitted when the pipe is unspecified (an older sheet or an electrical wire); see [tube.md](tube.md). |
 
 The two ends **should** belong to the same circuit. The format does not refuse a pipe whose
 ends are in different circuits, because the check has to see it: that is the ninth fault,
