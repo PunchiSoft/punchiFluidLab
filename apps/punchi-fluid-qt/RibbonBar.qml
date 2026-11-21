@@ -1092,8 +1092,10 @@ Rectangle {
                         leftAligned: true
                         tone: "foreground"
                         onTriggered: {
-                            ribbon.invoke(modelData.id);
+                            // Close first: `invoke` may open a panel or a dialog and the
+                            // handler must not read the ribbon again after it.
                             ribbon.menuOpen = false;
+                            ribbon.invoke(modelData.id);
                         }
                     }
                 }
