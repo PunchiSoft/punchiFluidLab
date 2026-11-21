@@ -459,18 +459,21 @@ before a panel is allowed to cover it:
 
 **With no project open, the drawing region holds the start view**, not an empty sheet: it is
 not a fourth region and not a ribbon tab, because the ribbon holds commands and the start view
-holds the decision of what to work on. The ribbon shows **Proyecto** and **Ayuda** only; a tab
-whose commands cannot act on an empty project is not shown. The view closes when a project
-opens ([ADR 0031](adr/0031-the-program-opens-on-a-start-view.md)).
+holds the decision of what to work on. **Inicio is a page, not a document**: while it is open
+the ribbon and the status bar are hidden instead of greyed, and the page fills the window from
+the top edge to the bottom, including the 1366×768 support floor. The view closes when a
+project opens ([ADR 0031](adr/0031-the-program-opens-on-a-start-view.md)).
 
 **The left region carries the start navigation** while the start view is shown: the catalog's
-column holds a rail with **Iniciar**, **Nuevo**, **Abrir** and **Aprender** — shortcuts, what
-ISO 1219 conformance means, About and licence — instead of a second sidebar. The right dock is
-hidden, since with no project it has no inspector and no block. The command that needs a
-document (`Guardar`, `Exportar`) is not shown greyed: it appears with the project. `Inicio` is
-reachable from **Archivo ▸ Inicio**, from the **strip's home control** at the foot of the
-sheet, and from `Ctrl+Home`; with a project open the view covers the sheet and **Volver**
-returns to it, and with none it is the only view. The rail is the same
+column holds a rail with **Iniciar** — **Inicio**, **Nuevo proyecto**, **Abrir…**, each with its
+symbol and the `Ctrl+N`/`Ctrl+O` hint — and **Aprender** — **Acerca de** and **Licencia** — instead
+of a second sidebar. **Atajos** and **ISO 1219** need a panel and content of their own and stay
+out until a node owns them. The right dock is hidden, since with no project it has no inspector
+and no block. The commands that need a document (`Guardar`, `Exportar`) are not shown greyed:
+they appear with the project. `Inicio` is reachable from **Archivo ▸ Inicio**, from the
+**strip's home control** at the foot of the sheet, and from `Ctrl+Home`; with a project open the
+view covers the sheet and **Volver a la hoja** returns to it, and with none it is the only view.
+`Esc` returns as well, and the page takes it before anything behind it. The rail is the same
 region, the same width and the same tokens as the catalog; returning to the sheet returns the
 catalog with its remembered width.
 
@@ -483,28 +486,34 @@ its text stays in the ink, so a hover cannot repaint a fill under a light-on-dar
 gives each row its symbol and its shortcut, and marks the current view with a filled accent
 row whose text and icon are the measured `onAccent`.
 
-**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver** or with **Nuevo**. Inicio takes the whole region: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
+**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver a la hoja**, with **Esc** or with **Nuevo**. Inicio takes the whole window: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
 
 - **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The page
   lists at most `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, newest first, with the
-  name and the folder; the rest stay in **Archivo ▸ Recientes**, and a line says so when the
-  page is showing a slice. A document whose file has gone stays in the list in grey, marked
-  **no disponible · <ruta>**, cannot be opened, and leaves it only through its **quitar**
-  control, which is a button with an accessible name and does not touch the document, the
-  history or the modified mark.
-- **Plantillas**, four circuits authored for this project: a 3/2 valve and single-acting
-  cylinder (the worked example), a 5/2 valve and double-acting cylinder, air preparation
-  ahead of a valve, and an electrical pushbutton driving a solenoid valve. Each card is a
-  keyboard-focusable button; choosing one copies its circuit into a clean project, while
-  **Nuevo proyecto** remains empty.
-- **Aprender**: the shortcuts, what “conforme a ISO 1219” means, and the About panel.
+  name, the folder, the **modified** relative time (its absolute value in the tooltip) and the
+  **real size** read from the file's metadata — the file is never opened or parsed. When more
+  than five are remembered, a line says the rest are in **Archivo ▸ Recientes**, whose group
+  already lists all ten. A document whose file has gone stays in the list in muted ink, marked
+  **no encontrado**, cannot be opened, and leaves it only through its **quitar** control, which
+  is a button with an accessible name and does not touch the document, the history or the
+  modified mark.
+- **An empty Recientes** says the next step instead of showing a blank table: *Aún no hay
+  proyectos recientes. Crea un proyecto nuevo o abre un archivo; aparecerá aquí.*
+- **Plantillas**, **three** circuits offered and authored for this project: a 3/2 valve and
+  single-acting cylinder (the worked example), a 5/2 valve and double-acting cylinder, and air
+  preparation ahead of a valve. The fourth compiled template — an electrical pushbutton driving
+  a solenoid valve — stays in the ABI for **P-026**, but its card is not offered while that
+  connection is deferred. Each card is a keyboard-focusable button; choosing one copies its
+  circuit into a clean project, while **Nuevo proyecto** remains empty.
+- **Aprender**: **Acerca de** and **Licencia**. The shortcuts and what “conforme a ISO 1219”
+  means need their own content and are not invented in this pass.
 
 The example cards **divide the page's width between them**, with one unit between cards and
 a minimum of 10 × `unit` before the grid starts a second row. Each card's height follows its
 width: the plate is the content width over the raster's 512:288 aspect, and the card is the
 plate over 0.65, so the plate is 65 % of it and the proportion holds at every breakpoint. At
-the default 18 px unit and a 1280 px window a card is about 252 × 200 px with a plate of
-about 231 × 130 px. Each card is a picture and its label: the picture fills the plate width
+the default 18 px unit and a 1280 px window a card is about 342 × 278 px with a plate of
+about 321 × 181 px. Each card is a picture and its label: the picture fills the plate width
 and keeps its aspect, with a transparent band for the 1.2 % difference between the 512 × 288
 raster and the authored 180 × 100 mm area; the plate is `panel` on a `surfaceRaised` card
 (`surfaceSunken` while pressed, `accent` border on hover and focus), and the name is
@@ -513,16 +522,17 @@ plus a tooltip that names the circuit. The default way in (**Nuevo proyecto**) c
 accent tint and border, and its text is ink, never a light word over a fill that hover
 repaints.
 Each thumbnail calls the same Rust drawing and Qt replay path as the sheet, then keeps one
-512 × 288 RGBA image until the theme changes or the card is destroyed. Four fixed templates
-bound that cache at 2.25 MiB; no image is fetched. The start-view icons follow **one raster
-rule with two sizes**: `Math.round(unit * 1.1)` on the rail and `Math.round(unit * 1.8)` on
-the two «Empezar» cards, each with `sourceSize` at that size so the provider rasterises it
-and `fillMode: Image.PreserveAspectFit`; the tone is always a theme token. Every
+512 × 288 RGBA image until the theme changes or the card is destroyed. The three offered cards
+bound that cache at 1.69 MiB (2.25 MiB if the fourth returns); no image is fetched. The
+start-view icons follow **one raster rule with two sizes**: `Math.round(unit * 1.1)` on the rail
+and `Math.round(unit * 1.8)` on the two «Empezar» cards, each with `sourceSize` at that size so
+the provider rasterises it and `fillMode: Image.PreserveAspectFit`; the tone is always a theme
+token. Every
 `image://theme` URL carries `&v=<session.themeRevision>`: a palette change increments the
 revision and QML re-requests the icons, so the old tint never stays on screen. Template cards
-expose their title and description to assistive technology. Inicio is reachable from
-**Archivo ▸ Inicio**; other start-page actions still have keyboard and recent-list work
-remaining.
+and recent rows expose their title/name and description to assistive technology. Inicio is
+reachable from **Archivo ▸ Inicio**; the domain chip, the recent thumbnail and the opened time
+are deferred to P-034b, with a preview-by-path bound and a `recent.json` version change.
 
 ### 3. The sheet
 
@@ -544,7 +554,7 @@ a background and an accent rule at the seam, never by colour alone. **Inicio sit
 of the strip**, before the scroll: a compact icon control with a tooltip and an accessible
 name, separated by a rule from the project. It is the way back, not a circuit, so it never
 enters the list, the file or the undo history; `Ctrl+Home` from the sheet is the same command,
-and both close with **Volver**. A click switches the
+and both close Inicio with **Volver a la hoja**. A click switches the
 circuit — view state, no undo entry — and `Ctrl+Tab` walks them, scrolling the strip so the
 active tab is in view; `F2` or a double click renames **in the tab**, with `Enter` to save and
 `Esc` to cancel, which is a document edit and one undo like any other. The circuit tabs and

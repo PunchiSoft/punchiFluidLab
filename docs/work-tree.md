@@ -74,8 +74,8 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-008 | The rail is uneven and its focus is not the catalogue's | `in progress` | [§8](start-view-corrections.md) |
 | P-009 | `electrical.relay.latching`: A2 and R1 collide at 300 dpi | `reported` | [review record](../assets/symbols/review/electrical.relay.latching.md) |
 | P-010 | The shuttle and the two-pressure valve are missing (OR/AND) | `reported` | [capabilities F2](capabilities.md) and ADR 0029 |
-| P-012 | The theme icon cache is unbounded | `in progress` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) — bounded `QCache` on `feat/start-view-visual-pass-2`: cap 73, working set 58, max group 21, LRU and palette key |
-| P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
+| P-012 | The theme icon cache is unbounded | `done` | [icons.cpp](../apps/punchi-fluid-qt/src/icons.cpp) — bounded `QCache` merged as #145: cap 73, working set 58, max group 21, LRU and palette key |
+| P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `done` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL, merged as #145 |
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 | P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
 | P-021a | A plug or a silencer is dropped on the sheet instead of fitted to the port | `in progress` | [P-021a](#p-021a--a-port-closure-belongs-to-the-port) on `feat/port-closures`: the per-port map, the menu, the drawing, the parts row, format 14 and ABI 12 |
@@ -91,6 +91,8 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-031 | Nothing guards English titles and file names outside the documented exceptions | `planned` | [P-031](#p-031--english-and-translation-are-guarded): `check-language.sh`, the exception list in `docs/style.md` and a fixture; no runtime, UI or documentation content change |
 | P-032 | Visual work has no single route to its documents, commands and evidence | `in progress` | [P-032](#p-032--a-punchi-visual-language-skill) on `docs/visual-language-skill`: the skill and its five references, the catalog row, the skill and anchor checks with their fixture, and the changelog; the diagrams and the ISO symbology are untouched |
 | P-033 | The icon family's inventory and gaps are not documented | `planned` | [P-033](#p-033--the-simulator-owns-its-icon-family): the inventory in `docs/reference/icons.md`, the shared-shape gaps and the small-size proof; after P-032; the ISO 1219 symbols and the diagrams are untouched |
+| P-034a | Inicio does not look like the program nor tell the truth about what it offers | `in progress` | [P-034](#p-034--inicio-tells-the-truth): three offered templates, five honest recent rows, missing/`quitar`, the empty state, `Volver a la hoja`, `Esc`, and the page filling 1366×768; on `feat/start-view-visual` |
+| P-034b | The start view has no domain chip, recent thumbnails or opened time | `planned` | [P-034](#p-034--inicio-tells-the-truth): the template domain model, a preview-by-path entry with a bound and a one-past test, and a `recent.json` version change with its migration; after P-034a |
 
 ## A node, filled
 
@@ -547,6 +549,36 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   gap, the changed drawings read at the small size in light and dark, and the ISO 1219
   symbols and the diagrams are untouched.
 - **State**: `planned`; after P-032 and after the owner approves the P0 set.
+
+### P-034 — Inicio tells the truth
+
+- **Problem**: Inicio is the first screen and it does not look like the program nor say what
+  it really offers: four template cards include an electrical circuit the simulator cannot
+  connect yet, the recent rows say *no disponible* and a path instead of the honest
+  **no encontrado**, modified time and real size, and the page stopped one hidden ribbon above
+  the 1366×768 floor, so the recents were clipped.
+- **Evidence**: the 1366×768 captures before and after; `--check-layout` start-view cases;
+  `--selftest` `start:` steps; `specs/evidence/20261121-p034a-*.png`.
+- **Touches**: `apps/punchi-fluid-qt/StartView.qml` (two start cards, three template cards,
+  five recent rows and the empty state), `Main.qml` (the rail, `Volver a la hoja`, `Esc`, and
+  the region measured with the visible bars only), `src/session.cpp`/`.h` (modified, size,
+  available from `QFileInfo`; no new ABI), `src/main.cpp` (the adapted template checks, the
+  `--selftest` steps and the layout cases), `docs/ui-ux.md` §2.3, ADR 0031's amendment, this
+  register and `CHANGELOG.md`. It does not touch the ABI, the diagrams, the ISO 1219 symbols,
+  the sheet, the zoom, the active fill or `.pfl`.
+- **Decision**: three cards are offered and the compiled fourth stays for P-026; the page is
+  a Flickable that fills the window; recents are five rows with modified/size and a
+  `quitar` that never deletes; `Esc` leaves the page; the domain chip, the thumbnails and the
+  opened time wait for the data in P-034b.
+- **Stages**: `feat/start-view-visual` (P-034a) delivers the page, the recents, the checks,
+  the captures and the docs; P-034b follows with the domain model, the preview-by-path entry
+  and the recent format change.
+- **Done when**: the 1366 captures fill the window and show the recent rows, a missing row
+  says **no encontrado** with `quitar`, the empty state names the next step, `--check-qml`,
+  `--check-theme`, `--check-layout` (1280/1366/1440/1600), `--selftest` and
+  `./scripts-dev/check.sh` exit 0, and the owner confirms the diff.
+- **State**: P-034a `in progress` on `feat/start-view-visual`, `done` after the owner merges;
+  P-034b `planned`.
 
 ### P-025 — The supply starts at 4 bar
 

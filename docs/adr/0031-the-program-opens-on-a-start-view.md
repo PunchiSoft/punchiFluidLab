@@ -105,6 +105,43 @@ meaningless negative pressure.
   `startup: the example loads on request`.
 - Full gate still required before delivery.
 
+## Amendment (2026-11-21, the visual pass P-034a)
+
+The first slice drew Inicio; P-034a makes the page tell the truth about what it offers and
+what it stores. This amendment supersedes the parts of the decision that had not held:
+
+- **The ribbon and the status bar are hidden over Inicio**, not reduced to Proyecto and
+  Ayuda. A page is not a document: hiding them is what lets the page fill the window down to
+  the 1366×768 support floor. The region arithmetic subtracts a bar only while it is visible;
+  a hidden bar that still took height left the page about 160 px short and clipped the recent
+  rows.
+- **The rail offers what exists**: Iniciar (Inicio, Nuevo proyecto, Abrir…) and Aprender
+  (Acerca de, Licencia). **Atajos** and **ISO 1219** need a panel and content and are not
+  invented here.
+- **Three templates are offered, not four.** The compiled `ElectricalControl` template stays
+  in the ABI (`PF_TEMPLATE_COUNT` remains four) and its card is hidden until **P-026** lands;
+  removing it would change the ABI for a card that returns. The QML list has three entries,
+  and a window check asserts the electrical card is absent.
+- **The recent list is `recent.json`, not `QSettings`.** `punchi-fluid-file` owns the format
+  (`RECENT_VERSION = 1`, paths and names only, `MAX_RECENT = 10`, `MAX_BYTES = 64 KiB`,
+  atomic write); the window passes
+  `$XDG_DATA_HOME/PunchiSoft/Punchi Fluid Lab/recent.json` to the core. The page shows five
+  (`PF_RECENT_PAGE_LIMIT`) and sends the rest to **Archivo ▸ Recientes**.
+- **The rows tell the truth with what is available now**: modified time and real size from
+  `QFileInfo` on at most five paths, never an invented opened time and never a file parse. A
+  path that is gone says **no encontrado** and keeps a **quitar** that forgets the entry and
+  never deletes the file. The empty list says the next step.
+- **The recent thumbnail and the opened time are P-034b**, not this pass: they need a
+  preview-by-path entry (a parse of an untrusted file, with a bound, a message and a
+  one-past-the-limit test) and a `recent.json` format change with a migration.
+- **The return is `Volver a la hoja`**, and `Esc` leaves the page before it touches anything
+  behind it.
+
+Evidence: `--check-layout` at 1280, 1366, 1440 and 1600, with the page measured against the
+window; `--check-qml`, `--check-theme` and `--selftest`; light/dark captures at 1366, a
+missing row and an empty page in `specs/evidence/`. No ABI, diagram, symbol, ISO 1219, sheet,
+zoom or active-fill change.
+
 ## Alternatives considered
 
 - **Keep seeding the example and offer the start view after it.** The first lesson stays

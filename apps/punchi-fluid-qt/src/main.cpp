@@ -1095,6 +1095,21 @@ int main(int argc, char *argv[])
             bool ok = start != nullptr && start->isVisible();
             QString detail;
             if (ok) {
+                // Inicio hides the ribbon and the status bar, and the page covers the whole
+                // window: a region measured with the hidden bars still subtracted stops one
+                // ribbon above the floor and clips the recent rows.
+                ok = std::abs(start->width() - window->width()) <= 1.0
+                     && std::abs(start->height() - window->height()) <= 1.0
+                     && std::abs(start->x()) <= 1.0 && std::abs(start->y()) <= 1.0;
+                if (!ok) {
+                    detail = QStringLiteral("page %1x%2 at %3,%4 in a %5x%6 window")
+                                 .arg(start->width())
+                                 .arg(start->height())
+                                 .arg(start->x())
+                                 .arg(start->y())
+                                 .arg(window->width())
+                                 .arg(window->height());
+                }
                 const qreal railIcon = std::round(unit * 1.1);
                 const qreal cardIcon = std::round(unit * 1.8);
                 auto *rail = start->findChild<QQuickItem *>(QStringLiteral("railHomeIcon"));
@@ -1212,8 +1227,12 @@ int main(int argc, char *argv[])
                 ++failures;
             }
         };
+        // The support floor and the widths the capability names. 1366 is the floor; 1280
+        // runs with the ribbon folded, but Inicio hides the ribbon and must still hold.
         startViewCase(1280, 800);
+        startViewCase(1366, 768);
         startViewCase(1440, 900);
+        startViewCase(1600, 900);
         window->setProperty("startViewOpen", false);
         settle();
         // The strip with the fixed home control: the control stays inside the strip, the
@@ -1829,6 +1848,11 @@ int main(int argc, char *argv[])
             QString recentDocument;
             /// Files written to prove the page's slice of the recent list.
             QVector<QString> recentPages;
+            /// Inicio's fixture, the file behind the missing row, and the row the pointer
+            /// steps click.
+            QString startRecent;
+            QString startMissing;
+            QQuickItem *startRow = nullptr;
             /// The document state a panel toggle must not change.
             bool panelModified = false;
             bool panelCanUndo = false;
@@ -5145,16 +5169,34 @@ int main(int argc, char *argv[])
             if (start == nullptr) {
                 return;
             }
-            check(start->property("templateCardCount").toInt()
-                      == static_cast<int>(PF_TEMPLATE_COUNT),
-                  QStringLiteral("templates: Inicio presents exactly four cards"));
+            check(start->property("templateCardCount").toInt() == 3,
+                  QStringLiteral("templates: Inicio offers three cards"));
+            // The electrical template is compiled in and PF_TEMPLATE_COUNT stays four, but
+            // its card is not offered until P-026. Reading the delegates proves the absence
+            // instead of trusting the array's length.
+            QObject *repeater =
+                start->findChild<QObject *>(QStringLiteral("templateRepeater"));
+            bool electrical = false;
+            const int cards = repeater != nullptr ? repeater->property("count").toInt() : 0;
+            for (int index = 0; index < cards; ++index) {
+                QQuickItem *card = nullptr;
+                if (QMetaObject::invokeMethod(repeater, "itemAt",
+                                              Q_RETURN_ARG(QQuickItem *, card),
+                                              Q_ARG(int, index))
+                    && card != nullptr
+                    && card->objectName() == QStringLiteral("templateCard3")) {
+                    electrical = true;
+                }
+            }
+            check(cards == 3 && !electrical,
+                  QStringLiteral("templates: the electrical card is absent"));
             const bool requested = QMetaObject::invokeMethod(
-                start, "activateTemplate", Q_ARG(QVariant, QVariant(3)));
+                start, "activateTemplate", Q_ARG(QVariant, QVariant(0)));
             check(requested, QStringLiteral("templates: a card can request a template"));
             check(!state->window->property("startViewOpen").toBool(),
                   QStringLiteral("templates: choosing one returns to its project"));
-            check(state->session->componentCount() == 6,
-                  QStringLiteral("templates: the electrical circuit is copied into the project"));
+            check(state->session->componentCount() == 4,
+                  QStringLiteral("templates: the 3/2 circuit is copied into the project"));
             check(!state->session->modified(),
                   QStringLiteral("templates: a starting circuit is clean, not an edit"));
 
@@ -5165,7 +5207,7 @@ int main(int argc, char *argv[])
                       == QStringLiteral("template")
                       && state->window->property("pendingTemplate").toInt() == 1,
                   QStringLiteral("templates: replacing unsaved work asks for confirmation"));
-            check(state->session->componentCount() == 6 && state->session->modified(),
+            check(state->session->componentCount() == 4 && state->session->modified(),
                   QStringLiteral("templates: work stays intact before confirmation"));
             const bool discarded =
                 QMetaObject::invokeMethod(state->window, "discardAndContinue");
@@ -5173,6 +5215,152 @@ int main(int argc, char *argv[])
             check(state->session->componentCount() == 3 && !state->session->modified()
                       && !state->window->property("startViewOpen").toBool(),
                   QStringLiteral("templates: discard opens the requested template cleanly"));
+        });
+
+        // Inicio's own visual pass: two buttons, three offered templates, the recent row with
+        // its stat'd time and size, the missing row and its quitar, and Esc. The fixture is a
+        // file the session saved; the page never opens or parses it.
+        steps->push_back([state, check, accessibleName] {
+            state->window->setProperty("startViewOpen", true);
+            QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));
+            check(start != nullptr, QStringLiteral("start: the page is in the scene"));
+            if (start == nullptr) {
+                return;
+            }
+            QQuickItem *newCard =
+                start->findChild<QQuickItem *>(QStringLiteral("startCardNew"));
+            QQuickItem *openCard =
+                start->findChild<QQuickItem *>(QStringLiteral("startCardOpen"));
+            check(newCard != nullptr && openCard != nullptr && newCard->isVisible()
+                      && openCard->isVisible(),
+                  QStringLiteral("start: the two cards exist"));
+            check(accessibleName(newCard) == QStringLiteral("Nuevo proyecto")
+                      && accessibleName(openCard) == QStringLiteral("Abrir…"),
+                  QStringLiteral("start: the cards are named for assistive technology"));
+            check(start->property("templateCardCount").toInt() == 3,
+                  QStringLiteral("start: three templates are offered"));
+            QObject *repeater =
+                start->findChild<QObject *>(QStringLiteral("templateRepeater"));
+            bool electrical = false;
+            const int cards = repeater != nullptr ? repeater->property("count").toInt() : 0;
+            for (int index = 0; index < cards; ++index) {
+                QQuickItem *card = nullptr;
+                if (QMetaObject::invokeMethod(repeater, "itemAt",
+                                              Q_RETURN_ARG(QQuickItem *, card),
+                                              Q_ARG(int, index))
+                    && card != nullptr
+                    && card->objectName() == QStringLiteral("templateCard3")) {
+                    electrical = true;
+                }
+            }
+            check(cards == 3 && !electrical,
+                  QStringLiteral("start: the electrical template is not offered"));
+        });
+        steps->push_back([state, check] {
+            state->session->forgetRecent();
+            state->startRecent =
+                QDir::tempPath() + QStringLiteral("/punchi-start-reciente.pfluid");
+            check(state->session->saveTo(state->startRecent),
+                  QStringLiteral("start: a recent fixture is written"));
+            check(state->session->recentPage().size() == 1,
+                  QStringLiteral("start: the fixture reaches the page"));
+            const QVariantMap row = state->session->recentPage().value(0).toMap();
+            check(row.value(QStringLiteral("modified")).toDateTime().isValid()
+                      && row.value(QStringLiteral("size")).toLongLong() > 0,
+                  QStringLiteral("start: the row carries real modified time and size"));
+            state->window->setProperty("startViewOpen", true);
+        });
+        steps->push_back([state, check] {
+            QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));
+            QQuickItem *scroll =
+                start != nullptr ? start->findChild<QQuickItem *>(
+                    QStringLiteral("startScroll")) : nullptr;
+            if (scroll != nullptr) {
+                scroll->setProperty("contentY",
+                                    qMax(0.0, scroll->property("contentHeight").toReal()
+                                                   - scroll->height()));
+            }
+            check(start != nullptr && scroll != nullptr,
+                  QStringLiteral("start: the page can scroll to the rows"));
+            QObject *repeater =
+                start != nullptr ? start->findChild<QObject *>(
+                    QStringLiteral("recentRepeater")) : nullptr;
+            QQuickItem *row = nullptr;
+            const bool got = repeater != nullptr
+                             && QMetaObject::invokeMethod(repeater, "itemAt",
+                                                          Q_RETURN_ARG(QQuickItem *, row),
+                                                          Q_ARG(int, 0));
+            check(got && row != nullptr && row->isVisible(),
+                  QStringLiteral("start: the recent row is on the page"));
+            QQuickItem *open =
+                row != nullptr ? row->findChild<QQuickItem *>(
+                    QStringLiteral("recentOpen0")) : nullptr;
+            check(open != nullptr && open->isVisible(),
+                  QStringLiteral("start: the row is a focusable button"));
+            state->startRow = row;
+        });
+        steps->push_back([state, check, clickItem] {
+            clickItem(state->startRow);
+            check(!state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("start: a recent row opens"));
+            check(state->session->currentPath() == state->startRecent,
+                  QStringLiteral("start: the row opens the file it names"));
+        });
+        steps->push_back([state, check] {
+            state->startMissing =
+                QDir::tempPath() + QStringLiteral("/punchi-start-falta.pfluid");
+            check(state->session->saveTo(state->startMissing),
+                  QStringLiteral("start: a file is written to go missing"));
+            check(QFile::remove(state->startMissing),
+                  QStringLiteral("start: the file is removed behind the page"));
+            // The failed open is what makes the session re-stat the rows; it never parses.
+            check(!state->session->openRecent(0),
+                  QStringLiteral("start: a missing row does not open"));
+            state->window->setProperty("startViewOpen", true);
+        });
+        steps->push_back([state, check] {
+            QObject *start = state->window->findChild<QObject *>(QStringLiteral("startView"));
+            QObject *repeater =
+                start != nullptr ? start->findChild<QObject *>(
+                    QStringLiteral("recentRepeater")) : nullptr;
+            QQuickItem *row = nullptr;
+            const bool got = repeater != nullptr
+                             && QMetaObject::invokeMethod(repeater, "itemAt",
+                                                          Q_RETURN_ARG(QQuickItem *, row),
+                                                          Q_ARG(int, 0));
+            QQuickItem *stateText =
+                row != nullptr ? row->findChild<QQuickItem *>(
+                    QStringLiteral("recentState0")) : nullptr;
+            check(got && row != nullptr && stateText != nullptr
+                      && stateText->property("text").toString()
+                             == QStringLiteral("no encontrado"),
+                  QStringLiteral("start: a missing recent says no encontrado"));
+            state->startRow = row;
+        });
+        steps->push_back([state, check, clickItem] {
+            QQuickItem *forget =
+                state->startRow != nullptr ? state->startRow->findChild<QQuickItem *>(
+                    QStringLiteral("recentForget0")) : nullptr;
+            check(forget != nullptr, QStringLiteral("start: quitar is on the missing row"));
+            clickItem(forget);
+            check(state->session->recentPage().size() == 1
+                      && state->session->recent().value(0).toMap()
+                             .value(QStringLiteral("path")).toString()
+                         == state->startRecent,
+                  QStringLiteral("start: quitar removes the row"));
+        });
+        steps->push_back([state, check] {
+            // Leave the list as the rest of the battery expects it and remove the fixture.
+            state->session->forgetRecent();
+            check(QFile::remove(state->startRecent),
+                  QStringLiteral("start: the fixture is removed"));
+            state->window->setProperty("startViewOpen", true);
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &escape);
+        });
+        steps->push_back([state, check] {
+            check(!state->window->property("startViewOpen").toBool(),
+                  QStringLiteral("start: Esc returns"));
         });
 
         // The strip's home is the way back, and it is not a circuit: these steps prove the
