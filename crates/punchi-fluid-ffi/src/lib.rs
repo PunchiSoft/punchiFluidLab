@@ -54,8 +54,8 @@ use punchi_fluid_doc::{
     Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
 };
 use punchi_fluid_draw::placed::{
-    Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_edge_towards, port_point,
-    route_between_boxes_avoiding, route_length_mm,
+    ExhaustMark, Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_edge_towards,
+    port_point, route_between_boxes_avoiding, route_length_mm,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
@@ -1087,6 +1087,7 @@ impl PfSession {
         preview_points.clear();
         preview_text.clear();
         let closures = closure_pairs(&document, catalog);
+        let exhausts = exhaust_marks(&document, catalog, None, &[]);
         let (placed, pipes) = scene(
             &document,
             catalog,
@@ -1100,6 +1101,7 @@ impl PfSession {
             },
             &empty_charts,
             &closures,
+            &exhausts,
             ContactStates {
                 contacts: &empty_contacts,
                 relays: &empty_relays,
@@ -1962,6 +1964,7 @@ impl PfSession {
 
         let circuit = document.active_circuit();
         let closures = closure_pairs(document, catalog);
+        let exhausts = exhaust_marks(document, catalog, system.as_ref(), placement_part);
         let (placed, pipes) = scene(
             document,
             catalog,
@@ -1975,6 +1978,7 @@ impl PfSession {
             },
             charts,
             &closures,
+            &exhausts,
             ContactStates {
                 contacts,
                 relays,
@@ -4957,6 +4961,12 @@ impl PfSession {
         // live only inside this block; the error is owned and reported after they are gone.
         let written: Result<(), String> = {
             let closures = closure_pairs(&self.document, &self.catalog);
+            let exhausts = exhaust_marks(
+                &self.document,
+                &self.catalog,
+                self.system.as_ref(),
+                &self.placement_part,
+            );
             let circuit = self.document.active_circuit();
             let (placed, pipes) = scene(
                 &self.document,
@@ -4964,6 +4974,7 @@ impl PfSession {
                 SceneState::printed(self.system.as_ref(), &self.placement_part, circuit),
                 &self.charts,
                 &closures,
+                &exhausts,
                 ContactStates {
                     contacts: &self.contacts,
                     relays: &self.relays,
@@ -7313,6 +7324,47 @@ fn closure_pairs<'a>(
         .collect()
 }
 
+/// The exhaust readings the drawing shows, one list per placement, parallel to the document.
+///
+/// The solver owns the flow through each port's atmosphere boundary; this is the one place
+/// that turns a part index into the port ids the drawing places, so the drawing never reads
+/// the network and a port the model does not know stays silent.
+fn exhaust_marks<'a>(
+    document: &'a Document,
+    catalog: &'a Catalog,
+    system: Option<&Network>,
+    placement_part: &[Option<usize>],
+) -> Vec<Vec<ExhaustMark<'a>>> {
+    let Some(network) = system else {
+        return vec![Vec::new(); document.placements().len()];
+    };
+    document
+        .placements()
+        .iter()
+        .enumerate()
+        .map(|(index, placement)| {
+            let Some(part) = placement_part.get(index).copied().flatten() else {
+                return Vec::new();
+            };
+            let Some(definition) = catalog.get(placement.catalog_id.as_str()) else {
+                return Vec::new();
+            };
+            definition
+                .port
+                .iter()
+                .filter(|port| port.role == PortRole::Exhaust)
+                .filter_map(|port| {
+                    let flow = network.exhaust_flow(part, port.id.as_str())?;
+                    Some(ExhaustMark {
+                        port: port.id.as_str(),
+                        flow_l_min: flow as f32,
+                    })
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// What the sheet holds, ready to be drawn: the placements with the state the model reports for
 /// each, and the hoses with their route offsets.
 ///
@@ -7326,6 +7378,7 @@ fn scene<'a>(
     state: SceneState<'a>,
     charts: &'a std::collections::HashMap<u64, Chart>,
     closures: &'a [Vec<(&'a str, &'a ComponentDefinition)>],
+    exhausts: &'a [Vec<ExhaustMark<'a>>],
     states: ContactStates<'_>,
 ) -> (Vec<Placed<'a>>, Vec<Pipe<'a>>) {
     let SceneState {
@@ -7381,6 +7434,7 @@ fn scene<'a>(
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
             closures: closures.get(index).map_or(&[], Vec::as_slice),
+            exhausts: exhausts.get(index).map_or(&[], Vec::as_slice),
         });
     }
     let pipes: Vec<Pipe<'a>> = document

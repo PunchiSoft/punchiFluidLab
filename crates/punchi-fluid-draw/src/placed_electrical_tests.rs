@@ -28,6 +28,7 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
         Placed {
             index: 1,
@@ -41,6 +42,7 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
     ];
     let pipes = [Pipe {
@@ -87,6 +89,7 @@ fn a_pneumatic_hose_keeps_its_own_class() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
         Placed {
             index: 1,
@@ -100,6 +103,7 @@ fn a_pneumatic_hose_keeps_its_own_class() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
     ];
     let pipes = [Pipe {
@@ -149,6 +153,7 @@ fn a_contact_shows_whether_it_is_open_or_closed() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         }];
         let mut surface = Recording::default();
         draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
@@ -202,6 +207,7 @@ fn a_lamp_shows_its_state_as_rays_not_only_colour() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         }]
     };
     let lines = |lit: bool| {
@@ -243,6 +249,7 @@ fn a_coil_label_is_not_printed_as_a_fixed_port_number() {
         orientation: Orientation::NONE,
         designation: None,
         closures: &[],
+        exhausts: &[],
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);

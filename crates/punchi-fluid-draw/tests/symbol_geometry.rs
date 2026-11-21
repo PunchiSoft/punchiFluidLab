@@ -34,6 +34,7 @@ fn every_symbol_keeps_its_geometry() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         };
         let mut recording = Recording::default();
         draw_placed(&mut recording, &[placed], &[], &catalog, &Ink::print(), &[]);

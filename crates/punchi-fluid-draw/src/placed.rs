@@ -118,6 +118,18 @@ pub struct Series<'a> {
 /// Most vertices a series uses; a longer one is subsampled, keeping the last sample.
 pub const SERIES_POINTS: usize = 64;
 
+/// A port that vents to the atmosphere and how much air left it on the frame.
+///
+/// The solver reports the flow through the port's atmosphere boundary; the drawing only
+/// places the marks, so a plugged port and a still hose draw nothing.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ExhaustMark<'a> {
+    /// Port identifier as the definition names it.
+    pub port: &'a str,
+    /// Signed flow leaving the port, normal litres per minute.
+    pub flow_l_min: f32,
+}
+
 /// A component of the sheet: which definition draws it and the box it occupies.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Placed<'a> {
@@ -147,6 +159,8 @@ pub struct Placed<'a> {
     /// stays a function of what it is given. An empty slice is a component with every
     /// port open, which is what most of the sheet is.
     pub closures: &'a [(&'a str, &'a ComponentDefinition)],
+    /// Ports of this placement that vent to the atmosphere, with their reading.
+    pub exhausts: &'a [ExhaustMark<'a>],
 }
 
 impl Placed<'_> {
@@ -281,6 +295,12 @@ pub fn draw_placed(
             placed.closures,
             ink,
         );
+        // The air leaving an exhaust port is drawn outside the symbol, in the same stream
+        // language as the hoses: the port says where, the marks say how much. A plugged
+        // port has no reading and draws nothing.
+        for mark in placed.exhausts {
+            draw_exhaust_jet(surface, placed, definition, mark, ink);
+        }
         // The designation sits under the box, as the reference draws it: it names the
         // component for the reader without touching the symbol itself.
         if let Some(designation) = placed.designation.filter(|text| !text.is_empty()) {
@@ -341,6 +361,37 @@ pub fn port_point(
             let local = symbol::at(rect, candidate.position[0], candidate.position[1]);
             orientation.map(rect.center(), local)
         })
+}
+
+/// Draws the air leaving an exhaust port, outside the symbol, along the port's edge.
+///
+/// The marks are the same solid arrowheads as the hose stream and the port's edge gives the
+/// direction, so a bottom exhaust blows down and a right one blows right. A plugged port has
+/// no reading and a still one is below the flow floor, so neither draws anything.
+fn draw_exhaust_jet(
+    surface: &mut dyn Surface,
+    placed: &Placed<'_>,
+    definition: &ComponentDefinition,
+    mark: &ExhaustMark<'_>,
+    ink: &Ink,
+) {
+    if mark.flow_l_min.abs() <= flow::FLOW_FLOOR {
+        return;
+    }
+    let Some(at) = port_point(placed.rect, placed.orientation, definition, mark.port) else {
+        return;
+    };
+    let direction = match port_edge(definition, mark.port) {
+        PortEdge::Left => Pt::new(-1.0, 0.0),
+        PortEdge::Right => Pt::new(1.0, 0.0),
+        PortEdge::Top => Pt::new(0.0, -1.0),
+        PortEdge::Bottom => Pt::new(0.0, 1.0),
+    };
+    // Fixed distances, not a loop over an index: the jet is three marks, no allocation.
+    for distance in [2.0_f32, 4.5, 7.0] {
+        let point = Pt::new(at.x + direction.x * distance, at.y + direction.y * distance);
+        symbol::draw_flow_arrow(surface, point, direction, flow::PULSE_HEAD_MM, ink.line);
+    }
 }
 
 /// Draws one pipe as an orthogonal run, which is how a schematic is read.
@@ -606,6 +657,7 @@ mod selection_tests {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         }
     }
 
