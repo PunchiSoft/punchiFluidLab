@@ -29,6 +29,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         orientation: Orientation::NONE,
         designation: Some("1A"),
         closures: &[],
+        exhausts: &[],
     }];
     draw_placed(surface, &placed, &[], &catalog, &print_ink(), &[]);
 }

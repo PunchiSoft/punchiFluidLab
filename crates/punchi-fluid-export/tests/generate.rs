@@ -129,6 +129,7 @@ fn write_review_images(catalog: &Catalog) {
                     orientation: punchi_fluid_draw::Orientation::NONE,
                     designation: None,
                     closures: &[],
+                    exhausts: &[],
                 };
                 punchi_fluid_draw::draw_placed(&mut surface, &[placed], &[], catalog, &ink, &[]);
             } else {

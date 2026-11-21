@@ -21,6 +21,7 @@ fn placed(index: usize, catalog_id: &'static str, rect: Rect) -> Placed<'static>
         orientation: Orientation::NONE,
         designation: None,
         closures: &[],
+        exhausts: &[],
     }
 }
 

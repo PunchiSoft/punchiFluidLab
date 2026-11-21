@@ -406,6 +406,7 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
             orientation: placement.orientation,
             designation: placement.designation.as_deref(),
             closures: &[],
+            exhausts: &[],
         })
         .collect();
     let pipes: Vec<Pipe<'_>> = document

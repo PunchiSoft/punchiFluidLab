@@ -290,6 +290,24 @@ struct Edge {
     /// The index addresses the document's connection list, not the slice passed to
     /// [`Network::build`], so a connection the caller could not model keeps its slot.
     pipe: Option<usize>,
+    /// Exhaust reading this edge feeds, when it is the vent of a closed port.
+    ///
+    /// A free exhaust has no edge at all: the port node itself is the atmosphere, and the
+    /// internal path that feeds it carries the reading.
+    vent: Option<usize>,
+}
+
+/// One exhaust port with an atmosphere boundary and the reading that belongs to it.
+///
+/// A free exhaust vents through the port node itself (the atmosphere reservoir); a silencer
+/// vents through its own edge. Both carry a reading, because a student must see the air
+/// leaving the valve, not only entering the hose.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExhaustPort {
+    /// Index of the part in the slice passed to [`Network::build`].
+    pub part: usize,
+    /// Port identifier as the definition names it.
+    pub port: String,
 }
 
 /// One chamber of a cylinder and the way its pressure pushes the piston.
@@ -393,6 +411,15 @@ pub struct Network {
     pipe_flow_sums: Vec<f64>,
     /// Running sum for [`Self::part_flow`], one slot per part.
     part_flow_sums: Vec<f64>,
+    /// Every exhaust port with an atmosphere boundary, free or closed by a silencer.
+    exhausts: Vec<ExhaustPort>,
+    /// Signed flow leaving each exhaust to the atmosphere on the last frame, normal litres
+    /// per minute. `Some(0.0)` is a port that vents nothing right now.
+    exhaust_flows: Vec<Option<f64>>,
+    /// Running sum for [`Self::exhaust_flows`].
+    exhaust_sums: Vec<f64>,
+    /// Port node to exhaust reading index, for the free vents whose node is the atmosphere.
+    exhaust_node: HashMap<usize, usize>,
 }
 
 impl Network {
@@ -475,6 +502,7 @@ impl Network {
             atmosphere_pa,
             &terminated,
         );
+        let vent_edge_start = edges.len();
         vent_edges(
             parts,
             terminations,
@@ -485,6 +513,22 @@ impl Network {
             temperature_kelvin,
         );
         silencer_edges(parts, &mut nodes, &port_node, &mut edges, atmosphere_pa);
+        // Every exhaust with an atmosphere boundary carries a reading: a free vent is the
+        // port node itself, and a silencer is the vent edge that leaves it. A plugged port
+        // is collected too, with a zero that never draws anything.
+        let ExhaustReadings {
+            ports: exhausts,
+            node: exhaust_node,
+            flows: exhaust_flows,
+            sums: exhaust_sums,
+        } = collect_exhausts(
+            parts,
+            &nodes,
+            &port_node,
+            &terminated,
+            &mut edges,
+            vent_edge_start,
+        );
         let (pistons, piston_parts) = chambers(
             parts,
             &mut nodes,
@@ -529,6 +573,10 @@ impl Network {
             pipe_flows,
             pipe_flow_sums,
             part_flow_sums,
+            exhausts,
+            exhaust_flows,
+            exhaust_sums,
+            exhaust_node,
         })
     }
 
@@ -783,6 +831,24 @@ impl Network {
         &self.pipe_flows
     }
 
+    /// Signed flow leaving an exhaust port to the atmosphere on the last frame, normal
+    /// litres per minute. `None` for a port that is not an exhaust with an atmosphere
+    /// boundary, so a caller never reads a hose's air as the valve's exhaust.
+    #[must_use]
+    pub fn exhaust_flow(&self, component: usize, port_id: &str) -> Option<f64> {
+        let index = self
+            .exhausts
+            .iter()
+            .position(|entry| entry.part == component && entry.port == port_id)?;
+        self.exhaust_flows.get(index).copied().flatten()
+    }
+
+    /// The exhaust ports that carry a reading, in build order.
+    #[must_use]
+    pub fn exhausts(&self) -> &[ExhaustPort] {
+        &self.exhausts
+    }
+
     /// Builds a telemetry snapshot.
     #[must_use]
     pub fn telemetry(&self) -> Telemetry {
@@ -838,6 +904,7 @@ impl Network {
         let substep = dt / f64::from(count);
         self.pipe_flow_sums.fill(0.0);
         self.part_flow_sums.fill(0.0);
+        self.exhaust_sums.fill(0.0);
         for _ in 0..count {
             self.substep(substep);
             let flows = &self.pipe_flows;
@@ -848,6 +915,12 @@ impl Network {
             }
             let part_flows = &self.part_flow;
             for (sum, reading) in self.part_flow_sums.iter_mut().zip(part_flows) {
+                if let Some(value) = reading {
+                    *sum += value;
+                }
+            }
+            let exhaust_readings = &self.exhaust_flows;
+            for (sum, reading) in self.exhaust_sums.iter_mut().zip(exhaust_readings) {
                 if let Some(value) = reading {
                     *sum += value;
                 }
@@ -864,6 +937,12 @@ impl Network {
         }
         let sums = &self.part_flow_sums;
         for (reading, sum) in self.part_flow.iter_mut().zip(sums) {
+            if let Some(value) = reading {
+                *value = sum / divisor;
+            }
+        }
+        let sums = &self.exhaust_sums;
+        for (reading, sum) in self.exhaust_flows.iter_mut().zip(sums) {
             if let Some(value) = reading {
                 *value = sum / divisor;
             }
@@ -896,7 +975,11 @@ impl Network {
         // Moved out of `self` so the loop can read the network while it writes the flows.
         let mut part_flow = std::mem::take(&mut self.part_flow);
         let mut pipe_flows = std::mem::take(&mut self.pipe_flows);
+        let mut exhaust_flows = std::mem::take(&mut self.exhaust_flows);
         for slot in &mut part_flow {
+            *slot = slot.map(|_| 0.0);
+        }
+        for slot in &mut exhaust_flows {
             *slot = slot.map(|_| 0.0);
         }
         let mut supply_flow = 0.0;
@@ -936,6 +1019,7 @@ impl Network {
                     *total += flow;
                 }
             }
+            add_exhaust_flow(edge, &self.exhaust_node, &mut exhaust_flows, flow);
             if flow == 0.0 {
                 continue;
             }
@@ -984,6 +1068,7 @@ impl Network {
         self.working_flow = working;
         self.part_flow = part_flow;
         self.pipe_flows = pipe_flows;
+        self.exhaust_flows = exhaust_flows;
 
         self.step_pistons(dt);
     }
@@ -1147,6 +1232,7 @@ fn valve_edges(
                     mask: 1_u64 << position,
                     part: None,
                     pipe: None,
+                    vent: None,
                 });
             }
         }
@@ -1187,6 +1273,7 @@ fn restriction_edges(
             mask: u64::MAX,
             part: meter.then_some(index),
             pipe: None,
+            vent: None,
         });
     }
 }
@@ -1219,6 +1306,7 @@ fn append_pipes(
             mask: u64::MAX,
             part: None,
             pipe: Some(*pipe),
+            vent: None,
         });
     }
 }
@@ -1299,6 +1387,64 @@ fn exhaust_node(
 /// The free-vent pass has already skipped the terminated node, so a silencer replaces the
 /// open boundary instead of joining it. A `Closed` port adds nothing and keeps its volume:
 /// the air is trapped and its pressure does not decay.
+/// Collects every exhaust with an atmosphere boundary and marks its vent edge.
+///
+/// A free exhaust is the port node itself; a silencer is the edge that leaves it. A plugged
+/// port is collected too, with a zero that never draws anything.
+/// The exhaust readings a build starts with: the ports, the node map and their slots.
+struct ExhaustReadings {
+    ports: Vec<ExhaustPort>,
+    node: HashMap<usize, usize>,
+    flows: Vec<Option<f64>>,
+    sums: Vec<f64>,
+}
+
+fn collect_exhausts(
+    parts: &[NetworkPart],
+    nodes: &[Node],
+    port_node: &[HashMap<&str, usize>],
+    terminated: &HashSet<usize>,
+    edges: &mut [Edge],
+    vent_edge_start: usize,
+) -> ExhaustReadings {
+    let mut exhausts = Vec::new();
+    let mut exhaust_node = HashMap::new();
+    for (index, part) in parts.iter().enumerate() {
+        for port in &part.ports {
+            if port.role != PortRole::Exhaust {
+                continue;
+            }
+            let Some(&node) = port_node[index].get(port.id.as_str()) else {
+                continue;
+            };
+            let free = nodes
+                .get(node)
+                .and_then(|node| node.reservoir.as_ref())
+                .is_some_and(|reservoir| reservoir.kind == ReservoirKind::Atmosphere);
+            if free || terminated.contains(&node) {
+                exhaust_node.insert(node, exhausts.len());
+                exhausts.push(ExhaustPort {
+                    part: index,
+                    port: port.id.clone(),
+                });
+            }
+        }
+    }
+    for edge in &mut edges[vent_edge_start..] {
+        if let Some(&index) = exhaust_node.get(&edge.a) {
+            edge.vent = Some(index);
+        }
+    }
+    let flows = vec![Some(0.0); exhausts.len()];
+    let sums = vec![0.0; exhausts.len()];
+    ExhaustReadings {
+        ports: exhausts,
+        node: exhaust_node,
+        flows,
+        sums,
+    }
+}
+
 fn vent_edges(
     parts: &[NetworkPart],
     terminations: &[(PortAddress, PortTermination)],
@@ -1332,6 +1478,7 @@ fn vent_edges(
             mask: u64::MAX,
             part: None,
             pipe: None,
+            vent: None,
         });
     }
 }
@@ -1375,6 +1522,7 @@ fn silencer_edges(
             mask: u64::MAX,
             part: None,
             pipe: None,
+            vent: None,
         });
     }
 }
@@ -1449,6 +1597,30 @@ fn owned(port_node: Vec<HashMap<&str, usize>>) -> Vec<HashMap<String, usize>> {
 }
 
 /// Mass flow from `a` to `b`, `kg / s`, positive towards `b`.
+/// Adds one edge's flow to the exhaust reading it feeds, if any.
+///
+/// A silencer or a plug vents through its own edge; a free exhaust is its port node, fed by
+/// the internal path. A hose never counts: its air goes into the pipe, not the atmosphere.
+fn add_exhaust_flow(
+    edge: &Edge,
+    exhaust_node: &HashMap<usize, usize>,
+    readings: &mut [Option<f64>],
+    flow: f64,
+) {
+    let vent = edge.vent.or_else(|| {
+        if edge.pipe.is_none() {
+            exhaust_node.get(&edge.b).copied()
+        } else {
+            None
+        }
+    });
+    if let Some(vent) = vent {
+        if let Some(reading) = readings.get_mut(vent).and_then(Option::as_mut) {
+            *reading += flow / orifice::normal::AIR_DENSITY * 60_000.0;
+        }
+    }
+}
+
 fn signed_flow(pressure_a: f64, pressure_b: f64, conductance: f64, temperature_kelvin: f64) -> f64 {
     if (pressure_a - pressure_b).abs() <= f64::EPSILON {
         return 0.0;
@@ -2383,6 +2555,55 @@ mod tests {
             network.pipe_flows()[2],
             Some(0.0),
             "the dead-end hose carried nothing, so its stored reading is zero, not the old one"
+        );
+    }
+
+    #[test]
+    fn the_exhaust_port_reports_the_air_it_releases() {
+        // A 3/2 valve with no silencer vents its exhaust port to the atmosphere through the
+        // port node itself. While the valve is held, port 3 is blocked and reads nothing;
+        // when it returns, the chamber empties through that port and the reading is positive.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes, &[], pipes.len()).expect("it builds");
+        assert!(
+            network
+                .exhausts()
+                .iter()
+                .any(|entry| entry.part == 1 && entry.port == "3")
+        );
+
+        assert!(network.press_valve(), "the actuator is in the model");
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let filling = network.exhaust_flow(1, "3").expect("port 3 is an exhaust");
+
+        network.release_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let venting = network.exhaust_flow(1, "3").expect("port 3 is an exhaust");
+        assert!(
+            venting > 0.0,
+            "the chamber empties through the exhaust, so the reading is positive: {venting:.3}"
+        );
+        assert!(
+            venting > filling.abs(),
+            "the blocked port reads less than the venting one: {filling:.3} against {venting:.3}"
+        );
+        assert_eq!(
+            network.exhaust_flow(1, "1"),
+            None,
+            "a supply port is not an exhaust"
         );
     }
 

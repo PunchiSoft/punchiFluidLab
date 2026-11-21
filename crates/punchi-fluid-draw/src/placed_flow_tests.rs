@@ -28,6 +28,7 @@ fn placed(index: usize, catalog_id: &'static str, rect: Rect) -> Placed<'static>
         orientation: Orientation::NONE,
         designation: None,
         closures: &[],
+        exhausts: &[],
     }
 }
 
@@ -314,4 +315,55 @@ fn a_page_without_flow_draws_no_mark() {
     hose.animate = false;
     let recording = draw_marks(&hose);
     assert!(recording.calls().is_empty());
+}
+
+#[test]
+fn an_exhaust_port_draws_the_air_leaving_it() {
+    // The jet is outside the symbol, on the port's edge: the drawing places it, the solver
+    // owns how much. A plugged port has no reading, so its slice is empty and nothing draws.
+    let catalog = Catalog::builtin();
+    let ink = Ink::print();
+    let valve = placed(
+        0,
+        "valve.3_2.spring_return",
+        Rect::from_center_size(Pt::new(40.0, 40.0), 20.0, 20.0),
+    );
+    let mark = ExhaustMark {
+        port: "3",
+        flow_l_min: 20.0,
+    };
+    let mut venting = valve;
+    venting.exhausts = std::slice::from_ref(&mark);
+    let mut surface = Recording::default();
+    draw_placed(&mut surface, &[venting], &[], &catalog, &ink, &[]);
+    let outside = |surface: &Recording| {
+        surface
+            .calls()
+            .iter()
+            .filter(|call| match call {
+                Call::Polygon { points, fill, .. } => {
+                    *fill == Some(ink.line)
+                        && !points.is_empty()
+                        && points
+                            .iter()
+                            .all(|point| point.y > venting.rect.max.y + 0.5)
+                }
+                _ => false,
+            })
+            .count()
+    };
+    assert!(
+        outside(&surface) >= 2,
+        "the air leaving port 3 draws below the valve"
+    );
+
+    let still = ExhaustMark {
+        port: "3",
+        flow_l_min: 0.0,
+    };
+    let mut quiet = valve;
+    quiet.exhausts = std::slice::from_ref(&still);
+    let mut surface = Recording::default();
+    draw_placed(&mut surface, &[quiet], &[], &catalog, &ink, &[]);
+    assert_eq!(outside(&surface), 0, "no flow, no jet");
 }

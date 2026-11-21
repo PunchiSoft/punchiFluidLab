@@ -31,6 +31,7 @@ fn a_series_draws_a_bounded_curve_inside_its_box() {
         orientation: Orientation::NONE,
         designation: None,
         closures: &[],
+        exhausts: &[],
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
@@ -91,6 +92,7 @@ fn every_port_carries_its_connection_circle() {
         orientation: Orientation::NONE,
         designation: None,
         closures: &[],
+        exhausts: &[],
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &[], &catalog, &Ink::print(), &[]);
@@ -145,6 +147,7 @@ fn the_bounds_cover_the_boxes_and_the_pipe_route() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
         Placed {
             index: 1,
@@ -158,6 +161,7 @@ fn the_bounds_cover_the_boxes_and_the_pipe_route() {
             orientation: Orientation::NONE,
             designation: None,
             closures: &[],
+            exhausts: &[],
         },
     ];
     let pipes = [Pipe {

@@ -26,6 +26,7 @@ fn host<'a>(
         orientation,
         designation: None,
         closures,
+        exhausts: &[],
     }
 }
 
