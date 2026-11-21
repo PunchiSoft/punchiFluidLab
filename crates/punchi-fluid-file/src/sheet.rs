@@ -9,12 +9,18 @@
 //! never leaves the parser. A future release migrates older sheets instead of refusing
 //! them.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
 use crate::paper::StoredSheet;
+
+mod closure;
+mod migrate;
+
+use closure::{identifier_is_valid, is_closed};
 
 /// Format version written by this build.
 ///
@@ -25,14 +31,15 @@ use crate::paper::StoredSheet;
 /// circuit, 9 gave that block the project, equipment, scale and norms of the Chilean guide,
 /// 10 added its content model and per-field visibility, 11 moved the positions to
 /// top-right/bottom-right/bottom-full and added the free note, 12 renamed the
-/// content-model names from `escolar`/`tecnico` to `school`/`technical`, and 13 gave a
-/// pneumatic pipe its tube diameter. An older file reads because every addition has an
-/// obvious default: an unturned symbol, an unnamed component, one circuit, an unbound
-/// recorder, a working line, an unframed A4 that is exactly the area the older release
-/// drew on, a block whose title is the circuit title, whose revision is `A`, whose scale is
-/// `S/E`, whose model is the full industrial block and whose note is empty, and a pipe
-/// whose tube is unspecified.
-pub const SHEET_VERSION: u32 = 13;
+/// content-model names from `escolar`/`tecnico` to `school`/`technical`, 13 gave a
+/// pneumatic pipe its tube diameter, and 14 gave a port of a component its closure — a
+/// blind plug or a silencer chosen on the port itself. An older file reads because every
+/// addition has an obvious default: an unturned symbol, an unnamed component, one circuit,
+/// an unbound recorder, a working line, an unframed A4 that is exactly the area the older
+/// release drew on, a block whose title is the circuit title, whose revision is `A`, whose
+/// scale is `S/E`, whose model is the full industrial block and whose note is empty, a
+/// pipe whose tube is unspecified, and a component whose ports are all open.
+pub const SHEET_VERSION: u32 = 14;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -54,6 +61,13 @@ pub const MAX_BYTES: u64 = 8 * 1024 * 1024;
 
 /// Longest accepted catalog id or port id.
 pub const MAX_ID: usize = 128;
+
+/// Most ports a component definition may carry.
+///
+/// It matches `punchi_fluid_catalog::MAX_PORTS`; the format crate does not depend on the
+/// catalog, so the number is stated in both and tested here. The closure map of one
+/// placement can never have more entries than the definition has ports.
+pub const MAX_PORTS: usize = 64;
 
 /// Largest accepted symbol box side, in millimetres.
 pub const MAX_SIDE_MM: f32 = 2_000.0;
@@ -123,6 +137,17 @@ pub struct StoredPlacement {
     /// What a recorder charts; absent when this component is not one or is not bound.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<StoredSource>,
+    /// Closures chosen on the ports of this component, by port id.
+    ///
+    /// `"3" -> "silencer.pneumatic"` or `"3" -> "plug.blind"`; an absent key is an open
+    /// port. Absent before format 14, and the empty map writes no key, so a format-14
+    /// sheet with no closure looks like a format-13 one but for the version number.
+    #[serde(
+        default,
+        skip_serializing_if = "BTreeMap::is_empty",
+        deserialize_with = "closure::deserialize_port_closures"
+    )]
+    pub port_closures: BTreeMap<String, String>,
 }
 
 /// Skips a field that carries the default, so an unturned sheet looks as it always did.
@@ -362,7 +387,7 @@ impl Sheet {
         }
         let ids = self.validate_placements()?;
         self.validate_sources(&ids)?;
-        self.validate_pipes(&circuit_ids, &ids)?;
+        self.validate_pipes(&circuit_ids, &ids, &self.placement)?;
         Ok(())
     }
 
@@ -371,9 +396,14 @@ impl Sheet {
     /// # Errors
     ///
     /// Returns [`SheetError::Invalid`] for a pipe in another circuit, an unknown
-    /// component, a self-join, an empty port, an out-of-range offset or an out-of-range
-    /// tube size.
-    fn validate_pipes(&self, circuit_ids: &[u32], ids: &[u64]) -> Result<(), SheetError> {
+    /// component, a self-join, an empty port, a pipe on a closed port, an out-of-range
+    /// offset or an out-of-range tube size.
+    fn validate_pipes(
+        &self,
+        circuit_ids: &[u32],
+        ids: &[u64],
+        placements: &[StoredPlacement],
+    ) -> Result<(), SheetError> {
         for pipe in &self.pipe {
             if self.format >= 4 && !circuit_ids.contains(&pipe.circuit) {
                 return Err(SheetError::Invalid(String::from(
@@ -394,6 +424,13 @@ impl Sheet {
                 if port.is_empty() || port.len() > MAX_ID {
                     return Err(SheetError::Invalid(format!("{name} is empty or too long")));
                 }
+            }
+            if is_closed(placements, pipe.from, &pipe.from_port)
+                || is_closed(placements, pipe.to, &pipe.to_port)
+            {
+                return Err(SheetError::Invalid(String::from(
+                    "a pipe ends on a closed port",
+                )));
             }
             if pipe.offset_tenths.unsigned_abs() > 10_000 {
                 return Err(SheetError::Invalid(String::from(
@@ -559,6 +596,24 @@ impl Sheet {
                     "a component has an unusable catalog id",
                 )));
             }
+            if placement.port_closures.len() > MAX_PORTS {
+                return Err(SheetError::Invalid(format!(
+                    "a component closes {} ports, at most {MAX_PORTS}",
+                    placement.port_closures.len()
+                )));
+            }
+            for (port, closure) in &placement.port_closures {
+                if !identifier_is_valid(port) {
+                    return Err(SheetError::Invalid(String::from(
+                        "a component has an unusable port id in its closures",
+                    )));
+                }
+                if !identifier_is_valid(closure) {
+                    return Err(SheetError::Invalid(String::from(
+                        "a component has an unusable closure id",
+                    )));
+                }
+            }
             for (name, value) in [
                 ("x", placement.x),
                 ("y", placement.y),
@@ -613,99 +668,6 @@ impl Sheet {
         sheet.migrate()?;
         sheet.validate()?;
         Ok(sheet)
-    }
-
-    /// Reads an older file as the current format, one version at a time.
-    ///
-    /// Each step only touches what that version lacked. A format 4 project already has its
-    /// circuits, and a migration that reset them would silently merge every sheet into the
-    /// first one.
-    fn migrate(&mut self) -> Result<(), SheetError> {
-        if self.format >= SHEET_VERSION {
-            return Ok(());
-        }
-        if self.format < SHEET_MIN {
-            return Err(SheetError::UnsupportedVersion {
-                found: self.format,
-                supported: SHEET_VERSION,
-            });
-        }
-        // 1–3 → 4: one circuit, which is what a single-sheet file meant.
-        if self.format < 4 {
-            if self.circuits.is_empty() {
-                self.circuits = vec![StoredCircuit {
-                    id: 0,
-                    title: String::from("Circuito 1"),
-                    block: StoredBlock {
-                        title: String::from("Circuito 1"),
-                        ..StoredBlock::default()
-                    },
-                }];
-            }
-            for placement in &mut self.placement {
-                placement.circuit = 0;
-            }
-            for pipe in &mut self.pipe {
-                pipe.circuit = 0;
-            }
-            self.active = 0;
-        }
-        // 4 → 5: an unbound recorder, which is the `None` the field already defaults to.
-        // 6 → 7: the sheet. An older file was drawn on a bare 200 × 130 mm rectangle, so it
-        // reads as an unframed A4: the rectangle sits inside the paper and no component
-        // becomes "outside the frame" just by opening the file in a newer build.
-        if self.format < 7 {
-            self.sheet = StoredSheet::default();
-        }
-        // 7 → 8: the control block. An older circuit had no block, so its title field is
-        // the circuit title and the revision the one this build starts at.
-        if self.format < 8 {
-            for circuit in &mut self.circuits {
-                if circuit.block.title.is_empty() {
-                    circuit.block.title.clone_from(&circuit.title);
-                }
-            }
-        }
-        // 8 → 9: the project, equipment, scale and norms of the block. Serde has already
-        // given an absent field its default, so a format 8 block reads as the same block
-        // with an empty project and equipment, a `S/E` scale and no norms.
-        if self.format < 9 {
-            for circuit in &mut self.circuits {
-                if circuit.block.scale.is_empty() {
-                    circuit.block.scale = String::from("S/E");
-                }
-            }
-        }
-        // 9 → 10: the content model and per-field visibility. Serde gives an absent model
-        // `industrial` and an absent visibility list that model's full field set, so an
-        // older block keeps printing every field it used to print.
-        // 10 → 11: the new positions and the free note. `right` and the retired `left` read
-        // as bottom right; `full` reads as the bottom band; the note starts empty.
-        if self.format < 11 {
-            for circuit in &mut self.circuits {
-                punchi_fluid_core::BlockPosition::from_name(&circuit.block.position)
-                    .as_str()
-                    .clone_into(&mut circuit.block.position);
-            }
-        }
-        // 11 → 12: the content-model names. Format 11 wrote the Spanish short names, so a
-        // file from that release is read as the model it meant and saved in English.
-        if self.format < 12 {
-            for circuit in &mut self.circuits {
-                let model = match circuit.block.model.as_str() {
-                    "escolar" => "school",
-                    "tecnico" => "technical",
-                    _ => continue,
-                };
-                model.clone_into(&mut circuit.block.model);
-            }
-        }
-        // 12 → 13: the tube diameter of a pneumatic pipe. The serde default already gives an
-        // absent field `None`, which is "unspecified" and keeps the old 0.42 mm width; the
-        // writer never adds the key for an unspecified pipe, so an old sheet re-saved by
-        // this build still looks as it did.
-        self.format = SHEET_VERSION;
-        Ok(())
     }
 
     /// The sheet this document is drawn on, as the domain stores it.

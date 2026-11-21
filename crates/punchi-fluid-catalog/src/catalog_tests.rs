@@ -3,6 +3,8 @@
 
 //! Tests for loading, overriding and validating a definition.
 
+use std::fmt::Write as _;
+
 use super::*;
 
 fn write(dir: &Path, name: &str, text: &str) {
@@ -169,6 +171,36 @@ conductance = 4.0e-10
             .problems()
             .iter()
             .any(|problem| problem.to_string().contains("exhaust port")),
+        "{:?}",
+        catalog.problems()
+    );
+}
+
+#[test]
+fn a_component_with_too_many_ports_is_refused() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let mut too_many = String::from(
+        "schema = 3\nid = \"plug.many\"\nname = \"Many ports\"\n\
+         category = \"accessory\"\n",
+    );
+    for index in 0..=MAX_PORTS {
+        write!(
+            too_many,
+            "[[port]]\nid = \"p{index}\"\nrole = \"exhaust\"\nposition = [0.5, 0.5]\n"
+        )
+        .expect("writing to a String cannot fail");
+    }
+    too_many.push_str("[behaviour]\ntype = \"plug\"\n");
+    write(dir.path(), "many.toml", &too_many);
+
+    let catalog = Catalog::builtin().with_user_dir(dir.path());
+    assert!(catalog.get("plug.many").is_none());
+    let expected = format!("at most {MAX_PORTS} ports");
+    assert!(
+        catalog
+            .problems()
+            .iter()
+            .any(|problem| problem.to_string().contains(&expected)),
         "{:?}",
         catalog.problems()
     );

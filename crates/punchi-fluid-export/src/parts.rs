@@ -16,14 +16,15 @@
 //! with the length of the route the sheet draws. It is a cut list read with the drawing, not
 //! a geometric measurement: no bend allowance, fittings or waste.
 
-use punchi_fluid_catalog::Catalog;
+use punchi_fluid_catalog::{Catalog, PortRole};
 use punchi_fluid_core::tube::tube_label;
 use punchi_fluid_draw::surface::LineClass;
 
 /// Most rows a printed list holds before it stops being a list and becomes a column.
 ///
-/// The components and the tubes share it; the components take precedence, because a sheet
-/// missing a valve is worse than a sheet missing a tube row that the drawing still shows.
+/// The components, the closures and the tubes share it, in that order: a sheet missing a
+/// valve is worse than a sheet missing a closure, and a closure row is more useful than a
+/// tube row the drawing still shows.
 pub const MAX_ROWS: usize = 24;
 
 /// One row of the parts list: a definition, how many of it, and their names.
@@ -87,6 +88,32 @@ fn class_label(class: LineClass) -> &'static str {
     }
 }
 
+/// The port display label a closure row prints: the role in Spanish and the port id.
+///
+/// The document stores the bare port id; the label belongs to the catalog's definition and
+/// is resolved here, so the row reads `escape 3` without the drawing having to know it. A
+/// parent or port the catalog does not resolve keeps the bare id, which is still a truthful
+/// row for a file the machine cannot fully read.
+fn port_label(catalog: &Catalog, parent_catalog: &str, port: &str) -> String {
+    let role = catalog
+        .get(parent_catalog)
+        .and_then(|definition| {
+            definition
+                .port
+                .iter()
+                .find(|candidate| candidate.id == port)
+        })
+        .map(|candidate| candidate.role);
+    match role {
+        Some(PortRole::Supply) => format!("suministro {port}"),
+        Some(PortRole::Working) => format!("trabajo {port}"),
+        Some(PortRole::Exhaust) => format!("escape {port}"),
+        Some(PortRole::Mechanical) => format!("mecánico {port}"),
+        Some(PortRole::Electrical) => format!("eléctrico {port}"),
+        None => port.to_owned(),
+    }
+}
+
 /// `true` when the class sorts before the other in the list: working first.
 fn class_rank(class: LineClass) -> u8 {
     match class {
@@ -108,6 +135,27 @@ fn length_label(length_mm: u32) -> String {
     format!("{whole},{fraction} m")
 }
 
+/// The line a closure prints: the closure, the component that carries it and the port.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClosureRow {
+    /// How many ports carry the same closure on the same parent and port.
+    pub quantity: usize,
+    /// Name the catalog gives the closure, in the interface's language.
+    pub closure: String,
+    /// Designation of the parent, or its catalog id when it has none.
+    pub parent: String,
+    /// Port display label, `<role> <id>` in Spanish (`escape 3`).
+    pub port: String,
+}
+
+impl ClosureRow {
+    /// The line the sheet prints: closure, parent and port.
+    #[must_use]
+    pub fn text(&self) -> String {
+        format!("{} · {} · {}", self.closure, self.parent, self.port)
+    }
+}
+
 /// The list a sheet prints.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PartsList {
@@ -115,9 +163,13 @@ pub struct PartsList {
     pub rows: Vec<PartRow>,
     /// Components left out because the list was full.
     pub omitted: usize,
-    /// Tube rows, after the components, sorted by class and diameter.
+    /// Closure rows, after the components and before the tubes.
+    pub closures: Vec<ClosureRow>,
+    /// Closures left out because the components and the earlier closures took the room.
+    pub omitted_closures: usize,
+    /// Tube rows, after the closures, sorted by class and diameter.
     pub tubes: Vec<TubeRow>,
-    /// Tubes left out because the components took the room.
+    /// Tubes left out because the components and closures took the room.
     pub omitted_tubes: usize,
 }
 
@@ -125,19 +177,22 @@ impl PartsList {
     /// `true` when there is nothing to print.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.rows.is_empty() && self.tubes.is_empty()
+        self.rows.is_empty() && self.closures.is_empty() && self.tubes.is_empty()
     }
 
-    /// Groups placements into component rows and pipes into tube rows.
+    /// Groups placements into component rows, port closures into closure rows and pipes
+    /// into tube rows.
     ///
     /// The input is what the document holds: the catalog id of each placement and the name
-    /// the user gave it, plus one [`TubeRowInput`] per drawn pneumatic pipe. A definition
-    /// the catalog does not know keeps its id as the name, so a sheet with a user file that
-    /// failed to load still lists what is drawn.
+    /// the user gave it, one tuple per port closure `(parent catalog, parent designation,
+    /// port id, closure catalog)`, and one [`TubeRowInput`] per drawn pneumatic pipe. A
+    /// definition the catalog does not know keeps its id as the name, so a sheet with a
+    /// user file that failed to load still lists what is drawn.
     #[must_use]
     pub fn group<'a>(
         catalog: &Catalog,
         placements: impl IntoIterator<Item = (&'a str, Option<&'a str>)>,
+        closures: impl IntoIterator<Item = (&'a str, Option<&'a str>, &'a str, &'a str)>,
         tubes: impl IntoIterator<Item = TubeRowInput>,
     ) -> Self {
         let mut groups: Vec<(String, Vec<Option<&'a str>>)> = Vec::new();
@@ -171,6 +226,8 @@ impl PartsList {
                 .then_with(|| left.name.cmp(&right.name))
         });
 
+        let mut closure_rows = group_closures(catalog, closures);
+
         let mut tube_rows: Vec<TubeRow> = Vec::new();
         for input in tubes {
             if let Some(row) = tube_rows
@@ -198,20 +255,75 @@ impl PartsList {
                 })
         });
 
-        // The components take the room first; the tubes get what is left, and each kind
-        // reports its own cut so a full list never hides one silently.
+        // The components take the room first, then the closures; the tubes get what is
+        // left, and each kind reports its own cut so a full list never hides one silently.
         let omitted = rows.len().saturating_sub(MAX_ROWS);
         rows.truncate(MAX_ROWS);
         let room = MAX_ROWS - rows.len();
+        let omitted_closures = closure_rows.len().saturating_sub(room);
+        closure_rows.truncate(room);
+        let room = MAX_ROWS - rows.len() - closure_rows.len();
         let omitted_tubes = tube_rows.len().saturating_sub(room);
         tube_rows.truncate(room);
         Self {
             rows,
             omitted,
+            closures: closure_rows,
+            omitted_closures,
             tubes: tube_rows,
             omitted_tubes,
         }
     }
+}
+
+/// Groups the closures into one row per distinct fit.
+///
+/// A closure is grouped by its catalog id, the parent's label and the port's display
+/// label: two valves named `1V1` with a silencer on `3` share one row. The label comes
+/// from the host catalog definition, because only it knows the role.
+fn group_closures<'a>(
+    catalog: &Catalog,
+    closures: impl IntoIterator<Item = (&'a str, Option<&'a str>, &'a str, &'a str)>,
+) -> Vec<ClosureRow> {
+    let mut closure_groups: Vec<((String, String, String), usize)> = Vec::new();
+    for (parent_catalog, parent_designation, port, closure_catalog) in closures {
+        let parent = parent_designation
+            .filter(|designation| !designation.is_empty())
+            .unwrap_or(parent_catalog)
+            .to_owned();
+        let port = port_label(catalog, parent_catalog, port);
+        let key = (closure_catalog.to_owned(), parent, port);
+        if let Some((_, quantity)) = closure_groups
+            .iter_mut()
+            .find(|(candidate, _)| *candidate == key)
+        {
+            *quantity += 1;
+        } else {
+            closure_groups.push((key, 1));
+        }
+    }
+    let mut closure_rows: Vec<ClosureRow> = closure_groups
+        .into_iter()
+        .map(|((closure, parent, port), quantity)| ClosureRow {
+            quantity,
+            closure: catalog
+                .get(&closure)
+                .map_or(closure, |definition| definition.display_name().to_owned()),
+            parent,
+            port,
+        })
+        .collect();
+    // A closure row is read by what is fitted, then by where: the same order the
+    // component rows use keeps the list predictable.
+    closure_rows.sort_by(|left, right| {
+        left.closure
+            .to_lowercase()
+            .cmp(&right.closure.to_lowercase())
+            .then_with(|| left.closure.cmp(&right.closure))
+            .then_with(|| left.parent.cmp(&right.parent))
+            .then_with(|| left.port.cmp(&right.port))
+    });
+    closure_rows
 }
 
 #[cfg(test)]
@@ -229,6 +341,7 @@ mod tests {
                 ("supply.compressor", None),
             ],
             [],
+            [],
         );
         assert_eq!(list.rows.len(), 2);
         let cylinders = list
@@ -245,6 +358,7 @@ mod tests {
     fn the_parts_list_has_a_tube_row_per_size_and_class_with_the_drawn_length() {
         let list = PartsList::group(
             &Catalog::builtin(),
+            [],
             [],
             [
                 TubeRowInput {
@@ -284,6 +398,7 @@ mod tests {
         let list = PartsList::group(
             &Catalog::builtin(),
             [],
+            [],
             [TubeRowInput {
                 od: None,
                 class: LineClass::Drain,
@@ -297,6 +412,80 @@ mod tests {
     }
 
     #[test]
+    fn the_parts_list_names_the_parent_and_the_port() {
+        let catalog = Catalog::builtin();
+        let list = PartsList::group(
+            &catalog,
+            [("valve.3_2.spring_return", Some("1A1"))],
+            [
+                (
+                    "valve.3_2.spring_return",
+                    Some("1A1"),
+                    "3",
+                    "silencer.pneumatic",
+                ),
+                (
+                    "valve.3_2.spring_return",
+                    Some("1A1"),
+                    "3",
+                    "silencer.pneumatic",
+                ),
+            ],
+            [],
+        );
+        assert_eq!(list.closures.len(), 1, "one port, one grouped row");
+        assert_eq!(list.closures[0].quantity, 2);
+        assert_eq!(list.closures[0].text(), "Silenciador · 1A1 · escape 3");
+        assert!(!list.is_empty());
+
+        // A closure with no designation names its catalog id, as the component does.
+        let only = PartsList::group(
+            &catalog,
+            [],
+            [("valve.3_2.spring_return", None, "3", "plug.blind")],
+            [],
+        );
+        assert_eq!(
+            only.closures[0].text(),
+            "Tapón ciego · valve.3_2.spring_return · escape 3"
+        );
+        assert!(!only.is_empty(), "a list with only a closure is not empty");
+    }
+
+    #[test]
+    fn closures_take_the_rows_after_the_components_and_before_the_tubes() {
+        let catalogue = Catalog::builtin();
+        let placements: Vec<(&str, Option<&str>)> = (0..MAX_ROWS - 1)
+            .map(|_| ("supply.compressor", None))
+            .collect();
+        // The placements above group into one row, so the closures must fill the rest of
+        // the list on their own; their ports are unknown to the parent so each keeps its
+        // bare id and stays a separate row.
+        let ports: Vec<String> = (0..=MAX_ROWS).map(|index| format!("p{index}")).collect();
+        let closures: Vec<(&str, Option<&str>, &str, &str)> = ports
+            .iter()
+            .map(|port| ("unknown.parent", Some("1V1"), port.as_str(), "plug.blind"))
+            .collect();
+        let list = PartsList::group(
+            &catalogue,
+            placements,
+            closures,
+            (0..2).map(|index| TubeRowInput {
+                od: Some(u16::try_from(400 + index).unwrap_or_default()),
+                class: LineClass::Working,
+                length_mm: 100,
+            }),
+        );
+        assert_eq!(list.rows.len(), 1);
+        // The component row leaves room for `MAX_ROWS - 1` closures; the rest are cut and
+        // counted, and the tubes get no room at all because the closures took it.
+        assert_eq!(list.closures.len(), MAX_ROWS - 1);
+        assert_eq!(list.omitted_closures, 2);
+        assert_eq!(list.tubes.len(), 0);
+        assert_eq!(list.omitted_tubes, 2);
+    }
+
+    #[test]
     fn the_components_take_the_rows_first_and_the_tubes_report_their_cut() {
         let catalogue = Catalog::builtin();
         let placements: Vec<(&str, Option<&str>)> =
@@ -305,6 +494,7 @@ mod tests {
         let list = PartsList::group(
             &catalogue,
             placements,
+            [],
             (0..MAX_ROWS + 2).map(|index| TubeRowInput {
                 od: Some(u16::try_from(400 + index).unwrap_or_default()),
                 class: LineClass::Working,

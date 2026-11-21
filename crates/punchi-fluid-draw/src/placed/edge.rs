@@ -81,7 +81,7 @@ pub fn port_edge_towards(
 }
 
 /// The edge `edge` after the placement's mirror and quarter turns.
-fn turned_edge(edge: PortEdge, orientation: Orientation) -> PortEdge {
+pub(crate) fn turned_edge(edge: PortEdge, orientation: Orientation) -> PortEdge {
     let mirrored = match edge {
         PortEdge::Left => PortEdge::Right,
         PortEdge::Right => PortEdge::Left,

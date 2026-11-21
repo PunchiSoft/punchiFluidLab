@@ -74,7 +74,7 @@ A document that is not simply current carries a status line under its title:
 | [ui-ux.md](ui-ux.md) | explanation | target | The interface: regions, theme, accessibility, what is still open |
 | [symbology.md](symbology.md) | explanation | current | The ISO 1219 contract, the renderer guarantees and the review checklist |
 | [engineering.md](engineering.md) | explanation | current | Modularisation, memory budget, security model and GitHub practice |
-| [reference/sheet-format.md](reference/sheet-format.md) | reference | current | The `.pfluid` format: fields, bounds, versions and migrations |
+| [reference/sheet-format.md](reference/sheet-format.md) | reference | current | The `.pfluid` format: fields, bounds, versions, migrations and port closures |
 | [reference/tube.md](reference/tube.md) | reference | current | The tube of a pneumatic connection: the value, the metric and inch series, the drawn width series and the parts rows |
 | [reference/cli.md](reference/cli.md) | reference | current | `check`, `validate` and `simulate`: formats, exit codes and the JSON contract |
 | [reference/catalog.md](reference/catalog.md) | reference | current | The catalog at a glance, with the authoring guide as the canonical reference |

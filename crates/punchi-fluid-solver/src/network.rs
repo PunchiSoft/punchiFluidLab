@@ -20,7 +20,7 @@
 //! those is a capability of the reference and is recorded as such in
 //! `docs/reference-parity.md`, not hidden as an assumption.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use punchi_fluid_catalog::{Actuation, Behaviour, ComponentDefinition, PortRole};
 
@@ -239,6 +239,21 @@ impl PortAddress {
     }
 }
 
+/// How a closure terminates a port in the gas network.
+///
+/// Only an exhaust receives one: a supply or working port with no pipe is already sealed,
+/// so a plug there changes the drawing and the parts list, not the graph.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PortTermination {
+    /// A blind plug: the port is sealed, with no atmosphere boundary and no edge.
+    Closed,
+    /// A silencer: the port vents to atmosphere through this conductance.
+    Vent {
+        /// Sonic conductance, `m³ / (s · Pa)`.
+        conductance: f64,
+    },
+}
+
 /// What a reservoir is for, which decides how its exchange is accounted for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReservoirKind {
@@ -396,14 +411,17 @@ impl Network {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(2, "2"), PortAddress::new(3, "1")),
         ];
-        Self::build(&parts, &pipes)
+        Self::build(&parts, &pipes, &[])
     }
 
-    /// Builds the network from the parts of the document and the pipes between them.
+    /// Builds the network from the parts of the document, the pipes between them and the
+    /// closures chosen on their exhaust ports.
     ///
     /// A part whose behaviour cannot be modelled is left out by the caller; the network
     /// only sees what it can simulate. Pipes that name a missing part or port are ignored
-    /// here and reported by the circuit check.
+    /// here and reported by the circuit check. Terminations are resolved by the caller from
+    /// the catalog and only apply to an exhaust port: a `Closed` or `Vent` on any other
+    /// port is not a change to the graph.
     ///
     /// # Errors
     ///
@@ -412,6 +430,7 @@ impl Network {
     pub fn build(
         parts: &[NetworkPart],
         pipes: &[(PortAddress, PortAddress)],
+        terminations: &[(PortAddress, PortTermination)],
     ) -> Result<Self, SolverError> {
         let atmosphere_pa = punchi_fluid_core::Pressure::ATMOSPHERE.pascal();
         let temperature_kelvin = punchi_fluid_core::Temperature::STANDARD.kelvin();
@@ -420,7 +439,27 @@ impl Network {
         let (mut edges, valves, valve_parts) = valve_edges(parts, &port_node)?;
         restriction_edges(parts, &port_node, &mut edges);
         append_pipes(&mut edges, pipes, &port_node);
-        close_open_exhausts(parts, &mut nodes, &port_node, &edges, atmosphere_pa);
+        // The closed exhausts are known before the free-vent pass: a plug must not receive
+        // the atmosphere reservoir that pass would give it, and a vent replaces it with
+        // its own edge. Collecting them first keeps the order out of the result.
+        let terminated = terminated_exhausts(parts, terminations, &port_node);
+        close_open_exhausts(
+            parts,
+            &mut nodes,
+            &port_node,
+            &edges,
+            atmosphere_pa,
+            &terminated,
+        );
+        vent_edges(
+            parts,
+            terminations,
+            &mut nodes,
+            &port_node,
+            &mut edges,
+            atmosphere_pa,
+            temperature_kelvin,
+        );
         silencer_edges(parts, &mut nodes, &port_node, &mut edges, atmosphere_pa);
         let (pistons, piston_parts) = chambers(
             parts,
@@ -1094,6 +1133,7 @@ fn close_open_exhausts(
     port_node: &[HashMap<&str, usize>],
     edges: &[Edge],
     atmosphere_pa: f64,
+    terminated: &HashSet<usize>,
 ) {
     let mut connected = vec![false; nodes.len()];
     for edge in edges {
@@ -1110,13 +1150,90 @@ fn close_open_exhausts(
             let Some(&node) = port_node[index].get(port.id.as_str()) else {
                 continue;
             };
-            if !connected[node] && nodes[node].reservoir.is_none() {
+            if !connected[node] && nodes[node].reservoir.is_none() && !terminated.contains(&node) {
                 nodes[node].reservoir = Some(Reservoir {
                     pressure_pa: atmosphere_pa,
                     kind: ReservoirKind::Atmosphere,
                 });
             }
         }
+    }
+}
+
+/// The exhaust nodes a closure terminates, so the free-vent pass leaves them alone.
+fn terminated_exhausts(
+    parts: &[NetworkPart],
+    terminations: &[(PortAddress, PortTermination)],
+    port_node: &[HashMap<&str, usize>],
+) -> HashSet<usize> {
+    terminations
+        .iter()
+        .filter_map(|(address, _)| exhaust_node(parts, address, port_node))
+        .collect()
+}
+
+/// The node of an addressed port, when the port exists and is an exhaust.
+///
+/// A closure on a supply, working, mechanical or electrical port is not a termination: the
+/// graph already seals a working line with no pipe, and the document refuses a pipe on a
+/// closed port. Filtering here keeps the solver from inventing physics for the no-op.
+fn exhaust_node(
+    parts: &[NetworkPart],
+    address: &PortAddress,
+    port_node: &[HashMap<&str, usize>],
+) -> Option<usize> {
+    let component = parts.get(address.part)?;
+    let port = component
+        .ports
+        .iter()
+        .find(|candidate| candidate.id == address.port)?;
+    if port.role != PortRole::Exhaust {
+        return None;
+    }
+    port_node
+        .get(address.part)?
+        .get(address.port.as_str())
+        .copied()
+}
+
+/// A port closure at an exhaust adds exactly one atmosphere edge through its conductance.
+///
+/// The free-vent pass has already skipped the terminated node, so a silencer replaces the
+/// open boundary instead of joining it. A `Closed` port adds nothing and keeps its volume:
+/// the air is trapped and its pressure does not decay.
+fn vent_edges(
+    parts: &[NetworkPart],
+    terminations: &[(PortAddress, PortTermination)],
+    nodes: &mut Vec<Node>,
+    port_node: &[HashMap<&str, usize>],
+    edges: &mut Vec<Edge>,
+    atmosphere_pa: f64,
+    temperature_kelvin: f64,
+) {
+    for (address, termination) in terminations {
+        let PortTermination::Vent { conductance } = termination else {
+            continue;
+        };
+        let Some(node) = exhaust_node(parts, address, port_node) else {
+            continue;
+        };
+        let atmosphere = nodes.len();
+        nodes.push(Node {
+            mass: atmosphere_pa * PORT_VOLUME / (AIR_SPECIFIC_GAS_CONSTANT * temperature_kelvin),
+            volume: PORT_VOLUME,
+            reservoir: Some(Reservoir {
+                pressure_pa: atmosphere_pa,
+                kind: ReservoirKind::Atmosphere,
+            }),
+        });
+        edges.push(Edge {
+            a: node,
+            b: atmosphere,
+            conductance: *conductance,
+            valve: None,
+            mask: u64::MAX,
+            part: None,
+        });
     }
 }
 
@@ -1278,7 +1395,7 @@ mod tests {
             (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
-        Network::build(&parts, &pipes).expect("the chain builds")
+        Network::build(&parts, &pipes, &[]).expect("the chain builds")
     }
 
     #[test]
@@ -1404,7 +1521,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "3")),
             (PortAddress::new(3, "3"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the junction builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the junction builds");
         network.press_valve();
         for _ in 0..60 {
             network.advance(0.016).expect("accepted");
@@ -1427,7 +1544,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the gauge builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the gauge builds");
         network.press_valve();
         for _ in 0..60 {
             network.advance(0.016).expect("accepted");
@@ -1469,7 +1586,7 @@ mod tests {
             (PortAddress::new(1, "4"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "2")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the five-port chain builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the five-port chain builds");
         let stroke = network.cylinder().expect("a cylinder").stroke;
         assert_eq!(network.valve().expect("a valve").position_count(), 2);
 
@@ -1519,7 +1636,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the meter builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the meter builds");
         assert_eq!(
             network.part_flow(3),
             Some(0.0),
@@ -1603,7 +1720,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the meter builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the meter builds");
         network.press_valve();
         for _ in 0..5 {
             network.advance(0.016).expect("accepted");
@@ -1651,7 +1768,7 @@ mod tests {
             part(&catalog, "throttle.fixed"),
         ];
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
-        let network = Network::build(&parts, &pipes).expect("builds");
+        let network = Network::build(&parts, &pipes, &[]).expect("builds");
         assert_eq!(network.part_flow(0), None, "a supply owns no restriction");
         assert_eq!(network.part_flow(9), None, "there is no ninth part");
     }
@@ -1674,7 +1791,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut throttled = Network::build(&with, &pipes).expect("builds");
+        let mut throttled = Network::build(&with, &pipes, &[]).expect("builds");
         throttled.press_valve();
         for _ in 0..10 {
             throttled.advance(0.016).expect("accepted");
@@ -1722,8 +1839,8 @@ mod tests {
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
         let mut direct =
-            Network::build(&parts, &direct_pipes).expect("builds without the silencer");
-        let mut silenced = Network::build(&parts, &silenced_pipes).expect("builds with it");
+            Network::build(&parts, &direct_pipes, &[]).expect("builds without the silencer");
+        let mut silenced = Network::build(&parts, &silenced_pipes, &[]).expect("builds with it");
         for network in [&mut direct, &mut silenced] {
             network.press_valve();
             for _ in 0..80 {
@@ -1767,7 +1884,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes).expect("the plug builds");
+        let mut network = Network::build(&parts, &pipes, &[]).expect("the plug builds");
         network.press_valve();
         for _ in 0..80 {
             network.advance(0.016).expect("accepted");
@@ -1788,6 +1905,257 @@ mod tests {
     }
 
     #[test]
+    fn a_plug_on_an_exhaust_holds_the_air_and_the_rod_stays() {
+        // A closure is not a placed plug: the port has no hose and no second component.
+        // The plug seals the exhaust node itself, so the air has nowhere to go.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let terminations = [(PortAddress::new(1, "3"), PortTermination::Closed)];
+        let mut network =
+            Network::build(&parts, &pipes, &terminations).expect("the plug on the port builds");
+        network.press_valve();
+        for _ in 0..80 {
+            network.advance(0.016).expect("accepted");
+        }
+        let stroke = network.cylinder().expect("a cylinder").stroke;
+        let extended = network.position();
+        assert!(extended > stroke * 0.5, "the rod did not extend");
+
+        network.release_valve();
+        for _ in 0..40 {
+            network.advance(0.016).expect("accepted");
+        }
+        let settled = network.position();
+        let pressure = network
+            .port_pressure(1, "3")
+            .expect("the exhaust port is in the model");
+        for _ in 0..40 {
+            network.advance(0.016).expect("accepted");
+        }
+        assert!(
+            (network.position() - settled).abs() < stroke * 0.01,
+            "the capped cylinder moved from {:.1} mm to {:.1} mm",
+            settled * 1000.0,
+            network.position() * 1000.0
+        );
+        let later = network
+            .port_pressure(1, "3")
+            .expect("the exhaust port is in the model");
+        assert!(
+            (later - pressure).abs() / pressure < 0.01,
+            "the trapped air decayed from {:.3} bar to {:.3} bar",
+            (pressure - network.atmosphere_pa()) / 1e5,
+            (later - network.atmosphere_pa()) / 1e5
+        );
+        assert!(
+            network.mass_out().abs() < 1e-12,
+            "nothing crossed the plug: {} kg left",
+            network.mass_out()
+        );
+    }
+
+    #[test]
+    fn a_plug_on_a_working_port_adds_no_solver_edge() {
+        // A working port with no pipe is already sealed. The plug's effect is the pipe
+        // refusal, the drawing and the parts row; the graph must not grow an edge for it.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let terminations = [(PortAddress::new(1, "2"), PortTermination::Closed)];
+        let without = Network::build(&parts, &pipes, &[]).expect("builds");
+        let with = Network::build(&parts, &pipes, &terminations).expect("still builds");
+        assert_eq!(
+            with.edges.len(),
+            without.edges.len(),
+            "a working plug is a no-op, not closure physics"
+        );
+        assert_eq!(with.nodes.len(), without.nodes.len());
+    }
+
+    #[test]
+    fn a_silencer_on_an_exhaust_vents_through_its_conductance() {
+        // The closure replaces the free atmosphere boundary with the silencer's own
+        // restriction: one edge to one atmosphere reservoir, never two.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let silencer = part(&catalog, "silencer.pneumatic");
+        let conductance = match silencer.behaviour {
+            PartBehaviour::Silencer { conductance } => conductance,
+            _ => 0.0,
+        };
+        assert!(
+            conductance > 0.0,
+            "the built-in silencer has no conductance"
+        );
+        let terminations = [(
+            PortAddress::new(1, "3"),
+            PortTermination::Vent { conductance },
+        )];
+        let mut open = Network::build(&parts, &pipes, &[]).expect("the open exhaust builds");
+        let mut vented =
+            Network::build(&parts, &pipes, &terminations).expect("the silencer closure builds");
+
+        let node = vented.port_nodes[1]["3"];
+        assert!(
+            vented.nodes[node].reservoir.is_none(),
+            "a vented port keeps its own node and adds an edge, not a reservoir"
+        );
+        assert_eq!(
+            vented.edges.len(),
+            open.edges.len() + 1,
+            "the silencer adds exactly one restriction"
+        );
+
+        for network in [&mut open, &mut vented] {
+            network.press_valve();
+            for _ in 0..80 {
+                network.advance(0.016).expect("accepted");
+            }
+            network.release_valve();
+            for _ in 0..40 {
+                network.advance(0.016).expect("accepted");
+            }
+        }
+        let stroke = open.cylinder().expect("a cylinder").stroke;
+        assert!(
+            open.position() < stroke * 0.95,
+            "the open exhaust did not let the rod return: {:.1} mm",
+            open.position() * 1000.0
+        );
+        assert!(
+            vented.position() > open.position(),
+            "silenced {:.1} mm should lag open {:.1} mm",
+            vented.position() * 1000.0,
+            open.position() * 1000.0
+        );
+    }
+
+    #[test]
+    fn an_exhaust_without_a_closure_still_vents_freely() {
+        let network = chain();
+        let node = network.port_nodes[1]["3"];
+        let reservoir = network.nodes[node]
+            .reservoir
+            .expect("an open exhaust is a free atmosphere boundary");
+        assert_eq!(reservoir.kind, ReservoirKind::Atmosphere);
+    }
+
+    #[test]
+    fn an_old_placed_silencer_and_a_closure_elsewhere_vent_once() {
+        // The two paths are the placed silencer and the per-port closure. A circuit with a
+        // placed silencer on one exhaust and a closure on the other must give each port one
+        // atmosphere connection, not two.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.5_2.spring_return"),
+            part(&catalog, "cylinder.double_acting_32_200"),
+            part(&catalog, "silencer.pneumatic"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "4"), PortAddress::new(2, "2")),
+            (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
+        ];
+        let silencer = part(&catalog, "silencer.pneumatic");
+        let conductance = match silencer.behaviour {
+            PartBehaviour::Silencer { conductance } => conductance,
+            _ => 0.0,
+        };
+        let terminations = [(
+            PortAddress::new(1, "5"),
+            PortTermination::Vent { conductance },
+        )];
+        let network = Network::build(&parts, &pipes, &terminations).expect("both exhausts build");
+        for port in ["3", "5"] {
+            let node = network.port_nodes[1][port];
+            assert!(
+                network.nodes[node].reservoir.is_none(),
+                "exhaust {port} received a free reservoir behind its closure"
+            );
+        }
+        // The placed silencer vents from its own port node, not from the host exhaust: the
+        // hose carries the air from the valve to the silencer first. Count the atmosphere
+        // boundaries of the whole network instead, one per exhaust path, so a duplicate
+        // free vent anywhere in a path breaks the invariant.
+        let atmosphere: Vec<usize> = network
+            .nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, node)| {
+                matches!(
+                    node.reservoir,
+                    Some(Reservoir {
+                        kind: ReservoirKind::Atmosphere,
+                        ..
+                    })
+                )
+            })
+            .map(|(index, _)| index)
+            .collect();
+        assert_eq!(
+            atmosphere.len(),
+            2,
+            "one atmosphere vent for each exhaust, not a second free one"
+        );
+        let vents = |node: usize| {
+            network
+                .edges
+                .iter()
+                .filter(|edge| edge.a == node && atmosphere.contains(&edge.b))
+                .count()
+        };
+        assert_eq!(
+            vents(network.port_nodes[3]["1"]),
+            1,
+            "the placed silencer vents its own port exactly once"
+        );
+        assert_eq!(
+            vents(network.port_nodes[1]["5"]),
+            1,
+            "the closure vents its host exhaust exactly once"
+        );
+        assert_eq!(
+            vents(network.port_nodes[1]["3"]),
+            0,
+            "the host exhaust must not add a free vent on top of the silencer path"
+        );
+        assert_eq!(
+            network
+                .edges
+                .iter()
+                .filter(|edge| atmosphere.contains(&edge.b))
+                .count(),
+            atmosphere.len(),
+            "each atmosphere reservoir is fed by one edge"
+        );
+    }
+
+    #[test]
     fn a_valve_with_too_many_positions_is_refused_instead_of_masked() {
         let catalog = Catalog::builtin();
         let mut valve = part(&catalog, "valve.3_2.spring_return");
@@ -1796,7 +2164,7 @@ mod tests {
         }
         let parts = [valve];
         assert!(matches!(
-            Network::build(&parts, &[]),
+            Network::build(&parts, &[], &[]),
             Err(SolverError::TooManyValvePositions { .. })
         ));
     }
@@ -1806,7 +2174,7 @@ mod tests {
         let catalog = Catalog::builtin();
         let parts = [part(&catalog, "supply.compressor")];
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(7, "1"))];
-        let network = Network::build(&parts, &pipes).expect("still builds");
+        let network = Network::build(&parts, &pipes, &[]).expect("still builds");
         assert!(network.cylinder().is_none());
     }
 }
@@ -1838,8 +2206,9 @@ mod electrical_tests {
             (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
-        let mut pneumatic = Network::build(&base, &pipes).expect("builds");
-        let mut control = Network::build(&with, &pipes).expect("builds with the control circuit");
+        let mut pneumatic = Network::build(&base, &pipes, &[]).expect("builds");
+        let mut control =
+            Network::build(&with, &pipes, &[]).expect("builds with the control circuit");
         for network in [&mut pneumatic, &mut control] {
             network.press_valve();
             for _ in 0..40 {

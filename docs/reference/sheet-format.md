@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 13. The implementation is
+Status: current, format 14. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,14 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `13` | `1` to `13` | always `13` |
+| `format` | `14` | `1` to `14` | always `14` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (13)`; it is never guessed.
+  understands (14)`; it is never guessed.
+- **Version 14** added the **closure of a port** (`port_closures`) to a placement: a map
+  from a port id to the catalog id of a plug or a silencer. The field is optional and
+  omitted when the placement has no closure, so a format-13 sheet reads with every port
+  open and the migration is the serde default alone (P-021a).
 - **Version 13** added the tube diameter of a pneumatic pipe
   (`tube_od_hundredths`). The field is optional and omitted when the pipe is unspecified, so
   a format-12 sheet reads with every pipe unspecified and keeps its historical drawn width;
@@ -65,6 +69,8 @@ document is used.
 | Designation | 1 to 40 characters, trimmed, no control characters | `MAX_DESIGNATION` |
 | Pipe offset | at most 10 000 tenths of a millimetre (1 m) | — |
 | Tube diameter | 100..=5000 hundredths of a millimetre (1–50 mm), integer | `MAX_TUBE_HUNDREDTHS` |
+| Port closures | at most `MAX_PORTS` (64) per placement, one per port | `MAX_PORTS` |
+| Port or closure id in a closure | non-empty, ASCII, at most 128 bytes | `MAX_ID` |
 
 Unknown keys are rejected at every level. A duplicate circuit id, a duplicate placement id,
 a pipe to a placement that is not in the project, or a pipe from a component to itself is an
@@ -75,7 +81,7 @@ too.
 
 ```json
 {
-  "format": 4,
+  "format": 14,
   "title": "Proyecto",
   "circuits": [
     { "id": 0, "title": "Potencia" },
@@ -125,7 +131,8 @@ change, not an undo entry.
   "edit": { "conductance": 1.2e-9 },
   "quarter_turns": 1,
   "mirrored": false,
-  "designation": "1V1"
+  "designation": "1V1",
+  "port_closures": { "3": "silencer.pneumatic", "5": "plug.blind" }
 }
 ```
 
@@ -141,6 +148,14 @@ change, not an undo entry.
 | `mirrored` | boolean | no, default `false` | Reflection on the symbol's own vertical axis; omitted when false. |
 | `designation` | string | no | Name the user gave the component; omitted when it has none. |
 | `source` | object | no | What a recorder charts; omitted when the component is not one or is not bound. |
+| `port_closures` | object | no in v14 | Port id to closure catalog id; omitted when the placement has no closure. One entry per port, at most `MAX_PORTS`, both ids non-empty ASCII within `MAX_ID`. |
+
+A closure is a **port-level decision**, not an edit of the definition: the key is the bare
+port id (`3`, `5`), and the value is a catalog id whose behaviour is `plug` or `silencer`.
+An exhaust accepts a plug or a silencer; a supply or working port accepts a plug; a
+mechanical or electrical port accepts none. The file reader checks the map's shape and
+bounds; whether the port exists, its role and whether the catalog id resolves are checked
+where the catalog is available (the loader and the check).
 
 The `edit` object, when present, may carry any of these fields. An absent field keeps the
 value from the definition.
@@ -199,6 +214,12 @@ ends are in different circuits, because the check has to see it: that is the nin
 `PipeAcrossCircuits`. The editor never creates one; a hand-edited file can, and the loader
 keeps it so the check can report it instead of hiding it.
 
+A pipe whose endpoint port is a key of its placement's `port_closures` is a **malformed
+sheet**: the port is closed, so nothing can be joined to it. The reader rejects it with
+`a pipe ends on a closed port`, and the document refuses the same connection from the
+editor. A format-13 sheet with no `port_closures` key still reads its pipes normally: its
+ports are open and the rule does not apply.
+
 The route is not stored point by point: it is the orthogonal route the editor computes
 from the two ports, moved by `offset_tenths`.
 
@@ -206,7 +227,7 @@ from the two ports, moved by `offset_tenths`.
 
 ```json
 {
-  "format": 4,
+  "format": 14,
   "title": "Válvula 3/2 y control",
   "circuits": [
     { "id": 0, "title": "Potencia" },
@@ -231,7 +252,8 @@ from the two ports, moved by `offset_tenths`.
       "width": 33.8,
       "height": 33.8,
       "quarter_turns": 1,
-      "designation": "1V1"
+      "designation": "1V1",
+      "port_closures": { "3": "silencer.pneumatic" }
     },
     {
       "id": 3,

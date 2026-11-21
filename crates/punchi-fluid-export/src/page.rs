@@ -163,8 +163,9 @@ impl Page {
         let title = self.title_rect();
         let width = title.width();
         #[allow(clippy::cast_precision_loss)]
-        let rows = (parts.rows.len() + parts.tubes.len()) as f32
+        let rows = (parts.rows.len() + parts.closures.len() + parts.tubes.len()) as f32
             + if parts.omitted > 0 { 1.0 } else { 0.0 }
+            + if parts.omitted_closures > 0 { 1.0 } else { 0.0 }
             + if parts.omitted_tubes > 0 { 1.0 } else { 0.0 }
             // One more line for the note that the length is the drawn route.
             + if parts.tubes.is_empty() { 0.0 } else { 1.0 };
@@ -262,6 +263,7 @@ mod tests {
                 ("supply.compressor", None),
                 ("valve.3_2.spring_return", Some("1V1")),
             ],
+            [],
             [],
         ));
         let with = page.drawing_rect();

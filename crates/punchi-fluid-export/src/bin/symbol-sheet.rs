@@ -58,6 +58,7 @@ fn main() -> ExitCode {
         contact_closed: None,
         orientation: punchi_fluid_draw::Orientation::NONE,
         designation: None,
+        closures: &[],
     };
     punchi_fluid_draw::draw_placed(&mut surface, &[placed], &[], &catalog, &print_ink(), &[]);
     match surface.encode() {

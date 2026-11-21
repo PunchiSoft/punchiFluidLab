@@ -26,13 +26,17 @@
 //! Every finding carries where it happens, so the interface can point at it instead of
 //! making the user map a sentence back onto the drawing.
 
-use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition, PortRole};
+use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition, PortRole};
 use punchi_fluid_doc::Document;
 
+mod geometry;
 mod placement;
 
-use placement::placement_faults;
-use punchi_fluid_draw::placed::{port_edge_towards, port_point, route_between_boxes_avoiding};
+use geometry::{crosses, overlap, shrink, trim_end, trim_start};
+use placement::{contains_rect, intersect, placement_faults};
+use punchi_fluid_draw::placed::{
+    closure_boxes, port_edge_towards, port_point, route_between_boxes_avoiding,
+};
 use punchi_fluid_draw::surface::{Pt, Rect};
 
 use electrical::short_circuits;
@@ -60,6 +64,8 @@ pub enum FindingKind {
     ShortCircuit,
     /// A component sits under the title block, where the printed sheet hides it.
     UnderTitleBlock,
+    /// A port carries a closure its role does not accept, or one the catalog cannot resolve.
+    BadPortClosure,
 }
 
 impl FindingKind {
@@ -77,6 +83,7 @@ impl FindingKind {
             Self::MismatchedConnection => "mismatched_connection",
             Self::ShortCircuit => "short_circuit",
             Self::UnderTitleBlock => "under_title_block",
+            Self::BadPortClosure => "bad_port_closure",
         }
     }
 
@@ -94,6 +101,7 @@ impl FindingKind {
             Self::MismatchedConnection => "una conexión une dos terminales que no encajan",
             Self::ShortCircuit => "el positivo del raíl y su retorno están unidos",
             Self::UnderTitleBlock => "un componente cae bajo el cajetín",
+            Self::BadPortClosure => "un cierre no encaja con el puerto que lo lleva",
         }
     }
 }
@@ -157,6 +165,7 @@ pub fn check_with_reserved(
         .collect();
 
     findings.extend(placement_faults(document, sheet, circuit, reserved));
+    findings.extend(closure_faults(document, catalog, sheet, circuit, reserved));
 
     for (index, connection) in document.connections().iter().enumerate() {
         if connection.circuit != circuit {
@@ -321,6 +330,11 @@ fn open_connections(document: &Document, catalog: &Catalog, circuit: u32) -> Vec
             if is_electrical(port.role) || !must_be_wired(definition, port.role) {
                 continue;
             }
+            // A plug on a supply or working port terminates it: the port is closed on
+            // purpose, so it is not the open connection this fault is about.
+            if placement.port_closures.contains_key(&port.id) {
+                continue;
+            }
             let joined = document.connections().iter().any(|connection| {
                 (connection.from.placement == placement.id() && connection.from.port == port.id)
                     || (connection.to.placement == placement.id() && connection.to.port == port.id)
@@ -342,6 +356,98 @@ fn open_connections(document: &Document, catalog: &Catalog, circuit: u32) -> Vec
                 component: Some(index),
                 pipe: None,
             });
+        }
+    }
+    findings
+}
+
+/// Faults about the closures chosen on a component's ports.
+///
+/// A closure is a port-level decision, so the check reads it from the placement and the
+/// catalog: the role decides which closure fits, the definition decides whether it is one
+/// at all, and the drawn box is where the fault is reported. A closure is not a placement,
+/// so it has no entry of its own in the component faults.
+fn closure_faults(
+    document: &Document,
+    catalog: &Catalog,
+    sheet: Rect,
+    circuit: u32,
+    reserved: &[Rect],
+) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, placement) in document.placements().iter().enumerate() {
+        if placement.circuit != circuit || placement.port_closures.is_empty() {
+            continue;
+        }
+        let Some(definition) = catalog.get(&placement.catalog_id) else {
+            continue;
+        };
+        // The box of a closure depends on the host port and not on the closure's own
+        // definition, so an unresolved id still gets a box when the port exists; the host
+        // definition stands in for the missing one.
+        let ports: Vec<(&str, &ComponentDefinition)> = placement
+            .port_closures
+            .iter()
+            .map(|(port, closure)| (port.as_str(), catalog.get(closure).unwrap_or(definition)))
+            .collect();
+        let boxes = closure_boxes(placement.rect(), placement.orientation, definition, &ports);
+        let at = |port: &str| {
+            boxes
+                .iter()
+                .find(|(id, _)| id == port)
+                .map_or_else(|| placement.rect().center(), |(_, rect)| rect.center())
+        };
+
+        for (port, closure_id) in &placement.port_closures {
+            let host = definition
+                .port
+                .iter()
+                .find(|candidate| &candidate.id == port);
+            let closure = catalog.get(closure_id);
+            let fits_role = host.is_some_and(|host| match host.role {
+                PortRole::Electrical | PortRole::Mechanical => false,
+                PortRole::Exhaust => true,
+                PortRole::Supply | PortRole::Working => closure
+                    .is_none_or(|closure| !matches!(closure.behaviour, Behaviour::Silencer { .. })),
+            });
+            let is_closure = closure.is_some_and(|closure| {
+                matches!(
+                    closure.behaviour,
+                    Behaviour::Plug | Behaviour::Silencer { .. }
+                )
+            });
+            if !fits_role || !is_closure {
+                findings.push(Finding {
+                    kind: FindingKind::BadPortClosure,
+                    at: at(port),
+                    component: Some(index),
+                    pipe: None,
+                });
+            }
+        }
+
+        // A closure sits outside the host's body, so it can leave the sheet or enter the
+        // block while the component itself is still inside.
+        for (_, rect) in &boxes {
+            if !contains_rect(sheet, *rect) {
+                findings.push(Finding {
+                    kind: FindingKind::OutsideSheet,
+                    at: rect.center(),
+                    component: Some(index),
+                    pipe: None,
+                });
+            }
+            if reserved
+                .iter()
+                .any(|area| intersect(*rect, *area).is_some())
+            {
+                findings.push(Finding {
+                    kind: FindingKind::UnderTitleBlock,
+                    at: rect.center(),
+                    component: Some(index),
+                    pipe: None,
+                });
+            }
         }
     }
     findings
@@ -601,162 +707,6 @@ fn without_lead(
     } else {
         trim_end(path, distance)
     }
-}
-
-/// The polyline from the point `distance` millimetres along it.
-fn trim_start(path: &[Pt], distance: f32) -> Vec<Pt> {
-    if path.len() < 2 || distance <= 0.0 {
-        return path.to_vec();
-    }
-    let mut left = distance;
-    for (index, pair) in path.windows(2).enumerate() {
-        let length = (pair[1].x - pair[0].x).abs() + (pair[1].y - pair[0].y).abs();
-        if left >= length {
-            left -= length;
-            continue;
-        }
-        let t = if length > 0.0 { left / length } else { 0.0 };
-        let cut = Pt::new(
-            pair[0].x + (pair[1].x - pair[0].x) * t,
-            pair[0].y + (pair[1].y - pair[0].y) * t,
-        );
-        let mut out = vec![cut];
-        out.extend_from_slice(&path[index + 1..]);
-        return out;
-    }
-    Vec::new()
-}
-
-/// The polyline up to the point `distance` millimetres from its end.
-fn trim_end(path: &[Pt], distance: f32) -> Vec<Pt> {
-    if path.len() < 2 || distance <= 0.0 {
-        return path.to_vec();
-    }
-    let mut left = distance;
-    for (index, pair) in path.windows(2).enumerate().rev() {
-        let length = (pair[1].x - pair[0].x).abs() + (pair[1].y - pair[0].y).abs();
-        if left >= length {
-            left -= length;
-            continue;
-        }
-        let t = if length > 0.0 {
-            1.0 - left / length
-        } else {
-            0.0
-        };
-        let cut = Pt::new(
-            pair[0].x + (pair[1].x - pair[0].x) * t,
-            pair[0].y + (pair[1].y - pair[0].y) * t,
-        );
-        let mut out = path[..=index].to_vec();
-        out.push(cut);
-        return out;
-    }
-    Vec::new()
-}
-
-/// The box reduced by `by` millimetres on every side.
-fn shrink(rect: Rect, by: f32) -> Rect {
-    Rect::from_corners(
-        Pt::new(rect.min.x + by, rect.min.y + by),
-        Pt::new(rect.max.x - by, rect.max.y - by),
-    )
-}
-
-/// Where a polyline enters a rectangle, if it does.
-fn crosses(path: &[Pt], rect: Rect) -> Option<Pt> {
-    for pair in path.windows(2) {
-        if let Some(at) = segment_meets_rect(pair[0], pair[1], rect) {
-            return Some(at);
-        }
-    }
-    None
-}
-
-/// The first point at which a segment is inside the rectangle.
-fn segment_meets_rect(start: Pt, end: Pt, rect: Rect) -> Option<Pt> {
-    // Both ends outside on the same side: no crossing, and the common case.
-    if (start.x < rect.min.x && end.x < rect.min.x)
-        || (start.x > rect.max.x && end.x > rect.max.x)
-        || (start.y < rect.min.y && end.y < rect.min.y)
-        || (start.y > rect.max.y && end.y > rect.max.y)
-    {
-        return None;
-    }
-    if rect.contains(start) {
-        return Some(start);
-    }
-    // Sample the segment; a schematic segment is at most a few tens of millimetres, so a
-    // sample every half millimetre cannot step over a component.
-    let length = start.to(end);
-    let length = length.0.hypot(length.1);
-    let steps = (length / 0.5).ceil().max(1.0);
-    if !steps.is_finite() {
-        return None;
-    }
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let steps = steps as u32;
-    for step in 1..=steps {
-        let t = f64::from(step) / f64::from(steps);
-        #[allow(clippy::cast_possible_truncation)]
-        let point = Pt::new(
-            start.x + (end.x - start.x) * t as f32,
-            start.y + (end.y - start.y) * t as f32,
-        );
-        if rect.contains(point) {
-            return Some(point);
-        }
-    }
-    None
-}
-
-/// Where two polylines run over each other, if they do.
-fn overlap(path: &[Pt], other: &[Pt]) -> Option<Pt> {
-    for a in path.windows(2) {
-        for b in other.windows(2) {
-            if let Some(at) = collinear_overlap(a[0], a[1], b[0], b[1]) {
-                return Some(at);
-            }
-        }
-    }
-    None
-}
-
-/// The middle of the shared stretch of two collinear segments, if they share one.
-fn collinear_overlap(a0: Pt, a1: Pt, b0: Pt, b1: Pt) -> Option<Pt> {
-    let horizontal = (a0.y - a1.y).abs() < 0.1;
-    let vertical = (a0.x - a1.x).abs() < 0.1;
-    if !horizontal && !vertical {
-        return None;
-    }
-    if horizontal {
-        if (b0.y - a0.y).abs() > 0.5 || (b1.y - a0.y).abs() > 0.5 {
-            return None;
-        }
-        let (a_low, a_high) = ordered(a0.x, a1.x);
-        let (b_low, b_high) = ordered(b0.x, b1.x);
-        let low = a_low.max(b_low);
-        let high = a_high.min(b_high);
-        if high - low > 1.0 {
-            return Some(Pt::new(f32::midpoint(low, high), a0.y));
-        }
-        return None;
-    }
-    if (b0.x - a0.x).abs() > 0.5 || (b1.x - a0.x).abs() > 0.5 {
-        return None;
-    }
-    let (a_low, a_high) = ordered(a0.y, a1.y);
-    let (b_low, b_high) = ordered(b0.y, b1.y);
-    let low = a_low.max(b_low);
-    let high = a_high.min(b_high);
-    if high - low > 1.0 {
-        return Some(Pt::new(a0.x, f32::midpoint(low, high)));
-    }
-    None
-}
-
-fn ordered(a: f32, b: f32) -> (f32, f32) {
-    if a <= b { (a, b) } else { (b, a) }
 }
 
 mod electrical;

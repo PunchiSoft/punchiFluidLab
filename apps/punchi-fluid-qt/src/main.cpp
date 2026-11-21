@@ -1477,6 +1477,10 @@ int main(int argc, char *argv[])
             QPointF routeTo;
             int routePipe = -1;
             float routeOffset = 0.0F;
+            /// The exhaust port the closure probes work on, and the inspector refreshes a
+            /// closure change emitted; the panel probe never calls `inspectComponent`.
+            QString closurePort;
+            int closureRefreshes = 0;
             /// The view gestures: the pointer the wheel is aimed at, the sheet point under
             /// it, and the document state that must not change.
             QPointF viewScene;
@@ -2031,6 +2035,191 @@ int main(int argc, char *argv[])
                   QStringLiteral("editing: reflecting twice leaves the symbol as it was"));
             state->session->undo();
             state->session->undo();
+        });
+
+        // A closure belongs to a port: the sheet opens the port menu on a repeated press
+        // over one and Alt+C is its keyboard path. The press sequence is the two clicks a
+        // hand makes, replayed, so the real press path is what is proved.
+        steps->push_back([state, check] {
+            state->session->select(state->valveIndex);
+            // The inspector narrows the sheet; it is not this probe's dock, so close it
+            // before the port's scene point is measured.
+            state->session->closeInspector();
+            check(state->session->editing(), QStringLiteral("close: the sheet is editing"));
+            state->closurePort.clear();
+            const QVariantList ports = state->session->portClosurePorts(state->valveIndex);
+            for (const QVariant &entry : ports) {
+                const QVariantMap row = entry.toMap();
+                if (row.value(QStringLiteral("role")).toInt() == 2) {
+                    state->closurePort = row.value(QStringLiteral("id")).toString();
+                    break;
+                }
+            }
+            check(!state->closurePort.isEmpty(),
+                  QStringLiteral("close: the valve has an exhaust port"));
+        });
+        steps->push_back([state, check, send, toScene] {
+            if (state->closurePort.isEmpty()) {
+                return;
+            }
+            const QPointF scene =
+                toScene(state->session->portPosition(state->valveIndex, state->closurePort));
+            // Two clicks in place. The first press starts a pipe and its release on the
+            // same port is a no-op; the second press is the menu.
+            send(QEvent::MouseButtonPress, scene, Qt::LeftButton, Qt::LeftButton);
+            send(QEvent::MouseButtonRelease, scene, Qt::LeftButton, Qt::NoButton);
+            check(state->session->lastError().isEmpty(),
+                  QStringLiteral("close: the first release is not an error"));
+            send(QEvent::MouseButtonPress, scene, Qt::LeftButton, Qt::LeftButton);
+        });
+        steps->push_back([state, check] {
+            QObject *menu =
+                state->window->findChild<QObject *>(QStringLiteral("portMenu"));
+            check(menu != nullptr && menu->property("opened").toBool(),
+                  QStringLiteral("close: double-click opens the menu on the port"));
+            check(menu != nullptr
+                      && menu->property("port").toString() == state->closurePort,
+                  QStringLiteral("close: the menu is anchored on that port"));
+            check(state->session->lastError().isEmpty(),
+                  QStringLiteral("close: a port double click leaves lastError empty"));
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &escape);
+        });
+        steps->push_back([state, check] {
+            QObject *menu =
+                state->window->findChild<QObject *>(QStringLiteral("portMenu"));
+            check(menu != nullptr && !menu->property("opened").toBool(),
+                  QStringLiteral("close: Esc closes"));
+            state->session->select(state->valveIndex);
+            QKeyEvent key(QEvent::KeyPress, Qt::Key_C, Qt::AltModifier);
+            QCoreApplication::sendEvent(state->window, &key);
+        });
+        steps->push_back([state, check] {
+            QObject *menu =
+                state->window->findChild<QObject *>(QStringLiteral("portMenu"));
+            const QVariantList ports = state->session->portClosurePorts(state->valveIndex);
+            const QString first =
+                ports.isEmpty()
+                    ? QString()
+                    : ports.constFirst().toMap().value(QStringLiteral("id")).toString();
+            check(menu != nullptr && menu->property("opened").toBool()
+                      && menu->property("componentIndex").toInt() == state->valveIndex
+                      && menu->property("port").toString() == first,
+                  QStringLiteral("close: Alt+C opens it for the selected component"));
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QCoreApplication::sendEvent(state->window, &escape);
+        });
+        // Each preset the exhaust accepts is applied through the menu itself and undone in
+        // one step; the catalog decides the list, the probe only walks it.
+        steps->push_back([state, check] {
+            QObject *menu =
+                state->window->findChild<QObject *>(QStringLiteral("portMenu"));
+            check(menu != nullptr, QStringLiteral("close: the menu travels with the sheet"));
+            if (menu == nullptr || state->closurePort.isEmpty()) {
+                return;
+            }
+            const QPointF point =
+                state->session->portPosition(state->valveIndex, state->closurePort);
+            int applied = 0;
+            const QVariantList choices =
+                state->session->portClosures(state->valveIndex, state->closurePort);
+            for (const QVariant &entry : choices) {
+                const QVariantMap row = entry.toMap();
+                if (!row.value(QStringLiteral("available")).toBool()) {
+                    continue;
+                }
+                const QString id = row.value(QStringLiteral("id")).toString();
+                const bool opened = QMetaObject::invokeMethod(
+                    menu, "openAt", Q_ARG(QVariant, QVariant(state->valveIndex)),
+                    Q_ARG(QVariant, QVariant(state->closurePort)),
+                    Q_ARG(QVariant, QVariant::fromValue(point)));
+                check(opened && menu->property("opened").toBool(),
+                      QStringLiteral("close: the menu reopens on the exhaust"));
+                QMetaObject::invokeMethod(menu, "choose", Q_ARG(QVariant, QVariant(id)));
+                check(state->session->portClosure(state->valveIndex, state->closurePort) == id,
+                      QStringLiteral("close: the preset applies"));
+                state->session->undo();
+                check(state->session->portClosure(state->valveIndex, state->closurePort)
+                          .isEmpty(),
+                      QStringLiteral("close: one undo returns"));
+                ++applied;
+            }
+            check(applied >= 2,
+                  QStringLiteral("close: an exhaust offers the plug and the silencer"));
+        });
+        steps->push_back([state, check] {
+            state->session->inspectComponent(state->valveIndex);
+            check(state->session->inspectorOpen(),
+                  QStringLiteral("close: the properties are open on the valve"));
+        });
+        // The panel is refreshed by the change itself: the closure is set after the panel
+        // was opened and no second `inspectComponent` runs before it is read.
+        steps->push_back([state, check] {
+            if (state->closurePort.isEmpty()) {
+                return;
+            }
+            state->closureRefreshes = 0;
+            QObject::connect(state->session, &FluidSession::inspectorChanged,
+                             state->session, [state] { ++state->closureRefreshes; });
+            state->session->setPortClosure(state->valveIndex, state->closurePort,
+                                           QStringLiteral("plug.blind"));
+            const QVariantList rows = state->session->inspectorClosures();
+            bool listed = rows.size() == 1;
+            if (listed) {
+                const QVariantMap row = rows.constFirst().toMap();
+                listed = row.value(QStringLiteral("port")).toString() == state->closurePort
+                    && row.value(QStringLiteral("label"))
+                           .toString()
+                           .startsWith(QStringLiteral("escape "))
+                    && !row.value(QStringLiteral("closure")).toString().isEmpty();
+            }
+            check(state->closureRefreshes > 0,
+                  QStringLiteral("close: the change refreshes the panel"));
+            check(listed, QStringLiteral("close: the panel lists the closure without an "
+                                         "extra inspectComponent"));
+            state->session->undo();
+            check(state->session->inspectorClosures().isEmpty(),
+                  QStringLiteral("close: the panel clears with the undo"));
+            state->session->closeInspector();
+        });
+        steps->push_back([state, check] {
+            int cylinder = -1;
+            char id[128] = {};
+            const uint32_t count = pf_session_component_count(state->session->handle());
+            for (uint32_t slot = 0; slot < count; ++slot) {
+                id[0] = '\0';
+                pf_session_component_id(state->session->handle(), slot, id, sizeof id);
+                if (QString::fromUtf8(id).startsWith(QLatin1String("cylinder"))) {
+                    cylinder = static_cast<int>(slot);
+                }
+            }
+            check(cylinder >= 0, QStringLiteral("close: the cylinder is placed"));
+            if (cylinder < 0 || state->closurePort.isEmpty()) {
+                return;
+            }
+            state->session->setPortClosure(state->valveIndex, state->closurePort,
+                                           QStringLiteral("plug.blind"));
+            check(state->session->portClosure(state->valveIndex, state->closurePort)
+                      == QStringLiteral("plug.blind"),
+                  QStringLiteral("close: the exhaust is plugged for the pipe probe"));
+            const uint32_t before = pf_session_connection_count(state->session->handle());
+            const bool joined = state->session->connectPorts(
+                state->valveIndex, state->closurePort, cylinder, QStringLiteral("2"));
+            check(!joined && !state->session->lastError().isEmpty()
+                      && pf_session_connection_count(state->session->handle()) == before,
+                  QStringLiteral("close: a pipe on a closed port is refused"));
+            state->session->undo();
+            check(state->session->portClosure(state->valveIndex, state->closurePort).isEmpty(),
+                  QStringLiteral("close: the closed port opens with the undo"));
+            // The very same pipe, now that the port is open, proves the closure refused it
+            // and that the document is as the probe found it after the second undo.
+            const bool reopened = state->session->connectPorts(
+                state->valveIndex, state->closurePort, cylinder, QStringLiteral("2"));
+            check(reopened && state->session->lastError().isEmpty(),
+                  QStringLiteral("close: the same pipe joins an open port"));
+            state->session->undo();
+            check(pf_session_connection_count(state->session->handle()) == before,
+                  QStringLiteral("close: the probe leaves the pipes as it found them"));
         });
 
         // Run until a state change: the transport stops on the frame the piston reaches
@@ -3162,23 +3351,42 @@ int main(int argc, char *argv[])
         });
 
         // The two terminations are files like everything else: they are placed, inspected
-        // and removed, and the inspector says what they do.
+        // and removed, and the inspector says what they do. The palette no longer lists
+        // them, because a closure belongs to a port, so their ABI index comes from the
+        // session's catalog: it still carries them for an old sheet, and it is the same
+        // index the palette row would have kept.
         steps->push_back([state, check] {
             int plug = -1;
             int silencer = -1;
-            const QVariantList entries = state->session->catalog();
-            for (const QVariant &entry : entries) {
-                const QVariantMap row = entry.toMap();
-                const QString id = row.value(QStringLiteral("id")).toString();
-                if (id == QStringLiteral("plug.blind")) {
-                    plug = row.value(QStringLiteral("index")).toInt();
+            bool hidden = true;
+            for (const QVariant &entry : state->session->catalog()) {
+                const QString id =
+                    entry.toMap().value(QStringLiteral("id")).toString();
+                if (id == QStringLiteral("plug.blind")
+                    || id == QStringLiteral("silencer.pneumatic")) {
+                    hidden = false;
                 }
-                if (id == QStringLiteral("silencer.pneumatic")) {
-                    silencer = row.value(QStringLiteral("index")).toInt();
+            }
+            PfCatalog catalog {};
+            if (pf_session_catalog(state->session->handle(), &catalog) == PF_OK
+                && catalog.items != nullptr && catalog.text != nullptr) {
+                for (uint32_t slot = 0; slot < catalog.items_len; ++slot) {
+                    const PfCatalogItem &item = catalog.items[slot];
+                    const QString id = QString::fromUtf8(
+                        reinterpret_cast<const char *>(catalog.text) + item.id_at,
+                        static_cast<int>(item.id_len));
+                    if (id == QStringLiteral("plug.blind")) {
+                        plug = static_cast<int>(slot);
+                    }
+                    if (id == QStringLiteral("silencer.pneumatic")) {
+                        silencer = static_cast<int>(slot);
+                    }
                 }
             }
             check(plug >= 0 && silencer >= 0,
                   QStringLiteral("terminations: the catalog offers both"));
+            check(hidden,
+                  QStringLiteral("terminations: the palette hides the two closures"));
             const int plug_index = plug >= 0 ? state->session->placeComponent(plug, 40.0, 60.0) : -1;
             const int silencer_index =
                 silencer >= 0 ? state->session->placeComponent(silencer, 80.0, 60.0) : -1;

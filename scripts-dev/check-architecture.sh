@@ -63,6 +63,9 @@ BIG_ALLOWED=(
     "crates/punchi-fluid-doc/src/lib.rs"
     "apps/punchi-fluid-qt/src/main.cpp"
     "apps/punchi-fluid-qt/src/session.cpp"
+    # 812 lines after the P-021a port menu (double click + release no-op); the split of
+    # the input path is a follow-up node. The owner decided this on 2026-11-21.
+    "apps/punchi-fluid-qt/src/canvasitem.cpp"
 )
 BUDGET=800
 

@@ -27,7 +27,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0013](0013-a-project-is-one-document.md) | A project is one document with several circuits | accepted | 2026-11-12 |
 | [0014](0014-a-flow-meter-is-a-restriction-that-reports.md) | A flow meter is an inline restriction that reports its flow | accepted | 2026-11-12 |
 | [0015](0015-a-recorder-samples-a-named-quantity.md) | A recorder is a component that samples a named quantity | accepted | 2026-11-12 |
-| [0016](0016-a-termination-is-a-component.md) | A termination is a component: a plug closes, a silencer vents | accepted | 2026-11-12 |
+| [0016](0016-a-termination-is-a-component.md) | A termination is a component: a plug closes, a silencer vents | accepted; amended by [0033](0033-a-port-closure-belongs-to-the-port.md) | 2026-11-12 |
 | [0017](0017-the-electrical-circuit-is-a-second-domain.md) | The electrical control circuit is a second domain | accepted | 2026-11-13 |
 | [0018](0018-the-control-circuit-is-a-boolean-net.md) | The control circuit is a boolean net, not a voltage | accepted | 2026-11-13 |
 | [0019](0019-a-relay-is-a-coil-and-a-contact.md) | A relay is a coil and a contact in one file | accepted | 2026-11-13 |
@@ -44,6 +44,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0030](0030-the-block-protects-its-own-box.md) | The title block protects its own box, not a band | accepted | 2026-11-18 |
 | [0031](0031-the-program-opens-on-a-start-view.md) | The program opens on a start view, and a new project is empty | accepted | 2026-11-19 |
 | [0032](0032-a-connection-carries-its-tube-size.md) | A connection carries its tube size | accepted | 2026-11-20 |
+| [0033](0033-a-port-closure-belongs-to-the-port.md) | A port closure belongs to the port | accepted; amends [0016](0016-a-termination-is-a-component.md) | 2026-11-21 |
 
 ## When a decision needs an ADR
 

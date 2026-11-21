@@ -33,6 +33,7 @@ fn every_symbol_keeps_its_geometry() {
             contact_closed: None,
             orientation: Orientation::NONE,
             designation: None,
+            closures: &[],
         };
         let mut recording = Recording::default();
         draw_placed(&mut recording, &[placed], &[], &catalog, &Ink::print(), &[]);

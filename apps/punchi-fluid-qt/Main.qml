@@ -584,6 +584,20 @@ Window {
         session.selectCircuit(list[(index + step + list.length) % list.length].id);
     }
 
+    /// Opens the port menu on the selected component's first closable port: the keyboard
+    /// path that does not depend on the mouse gesture the sheet also offers.
+    function openPortClosureMenu() {
+        if (session.selected < 0) {
+            return;
+        }
+        const ports = session.portClosurePorts(session.selected);
+        if (ports.length === 0) {
+            return;
+        }
+        const point = session.portPosition(session.selected, ports[0].id);
+        portMenu.openAt(session.selected, ports[0].id, sheet.scenePointForSheet(point));
+    }
+
     // The keyboard path back to Inicio. The strip's home control and the ribbon command are
     // the pointer paths; a focused text field keeps Ctrl+Home for its caret.
     Shortcut {
@@ -719,6 +733,14 @@ Window {
     Shortcut {
         sequence: "Alt+M"
         onActivated: session.mirrorSelected()
+    }
+    // A closure belongs to a port, so the sheet opens the menu on a repeated press over
+    // one; Alt+C is the keyboard path to the selected component's first closable port. A
+    // text field or Inicio keeps the keyboard, exactly as Ctrl+Home does.
+    Shortcut {
+        sequence: "Alt+C"
+        enabled: !window.startViewOpen && !window.textEditorFocused
+        onActivated: window.openPortClosureMenu()
     }
     // The tube diameter of the selected pipe: Alt+D opens the nominal series from any tab.
     Shortcut {
@@ -994,6 +1016,18 @@ Window {
                     anchors.margins: Math.max(4, Math.round(session.unit / 2))
                     anchors.bottomMargin: Math.max(4, Math.round(session.unit / 2))
                                           + window.tabStripHeight
+                    session: session
+                    onPortMenuRequested: function (index, port, scenePoint) {
+                        portMenu.openAt(index, port, scenePoint);
+                    }
+                }
+
+                // The port menu travels with the sheet, so its anchor is the same pixel
+                // space the item reported for the port under the pointer.
+                PortClosureMenu {
+                    id: portMenu
+                    objectName: "portMenu"
+                    parent: sheet
                     session: session
                 }
 
@@ -1743,6 +1777,36 @@ Window {
                                                               ? Qt.ImhNone
                                                               : Qt.ImhFormattedNumbersOnly
                                         }
+                                    }
+                                }
+                            }
+
+                            // Read-only: the closures belong to the selected component's
+                            // ports, and the popup is where they are edited. The row names
+                            // the port and the closure, never a bare catalog id.
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                visible: session.inspectorClosures.length > 0
+
+                                Text {
+                                    width: parent.width
+                                    text: qsTr("Cierres de puerto")
+                                    color: session.muted
+                                    font.pixelSize: 11
+                                }
+
+                                Repeater {
+                                    model: session.inspectorClosures
+
+                                    delegate: Text {
+                                        required property var modelData
+
+                                        width: parent.width
+                                        text: modelData.label + "  ·  " + modelData.closure
+                                        color: session.foreground
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
                                     }
                                 }
                             }

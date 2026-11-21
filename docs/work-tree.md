@@ -78,11 +78,14 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-013 | The icon cache can show the previous theme's tint because QML never re-requests it | `in progress` | [StartView.qml](../apps/punchi-fluid-qt/StartView.qml) and [session.cpp](../apps/punchi-fluid-qt/src/session.cpp) — `&v=<themeRevision>` in every `image://theme` URL |
 | P-018 | A port designation touches or covers the symbol | `in progress` | P-018a: `envelope`, `draw_numeral`, the ninth lint rule, the clearance test and `preparation.service_unit`; P-018b follows on `feat/port-numeral-clearance-rest` |
 | P-020 | The reference zones name the rows and columns backwards | `in progress` | `fix/reference-zone-axes`: letters down the vertical bands, numerals across the horizontal, `I`/`O` skipped, and the standard's two-sided form on A4; export, canvas, tests, docs and captures |
+| P-021a | A plug or a silencer is dropped on the sheet instead of fitted to the port | `in progress` | [P-021a](#p-021a--a-port-closure-belongs-to-the-port) on `feat/port-closures`: the per-port map, the menu, the drawing, the parts row, format 14 and ABI 12 |
+| P-021b | The silencer + regulator chain cannot be drawn | `planned` | [P-021b](#p-021b--the-flow-regulator-and-the-silencer-chain): the flow regulator, the chain and the full menu, with the next free format |
 | P-022 | The branch of a tee bends instead of staying straight | `in progress` | `fix/tee-gauge-route`: a junction port takes its edge from the component or pipe it faces, the check passes the same hint, and the selftest tee probe and the captures prove the straight branch |
 | P-024a | A pneumatic connection does not carry its tube size | `in progress` | [P-024a](#p-024a--a-pneumatic-connection-carries-its-tube-size) on `feat/tube-size`: format 13, the width series, the parts rows, the Conducto gallery; the physics is P-024b |
 | P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
 | P-026 | The electrical connection does not work as planned | `deferred` | [P-026](#p-026--the-electrical-connection-does-not-work-as-planned): the owner's decision of 2026-11-20; not in the current queue and not touched by P-024a |
 | P-027 | The ribbon's horizontal groups overflow at 1280/1440 | `in progress` | [P-027](#p-027--the-ribbons-horizontal-groups-overflow-at-12801440) on `fix/ribbon-collapse-1280`: the fold at 1280, the reachable Diámetro, the layout check and the 1440 known limit |
+| P-029 | `canvasitem.cpp` grew past the input-path budget with the port menu | `reported` | [P-029](#p-029--canvasitemcpp-grew-past-the-input-path-budget): the double click and the release no-op put it at 812 lines; split the input path instead of keeping the `BIG_ALLOWED` exemption |
 
 ## A node, filled
 
@@ -244,6 +247,95 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   pass; `./scripts-dev/check.sh` is green; the 4/10/16 mm light/dark and 300 dpi captures
   show the widths and the frame separation; the owner confirms the diff.
 - **State**: `in progress` on `feat/tube-size`; `done` after the owner merges.
+
+### P-021a — A port closure belongs to the port
+
+- **Problem**: a blind plug or a silencer was a separate placement with its own port and a
+  hose to the valve, so the drawing showed the cone away from the exhaust and the parts
+  list counted a free component and a tube that the circuit does not use.
+- **Evidence**: the owner's report of 2026-11-20 and the split of 2026-11-21; the approved
+  spec `specs/port-closures.md`; the `--selftest` steps `close: …`; the 300 dpi page with
+  `Silenciador · 1V1 · escape 3`; the light/dark captures
+  `p021a-port-closures-{light,dark}.png` and their zoomed pair.
+- **Touches**: `crates/punchi-fluid-doc/src/lib.rs` (`port_closures`,
+  `Change::Closured`, `set_port_closure`, the pipe refusal), `punchi-fluid-catalog`
+  (`MAX_PORTS`), `punchi-fluid-file` (format 14, `StoredPlacement.port_closures`,
+  `validate_pipes`), `punchi-fluid-solver` (`PortTermination`, the exhaust skip),
+  `punchi-fluid-draw` (`placed/closure.rs`, `Placed.closures`, the numeral suppression),
+  `punchi-fluid-check` (`BadPortClosure`), `punchi-fluid-export` (`ClosureRow`, the page),
+  `punchi-fluid-ffi` (the port/closure ABI, `PF_ABI_VERSION = 12`),
+  `apps/punchi-fluid-qt` (`PortClosureMenu.qml`, the `SchematicItem` signal and ordering,
+  `Alt+C`, the palette filter, the panel block), `docs/adr/0033-…`, the reference pages,
+  `docs/ui-ux.md`, `docs/symbology.md`, `docs/capabilities.md`, this register and
+  `CHANGELOG.md`.
+- **Options**: keep the placement and add an attach gesture (rejected: the hose and the
+  free-component count remain); a child placement with a parent id (rejected: a second
+  relation and hit test for ports only); a `Behaviour::PortClosure` variant (rejected: it
+  duplicates the physics and blocks the chain); the per-port map (chosen).
+- **Decision**: option 4, the per-port closure map, approved by the owner with the P-021a /
+  P-021b split on 2026-11-21. **ADR 0033** records it and amends ADR 0016 without erasing
+  the two behaviours. The electrical port is excluded with **P-026**; the chain is
+  **P-021b**.
+- **Stages**: one branch, `feat/port-closures` — (1) the document map, the change and the
+  pipe refusal; (2) the catalog `MAX_PORTS` and format 14 with its bounds; (3) the solver
+  termination; (4) the drawing and the numeral rule; (5) the check; (6) the parts rows and
+  the page; (7) the ABI 12; (8) the Qt menu, the ordering, the release no-op, `Alt+C`, the
+  panel and the palette filter; (9) the docs, the evidence and the gate.
+- **Done when**: the P-021a tests named in `docs/capabilities.md` and the `close:` selftest
+  probes are green, `--check-qml`, `--check-theme`, `--check-layout` and `--selftest` exit
+  0, `./scripts-dev/check.sh` is green, the 300 dpi page shows the closure rows and the
+  light/dark captures show the closure at the port with the numeral clear, and the owner
+  confirms the diff.
+- **State**: `in progress` on `feat/port-closures`; `done` after the owner merges.
+
+### P-021b — The flow regulator and the silencer chain
+
+- **Problem**: an exhaust often carries a **flow regulator and a silencer in series**, and
+  a single closure id cannot express the chain or its setting. The full port menu that
+  edits both is the second half the owner split from P-021a.
+- **Evidence**: the owner's split of 2026-11-21; the alternatives in ADR 0033; the
+  `throttle.adjustable` definition still missing.
+- **Touches**: `punchi-fluid-catalog` (the `throttle.adjustable` file and its review),
+  `punchi-fluid-doc`/`punchi-fluid-file` (the chain shape and the next free format, with an
+  explicit migration from the single closure id to a one-element chain), the solver
+  termination for the regulator, `punchi-fluid-draw` (the chain at the port),
+  `punchi-fluid-export` (the row for the chain), `punchi-fluid-ffi`, the Qt menu, the ADR
+  that follows 0033 and the docs.
+- **Options**: reuse the single id and add the regulator as a second key (rejected: two
+  independent closures cannot say "in series" or order the parts); a chain value with the
+  regulator's setting (chosen by the split); a new behaviour (rejected: the physics is the
+  existing throttle plus the existing silencer).
+- **Decision**: P-021b owns the chain and the flow regulator. It takes the **next free
+  format at its branch** and publishes the migration from the single id to a one-element
+  chain; it does not promise 15 here if the shape changes. The single-id map of P-021a is
+  the honest cut, not a chain in disguise.
+- **Done when**: the regulator file and its review exist, the chain is drawn, stored and
+  listed with the same numeral and parts rules, the migrated format reads an old sheet with
+  one closure, and the owner approves its own specification.
+- **State**: `planned`; not started.
+
+### P-029 — `canvasitem.cpp` grew past the input-path budget
+
+- **Problem**: the port menu added the repeated press, the pipe-start refusal and the
+  release no-op to `canvasitem.cpp`, and the file reached **812 lines**, past the
+  800-line workspace budget. It is listed in `BIG_ALLOWED` with a comment that the split
+  is a follow-up, not a permanent exemption.
+- **Evidence**: `scripts-dev/check-architecture.sh` `BIG_ALLOWED` and the 812-line
+  measurement on `feat/port-closures`; the owner's decision of 2026-11-21.
+- **Touches**: `apps/punchi-fluid-qt/src/canvasitem.cpp` (the editing press path, the
+  double-click count, the port menu signal and the release handling), its header, the
+  `SchematicItem` selftest fixture in `src/main.cpp`, and the `BIG_ALLOWED` line.
+- **Options**: leave the exemption (rejected as a permanent answer: the input path keeps
+  growing); split the pointer/gesture helpers into a small C++ unit (chosen); move the
+  whole item to a `QQuickItem` subclass with a private implementation (rejected for now:
+  it touches the QML registration and the tests).
+- **Decision**: split the **input path** — the press/release/double-click decision, the
+  port hit and the pipe start — into a helper compiled beside the item, keeping the QML
+  type and the behaviour unchanged. The `BIG_ALLOWED` entry is removed with the split.
+- **Done when**: `canvasitem.cpp` is under 800 lines, `BIG_ALLOWED` no longer names it,
+  the `--selftest` editing and `close:` probes stay green, and `./scripts-dev/check.sh`
+  passes.
+- **State**: `reported`; not started.
 
 ### P-026 — The electrical connection does not work as planned
 

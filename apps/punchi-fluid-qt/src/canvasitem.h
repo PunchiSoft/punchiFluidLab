@@ -77,6 +77,9 @@ signals:
     void paintCountChanged();
     void viewHistoryChanged();
     void zoomWindowChanged();
+    /// A repeated press on a port: the menu opens at that port. `scenePoint` is in the
+    /// item's pixels, the same space a popup anchored to the sheet uses.
+    void portMenuRequested(int index, QString port, QPointF scenePoint);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

@@ -27,7 +27,8 @@ use punchi_fluid::{
     PF_QUANTITY_FLOW, PF_QUANTITY_POSITION, PF_QUANTITY_PRESSURE, PF_SHEET_CUSTOM_PAPER,
     PF_TEMPLATE_COUNT, PfAbi, PfBlockLayout, PfCall, PfCatalog, PfChartSource, PfEditSet,
     PfExportOptions, PfFrame, PfInk, PfPoint, PfSession, PfSheet, PfTelemetry, pf_abi,
-    pf_export_paper_bounds, pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
+    pf_closure_count, pf_closure_id, pf_closure_is_plug, pf_closure_name, pf_export_paper_bounds,
+    pf_export_paper_count, pf_export_paper_name, pf_export_paper_size_mm,
     pf_session_active_circuit, pf_session_add_circuit, pf_session_advance,
     pf_session_align_selection, pf_session_autosave, pf_session_block, pf_session_block_customized,
     pf_session_block_layout, pf_session_block_model, pf_session_block_preset,
@@ -35,13 +36,14 @@ use punchi_fluid::{
     pf_session_buzzer_active, pf_session_can_undo, pf_session_catalog, pf_session_catalog_problems,
     pf_session_chart_candidate, pf_session_chart_candidate_count, pf_session_chart_source,
     pf_session_check, pf_session_circuit_count, pf_session_circuit_id, pf_session_circuit_name,
-    pf_session_clear_chart_source, pf_session_component_count, pf_session_component_designation,
-    pf_session_component_edits, pf_session_component_id, pf_session_component_orientation,
-    pf_session_component_rect, pf_session_component_valve_position,
-    pf_session_component_valve_spring_return, pf_session_connect, pf_session_connection_count,
-    pf_session_contact_closed, pf_session_copy_selected, pf_session_describe_component,
-    pf_session_drag_component, pf_session_duplicate_component, pf_session_duplicate_selection,
-    pf_session_export, pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
+    pf_session_clear_chart_source, pf_session_component_circuit, pf_session_component_count,
+    pf_session_component_designation, pf_session_component_edits, pf_session_component_id,
+    pf_session_component_orientation, pf_session_component_rect,
+    pf_session_component_valve_position, pf_session_component_valve_spring_return,
+    pf_session_connect, pf_session_connection_count, pf_session_contact_closed,
+    pf_session_copy_selected, pf_session_describe_component, pf_session_drag_component,
+    pf_session_duplicate_component, pf_session_duplicate_selection, pf_session_export,
+    pf_session_export_with, pf_session_finding_at, pf_session_forget_recent,
     pf_session_forget_recent_at, pf_session_free, pf_session_grid_step, pf_session_hit_component,
     pf_session_hit_valve, pf_session_indicator_active, pf_session_is_modified,
     pf_session_last_error, pf_session_load_example, pf_session_load_template,
@@ -49,20 +51,22 @@ use punchi_fluid::{
     pf_session_new, pf_session_new_document, pf_session_open, pf_session_open_recent,
     pf_session_paste, pf_session_paste_offset, pf_session_pipe_at, pf_session_pipe_class,
     pf_session_pipe_offset, pf_session_pipe_tube, pf_session_place_component,
-    pf_session_placement_id, pf_session_port_point, pf_session_press_component_valve,
-    pf_session_press_valve, pf_session_preview, pf_session_preview_template,
-    pf_session_recent_available, pf_session_recent_count, pf_session_recent_path,
-    pf_session_recover, pf_session_redo, pf_session_release_component_valve,
-    pf_session_release_valve, pf_session_remove_circuit, pf_session_remove_component,
-    pf_session_remove_selected_pipe, pf_session_remove_selection, pf_session_rename_circuit,
-    pf_session_reset_block_visibility, pf_session_restart, pf_session_rotate_selected,
-    pf_session_route_pipe, pf_session_save, pf_session_select, pf_session_select_all,
-    pf_session_select_circuit, pf_session_select_pipe, pf_session_select_rect, pf_session_selected,
-    pf_session_selected_pipe, pf_session_selection_at, pf_session_selection_count,
-    pf_session_set_block, pf_session_set_block_model, pf_session_set_block_preset,
-    pf_session_set_block_remark, pf_session_set_block_visible, pf_session_set_chart_source,
-    pf_session_set_component_designation, pf_session_set_component_edits, pf_session_set_grid_step,
-    pf_session_set_pipe_class, pf_session_set_pipe_tube, pf_session_set_recent_file,
+    pf_session_placement_id, pf_session_port_closure, pf_session_port_count,
+    pf_session_port_has_pipe, pf_session_port_id, pf_session_port_point, pf_session_port_role,
+    pf_session_press_component_valve, pf_session_press_valve, pf_session_preview,
+    pf_session_preview_template, pf_session_recent_available, pf_session_recent_count,
+    pf_session_recent_path, pf_session_recover, pf_session_redo,
+    pf_session_release_component_valve, pf_session_release_valve, pf_session_remove_circuit,
+    pf_session_remove_component, pf_session_remove_selected_pipe, pf_session_remove_selection,
+    pf_session_rename_circuit, pf_session_reset_block_visibility, pf_session_restart,
+    pf_session_rotate_selected, pf_session_route_pipe, pf_session_save, pf_session_select,
+    pf_session_select_all, pf_session_select_circuit, pf_session_select_pipe,
+    pf_session_select_rect, pf_session_selected, pf_session_selected_pipe, pf_session_selection_at,
+    pf_session_selection_count, pf_session_set_block, pf_session_set_block_model,
+    pf_session_set_block_preset, pf_session_set_block_remark, pf_session_set_block_visible,
+    pf_session_set_chart_source, pf_session_set_component_designation,
+    pf_session_set_component_edits, pf_session_set_grid_step, pf_session_set_pipe_class,
+    pf_session_set_pipe_tube, pf_session_set_port_closure, pf_session_set_recent_file,
     pf_session_set_sheet, pf_session_sheet, pf_session_space_selection, pf_session_straighten_pipe,
     pf_session_telemetry, pf_session_toggle_contact, pf_session_toggle_select,
     pf_session_toggle_valve, pf_session_undo, pf_session_valve_rect,
@@ -152,6 +156,14 @@ fn port_of(session: *mut PfSession, index: u32, port: &str) -> (f32, f32) {
         PF_OK
     );
     (out[0], out[1])
+}
+
+/// A string the ABI wrote into a fixed buffer.
+fn written(buffer: &[c_char]) -> String {
+    // SAFETY: the call that filled the buffer wrote a NUL-terminated string into it.
+    unsafe { CStr::from_ptr(buffer.as_ptr()) }
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Places a supply and a contact and joins them with one wire; returns the wire's index.
@@ -1493,6 +1505,307 @@ fn two_ports_can_be_joined_and_the_join_is_refused_when_it_makes_no_sense() {
     assert_eq!(unsafe { pf_session_connection_count(session) }, seeded);
     // SAFETY: the session is still alive.
     unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn every_port_can_be_enumerated_with_its_role() {
+    let session = session();
+    let valve = component_with(session, "valve.");
+    assert_ne!(valve, u32::MAX, "the worked example has a valve");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_port_count(session, valve) }, 3);
+    // SAFETY: live session.
+    assert!(unsafe { pf_session_port_count(session, 999) } < 0);
+
+    let mut ids = Vec::new();
+    for slot in 0..3 {
+        let mut buffer = [0 as c_char; 32];
+        // SAFETY: live session and a writable buffer.
+        let length = unsafe { pf_session_port_id(session, valve, slot, buffer.as_mut_ptr(), 32) };
+        assert!(length > 0, "slot {slot} must name a port");
+        ids.push(written(&buffer));
+    }
+    assert_eq!(ids, ["1", "2", "3"]);
+
+    let role = |port: &str| {
+        let id = CString::new(port).unwrap_or_default();
+        // SAFETY: live session and a NUL-terminated port.
+        unsafe { pf_session_port_role(session, valve, id.as_ptr()) }
+    };
+    assert_eq!(role("1"), 0, "supply");
+    assert_eq!(role("2"), 1, "working");
+    assert_eq!(role("3"), 2, "exhaust");
+    assert!(role("9") < 0, "a port the definition does not have");
+
+    // A slot past the end and a buffer too small are errors, not silent zeros.
+    let mut one = [0 as c_char; 1];
+    // SAFETY: live session and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_session_port_id(session, valve, 99, one.as_mut_ptr(), 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_session_port_id(session, valve, 0, one.as_mut_ptr(), 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_port_closure_is_fitted_cleared_and_undone_as_one_step() {
+    let session = session();
+    let valve = component_with(session, "valve.");
+    let exhaust = CString::new("3").unwrap_or_default();
+    let supply = CString::new("1").unwrap_or_default();
+    let plug = CString::new("plug.blind").unwrap_or_default();
+    let silencer = CString::new("silencer.pneumatic").unwrap_or_default();
+    let clear = CString::new("").unwrap_or_default();
+
+    let read = |buffer: &mut [c_char; 64]| {
+        // SAFETY: live session, NUL-terminated port and a writable buffer.
+        unsafe {
+            pf_session_port_closure(session, valve, exhaust.as_ptr(), buffer.as_mut_ptr(), 64)
+        }
+    };
+    let mut buffer = [0 as c_char; 64];
+    assert_eq!(read(&mut buffer), 0, "a port starts with no closure");
+    assert_eq!(written(&buffer), "");
+
+    // A plug on the exhaust, then back and forth: one undo per change.
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_set_port_closure(session, valve, exhaust.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    assert!(read(&mut buffer) > 0);
+    assert_eq!(written(&buffer), "plug.blind");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_can_undo(session) }, 1);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_undo(session) }, PF_OK);
+    assert_eq!(read(&mut buffer), 0);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_redo(session) }, PF_OK);
+    assert!(read(&mut buffer) > 0);
+    assert_eq!(written(&buffer), "plug.blind");
+
+    // A silencer replaces it, and an empty id clears it.
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_set_port_closure(session, valve, exhaust.as_ptr(), silencer.as_ptr()) },
+        PF_OK
+    );
+    assert!(read(&mut buffer) > 0);
+    assert_eq!(written(&buffer), "silencer.pneumatic");
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_set_port_closure(session, valve, exhaust.as_ptr(), clear.as_ptr()) },
+        PF_OK
+    );
+    assert_eq!(read(&mut buffer), 0);
+
+    // A silencer cannot vent a supply port: the role decides, not the caller.
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, valve, supply.as_ptr(), silencer.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert!(
+        !unsafe { CStr::from_ptr(pf_session_last_error(session)) }
+            .to_bytes()
+            .is_empty()
+    );
+
+    // An unknown id and an unknown port are refused, and none of it changed the document.
+    let unknown = CString::new("not.a.closure").unwrap_or_default();
+    let nine = CString::new("9").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, valve, exhaust.as_ptr(), unknown.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, valve, nine.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    assert_eq!(read(&mut buffer), 0);
+
+    // The getter's own bound: an empty closure fits one byte, a real id does not.
+    let mut one = [0 as c_char; 1];
+    // SAFETY: live session, NUL-terminated port and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_session_port_closure(session, valve, exhaust.as_ptr(), one.as_mut_ptr(), 1) },
+        0
+    );
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_set_port_closure(session, valve, exhaust.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session, NUL-terminated port and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_session_port_closure(session, valve, exhaust.as_ptr(), one.as_mut_ptr(), 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn an_electrical_port_takes_no_closure() {
+    let session = session();
+    let rail = catalog_index(session, "electrical.supply");
+    // SAFETY: live session and finite coordinates.
+    let rail = unsafe { pf_session_place_component(session, rail, 40.0, 20.0) };
+    assert!(rail >= 0, "the rail is placed");
+    let rail = u32::try_from(rail).unwrap_or_default();
+
+    let live = CString::new("L").unwrap_or_default();
+    // SAFETY: live session and a NUL-terminated port.
+    assert_eq!(
+        unsafe { pf_session_port_role(session, rail, live.as_ptr()) },
+        4
+    );
+
+    let plug = CString::new("plug.blind").unwrap_or_default();
+    let clear = CString::new("").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, rail, live.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    assert!(
+        !unsafe { CStr::from_ptr(pf_session_last_error(session)) }
+            .to_bytes()
+            .is_empty()
+    );
+    // Even clearing is refused: the port has no closure to manage at all.
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, rail, live.as_ptr(), clear.as_ptr()) },
+        PF_OK
+    );
+
+    let mut buffer = [0 as c_char; 32];
+    // SAFETY: live session, NUL-terminated port and a writable buffer.
+    assert_eq!(
+        unsafe { pf_session_port_closure(session, rail, live.as_ptr(), buffer.as_mut_ptr(), 32) },
+        0
+    );
+    assert_eq!(written(&buffer), "");
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn a_hose_blocks_a_closure_until_it_is_removed() {
+    let session = session();
+    let valve = component_with(session, "valve.");
+    let working = CString::new("2").unwrap_or_default();
+    let exhaust = CString::new("3").unwrap_or_default();
+    let nine = CString::new("9").unwrap_or_default();
+
+    // SAFETY: live session and NUL-terminated ports.
+    assert_eq!(
+        unsafe { pf_session_port_has_pipe(session, valve, working.as_ptr()) },
+        1
+    );
+    // SAFETY: live session and a NUL-terminated port.
+    assert_eq!(
+        unsafe { pf_session_port_has_pipe(session, valve, exhaust.as_ptr()) },
+        0
+    );
+    // SAFETY: live session and a NUL-terminated port.
+    assert!(unsafe { pf_session_port_has_pipe(session, valve, nine.as_ptr()) } < 0);
+
+    // A working port accepts a plug, but not while the hose is there.
+    let plug = CString::new("plug.blind").unwrap_or_default();
+    // SAFETY: live session and NUL-terminated strings.
+    assert_ne!(
+        unsafe { pf_session_set_port_closure(session, valve, working.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: live session.
+    let message = unsafe { CStr::from_ptr(pf_session_last_error(session)) }
+        .to_string_lossy()
+        .into_owned();
+    assert!(
+        message.contains("hose"),
+        "the refusal explains the hose: {message}"
+    );
+
+    // The worked example's third pipe joins the valve's working port `2` to the cylinder.
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_select_pipe(session, 2) }, PF_OK);
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_session_remove_selected_pipe(session) }, PF_OK);
+    // SAFETY: live session and a NUL-terminated port.
+    assert_eq!(
+        unsafe { pf_session_port_has_pipe(session, valve, working.as_ptr()) },
+        0
+    );
+    // SAFETY: live session and NUL-terminated strings.
+    assert_eq!(
+        unsafe { pf_session_set_port_closure(session, valve, working.as_ptr(), plug.as_ptr()) },
+        PF_OK
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_closure_definitions_come_from_the_session_catalog() {
+    let session = session();
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_closure_count(session) }, 2);
+
+    let mut id = [0 as c_char; 64];
+    let mut name = [0 as c_char; 64];
+    // The catalog orders definitions by id, so the plug comes first.
+    // SAFETY: live session and writable buffers.
+    assert!(unsafe { pf_closure_id(session, 0, id.as_mut_ptr(), 64) } > 0);
+    assert_eq!(written(&id), "plug.blind");
+    // SAFETY: live session and writable buffers.
+    assert!(unsafe { pf_closure_name(session, 0, name.as_mut_ptr(), 64) } > 0);
+    assert_eq!(written(&name), "Tapón ciego");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_closure_is_plug(session, 0) }, 1);
+
+    // SAFETY: live session and writable buffers.
+    assert!(unsafe { pf_closure_id(session, 1, id.as_mut_ptr(), 64) } > 0);
+    assert_eq!(written(&id), "silencer.pneumatic");
+    // SAFETY: live session and writable buffers.
+    assert!(unsafe { pf_closure_name(session, 1, name.as_mut_ptr(), 64) } > 0);
+    assert_eq!(written(&name), "Silenciador");
+    // SAFETY: live session.
+    assert_eq!(unsafe { pf_closure_is_plug(session, 1) }, 0);
+
+    // Past the end and a short buffer are errors.
+    let mut one = [0 as c_char; 1];
+    // SAFETY: live session and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_closure_id(session, 9, one.as_mut_ptr(), 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session and a one-byte buffer.
+    assert_eq!(
+        unsafe { pf_closure_id(session, 0, one.as_mut_ptr(), 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: live session.
+    assert!(unsafe { pf_closure_is_plug(session, 9) } < 0);
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
+fn the_abi_version_is_the_one_the_header_declares() {
+    assert_eq!(PF_ABI_VERSION, 12);
 }
 
 #[test]
@@ -3227,6 +3540,47 @@ fn circuits_can_be_removed_undone_and_the_last_one_is_protected() {
 }
 
 #[test]
+fn a_placement_reports_the_circuit_it_belongs_to() {
+    let session = session();
+    let first = unsafe { pf_session_active_circuit(session) };
+    let count = unsafe { pf_session_component_count(session) };
+    assert!(count > 0, "the worked example fills the first circuit");
+    for index in 0..count {
+        assert_eq!(
+            unsafe { pf_session_component_circuit(session, index) },
+            first,
+            "placement {index} belongs to the first circuit"
+        );
+    }
+
+    let title = CString::new("Circuito 2").expect("a title");
+    // SAFETY: live session and a NUL-terminated title.
+    let second = unsafe { pf_session_add_circuit(session, title.as_ptr()) };
+    assert!(second > 0, "a second circuit gets its own identity");
+    // SAFETY: live session and a valid catalog slot.
+    let placed = unsafe { pf_session_place_component(session, 0, 20.0, 20.0) };
+    assert!(placed >= 0, "the second circuit takes a placement");
+    let placed = u32::try_from(placed).expect("a placement index");
+    assert_eq!(
+        unsafe { pf_session_component_circuit(session, placed) },
+        second
+    );
+    for index in 0..count {
+        assert_eq!(
+            unsafe { pf_session_component_circuit(session, index) },
+            first,
+            "the first circuit keeps its own placements"
+        );
+    }
+    assert_eq!(
+        unsafe { pf_session_component_circuit(session, placed + 1) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
 fn circuit_limit_is_enforced_at_the_abi() {
     let session = session();
     let title = CString::new("Circuito").expect("a title");
@@ -4267,14 +4621,14 @@ fn an_old_pipe_reads_as_unspecified_and_keeps_its_width() {
             .unwrap_or_default(),
     )
     .expect("the sheet is written");
-    assert!(text.contains("\"format\": 13"), "this build writes 13");
+    assert!(text.contains("\"format\": 14"), "this build writes 14");
     assert!(
         !text.contains("tube_od_hundredths"),
         "an unspecified pipe writes no key"
     );
 
     // What a format-12 release wrote: the same sheet without the key.
-    let older = text.replace("\"format\": 13", "\"format\": 12");
+    let older = text.replace("\"format\": 14", "\"format\": 12");
     let older_path = directory.path().join("older.pfluid");
     std::fs::write(&older_path, older).expect("the older sheet is written");
     let older_path = CString::new(older_path.to_str().unwrap_or_default()).expect("a path");
