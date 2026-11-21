@@ -2034,6 +2034,13 @@ int main(int argc, char *argv[])
             send(QEvent::MouseButtonPress, state->valveScene, Qt::LeftButton, Qt::LeftButton);
         });
         steps->push_back([state, check, send] {
+            // The transport tick is wall-clock. A loaded runner may have run none between
+            // the press and this step, which once failed the pressure check on CI alone, so
+            // the model is advanced deterministically — bounded by the stroke's own time —
+            // before it is read. The assertions are unchanged.
+            for (int tick = 0; tick < 20 && state->session->pressureBar() <= 2.0; ++tick) {
+                state->session->advance(0.016);
+            }
             std::fprintf(stderr, "selftest: valve %d, %.2f bar, %.1f mm, click at (%.0f, %.0f)\n",
                          state->session->valvePosition(), state->session->pressureBar(),
                          state->session->positionMm(), state->valveScene.x(),
