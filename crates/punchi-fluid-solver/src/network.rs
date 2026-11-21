@@ -285,6 +285,11 @@ struct Edge {
     mask: u64,
     /// Part the restriction belongs to, when an instrument reads the flow through it.
     part: Option<usize>,
+    /// Document connection this edge models, when it is a hose and not an internal path.
+    ///
+    /// The index addresses the document's connection list, not the slice passed to
+    /// [`Network::build`], so a connection the caller could not model keeps its slot.
+    pipe: Option<usize>,
 }
 
 /// One chamber of a cylinder and the way its pressure pushes the piston.
@@ -375,6 +380,19 @@ pub struct Network {
     /// substep. `None` for a part that owns none, so a missing reading never looks like
     /// a reading of zero.
     part_flow: Vec<Option<f64>>,
+    /// Signed flow of every document connection, in normal litres per minute, averaged over
+    /// the substeps of the last call. Indexed by the document connection list; `None` for a
+    /// connection the model could not represent, `Some(0.0)` for a modelled hose that
+    /// carried nothing.
+    pipe_flows: Vec<Option<f64>>,
+    /// Running sum for [`Self::pipe_flows`], one slot per document connection.
+    ///
+    /// A reading is the **net** flow of the frame, not the sign of one substep: a dead-end
+    /// line chatters between equal and opposite flows every substep, and reporting the last
+    /// one made the sheet show air running backwards on a line that was still.
+    pipe_flow_sums: Vec<f64>,
+    /// Running sum for [`Self::part_flow`], one slot per part.
+    part_flow_sums: Vec<f64>,
 }
 
 impl Network {
@@ -407,11 +425,11 @@ impl Network {
             parts.push(NetworkPart::from_definition(definition)?);
         }
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
-            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
-            (PortAddress::new(2, "2"), PortAddress::new(3, "1")),
+            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (2, PortAddress::new(2, "2"), PortAddress::new(3, "1")),
         ];
-        Self::build(&parts, &pipes, &[])
+        Self::build(&parts, &pipes, &[], pipes.len())
     }
 
     /// Builds the network from the parts of the document, the pipes between them and the
@@ -423,14 +441,20 @@ impl Network {
     /// the catalog and only apply to an exhaust port: a `Closed` or `Vent` on any other
     /// port is not a change to the graph.
     ///
+    /// Each pipe carries the index of its connection in the **document's** list before its
+    /// two ends, and `pipe_count` is that whole list's length. The count sizes the flow
+    /// vector, so a connection this build could not represent keeps its slot as `None`
+    /// instead of letting the next hose inherit its index.
+    ///
     /// # Errors
     ///
     /// Returns [`SolverError::TooManyValvePositions`] when a valve declares more positions
     /// than the edge mask can hold.
     pub fn build(
         parts: &[NetworkPart],
-        pipes: &[(PortAddress, PortAddress)],
+        pipes: &[(usize, PortAddress, PortAddress)],
         terminations: &[(PortAddress, PortTermination)],
+        pipe_count: usize,
     ) -> Result<Self, SolverError> {
         let atmosphere_pa = punchi_fluid_core::Pressure::ATMOSPHERE.pascal();
         let temperature_kelvin = punchi_fluid_core::Temperature::STANDARD.kelvin();
@@ -469,9 +493,19 @@ impl Network {
             temperature_kelvin,
         );
         let mut part_flow = vec![None; parts.len()];
+        let mut pipe_flows = vec![None; pipe_count];
+        let pipe_flow_sums = vec![0.0; pipe_count];
+        let part_flow_sums = vec![0.0; parts.len()];
         for edge in &edges {
             if let Some(part) = edge.part {
                 part_flow[part] = Some(0.0);
+            }
+            // A modelled hose reads zero until the first substep moves air; an
+            // unrepresentable connection is never an edge and stays `None`.
+            if let Some(pipe) = edge.pipe {
+                if let Some(slot) = pipe_flows.get_mut(pipe) {
+                    *slot = Some(0.0);
+                }
             }
         }
         Ok(Self {
@@ -492,6 +526,9 @@ impl Network {
             supply_flow: 0.0,
             working_flow: 0.0,
             part_flow,
+            pipe_flows,
+            pipe_flow_sums,
+            part_flow_sums,
         })
     }
 
@@ -731,6 +768,21 @@ impl Network {
         Some(flow / orifice::normal::AIR_DENSITY * 60_000.0)
     }
 
+    /// Signed flow through each document connection over the last call's substeps, normal
+    /// litres per minute.
+    ///
+    /// Indexed by the **document's connection list**, not by the slice handed to
+    /// [`Self::build`]: a connection the model could not represent is `None` and keeps its
+    /// slot, so one hose never reports another's air. `Some(0.0)` is a modelled hose that
+    /// carried nothing. Positive means from the connection's `from` to its `to`, the order
+    /// the document enumerated.
+    ///
+    /// Borrowed on purpose: the frame path reads the vector without building one of its own.
+    #[must_use]
+    pub fn pipe_flows(&self) -> &[Option<f64>] {
+        &self.pipe_flows
+    }
+
     /// Builds a telemetry snapshot.
     #[must_use]
     pub fn telemetry(&self) -> Telemetry {
@@ -784,8 +836,37 @@ impl Network {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let count = substeps.max(1.0) as u32;
         let substep = dt / f64::from(count);
+        self.pipe_flow_sums.fill(0.0);
+        self.part_flow_sums.fill(0.0);
         for _ in 0..count {
             self.substep(substep);
+            let flows = &self.pipe_flows;
+            for (sum, reading) in self.pipe_flow_sums.iter_mut().zip(flows) {
+                if let Some(value) = reading {
+                    *sum += value;
+                }
+            }
+            let part_flows = &self.part_flow;
+            for (sum, reading) in self.part_flow_sums.iter_mut().zip(part_flows) {
+                if let Some(value) = reading {
+                    *sum += value;
+                }
+            }
+        }
+        // The frame's reading is the net flow: a still line that chatters cancels itself,
+        // and a hose that truly carries air keeps its sign and its magnitude.
+        let divisor = f64::from(count);
+        let sums = &self.pipe_flow_sums;
+        for (reading, sum) in self.pipe_flows.iter_mut().zip(sums) {
+            if let Some(value) = reading {
+                *value = sum / divisor;
+            }
+        }
+        let sums = &self.part_flow_sums;
+        for (reading, sum) in self.part_flow.iter_mut().zip(sums) {
+            if let Some(value) = reading {
+                *value = sum / divisor;
+            }
         }
         self.time += dt;
         Ok(self.telemetry())
@@ -814,6 +895,7 @@ impl Network {
         let mut delta = vec![0.0_f64; self.nodes.len()];
         // Moved out of `self` so the loop can read the network while it writes the flows.
         let mut part_flow = std::mem::take(&mut self.part_flow);
+        let mut pipe_flows = std::mem::take(&mut self.pipe_flows);
         for slot in &mut part_flow {
             *slot = slot.map(|_| 0.0);
         }
@@ -841,6 +923,14 @@ impl Network {
                 edge.conductance,
                 self.temperature_kelvin,
             );
+            // Stored before the zero-flow `continue`: a hose that settles at exactly zero
+            // still reports that zero, and its slot never keeps the reading of an earlier
+            // substep. No reset pass is needed because every modelled hose is assigned here.
+            if let Some(pipe) = edge.pipe {
+                if let Some(reading) = pipe_flows.get_mut(pipe).and_then(Option::as_mut) {
+                    *reading = flow / orifice::normal::AIR_DENSITY * 60_000.0;
+                }
+            }
             if let Some(part) = edge.part {
                 if let Some(total) = part_flow.get_mut(part).and_then(Option::as_mut) {
                     *total += flow;
@@ -893,6 +983,7 @@ impl Network {
         self.supply_flow = supply_flow;
         self.working_flow = working;
         self.part_flow = part_flow;
+        self.pipe_flows = pipe_flows;
 
         self.step_pistons(dt);
     }
@@ -1055,6 +1146,7 @@ fn valve_edges(
                     valve: Some(valve),
                     mask: 1_u64 << position,
                     part: None,
+                    pipe: None,
                 });
             }
         }
@@ -1094,16 +1186,21 @@ fn restriction_edges(
             valve: None,
             mask: u64::MAX,
             part: meter.then_some(index),
+            pipe: None,
         });
     }
 }
 
+/// Appends one edge per hose, remembering the document connection it came from.
+///
+/// The index and the ends are the caller's: the document enumerated the connections before
+/// filtering them, so an entry that reaches here keeps its place in the flow vector.
 fn append_pipes(
     edges: &mut Vec<Edge>,
-    pipes: &[(PortAddress, PortAddress)],
+    pipes: &[(usize, PortAddress, PortAddress)],
     port_node: &[HashMap<&str, usize>],
 ) {
-    for (from, to) in pipes {
+    for (pipe, from, to) in pipes {
         let (Some(&a), Some(&b)) = (
             port_node
                 .get(from.part)
@@ -1121,6 +1218,7 @@ fn append_pipes(
             valve: None,
             mask: u64::MAX,
             part: None,
+            pipe: Some(*pipe),
         });
     }
 }
@@ -1233,6 +1331,7 @@ fn vent_edges(
             valve: None,
             mask: u64::MAX,
             part: None,
+            pipe: None,
         });
     }
 }
@@ -1275,6 +1374,7 @@ fn silencer_edges(
             valve: None,
             mask: u64::MAX,
             part: None,
+            pipe: None,
         });
     }
 }
@@ -1384,6 +1484,24 @@ mod tests {
         NetworkPart::from_definition(definition).expect("a part")
     }
 
+    /// Builds a test network from pipes addressed in order.
+    ///
+    /// The solver sizes its flow vector by the document connection list; these tests have no
+    /// document, so the position in the slice is the connection index and its length is the
+    /// document's connection count.
+    pub(super) fn build(
+        parts: &[NetworkPart],
+        pipes: &[(PortAddress, PortAddress)],
+        terminations: &[(PortAddress, PortTermination)],
+    ) -> Result<Network, SolverError> {
+        let indexed: Vec<(usize, PortAddress, PortAddress)> = pipes
+            .iter()
+            .enumerate()
+            .map(|(index, (from, to))| (index, from.clone(), to.clone()))
+            .collect();
+        Network::build(parts, &indexed, terminations, pipes.len())
+    }
+
     fn chain() -> Network {
         let catalog = Catalog::builtin();
         let parts = [
@@ -1395,7 +1513,7 @@ mod tests {
             (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
-        Network::build(&parts, &pipes, &[]).expect("the chain builds")
+        build(&parts, &pipes, &[]).expect("the chain builds")
     }
 
     #[test]
@@ -1521,7 +1639,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "3")),
             (PortAddress::new(3, "3"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the junction builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the junction builds");
         network.press_valve();
         for _ in 0..60 {
             network.advance(0.016).expect("accepted");
@@ -1544,7 +1662,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the gauge builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the gauge builds");
         network.press_valve();
         for _ in 0..60 {
             network.advance(0.016).expect("accepted");
@@ -1586,7 +1704,7 @@ mod tests {
             (PortAddress::new(1, "4"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "2")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the five-port chain builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the five-port chain builds");
         let stroke = network.cylinder().expect("a cylinder").stroke;
         assert_eq!(network.valve().expect("a valve").position_count(), 2);
 
@@ -1636,7 +1754,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the meter builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the meter builds");
         assert_eq!(
             network.part_flow(3),
             Some(0.0),
@@ -1720,7 +1838,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the meter builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the meter builds");
         network.press_valve();
         for _ in 0..5 {
             network.advance(0.016).expect("accepted");
@@ -1768,7 +1886,7 @@ mod tests {
             part(&catalog, "throttle.fixed"),
         ];
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
-        let network = Network::build(&parts, &pipes, &[]).expect("builds");
+        let network = build(&parts, &pipes, &[]).expect("builds");
         assert_eq!(network.part_flow(0), None, "a supply owns no restriction");
         assert_eq!(network.part_flow(9), None, "there is no ninth part");
     }
@@ -1791,7 +1909,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
-        let mut throttled = Network::build(&with, &pipes, &[]).expect("builds");
+        let mut throttled = build(&with, &pipes, &[]).expect("builds");
         throttled.press_valve();
         for _ in 0..10 {
             throttled.advance(0.016).expect("accepted");
@@ -1838,9 +1956,8 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
-        let mut direct =
-            Network::build(&parts, &direct_pipes, &[]).expect("builds without the silencer");
-        let mut silenced = Network::build(&parts, &silenced_pipes, &[]).expect("builds with it");
+        let mut direct = build(&parts, &direct_pipes, &[]).expect("builds without the silencer");
+        let mut silenced = build(&parts, &silenced_pipes, &[]).expect("builds with it");
         for network in [&mut direct, &mut silenced] {
             network.press_valve();
             for _ in 0..80 {
@@ -1884,7 +2001,7 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
-        let mut network = Network::build(&parts, &pipes, &[]).expect("the plug builds");
+        let mut network = build(&parts, &pipes, &[]).expect("the plug builds");
         network.press_valve();
         for _ in 0..80 {
             network.advance(0.016).expect("accepted");
@@ -1920,7 +2037,7 @@ mod tests {
         ];
         let terminations = [(PortAddress::new(1, "3"), PortTermination::Closed)];
         let mut network =
-            Network::build(&parts, &pipes, &terminations).expect("the plug on the port builds");
+            build(&parts, &pipes, &terminations).expect("the plug on the port builds");
         network.press_valve();
         for _ in 0..80 {
             network.advance(0.016).expect("accepted");
@@ -1977,8 +2094,8 @@ mod tests {
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let terminations = [(PortAddress::new(1, "2"), PortTermination::Closed)];
-        let without = Network::build(&parts, &pipes, &[]).expect("builds");
-        let with = Network::build(&parts, &pipes, &terminations).expect("still builds");
+        let without = build(&parts, &pipes, &[]).expect("builds");
+        let with = build(&parts, &pipes, &terminations).expect("still builds");
         assert_eq!(
             with.edges.len(),
             without.edges.len(),
@@ -2014,9 +2131,8 @@ mod tests {
             PortAddress::new(1, "3"),
             PortTermination::Vent { conductance },
         )];
-        let mut open = Network::build(&parts, &pipes, &[]).expect("the open exhaust builds");
-        let mut vented =
-            Network::build(&parts, &pipes, &terminations).expect("the silencer closure builds");
+        let mut open = build(&parts, &pipes, &[]).expect("the open exhaust builds");
+        let mut vented = build(&parts, &pipes, &terminations).expect("the silencer closure builds");
 
         let node = vented.port_nodes[1]["3"];
         assert!(
@@ -2090,7 +2206,7 @@ mod tests {
             PortAddress::new(1, "5"),
             PortTermination::Vent { conductance },
         )];
-        let network = Network::build(&parts, &pipes, &terminations).expect("both exhausts build");
+        let network = build(&parts, &pipes, &terminations).expect("both exhausts build");
         for port in ["3", "5"] {
             let node = network.port_nodes[1][port];
             assert!(
@@ -2164,7 +2280,7 @@ mod tests {
         }
         let parts = [valve];
         assert!(matches!(
-            Network::build(&parts, &[], &[]),
+            build(&parts, &[], &[]),
             Err(SolverError::TooManyValvePositions { .. })
         ));
     }
@@ -2174,13 +2290,169 @@ mod tests {
         let catalog = Catalog::builtin();
         let parts = [part(&catalog, "supply.compressor")];
         let pipes = [(PortAddress::new(0, "1"), PortAddress::new(7, "1"))];
-        let network = Network::build(&parts, &pipes, &[]).expect("still builds");
+        let network = build(&parts, &pipes, &[]).expect("still builds");
         assert!(network.cylinder().is_none());
+    }
+
+    #[test]
+    fn a_pipe_reports_the_flow_through_it() {
+        // The hose from the supply to the valve is the first document connection. Its
+        // reading must be the ISO 6358 flow through the hose's own conductance, between the
+        // pressures the model reports at its two ends, positive from `from` to `to`.
+        let mut network = chain();
+        network.press_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let flows = network.pipe_flows();
+        assert_eq!(flows.len(), 2, "one reading per hose of the document");
+        let read = flows[0].expect("the supply hose is modelled");
+        assert!(
+            read > 0.0,
+            "air runs from the supply to the valve, so the reading is positive, got {read}"
+        );
+
+        let supply = network
+            .port_pressure(0, "1")
+            .expect("the supply port is in the model");
+        let valve = network
+            .port_pressure(1, "1")
+            .expect("the valve's supply port is in the model");
+        let (upstream, downstream, sign) = if supply >= valve {
+            (supply, valve, 1.0)
+        } else {
+            (valve, supply, -1.0)
+        };
+        let reference = orifice::mass_flow(
+            PIPE_CONDUCTANCE,
+            upstream,
+            downstream,
+            network.temperature_kelvin,
+            DEFAULT_CRITICAL_RATIO,
+        )
+        .expect("the pressures are physical");
+        let expected = sign * reference / orifice::normal::AIR_DENSITY * 60_000.0;
+        assert!(
+            expected.abs() > 0.01,
+            "the test needs a real flow, got {expected} l/min"
+        );
+        assert!(
+            (read - expected).abs() / expected.abs() < 0.01,
+            "the hose reads {read:.2} l/min against the ISO 6358 flow {expected:.2} l/min \
+             between {:.2} bar and {:.2} bar",
+            (upstream - network.atmosphere_pa()) / 1e5,
+            (downstream - network.atmosphere_pa()) / 1e5
+        );
+
+        // Releasing the valve exhausts the chamber back through the second hose, whose
+        // `from` end is the valve: the reading has to turn negative.
+        network.release_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        let returning = network.pipe_flows()[1].expect("the working hose is modelled");
+        assert!(
+            returning < 0.0,
+            "air returns from the cylinder to the valve, so the reading is negative, got \
+             {returning}"
+        );
+    }
+
+    #[test]
+    fn a_zero_flow_pipe_reports_zero_after_a_step() {
+        // The gauge is a dead end: its hose carries nothing. A substep whose flow is exactly
+        // zero still stores the zero, because the store sits before the zero-flow `continue`.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+            part(&catalog, "gauge.pressure"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("the gauge builds");
+        // A reading from an earlier substep: the next substep has to overwrite it even
+        // though its flow is zero, or the hose keeps a stale pulse.
+        network.pipe_flows[2] = Some(0.75);
+        network.advance(0.016).expect("a frame is accepted");
+        assert_eq!(
+            network.pipe_flows()[2],
+            Some(0.0),
+            "the dead-end hose carried nothing, so its stored reading is zero, not the old one"
+        );
+    }
+
+    #[test]
+    fn a_dead_end_line_does_not_report_a_reversing_flow() {
+        // A supply line that ends at a closed valve port chatters: the explicit substep
+        // alternates between equal and opposite flows every 2 us. The reading is the
+        // frame's net, so a still line reports ~0 instead of an arrow that flips direction.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+        ];
+        let pipes = [(0, PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
+        let mut network = Network::build(&parts, &pipes, &[], 1).expect("it builds");
+        assert!(network.press_valve(), "the actuator is in the model");
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        network.release_valve();
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+        }
+        for _ in 0..5 {
+            network.advance(0.016).expect("accepted");
+            let reading = network.pipe_flows()[0].expect("the supply hose is modelled");
+            assert!(
+                reading.abs() < 0.01,
+                "a sealed line is still: it read {reading:.4} l/min, so the sheet would \
+                 draw air running backwards"
+            );
+        }
+    }
+
+    #[test]
+    fn a_skipped_pipe_reports_no_flow() {
+        // The second connection names a part the model does not have, so it contributes no
+        // edge. Its slot is `None`, not a stale or borrowed zero from the hose beside it.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(1, "3"), PortAddress::new(9, "1")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("the modelled hose still builds");
+        assert_eq!(network.pipe_flows().len(), 2);
+        assert_eq!(network.pipe_flows()[0], Some(0.0));
+        assert_eq!(network.pipe_flows()[1], None);
+
+        network.press_valve();
+        network.advance(0.016).expect("accepted");
+        let flows = network.pipe_flows();
+        assert_eq!(flows.len(), 2, "the skipped connection keeps its slot");
+        assert_eq!(
+            flows[1], None,
+            "a connection the model cannot represent has no reading"
+        );
+        assert!(
+            flows[0].is_some(),
+            "the hose beside it still reports its flow"
+        );
     }
 }
 
 #[cfg(test)]
 mod electrical_tests {
+    use super::tests::build;
     use super::*;
     use punchi_fluid_catalog::Catalog;
 
@@ -2206,9 +2478,8 @@ mod electrical_tests {
             (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
-        let mut pneumatic = Network::build(&base, &pipes, &[]).expect("builds");
-        let mut control =
-            Network::build(&with, &pipes, &[]).expect("builds with the control circuit");
+        let mut pneumatic = build(&base, &pipes, &[]).expect("builds");
+        let mut control = build(&with, &pipes, &[]).expect("builds with the control circuit");
         for network in [&mut pneumatic, &mut control] {
             network.press_valve();
             for _ in 0..40 {

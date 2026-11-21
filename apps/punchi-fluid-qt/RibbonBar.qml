@@ -1092,8 +1092,15 @@ Rectangle {
                         leftAligned: true
                         tone: "foreground"
                         onTriggered: {
-                            ribbon.invoke(modelData.id);
-                            ribbon.menuOpen = false;
+                            // Capture before the command runs: `invoke` may close the menu,
+                            // and the Repeater then destroys this delegate, so an id lookup
+                            // afterwards fails with "ribbon is not defined". The close must
+                            // also come after the invoke, or clearing the model destroys the
+                            // delegate before the command is dispatched.
+                            const owner = ribbon;
+                            const action = modelData.id;
+                            owner.invoke(action);
+                            owner.menuOpen = false;
                         }
                     }
                 }

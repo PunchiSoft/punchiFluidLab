@@ -56,6 +56,9 @@ fn a_hose_between_two_terminals_is_drawn_dotted() {
         class: LineClass::Working,
         pressure_ratio: 0.0,
         tube_od_hundredths: None,
+        flow_l_min: 0.0,
+        phase_s: 0.0,
+        animate: false,
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &pipes, &catalog, &Ink::print(), &[]);
@@ -112,6 +115,9 @@ fn a_pneumatic_hose_keeps_its_own_class() {
         class: LineClass::Working,
         pressure_ratio: 0.0,
         tube_od_hundredths: Some(1000),
+        flow_l_min: 0.0,
+        phase_s: 0.0,
+        animate: false,
     }];
     let mut surface = Recording::default();
     draw_placed(&mut surface, &placed, &pipes, &catalog, &Ink::print(), &[]);

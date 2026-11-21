@@ -239,7 +239,14 @@ void FluidSession::stepForward()
     // A step is taken from a pause, so the display does not lurch on while the user is
     // pressing it, and it always repaints even if the model had settled.
     setRunning(false);
-    advanceInternal(kFrameSeconds * m_speed, true);
+    const double step = kFrameSeconds * m_speed;
+    advanceInternal(step, true);
+    // `advanceInternal` only advances the pulse while the transport plays; a step is the
+    // one case where a paused transport advances it, by exactly the step's own seconds.
+    if (m_motion && step > 0.0) {
+        m_phaseS += step;
+        emit changed();
+    }
 }
 
 void FluidSession::runUntilChange()
@@ -305,7 +312,18 @@ void FluidSession::advanceInternal(double dt, bool forced)
         }
         return;
     }
+    // The air pulse follows the model's clock, not a second timer: it advances only while
+    // the transport plays and the desktop allows motion. A step adds its own seconds below,
+    // and pause, stop and restart leave the phase where each of them says.
+    bool phaseAdvanced = false;
+    if (m_running && m_motion && dt > 0.0) {
+        m_phaseS += dt;
+        phaseAdvanced = true;
+    }
     refresh(forced);
+    if (phaseAdvanced) {
+        emit changed();
+    }
 }
 
 void FluidSession::startSimulation()
@@ -318,6 +336,8 @@ void FluidSession::startSimulation()
     const bool wasEditing = m_editing;
     m_editing = false;
     m_steadyFrames = 0;
+    // Start clears the pulse: the run begins at t = 0, so the air begins at the source.
+    m_phaseS = 0.0;
     if (m_settled) {
         m_settled = false;
         emit settledChanged();
@@ -358,6 +378,8 @@ void FluidSession::stopSimulation()
         m_editing = true;
         emit modeChanged();
     }
+    // Stop leaves simulation: the sheet is still again, so the pulse goes back to the start.
+    m_phaseS = 0.0;
     emit changed();
 }
 
@@ -785,6 +807,8 @@ void FluidSession::restart()
     m_awaySince = 0.0;
     m_lastVelocity = 0.0;
     m_lastExtension = 0.0;
+    // Back at t = 0: the air pulse starts again from the source.
+    m_phaseS = 0.0;
     if (m_settled) {
         m_settled = false;
         emit settledChanged();
@@ -1004,6 +1028,9 @@ void FluidSession::applyPalette(const QPalette &palette)
 {
     m_tokens = tokensFrom(palette);
     m_contrast = measure(m_tokens);
+    // The desktop's animation factor decides whether the air pulse travels; the phase is
+    // kept, so turning motion back on resumes where it froze instead of jumping.
+    m_motion = m_tokens.motionMs > 0;
 
     if (m_session) {
         PfInk ink {};

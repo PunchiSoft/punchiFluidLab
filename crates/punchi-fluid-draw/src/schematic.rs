@@ -426,10 +426,10 @@ mod tests {
             })
             .collect();
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
-            (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
-        Network::build(&parts, &pipes, &[]).expect("the built-in circuit starts")
+        Network::build(&parts, &pipes, &[], pipes.len()).expect("the built-in circuit starts")
     }
 
     #[test]

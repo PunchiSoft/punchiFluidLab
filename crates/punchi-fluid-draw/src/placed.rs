@@ -15,6 +15,7 @@ use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
 
 mod closure;
 mod edge;
+mod flow;
 
 pub use closure::{CLOSURE_MM, closure_boxes, draw_closures};
 pub use edge::{EDGE_TIE_MM, port_edge_towards};
@@ -49,6 +50,18 @@ pub struct Pipe<'a> {
     /// `None` is an old sheet or an electrical wire; the width then stays the one the
     /// drawing always used. The size is stored, not measured: its physics is P-024b.
     pub tube_od_hundredths: Option<u16>,
+    /// Signed flow through the hose over the model's last frame, normal litres per minute.
+    ///
+    /// Positive runs from `from` to `to`. `0.0` is a still hose or a scene that was not
+    /// given a live model; the drawing reads it only to place the flow pulse.
+    pub flow_l_min: f32,
+    /// How far the flow pulse has travelled, in simulated seconds.
+    ///
+    /// The front end owns the clock, so the drawing never reads time: it maps the phase
+    /// onto the route. An export leaves it at zero and sets [`Self::animate`] to `false`.
+    pub phase_s: f32,
+    /// Whether the flow pulse travels. `false` freezes it for reduced motion and the print.
+    pub animate: bool,
 }
 use crate::control_drawing::{indicator_rays, moving_bar};
 use crate::symbol::{self, Ink};
@@ -366,6 +379,9 @@ fn draw_pipe(
     // The pattern is the class's, never a literal: a pilot or drain line is read by its
     // dashes before anyone reads its label.
     surface.line(&route.points, Stroke::new(width, colour).with_class(class));
+    if !route.electrical {
+        flow::draw_flow_marks(surface, &route.points, pipe, width, colour);
+    }
 }
 
 /// The width a pneumatic pipe draws at, from its nominal outside diameter.
@@ -626,6 +642,10 @@ mod selection_tests {
 #[cfg(test)]
 #[path = "placed_tube_tests.rs"]
 mod tube_tests;
+
+#[cfg(test)]
+#[path = "placed_flow_tests.rs"]
+mod flow_tests;
 
 #[cfg(test)]
 #[path = "placed_closure_tests.rs"]

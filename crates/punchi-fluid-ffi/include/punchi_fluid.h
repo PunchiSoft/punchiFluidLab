@@ -21,7 +21,7 @@ extern "C" {
 #define PF_MAX_CIRCUITS 32u
 #define PF_ERR_PANIC -3
 
-#define PF_ABI_VERSION 12u
+#define PF_ABI_VERSION 13u
 /* Standard atmosphere, for the gauge pressure the interface shows. */
 #define PF_ATMOSPHERE_PA 101325.0
 
@@ -212,8 +212,11 @@ int32_t pf_session_restart(PfSession *session);
  * window, the check and the printed page cannot measure different sheets. The
  * pointers in `out` borrow the session and stay valid until the next call to this
  * function or to pf_session_free(). Replays are cheap: one loop, no allocation.
+ * `phase_s` is how far the flow pulse has travelled in simulated seconds; `motion` is
+ * 0 when reduced motion freezes it and 1 when it travels.
  */
-int32_t pf_session_build_frame(PfSession *session, float pixels_per_mm, PfFrame *out);
+int32_t pf_session_build_frame(PfSession *session, float pixels_per_mm, float phase_s,
+                               int32_t motion, PfFrame *out);
 
 /* `1` when the point falls on the valve of the last built frame. */
 int32_t pf_session_hit_valve(const PfSession *session, float x_mm, float y_mm);

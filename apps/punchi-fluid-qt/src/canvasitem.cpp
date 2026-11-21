@@ -97,7 +97,8 @@ void SchematicItem::paint(QPainter *painter)
     const Fit placement = this->placement();
     PfFrame frame {};
     const int32_t code = pf_session_build_frame(
-        m_session->handle(), static_cast<float>(placement.pixelsPerMm), &frame);
+        m_session->handle(), static_cast<float>(placement.pixelsPerMm),
+        static_cast<float>(m_session->phase()), m_session->motionActive() ? 1 : 0, &frame);
     if (code != PF_OK) {
         return;
     }
