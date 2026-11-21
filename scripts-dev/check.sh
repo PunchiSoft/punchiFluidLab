@@ -18,6 +18,9 @@ cargo fmt --all --check
 # The documentation-only classifier decides whether CI runs the full gate or only the
 # documentation contracts. A wrong `docs` answer would skip the tests, so it is tested here.
 ./scripts-dev/test-changed-paths.sh
+# The documentation check is the only resolver of a skill-authored link: the fixture proves
+# the broken link, the missing catalog row, the wrong anchor and the path containment.
+./scripts-dev/test-check-docs.sh
 # `cargo` prevents cycles, not layering: the graph, the one home of `unsafe` and the file
 # budget are enforced here.
 ./scripts-dev/check-architecture.sh

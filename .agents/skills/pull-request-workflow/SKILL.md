@@ -198,7 +198,7 @@ attaches commits that are not yours, and the mistake stays invisible until revie
 
 ## Coordination
 
-[github-collaboration](github-collaboration/SKILL.md) owns the content rules — commit
+[github-collaboration](../github-collaboration/SKILL.md) owns the content rules — commit
 form, review, issues, releases. This skill owns the route: branch, gate, pull request,
 hand-over. The merge stays with the project owner. A capability itself is still gated by
 [capability-plan](../capability-plan/SKILL.md) and the parity ledger; the branch is how

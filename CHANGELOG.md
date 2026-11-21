@@ -23,6 +23,28 @@ publicación.
   `--selftest` conserva sus pasos de arrastre, clic de válvula y rectángulo de componente.
 - **Docs**: `docs/ui-ux.md` declara que un componente arrastrado toma la caja de las
   plantillas.
+### Skill de lenguaje visual y check de documentación — 2026-11-21
+
+- **Una skill propia, `punchi-visual-language`**, convierte la base visual en procedimiento
+  y no en una segunda fuente: enruta por tarea —un control, un token, un icono, la cinta, el
+  layout y una revisión— a `docs/ui-ux.md`, el adaptador del tema, ADR 0028,
+  `actionicons.cpp`, la skill `qt-adaptive-layout` y los nodos P-028/P-033, con “leer /
+  ejecutar / evidencia”, lista de comprobación, trampas y validación. No añade ningún ancho,
+  tamaño, contraste, movimiento ni geometría de icono: esos valores viven en su documento.
+  Los diagramas de la documentación son P-030 y la simbología ISO 1219 y su registro de
+  revisión son un nodo aparte: la skill no los toca.
+- **`check-docs.sh` valida la skill y los anclajes**: recorre `.agents/skills/**/*.md`,
+  comprueba que cada carpeta tiene su fila en `.agents/skills/README.md` y un `name` igual
+  al nombre de la carpeta, y resuelve cada enlace relativo contra el árbol. El `#fragment`
+  se valida contra los títulos del documento de destino, y un enlace no puede salir del
+  árbol: `../` fuera, una ruta absoluta o un symlink que apunte fuera fallan.
+- **`scripts-dev/test-check-docs.sh`** construye un árbol temporal y prueba los fallos que
+  la extensión debe detectar —enlace relativo roto, fila ausente, ancla incorrecta— además
+  de los escapes de ruta, sin tocar el árbol real; `check.sh` lo ejecuta junto al
+  clasificador de documentación.
+- **Documentación**: la skill y sus cinco referencias, la fila del catálogo, los nodos
+  P-030–P-033 en `docs/work-tree.md` y este registro. Sin cambio de runtime, de dibujo, de
+  símbolos ISO 1219 ni de la página exportada.
 
 ### Ventana: la cinta se ve a 1366×768 — 2026-11-21
 
