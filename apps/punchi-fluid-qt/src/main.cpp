@@ -1998,6 +1998,37 @@ int main(int argc, char *argv[])
                   QStringLiteral("start enters simulation"));
         });
 
+        // The air pulse's clock belongs to the session, not to a timer in the drawing: start
+        // clears it, a running model advances it, pause freezes it and stop or restart clears
+        // it again. Everything here reads the read-only `phase` property, so the check can
+        // not pass by reaching into a private value.
+        steps->push_back([state, check] {
+            state->session->startSimulation();
+            check(state->session->phase() == 0.0,
+                  QStringLiteral("animation: start clears the phase"));
+            state->session->advance(0.25);
+            const double running = state->session->phase();
+            std::fprintf(stderr, "selftest: animation motion=%d phase=%.2f\n",
+                         state->session->motionActive() ? 1 : 0, running);
+            check(running > 0.0 || !state->session->motionActive(),
+                  QStringLiteral("animation: running advances the phase"));
+            state->session->pauseSimulation();
+            const double frozen = state->session->phase();
+            state->session->advance(0.25);
+            check(state->session->phase() == frozen,
+                  QStringLiteral("animation: pause freezes the phase"));
+            state->session->stopSimulation();
+            check(state->session->phase() == 0.0,
+                  QStringLiteral("animation: stop clears the phase"));
+            state->session->startSimulation();
+            state->session->advance(0.25);
+            state->session->restart();
+            check(state->session->phase() == 0.0,
+                  QStringLiteral("animation: restart clears the phase"));
+            // Leave the transport running for the gesture block that follows.
+            state->session->startSimulation();
+        });
+
         // Simulation: the click is a pushbutton. It opens while held and closes on release.
         steps->push_back([state, check, send] {
             send(QEvent::MouseButtonPress, state->valveScene, Qt::LeftButton, Qt::LeftButton);
@@ -2170,7 +2201,7 @@ int main(int argc, char *argv[])
             state->session->closeInspector();
             QCoreApplication::processEvents();
             PfFrame frame {};
-            pf_session_build_frame(state->session->handle(), 4.0F, &frame);
+            pf_session_build_frame(state->session->handle(), 4.0F, 0.0F, 0, &frame);
             const QPointF start = toScene(valveCentre());
             const QPointF end = start + QPointF(60.0, 0.0);
             sendWith(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton,
@@ -3316,7 +3347,7 @@ int main(int argc, char *argv[])
                 PfFrame frame {};
                 int readings = 0;
                 bool positive = false;
-                if (pf_session_build_frame(state->session->handle(), 4.0, &frame)
+                if (pf_session_build_frame(state->session->handle(), 4.0, 0.0, 0, &frame)
                     == PF_OK) {
                     for (uint32_t i = 0; i < frame.calls_len; ++i) {
                         const PfCall &call = frame.calls[i];
@@ -3798,7 +3829,7 @@ int main(int argc, char *argv[])
             }
             PfFrame frame {};
             bool charted = false;
-            if (pf_session_build_frame(state->session->handle(), 4.0, &frame)
+            if (pf_session_build_frame(state->session->handle(), 4.0, 0.0, 0, &frame)
                 == PF_OK) {
                 for (uint32_t i = 0; i < frame.calls_len; ++i) {
                     const PfCall &call = frame.calls[i];
@@ -5547,6 +5578,69 @@ int main(int argc, char *argv[])
             QCoreApplication::sendEvent(state->window, &tabThree);
             check(state->window->activeFocusItem() == plus,
                   QStringLiteral("home: Tab reaches the plus"));
+        });
+
+        // A hose to a dead end carries no flow, so it carries no pulse even while the
+        // transport runs and the phase advances. The fixture is two components and one
+        // hose, so the only accent-coloured line the frame could contain is the pulse.
+        steps->push_back([state, check] {
+            const auto catalogIndex = [state](const QString &id) {
+                const QVariantList rows = state->session->catalog();
+                for (const QVariant &entry : rows) {
+                    const QVariantMap row = entry.toMap();
+                    if (row.value(QStringLiteral("id")).toString() == id) {
+                        return row.value(QStringLiteral("index")).toInt();
+                    }
+                }
+                return -1;
+            };
+            state->session->stopSimulation();
+            state->session->newDocument();
+            const int compressor = catalogIndex(QStringLiteral("supply.compressor"));
+            const int gauge = catalogIndex(QStringLiteral("gauge.pressure"));
+            check(compressor >= 0 && gauge >= 0,
+                  QStringLiteral("animation: the dead-end fixture exists"));
+            if (compressor < 0 || gauge < 0) {
+                return;
+            }
+            const int source = state->session->placeComponent(compressor, 30.0, 40.0);
+            const int dead_end = state->session->placeComponent(gauge, 120.0, 40.0);
+            check(source >= 0 && dead_end >= 0,
+                  QStringLiteral("animation: the dead-end hose is placed"));
+            if (source < 0 || dead_end < 0) {
+                return;
+            }
+            check(pf_session_connect(state->session->handle(), source, "1", dead_end, "1")
+                      == PF_OK,
+                  QStringLiteral("animation: the gauge is connected as a dead end"));
+            // A placed component is selected, and a selected symbol is drawn in the accent;
+            // clear the selection so the only accent the frame can carry is the pulse.
+            state->session->select(-1);
+            state->session->startSimulation();
+            for (int i = 0; i < 20; ++i) {
+                state->session->advance(0.016);
+            }
+            PfFrame frame {};
+            const int32_t code = pf_session_build_frame(
+                state->session->handle(), 4.0F, static_cast<float>(state->session->phase()),
+                state->session->motionActive() ? 1 : 0, &frame);
+            check(code == PF_OK, QStringLiteral("animation: the dead-end frame is built"));
+            const QColor accent = state->session->accent().lighter(150);
+            const auto pulse_rgb = [&accent](const PfRgb &rgb) {
+                return rgb.r == static_cast<uint8_t>(accent.red())
+                       && rgb.g == static_cast<uint8_t>(accent.green())
+                       && rgb.b == static_cast<uint8_t>(accent.blue());
+            };
+            bool pulse = false;
+            if (code == PF_OK) {
+                for (uint32_t i = 0; i < frame.calls_len; ++i) {
+                    const PfCall &call = frame.calls[i];
+                    if (call.kind == PF_KIND_LINE && pulse_rgb(call.stroke)) {
+                        pulse = true;
+                    }
+                }
+            }
+            check(!pulse, QStringLiteral("animation: a dead-end draws no pulse"));
         });
 
         QTimer::singleShot(400, window, [state, steps] {

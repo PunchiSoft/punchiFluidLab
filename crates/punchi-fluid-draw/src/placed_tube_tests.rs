@@ -38,6 +38,9 @@ fn pipe(from: usize, from_port: &'static str, to: usize, to_port: &'static str) 
         pressure_ratio: 0.0,
         class: LineClass::Working,
         tube_od_hundredths: None,
+        flow_l_min: 0.0,
+        phase_s: 0.0,
+        animate: false,
     }
 }
 

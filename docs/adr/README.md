@@ -45,6 +45,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0031](0031-the-program-opens-on-a-start-view.md) | The program opens on a start view, and a new project is empty | accepted | 2026-11-19 |
 | [0032](0032-a-connection-carries-its-tube-size.md) | A connection carries its tube size | accepted | 2026-11-20 |
 | [0033](0033-a-port-closure-belongs-to-the-port.md) | A port closure belongs to the port | accepted; amends [0016](0016-a-termination-is-a-component.md) | 2026-11-21 |
+| [0034](0034-the-sheet-animates-the-models-flow.md) | The sheet animates the model's flow, not a decoration | accepted | 2026-11-21 |
 
 ## When a decision needs an ADR
 

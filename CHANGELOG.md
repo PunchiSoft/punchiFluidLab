@@ -6,6 +6,52 @@ publicación.
 
 ## Unreleased
 
+### Caudal: el aire se ve moverse por los tubos — 2026-11-21
+
+- **La hoja dibuja el aire que el modelo mueve como una corriente de puntas**: varias flechas
+  sólidas espaciadas a lo largo del tubo, cada una sobre un trazo corto del color del propio
+  tubo dibujado 1,7 veces más grueso que la línea para que se distinga. Mientras una sale por
+  el sumidero, otra entra por la fuente, así que el tubo nunca queda vacío con el aire en
+  marcha; la retícula es exacta y las marcas no se agrupan. El signo del caudal invierte el
+  sentido y un tubo sin caudal no dibuja nada: un final cerrado con presión se queda quieto.
+  Una marca única se descartó con la grabación del 2026-11-21, que la cazó saltando del
+  sumidero a la fuente y dejando el tubo en blanco entre medias. La decisión está en la
+  [ADR 0034](docs/adr/0034-the-sheet-animates-the-models-flow.md).
+- **La lectura es el caudal neto del fotograma, no el signo de un subpaso**: un tubo que
+  termina en un puerto cerrado oscilaba entre +7,6 y −7,6 l/min en subpasos consecutivos, y
+  como el dibujo leía el último, la corriente de flechas cambiaba de sentido a 500 Hz y
+  parecía que el aire retrocedía. El solver acumula los subpasos de la llamada y publica la
+  media: en reposo la lectura queda en ±0,004 l/min, por debajo del umbral del dibujo, y con
+  el aire en marcha conserva su signo y su magnitud. Prueba nueva
+  `a_dead_end_line_does_not_report_a_reversing_flow`.
+- **El aire se mueve con el caudal**: la velocidad de la corriente sigue `\|flow\|` entre 6 y
+  45 mm/s, así que un caudal pequeño va despacio y uno fuerte corre; un tubo largo tarda más
+  en cruzarse, como debe. La escala es de legibilidad, no la velocidad física del aire, y el
+  orden y el sentido son los del modelo.
+- **El reloj es del armazón**: la fase es estado de vista —arrancar la pone a cero, el tick
+  de 16 ms la avanza mientras el modelo corre, pausar la congela, un paso suma sus segundos y
+  parar o reiniciar la limpian— y nunca entra en el documento, el formato, el deshacer ni la
+  marca de modificado.
+- **Movimiento reducido y papel congelan una punta**: con `AnimationDurationFactor = 0`, y en
+  el PDF, PNG y SVG, cada tubo con aire lleva una sola punta quieta en la mitad del trayecto
+  y sin trazo; sin modelo vivo la página no inventa una dirección.
+- **ABI 13**: `pf_session_build_frame` recibe `phase_s` y `motion` —y rechaza cualquier valor
+  de `motion` que no sea 0 o 1 en vez de adivinar—, `Pipe` lleva `flow_l_min`, `phase_s` y
+  `animate`, y la exportación pasa los caudales del último fotograma con `motion = 0`.
+- **Evidencia**: pruebas de solver (`a_pipe_reports_the_flow_through_it`,
+  `a_zero_flow_pipe_reports_zero_after_a_step`, `a_skipped_pipe_reports_no_flow`), de dibujo
+  (`the_stream_never_leaves_the_hose_empty`,
+  `the_marks_are_ordered_inside_the_hose_and_do_not_overlap`,
+  `the_stream_moves_with_the_phase`, `the_sign_reverses_the_stream`,
+  `a_still_hose_draws_nothing`, `reduced_motion_keeps_one_arrowhead_in_the_middle`,
+  `a_short_route_draws_nothing`, `the_pace_comes_from_the_hose_and_the_flow_only_hurries_it`,
+  `every_mark_draws_a_thick_stroke_with_its_head`,
+  `a_drawn_mark_keeps_the_line_class_and_the_numerals`,
+  `a_page_without_flow_draws_no_mark`), del ABI
+  (`a_printed_page_carries_the_flow_and_freezes_it`,
+  `the_frame_accepts_a_phase_and_a_motion_flag_and_refuses_any_other_flag`), los pasos
+  `animation:` de `--selftest` y las capturas de la corriente en la hoja.
+
 ### Inicio: la página llena la ventana y cuenta lo que ofrece — 2026-11-21
 
 - **La página de Inicio llena la ventana hasta el suelo de 1366×768**: la región restaba el

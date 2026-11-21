@@ -386,7 +386,7 @@ pub struct PfAbi {
 }
 
 /// The ABI layout this build produces.
-pub const PF_ABI_VERSION: u32 = 12;
+pub const PF_ABI_VERSION: u32 = 13;
 
 fn rgb(colour: Option<Colour>) -> PfRgb {
     colour.map_or(PfRgb::BLACK, PfRgb::from_colour)
@@ -1094,6 +1094,9 @@ impl PfSession {
                 system: None,
                 placement_part: &[],
                 circuit: document.active_circuit(),
+                flows: &[],
+                phase_s: 0.0,
+                motion: false,
             },
             &empty_charts,
             &closures,
@@ -1364,7 +1367,7 @@ impl PfSession {
             // tells the user about it, not a silent half-model.
         }
         let mut pipes = Vec::new();
-        for connection in self.document.connections() {
+        for (index, connection) in self.document.connections().iter().enumerate() {
             if connection.circuit != circuit {
                 continue;
             }
@@ -1378,10 +1381,14 @@ impl PfSession {
                 continue;
             };
             pipes.push((
+                index,
                 PortAddress::new(from, connection.from.port.clone()),
                 PortAddress::new(to, connection.to.port.clone()),
             ));
         }
+        // The flow vector is indexed by the document's whole connection list, not by the
+        // filtered `pipes`: a connection the model cannot represent keeps its `None` slot.
+        let pipe_count = self.document.connections().len();
         // A closure is a port termination, not a placement of its own. Only an exhaust
         // gets one: a working or supply port is already sealed without a pipe, so a plug
         // there would be a silent no-op. An unresolved closure adds no edge; the check is
@@ -1422,7 +1429,7 @@ impl PfSession {
         }
         self.placement_part = part_of;
         self.placement_valve = valve_of;
-        match Network::build(&parts, &pipes, &terminations) {
+        match Network::build(&parts, &pipes, &terminations, pipe_count) {
             Ok(network) if network.cylinder().is_some() => {
                 self.system = Some(network);
                 self.error = CString::default();
@@ -1923,7 +1930,7 @@ impl PfSession {
     }
 
     /// Builds the frame the front end draws.
-    fn build_frame(&mut self, scale: f32) {
+    fn build_frame(&mut self, scale: f32, phase_s: f32, motion: bool) {
         // The sheet decides the area, so the window and the check cannot disagree about
         // where the paper ends.
         let (width, height) = self.document.sheet().size_mm();
@@ -1962,6 +1969,9 @@ impl PfSession {
                 system: system.as_ref(),
                 placement_part,
                 circuit,
+                flows: system.as_ref().map_or(&[], Network::pipe_flows),
+                phase_s,
+                motion,
             },
             charts,
             &closures,
@@ -3304,6 +3314,10 @@ pub unsafe extern "C" fn pf_session_describe_valve(
 /// The paper is the document's: the front end does not pass an area, so the window, the
 /// check and the printed page cannot measure different sheets.
 ///
+/// `phase_s` is how far the flow pulse has travelled, in simulated seconds, and `motion`
+/// is `0` when reduced motion freezes it or `1` when it travels. Both are view values: the
+/// core runs no clock and the document stores neither.
+///
 /// The pointers in `out` borrow the session: they stay valid until the next call to this
 /// function or to [`pf_session_free`]. The function allocates only when the drawing grew.
 ///
@@ -3314,15 +3328,22 @@ pub unsafe extern "C" fn pf_session_describe_valve(
 pub unsafe extern "C" fn pf_session_build_frame(
     session: *mut PfSession,
     pixels_per_mm: f32,
+    phase_s: f32,
+    motion: i32,
     out: *mut PfFrame,
 ) -> i32 {
     guard(|| {
+        // The flag is not a truthiness test: a caller that passes 2 meant something else,
+        // and guessing would animate a still scene.
+        if motion != 0 && motion != 1 {
+            return PF_ERR_MODEL;
+        }
         // SAFETY: the caller upholds both contracts.
         let (Some(session), Some(out)) = (unsafe { borrow(session) }, unsafe { out.as_mut() })
         else {
             return PF_ERR_NULL;
         };
-        session.build_frame(pixels_per_mm);
+        session.build_frame(pixels_per_mm, phase_s, motion == 1);
         *out = PfFrame {
             calls: session.calls.as_ptr(),
             calls_len: session.calls.len() as u32,
@@ -4940,11 +4961,7 @@ impl PfSession {
             let (placed, pipes) = scene(
                 &self.document,
                 &self.catalog,
-                SceneState {
-                    system: self.system.as_ref(),
-                    placement_part: &self.placement_part,
-                    circuit,
-                },
+                SceneState::printed(self.system.as_ref(), &self.placement_part, circuit),
                 &self.charts,
                 &closures,
                 ContactStates {
@@ -7231,6 +7248,38 @@ struct SceneState<'a> {
     circuit: u32,
     system: Option<&'a Network>,
     placement_part: &'a [Option<usize>],
+    /// Flow of every document connection over the model's last frame, or empty when there
+    /// is no live model. The pipe index is the document's connection index, not the drawn
+    /// one.
+    flows: &'a [Option<f64>],
+    /// How far the flow pulse has travelled, in simulated seconds; the front end owns it.
+    phase_s: f32,
+    /// Whether the flow pulse travels at all: reduced motion and the print freeze it.
+    motion: bool,
+}
+
+impl<'a> SceneState<'a> {
+    /// The state of a printed page: the model's last readings, frozen.
+    ///
+    /// The direction of the air is information a sheet keeps when it is printed, so the page
+    /// carries the model's flow slice; the travel is motion a page cannot have, so the phase
+    /// is zero and `motion` is false, and the drawing freezes one solid arrowhead per hose
+    /// that carries air. A document with no live model has no reading, and the page then
+    /// draws no mark: it never invents a direction.
+    fn printed(
+        engine: Option<&'a Network>,
+        placement_part: &'a [Option<usize>],
+        circuit: u32,
+    ) -> Self {
+        Self {
+            circuit,
+            system: engine,
+            placement_part,
+            flows: engine.map_or(&[], Network::pipe_flows),
+            phase_s: 0.0,
+            motion: false,
+        }
+    }
 }
 
 /// The run state a frame reads for its moving contacts: the clicked buttons and the relays
@@ -7283,6 +7332,9 @@ fn scene<'a>(
         circuit,
         system,
         placement_part,
+        flows,
+        phase_s,
+        motion,
     } = state;
     // Scene index of every document placement, so a pipe names the end it draws while the
     // selection and the hit test keep using the document index.
@@ -7334,8 +7386,9 @@ fn scene<'a>(
     let pipes: Vec<Pipe<'a>> = document
         .connections()
         .iter()
-        .filter(|connection| connection.circuit == circuit)
-        .filter_map(|connection| {
+        .enumerate()
+        .filter(|(_, connection)| connection.circuit == circuit)
+        .filter_map(|(connection_index, connection)| {
             let from_document = document.index_of(connection.from.placement)?;
             let to_document = document.index_of(connection.to.placement)?;
             if document.placements().get(from_document)?.circuit != circuit
@@ -7362,6 +7415,15 @@ fn scene<'a>(
                     placement_part.get(from_document).copied().flatten(),
                     &connection.from.port,
                 ),
+                // The flow vector is indexed by the document's connection list, before the
+                // circuit and drawing filters, so a skipped hose keeps its own slot.
+                flow_l_min: flows
+                    .get(connection_index)
+                    .copied()
+                    .flatten()
+                    .unwrap_or(0.0) as f32,
+                phase_s,
+                animate: motion,
             })
         })
         .collect();
@@ -9252,5 +9314,60 @@ mod chart_tests {
             2,
             "an empty ring is still usable"
         );
+    }
+}
+
+#[cfg(test)]
+mod scene_tests {
+    use super::*;
+
+    fn part(catalog: &Catalog, id: &str) -> NetworkPart {
+        let definition = catalog.get(id).expect("the built-in catalog has it");
+        NetworkPart::from_definition(definition).expect("the definition makes a part")
+    }
+
+    #[test]
+    fn a_printed_page_carries_the_flow_and_freezes_it() {
+        // A page is a drawing like any other, so it reads the model's own reading: a printed
+        // hose says which way the air went. It freezes that reading, because paper cannot
+        // travel, and with no model there is no reading to print.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
+        ];
+        let mut network = Network::build(&parts, &pipes, &[], pipes.len()).expect("it builds");
+        assert!(network.press_valve(), "the actuator is in the model");
+        network.advance(0.016).expect("a frame is accepted");
+
+        let printed = SceneState::printed(Some(&network), &[], 0);
+        assert_eq!(
+            printed.flows.len(),
+            2,
+            "one reading per document connection, not per drawn hose"
+        );
+        let flowing = printed.flows[0].expect("the supply hose is modelled");
+        assert!(
+            flowing.abs() > 0.0,
+            "the valve is open, so the page has a direction to print"
+        );
+        assert!(!printed.motion, "a printed page never travels");
+        assert!(
+            printed.phase_s.abs() < f32::EPSILON,
+            "the page has no clock of its own"
+        );
+        assert!(
+            printed.system.is_some(),
+            "pressures and positions still come from the model"
+        );
+
+        let no_model = SceneState::printed(None, &[], 0);
+        assert!(no_model.flows.is_empty(), "no model means no reading");
+        assert!(!no_model.motion, "a page without a model is still paper");
     }
 }

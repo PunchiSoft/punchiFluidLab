@@ -81,6 +81,7 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
 | P-021a | A plug or a silencer is dropped on the sheet instead of fitted to the port | `in progress` | [P-021a](#p-021a--a-port-closure-belongs-to-the-port) on `feat/port-closures`: the per-port map, the menu, the drawing, the parts row, format 14 and ABI 12 |
 | P-021b | The silencer + regulator chain cannot be drawn | `planned` | [P-021b](#p-021b--the-flow-regulator-and-the-silencer-chain): the flow regulator, the chain and the full menu, with the next free format |
 | P-022 | The branch of a tee bends instead of staying straight | `in progress` | `fix/tee-gauge-route`: a junction port takes its edge from the component or pipe it faces, the check passes the same hint, and the selftest tee probe and the captures prove the straight branch |
+| P-023 | The air the model moves is invisible on the sheet | `in progress` | [P-023](#p-023--the-sheet-animates-the-air-with-a-stream-of-solid-arrowheads) on `feat/air-flow-animation`: the solver's per-hose signed flow, the stream of arrowheads, the session phase, the reduced-motion and printed arrowhead, and the captures |
 | P-024a | A pneumatic connection does not carry its tube size | `in progress` | [P-024a](#p-024a--a-pneumatic-connection-carries-its-tube-size) on `feat/tube-size`: format 13, the width series, the parts rows, the Conducto gallery; the physics is P-024b |
 | P-025 | The supply starts at 6 bar instead of the industry's 4 bar | `in progress` | [P-025](#p-025--the-supply-starts-at-4-bar) on `chore/supply-four-bar`: the three built-in supplies, the templates, the example, the tests and the docs; an explicit per-placement pressure still wins |
 | P-026 | The electrical connection does not work as planned | `deferred` | [P-026](#p-026--the-electrical-connection-does-not-work-as-planned): the owner's decision of 2026-11-20; not in the current queue and not touched by P-024a |
@@ -210,6 +211,98 @@ A node is `reported` until it has a plan, `planned` until the owner approves the
   `--check-qml`, `--check-theme` and `--check-icons` pass; `./scripts-dev/check.sh` is green;
   the light/dark and 300 dpi captures show the straight branch; the owner confirms the diff.
 - **State**: `in progress` on `fix/tee-gauge-route`; `done` after the owner merges.
+
+### P-023 — The sheet animates the air with a stream of solid arrowheads
+
+- **Problem**: the circuit moves but the air that moves it is invisible: the interactive
+  sheet colours a hose by pressure and draws no flow at all, the solver computes the signed
+  flow of every edge and discards it, and only the fixed example draws an arrowhead. The
+  owner wants the sheet to show it, and asked on 2026-11-21 that the **solid arrowhead** be
+  kept on the travelling mark: a stroke alone says nothing on a still page.
+- **Evidence**: the owner's request of 2026-11-20 (a travelling mark, not a row of chevrons)
+  and of 2026-11-21 (“quiero ver la punta de la flecha”); the approved spec
+  `specs/air-flow-animation.md`; the captures
+  `specs/evidence/20261121-p023-phase-1.png`, `-phase-2.png` and `-reduced-motion.png`, which
+  still show the stroke before the head and are to be repeated with it; the solver, draw,
+  ABI and `--selftest` tests named below.
+- **Touches**: `crates/punchi-fluid-solver/src/network.rs` (the `pipe` edge index, the
+  document-indexed `pipe_flows` store and borrowed accessor, `Network::build(...,
+  pipe_count)`, the P-021a terminations and the tests),
+  `crates/punchi-fluid-draw/src/placed.rs` (the `Pipe` fields, the pulse and its head, the
+  `Vec`-free segment), `crates/punchi-fluid-draw/src/placed_flow_tests.rs` (the pulse and
+  head tests), `crates/punchi-fluid-draw/src/symbol.rs` (`draw_flow_arrow`, unchanged and
+  reused), `crates/punchi-fluid-draw/src/placed_electrical_tests.rs`,
+  `placed_tube_tests.rs`, `placed_tests.rs`, `schematic.rs` and
+  `crates/punchi-fluid-check/src/tests.rs` (the `Pipe` literals and the `Network::build`
+  count), `crates/punchi-fluid-ffi/src/lib.rs` (the enumerated `rebuild_model`,
+  `SceneState`/`scene`, `SceneState::printed`, the frame/export/template/`bounds_placed`/
+  `parts_list` callers and the scene tests), `crates/punchi-fluid-ffi/include/punchi_fluid.h`
+  (`phase_s`/`motion`, `PF_ABI_VERSION` 13) and `tests/abi.rs`,
+  `apps/punchi-fluid-qt/src/session.cpp`/`.h` (the phase and motion state, the read-only
+  `phase` property, start/pause/stop/step), `Main.qml` (the existing 16 ms tick),
+  `canvasitem.cpp`, `src/main.cpp` (the `animation:` selftest steps and the frame calls),
+  `docs/adr/0034-the-sheet-animates-the-models-flow.md`, `docs/adr/README.md`,
+  `docs/ui-ux.md`, `docs/work-queue.md` §10a, `docs/capabilities.md`, `docs/symbology.md`,
+  this register and `CHANGELOG.md`. It changes no document field, format version, diagram,
+  symbol, ISO 1219 geometry, sheet, zoom or export composition.
+- **Options**:
+  1. Chevrons spaced along the route, as work-queue 10a was first written. **Pro**: no head
+     to draw. **Con**: several marks per hose cost more per frame and give no reading a
+     single pulse with a head does not give.
+  2. Guess the flow from the pressure difference. **Pro**: no solver change. **Con**: a dead
+     end with pressure has a difference and no flow, so the mark would lie; a closed valve
+     would keep moving.
+  3. A per-frame particle system. **Pro**: a richer motion. **Con**: allocations and
+     unbounded state on the frame path.
+  4. Expose the solver's signed flow, carry it as a value with a phase, and overlay a short
+     stroke **carrying the existing solid arrowhead** on the route the drawing already
+     builds. **Pro**: the model is the only source, the head is ISO 1219-1 and our own
+     primitive, the phase is a scalar, and the page can freeze the one head that keeps the
+     direction. **Con**: an ABI 13 frame change and a `Pipe` field set to update at every
+     literal.
+- **Decision**: option 4, approved by the owner on 2026-11-20 and confirmed with the arrowhead
+  on 2026-11-21. The flow vector is indexed by the **document connection list**, enumerated
+  before the circuit and drawing filters, so a skipped hose keeps its own `None` slot
+  (`Some(0.0)` is a modelled hose with no flow). The C++ `FluidSession` owns the phase: start
+  clears it, the existing 16 ms tick advances it, pause freezes it, a step adds the step's
+  seconds, and stop or restart clears it; the solver, the ABI and the drawing run no clock.
+  `draw_pipe` keeps the line class and overlays a **stream** of 4 mm strokes **in the hose's
+  own colour** — never the accent, which means selection — drawn 1.7× the hose's width so
+  they read against the line, each with `symbol::draw_flow_arrow` on its leading end, from
+  `from` for a positive flow and `to` for a negative one. The marks are an exact lattice
+  (two to eight per hose, 14 mm apart where it fits), so an arrowhead enters while another
+  leaves and no frame is empty. The stream's speed follows `|flow|` between 6 and 45 mm/s, so
+  a trickle drifts and a strong current runs; the scale is readability, not the physical air
+  speed, and the ordering is the model's. The solver publishes the **frame's net flow**, not the last
+  substep's: the owner's second recording caught the arrows reversing at 500 Hz on a sealed
+  line, and `a_dead_end_line_does_not_report_a_reversing_flow` fixes it. Zero flow, a route
+  shorter than a mark plus its clearance, and an electrical pipe draw nothing. Reduced motion
+  draws one static arrowhead at the middle of the route without advancing the phase, and
+  `SceneState::printed` passes the model's flows with phase zero and no motion, so the page
+  keeps one frozen arrowhead per hose with air. **ADR 0034** records it; **ABI 13** adds the
+  frame signature; no document or format change.
+- **Stages**: one branch, `feat/air-flow-animation` — (1) the solver's document-indexed flow
+  and its three tests (**green**); (2) the `Pipe` fields, the pulse, the solid head and the
+  draw tests (**green**); (3) the ABI 13 frame, the session phase and motion, the frozen
+  arrowhead on the printed page, the selftest steps and the captures (**in progress**);
+  (4) `docs/capabilities.md`, this node, `CHANGELOG.md` and the gate.
+- **Done when**: the solver tests (`a_pipe_reports_the_flow_through_it`,
+  `a_zero_flow_pipe_reports_zero_after_a_step`, `a_skipped_pipe_reports_no_flow`), the draw
+  tests (`the_stream_never_leaves_the_hose_empty`,
+  `the_marks_are_ordered_inside_the_hose_and_do_not_overlap`,
+  `the_stream_moves_with_the_phase`, `the_sign_reverses_the_stream`,
+  `a_still_hose_draws_nothing`, `reduced_motion_keeps_one_arrowhead_in_the_middle`,
+  `a_short_route_draws_nothing`,
+  `the_pace_comes_from_the_hose_and_the_flow_only_hurries_it`,
+  `every_mark_draws_a_thick_stroke_with_its_head`,
+  `a_drawn_mark_keeps_the_line_class_and_the_numerals`,
+  `a_page_without_flow_draws_no_mark`) and
+  the ABI tests (`the_frame_accepts_a_phase_and_a_motion_flag_and_refuses_any_other_flag`,
+  `a_printed_page_carries_the_flow_and_freezes_it`) are green; the `animation:` selftest steps
+  pass; `--check-qml`, `--check-theme` and `./scripts-dev/check.sh` exit 0; the captures show
+  the head at two phases, the frozen head under reduced motion and the head on a printed
+  page; no allocation per frame is confirmed by review; and the owner confirms the diff.
+- **State**: `in progress` on `feat/air-flow-animation`; `done` after the owner merges.
 
 ### P-024a — A pneumatic connection carries its tube size
 

@@ -427,6 +427,9 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
                 pressure_ratio: 0.0,
                 class: connection.class(),
                 tube_od_hundredths: connection.tube_od_hundredths(),
+                flow_l_min: 0.0,
+                phase_s: 0.0,
+                animate: false,
             })
         })
         .collect();

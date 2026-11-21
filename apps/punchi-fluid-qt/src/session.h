@@ -160,6 +160,8 @@ class FluidSession : public QObject
     /// change invalidates the image cache instead of drawing the previous tint.
     Q_PROPERTY(int themeRevision READ themeRevision NOTIFY themeRevisionChanged)
     Q_PROPERTY(bool settled READ settled NOTIFY settledChanged)
+    /// How far the flow pulse has travelled, in simulated seconds; the front end owns the clock.
+    Q_PROPERTY(double phase READ phase NOTIFY changed)
 
     Q_PROPERTY(QColor background READ background NOTIFY changed)
     Q_PROPERTY(QColor panel READ panel NOTIFY changed)
@@ -356,6 +358,10 @@ public:
     /// which is how an idle simulator ends up looking like a busy GPU.
     bool settled() const { return m_settled; }
     bool untilChangeRunning() const { return m_untilChange; }
+
+    /// Where the air pulse is on every hose, in simulated seconds; `motionActive` is the desktop's answer.
+    double phase() const { return m_phaseS; }
+    bool motionActive() const { return m_motion; }
 
     QVariantList catalog() const { return m_catalog; }
     QVariantList catalogGroups() const { return m_catalogGroups; }
@@ -764,6 +770,8 @@ private:
     int m_themeRevision = 0;
     bool m_settled = false;
     bool m_running = false;
+    double m_phaseS = 0.0; ///< Simulated seconds the flow pulse has travelled; view state.
+    bool m_motion = false; ///< `motionMs > 0` from the theme; reduced motion freezes the pulse.
     QTimer m_untilChangeTimer;
     bool m_untilChange = false;
     int m_untilChangeFrames = 0;

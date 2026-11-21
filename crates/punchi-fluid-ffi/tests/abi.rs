@@ -293,7 +293,7 @@ fn the_frame_carries_the_drawing_and_a_text_run() {
     let session = session();
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
-    let code = unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) };
+    let code = unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) };
     assert_eq!(code, PF_OK);
     assert!(
         frame.calls_len > 10,
@@ -329,7 +329,7 @@ fn the_hit_test_uses_the_layout_of_the_last_frame() {
     let session = session();
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
-    unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) };
+    unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) };
 
     // The valve's own box is where the hit test must answer, whatever paper the document
     // uses; the front end asks for that box to draw its hover ring.
@@ -490,7 +490,7 @@ fn a_new_document_is_an_empty_sheet_and_the_example_loads_on_request() {
     let mut frame = PfFrame::default();
     // SAFETY: live session and a writable frame.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 1.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 1.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     assert_eq!(unsafe { pf_session_component_count(session) }, 0);
@@ -640,7 +640,7 @@ fn the_sheet_is_a4_landscape_and_a_paper_change_is_one_undo() {
     let mut frame = PfFrame::default();
     // SAFETY: live session and a writable frame.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     assert_eq!(
@@ -1407,7 +1407,7 @@ fn a_component_dropped_on_the_sheet_can_be_moved_and_undone() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output. Seeding happens on the first frame.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: live session.
@@ -1837,7 +1837,38 @@ fn the_closure_definitions_come_from_the_session_catalog() {
 
 #[test]
 fn the_abi_version_is_the_one_the_header_declares() {
-    assert_eq!(PF_ABI_VERSION, 12);
+    assert_eq!(PF_ABI_VERSION, 13);
+}
+
+#[test]
+fn the_frame_accepts_a_phase_and_a_motion_flag_and_refuses_any_other_flag() {
+    let session = session();
+    let mut frame = PfFrame::default();
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
+        PF_OK,
+        "still motion is a valid flag"
+    );
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 4.0, 1.25, 1, &raw mut frame) },
+        PF_OK,
+        "a running pulse is a valid flag"
+    );
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 4.0, 1.25, 2, &raw mut frame) },
+        PF_ERR_MODEL,
+        "a flag that is neither 0 nor 1 is refused, not treated as true"
+    );
+    // SAFETY: live session and a writable frame.
+    assert_eq!(
+        unsafe { pf_session_build_frame(session, 4.0, 1.25, -1, &raw mut frame) },
+        PF_ERR_MODEL
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
 }
 
 #[test]
@@ -2252,7 +2283,7 @@ fn a_pressure_gauge_reads_the_line_it_is_connected_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.
@@ -4018,7 +4049,7 @@ fn a_flow_meter_reads_the_line_it_is_connected_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.
@@ -4137,7 +4168,7 @@ fn a_recorder_charts_the_quantity_it_is_bound_to() {
     let mut frame = PfFrame::default();
     // SAFETY: live session, writable output.
     assert_eq!(
-        unsafe { pf_session_build_frame(session, 4.0, &raw mut frame) },
+        unsafe { pf_session_build_frame(session, 4.0, 0.0, 0, &raw mut frame) },
         PF_OK
     );
     // SAFETY: the slices were produced by the call above and the session is alive.

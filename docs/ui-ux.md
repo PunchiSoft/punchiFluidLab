@@ -795,19 +795,42 @@ replicates it from the model, never from a timer that guesses.
 | Piston and rod | `extension` | Already; the position is the model's |
 | Valve spool | valve position | Already; the active square is the model's |
 | Contact blade, relay bar, lamp rays | run state | Already; the shape changes, never colour alone |
-| **Flow in a hose** | **signed mass flow of that hose** | Travelling chevrons along the route; speed from `|flow|`, direction from the sign; none at zero |
+| **Flow in a hose** | **signed mass flow of that hose** | A **stream of solid arrowheads** spaced along the route, each on a short stroke; pace from the hose, direction from the sign; none at zero |
 | Instrument reading | the quantity | The number and the needle update with the sample |
 
-- **Direction is the model's.** A pressure difference at a dead end is not flow; the
-  chevrons stay still unless the solver reports flow through that hose.
-- **Start, pause, reset.** Starting begins the phase at zero; pausing freezes it; reset
-  clears it. A single step advances the phase by one step, not by a frame.
-- **Reduced motion.** `[KDE] AnimationDurationFactor = 0` replaces the travelling chevrons
-  with one static direction arrow; pressure colours and moving parts remain readable.
+- **Direction is the model's.** A pressure difference at a dead end is not flow; the stream
+  stays still unless the solver reports flow through that hose.
+- **The head is the standard's, the stroke is ours.** ISO 1219-1 marks direction with a solid
+  arrowhead, and it is the same primitive the symbols and the fixed example already draw
+  (`draw_flow_arrow`); the stroke is what says the air moves, drawn a little thicker than the
+  hose or it would vanish into the line. Neither is traced from another program.
+- **A stream, never one mark.** One mark has to restart at the source and that restart is a
+  visible jump; a stream lets an arrowhead enter while another leaves, so the hose is never
+  empty while the air moves. The marks are an exact lattice, so they never bunch where the
+  travel wraps.
+- **The air moves with the flow.** The stream's speed follows `|flow|` between a floor and a
+  cap — a trickle drifts, a strong current runs — so the sheet's ordering is the model's; a
+  hose long enough takes longer to cross. The numbers are a readability scale, not the
+  physical air speed.
+- **The mark is the hose's colour**, the pressure blend the line already has, never the
+  accent: on this sheet the accent means selection, and a selected hose must stay
+  distinguishable from a hose with air in it.
+- **The 16 ms tick.** The transport's existing 16 ms timer advances the phase while the
+  model runs and the desktop allows motion. There is no second timer: start clears the
+  phase, pause freezes it, stop and restart clear it, and a single step adds the step's own
+  seconds, not a frame's.
+- **Reduced motion.** `[KDE] AnimationDurationFactor = 0` replaces the stream with one
+  static arrowhead in the middle of the route, in the flow direction, with no stroke: the
+  direction stays readable and the phase does not advance.
+- **The printed page keeps the direction.** The export passes the model's flow with a zero
+  phase and `motion = false`, so a page carries one arrowhead per hose that holds air and
+  no pulse. A document with no live model has no reading, and the page draws no mark.
 - **No allocation per frame.** The route is already computed; the phase and the flow are
-  scalars, and the chevrons are line segments on the same surface.
-- **Performance.** The animation must not move the frame budget; if a long route costs more
-  than the static draw, the chevrons are capped per hose, not skipped silently.
+  scalars, and each mark is one short polyline and one triangle on the same surface, in a
+  fixed buffer.
+- **Performance.** The animation must not move the frame budget; the stream is at most eight
+  short segments and eight polygons on a route the drawing already builds. A suspected
+  frame-time change is measured at 200 components, not guessed.
 
 ### Sound
 

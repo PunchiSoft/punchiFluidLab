@@ -173,6 +173,9 @@ fn the_bounds_cover_the_boxes_and_the_pipe_route() {
         offset_mm: 10.0,
         pressure_ratio: 0.0,
         tube_od_hundredths: Some(1000),
+        flow_l_min: 0.0,
+        phase_s: 0.0,
+        animate: false,
     }];
 
     let bounds = bounds_placed(&placements, &pipes, &catalog).expect("a drawing has bounds");

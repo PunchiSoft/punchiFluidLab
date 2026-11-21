@@ -36,7 +36,7 @@ The state is `ready`, `doing`, `done` or `blocked`. A `blocked` entry names what
 | 7 | Pressure switch and vacuum switch | done | a contact that closes above a declared pressure and opens below it, read from a run; the vacuum switch does the same on the other side of atmosphere; tests with a rising and a falling line |
 | 8 | Manual switches: selector, maintained, mushroom and a normally-closed contact | done | selector and maintained switches keep their state, the mushroom is a latching NC contact, and an NC contact file passes the catalog lint; ABI test with a lamp |
 | 9 | Latching relay: set and reset coils | done | a file with two coils that holds its state after both are released; a test that sets, releases, resets |
-| 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | ready | a hose shows the model's signed flow as travelling chevrons while the simulation runs, none at zero flow, reversed with the flow, frozen by reduced motion, and an ABI/drawing test at two phases |
+| 10a | **Running animations: flow in the hoses** (owner order, runs before 10) | doing | a hose shows the model's signed flow as a short accent stroke moving along the route while the simulation runs, none at zero flow, reversed with the sign, frozen as one off-centre stroke under reduced motion, no pulse on the printed page, and drawing tests at two phases plus an ABI test of the still export |
 | 10b | **Pneumatic symbol conformance against the reference palette** (owner order, runs with 10a) | doing | every pneumatic symbol and its menu family matches the reference: source apex up, filter element and drain, spring outside the barrel, reservoir/separator/cooler/dryer/motor/rotary/multi-position present, with a review and a lint per file |
 | 10c | **Valve configuration dialog and conditional coil labels** (owner order) | ready | double-click a valve opens the reference dialog: left/right actuation (spring, detent, external supply, pneumatic spring, muscle, mechanical, pneumatic/electrical), reversible body, initial position, nominal flow, reflect, preview; double-click a solenoid opens the connection-label dialog with `Marca` (`Y1`); only an electrical terminal can carry a coil label; labels are per placement and saved |
 | 10 | Counter relay | ready | counts rising edges up to a preset, resets on its reset coil; a test with the preset and one pulse more |
@@ -64,23 +64,29 @@ its slice is split, and the split is written here before the code.
 The owner ordered the reference's animations replicated, and the reference's signature is
 the circuit in motion. This entry runs before 10.
 
-- **Decision first**: an ADR, *the sheet animates the model, not a decoration*. The chevrons
-  follow the mass flow the solver computed for that hose; a pressure difference alone is not
-  flow, and a dead-end line with a pressure difference must stay still.
-- **Solver**: `Edge` gains `pipe: Option<usize>` and the network keeps `pipe_flow`, filled
-  where the edge flow is already computed; `Network::pipe_flow_l_min(index)` exposes it.
+- **Decision first**: [ADR 0034](adr/0034-the-sheet-animates-the-models-flow.md), *the sheet
+  animates the model's flow, not a decoration*. The stroke follows the mass flow the solver
+  computed for that hose; a pressure difference alone is not flow, and a dead-end line with
+  a pressure difference must stay still.
+- **Solver**: `Edge` gains `pipe: Option<usize>` and the network keeps `pipe_flows`, indexed
+  by the document's connection list and filled where the edge flow is already computed;
+  `Network::pipe_flows()` exposes the slice, so the frame reads it without copying.
   Test: a known restriction at a known pressure difference, compared with the orifice
-  calculation.
-- **ABI**: `Pipe` carries `flow_l_min` with sign and `phase_s`; `scene` fills them from the
-  network time, so the drawing never reads the solver.
-- **Drawing**: `draw_pipe` draws travelling chevrons along the existing route when the flow
-  is above a threshold; speed follows `|flow|`, direction follows the sign, zero draws none.
-  The phase is a scalar; no allocation per frame. Reduced motion freezes one static arrow.
-- **Window**: starting resets the phase, pausing freezes it, reset clears it; the transport
-  already drives the redraw.
-- **Evidence**: `a_pipe_reports_the_flow_through_it`, `the_flow_chevrons_move_with_the_phase`,
-  `no_flow_draws_no_chevron`, `reduced_motion_freezes_the_chevron`, and a recorded clip in
-  the pull request.
+  calculation, and a skipped connection that keeps its `None` slot.
+- **ABI**: `Pipe` carries `flow_l_min` with sign, `phase_s` and `animate`; `scene` fills them
+  from the network, so the drawing never reads the solver. The printed page uses
+  `SceneState::printed`: no flow, a zero phase and no motion, so the page is still.
+- **Drawing**: `draw_pipe` draws a 6 mm accent stroke along the existing route when the flow
+  is above a threshold, at the hose's own width; speed follows `|flow|`, direction follows
+  the sign, zero flow, an electrical pipe and a short jumper draw nothing, and the line class
+  and numerals stay readable around the stroke. The phase is a scalar; no allocation per
+  frame. Reduced motion draws one static off-centre stroke; the print draws none.
+- **Window**: starting resets the phase, the existing 16 ms transport tick advances it,
+  pausing freezes it, a step adds the step's seconds, and reset clears it.
+- **Evidence**: `a_pipe_reports_the_flow_through_it` (solver), `the_flow_pulse_moves_with_the_phase`,
+  `no_flow_draws_no_pulse`, `reduced_motion_freezes_the_pulse`, `the_export_draws_no_pulse`,
+  and the ABI test `a_printed_page_has_no_flow_and_no_pulse`; the draw tests are the evidence
+  when no existing CLI path can set the phase for a capture.
 
 ### 10b — Pneumatic symbol conformance
 
