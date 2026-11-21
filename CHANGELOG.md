@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Colocación: el símbolo conserva su caja — 2026-11-21
+
+- **Un componente arrastrado desde el catálogo ocupa la misma caja que las plantillas**:
+  la caja canónica de `SYMBOL_BOX_MM` (20 mm) para suministro, válvula, estrangulador,
+  accesorio y el caso por defecto, y `SYMBOL_BOX_MM × CYLINDER_RATIO` para el actuador
+  (44 × 20 mm). Antes el arrastre usaba `default_size` con 34 × 34 para la válvula,
+  62 × 26 para el actuador, 26 × 26 para el suministro, 24 × 24 para el accesorio y
+  22 × 22 por defecto: el mismo símbolo salía hasta 1,7 veces mayor que el de una
+  plantilla y un circuito recién dibujado no se leía como el de la página de inicio. La
+  hoja, el zoom y el marco no cambian.
+- **La válvula sigue siendo cuadrada**: su cuerpo son dos celdas dentro de una caja
+  cuadrada, y una caja rectangular aplastaría las celdas a la mitad de su alto.
+- **Prueba**: `a_dropped_valve_and_cylinder_take_the_template_box` en la ABI coloca una
+  válvula y un cilindro por `pf_session_place_component` y mide 20 × 20 y 44 × 20 mm;
+  `--selftest` conserva sus pasos de arrastre, clic de válvula y rectángulo de componente.
+- **Docs**: `docs/ui-ux.md` declara que un componente arrastrado toma la caja de las
+  plantillas.
+
 ### Ventana: la cinta se ve a 1366×768 — 2026-11-21
 
 - **1366×768 es el suelo de soporte** (el portátil de entrada y educación del mercado al

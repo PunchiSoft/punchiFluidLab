@@ -3539,19 +3539,17 @@ pub unsafe extern "C" fn pf_session_restart(session: *mut PfSession) -> i32 {
 
 /// The box a component of this category takes when it is dropped on the sheet.
 ///
-/// A valve is wide and short, a cylinder is long: the drop then looks like the symbol it
-/// brings, instead of every component arriving the same size.
+/// A drop takes exactly the box the templates use: the canonical symbol square, and a
+/// cylinder whose barrel is [`punchi_fluid_draw::CYLINDER_RATIO`] wide. The symbol is read
+/// by shape, so a component does not change size because it arrived by drag instead of in
+/// a template. The valve box stays square: its body is two cells side by side inside one
+/// square box, and a rectangle would squash them to half their height.
 fn default_size(category: u32) -> (f32, f32) {
-    match category {
-        PF_CATEGORY_SUPPLY => (26.0, 26.0),
-        // A valve body is two squares side by side, expressed as 2:1 in box units. The
-        // placement box has to stay square or the cells are squashed to half their height;
-        // the seeded valve already uses a square for exactly this reason.
-        PF_CATEGORY_VALVE => (34.0, 34.0),
-        PF_CATEGORY_ACTUATOR => (62.0, 26.0),
-        PF_CATEGORY_THROTTLE => (20.0, 20.0),
-        PF_CATEGORY_ACCESSORY => (24.0, 24.0),
-        _ => (22.0, 22.0),
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+    if category == PF_CATEGORY_ACTUATOR {
+        (unit * punchi_fluid_draw::CYLINDER_RATIO, unit)
+    } else {
+        (unit, unit)
     }
 }
 
