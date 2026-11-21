@@ -66,8 +66,9 @@ because it has nothing to fly out. The measured set per width is:
 | 1920 | none |
 
 At 1280 px wide and below the ribbon folds into a single **Menú** button (a ribbon needs
-width to work), and at 125 % scaling a 1366-wide panel is ~1093 logical pixels, so it is
-the folded form there too; that is the recorded case, not an exception. The ribbon height does not
+width to work) while the transport stays visible beside it, and at 125 % scaling a
+1366-wide panel is ~1093 logical pixels, so it is the folded form there too; that is the
+recorded case, not an exception. The ribbon height does not
 change (121 px at the default unit), so the sheet below keeps its room and the A4 page is
 not covered. **Today** the window applies that one breakpoint and keeps the catalog at
 248 px and the right panels at 360 px; the three modes of *The window adapts* below are
@@ -129,10 +130,11 @@ Depth comes from the palette, never from a new hue.
   carries the same commands as the expanded group, each with its label and accessible
   name. `Alt+D` still reaches the Conducto group's **Diámetro**, whether that group is
   expanded or in its flyout.
-- At 1280 px and below the body folds away: the tabs stay, and one **Menú** button opens
-  the commands of the open tab, the Conducto group's **Diámetro** included. A ribbon
-  without width is a maze; the menu scrolls when the window cannot hold every command, so
-  none is out of reach.
+- At 1280 px and below the body folds away: the tabs stay, one **Menú** button opens
+  the commands of the open tab (the Conducto group's **Diámetro** included), and the
+  **transport stays in the tab row** — Iniciar/Pausa, Paso and Detener. A ribbon without
+  width is a maze; the menu scrolls when the window cannot hold every command, so none is
+  out of reach, but the three actions a lesson needs must not be behind a menu.
 - **The two help links are text at the right end of the tab row**, with the same weight
   as the tabs: **Acerca de** opens a popup with the name, the core's version, "versión en
   desarrollo, sin publicar", a one-line description, the repository and the issue tracker,
