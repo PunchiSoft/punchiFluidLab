@@ -185,6 +185,42 @@ documento. Desde 2026-11-19: el símbolo mide 20 mm (44 × 20 el cilindro), la p
 lista cinco recientes y las plantillas se componen con archivos del catálogo, nunca con
 geometría escrita en código.
 
+## La migración a Rust: producto, descartes y cómo arrancar
+
+**El producto es el núcleo esencial, no la app Qt.** La ventana Qt y el ABI quedan como
+referencia de comportamiento hasta la fase 5 y no reciben nada nuevo; todo se construye en
+la ventana Rust (`apps/punchi-fluid`) sobre el catálogo, el solver, el documento y la
+sesión. El núcleo está escrito en [capabilities.md](capabilities.md) (§“The essential
+core”), con su prueba por pieza.
+
+**Lo que se retira o se rehace** (no se migra lo mal diseñado):
+
+- **Compresores**: el símbolo actual está mal; se rehacen los dos tipos.
+- **Válvulas con retorno/accionamiento**: el núcleo pide la **válvula base** (sin retorno
+  ni accionamiento); las accionadas vuelven como variantes cuando se decida (pregunta).
+- **FRL**: el actual se parte en simplificado y completo.
+- **Control eléctrico y registradores**: diseño malo en el ABI; se replantean con ADR.
+- **Bibliotecas eléctrica/digital/GRAFCET, DXF, material didáctico y lo que no esté en el
+  núcleo**: fuera del producto por ahora (se posponen o se descartan).
+- **Se conservan**: la fuente de aire, los cilindros (con los campos nuevos), el tapón y el
+  silenciador fijo (más el regulable nuevo).
+
+**Cómo arranca una sesión nueva**
+
+1. Lee `AGENTS.md`, esta sección y [next-steps.md](next-steps.md) (“The Rust window: what is
+   left”, bloque 1).
+2. Comprueba `git rev-list --left-right --count main...HEAD` = `0 0` y
+   `./scripts-dev/check.sh` en verde.
+3. Ejecuta el bloque 1 en este orden: las **ADRs** de OR/AND y del silenciador regulable;
+   el **esquema del catálogo** (campos del cilindro con rangos, las definiciones del núcleo
+   con sus `id`); la **subida de `FORMAT_VERSION`** con su prueba de migración; las
+   **pruebas del catálogo** y las **revisiones de los símbolos** nuevos y corregidos.
+4. Un corte por PR, `check.sh` verde, y espera mi fusión; no fusiona el agente.
+
+**Preguntas abiertas para ti**: ¿las válvulas accionadas (solenoide/muelle) vuelven como
+variantes del núcleo o se retiran?; ¿los instrumentos (manómetro, caudalímetro) y la
+exportación entran en el núcleo o esperan?; ¿qué se hace con `spikes/`?
+
 ## 1. Qué es este proyecto
 
 `punchi-fluid-lab`: simulador libre de circuitos neumáticos (y más adelante hidráulicos), en
