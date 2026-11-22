@@ -235,12 +235,12 @@ fn electrical_control(area: Rect) -> Composition {
     )
 }
 
-fn composition(template: Template, area: Rect) -> Option<Composition> {
+fn composition(template: Template, area: Rect) -> Composition {
     match template {
-        Template::WorkedExample => Some(worked_example(area)),
-        Template::DoubleActing => Some(double_acting(area)),
-        Template::AirPreparation => Some(air_preparation(area)),
-        Template::ElectricalControl => Some(electrical_control(area)),
+        Template::WorkedExample => worked_example(area),
+        Template::DoubleActing => double_acting(area),
+        Template::AirPreparation => air_preparation(area),
+        Template::ElectricalControl => electrical_control(area),
     }
 }
 
@@ -253,8 +253,7 @@ fn composition(template: Template, area: Rect) -> Option<Composition> {
 pub(crate) fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
     let template = Template::from_index(index)
         .ok_or_else(|| String::from("that start-page template does not exist"))?;
-    let (parts, wires) = composition(template, area)
-        .ok_or_else(|| String::from("the drawing area is too small for this template"))?;
+    let (parts, wires) = composition(template, area);
 
     for part in &parts {
         if catalog.get(part.catalog_id).is_none() {
