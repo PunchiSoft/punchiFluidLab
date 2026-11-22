@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### La cadena de cierre, decidida — 2026-11-22
+
+- **ADR 0038 decide que un cierre de puerto es una cadena ordenada**: el regulador de caudal
+  y el silenciador en serie, con el ajuste del regulador por instancia en unidades del SI, la
+  tabla de roles de puerto ampliada y el solver componiendo las restricciones en serie. El formato
+  sube al siguiente libre con migración explícita desde el id único. Sin código todavía: la
+  decisión habilita el esquema y el modelo.
+
 ### Las notas de trabajo salen del repositorio público — 2026-11-22
 
 - **La nota de continuidad, el orden de trabajo, el registro de nodos, la cola de la parity

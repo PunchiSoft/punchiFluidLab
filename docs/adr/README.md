@@ -49,6 +49,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0035](0035-the-window-is-rust.md) | The window is Rust, with a fixed layout | proposed | 2026-11-21 |
 | [0036](0036-the-toolkit-is-egui.md) | The window's toolkit is egui | proposed | 2026-11-22 |
 | [0037](0037-the-tube-is-a-restriction-with-its-own-characteristic.md) | The tube is a restriction, and its model needs a measured characteristic | proposed | 2026-11-21 |
+| [0038](0038-a-port-closure-is-a-chain.md) | A port closure is a chain: the regulator and the silencer in series | proposed | 2026-11-22 |
 
 ## When a decision needs an ADR
 
