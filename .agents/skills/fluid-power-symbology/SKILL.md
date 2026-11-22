@@ -15,6 +15,27 @@ manual, a datasheet or the standard itself. Geometry is written by hand to confo
 and the pull request states which requirement was checked. The normative text is
 copyrighted; this repository records *our* engineering contract, not the standard.
 
+### The symbols are normative, not ours to change
+
+The symbols and the circuit conventions are the standard's: one form, the same in every
+application. This repository **implements** them; it does not own them and may not adapt
+them.
+
+- The authority is ISO 1219-1/-2/-3 (and the national adoption named in the contract) and,
+  in our own words, [docs/symbology.md](../../../docs/symbology.md). A reference
+  application, a screenshot, a capture or a manual can only say **which symbol exists**; it
+  never supplies a proportion, a shape, an added mark or a correction.
+- **No transformation of a symbol of ours**: no simplified variant, no added mark, no
+  orientation or proportion chosen to match another program or a capture. A drawing that
+  differs from the standard is a defect of the drawing, not a variant of the symbol. The
+  library panel and the sheet are two views: **the panel shows the symbol itself, without
+  the diagram's connection points; the sheet draws them because that is where a hose
+  connects**, and those marks are not a symbol variant. Neither view is changed to imitate
+  the other.
+- The standard is never modified to fit the application, a capture or a previous drawing. A
+  correction goes to our definition, the renderer and the review record, with the clause and
+  the measures.
+
 ### The gate before geometry
 
 No line is drawn until these three exist, in this order:

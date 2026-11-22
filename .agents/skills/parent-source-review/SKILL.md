@@ -6,11 +6,13 @@ license: GPL-3.0-or-later
 
 # Parent source review
 
-The owner ordered parity with the parent application. The running app answers *what it looks
-like*; its installed code and data answer *how it decides*. Both are read-only references.
+The owner ordered parity with the parent application. The running app answers *how it
+behaves*; its installed code and data answer *how it decides*. Both are read-only references.
 Neither is a source of bytes for this repository: behaviour is understood, written down in
 our words, and implemented in Rust in our own document format and our own hand-drawn geometry
-(ADR 0009).
+(ADR 0009). The symbology is not the parent's: the symbols are the standard's and are never
+changed based on the parent app, its data, a screenshot or a capture
+([fluid-power-symbology](../fluid-power-symbology/SKILL.md)).
 
 This skill covers the code and data. The palette, the capture procedure and the symbol audit
 are in [reference-parity](../reference-parity/SKILL.md); use both together.

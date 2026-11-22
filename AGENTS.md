@@ -151,6 +151,12 @@ tooling, never a runtime dependency).
 - **Never trace or copy** a symbol from another program, a screenshot, a manual or the
   standard itself. Geometry is written by hand to conform, and the review records
   which requirement was checked.
+- **The symbols are normative, not ours.** They are the standard's, one form in every
+  application: no variant or transformation of a symbol of ours, and no change based on a
+  reference application, a screenshot or a capture. A reference may only say which symbol
+  exists; the clause and the measures come from the standard. The sheet's connection points
+  are the diagram's rendering, not a symbol variant; the library panel shows the symbol
+  without them.
 - A symbol change needs a **conformance review**: the automated `symbol lint` plus the
   manual checklist, with light/dark screenshots attached to the pull request.
 - Normative details are not negotiable for taste: box proportions, arrow direction,
