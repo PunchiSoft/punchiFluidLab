@@ -53,6 +53,7 @@ pub struct Ribbon {
     active_speed: &'static str,
     running: bool,
     pub last: String,
+    pending: Option<String>,
 }
 
 impl Ribbon {
@@ -64,6 +65,7 @@ impl Ribbon {
             active_speed: "1×",
             running: false,
             last: String::from("—"),
+            pending: None,
         }
     }
 
@@ -98,6 +100,13 @@ impl Ribbon {
             _ => {}
         }
         self.last = label.to_string();
+        self.pending = Some(label.to_string());
+    }
+
+    /// Takes the command the reader just chose, for the window to act on; the last command
+    /// stays in `last` for the status bar.
+    pub fn take(&mut self) -> Option<String> {
+        self.pending.take()
     }
 
     /// Draws the strip and the active tab; the pick lands in `last`.
