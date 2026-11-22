@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### El elemento de presión, enmendado — 2026-11-22
+
+- **ADR 0039 enmienda la implementación de la ADR 0029**: el shuttle y la válvula de dos
+  presiones se dibujan como símbolo plano con primitivas (el cuerpo del renderizador es
+  para válvulas de posiciones), los puertos ganan un `numeral` opcional para que las dos
+  entradas compartan el `1`, y el solver aplica una restricción por paso —toma masa de la
+  entrada que alimenta y no inventa ninguna— con sus pruebas de referencia.
+- Sin código todavía: la decisión habilita el esquema, los archivos y el modelo.
+
 ### Las válvulas base 3/2 y 5/2 — 2026-11-22
 
 - **Dos definiciones nuevas, `valve.3_2.base` y `valve.5_2.base`**, con el cuerpo de la
