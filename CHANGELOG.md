@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La ventana Rust mueve la hoja — 2026-11-22
+
+- **La hoja se amplía y se desplaza como en la ventana Qt**: Ctrl+rueda amplía sobre el
+  puntero, la rueda y el botón central desplazan, las flechas desplazan desde el teclado y
+  Ctrl+0 vuelve al encaje, con el rango 0,4–6× y el paso 1,25 de la sesión Qt. El
+  desplazamiento está acotado al sobrante de la hoja y se borra al volver al encaje.
+- **Los comandos de la pestaña Ver ya actúan**: Aumentar, Disminuir, Tamaño original y
+  Restablecer vista mueven la vista y no el documento; la barra de estado lee la
+  magnificación en % y en px/mm.
+- **Cinco pruebas nuevas de la vista** sobre las 11 anteriores: encaje centrado, ampliación
+  sobre el puntero, tope del desplazamiento, vuelta al encaje y rango de los comandos.
+
 ### La ventana Rust gana la cinta — 2026-11-22
 
 - **La cinta del prototipo entra en la ventana**: las cinco pestañas, los grupos con botones

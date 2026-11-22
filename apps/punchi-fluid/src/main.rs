@@ -3,10 +3,10 @@
 
 //! The window: one fixed layout over the document's sheet.
 //!
-//! This is the first slice of ADR 0035's phase 3: the window opens at the 1366 × 768 floor,
-//! draws the sheet of a new document and reports the fit and the drawing's own time. The
-//! ribbon, the sidebar and the document's commands arrive in the following slices. Colour,
-//! type and motion come from the desktop through `theme`.
+//! This is ADR 0035's phase 3: the window opens at the 1366 × 768 floor, draws the sheet of a
+//! new document with the ribbon and the view's zoom and pan, and reports the fit, the
+//! magnification and the drawing's own time. The sidebar and the document's commands arrive
+//! in the following slices. Colour, type and motion come from the desktop through `theme`.
 
 use std::time::Instant;
 
@@ -17,6 +17,7 @@ use punchi_fluid_export::{Page, TitleBlock, sheet};
 mod ribbon;
 mod surface;
 mod theme;
+mod view;
 
 use surface::EguiSurface;
 
@@ -41,12 +42,13 @@ fn main() -> eframe::Result<()> {
     )
 }
 
-/// What the window owns today: the sheet of a new document, the desktop's theme and the last
-/// frame's numbers.
+/// What the window owns today: the sheet of a new document, the reader's view, the ribbon,
+/// the desktop's theme and the last frame's numbers.
 struct Window {
     page: Page,
     block: TitleBlock,
-    scale: f32,
+    view: view::View,
+    magnification: f32,
     frame_ms: f64,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
@@ -70,7 +72,8 @@ impl Window {
         Self {
             page,
             block,
-            scale: 1.0,
+            view: view::View::default(),
+            magnification: 1.0,
             frame_ms: 0.0,
             theme,
             ribbon: ribbon::Ribbon::new(),
@@ -84,37 +87,111 @@ impl eframe::App for Window {
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette);
         });
+        if let Some(command) = self.ribbon.take() {
+            self.view.command(&command);
+        }
 
         let (width, height) = self.page.size_mm();
+        let page_mm = egui::vec2(width, height);
         let ink = self.theme.tokens.ink;
         let last = self.ribbon.last.clone();
+        let zoom = self.view.zoom();
+        let magnification = self.magnification;
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
             ui.label(
                 egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.2} px/mm · {:.2} ms de dibujo · último: {last}",
-                    self.scale, self.frame_ms
+                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last}",
+                    zoom * 100.0, self.frame_ms
                 ))
                 .color(ink),
             );
         });
 
         egui::CentralPanel::default().show(context, |ui| {
-            let page_rect = self.page.rect();
             let area = ui.available_rect_before_wrap();
-            let scale = (area.width() / page_rect.width()).min(area.height() / page_rect.height());
-            let origin = area.min - egui::vec2(page_rect.min.x * scale, page_rect.min.y * scale);
-            let sheet = ui.allocate_rect(area, egui::Sense::hover());
+            let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {
                 egui::WidgetInfo::labeled(egui::WidgetType::Image, true, "hoja de dibujo")
             });
-            let mut drawing = EguiSurface::new(context, origin, scale);
+            self.handle_view(ui, &sheet, area, page_mm);
+            let placement = self.view.placement(area, page_mm);
+            self.magnification = placement.scale;
+            let page_rect = self.page.rect();
+            let origin = placement.origin
+                - egui::vec2(
+                    page_rect.min.x * placement.scale,
+                    page_rect.min.y * placement.scale,
+                );
+            let mut drawing = EguiSurface::new(context, origin, placement.scale);
             let started = Instant::now();
             sheet::draw(&mut drawing, &self.page, &self.block);
-            self.scale = scale;
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let painter = ui.painter().with_clip_rect(ui.max_rect());
             painter.extend(drawing.shapes);
         });
+    }
+}
+
+impl Window {
+    /// The sheet's gestures: Ctrl+wheel zooms about the pointer, the wheel and the middle
+    /// button pan, the arrows pan from the keyboard and Ctrl+0 returns to the fit.
+    fn handle_view(
+        &mut self,
+        ui: &egui::Ui,
+        response: &egui::Response,
+        area: egui::Rect,
+        page_mm: egui::Vec2,
+    ) {
+        let (scroll, ctrl, pointer) = ui.input(|input| {
+            (
+                input.raw_scroll_delta,
+                input.modifiers.ctrl,
+                input.pointer.hover_pos(),
+            )
+        });
+        if response.hovered() && scroll != egui::Vec2::ZERO {
+            if ctrl {
+                if let Some(pointer) = pointer {
+                    self.view
+                        .zoom_about((scroll.y * 0.005).exp(), pointer, area, page_mm);
+                }
+            } else {
+                self.view.pan_by(scroll);
+            }
+        }
+        if response.dragged_by(egui::PointerButton::Middle) {
+            let delta = ui.input(|input| input.pointer.delta());
+            self.view.pan_by(delta);
+        }
+        let (left, right, up, down, reset) = ui.input(|input| {
+            (
+                input.key_pressed(egui::Key::ArrowLeft),
+                input.key_pressed(egui::Key::ArrowRight),
+                input.key_pressed(egui::Key::ArrowUp),
+                input.key_pressed(egui::Key::ArrowDown),
+                input.modifiers.ctrl && input.key_pressed(egui::Key::Num0),
+            )
+        });
+        if reset {
+            self.view.reset();
+        }
+        let mut x = 0.0;
+        let mut y = 0.0;
+        if left {
+            x += 1.0;
+        }
+        if right {
+            x -= 1.0;
+        }
+        if up {
+            y += 1.0;
+        }
+        if down {
+            y -= 1.0;
+        }
+        if x != 0.0 || y != 0.0 {
+            self.view.pan_arrow(x, y);
+        }
     }
 }
 
