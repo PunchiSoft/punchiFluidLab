@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### La ventana gana el panel del catálogo — 2026-11-22
+
+- **La tercera región de la ventana**: el panel izquierdo lista el catálogo como paleta de
+  azulejos —el símbolo propio, el nombre en español y el id— agrupado por categoría, con el
+  número de componentes, la búsqueda por nombre, nombre español e id y las categorías
+  plegables. El símbolo lo dibuja el mismo renderizador, con la vista previa del panel (sin
+  los puntos de conexión que la hoja añade).
+- **Clic en un azulejo añade el componente al centro de la hoja** como una sola operación
+  de deshacer, lo deja seleccionado y lo dice en la barra de estado; Ctrl+F lleva a la
+  búsqueda. Las definiciones de cierre de puerto (tapón y silenciador) no son entradas de
+  la paleta (ADR 0033): se ajustan a un puerto, no se colocan.
+- **Pruebas**: la paleta esconde los cierres de puerto; la búsqueda casa nombre, nombre
+  español e id; añadir coloca en el centro de la hoja, selecciona y deshace en un paso.
+
 ### La ventana borra, gira, refleja y deshace — 2026-11-22
 
 - **Sobre la selección**: Borrar la quita de la hoja, Girar la cuarta parte y Reflejar la
