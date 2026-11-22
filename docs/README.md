@@ -23,6 +23,7 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 | want to know what comes next, and what proves it | [capabilities.md](capabilities.md) → [plan.md](plan.md) |
 | are about to write code | [capabilities.md](capabilities.md) → [plan.md](plan.md) → the relevant [skill](../.agents/skills/README.md) |
 | are planning a capability | [capabilities.md](capabilities.md) and [capability-plan](../.agents/skills/capability-plan/SKILL.md) |
+| are planning the move to the Rust window | [rust-migration-plan.md](rust-migration-plan.md) |
 | are changing a symbol | [symbology.md](symbology.md) and [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md) |
 | are changing the interface | [ui-ux.md](ui-ux.md) |
 | are changing the sheet frame or the title block | [reference/title-block.md](reference/title-block.md) and [ADR 0026](adr/0026-the-sheet-is-the-paper.md) |
