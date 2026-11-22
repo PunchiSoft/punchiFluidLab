@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La ventana guarda el documento que abrió — 2026-11-22
+
+- **Guardar escribe el documento en el fichero del que se abrió**, con Ctrl+S o el botón de
+  la cinta, por `punchi-fluid-session::save`: el documento → la hoja → el mismo texto que
+  `load` lee, así que lo guardado se vuelve a abrir. Sin ruta (documento nuevo) lo dice en
+  la barra de estado en vez de inventarse un destino; «Guardar como» espera al diálogo.
+- **La cinta no finge**: Guardar se enciende solo cuando hay ruta, y Abrir, Nuevo, Guardar
+  como y Exportar quedan apagados hasta que su diálogo exista.
+- **Dos pruebas**: la sesión guarda y reabre un documento con una colocación; la ventana
+  escribe el documento que se le dio, el texto vuelve a ser una hoja válida y la barra de
+  estado lo dice.
+
 ### El panel muestra el símbolo, el lienzo los puntos de conexión — 2026-11-22
 
 - **La vista previa del catálogo deja de dibujar los círculos de conexión**: el panel

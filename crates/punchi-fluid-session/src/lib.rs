@@ -8,6 +8,8 @@
 //! so the ABI, the window and the tests open and save the same way. The editor state
 //! (selection, tools, undo history) joins it with the next slice.
 
+use std::path::Path;
+
 use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Source};
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt};
@@ -194,12 +196,27 @@ pub fn to_sheet(document: &Document) -> Sheet {
         active: document.active_circuit(),
     }
 }
+
+/// Writes the document to `path` as a sheet file.
+///
+/// The same text `load` reads: what the window saves is what it can open again.
+///
+/// # Errors
+///
+/// Returns a message when the file cannot be written.
+pub fn save(document: &Document, path: &Path) -> Result<(), String> {
+    to_sheet(document)
+        .write(path)
+        .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use punchi_fluid_doc::{Document, Placement};
     use punchi_fluid_draw::surface::Pt;
+    use punchi_fluid_file::sheet::Sheet;
 
-    use super::{load, to_sheet};
+    use super::{load, save, to_sheet};
 
     #[test]
     fn a_new_document_survives_the_round_trip() {
@@ -225,5 +242,27 @@ mod tests {
         assert_eq!(loaded.placements().len(), 1);
         assert_eq!(loaded.placements()[0].catalog_id, "valve.5_2");
         assert!((loaded.placements()[0].centre.x - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn a_saved_document_is_the_one_that_loads_again() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.5_2",
+            Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+        let path = std::env::temp_dir().join(format!(
+            "punchi-fluid-session-save-{}.pfluid",
+            std::process::id()
+        ));
+        save(&document, &path).expect("the document saves");
+        let text = std::fs::read_to_string(&path).expect("the file was written");
+        let sheet = Sheet::parse(&text).expect("the saved text is a sheet");
+        let loaded = load(&sheet).expect("the saved sheet loads");
+        assert_eq!(loaded.placements().len(), 1);
+        assert_eq!(loaded.placements()[0].catalog_id, "valve.5_2");
+        let _ = std::fs::remove_file(&path);
     }
 }

@@ -53,6 +53,8 @@ pub struct Ribbon {
     active_speed: &'static str,
     running: bool,
     pub last: String,
+    /// Whether there is a path to save to; the window sets it every frame.
+    pub savable: bool,
     pending: Option<String>,
 }
 
@@ -65,6 +67,7 @@ impl Ribbon {
             active_speed: "1×",
             running: false,
             last: String::from("—"),
+            savable: false,
             pending: None,
         }
     }
@@ -81,11 +84,15 @@ impl Ribbon {
     }
 
     /// Whether the command may run in the current state. The transport is the demo: it
-    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar.
+    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar. Guardar
+    /// needs a path, and the file actions whose dialogs are not here yet stay dimmed instead
+    /// of pretending to work.
     fn enabled(&self, label: &str) -> bool {
         match label {
             "Iniciar" => !self.running,
             "Pausa" | "Paso" | "Hasta cambio" | "Detener" => self.running,
+            "Guardar" => self.savable,
+            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" => false,
             _ => true,
         }
     }
