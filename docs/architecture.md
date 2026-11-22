@@ -36,10 +36,16 @@ reads files, writes files and runs.
   CLI ──▶ file + catalog + check + solver        (no window, no Qt)
 ```
 
-The window never links a Rust crate directly: it links the static library built from
+The Qt window never links a Rust crate directly: it links the static library built from
 `punchi-fluid-ffi` and calls the functions in `include/punchi_fluid.h`. That is why the
 window can be replaced without touching the model, and why a test can drive the same
 session without a display (ADR 0005).
+
+During the migration there is a second window. `apps/punchi-fluid` (ADR 0035, ADR 0036)
+links `doc`, `draw` and `export` directly and speaks no ABI: it replays the drawing, prints
+from the same crate and carries the document it edits. Its first slice opens on the sheet
+of a new document; the ribbon and the commands follow, and the pair `punchi-fluid-ffi` plus
+`apps/punchi-fluid-qt` retires when the new window has replaced their checks (ADR 0035).
 
 ## The crates
 
@@ -59,12 +65,18 @@ fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked 
 | `punchi-fluid-export` | page geometry, frame, title block, legend, PNG and PDF writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-ffi` | the C ABI: one session, one frame, hit tests, layout, export | logic of its own | all of the above |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `core`, `file`, `solver`, `catalog`, `check`, `doc`, `draw` |
+| `punchi-fluid-window` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter | physics, the document | `core`, `doc`, `draw`, `export` |
 
-The window (`apps/punchi-fluid-qt`) is outside Cargo. It owns the ribbon, the sidebar, the
-sheet widget, the status bar, the theme adapter, the icon provider and the QML. It never
+The Qt window (`apps/punchi-fluid-qt`) is outside Cargo. It owns the ribbon, the sidebar,
+the sheet widget, the status bar, the theme adapter, the icon provider and the QML. It never
 contains a formula or a catalog id: the catalog comes through the ABI and the palette comes
 from the theme adapter. A few pixel sizes are still literals in QML; moving them into the
 adapter is a declared debt, not a finished rule.
+
+The Rust window (`apps/punchi-fluid`, package `punchi-fluid-window`) owns the same regions
+in egui, over the same recording. It never contains a formula either: the document comes
+from `punchi-fluid-doc` and the drawing from `punchi-fluid-draw` behind `Surface`. It has
+no ABI and does not depend on the Qt app or on `punchi-fluid-ffi`.
 
 ## A circuit, from file to motion
 

@@ -110,6 +110,16 @@ jobs:
           toolchain: ${{ steps.rust.outputs.channel }}
           components: rustfmt, clippy
 
+      # eframe links the window's graphics stack; the runner image does not carry the
+      # development packages by default. They are build-time only and add no token.
+      - name: Install the window's system libraries
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev fonts-dejavu-core
+
       - name: Cache the build
         if: needs.changes.outputs.code == 'true'
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
@@ -191,16 +201,32 @@ jobs:
         with:
           persist-credentials: false
 
-      # 1.85 is the floor declared in Cargo.toml, not the toolchain the project is built
-      # with day to day. It is an input and not the action's revision on purpose: as a
-      # revision it looked like a version to bump, and dependabot proposed 1.120.0.
-      - name: Install the declared minimum
+      # 1.85 is the floor declared in Cargo.toml for the crates, and 1.89 the floor the
+      # window declares for its graphics stack; the job verifies both. The toolchain is an
+      # input and not the action's revision on purpose: as a revision it looked like a
+      # version to bump, and dependabot proposed 1.120.0.
+      - name: Install the crates' minimum
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: "1.85.0"
 
+      - name: Install the window's system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev
+
       - name: Cache the build
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
-      - name: Build with the declared minimum
-        run: cargo build --workspace --locked
+      - name: Build the crates with their minimum
+        run: cargo build --workspace --exclude punchi-fluid-window --locked
+
+      - name: Install the window's minimum
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: "1.89.0"
+
+      - name: Build the window with its minimum
+        run: cargo build -p punchi-fluid-window --locked

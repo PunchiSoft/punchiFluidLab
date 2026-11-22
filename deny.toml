@@ -36,6 +36,10 @@ allow = [
     "OFL-1.1",
     "MPL-2.0",
     "Unlicense",
+    # The Windows clipboard crates under `arboard` (`clipboard-win`, `error-code`): the
+    # Boost licence is OSI-approved, FSF-free and GPL-compatible; they are not built on
+    # Linux but cargo-deny reads the whole graph.
+    "BSL-1.0",
 ]
 # Fonts and icons read at runtime from the system are not distributed by us.
 exceptions = []

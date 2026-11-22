@@ -82,7 +82,8 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-export` | standard sheets, title block, the PNG and PDF writers | physics, widgets |
 | `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
 | `crates/punchi-fluid-cli` | headless validate and simulate | UI |
-| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter | physics, the document |
+| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter (retires with ADR 0035) | physics, the document |
+| `apps/punchi-fluid` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter (ADR 0035) | physics, the document |
 
 Dependency direction: `core` is the base; `catalog` and `file` depend on it and on no
 other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
@@ -94,11 +95,13 @@ page reads them from `core`); `ffi` on all of the above, `export` included, beca
 window speaks only the ABI and the ABI is the one place that holds both the document and the
 page it is printed on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
 `solver`, because it runs the same check and the same model without a window. Nothing in
-Rust depends on the window, and the window depends only on
-`punchi-fluid-ffi`. A new dependency direction needs an ADR; the `Surface` layer that
-made `draw` and `export` possible is [ADR 0003](docs/adr/0003-one-drawing-two-devices.md),
-and the Qt window over the C ABI is
-[ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md). `scripts-dev/check-docs.sh` fails if
+Rust depends on a window. During the migration the Qt window depends only on
+`punchi-fluid-ffi` ([ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md)), and the Rust
+window in `apps/punchi-fluid` depends on `core`, `doc`, `draw` and `export` — and, as its
+commands land, on `catalog` and `solver` — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+[ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)). A new dependency direction needs an ADR;
+the `Surface` layer that made `draw` and `export` possible is
+[ADR 0003](docs/adr/0003-one-drawing-two-devices.md). `scripts-dev/check-docs.sh` fails if
 this table and `Cargo.toml` disagree.
 
 Non-code directories: `assets/catalog/` (the component definitions and their guide),

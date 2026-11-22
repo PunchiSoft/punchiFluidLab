@@ -11,6 +11,7 @@ members = [
     "crates/punchi-fluid-solver",
     "crates/punchi-fluid-ffi",
     "crates/punchi-fluid-cli",
+    "apps/punchi-fluid",
 ]
 
 [workspace.package]
@@ -41,6 +42,13 @@ thiserror = "2"
 tiny-skia = { version = "0.12", default-features = false, features = ["png-format", "std"] }
 ab_glyph = "0.2"
 fontdb = { version = "0.24", default-features = false, features = ["memmap", "std"] }
+# The window's toolkit (ADR 0036); accesskit carries the accessibility tree.
+eframe = { version = "0.32", default-features = false, features = [
+    "accesskit",
+    "glow",
+    "wayland",
+    "x11",
+] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
