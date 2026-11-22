@@ -1,293 +1,630 @@
 ---
 name: fluid-power-symbology
-description: ISO 1219 conformance workflow for pneumatic and hydraulic symbols in the catalog. Use when drawing or changing a symbol, adding a valve or actuator, running the symbol lint, or preparing a conformance review.
+description: Author, reconstruct, correct and verify ISO 1219 pneumatic and hydraulic symbols using owner-provided visual references, functional instructions, catalog definitions and geometric conformance reviews. Use when adding or changing a symbol.
 license: GPL-3.0-or-later
 ---
 
-# Fluid-power symbology (ISO 1219)
+# Fluid-power symbology
 
-A schematic that is almost right is worse than one that is obviously a sketch: it
-misleads a reader who trusts it. This skill is the procedure for changing a symbol
-without breaking that trust.
+## Purpose
 
-**Hard rule: never trace or copy a symbol** from another program, a screenshot, a
-manual, a datasheet or the standard itself. Geometry is written by hand to conform,
-and the pull request states which requirement was checked. The normative text is
-copyrighted; this repository records *our* engineering contract, not the standard.
+This skill defines the workflow for identifying, reconstructing, authoring and validating pneumatic and hydraulic symbols in PunchiFluidLab.
 
-### The symbols are normative, not ours to change
+The project implements standardized fluid-power symbology. The symbol's meaning and normative form come from the applicable standards, not from the software displaying it.
 
-The symbols and the circuit conventions are the standard's: one form, the same in every
-application. This repository **implements** them; it does not own them and may not adapt
-them.
+The project owner provides the intended reference, functional interpretation and engineering direction. The agent acts as a technical drawing and implementation assistant: it analyzes the available information, identifies uncertainties, constructs the definition and verifies the result against the project's actual schema and rendering behavior.
 
-- The authority is ISO 1219-1/-2/-3 (and the national adoption named in the contract) and,
-  in our own words, [docs/symbology.md](../../../docs/symbology.md). A reference
-  application, a screenshot, a capture or a manual can only say **which symbol exists**; it
-  never supplies a proportion, a shape, an added mark or a correction.
-- **No transformation of a symbol of ours**: no simplified variant, no added mark, no
-  orientation or proportion chosen to match another program or a capture. A drawing that
-  differs from the standard is a defect of the drawing, not a variant of the symbol. The
-  library panel and the sheet are two views: **the panel shows the symbol itself, without
-  the diagram's connection points; the sheet draws them because that is where a hose
-  connects**, and those marks are not a symbol variant. Neither view is changed to imitate
-  the other.
-- The standard is never modified to fit the application, a capture or a previous drawing. A
-  correction goes to our definition, the renderer and the review record, with the clause and
-  the measures.
+A symbol must communicate the correct function. A visually plausible but functionally incorrect symbol is not acceptable.
 
-### The gate before geometry
+## 1. Authority and responsibilities
 
-No line is drawn until these three exist, in this order:
+Use the following order of authority:
 
-1. **The requirement, in our words**, with the clause it comes from. If the clause cannot
-   be cited, stop: the symbol stays marked unverified and the question goes to the owner.
-2. **The measures**, as numbers: box proportions, where each port sits, the arrow's sense,
-   the spring's end, the blocking mark. A drawing is checked against these numbers, never
-   against a picture.
-3. **The owner's approval of 1 and 2.** The geometry comes after, one symbol at a time.
+1. **Applicable standards:** normative requirements for symbol form, meaning, connections and diagram conventions.
+2. **Project owner:** intended component, supplied references, functional description, engineering requirements and decisions about unresolved interpretations.
+3. **Project contracts:** accepted ADRs, `AGENTS.md`, `docs/symbology.md`, catalog schema and renderer behavior.
+4. **Existing catalog definitions:** implementation examples, not automatic normative authority.
+5. **Agent interpretation:** provisional engineering interpretation that must be identified as such when it is not directly supported by the sources.
 
-A picture from Wikimedia Commons, a CAD library or a manual is **only** a reminder of which
-symbols exist; it is never the source of a proportion. Those drawings were made by someone
-else, for their own edition, and copying one would break both the licence and the geometry.
+The owner is the authority on what component is being requested and what the intended implementation must accomplish.
 
-### The owner's reference
+The agent must not silently replace the owner's functional instructions with an assumption. If an instruction conflicts with a verified normative requirement, explain the conflict and request a decision.
 
-Before drawing, ask the owner for a capture of the element in the application they use as a
-reference: the catalog tile and the same element on the canvas. It is an aid to identify the
-symbol, not a source of geometry.
+The owner may request a non-standard or custom symbol. Such a symbol must not be represented as ISO-conformant.
 
-- It **may** settle: which symbol exists, which side each port is on, whether the drawing
-  has a spring, an actuator, a check seat or a double piston, and whether a student reads it
-  at palette size.
-- It **may never** settle: a proportion, an angle, a coordinate, a stroke width or the exact
-  outline of a part. Those come from the requirement written in our words and from our own
-  measures ([docs/symbology.md](../../../docs/symbology.md)), and the review records which
-  clause was checked.
-- Nothing from the capture is traced, measured with a tool or stored in the repository: no
-  image, no crop, no path.
+## 2. Visual references supplied by the owner
 
-After drawing the symbol by hand, look at the capture again as a reader: if ours cannot be
-told apart from the one in it, the drawing is wrong, and the standard's measures still
-decide the final form. If the capture and the standard disagree, the standard wins; if the
-standard is ambiguous, stop and ask the owner, and leave the review unverified.
+The owner may provide any visual reference, including:
 
-## Standards in force
+- Photographs of physical diagrams or components.
+- Hand-drawn sketches.
+- Screenshots from other software.
+- Technical drawings.
+- Images from books or technical manuals.
+- Figures from applicable standards.
+- Annotated images and detail crops.
+- Existing pneumatic or hydraulic circuit diagrams.
 
-| Standard | Edition | Governs here |
-|---|---|---|
-| ISO 1219-1 | 2012 | graphical symbols, conventional use and data processing |
-| ISO 1219-2 | 2012 | circuit diagrams |
-| ISO 1219-3 | 2016 | symbol modules and connected symbols |
-| ISO 6358 | — | pneumatic flow through a restriction (solver, not drawing) |
-| Port identification | to confirm | ISO 11727 (pneumatic) / ISO 9461 (hydraulic); see Open questions |
+Do not reject a reference merely because it comes from another application or source.
 
-The full contract, the guarantees and the open items are in
-[docs/symbology.md](../../../docs/symbology.md). Read it before this skill; if the two
-disagree, the document wins and this skill is the bug.
+First determine what the image is intended to communicate and how the owner wants it used.
 
-## Vocabulary that changes the drawing
+### 2.1 Classify the reference
 
-- **Function**: what the component does (3/2 directional valve, single-acting
-  cylinder, pressure relief valve).
-- **Position**: one state of a valve. A 3/2 valve has two positions, a 5/3 valve three.
-- **Way**: a distinct port path. "3/2" means three ports, two positions.
-- **Rest position**: the state with no actuation, held by the spring. Position *N* in
-  a file is the *N*-th square **counted from the spring end**.
-- **Port role**: `supply`, `working`, `exhaust`, `mechanical` in the catalog. The
-  solver classifies a connection by roles, not by numerals.
-- **Line class**: `working`, `pilot`, `drain`, `electrical`. Each has its own pattern;
-  a definition declares the class, it never picks a dash pattern.
-- **Pneumatic vs hydraulic**: same ISO 1219-1 symbol language, different circuit
-  conventions (see the table below). This project simulates pneumatics today; a
-  hydraulic symbol may be drawn, but its physics needs a model before it can be claimed.
+Every reference must be classified by its origin and intended purpose.
 
-## Procedure: changing or adding a symbol
+**A. Normative standard figure**
 
-Before step 1, ask the owner for the reference (see *The owner's reference*): it identifies
-the symbol and its ports, and never supplies a measure.
+A figure that defines the symbol in the applicable standard.
 
-1. **Name the function and the class.** Write the sentence the symbol must let a
-   reader say: "pressed, 1 connects to 2; released, 2 connects to 3." If you cannot
-   write it, the symbol is not understood yet.
-2. **Collect the normative requirements** for that class from
-   [docs/symbology.md](../../../docs/symbology.md) and the checklists below. Read the
-   standard itself when you have access; do not copy its figures.
-3. **Check the existing definition** in `assets/catalog/`. Copying the closest file to
-   the user catalog and changing its numbers is the supported path
-   ([assets/catalog/README.md](../../../assets/catalog/README.md)).
-4. **Author the file, not the drawing.** Schema 2 declares parts:
-   `body` (split into one equal square per position), `[[port]]` with `id`, `role`,
-   `position`, `[spring]`, `[actuator]`, `[[behaviour.positions]]` with `connection`
-   and `blocked`, and `[[symbol]]` primitives with `line_class`. The renderer draws the
-   stubs, numerals, flow arrows and blocking marks — do not hand-draw them.
-5. **Run the lint.** `cargo test -p punchi-fluid-catalog` runs the eight lint rules and
-   their tests. A file that breaks a rule is skipped and reported, never fatal.
-6. **Look at it at both sizes.** `PUNCHI_FLUID_PREVIEW=1 ./scripts-dev/run.sh` opens the
-   catalog sheet; check palette size (24–30 px) and export size (300 dpi), light and
-   dark.
-7. **Write the review** in `assets/symbols/review/<id>.md`: status, date, reviewer,
-   provenance of the geometry, automated-check table, visual-check table, what is
-   still open. `pending-300dpi` keeps the export's "not yet verified" note; only
-   evidence changes it.
-8. **Open the pull request with the evidence**: the lint result, the two screenshots,
-   the review file and the checklist item that was checked. A symbol change without a
-   conformance review is not reviewable.
+It may be used to:
 
-## Correcting an existing symbol
+- Identify the normative symbol.
+- Read its geometric proportions and dimensions.
+- Determine relative positions and orientations.
+- Inspect line arrangements and graphical relationships.
+- Derive geometric coordinates needed for an independent implementation.
+- Compare the authored geometry against the normative requirements.
 
-The first pass over this library is a **correction**, because a wrong symbol that is already
-in a circuit teaches the wrong thing. The order is fixed, and it stops before the symbols
-are extended:
+Record the standard, edition, clause or figure reference, and the measures used in the review.
 
-1. **Stock-taking first**: list the symbols, the ones under `assets/symbols/review` and the
-   state of each review. Do not touch anything before that list exists.
-2. **One symbol per change.** A batch hides a wrong arc among ten right ones, and the review
-   stops being a review.
-3. **Write the requirement and the measures** (the gate above), then change the file.
-4. **Lint, the geometry fixture and the 300 dpi captures**, then the family checklist with
-   one answer per normative feature. The fixture is
-   [assets/symbols/fixtures](../../../assets/symbols/fixtures/README.md): the drawing in
-   numbers, which fails when a point moves; read its diff before approving it.
-5. **The owner signs off.** If a requirement is ambiguous, the symbol is marked unverified
-   and the question is written down; a plausible drawing is the worst outcome here.
-6. **Record which requirement was checked** in the review file, not only "reviewed". Fill
-   [assets/symbols/review/TEMPLATE.md](../../../assets/symbols/review/TEMPLATE.md): function,
-   clause, measures, captures, the checklist and a person's sign-off. A record without the
-   clause and the measures is an opinion.
+**B. Owner-provided engineering drawing or sketch**
 
-## Valve checklist
+May be used to:
 
-- One equal square per position, sharing edges, counted from the spring end. The
-  rest position is the square against the spring.
-- Actuator at one end, return spring at the opposite end, both outside the body.
-  `spring_return = true` without `[spring]` is a defect; a spring at the actuator end
-  is a defect.
-- Ports drawn once, at the rest square: one set of numerals, stubs straight to the
-  body edge. Numerals come from the port table and are identical in every square.
-- Inside each square, only that position's flow paths: a straight line from the port
-  it leaves to the port it reaches, arrowhead at the destination. A path never crosses
-  into the neighbouring square.
-- A port the position closes carries its blocking mark **inside that square**; each
-  state must be readable on its own.
-- Paths are declared as connections and classified by port roles. Never author an
-  arrow by hand: the arrow direction is the connection.
-- A 3-position valve shows the centre position too, with its own paths or blocking
-  marks; no empty square.
+- Identify the intended component.
+- Understand the owner's desired representation.
+- Extract owner-specified dimensions when they are provided as engineering requirements.
+- Identify ports, connections, annotations and relationships.
+- Clarify an intended modification or custom representation.
 
-## Actuator checklist
+Do not automatically assume that a sketch is normatively correct.
 
-- Single-acting cylinder: barrel, piston, rod **and return spring at the rod side**,
-  between piston and rod-side wall. The spring compresses with the stroke: same wire,
-  fewer pitch, slightly larger amplitude.
-- Double-acting cylinder: barrel, piston, rod, **no spring**, two working ports, one at
-  each end, drawn above the barrel because the rod leaves on the centreline.
-- The barrel is the widest rectangle the definition declares; a longer cylinder is a
-  different file, not a code change. The piston never leaves the barrel; only the rod
-  reaches outside the body.
-- Moving parts come from the simulation state; fixed parts from the file. `kinematics =
-  "linear_actuator"` declares that the renderer draws piston, rod and (only if
-  `[spring]` exists) the spring.
+**C. Image from another application, library or external manual**
 
-## Circuit checklist (Parts 2 and 3)
+May be used to:
 
-- Orthogonal lines; a line never passes behind a symbol; a connection joins ports, not
-  arbitrary points on a body.
-- A filled dot where three or more lines meet; no dot where lines cross.
-- Components grouped and numbered; the sheet carries an identification block (title,
-  project, date, sheet, revision).
-- The drawing sits inside the sheet frame and content area, the same geometry the PNG
-  and PDF export uses.
+- Identify the component the owner is referring to.
+- Understand the intended function and arrangement.
+- Identify visible features the owner wants to discuss.
+- Locate differences that need to be resolved against the applicable standard.
 
-## Pneumatic and hydraulic differences
+It must not become a source from which third-party graphical assets, proprietary implementations, manual content or application-specific drawing resources are copied into the repository.
 
-| Concern | Pneumatic | Hydraulic |
-|---|---|---|
-| Supply | compressor / air supply symbol | pump symbol, reservoir and return line |
-| Exhaust | exhaust port, often a silencer | return to tank; drain line to tank |
-| Line classes | working, pilot, drain, electrical | pressure, return, drain, pilot |
-| Energy storage | receiver | accumulator and pressure relief valve |
-| Medium model | compressible, ISO 6358 | incompressible, different model (not implemented) |
-| Port numerals | 1 pressure, 2/4 working, 3/5 exhaust, 12/14 pilot | same convention; confirm current port standard |
+Do not confuse the ability to inspect an image with permission to incorporate its original material into the project.
 
-Do not put a pneumatic exhaust or a silencer in a hydraulic circuit, or a tank return
-in a pneumatic one. The symbol set is shared; the circuit conventions are not.
+**D. Photograph of a physical component or installation**
 
-## What the renderer guarantees (do not re-check by hand)
+May be used to understand:
 
-1. Valve squares are equal and aligned; a file cannot make them ragged.
-2. Arrowheads point along the flow and a blocked port always shows its mark.
-3. Port numerals come from the port table, so the file cannot disagree with the drawing.
-4. No meaning depends on colour alone: the active square is a shape/ink change and
-   values also appear as numbers.
-5. A symbol below the legibility floor is replaced by a simplified marker.
+- Component identity.
+- Mechanical arrangement.
+- Number and location of physical connections.
+- Actuation and return mechanisms.
+- Installation context.
+- Functional relationships.
 
-These are enforced in `punchi-fluid-draw` and `punchi-fluid-catalog`; a bug there is a
-code bug with a test, not a per-file workaround.
+A photograph of a physical component does not, by itself, establish its standardized graphical representation.
 
-## Gotchas
+### 2.2 Analyze the reference
 
-- **A reference is not a measure.** A capture can say which symbol exists and where its
-  ports sit; it cannot say how long a seat is or how wide a piston is. Tracing it is a
-  licence break and a geometry bug.
-- **The capture does not enter the repository.** No screenshot, crop or path from the
-  owner's reference in a tracked file; `check-docs.sh` fails on a path under `$HOME`.
-- **Position index is counted from the spring end**, not from the left. A spring on the
-  right reverses the reading; the test `every_position_shuts_its_blocked_port_inside_its_own_square`
-  is the guard.
-- **Do not add a second set of port numerals per square.** The numerals belong to the
-  rest square and are read with the valve.
-- **A flow path that touches the square border is a defect**, even if it looks better
-  centred; it makes two states unreadable.
-- **`line_class` is mandatory** on every line and polyline. `dashed = true` is for a
-  part that is dashed by nature (a spring), never a substitute for a pilot line.
-- **Primitives live in the `0..=1` box**, shared with port positions. No zero-length
-  line, zero radius or stroke below the floor.
-- **Legibility is part of conformance.** A symbol that cannot be read at palette size
-  fails review even with perfect geometry.
-- **The review status is evidence, not paperwork.** `pending-300dpi` is why the export
-  still labels the document unverified; flipping it without a reviewed image is a lie.
-- **No colour-only state.** Spool position must be visible as shape/ink, and every
-  colour-coded value must also be a number.
-- **No third-party asset**, including a "reference" PNG in the repository. If the
-  provenance is not ours or hand-drawn, it does not enter.
+When the owner supplies an image:
 
-## Open questions — do not invent the answer
+1. Inspect the entire image before analyzing individual details.
+2. Identify the component or circuit being discussed.
+3. Identify visible symbols, ports, actuators, springs, paths and annotations.
+4. Separate visible information from functional information supplied by the owner.
+5. Determine whether the image is a normative figure, an engineering reference or an identification reference.
+6. Ask for clarification only when a relevant detail cannot be established.
+7. Select the applicable normative symbol and implementation approach.
 
-- **Port-identification edition**: confirm the current ISO catalogue edition for the
-  pneumatic and hydraulic port/control-mechanism identification standards before citing
-  them in a review. The numeral convention used here (1 pressure, 2/4 working, 3/5
-  exhaust, 12/14 pilot) is consistent with it, but the edition is not recorded.
-- **300 dpi raster**: each built-in review is `pending-300dpi` until a reviewed image
-  exists; the PDF is vector, but the evidence is not there yet.
-- **Second reader**: the reviews are an automated pass; a second person's signature is
-  open.
-- **Junction dots and title block**: they need the pipe network (M4) and the sheet layout
-  (M2); do not fake them in a symbol file.
+Do not invent missing details.
 
-When a normative question is open, the code says so and the export labels the document
-unverified. A plausible-looking but non-conformant diagram is the worst outcome this
-project can ship.
+When image quality prevents reliable identification, state which details are unclear rather than fabricating coordinates or geometry.
 
-## Validation
+### 2.3 Geometric reconstruction
+
+Geometric reconstruction is permitted when the source and its use authorize it.
+
+For normative standard figures, the agent may read dimensions, measure proportions, derive coordinates and reconstruct the symbol geometry.
+
+For owner-provided engineering requirements, use explicitly supplied dimensions and geometric constraints.
+
+For third-party application captures and external graphical assets, do not trace or copy their graphical implementation. Use them to understand the requested component and resolve its intended meaning against the applicable standard.
+
+Always construct an independent TOML definition using PunchiFluidLab's own schema and primitives.
+
+The resulting definition must not depend on the original image at runtime.
+
+## 3. Normative standards
+
+Read the project's current normative contract before modifying symbols:
+
+- `docs/symbology.md`
+- `AGENTS.md`
+- Relevant accepted ADRs.
+- Applicable catalog documentation.
+
+The project currently identifies the following standards:
+
+| Standard | Scope |
+|---|---|
+| ISO 1219-1:2012 | Graphical symbols and conventional use |
+| ISO 1219-2:2012 | Circuit diagram conventions |
+| ISO 1219-3:2016 | Symbol modules and combinations |
+| ISO 6358 | Pneumatic flow through restrictions |
+| ISO 5598 | Fluid power vocabulary |
+
+Check the applicable edition and any national adoption documented by the project before making a normative claim.
+
+Do not invent clause numbers, dimensions or requirements.
+
+If the standard's applicable requirement cannot be verified, record the item as unresolved.
+
+### 3.1 Normative identity
+
+The same standardized symbol must retain its normative meaning and form independently of the application that displays it.
+
+PunchiFluidLab must implement the symbol rather than create a software-specific interpretation of its meaning.
+
+Do not introduce graphical variants merely to imitate another application.
+
+A custom representation must be explicitly identified as custom or non-standard.
+
+### 3.2 Functional interpretation
+
+A symbol describes a component or function. The catalog behavior describes how the simulator models it.
+
+These are related but distinct concerns.
+
+For every new component, determine:
+
+- What physical or logical function it represents.
+- What its ports represent.
+- Which ports communicate in each operating state.
+- What conditions change its state.
+- Whether it has a mechanical actuator or return mechanism.
+- Whether it is pneumatic, hydraulic, electrical or a combination.
+- Whether its physical behavior is currently supported by the solver.
+
+A symbol may be graphically valid even when its physical simulation model is not yet implemented. Do not claim simulation support merely because the component can be drawn.
+
+## 4. Workflow: reconstructing a symbol
+
+### Step 1 — Understand the owner's request
+
+Identify the intended component and its purpose.
+
+Write a functional description in plain language.
+
+For example:
+
+"When pressure is present at either inlet, the shuttle selects the higher-pressure inlet and supplies the outlet."
+
+If the owner has supplied a functional description, preserve its meaning.
+
+Do not infer a different behavior from the image alone.
+
+### Step 2 — Inspect the visual reference
+
+Classify its origin and intended use according to Section 2.
+
+Identify:
+
+- Main body.
+- Number of positions.
+- Ports and their identifiers.
+- Actuators.
+- Springs and return mechanisms.
+- Flow paths.
+- Blocking marks.
+- Arrows and directional features.
+- Additional graphical elements.
+
+For a circuit, also identify the connections between components.
+
+### Step 3 — Establish normative requirements
+
+Determine the corresponding standardized symbol and its applicable requirements.
+
+Record:
+
+- Standard and edition.
+- Clause or figure, when available.
+- Required geometric relationships.
+- Port arrangement.
+- Direction of flow.
+- Actuation and return arrangement.
+- Required marks and annotations.
+
+When using a normative figure as a geometric reference, record the measures read or derived from it.
+
+Do not present a derived estimate as a dimension explicitly stated by the standard.
+
+### Step 4 — Establish geometry
+
+Define the symbol's geometry using the project's coordinate system.
+
+Prefer normalized coordinates where the schema requires them.
+
+Record:
+
+- Bounding box.
+- Relative proportions.
+- Primitive coordinates.
+- Port positions.
+- Line endpoints.
+- Arc centers and radii.
+- Orientation.
+- Required clearances.
+- Relationships between graphical elements.
+
+Keep observed measurements, derived coordinates and inferred values distinguishable.
+
+Do not use arbitrary coordinates merely to make the first rendering look plausible.
+
+### Step 5 — Inspect the existing catalog
+
+Before creating a definition, inspect:
+
+- `assets/catalog/`
+- `assets/catalog/README.md`
+- Related component definitions.
+- Existing symbol review records.
+- Existing geometry fixtures.
+
+Reuse the closest valid definition as a starting point when appropriate.
+
+Do not introduce a new behavior variant or a new code path just to accommodate a new symbol. Catalog definitions are data-driven.
+
+A new behavior variant requires the corresponding architectural decision.
+
+### Step 6 — Author the TOML definition
+
+Use the schema and field names documented by the current catalog.
+
+Do not assume an older schema version is still current.
+
+The definition may include:
+
+- Component metadata.
+- Ports.
+- Port roles.
+- Port positions.
+- Actuator and spring declarations.
+- Kinematics.
+- Behavior.
+- Behavior positions.
+- Symbol primitives.
+- Line classes.
+- Annotations.
+
+Use the smallest definition that accurately expresses the component.
+
+### Step 7 — Respect renderer responsibilities
+
+Understand which graphical elements are authored in TOML and which are generated by the renderer.
+
+For flat symbols:
+
+- Stubs are declared as TOML symbol primitives.
+- Connection circles are drawn by the renderer.
+- Port numerals are drawn by the renderer when applicable.
+- Port metadata and positions determine connection behavior.
+
+Do not assume that the renderer automatically generates every visible line.
+
+For valves and other component families, inspect the actual drawing implementation before assigning responsibility for a graphical element.
+
+Never duplicate a renderer-generated feature as a TOML primitive.
+
+Never omit a primitive that the current renderer expects the definition to provide.
+
+### Step 8 — Validate the definition
+
+Run the catalog tests and the relevant validation tools.
+
+At minimum:
 
 ```bash
-cargo test -p punchi-fluid-catalog      # schema, lint rules, review coverage
-cargo test -p punchi-fluid-draw         # geometry and position tests
-./scripts-dev/check.sh                  # the whole gate
-
-PUNCHI_FLUID_PREVIEW=1 ./scripts-dev/run.sh
-PUNCHI_FLUID_WRITE_SAMPLE=1 cargo test -p punchi-fluid-export --test generate
+cargo test -p punchi-fluid-catalog
 ```
 
-Then the manual part: read the rendered symbol at 24–30 px in light and dark, at 300
-dpi, against the checklist for its class, and record the result in the review file. The
-pull request carries the screenshots and names the requirement checked.
+Check:
 
-## Sources
+- TOML syntax.
+- Schema version.
+- Required fields.
+- Unknown keys.
+- Unique identifiers.
+- Port roles.
+- Port positions.
+- Primitive structure.
+- Geometry bounds.
+- Behavior declarations.
+- Connections.
+- Conductance and physical values where applicable.
 
-- ISO 1219-1:2012, ISO 1219-2:2012, ISO 1219-3:2016 — read the standard; do not
-  reproduce it.
-- ISO 6358 — pneumatic flow (solver side, see [solver-validation](../solver-validation/SKILL.md)).
-- [docs/symbology.md](../../../docs/symbology.md) — the repository's normative contract.
-- [assets/catalog/README.md](../../../assets/catalog/README.md) — schema 2 and the lint.
+A malformed definition must be corrected rather than hidden by changing validation rules.
+
+### Step 9 — Render and inspect
+
+Use the project's current symbol preview tooling.
+
+The review must include:
+
+- Palette size.
+- Canvas size.
+- Light theme.
+- Dark theme.
+- Export resolution.
+- Port visibility.
+- Numeral readability.
+- Geometric alignment.
+- Line continuity.
+- Clearances.
+- Correct rendering of actuators and springs.
+
+Where available, generate the symbol sheet using:
+
+```bash
+cargo run -p punchi-fluid-export --bin symbol-sheet -- <id>
+```
+
+Check the actual command options before using additional arguments.
+
+Do not approve a symbol solely because its TOML parses.
+
+### Step 10 — Review geometric conformance
+
+Compare the authored definition against the applicable requirements.
+
+When a normative standard figure was used as a geometric reference, check the reconstructed form against its documented measures and relationships.
+
+When an owner-provided sketch or photograph was used, check that the implementation reflects the owner's intended component while remaining consistent with the applicable standard.
+
+Record discrepancies explicitly.
+
+Do not adjust geometry merely to make it resemble an unrelated software rendering.
+
+### Step 11 — Record the review
+
+Create or update:
+
+`assets/symbols/review/<component-id>.md`
+
+Use:
+
+`assets/symbols/review/TEMPLATE.md`
+
+Record:
+
+- Component identifier.
+- Functional description.
+- Reference provenance.
+- Standard and edition.
+- Normative clause or figure.
+- Measures and geometric relationships.
+- Derived coordinates where relevant.
+- Automated validation results.
+- Visual review results.
+- Unresolved questions.
+- Reviewer and sign-off.
+
+The repository must not store unauthorized third-party material.
+
+The review should preserve enough information to understand how the geometry was constructed without depending on an external image remaining available.
+
+### Step 12 — Update geometry fixtures
+
+The geometry fixture records the drawing calls produced by the renderer.
+
+When a symbol changes, update its fixture using the repository's documented procedure.
+
+For example:
+
+```bash
+UPDATE_SYMBOL_FIXTURES=1 cargo test -p punchi-fluid-draw --test symbol_geometry
+```
+
+Read the fixture diff.
+
+Confirm that every coordinate, line width and graphical element changed for an intentional reason.
+
+Commit the TOML definition, fixture and review record together.
+
+### Step 13 — Prepare the pull request
+
+Include:
+
+- Reason for the change.
+- Functional description.
+- Normative source.
+- Reference provenance.
+- Geometric measures.
+- TOML changes.
+- Lint results.
+- Fixture changes.
+- Light and dark captures.
+- Review record.
+- Remaining limitations.
+
+One symbol per change is preferred during corrections to the existing catalog.
+
+The owner performs the final approval.
+
+## 5. Valve reconstruction checklist
+
+For directional valves, verify:
+
+- Correct number of positions and ways.
+- One equal square per position.
+- Correct ordering of positions.
+- Correct rest position.
+- Correct actuator side.
+- Correct spring side.
+- Correct port arrangement.
+- Correct port identifiers and numerals.
+- Correct flow paths for every position.
+- Correct blocking marks.
+- Correct arrow direction.
+- No path crosses into another position unintentionally.
+
+The functional description must agree with the behavior declaration.
+
+For example, a 3/2 valve must have three ports and two positions. Its connections in each position must match the intended function.
+
+Do not assume that every 3/2 or 5/2 valve has the same rest state or actuation mechanism.
+
+## 6. Actuator and cylinder checklist
+
+For cylinders, verify:
+
+- Single-acting or double-acting configuration.
+- Barrel.
+- Piston.
+- Rod.
+- Number and location of working ports.
+- Return spring, if applicable.
+- Correct mechanical arrangement.
+- Correct kinematics declaration.
+- Correct relationship between the fixed geometry and moving parts.
+
+The renderer must draw moving elements according to the actual catalog contract and simulation state.
+
+Do not add a spring to a double-acting cylinder unless the requested component and its normative representation require it.
+
+## 7. Flat symbols and other components
+
+For flat symbols such as shuttle valves and two-pressure valves, verify:
+
+- Correct number of inlets and outlets.
+- Correct port roles.
+- Correct identifiers.
+- Correct printed numerals.
+- Correct graphical primitives.
+- Correct functional behavior.
+
+When two ports share a printed numeral, keep their internal identifiers distinct.
+
+For example, two inlets may have identifiers `1a` and `1b`, while both display the numeral `1`, provided the catalog contract supports this arrangement.
+
+Do not confuse the internal port identifier with its printed numeral.
+
+For symbols with no moving parts, do not introduce unnecessary kinematics.
+
+## 8. Circuit diagram checklist
+
+When reconstructing a complete circuit, verify:
+
+- Component identity.
+- Correct connections between ports.
+- Correct line classes.
+- Correct junctions.
+- Correct crossing behavior.
+- Correct supply and return arrangement.
+- Correct pilot and drain lines.
+- Correct component numbering.
+- Correct diagram layout.
+
+A symbol's visual proximity to another symbol does not establish a connection.
+
+Connections must be represented through the document's actual connection model.
+
+## 9. Pneumatic and hydraulic distinctions
+
+ISO 1219 provides a common graphical language for fluid-power symbols.
+
+However, pneumatic and hydraulic circuits may differ in their physical arrangement, supply, return, exhaust and operating assumptions.
+
+Do not assume that a pneumatic simulation model automatically represents hydraulic behavior.
+
+Verify the actual solver capabilities before claiming that a hydraulic component can be simulated.
+
+A hydraulic symbol may be implemented graphically while its hydraulic physics remains unsupported.
+
+## 10. Common mistakes
+
+Avoid the following:
+
+- Inventing dimensions without identifying their origin.
+- Treating an image as proof of normative compliance.
+- Treating every reference image as forbidden.
+- Treating every reference image as permission to copy external graphical assets.
+- Copying another application's internal implementation.
+- Confusing a physical component with its standardized symbol.
+- Confusing ports with printed numerals.
+- Confusing symbol geometry with renderer-generated connection details.
+- Drawing flow arrows manually when the behavior model already determines them.
+- Duplicating generated circles or numerals.
+- Modifying the renderer to compensate for incorrect catalog geometry.
+- Changing validation rules merely to accept an invalid definition.
+- Claiming a component is simulated when only its drawing exists.
+- Marking an unresolved symbol as conformant.
+- Updating a fixture without reviewing its diff.
+
+## 11. Handling uncertainty
+
+Classify uncertain information as one of:
+
+- `verified`: supported by a normative requirement or an established project contract.
+- `owner-defined`: explicitly supplied or approved by the project owner.
+- `derived`: calculated from documented measures or geometric relationships.
+- `inferred`: interpretation that still needs confirmation.
+- `unresolved`: insufficient information to make a reliable decision.
+
+When a detail is unresolved and affects the symbol's meaning or conformance, ask the owner before finalizing it.
+
+Do not silently convert an inference into a verified requirement.
+
+If the standard's interpretation is unclear, preserve the uncertainty in the review record.
+
+## 12. Validation and acceptance
+
+A symbol is ready for approval when:
+
+- Its function is understood.
+- Its reference provenance is recorded.
+- Its normative requirements are identified.
+- Its geometry has a documented basis.
+- Its TOML definition passes catalog validation.
+- Its rendered appearance has been inspected.
+- Its geometry fixture is updated and reviewed.
+- Its conformance review is complete or explicitly marked pending.
+- The owner has reviewed the result.
+
+A symbol with unresolved normative requirements must not be described as fully verified.
+
+## 13. Repository rules
+
+Before changing files, inspect the current repository state.
+
+Follow:
+
+- `AGENTS.md`
+- `docs/symbology.md`
+- Accepted ADRs.
+- `assets/catalog/README.md`
+- `assets/symbols/review/TEMPLATE.md`
+- `assets/symbols/fixtures/README.md`
+
+Do not create a second implementation of existing catalog, drawing or validation responsibilities.
+
+Do not add third-party assets, proprietary symbol libraries, external application manuals or copied graphical resources to the repository.
+
+A normative reference may guide reconstruction under ADR 0040. Its figures and text must not be copied into the repository.
+
+Follow the branch, review, changelog and pull-request rules in `AGENTS.md`.
+
+## 14. Definition of done
+
+The work is complete when PunchiFluidLab contains an independently authored, valid and reviewed symbol definition that:
+
+1. Represents the component requested by the owner.
+2. Matches the intended functional behavior.
+3. Follows the applicable normative requirements, or is explicitly identified as custom.
+4. Uses the project's own TOML schema and rendering system.
+5. Passes automated validation.
+6. Has a reviewed geometry fixture.
+7. Has a documented conformance review.
+8. Has owner approval.

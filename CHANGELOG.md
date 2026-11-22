@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La referencia del propietario, permitida — 2026-11-22
+
+- **ADR 0040 enmienda la regla de contenido**: el propietario es la autoridad del símbolo
+  que quiere. Una figura de la norma o un dibujo de ingeniería con sus medidas alimentan la
+  geometría; una captura de otra aplicación o una fotografía identifican el componente, su
+  función y su disposición, pero no se calcan. La reconstrucción se escribe como nuestro
+  TOML, la imagen de referencia no se guarda y la revisión separa lo observado, lo requerido,
+  lo que dice la norma y lo que es interpretación o suposición. El código y los activos de
+  otro programa siguen fuera del repositorio.
+- **`AGENTS.md`, `symbology.md` y la skill de simbología** recogen la distinción. Sin código
+  todavía: la decisión habilita la skill de reconstrucción.
+
 ### El shuttle sigue la geometría del propietario — 2026-11-22
 
 - **El símbolo del shuttle (OR) se corrige con la geometría del propietario**: cuerpo

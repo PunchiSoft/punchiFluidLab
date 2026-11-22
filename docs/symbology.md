@@ -102,7 +102,7 @@ application.** This project implements them; it does not own them and may not ad
 
 The source and the parts that condition the air are a set, and a reader recognises them by
 shape alone. Every one of them is a **square turned 45°** or an upright square, drawn from the
-requirement and never traced, and every connection point is the small open circle of the
+requirement and never copied from another program, and every connection point is the small open circle of the
 reference set so that a hose is visibly meant to arrive there.
 
 | Symbol | Shape, and what carries the meaning |
