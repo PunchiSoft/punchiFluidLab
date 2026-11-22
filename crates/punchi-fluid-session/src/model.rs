@@ -169,6 +169,23 @@ impl Model {
             .unwrap_or(0)
     }
 
+    /// Presses the valve a placement is, while the button is held. A momentary valve
+    /// returns on [`Self::release_valve`]; a maintained one stays.
+    pub fn press_valve(&mut self, index: usize) -> bool {
+        let Some(valve) = self.valve_of(index) else {
+            return false;
+        };
+        self.network.press_valve_at(valve)
+    }
+
+    /// Releases the valve a placement is, returning it when its return is a spring.
+    pub fn release_valve(&mut self, index: usize) -> bool {
+        let Some(valve) = self.valve_of(index) else {
+            return false;
+        };
+        self.network.release_valve_at(valve)
+    }
+
     /// Reading of an instrument at `index`, in the unit its definition declares.
     #[must_use]
     pub fn reading(&self, index: usize, definition: &ComponentDefinition) -> Option<Reading> {
@@ -309,6 +326,19 @@ mod tests {
         let telemetry = model.network().telemetry();
         assert!(telemetry.time > before);
         assert!(telemetry.pressure_pa >= 0.0, "pressure never goes negative");
+    }
+
+    #[test]
+    fn a_held_valve_moves_and_a_released_spring_returns_it() {
+        let document = worked_document();
+        let mut model =
+            Model::build(&document, &Catalog::builtin()).expect("the worked circuit builds");
+        assert_eq!(model.valve_position(1), 0);
+        assert!(model.press_valve(1));
+        assert_eq!(model.valve_position(1), 1, "holding moves the spool");
+        assert!(model.release_valve(1));
+        assert_eq!(model.valve_position(1), 0, "a spring returns it");
+        assert!(!model.press_valve(0), "the supply is not a valve");
     }
 
     #[test]
