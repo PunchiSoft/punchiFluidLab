@@ -64,6 +64,7 @@ fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked 
 | `punchi-fluid-check` | the design faults a sheet can have before it is run | physics, drawing, UI | `catalog`, `doc`, `draw` |
 | `punchi-fluid-export` | page geometry, frame, title block, legend, PNG and PDF writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-ffi` | the C ABI: one session, one frame, hit tests, layout, export | logic of its own | all of the above |
+| `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, and the editor state as it moves | physics, widgets | `core`, `doc`, `draw`, `file` |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `core`, `file`, `solver`, `catalog`, `check`, `doc`, `draw` |
 | `punchi-fluid-window` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter | physics, the document | `core`, `doc`, `draw`, `export` |
 

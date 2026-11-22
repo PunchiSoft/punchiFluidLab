@@ -1,0 +1,18 @@
+[package]
+name = "punchi-fluid-session"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+description = "The document's life between the file and the window"
+
+[dependencies]
+punchi-fluid-doc = { workspace = true }
+punchi-fluid-draw = { workspace = true }
+punchi-fluid-file = { workspace = true }
+
+[lints]
+workspace = true

@@ -50,19 +50,16 @@ use punchi_fluid_core::paper::{
 const JUNCTION_ID: &str = "junction.tee";
 const JUNCTION_MM: f32 = 8.0;
 
-use punchi_fluid_doc::{
-    Align, Circuit, Document, Endpoint, Placement, PlacementEdits, Quantity, Turn,
-};
+use punchi_fluid_doc::{Align, Document, Placement, PlacementEdits, Quantity, Turn};
 use punchi_fluid_draw::placed::{
     ExhaustMark, Pipe, PipeEnd, Placed, Reading, draw_placed, port_edge, port_edge_towards,
     port_point, route_between_boxes_avoiding, route_length_mm,
 };
 use punchi_fluid_draw::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface};
 use punchi_fluid_draw::symbol::Ink;
-use punchi_fluid_draw::{Layout, Orientation, dashes};
-use punchi_fluid_file::paper::StoredSheet;
+use punchi_fluid_draw::{Layout, dashes};
 use punchi_fluid_file::recent::RecentList;
-use punchi_fluid_file::sheet::{Sheet, StoredEdits, StoredPipe, StoredPlacement};
+use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_solver::network::{
     Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
 };
@@ -2010,177 +2007,12 @@ impl PfSession {
 
     /// The document as the sheet format stores it.
     fn to_sheet(&self) -> Sheet {
-        let placement = self
-            .document
-            .placements()
-            .iter()
-            .map(|placement| {
-                let edits = &placement.edits;
-                let edit = if edits.is_empty() {
-                    None
-                } else {
-                    Some(StoredEdits {
-                        pressure_bar: edits.pressure_bar,
-                        conductance: edits.conductance,
-                        stroke_mm: edits.stroke_mm,
-                        bore_mm: edits.bore_mm,
-                        rod_mm: edits.rod_mm,
-                        moving_mass_kg: edits.moving_mass_kg,
-                    })
-                };
-                // Tenths of a millimetre are the precision the sheet draws at; storing
-                // the raw `f32` only writes the layout's arithmetic noise into the file.
-                let round = |value: f32| (value * 10.0).round() / 10.0;
-                StoredPlacement {
-                    id: placement.id(),
-                    circuit: placement.circuit,
-                    catalog: placement.catalog_id.clone(),
-                    x: round(placement.centre.x),
-                    y: round(placement.centre.y),
-                    width: round(placement.width),
-                    height: round(placement.height),
-                    edit,
-                    quarter_turns: placement.orientation.quarter_turns(),
-                    mirrored: placement.orientation.mirrored(),
-                    designation: placement.designation.clone(),
-                    source: placement
-                        .source
-                        .map(|source| punchi_fluid_file::sheet::StoredSource {
-                            placement: source.placement,
-                            quantity: source.quantity.as_str().to_owned(),
-                        }),
-                    port_closures: placement.port_closures.clone(),
-                }
-            })
-            .collect();
-        let pipe = self
-            .document
-            .connections()
-            .iter()
-            .map(|connection| StoredPipe {
-                circuit: connection.circuit,
-                from: connection.from.placement,
-                from_port: connection.from.port.clone(),
-                to: connection.to.placement,
-                to_port: connection.to.port.clone(),
-                offset_tenths: connection.offset_tenths(),
-                class: match connection.class() {
-                    LineClass::Pilot => punchi_fluid_file::sheet::StoredClass::Pilot,
-                    LineClass::Drain => punchi_fluid_file::sheet::StoredClass::Drain,
-                    // The file has no electrical class yet, so a line the format cannot
-                    // name is written as working until F6 gives it one.
-                    LineClass::Working | LineClass::Electrical => {
-                        punchi_fluid_file::sheet::StoredClass::Working
-                    }
-                },
-                tube_od_hundredths: connection.tube_od_hundredths(),
-            })
-            .collect();
-        let circuits = self
-            .document
-            .circuits()
-            .iter()
-            .map(|circuit| punchi_fluid_file::sheet::StoredCircuit {
-                id: circuit.id,
-                title: circuit.title.clone(),
-                block: punchi_fluid_file::sheet::StoredBlock::from_block(&circuit.block),
-            })
-            .collect();
-        Sheet {
-            format: punchi_fluid_file::sheet::SHEET_VERSION,
-            title: String::from("Circuito"),
-            sheet: StoredSheet::from(self.document.sheet()),
-            circuits,
-            placement,
-            pipe,
-            active: self.document.active_circuit(),
-        }
+        punchi_fluid_session::to_sheet(&self.document)
     }
 
     /// Replaces the document with a parsed sheet, leaving the old one untouched on error.
     fn load(&mut self, sheet: &Sheet) -> Result<(), String> {
-        let placements: Vec<Placement> = sheet
-            .placement
-            .iter()
-            .map(|stored| {
-                let mut placement = Placement::with_id(
-                    stored.id,
-                    stored.catalog.clone(),
-                    Pt::new(stored.x, stored.y),
-                    stored.width,
-                    stored.height,
-                );
-                placement.circuit = stored.circuit;
-                if let Some(edit) = stored.edit {
-                    placement.edits = PlacementEdits {
-                        pressure_bar: edit.pressure_bar,
-                        conductance: edit.conductance,
-                        stroke_mm: edit.stroke_mm,
-                        bore_mm: edit.bore_mm,
-                        rod_mm: edit.rod_mm,
-                        moving_mass_kg: edit.moving_mass_kg,
-                    };
-                }
-                placement.orientation = Orientation::new(stored.quarter_turns, stored.mirrored);
-                placement.source = stored.source.as_ref().and_then(|source| {
-                    let quantity = punchi_fluid_doc::Quantity::from_name(&source.quantity)?;
-                    Some(punchi_fluid_doc::Source::new(source.placement, quantity))
-                });
-                placement.designation.clone_from(&stored.designation);
-                placement.port_closures.clone_from(&stored.port_closures);
-                placement
-            })
-            .collect();
-        let mut circuits: Vec<Circuit> = sheet
-            .circuits
-            .iter()
-            .map(|stored| {
-                let mut circuit = Circuit::new(stored.id, stored.title.clone());
-                circuit.block = stored.block.to_block(&stored.title);
-                circuit
-            })
-            .collect();
-        if circuits.is_empty() {
-            circuits.push(Circuit::new(0, "Circuito 1"));
-        }
-        let active = if circuits.iter().any(|circuit| circuit.id == sheet.active) {
-            sheet.active
-        } else {
-            circuits[0].id
-        };
-        let mut document = Document::new();
-        if !document.set_project(circuits, active) {
-            return Err(String::from("the project has no usable circuit"));
-        }
-        // The sheet is part of the file: a drawing opened on A3 stays on A3, and a file
-        // written before the paper existed opens on the unframed A4 its geometry expects.
-        document.seed_sheet(sheet.paper_sheet());
-        document.seed(placements);
-        for pipe in &sheet.pipe {
-            if !document.seed_connect(
-                Endpoint::new(pipe.from, pipe.from_port.clone()),
-                Endpoint::new(pipe.to, pipe.to_port.clone()),
-            ) {
-                return Err(format!(
-                    "the pipe {}:{} -> {}:{} cannot be connected",
-                    pipe.from, pipe.from_port, pipe.to, pipe.to_port
-                ));
-            }
-            let index = document.connections().len() - 1;
-            document.seed_pipe_circuit(index, pipe.circuit);
-            document.seed_route(index, pipe.offset_tenths);
-            document.seed_pipe_class(
-                index,
-                match pipe.class {
-                    punchi_fluid_file::sheet::StoredClass::Working => LineClass::Working,
-                    punchi_fluid_file::sheet::StoredClass::Pilot => LineClass::Pilot,
-                    punchi_fluid_file::sheet::StoredClass::Drain => LineClass::Drain,
-                },
-            );
-            // The size is read verbatim: an old sheet has no key and stays unspecified,
-            // which is not the same as a new pipe's documented 10 mm.
-            document.seed_pipe_tube(index, pipe.tube_od_hundredths);
-        }
+        let document = punchi_fluid_session::load(sheet)?;
         self.document = document;
         let (width, height) = self.document.sheet().size_mm();
         self.width_mm = width;

@@ -93,6 +93,7 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 | `punchi-fluid-draw` | El dibujo único del circuito, en milímetros, tras un trait `Surface` |
 | `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda, y los escritores PNG y PDF |
 | `punchi-fluid-ffi` | El ABI C que habla la ventana: el documento, el cuadro de dibujo, los hit tests y la exportación |
+| `punchi-fluid-session` | La vida del documento entre el fichero y la ventana: la conversión hoja↔documento |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
 | `punchi-fluid-cli` | `validate`, `simulate` y `check` sin ventana |
 | `apps/punchi-fluid-qt` | La ventana: cinta, barra lateral de catálogo, hoja, barra de estado y la paleta del escritorio, sobre el ABI C |
