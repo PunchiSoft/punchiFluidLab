@@ -3,8 +3,8 @@
 Status: **the three regions exist; parts of the spec are still open.** The sidebar tiles,
 groups, search and footer, the panels that hide, the ribbon's depth and icon family, the
 workspace frame and the adaptive shell are target, not current window; each section says
-what is there today. The staged order of that work is
-[interface-plan.md](interface-plan.md). The document stays the specification: a change to
+what is there today. The staged order of that work is kept in the owner's working notes. The
+document stays the specification: a change to
 a region starts here. The font item under *Still open* is the only open item of the theme
 layer itself.
 
@@ -72,7 +72,7 @@ recorded case, not an exception. The ribbon height does not
 change (121 px at the default unit), so the sheet below keeps its room and the A4 page is
 not covered. **Today** the window applies that one breakpoint and keeps the catalog at
 248 px and the right panels at 360 px; the three modes of *The window adapts* below are
-target ([interface-plan.md](interface-plan.md) stage 6).
+target (the owner's staged plan, stage 6).
 
 ### 1. Ribbon (top)
 
@@ -376,7 +376,7 @@ The catalog on the left and the right dock (the properties of one component and 
 block's editor) are **panels**, and a panel is chrome: it can be hidden, widened or
 narrowed, and none of that changes the circuit. The page setup and the export editor are
 **invoked editors** for now: they open centered, they close, and moving them to the right
-dock is a later decision (stage 6 of [interface-plan.md](interface-plan.md)).
+dock is a later decision (stage 6 of the owner's staged plan).
 
 - A panel has a **header** with its title and its hide control, and a **rail** at the edge
   while it is closed, one unit wide and never below 24 px, so the control stays a target.
@@ -398,8 +398,7 @@ dock is a later decision (stage 6 of [interface-plan.md](interface-plan.md)).
 
 Both panels implement this today: the catalog and the right dock fold to their rail,
 auto-hide is opt-in, the state is remembered and **Restablecer vista** puts it back. The
-adaptive modes that move a panel to a drawer are stage 6 of
-[interface-plan.md](interface-plan.md).
+adaptive modes that move a panel to a drawer are stage 6 of the owner's staged plan.
 
 ### 2.2 The window adapts
 
@@ -453,7 +452,7 @@ before a panel is allowed to cover it:
   opens at the screen-aware size and remembers its size and place. `--check-layout` proves
   it at seven widths, with the drawer open, with the ribbon folded and with the geometry
   restored, at 1.25×, 1.5× and 2× density and with a 1.5× font
-  ([interface-plan.md](interface-plan.md) stage 6a). `--selftest` proves the first-window
+  (the owner's staged plan, stage 6a). `--selftest` proves the first-window
   sizes and the restored clamp with synthetic screen areas, so it does not depend on the
   machine's own screen.
 
@@ -950,10 +949,10 @@ translator must be able to reorder the sentence.
 - The font family from `[General] font` is read and stored, not loaded; text size is.
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
-  ([interface-plan.md](interface-plan.md) stage 6).
+  (the owner's staged plan, stage 6).
 - The **fit and the zoom** are under review: the owner wants the sheet fitted rather than the
   frame, and the zoom and the middle double click checked against the two CAD references.
-  Nothing changes until that note arrives ([interface-plan.md](interface-plan.md#open-decisions-owner-2026-11-15)).
+  Nothing changes until that note arrives.
 - **The block's reserve is decided**: `Sin cajetín` frees the frame, and enabling a block
   over an existing drawing is a fault the check reports
   ([ADR 0030](adr/0030-the-block-protects-its-own-box.md)); the footprint replaces the band

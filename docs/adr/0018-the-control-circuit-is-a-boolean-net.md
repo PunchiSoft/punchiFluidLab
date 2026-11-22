@@ -67,5 +67,4 @@ The control circuit is a **boolean net**:
 
 - [ADR 0017](0017-the-electrical-circuit-is-a-second-domain.md), the library this models.
 - [docs/symbology.md](../symbology.md) for the contact's bar and the coil terminal.
-- [P5.2 in next-steps](../next-steps.md) and the F6 entry in
-  [capabilities.md](../capabilities.md).
+- P5.2 in the owner's work order and the F6 entry in [capabilities.md](../capabilities.md).

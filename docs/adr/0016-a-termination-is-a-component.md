@@ -60,5 +60,4 @@ the silencer.
 
 - [ADR 0002](0002-components-are-files.md), the rule this follows.
 - [docs/symbology.md](../symbology.md) for the two symbols and the open 300 dpi review.
-- [P3.2 in next-steps](../next-steps.md) and the F1 entry in
-  [capabilities.md](../capabilities.md).
+- P3.2 in the owner's work order and the F1 entry in [capabilities.md](../capabilities.md).

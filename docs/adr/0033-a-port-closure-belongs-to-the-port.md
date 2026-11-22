@@ -127,7 +127,7 @@ termination, the drawing, the parts row and the menu.
 - [symbology.md](../symbology.md): the closure drawn at the port and the numeral
   rule.
 - [capabilities.md](../capabilities.md): the F1 row and the F6 exclusion.
-- [work-tree.md](../work-tree.md): P-021a, P-021b and the `canvasitem.cpp`
-  follow-up.
+- The owner's node register (outside this repository): P-021a, P-021b and the
+  `canvasitem.cpp` follow-up.
 - The owner's report of 2026-11-20, the split of 2026-11-21 and the approved
   specification `specs/port-closures.md`.

@@ -1,6 +1,6 @@
 ---
 name: parity-run
-description: Run a long, owner-authorized batch on one branch: pick the next capability from docs/work-queue.md, build it with its test and docs, gate, one signed commit per capability, and one pull request at the end. Use when a parity run is authorized or resumed, or when a fresh session must continue it after a context reset.
+description: Run an owner-authorized batch on one branch: take the next capability from the local private work queue, build it with its test and docs, gate, one signed commit each, and one pull request. Use when a parity run is authorized or resumed, or a fresh session continues it.
 license: GPL-3.0-or-later
 ---
 
@@ -11,7 +11,7 @@ explicit authorization from the project owner. It exists because a review per sl
 owner more than one long branch, and because a session that loses its context must be able to
 pick up the work from the repository alone.
 
-The run does not invent the work: [docs/work-queue.md](../../../docs/work-queue.md) is the
+The run does not invent the work: the owner's local `docs-private/work-queue.md` is the
 queue and [docs/capabilities.md](../../../docs/capabilities.md) is the authority for what a
 capability is and how it is proven. This skill is the loop.
 
@@ -22,7 +22,7 @@ capability is and how it is proven. This skill is the loop.
    the session, use [pull-request-workflow](../pull-request-workflow/SKILL.md) instead.
 2. **Prove the base.** `git switch main && git merge --ff-only origin/main`, then
    `git switch -c feat/parity`. The branch is cut once and never rebased onto itself.
-3. **Read the continuity note**: [docs/parity-run.md](../../../docs/parity-run.md) — branch,
+3. **Read the continuity note**: `docs-private/parity-run.md` — branch,
    queue state, commits done, decisions taken, next step. After a reset it is the first file
    to open.
 
@@ -56,7 +56,7 @@ capability is and how it is proven. This skill is the loop.
 ## Closing the run
 
 1. Run the full gate one last time.
-2. Update `docs/parity-run.md` with the final state and the report material.
+2. Update `docs-private/parity-run.md` with the final state and the report material.
 3. Push the branch and open **one** pull request against `main`, with the template filled and
    a section per capability: what was built, the test that proves it, what remains.
 4. Hand it over. The owner merges; the agent never merges, enables auto-merge, approves or
@@ -83,6 +83,6 @@ capability is and how it is proven. This skill is the loop.
 git --no-pager log --oneline main..HEAD            # one commit per capability
 git --no-pager status --short                      # clean between capabilities
 ./scripts-dev/check.sh                             # green on the branch
-grep -c "| done |" docs/work-queue.md              # the queue agrees with the log
+grep -c "| done |" docs-private/work-queue.md      # the queue agrees with the log
 gh pr view --json baseRefName,headRefName,state    # one PR, base main, state OPEN
 ```

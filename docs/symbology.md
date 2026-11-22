@@ -317,7 +317,7 @@ dashed, drain dashed — and the width changes only the stroke. The port stubs b
 symbol and do not thicken; the selection ring keeps the base `LINE` weight. An electrical
 wire is not a tube: the renderer checks the electrical case before the width, so the wire
 keeps its dotted class stroke and never takes a pipe width. The electrical connection itself
-is deferred ([P-026](work-tree.md#p-026--the-electrical-connection-does-not-work-as-planned)).
+is deferred (P-026, the owner's node register).
 
 ### Circuit diagrams (Part 2/3)
 
@@ -392,8 +392,8 @@ connection strokes, so this list is the control:
 
 **Owner's decision, 2026-11-15.** The next pass over the symbols is a **correction**, not an
 extension: pneumatic geometry goes first, and no other library is added until what exists is
-conformant. The order and the stop are in
-[next-steps.md](next-steps.md#stop-before-the-symbols). A symbol is not corrected by
+conformant. The order and the stop are recorded in the owner's working notes. A symbol is
+not corrected by
 comparing it with a drawing from another program: the requirement is read, written in words,
 drawn by hand, and checked with the lint and the manual list.
 

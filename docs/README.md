@@ -6,6 +6,10 @@ document is reachable from here: the top-level pages are linked below, and the A
 their own [index](adr/README.md). A new document is added here in the same change that
 creates it.
 
+The owner's working notes — the continuity note, the work order, the node register and the
+parity queue — are kept in a local, untracked `docs-private/`; they are not documents of
+this repository and no page here links to them.
+
 The rules for writing and linking are in [style.md](style.md). The shape of the system and
 the reason for each crate are in [architecture.md](architecture.md). The rules that bind
 people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
@@ -16,17 +20,13 @@ people and agents are in [AGENTS.md](../AGENTS.md), which is canonical.
 |---|---|
 | want to draw your first circuit | [guides/first-circuit.md](guides/first-circuit.md) → [guides/export-a-drawing.md](guides/export-a-drawing.md) |
 | are opening the repository for the first time | [README](../README.md) → [architecture.md](architecture.md) → [CONTRIBUTING](../CONTRIBUTING.md) |
-| are resuming work with no context | [retomar.md](retomar.md) (Spanish) → [next-steps.md](next-steps.md) |
-| are continuing or resuming a parity run | [parity-run.md](parity-run.md) → [work-queue.md](work-queue.md) → `git log --oneline main..HEAD` |
-| are about to write code | [next-steps.md](next-steps.md) → [capabilities.md](capabilities.md) → the relevant [skill](../.agents/skills/README.md) |
+| want to know what comes next, and what proves it | [capabilities.md](capabilities.md) → [plan.md](plan.md) |
+| are about to write code | [capabilities.md](capabilities.md) → [plan.md](plan.md) → the relevant [skill](../.agents/skills/README.md) |
 | are planning a capability | [capabilities.md](capabilities.md) and [capability-plan](../.agents/skills/capability-plan/SKILL.md) |
 | are changing a symbol | [symbology.md](symbology.md) and [fluid-power-symbology](../.agents/skills/fluid-power-symbology/SKILL.md) |
 | are changing the interface | [ui-ux.md](ui-ux.md) |
-| are reworking the window's panels, ribbon, icons or catalog | [interface-plan.md](interface-plan.md) and [ui-ux.md](ui-ux.md) |
-| are fixing the start page | [start-view-corrections.md](start-view-corrections.md) and [ui-ux.md](ui-ux.md) |
-| are starting or resuming a session | [work-tree.md](work-tree.md) first, then the node it is about |
 | are changing the sheet frame or the title block | [reference/title-block.md](reference/title-block.md) and [ADR 0026](adr/0026-the-sheet-is-the-paper.md) |
-| are reviewing a change | [capabilities.md](capabilities.md), the phase in [next-steps.md](next-steps.md), and the ADR it touches |
+| are reviewing a change | [capabilities.md](capabilities.md), [plan.md](plan.md), and the ADR it touches |
 | want to know why the system is shaped this way | [architecture.md](architecture.md) and the [ADR index](adr/README.md) |
 
 ## Kinds of document
@@ -41,7 +41,7 @@ small and a deep tree makes a link harder to write, not easier to find.
 | How-to | Solve one task | [guides/export-a-drawing.md](guides/export-a-drawing.md), [guides/troubleshooting.md](guides/troubleshooting.md) |
 | Reference | Describe a format, a command, a field or a unit | [reference/sheet-format.md](reference/sheet-format.md), [reference/tube.md](reference/tube.md), [reference/cli.md](reference/cli.md), [reference/catalog.md](reference/catalog.md), [reference/title-block.md](reference/title-block.md), [glossary.md](glossary.md), [assets/catalog/README.md](../assets/catalog/README.md) |
 | Explanation | Explain why and how the system works | [architecture.md](architecture.md), [ui-ux.md](ui-ux.md), [symbology.md](symbology.md), [engineering.md](engineering.md) |
-| Process and record | Say what is built, in what order, and what happened | [next-steps.md](next-steps.md), [capabilities.md](capabilities.md), [plan.md](plan.md), [retomar.md](retomar.md) |
+| Process and record | Say what is built, in what order, and what happened | [capabilities.md](capabilities.md), [plan.md](plan.md) |
 | Decision | Record one choice and its consequences | [adr/](adr/README.md) |
 | Design | A specification written and reviewed before the code (EGM) | [designs/](designs/README.md) |
 
@@ -54,20 +54,12 @@ A document that is not simply current carries a status line under its title:
 | `current` | It describes the code as it is today; a disagreement is a bug in one of them. |
 | `target` | It is the specification; it says which parts exist today and which are still a target. |
 | `historical` | It is a dated record. It is not edited to look current; a new decision is a new document. |
-| `internal` | It is for the maintainer, not the product: the continuity note is the only one. |
 
 ## The documents
 
 | Document | Kind | Status | What it is |
 |---|---|---|---|
 | [designs/title-block-and-sheet.md](designs/title-block-and-sheet.md) | design | current | The EGM design for the sheet, the A4 landscape default, the title block and its positions, and the reference zones |
-| [retomar.md](retomar.md) | process | internal | The owner's continuity note, in Spanish: state, history, verification, decisions and the prompt to continue |
-| [parity-run.md](parity-run.md) | process | internal | The parity run's continuity note: branch, progress log, decisions and how to continue after a reset |
-| [work-queue.md](work-queue.md) | process | current | The parity run's queue: one entry per capability, its state and its acceptance test |
-| [next-steps.md](next-steps.md) | process | current | The work order: where the project stands, the next phase, the files and the tests |
-| [interface-plan.md](interface-plan.md) | process | target | The staged plan for panels, the ribbon and its icons, the catalog palette, the workspace frame and the adaptive shell |
-| [start-view-corrections.md](start-view-corrections.md) | record | current | Every known defect of Inicio, one entry each, with the file, symbol and test to touch |
-| [work-tree.md](work-tree.md) | record | current | The node register: every reported problem, its options, the code it touches, its state, and the order to take it |
 | [capabilities.md](capabilities.md) | process | current | The coverage ledger: what a student must be able to do, its state and its evidence |
 | [plan.md](plan.md) | process | current | The milestones and their acceptance criteria, with the status of each |
 | [architecture.md](architecture.md) | explanation | current | The system map: crates, data flow, extension points, debts |
@@ -104,12 +96,12 @@ A document that is not simply current carries a status line under its title:
 3. [../CONTRIBUTING.md](../CONTRIBUTING.md) — the environment and the gate.
 4. [../AGENTS.md](../AGENTS.md) — the rules that are not negotiable.
 5. The [skill catalog](../.agents/skills/README.md) — the procedure for the task at hand.
-6. [next-steps.md](next-steps.md) and [capabilities.md](capabilities.md) — what is next and
-   what proves it.
+6. [capabilities.md](capabilities.md) and [plan.md](plan.md) — what is next, in what order,
+   and what proves it.
 
 ## Rules for this folder
 
-- English is canonical, except [retomar.md](retomar.md) and [../CHANGELOG.md](../CHANGELOG.md).
+- English is canonical, except [../CHANGELOG.md](../CHANGELOG.md).
 - One `H1` per file, ordered sections, relative links, ISO dates, units with their symbol.
 - A claim names its evidence or is removed; a number that can rot is derived or left out.
 - A new document is listed in the table above in the same change.
@@ -118,3 +110,5 @@ A document that is not simply current carries a status line under its title:
 - `./scripts-dev/check-docs.sh` checks the workspace documents against `Cargo.toml`, the
   community files, the labels, the index coverage, every relative link and the ADR
   numbering, status and date. It runs in `./scripts-dev/check.sh`.
+- The owner's working notes live in the local, untracked `docs-private/`; they are not
+  listed here and no page here links to them.

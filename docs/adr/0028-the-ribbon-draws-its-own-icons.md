@@ -87,4 +87,4 @@ rendered by the application as vector geometry. The rules that follow:
 - [ADR 0009](0009-identity-and-standards.md): behaviour may be studied; material is never
   taken.
 - [ui-ux.md](../ui-ux.md), the interface contract, and
-  [interface-plan.md](../interface-plan.md), stages 3b and 3c.
+  the owner's staged plan (private), stages 3b and 3c.

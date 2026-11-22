@@ -74,12 +74,11 @@ today, kept here so a translator does not invent a second vocabulary.
 |---|---|---|
 | capability | What a student must be able to do, with its purpose, behaviour and evidence. | `docs/capabilities.md` |
 | coverage ledger | The table that gives every capability a state: `missing`, `partial`, `covered`, `improved` or `not planned`. | `docs/capabilities.md` |
-| phase | One branch, one pull request and one reviewable delivery. | `docs/next-steps.md` |
+| phase | One branch, one pull request and one reviewable delivery. | `docs/plan.md` |
 | gate | `./scripts-dev/check.sh`: format, lints, tests, docs and the headless window. | `AGENTS.md` |
 | evidence level | How a claim is proven: unit test, invariant, reference curve, ABI test, headless UI test, measurement, screenshot, review. | `docs/style.md` |
 | ADR | An architecture decision record: why the system is shaped this way. | `docs/adr/README.md` |
 | skill | A procedure for a recurring task, under `.agents/skills/`. | `.agents/skills/README.md` |
-| continuity note | The owner's Spanish note for resuming with no context. | `docs/retomar.md` |
 
 ## Units
 

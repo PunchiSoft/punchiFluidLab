@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Las notas de trabajo salen del repositorio público — 2026-11-22
+
+- **La nota de continuidad, el orden de trabajo, el registro de nodos, la cola de la parity
+  run, el plan de interfaz y la lista de defectos de Inicio pasan a `docs-private/`**, una
+  carpeta local ignorada, con su propio repositorio: no se commitea, no se revisa y no abre
+  una pull request. El repositorio público conserva la especificación, las decisiones y el
+  registro que el producto necesita.
+- **Los documentos públicos dejan de enlazar a esas notas**: el índice, las ADRs, las skills,
+  los dos README y `CONTRIBUTING` apuntan a [docs/capabilities.md](docs/capabilities.md) y
+  [docs/plan.md](docs/plan.md).
+- Prueba: `scripts-dev/check-docs.sh` en verde y ningún enlace público a esas notas.
+
 ### La ventana corre hasta el cambio — 2026-11-22
 
 - **«Hasta cambio» avanza en pasos de 10 ms hasta que el pistón llega a un tope o cambia

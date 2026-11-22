@@ -116,7 +116,7 @@ new mark reuses that primitive. What is ours is the stroke that carries it.
 
 ## References
 
-- [work-queue.md](../work-queue.md) §10a: the owner's order and the acceptance criteria.
+- The owner's work queue (private) §10a: the order and the acceptance criteria.
 - [ui-ux.md](../ui-ux.md) §“Animation on the sheet”: the behaviour, the reduced-motion rule,
   the printed page and the no-allocation rule.
 - [symbology.md](../symbology.md): the arrowhead and the “flow direction” requirement.

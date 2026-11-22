@@ -96,7 +96,8 @@ quantity in the queue and the continuity note, and do not fake it.
 
 ## The loop
 
-1. Read `docs/work-queue.md` and `docs/parity-run.md`; take the first `ready` entry.
+1. Read the owner's local `docs-private/work-queue.md` and `docs-private/parity-run.md`;
+   take the first `ready` entry.
 2. Audit the reference for that entry (palette and running behaviour).
 3. Implement in layer order: catalog file, model, drawing, ABI, window, format only if
    unavoidable.

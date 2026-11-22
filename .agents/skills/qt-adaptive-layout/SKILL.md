@@ -10,9 +10,9 @@ The window has to work on a 1280 px laptop and on a 1920 px desk, at 100 % and a
 with the catalog open or folded, without the sheet disappearing. The rules that make that
 possible are few, and the trap is always the same: a number that belonged to one screen.
 
-The contract lives in [docs/ui-ux.md](../../../docs/ui-ux.md) §2.2 and the stage in
-[docs/interface-plan.md](../../../docs/interface-plan.md) 6a. This skill is the procedure,
-not a second copy of the contract.
+The contract lives in [docs/ui-ux.md](../../../docs/ui-ux.md) §2.2; the staged plan is kept
+in the owner's local `docs-private/interface-plan.md` (stage 6a). This skill is the
+procedure, not a second copy of the contract.
 
 ## The rule
 
