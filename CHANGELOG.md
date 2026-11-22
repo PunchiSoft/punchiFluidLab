@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### Las capturas de revisión salen del renderizador — 2026-11-22
+
+- **`symbol-sheet` gana `--ink light|dark` y `--fit`**: la captura clara y la oscura de una
+  revisión salen del mismo renderizador que el dibujo, sobre la superficie del tema y
+  recortadas al símbolo; la hoja de 300 dpi sigue siendo la de impresión. Así un símbolo
+  nuevo trae sus tres imágenes sin depender de una captura de ventana.
+- Comprobado sobre `valve.3_2.spring_return`: la captura oscura generada con la herramienta
+  usa la misma tinta y el mismo acento que la guardada.
+
 ### La cadena de cierre, decidida — 2026-11-22
 
 - **ADR 0038 decide que un cierre de puerto es una cadena ordenada**: el regulador de caudal

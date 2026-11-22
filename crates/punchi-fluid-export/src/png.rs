@@ -94,6 +94,16 @@ impl PngSurface {
         (self.pixmap.width(), self.pixmap.height())
     }
 
+    /// Fills the whole page with one colour.
+    ///
+    /// The constructor starts on white paper; a review capture on the dark surface paints
+    /// its own background before the drawing, so the same renderer serves both themes.
+    pub fn fill(&mut self, colour: Colour) {
+        self.pixmap.fill(tiny_skia::Color::from_rgba8(
+            colour.r, colour.g, colour.b, 255,
+        ));
+    }
+
     /// Encodes the bitmap as a PNG.
     ///
     /// # Errors

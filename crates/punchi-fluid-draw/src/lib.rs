@@ -21,7 +21,8 @@ pub mod symbol;
 
 pub use orient::{Orientation, Turned};
 pub use placed::{
-    Placed, draw_placed, draw_placed_preview, port_point, route, route_offset, selection_ring,
+    Placed, bounds_placed, draw_placed, draw_placed_preview, port_point, route, route_offset,
+    selection_ring,
 };
 pub use route::{route_between_boxes, route_between_boxes_avoiding};
 pub use schematic::{
