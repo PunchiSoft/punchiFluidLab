@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La ventana toma su tema del escritorio — 2026-11-22
+
+- **La ventana Rust lee el tema del escritorio**, no de literales: `kdeglobals` da los
+  colores de ventana, vista, botón, selección y enlace; el adaptador deriva los tokens con
+  las mismas reglas que la ventana Qt (contraste mínimo 4.5 para el texto y 3.0 para el
+  acento y las líneas, dos planos, acento suavizado, radios y tamaños de texto desde la
+  unidad de la fuente). Sin `kdeglobals` arranca con la paleta clara de respaldo.
+- **La fuente también sale del escritorio**: la familia declarada en `[General] font=`, con
+  la sans del sistema como respaldo; no se empaqueta ninguna fuente.
+- **El movimiento respeta `[KDE] AnimationDurationFactor`**: 0 desactiva la animación; la
+  barra de estado usa el cuerpo de texto y la tinta del tema.
+- La entrada BSL-1.0 del portapapeles de Windows sigue siendo la única licencia añadida; no
+  entra ninguna de fuente. Deuda de este corte: el portal
+  `org.freedesktop.appearance color-scheme` para escritorios que no son KDE y la relectura
+  en caliente.
+
 ### La ventana Rust: egui y la primera hoja — 2026-11-22
 
 - **El toolkit es egui** ([ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)): la ventana
