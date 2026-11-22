@@ -93,6 +93,8 @@ struct Window {
     model_revision: u64,
     /// Whether the model's clock is being advanced.
     running: bool,
+    /// The valve held under the pointer, so the gesture presses once and releases once.
+    pressed_valve: Option<usize>,
 }
 
 /// A primary-button drag of the selection.
@@ -144,6 +146,7 @@ impl Window {
             model: None,
             model_revision: 0,
             running: false,
+            pressed_valve: None,
         }
     }
 
@@ -624,6 +627,33 @@ impl Window {
                 page_min.y + (screen.y - placement.origin.y) / placement.scale,
             )
         };
+        // The reference presses a valve while the button is down: the momentary returns, the
+        // maintained stays. A press on a valve is not a drag of the selection.
+        if response.is_pointer_button_down_on() {
+            if let Some(position) = response.interact_pointer_pos() {
+                let hit = self.hit_placement(to_mm(position));
+                if hit != self.pressed_valve {
+                    if let Some(previous) = self.pressed_valve.take() {
+                        if let Some(model) = self.model.as_mut() {
+                            let _ = model.release_valve(previous);
+                        }
+                    }
+                    if let Some(index) = hit {
+                        let pressed = self
+                            .model
+                            .as_mut()
+                            .is_some_and(|model| model.press_valve(index));
+                        if pressed {
+                            self.pressed_valve = Some(index);
+                        }
+                    }
+                }
+            }
+        } else if let Some(index) = self.pressed_valve.take() {
+            if let Some(model) = self.model.as_mut() {
+                let _ = model.release_valve(index);
+            }
+        }
         if response.clicked() {
             if let Some(position) = response.interact_pointer_pos() {
                 let additive = response.ctx.input(|input| input.modifiers.shift);
@@ -633,7 +663,7 @@ impl Window {
         if response.drag_started_by(egui::PointerButton::Primary) {
             if let Some(position) = response.interact_pointer_pos() {
                 let additive = response.ctx.input(|input| input.modifiers.shift);
-                if additive {
+                if additive || self.pressed_valve.is_some() {
                     return;
                 }
                 let index = self.select_at(to_mm(position), false);

@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La ventana acciona las válvulas — 2026-11-22
+
+- **Pulsar y mantener el botón sobre una válvula la acciona**, como en la referencia: la de
+  retorno por muelle vuelve al soltar y la mantenida se queda en la posición accionada; el
+  gesto no arrastra la selección.
+- **`Model::press_valve` y `release_valve`** traducen la colocación a la válvula de la red
+  (`valve_of`) y usan `press_valve_at`/`release_valve_at` del solver.
+- **Pruebas**: mantener la válvula del circuito de ejemplo la mueve; soltarla la devuelve;
+  una fuente no es una válvula.
+
 ### La hoja dibuja el estado del modelo — 2026-11-22
 
 - **La escena de la ventana lee el modelo**: cada colocación lleva la posición de su
