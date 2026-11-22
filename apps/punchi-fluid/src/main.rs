@@ -13,8 +13,8 @@ use std::time::Instant;
 
 use eframe::egui;
 use punchi_fluid_doc::Document;
-use punchi_fluid_draw::draw_placed;
 use punchi_fluid_draw::symbol::Ink;
+use punchi_fluid_draw::{Pt, Rect, draw_placed};
 use punchi_fluid_export::{Page, TitleBlock, sheet};
 use punchi_fluid_file::sheet::Sheet;
 
@@ -76,7 +76,22 @@ struct Window {
     frame_ms: f64,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
+    /// The placements the reader selected, as indices into the document.
+    selected: Vec<usize>,
+    /// The drag in progress: the pointer's press, the selection's start centres and the
+    /// millimetres it has moved. The drawing applies the offset live; the release commits it.
+    drag: Option<Drag>,
 }
+
+/// A primary-button drag of the selection.
+struct Drag {
+    pointer: egui::Pos2,
+    starts: Vec<(usize, Pt)>,
+    delta: egui::Vec2,
+}
+
+/// How far beside its edge a placement still accepts the click, in millimetres.
+const HIT_SLACK: f32 = 1.0;
 
 impl Window {
     fn new(
@@ -107,6 +122,48 @@ impl Window {
             frame_ms: 0.0,
             theme,
             ribbon: ribbon::Ribbon::new(),
+            selected: Vec::new(),
+            drag: None,
+        }
+    }
+
+    /// The placement under `point` in the active circuit, the one on top first.
+    fn hit_placement(&self, point: Pt) -> Option<usize> {
+        let circuit = self.document.active_circuit();
+        self.document.placements().iter().rposition(|placement| {
+            placement.circuit == circuit && placement.contains(point, HIT_SLACK)
+        })
+    }
+
+    /// Selects what is under `point`, or clears the selection when the sheet is empty there.
+    fn select_at(&mut self, point: Pt) -> Option<usize> {
+        let hit = self.hit_placement(point);
+        self.selected = hit.map(|index| vec![index]).unwrap_or_default();
+        self.notice = hit.and_then(|index| {
+            self.document
+                .placements()
+                .get(index)
+                .map(|placement| format!("seleccionado {}", placement.catalog_id))
+        });
+        hit
+    }
+
+    /// Ends a drag: one undo entry for the whole gesture, never one per frame.
+    fn commit_drag(&mut self, scale: f32, now: egui::Pos2) {
+        let Some(drag) = self.drag.take() else {
+            return;
+        };
+        let delta = egui::vec2(now.x - drag.pointer.x, now.y - drag.pointer.y) / scale;
+        if delta.length() < 0.5 {
+            return;
+        }
+        let moves: Vec<(usize, Pt)> = drag
+            .starts
+            .iter()
+            .map(|(index, start)| (*index, Pt::new(start.x + delta.x, start.y + delta.y)))
+            .collect();
+        if self.document.move_many(&moves) {
+            self.notice = Some(String::from("movido"));
         }
     }
 
@@ -185,13 +242,29 @@ impl eframe::App for Window {
             let placement = self.view.placement(area, page_mm);
             self.magnification = placement.scale;
             let page_rect = self.page.rect();
+            let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
+            self.handle_edit(&sheet, &placement, page_min);
             let origin = placement.origin
                 - egui::vec2(
                     page_rect.min.x * placement.scale,
                     page_rect.min.y * placement.scale,
                 );
             let mut drawing = EguiSurface::new(context, origin, placement.scale);
-            let scene = scene::build(&self.document, self.document.active_circuit());
+            let mut scene = scene::build(&self.document, self.document.active_circuit());
+            // The drag is previewed on the drawing, not written to the document: the document
+            // only changes once, when the button comes up.
+            if let Some(drag) = &self.drag {
+                let delta = drag.delta;
+                for placed in &mut scene.placed {
+                    if drag.starts.iter().any(|(index, _)| *index == placed.index) {
+                        placed.rect = Rect::from_min_size(
+                            Pt::new(placed.rect.min.x + delta.x, placed.rect.min.y + delta.y),
+                            placed.rect.max.x - placed.rect.min.x,
+                            placed.rect.max.y - placed.rect.min.y,
+                        );
+                    }
+                }
+            }
             let started = Instant::now();
             sheet::draw(&mut drawing, &self.page, &self.block);
             draw_placed(
@@ -200,7 +273,7 @@ impl eframe::App for Window {
                 &scene.pipes,
                 &self.catalog,
                 &Ink::print(),
-                &[],
+                &self.selected,
             );
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let painter = ui.painter().with_clip_rect(ui.max_rect());
@@ -210,6 +283,66 @@ impl eframe::App for Window {
 }
 
 impl Window {
+    /// The sheet's editing gestures: a click selects the placement under the pointer, a
+    /// primary drag moves the selection with a live preview, and the release commits one
+    /// undo entry.
+    fn handle_edit(
+        &mut self,
+        response: &egui::Response,
+        placement: &view::Placement,
+        page_min: egui::Vec2,
+    ) {
+        let to_mm = |screen: egui::Pos2| {
+            Pt::new(
+                page_min.x + (screen.x - placement.origin.x) / placement.scale,
+                page_min.y + (screen.y - placement.origin.y) / placement.scale,
+            )
+        };
+        if response.clicked() {
+            if let Some(position) = response.interact_pointer_pos() {
+                self.select_at(to_mm(position));
+            }
+        }
+        if response.drag_started_by(egui::PointerButton::Primary) {
+            if let Some(position) = response.interact_pointer_pos() {
+                let index = self.select_at(to_mm(position));
+                if index.is_some() {
+                    let starts: Vec<(usize, Pt)> = self
+                        .selected
+                        .iter()
+                        .filter_map(|index| {
+                            self.document
+                                .placements()
+                                .get(*index)
+                                .map(|placement| (*index, placement.centre))
+                        })
+                        .collect();
+                    self.drag = Some(Drag {
+                        pointer: position,
+                        starts,
+                        delta: egui::Vec2::ZERO,
+                    });
+                }
+            }
+        }
+        if response.dragged_by(egui::PointerButton::Primary) {
+            if let Some(drag) = &mut self.drag {
+                if let Some(position) = response.interact_pointer_pos() {
+                    drag.delta = egui::vec2(
+                        (position.x - drag.pointer.x) / placement.scale,
+                        (position.y - drag.pointer.y) / placement.scale,
+                    );
+                }
+            }
+        }
+        if response.drag_stopped_by(egui::PointerButton::Primary) {
+            match response.interact_pointer_pos() {
+                Some(position) => self.commit_drag(placement.scale, position),
+                None => self.drag = None,
+            }
+        }
+    }
+
     /// The sheet's gestures: Ctrl+wheel zooms about the pointer, the wheel and the middle
     /// button pan, the arrows pan from the keyboard and Ctrl+0 returns to the fit.
     fn handle_view(
@@ -274,10 +407,51 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
-    use punchi_fluid_doc::Document;
+    use eframe::egui;
+    use punchi_fluid_doc::{Document, Placement};
     use punchi_fluid_draw::surface::Recording;
 
-    use super::{Window, sheet, theme};
+    use super::{Drag, Pt, Window, sheet, theme};
+
+    #[test]
+    fn a_click_selects_the_placement_under_it_and_clears_the_rest() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.5_2",
+            Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+        assert_eq!(window.select_at(Pt::new(101.0, 81.0)), Some(0));
+        assert_eq!(window.selected, vec![0]);
+        assert_eq!(window.select_at(Pt::new(10.0, 10.0)), None);
+        assert!(window.selected.is_empty());
+    }
+
+    #[test]
+    fn a_drag_commit_moves_the_selection_and_leaves_one_undo_step() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.5_2",
+            Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+        let _ = window.select_at(Pt::new(100.0, 80.0));
+        window.drag = Some(Drag {
+            pointer: egui::pos2(0.0, 0.0),
+            starts: vec![(0, Pt::new(100.0, 80.0))],
+            delta: egui::Vec2::ZERO,
+        });
+        window.commit_drag(1.0, egui::pos2(20.0, 10.0));
+        let moved = window.document.placements()[0].centre;
+        assert!((moved.x - 120.0).abs() < 0.01);
+        assert!((moved.y - 90.0).abs() < 0.01);
+        assert!(window.document.can_undo(), "one drag, one undo entry");
+        assert!(window.drag.is_none());
+    }
 
     #[test]
     fn the_window_saves_the_document_it_was_given() {
