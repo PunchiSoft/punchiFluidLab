@@ -1111,7 +1111,9 @@ impl PfSession {
             text: preview_text,
             scale,
         };
-        draw_placed(&mut buffer, &placed, &pipes, catalog, ink, &[]);
+        // The sidebar lists the symbols; the sheet draws the connections. A thumbnail has
+        // no hose arriving at it, so it carries no connection points.
+        punchi_fluid_draw::draw_placed_preview(&mut buffer, &placed, &pipes, catalog, ink, &[]);
         PF_OK
     }
 

@@ -1110,10 +1110,11 @@ pub fn draw_valve(
     active: usize,
     ink: &Ink,
 ) {
-    draw_valve_with(surface, rect, definition, active, ink, true);
+    draw_valve_with(surface, rect, definition, active, ink, true, true);
 }
 
-/// The valve, with or without the numerals its ports declare.
+/// The valve, with or without the numerals its ports declare, and with or without the
+/// connection points the sheet draws at each port.
 fn draw_valve_with(
     surface: &mut dyn Surface,
     rect: Rect,
@@ -1121,9 +1122,10 @@ fn draw_valve_with(
     active: usize,
     ink: &Ink,
     numerals: bool,
+    connections: bool,
 ) {
     let Some([bx, by, bw, bh]) = definition.body else {
-        draw_flat_with(surface, rect, definition, ink, numerals);
+        draw_flat_with(surface, rect, definition, ink, numerals, connections);
         return;
     };
     #[allow(clippy::cast_possible_truncation)]
@@ -1163,7 +1165,9 @@ fn draw_valve_with(
         if (from.x - to.x).abs() > f32::EPSILON || (from.y - to.y).abs() > f32::EPSILON {
             surface.line(&[from, to], Stroke::new(LINE, ink.line));
         }
-        draw_connection(surface, from, rect, ink);
+        if connections {
+            draw_connection(surface, from, rect, ink);
+        }
         if numerals && port.show_numeral {
             draw_numeral(
                 surface,
@@ -1322,16 +1326,18 @@ pub fn draw_flat(
     definition: &ComponentDefinition,
     ink: &Ink,
 ) {
-    draw_flat_with(surface, rect, definition, ink, true);
+    draw_flat_with(surface, rect, definition, ink, true, true);
 }
 
-/// The flat symbol, with or without the numerals its ports declare.
+/// The flat symbol, with or without the numerals its ports declare, and with or without the
+/// connection points the sheet draws at each port.
 fn draw_flat_with(
     surface: &mut dyn Surface,
     rect: Rect,
     definition: &ComponentDefinition,
     ink: &Ink,
     numerals: bool,
+    connections: bool,
 ) {
     draw_primitives(surface, rect, &definition.symbol, ink.line, LINE);
     // A junction is a filled dot and nothing else (ISO 1219-1): its ports are one point, so
@@ -1348,12 +1354,14 @@ fn draw_flat_with(
         None
     };
     for port in &definition.port {
-        draw_connection(
-            surface,
-            at(rect, port.position[0], port.position[1]),
-            rect,
-            ink,
-        );
+        if connections {
+            draw_connection(
+                surface,
+                at(rect, port.position[0], port.position[1]),
+                rect,
+                ink,
+            );
+        }
         if numerals && port.show_numeral {
             draw_numeral(
                 surface,
@@ -1536,7 +1544,25 @@ pub fn draw_component(
     extension: f32,
     ink: &Ink,
 ) {
-    draw_component_with(surface, rect, definition, active, extension, ink, true);
+    draw_component_with(
+        surface, rect, definition, active, extension, ink, true, true,
+    );
+}
+
+/// The same symbol as the panel shows it: without the connection points the sheet draws at
+/// each port. The panel lists symbols; the sheet draws a diagram and marks where a hose
+/// arrives.
+pub fn draw_component_preview(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    definition: &ComponentDefinition,
+    active: usize,
+    extension: f32,
+    ink: &Ink,
+) {
+    draw_component_with(
+        surface, rect, definition, active, extension, ink, true, false,
+    );
 }
 
 /// The same symbol without the numerals of its own ports.
@@ -1552,10 +1578,13 @@ pub fn draw_component_without_numerals(
     extension: f32,
     ink: &Ink,
 ) {
-    draw_component_with(surface, rect, definition, active, extension, ink, false);
+    draw_component_with(
+        surface, rect, definition, active, extension, ink, false, true,
+    );
 }
 
-/// The one dispatcher, with the numeral decision explicit.
+/// The one dispatcher, with the numeral and connection-point decisions explicit.
+#[allow(clippy::too_many_arguments)]
 fn draw_component_with(
     surface: &mut dyn Surface,
     rect: Rect,
@@ -1564,12 +1593,21 @@ fn draw_component_with(
     extension: f32,
     ink: &Ink,
     numerals: bool,
+    connections: bool,
 ) {
     if definition.body.is_some() {
-        draw_valve_with(surface, rect, definition, active, ink, numerals);
+        draw_valve_with(
+            surface,
+            rect,
+            definition,
+            active,
+            ink,
+            numerals,
+            connections,
+        );
         return;
     }
-    draw_flat_with(surface, rect, definition, ink, numerals);
+    draw_flat_with(surface, rect, definition, ink, numerals, connections);
     if definition.kinematics == Kinematics::LinearActuator {
         draw_cylinder(surface, rect, definition, extension, ink);
     }
@@ -1596,6 +1634,28 @@ mod tests {
         assert_eq!(squares.len(), 2);
         assert!((squares[0][2] - squares[1][2]).abs() < f64::EPSILON);
         assert!((squares[0][0] + squares[0][2] - squares[1][0]).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn the_panel_preview_skips_the_connection_points() {
+        let definition = valve();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut sheet = Recording::default();
+        draw_component(&mut sheet, rect, &definition, 0, 0.0, &Ink::print());
+        let mut panel = Recording::default();
+        draw_component_preview(&mut panel, rect, &definition, 0, 0.0, &Ink::print());
+        let circles = |recording: &Recording| {
+            recording
+                .calls()
+                .iter()
+                .filter(|call| matches!(call, crate::surface::Call::Circle { .. }))
+                .count()
+        };
+        assert_eq!(
+            circles(&sheet) - circles(&panel),
+            definition.port.len(),
+            "one connection point per port on the sheet, none in the panel"
+        );
     }
 
     #[test]
