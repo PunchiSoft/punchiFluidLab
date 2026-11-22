@@ -50,15 +50,6 @@ impl Part {
             height: unit * h,
         }
     }
-
-    fn in_box(catalog_id: &'static str, rect: Rect) -> Self {
-        Self {
-            catalog_id,
-            centre: rect.center(),
-            width: rect.width(),
-            height: rect.height(),
-        }
-    }
 }
 
 #[derive(Clone, Copy)]
