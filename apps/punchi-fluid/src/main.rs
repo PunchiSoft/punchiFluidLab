@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use eframe::egui;
-use punchi_fluid_doc::Document;
+use punchi_fluid_doc::{Document, Turn};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Pt, Rect, draw_placed};
 use punchi_fluid_export::{Page, TitleBlock, sheet};
@@ -167,6 +167,88 @@ impl Window {
         }
     }
 
+    /// Deletes the selection as one undo entry.
+    fn remove_selected(&mut self) {
+        if self.selected.is_empty() {
+            return;
+        }
+        let removed = self.document.remove_many(&self.selected);
+        self.selected.clear();
+        if !removed.is_empty() {
+            self.notice = Some(format!("borradas {}", removed.len()));
+        }
+    }
+
+    /// Turns the selection a quarter clockwise, as one undo entry.
+    fn rotate_selected(&mut self) {
+        if self.selected.is_empty() {
+            return;
+        }
+        if self.document.turn_many(&self.selected, Turn::Clockwise) {
+            self.notice = Some(String::from("girado"));
+        }
+    }
+
+    /// Reflects the selection on its own vertical axis, as one undo entry.
+    fn reflect_selected(&mut self) {
+        if self.selected.is_empty() {
+            return;
+        }
+        if self.document.turn_many(&self.selected, Turn::Reflect) {
+            self.notice = Some(String::from("reflejado"));
+        }
+    }
+
+    /// Steps the document's history back. The selection is dropped: a restored placement may
+    /// have taken an index the selection still names.
+    fn undo(&mut self) {
+        if self.document.undo() {
+            self.selected.clear();
+            self.notice = Some(String::from("deshecho"));
+        }
+    }
+
+    /// Steps the document's history forward, dropping the selection for the same reason.
+    fn redo(&mut self) {
+        if self.document.redo() {
+            self.selected.clear();
+            self.notice = Some(String::from("rehecho"));
+        }
+    }
+
+    /// Runs the command the ribbon picked, whether it edits the document or the view.
+    fn run_command(&mut self, command: &str) {
+        match command {
+            "Guardar" => self.save(),
+            "Borrar" => self.remove_selected(),
+            "Girar" => self.rotate_selected(),
+            "Reflejar" => self.reflect_selected(),
+            "Deshacer" => self.undo(),
+            "Rehacer" => self.redo(),
+            _ => self.view.command(command),
+        }
+    }
+
+    /// The keyboard commands and the ribbon's enabled state, so `update` stays the layout.
+    fn sync_commands(&mut self, context: &egui::Context) {
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
+            self.save();
+        }
+        if context.input(|input| input.key_pressed(egui::Key::Delete)) {
+            self.remove_selected();
+        }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Z)) {
+            self.undo();
+        }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Y)) {
+            self.redo();
+        }
+        self.ribbon.savable = self.path.is_some();
+        self.ribbon.selection = !self.selected.is_empty();
+        self.ribbon.can_undo = self.document.can_undo();
+        self.ribbon.can_redo = self.document.can_redo();
+    }
+
     /// Writes the document to the path it was opened from, or says why it cannot.
     fn save(&mut self) {
         let Some(path) = self.path.clone() else {
@@ -188,21 +270,13 @@ impl Window {
 
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
-        // The ribbon enables Guardar only when there is a path to write to, and the window
-        // owns that path; the keyboard shortcut is the same command.
-        self.ribbon.savable = self.path.is_some();
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
-            self.save();
-        }
+        self.sync_commands(context);
         let palette = ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette);
         });
         if let Some(command) = self.ribbon.take() {
-            match command.as_str() {
-                "Guardar" => self.save(),
-                _ => self.view.command(&command),
-            }
+            self.run_command(&command);
         }
 
         let (width, height) = self.page.size_mm();
@@ -451,6 +525,51 @@ mod tests {
         assert!((moved.y - 90.0).abs() < 0.01);
         assert!(window.document.can_undo(), "one drag, one undo entry");
         assert!(window.drag.is_none());
+    }
+
+    #[test]
+    fn deleting_the_selection_is_one_undo_step() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.5_2",
+            Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+        let _ = window.select_at(Pt::new(100.0, 80.0));
+        window.remove_selected();
+        assert!(window.document.placements().is_empty());
+        assert!(window.selected.is_empty());
+        window.undo();
+        assert_eq!(
+            window.document.placements().len(),
+            1,
+            "one undo brings it back"
+        );
+    }
+
+    #[test]
+    fn turning_and_reflecting_the_selection_both_undo() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.5_2",
+            Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+        let before = document.placements()[0].orientation;
+        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+        let _ = window.select_at(Pt::new(100.0, 80.0));
+        window.rotate_selected();
+        assert_ne!(window.document.placements()[0].orientation, before);
+        window.undo();
+        assert_eq!(window.document.placements()[0].orientation, before);
+        let _ = window.select_at(Pt::new(100.0, 80.0));
+        window.reflect_selected();
+        assert_ne!(window.document.placements()[0].orientation, before);
+        window.undo();
+        assert_eq!(window.document.placements()[0].orientation, before);
     }
 
     #[test]

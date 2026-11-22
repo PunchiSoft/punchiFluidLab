@@ -47,6 +47,10 @@ impl Palette {
     }
 }
 
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the ribbon's state is five independent flags, not a bit set to encode"
+)]
 pub struct Ribbon {
     icons: HashMap<String, &'static [u8]>,
     active: usize,
@@ -55,6 +59,11 @@ pub struct Ribbon {
     pub last: String,
     /// Whether there is a path to save to; the window sets it every frame.
     pub savable: bool,
+    /// Whether the edit commands have a selection to work on; the window sets it every frame.
+    pub selection: bool,
+    /// Whether the document has something to undo or redo; the window sets both every frame.
+    pub can_undo: bool,
+    pub can_redo: bool,
     pending: Option<String>,
 }
 
@@ -68,6 +77,9 @@ impl Ribbon {
             running: false,
             last: String::from("—"),
             savable: false,
+            selection: false,
+            can_undo: false,
+            can_redo: false,
             pending: None,
         }
     }
@@ -92,7 +104,12 @@ impl Ribbon {
             "Iniciar" => !self.running,
             "Pausa" | "Paso" | "Hasta cambio" | "Detener" => self.running,
             "Guardar" => self.savable,
-            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" => false,
+            "Borrar" | "Girar" | "Reflejar" => self.selection,
+            "Deshacer" => self.can_undo,
+            "Rehacer" => self.can_redo,
+            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Duplicar" | "Copiar" | "Pegar" => {
+                false
+            }
             _ => true,
         }
     }

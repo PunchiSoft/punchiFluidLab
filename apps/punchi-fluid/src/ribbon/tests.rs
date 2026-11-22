@@ -21,6 +21,26 @@ fn the_save_button_waits_for_a_path() {
     );
     assert!(!ribbon.enabled("Abrir"), "the open dialog is not here yet");
 }
+
+#[test]
+fn the_edit_buttons_follow_the_selection_and_the_history() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled("Borrar"), "no selection, no delete");
+    ribbon.selection = true;
+    assert!(
+        ribbon.enabled("Borrar"),
+        "a selection enables the edit commands"
+    );
+    assert!(ribbon.enabled("Girar"));
+    assert!(ribbon.enabled("Reflejar"));
+    assert!(!ribbon.enabled("Duplicar"), "the duplicate is not here yet");
+    assert!(!ribbon.enabled("Deshacer"), "nothing to undo");
+    ribbon.can_undo = true;
+    assert!(ribbon.enabled("Deshacer"));
+    assert!(!ribbon.enabled("Rehacer"), "nothing to redo");
+    ribbon.can_redo = true;
+    assert!(ribbon.enabled("Rehacer"));
+}
 use crate::theme::Theme;
 
 fn harness<'a>(ribbon: &'a mut Ribbon, palette: &'a Palette) -> egui_kittest::Harness<'a> {
