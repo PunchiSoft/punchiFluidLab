@@ -48,6 +48,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0034](0034-the-sheet-animates-the-models-flow.md) | The sheet animates the model's flow, not a decoration | accepted | 2026-11-21 |
 | [0035](0035-the-window-is-rust.md) | The window is Rust, with a fixed layout | proposed | 2026-11-21 |
 | [0036](0036-the-toolkit-is-egui.md) | The window's toolkit is egui | proposed | 2026-11-22 |
+| [0037](0037-the-tube-is-a-restriction-with-its-own-characteristic.md) | The tube is a restriction, and its model needs a measured characteristic | proposed | 2026-11-21 |
 
 ## When a decision needs an ADR
 
