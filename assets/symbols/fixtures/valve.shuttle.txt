@@ -5,7 +5,7 @@ Line { points: [Pt { x: 20.0, y: 0.0 }, Pt { x: 20.0, y: 20.0 }], stroke: Stroke
 Line { points: [Pt { x: 8.0, y: 20.0 }, Pt { x: 11.32, y: 20.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 15.0, y: 16.0 }, Pt { x: 11.32, y: 20.0 }, Pt { x: 15.0, y: 24.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Circle { centre: Pt { x: 14.0, y: 20.0 }, radius: 2.0, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
-Line { points: [Pt { x: 16.0, y: 20.0 }, Pt { x: 20.0, y: 20.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 15.0, y: 20.0 }, Pt { x: 20.0, y: 20.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 20.0, y: 20.0 }, Pt { x: 28.800001, y: 20.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 25.2, y: 16.0 }, Pt { x: 28.800001, y: 20.0 }, Pt { x: 25.2, y: 24.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 28.800001, y: 20.0 }, Pt { x: 32.0, y: 20.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
