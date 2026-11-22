@@ -722,8 +722,11 @@ en `CHANGELOG.md`; `main` está en `5da5f56`. Lo que la ventana Rust ya hace:
 
 El **núcleo del producto** (decisión del propietario, 2026-11-22): la fuente de aire y los
 dos compresores con el diseño corregido; el FRL simplificado y el completo; las válvulas
-base editables (3/2, 5/2…); la OR y la AND; los cilindros con amortiguador e imán; los
-tapones y silenciadores con y sin regulador; y el doble clic con el panel de propiedades.
+base editables (3/2, 5/2…), dibujadas como el default de la norma —cuadros iguales, las
+T y los números de puerto— y **con sus etiquetas de puerto movibles** (la designación es
+la de la norma: número en neumática, letra en hidráulica); la OR y la AND; los cilindros con
+amortiguador e imán; los tapones y silenciadores con y sin regulador; y el doble clic con el
+panel de propiedades.
 **Lo mal diseñado no se migra: se descarta**, con la generación nueva del formato y su
 migración (detalle en [capabilities.md](capabilities.md)).
 

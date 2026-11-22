@@ -235,8 +235,9 @@ has the entries. Nothing here is a port of the ABI: what is badly designed is di
    with its ADR and its reference test.
 3. **The window**: the double click and the property panel.
 4. **The symbol set**: the corrected core set and its conformance review.
-5. **The rest of the shell**: draw pipes, the document and the dialogs, the theme and
-   accessibility, the export, and then phase 5.
+5. **The rest of the shell**: draw pipes, the port designations per the standard (numerals
+   in pneumatics, letters in hydraulics) with their movable labels, the document and the
+   dialogs, the theme and accessibility, the export, and then phase 5.
 
 **Not migrated as-is, and not critical**: the **electrical control** (relays, contacts,
 lamps, buzzers, switches) and the **recorders** are badly designed in the ABI; they are
