@@ -5,6 +5,15 @@ done next, which files it touches, which tests prove it and which questions belo
 the project owner. The reasoning behind every rule is in the linked documents; this
 file is the execution order.
 
+> **Start here (2026-11-22).** The product is the **essential core** in
+> [capabilities.md](capabilities.md): the air supply and the two corrected compressors, the
+> simplified and complete FRL, the bare editable valves, the OR and the AND, the cylinders
+> with cushioning and magnet, the plugs and silencers with and without a regulator, and the
+> double click with the property panel. The Qt window and the ABI are the **behaviour
+> reference only** until phase 5 and receive nothing new; what is badly designed is
+> discarded, not migrated. The blocks in "The Rust window: what is left" are the order;
+> the M-milestones below are the record of the retired product.
+
 > **Read the toolkit note first.** [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) replaced
 > the egui front end with the Qt window over `punchi-fluid-ffi` and retired
 > `punchi-fluid-theme`, `punchi-fluid-ui`, `punchi-fluid-desktop` and
@@ -226,8 +235,9 @@ has the entries. Nothing here is a port of the ABI: what is badly designed is di
    with its ADR and its reference test.
 3. **The window**: the double click and the property panel.
 4. **The symbol set**: the corrected core set and its conformance review.
-5. **The rest of the shell**: draw pipes, the document and the dialogs, the theme and
-   accessibility, the export, and then phase 5.
+5. **The rest of the shell**: draw pipes, the port designations per the standard (numerals
+   in pneumatics, letters in hydraulics) with their movable labels, the document and the
+   dialogs, the theme and accessibility, the export, and then phase 5.
 
 **Not migrated as-is, and not critical**: the **electrical control** (relays, contacts,
 lamps, buzzers, switches) and the **recorders** are badly designed in the ABI; they are
