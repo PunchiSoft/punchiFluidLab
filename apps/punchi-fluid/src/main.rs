@@ -87,6 +87,12 @@ struct Window {
     drag: Option<Drag>,
     /// The window's clipboard: the placements cut or copied, ready to paste.
     clipboard: Vec<Placement>,
+    /// The live model of the active circuit, rebuilt when the document changes.
+    model: Option<punchi_fluid_session::Model>,
+    /// The document revision the model was built from.
+    model_revision: u64,
+    /// Whether the model's clock is being advanced.
+    running: bool,
 }
 
 /// A primary-button drag of the selection.
@@ -135,6 +141,9 @@ impl Window {
             selected: Vec::new(),
             drag: None,
             clipboard: Vec::new(),
+            model: None,
+            model_revision: 0,
+            running: false,
         }
     }
 
@@ -157,6 +166,72 @@ impl Window {
         self.selected = vec![index];
         let name = definition.name_es.as_deref().unwrap_or(&definition.name);
         self.notice = Some(format!("añadida {name}"));
+    }
+
+    /// Rebuilds the model when the document changed, and says why when it cannot.
+    fn rebuild_if_stale(&mut self) {
+        if self.model_revision == self.document.revision() {
+            return;
+        }
+        self.model = match punchi_fluid_session::Model::build(&self.document, &self.catalog) {
+            Ok(model) => Some(model),
+            Err(cause) => {
+                self.notice = Some(cause);
+                None
+            }
+        };
+        self.model_revision = self.document.revision();
+    }
+
+    /// Starts the clock if the sheet has a model.
+    fn start(&mut self) {
+        self.rebuild_if_stale();
+        if self.model.is_some() {
+            self.running = true;
+        }
+    }
+
+    /// Advances the model by `dt` seconds, stopping with the reason when the step fails.
+    fn advance(&mut self, dt: f64) {
+        let Some(model) = self.model.as_mut() else {
+            self.running = false;
+            return;
+        };
+        if let Err(cause) = model.advance(dt) {
+            self.running = false;
+            self.notice = Some(format!("la simulación se detuvo: {cause}"));
+        }
+    }
+
+    /// Stops the clock and throws the model away, so the next start builds it at `t = 0`.
+    fn stop(&mut self) {
+        self.running = false;
+        self.model = None;
+        self.model_revision = 0;
+    }
+
+    /// The live frame's work: rebuild the model when the document moved and advance the
+    /// clock when it is running.
+    fn tick(&mut self, context: &egui::Context) {
+        self.rebuild_if_stale();
+        if self.running {
+            let dt = f64::from(context.input(|input| input.stable_dt).min(0.1));
+            self.advance(dt);
+        }
+    }
+
+    /// The status bar's live line: nothing until a model is loaded.
+    fn simulation_line(&self) -> String {
+        match self.model.as_ref().map(|model| model.network().telemetry()) {
+            Some(telemetry) => format!(
+                " · t {:.2} s · {:.2} bar · {:.1} mm · {:.1} mm/s",
+                telemetry.time,
+                telemetry.pressure_pa / 1.0e5,
+                telemetry.position * 1000.0,
+                telemetry.velocity * 1000.0,
+            ),
+            None => String::new(),
+        }
     }
 
     /// The placement under `point` in the active circuit, the one on top first.
@@ -352,6 +427,13 @@ impl Window {
             "Abajo" => self.align_selected(Align::Bottom),
             "Deshacer" => self.undo(),
             "Rehacer" => self.redo(),
+            "Iniciar" => self.start(),
+            "Pausa" => self.running = false,
+            "Paso" => {
+                self.running = false;
+                self.advance(0.01);
+            }
+            "Detener" => self.stop(),
             _ => self.view.command(command),
         }
     }
@@ -420,6 +502,7 @@ impl Window {
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
+        self.tick(context);
         let palette = ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette);
@@ -445,10 +528,11 @@ impl eframe::App for Window {
             .as_deref()
             .map(|notice| format!(" · {notice}"))
             .unwrap_or_default();
+        let simulation = self.simulation_line();
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
             ui.label(
                 egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last} · {source}{notice}",
+                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last} · {source}{notice}{simulation}",
                     zoom * 100.0, self.frame_ms
                 ))
                 .color(ink),

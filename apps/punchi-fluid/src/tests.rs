@@ -4,7 +4,7 @@
 //! The window tests: the document, the selection and the drawing, without a frame.
 
 use eframe::egui;
-use punchi_fluid_doc::{Align, Document, Placement};
+use punchi_fluid_doc::{Align, Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::Recording;
 
 use super::{Drag, Pt, Window, sheet, theme};
@@ -277,4 +277,65 @@ fn the_sheet_of_a_new_document_draws_into_a_recording() {
         "the sheet must produce calls: {}",
         recording.len()
     );
+}
+#[test]
+fn the_transport_runs_the_model_the_session_builds() {
+    let mut document = Document::new();
+    let supply = document.place(Placement::new(
+        "supply.compressor",
+        Pt::new(60.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let valve = document.place(Placement::new(
+        "valve.5_2.spring_return",
+        Pt::new(120.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let cylinder = document.place(Placement::new(
+        "cylinder.double_acting_32_200",
+        Pt::new(200.0, 100.0),
+        44.0,
+        20.0,
+    ));
+    let supply_id = document.placements()[supply].id();
+    let valve_id = document.placements()[valve].id();
+    let cylinder_id = document.placements()[cylinder].id();
+    document.connect(
+        Endpoint::new(supply_id, "1"),
+        Endpoint::new(valve_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "2"),
+        Endpoint::new(cylinder_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "4"),
+        Endpoint::new(cylinder_id, "2"),
+        None,
+    );
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    window.start();
+    assert!(window.running);
+    assert!(window.model.is_some());
+    window.advance(0.01);
+    let clock = window
+        .model
+        .as_ref()
+        .map_or(0.0, |model| model.network().telemetry().time);
+    assert!(clock > 0.0);
+    window.stop();
+    assert!(!window.running);
+    assert!(window.model.is_none());
+}
+
+#[test]
+fn an_empty_sheet_does_not_start_the_clock() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.start();
+    assert!(!window.running);
+    assert!(window.model.is_none());
 }
