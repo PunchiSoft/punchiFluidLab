@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Los tubos llevan la presión del modelo — 2026-11-22
+
+- **La hoja colorea cada tubo con la presión que el modelo reporta en su extremo**, como
+  fracción del rango de alimentación (`Model::hose_pressure`), así que al simular se ve
+  qué línea está en presión y cuál ventea. Un tubo que el modelo no puede resolver se queda
+  neutro en vez de adivinar.
+- Pruebas: el tubo de alimentación del circuito de ejemplo supera la mitad del rango.
+
 ### La ventana acciona las válvulas — 2026-11-22
 
 - **Pulsar y mantener el botón sobre una válvula la acciona**, como en la referencia: la de

@@ -186,6 +186,32 @@ impl Model {
         self.network.release_valve_at(valve)
     }
 
+    /// Pressure in the hose of a connection of `document`, as a fraction of the supply
+    /// span, for the drawing. A hose the model cannot resolve stays neutral.
+    #[must_use]
+    pub fn hose_pressure(&self, document: &Document, index: usize) -> f32 {
+        let Some(connection) = document.connections().get(index) else {
+            return 0.0;
+        };
+        let Some(from) = document.index_of(connection.from.placement) else {
+            return 0.0;
+        };
+        let Some(part) = self.part_of(from) else {
+            return 0.0;
+        };
+        let Some(pressure) = self.network.port_pressure(part, &connection.from.port) else {
+            return 0.0;
+        };
+        let atmosphere = self.network.atmosphere_pa();
+        let span = self.network.supply_pa() - atmosphere;
+        if span <= 0.0 {
+            return 0.0;
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        let ratio = ((pressure - atmosphere) / span) as f32;
+        ratio.clamp(0.0, 1.0)
+    }
+
     /// Reading of an instrument at `index`, in the unit its definition declares.
     #[must_use]
     pub fn reading(&self, index: usize, definition: &ComponentDefinition) -> Option<Reading> {
@@ -339,6 +365,10 @@ mod tests {
         assert!(model.release_valve(1));
         assert_eq!(model.valve_position(1), 0, "a spring returns it");
         assert!(!model.press_valve(0), "the supply is not a valve");
+        assert!(
+            model.hose_pressure(&document, 0) > 0.5,
+            "the supply hose carries the supply pressure"
+        );
     }
 
     #[test]
