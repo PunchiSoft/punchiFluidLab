@@ -56,8 +56,9 @@ pub fn build<'a>(
     let pipes: Vec<Pipe<'_>> = document
         .connections()
         .iter()
-        .filter(|connection| connection.circuit == circuit)
-        .filter_map(|connection| {
+        .enumerate()
+        .filter(|(_, connection)| connection.circuit == circuit)
+        .filter_map(|(index, connection)| {
             let from = document.index_of(connection.from.placement)?;
             let to = document.index_of(connection.to.placement)?;
             if document.placements().get(from)?.circuit != circuit
@@ -75,7 +76,7 @@ pub fn build<'a>(
                     port: connection.to.port.as_str(),
                 },
                 offset_mm: connection.offset_mm(),
-                pressure_ratio: 0.0,
+                pressure_ratio: model.map_or(0.0, |model| model.hose_pressure(document, index)),
                 class: connection.class(),
                 tube_od_hundredths: connection.tube_od_hundredths(),
                 flow_l_min: 0.0,
