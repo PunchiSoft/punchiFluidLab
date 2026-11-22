@@ -215,10 +215,13 @@ instruments' readings and the hoses' pressure). The 2026-11-22 slices are in `CH
 
 What is left, in the order it should be done:
 
-1. **The live frame's control**: the electrical control (relays, contacts, lamps, buzzers,
-   switches), the recorders' charts and then "Hasta cambio". The flow pulses and the
-   exhaust jets are **not on this critical path**: they are their own slice, worked
-   separately (the jet's drawing is P-037).
+1. **The rest of the editing**: draw pipes port to port, select and drag a pipe, edit the
+   per-instance properties, distribute (needs a document command) and the page orientation.
+
+**Not migrated as-is, and not on the critical path**: the **electrical control** (relays,
+contacts, lamps, buzzers, switches) and the **recorders** are badly designed in the ABI;
+they are redesigned before any code is written, with their own ADR, instead of copied. The
+flow pulses and the exhaust jets (P-037) are not critical either, and stay their own slice.
 2. **The rest of the editing**: draw pipes port to port, select and drag a pipe, edit the
    per-instance properties, distribute (needs a document command) and the page orientation.
 3. **The document**: the start view, the open/save-as/new dialogs, the recent files, the

@@ -684,18 +684,21 @@ en `CHANGELOG.md`; `main` está en `5da5f56`. Lo que la ventana Rust ya hace:
 
 **Lo que falta, en orden** (los detalles en [next-steps.md](next-steps.md)):
 
-1. Fotograma vivo: control eléctrico (relés, lámparas, contactos), registradores y «Hasta
-   cambio». **Los pulsos de flujo y los chorros de escape no son críticos**: se trabajan
-   aparte, después, con su parte de dibujo (P-037).
-2. Edición restante: dibujar tuberías puerto a puerto, seleccionar tubos, editar
+1. Edición restante: dibujar tuberías puerto a puerto, seleccionar tubos, editar
    propiedades, repartir (comando en el documento) y orientación de página.
-3. Documento: Inicio, Abrir/Guardar como/Nuevo con diálogo, recientes, aviso de cambios sin
+2. Documento: Inicio, Abrir/Guardar como/Nuevo con diálogo, recientes, aviso de cambios sin
    guardar, circuitos y pestañas.
-4. Tema (portal `color-scheme` en caliente), accesibilidad/IME y los checks Rust
+3. Tema (portal `color-scheme` en caliente), accesibilidad/IME y los checks Rust
    equivalentes a `--check-theme`/`--check-qml`/`--check-icons`/`--check-layout`/`--selftest`.
-5. Exportar desde la ventana (PNG/PDF/SVG), cajetín y página editables, piezas e impresión.
-6. Fase 5: mover el job `window` de CI a la ventana Rust, retirar `punchi-fluid-ffi` y
+4. Exportar desde la ventana (PNG/PDF/SVG), cajetín y página editables, piezas e impresión.
+5. Fase 5: mover el job `window` de CI a la ventana Rust, retirar `punchi-fluid-ffi` y
    `apps/punchi-fluid-qt`, empaquetado y documentación.
+
+**Fuera del camino crítico, y no se migran tal cual:** el **control eléctrico** (relés,
+contactos, lámparas, zumbadores, interruptores) y los **registradores** tienen un diseño
+malo en el ABI; se replantean antes de escribir código, con su ADR, en vez de copiarlos.
+Tampoco son críticos los pulsos de flujo y los chorros de escape (P-037), la simbología y
+la física del tubo.
 
 La **simbología** (correcciones de forma y revisión de 300 dpi) y la **física del tubo**
 (ADR 0037, `proposed`, esperando la fuente de la tabla) quedan para la pasada final, como se
