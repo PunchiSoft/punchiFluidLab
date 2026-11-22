@@ -684,8 +684,9 @@ en `CHANGELOG.md`; `main` está en `5da5f56`. Lo que la ventana Rust ya hace:
 
 **Lo que falta, en orden** (los detalles en [next-steps.md](next-steps.md)):
 
-1. Fotograma vivo completo: pulsos de flujo y chorros de escape, control eléctrico (relés,
-   lámparas, contactos), registradores y «Hasta cambio».
+1. Fotograma vivo: control eléctrico (relés, lámparas, contactos), registradores y «Hasta
+   cambio». **Los pulsos de flujo y los chorros de escape no son críticos**: se trabajan
+   aparte, después, con su parte de dibujo (P-037).
 2. Edición restante: dibujar tuberías puerto a puerto, seleccionar tubos, editar
    propiedades, repartir (comando en el documento) y orientación de página.
 3. Documento: Inicio, Abrir/Guardar como/Nuevo con diálogo, recientes, aviso de cambios sin
