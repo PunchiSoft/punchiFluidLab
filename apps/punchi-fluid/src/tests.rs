@@ -339,3 +339,61 @@ fn an_empty_sheet_does_not_start_the_clock() {
     assert!(!window.running);
     assert!(window.model.is_none());
 }
+
+#[test]
+fn until_change_stops_at_the_piston_end() {
+    let mut document = Document::new();
+    let supply = document.place(Placement::new(
+        "supply.compressor",
+        Pt::new(60.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let valve = document.place(Placement::new(
+        "valve.5_2.spring_return",
+        Pt::new(120.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let cylinder = document.place(Placement::new(
+        "cylinder.double_acting_32_200",
+        Pt::new(200.0, 100.0),
+        44.0,
+        20.0,
+    ));
+    let supply_id = document.placements()[supply].id();
+    let valve_id = document.placements()[valve].id();
+    let cylinder_id = document.placements()[cylinder].id();
+    document.connect(
+        Endpoint::new(supply_id, "1"),
+        Endpoint::new(valve_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "2"),
+        Endpoint::new(cylinder_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "4"),
+        Endpoint::new(cylinder_id, "2"),
+        None,
+    );
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    window.start();
+    assert!(window.model.is_some());
+    window.until_change();
+    assert!(
+        window
+            .notice
+            .as_deref()
+            .is_some_and(|notice| notice.contains("tope")),
+        "the piston reached an end: {:?}",
+        window.notice
+    );
+    let position = window
+        .model
+        .as_ref()
+        .map_or(0.0, |model| model.network().telemetry().position);
+    assert!(position > 0.0, "the piston moved towards the far end");
+}

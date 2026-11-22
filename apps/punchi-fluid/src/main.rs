@@ -22,6 +22,7 @@ use punchi_fluid_file::sheet::Sheet;
 mod ribbon;
 mod scene;
 mod sidebar;
+mod sim;
 mod surface;
 mod theme;
 mod view;
@@ -437,6 +438,7 @@ impl Window {
                 self.advance(0.01);
             }
             "Detener" => self.stop(),
+            "Hasta cambio" => self.until_change(),
             _ => self.view.command(command),
         }
     }
@@ -477,6 +479,7 @@ impl Window {
             self.cut_selected();
         }
         self.ribbon.savable = self.path.is_some();
+        self.ribbon.can_step = self.model.is_some();
         self.ribbon.has_clipboard = !self.clipboard.is_empty();
         self.ribbon.selected = self.selected.len();
         self.ribbon.can_undo = self.document.can_undo();

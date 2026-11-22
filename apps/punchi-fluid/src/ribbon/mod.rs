@@ -62,6 +62,8 @@ pub struct Ribbon {
     /// How many placements are selected; the window sets it every frame, so a command can
     /// ask for one, two (align) or the clipboard's own rules.
     pub selected: usize,
+    /// Whether the sheet has a model the step commands can advance.
+    pub can_step: bool,
     /// Whether the window's clipboard holds placements; the window sets it every frame.
     pub has_clipboard: bool,
     /// Whether the document has something to undo or redo; the window sets both every frame.
@@ -81,6 +83,7 @@ impl Ribbon {
             last: String::from("—"),
             savable: false,
             selected: 0,
+            can_step: false,
             has_clipboard: false,
             can_undo: false,
             can_redo: false,
@@ -106,7 +109,8 @@ impl Ribbon {
     fn enabled(&self, label: &str) -> bool {
         match label {
             "Iniciar" => !self.running,
-            "Pausa" | "Paso" | "Detener" => self.running,
+            "Pausa" | "Detener" => self.running,
+            "Paso" | "Hasta cambio" => self.can_step,
             "Guardar" => self.savable,
             "Borrar" | "Girar" | "Reflejar" | "Duplicar" | "Copiar" => self.selected >= 1,
             "Pegar" => self.has_clipboard,
@@ -116,7 +120,7 @@ impl Ribbon {
             // Run until a state change, the file actions and the rest wait for their
             // commands or their dialogs.
             "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Horizontal" | "Vertical"
-            | "Apaisado" | "Hasta cambio" => false,
+            | "Apaisado" => false,
             _ => true,
         }
     }
