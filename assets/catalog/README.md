@@ -259,9 +259,9 @@ A **pressure element** is a flat symbol with two supply inlets and one working o
 two inlets print the numeral `1` and the outlet `2`, with distinct ids. The network applies
 the rule of [ADR 0029](../docs/adr/0029-a-two-pressure-valve-decides-by-pressure.md) with
 the flat geometry and the per-step constraint of
-[ADR 0039](../docs/adr/0039-the-pressure-element-is-flat-and-constrained.md); until the
-solver slice lands, a circuit that places one is refused with a message instead of being
-simulated wrong.
+[ADR 0039](../docs/adr/0039-the-pressure-element-is-flat-and-constrained.md): the shuttle
+feeds the outlet from the higher inlet, and the two-pressure valve from the lower one while
+both carry pressure and vents it when either falls to atmosphere.
 
 ```toml
 [behaviour]
