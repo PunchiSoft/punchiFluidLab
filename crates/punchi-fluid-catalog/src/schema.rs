@@ -109,6 +109,16 @@ pub enum Kinematics {
     Contact,
 }
 
+/// Which rule a passive pressure element follows (ADR 0029).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PressureKind {
+    /// Shuttle (OR): the outlet follows the higher of the two inlets.
+    Shuttle,
+    /// Two-pressure valve (AND): the outlet follows the lower while both are in pressure.
+    TwoPressure,
+}
+
 /// Kind of line, with its own pattern in the drawing.
 ///
 /// The class is not decorative: a pilot line drawn solid is a misreading risk, so the
@@ -476,6 +486,11 @@ pub enum Behaviour {
         /// Sonic conductance to atmosphere, `m³ / (s · Pa)`.
         conductance: f64,
     },
+    /// Passive pressure element: a shuttle or a two-pressure valve (ADR 0029).
+    Pressure {
+        /// Which pressure rule it follows.
+        kind: PressureKind,
+    },
     /// An electrical rail at a declared voltage (ADR 0017).
     ElectricalSupply {
         /// Voltage of the rail, volts.
@@ -572,6 +587,7 @@ impl Behaviour {
             Self::Recorder { .. } => "recorder",
             Self::Plug => "plug",
             Self::Silencer { .. } => "silencer",
+            Self::Pressure { .. } => "pressure",
             Self::ElectricalSupply { .. } => "electrical_supply",
             Self::Contact { .. } => "contact",
             Self::LimitSwitch { .. } => "limit_switch",

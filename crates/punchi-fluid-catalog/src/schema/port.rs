@@ -73,4 +73,19 @@ pub struct Port {
     /// a port with this flag off still connects and routes, but prints no number.
     #[serde(default = "default_true")]
     pub show_numeral: bool,
+    /// Number the renderer prints, when it differs from the id.
+    ///
+    /// The id is the unique key a pipe, the document and the solver use; the standard can
+    /// print the same numeral on two ports, as the two supply inlets of a shuttle do
+    /// (`1a` and `1b`, both drawn as `1`). Absent means the id is the numeral (ADR 0039).
+    #[serde(default)]
+    pub numeral: Option<String>,
+}
+
+impl Port {
+    /// Number the renderer prints: the declared numeral, or the id.
+    #[must_use]
+    pub fn numeral(&self) -> &str {
+        self.numeral.as_deref().unwrap_or(&self.id)
+    }
 }
