@@ -725,7 +725,7 @@ definition count and the mode text are the target, not in the bar yet.
 | `grid_minor`, `grid_major` | `text_muted` at 22 % and 34 % opacity |
 | spacing | `grid_unit` (18 px in Breeze) and its multiples, with `unit` for the panel margins |
 | typography | `[General] font` family and point size; `textDisplay` is the page title of a view that is not a document, about 1.5 × the spacing unit and one display step above the label |
-| motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change |
+| motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change ([Motion](#motion)) |
 | icons | the ribbon's own line family, one ink; the rest of the window the desktop theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)) |
 
 A single semantic layer, `apps/punchi-fluid-qt/src/theme.cpp`, converts the palette into
@@ -786,11 +786,72 @@ disappears on its own window colour.
 - Targets ≥ 24 × 24 px; the canvas is exempt because it is a drawing surface, and it
   has keyboard alternatives for everything it does.
 
+### Motion
+
+Motion shows a change of place or state that the eye would otherwise lose. It is never
+decoration and never a delay. The reference app decides *what* moves; this contract decides
+*how*, and `motionMs` decides *how long*.
+
+**What moves.** Only the chrome: a panel that folds, opens or yields its width, the rail
+beside it, a dialog and a popover. The sheet has its own motion, which belongs to the model
+([Animation on the sheet](#animation-on-the-sheet)).
+
+**What never moves.** Selection, a drag, the pan, the zoom, the routing of a hose, the
+deletion of a component and every command the keyboard issues to the document. They are
+used hundreds of times a day, and a tween between the pointer and the result is a delay the
+reader pays on every operation. Type is never tweened: its size, weight and spacing change
+in a frame.
+
+**One duration, one curve per intent.** `motionMs` is the duration of every chrome
+transition; it comes from the desktop ([Visual language](#visual-language)) and no widget
+owns a second one.
+
+| Intent | Curve | Used by |
+|---|---|---|
+| Entering, leaving, folding | decelerating: fast at the start, settling at the end (`cubic-out`) | a panel, the rail, a dialog, a popover |
+| Moving while it stays on screen | accelerates and then brakes (`cubic-in-out`) | a control that changes place |
+| Progress or constant motion | linear | a progress indicator, a hold |
+| Hover and press | the same `motionMs`, no overshoot | a control's colour |
+
+A spring, a bounce or an overshoot is not used anywhere: a simulator does not move what the
+model did not move, and a bounce is the interface imitating physics it does not have. An
+exit is not faster than its entrance: the desktop's factor is the only knob, and a second
+duration for leaving would be a second token by another name.
+
+**Paired elements share one transition.** A panel and its rail, a dialog and the band
+behind it: if they move as one thing they take the same curve and the same `motionMs`, or
+the pair visibly comes apart.
+
+**Interruption replaces, never restarts.** A transition that is reversed or retargeted
+starts from the value it holds at that moment, not from zero, so a reader who changes their
+mind sees one movement and no jump back. The result under the pointer is never held back
+while a transition runs.
+
+**Reduced motion removes the tween and keeps the change.** `[KDE] AnimationDurationFactor
+= 0` makes `motionMs` zero: every state change happens in the frame it was commanded, no
+transition runs and no frame is requested for one. The piston still shows its position, the
+panel is already folded, and the focus moves where it would have moved. Nothing is delayed
+and nothing is left half-drawn; the sheet's static arrowhead is the same rule
+([ADR 0034](adr/0034-the-sheet-animates-the-models-flow.md)).
+
+**Motion is view state.** It never enters the document, the file, the undo history or the
+modified mark. A fold, a dialog and a hover change nothing that can be saved, and reopening
+the document does not replay them.
+
+**The frame budget does not move.** A transition is event-driven: it requests the frames it
+needs and none after it settles, so the transport's clock stays the only continuous one. An
+animated width or height lays the window out on every frame, and a panel width reflows the
+sheet; the cost is measured at 200 components before it ships, and a transition that misses
+the budget is shortened or moved to the end of the gesture. The theme check prints
+`motionMs`; it does not prove that a widget used it, so the reduced-motion branch is a test
+in the adapter.
+
 ### Animation on the sheet
 
 Being in simulation mode *is* the animation; a stopped sheet is still, and a paused sheet
 keeps the frame it was on. The reference's signature is the circuit in motion, and the sheet
-replicates it from the model, never from a timer that guesses.
+replicates it from the model, never from a timer that guesses. The chrome's transitions are
+the [Motion](#motion) contract; this section is only the sheet's.
 
 | What moves | Source | Rule |
 |---|---|---|
