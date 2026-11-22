@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### La migración a Rust, en cuatro lotes — 2026-11-22
+
+- **`docs/rust-migration-plan.md` fija el orden**: (1) la ventana Rust es el producto —Inicio,
+  plantillas, recientes, archivos, autoguardado y retirada de la Qt y su job de CI—; (2) la
+  paridad de interfaz y F8; (3) los huecos de contenido (hidráulica, bibliotecas, FRL,
+  cilindros, designaciones, revisiones); (4) el 1.0. Cada lote es una entrega con su
+  aceptación, no un PR por control.
+
 ### La bola del shuttle espera en su último asiento — 2026-11-22
 
 - **En standby la bola no parpadea**: si las dos entradas caen a atmósfera, la bola
