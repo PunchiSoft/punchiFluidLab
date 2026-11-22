@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La ventana selecciona y mueve en la hoja — 2026-11-22
+
+- **Clic en la hoja selecciona la colocación bajo el puntero** (la de arriba manda, solo en
+  el circuito activo) y el arrastre con el botón izquierdo la mueve con vista previa en
+  vivo; al soltar, el movimiento entra como **una sola operación de deshacer**
+  (`Document::move_many`) y la colocación seleccionada se marca con el acento del tema.
+- **La primera edición real de la ventana Rust**: el documento se modifica desde el gesto,
+  sin ABI ni Qt, y la barra de estado dice qué se seleccionó o movió.
+- **Dos pruebas**: el clic selecciona y deselecciona por el hit del documento; un arrastre
+  mueve la selección y deja un solo paso de historial.
+
 ### La ventana guarda el documento que abrió — 2026-11-22
 
 - **Guardar escribe el documento en el fichero del que se abrió**, con Ctrl+S o el botón de
