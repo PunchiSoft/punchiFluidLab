@@ -510,6 +510,24 @@ impl Window {
 }
 
 impl eframe::App for Window {
+    /// The Inicio page: returns `true` while it is the screen, after loading the template
+    /// the reader chose.
+    fn show_start(&mut self, ui: &mut egui::Ui) -> bool {
+        if !self.start_open {
+            return false;
+        }
+        if let Some(index) = start::show(ui) {
+            let area = self.page.rect();
+            if let Ok(document) =
+                punchi_fluid_session::templates::document(index, &self.catalog, area)
+            {
+                *self = Window::new(self.theme.clone(), document, None, None);
+                self.start_open = false;
+            }
+        }
+        true
+    }
+
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
@@ -564,16 +582,7 @@ impl eframe::App for Window {
             });
 
         egui::CentralPanel::default().show(context, |ui| {
-            if self.start_open {
-                if let Some(index) = start::show(ui) {
-                    let area = self.page.rect();
-                    if let Ok(document) =
-                        punchi_fluid_session::templates::document(index, &self.catalog, area)
-                    {
-                        *self = Window::new(self.theme.clone(), document, None, None);
-                        self.start_open = false;
-                    }
-                }
+            if self.show_start(ui) {
                 return;
             }
             let area = ui.available_rect_before_wrap();
