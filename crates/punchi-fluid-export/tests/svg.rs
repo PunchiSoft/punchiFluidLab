@@ -22,6 +22,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
         catalog_id: definition.id.as_str(),
         rect,
         extension: 0.5,
+        moving: None,
         valve_position: 0,
         reading: None,
         series: None,

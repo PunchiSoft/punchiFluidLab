@@ -419,6 +419,21 @@ belongs to the renderer. For a valve, `[[behaviour.positions.symbol]]` is an opt
 annotation drawn on top of the position; the flow paths themselves come from the
 `connection` table, so the arrow direction is never authored by hand.
 
+### Moving parts
+
+A flat symbol may name a part the renderer places from the live state, like the shuttle's
+ball (ADR 0041):
+
+```toml
+[[moving]]
+primitive = 6                       # index into [[symbol]]
+seats = [[0.35, 0.50], [0.50, 0.50], [0.65, 0.50]]
+```
+
+The primitive is translated to the left, centre or right seat; the rest of the symbol stays
+put. The state comes from the element the part belongs to (the pressure element's seat), so
+the file never carries a second copy of the rule and the drawing cannot drift from the model.
+
 ### Normative symbols
 
 A definition is not free-form drawing. It must reproduce the symbol that

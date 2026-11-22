@@ -611,6 +611,15 @@ pub enum Origin {
     User,
 }
 
+/// A part the renderer places from the live state (ADR 0041).
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize)]
+pub struct MovingPart {
+    /// Index into the definition's `symbol` list.
+    pub primitive: usize,
+    /// Centre of the part in its three positions: left seat, centre and right seat.
+    pub seats: [[f64; 2]; 3],
+}
+
 /// One component definition, as stored in a catalog file.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -671,6 +680,13 @@ pub struct ComponentDefinition {
     /// Moving parts the renderer must animate.
     #[serde(default)]
     pub kinematics: Kinematics,
+    /// Parts the renderer places from the live state, like the shuttle's ball.
+    ///
+    /// Each entry names a `symbol` primitive and the three positions its centre takes:
+    /// seated on the left, centred, and seated on the right. The drawing translates the
+    /// primitive to the position the element selects; the rest of the symbol is static.
+    #[serde(default)]
+    pub moving: Vec<MovingPart>,
     /// File this definition was read from.
     #[serde(skip)]
     pub source: Option<PathBuf>,

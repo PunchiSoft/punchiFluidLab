@@ -21,8 +21,8 @@ picks one inlet when the two carry the same pressure.
 
 1. **The solver's rule.** An inlet is live above atmosphere + 5 kPa. Two live inlets within
    2 kPa of each other hold the ball centred and isolate the outlet; otherwise the outlet
-   follows the higher inlet, and when both fall it follows the higher and vents (ADR 0039's
-   correction).
+   follows the higher inlet, and when both fall the ball keeps its last seat and the outlet
+   vents through the open inlet (ADR 0039's correction).
 2. **The ball has three positions**: seated on the right seat (1B closed) when 1A wins,
    seated on the left (1A closed) when 1B wins, and centred when both live inlets are equal.
 3. **The symbol declares its moving part and the three positions**; the renderer places it
@@ -34,10 +34,9 @@ picks one inlet when the two carry the same pressure.
 
 - The bands are constants with the tests; the both-live case blocks port 2; the vent of
   ADR 0039 still passes.
-- The schema gains the moving-part declaration, and the draw, the session and the FFI pass
-  the state (next slice); the review captures the three positions.
-- **Debt:** the bands are absolute pressures; when both inlets fall the ball follows the
-  vent side; the animation arrives in its own slice after this rule.
+- The schema declares the moving part and its three seats, and the draw, the session and the
+  FFI pass the state; the review captures the three positions.
+- **Debt:** the bands are absolute pressures; in standby the ball keeps the last seat.
 
 ## Alternatives considered
 

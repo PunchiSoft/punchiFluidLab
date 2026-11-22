@@ -68,7 +68,7 @@ line_class = "working"
 # Passage from shuttle ball to central junction
 [[symbol]]
 kind = "line"
-points = [0.40, 0.50, 0.50, 0.50]
+points = [0.283, 0.50, 0.50, 0.50]
 line_class = "working"
 
 # Central junction to right check valve
@@ -98,6 +98,12 @@ kind = "circle"
 points = [0.50, 0.50, 0.022]
 filled = true
 line_class = "working"
+
+# The ball (primitive 6) is placed from the live state: left seat, centre, right seat
+# (ADR 0041). 1A pushes it right, 1B left, and two live signals hold it centred.
+[[moving]]
+primitive = 6
+seats = [[0.35, 0.50], [0.50, 0.50], [0.65, 0.50]]
 
 # --------------------------------------------------
 # Ports

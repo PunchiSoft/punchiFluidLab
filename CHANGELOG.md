@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### La bola del shuttle espera en su último asiento — 2026-11-22
+
+- **En standby la bola no parpadea**: si las dos entradas caen a atmósfera, la bola
+  conserva el asiento del último accionamiento (1A → derecha, 1B → izquierda) y la salida 2
+  ventea por la entrada que queda abierta. El solver guarda el asiento en el elemento de
+  presión; el dibujo lo refleja.
+- **El trazo del centro al asiento izquierdo** se completa: la línea interior llega al
+  asiento (0,375) para que la bola se desplace sobre ella cuando cambia de lado.
+- Prueba `the_shuttle_keeps_its_last_seat_in_standby`; fixture y capturas regenerados.
+
+### La bola del shuttle se dibuja en su asiento — 2026-11-22
+
+- **La bola del shuttle se mueve en el dibujo**: el símbolo declara la parte móvil y sus
+  tres posiciones (`[[moving]]`: primitiva y asientos izquierdo, centro y derecho) y el
+  renderizador la coloca según el estado del elemento de presión: 1A la lleva al asiento
+  derecho, 1B al izquierdo y las dos señales la dejan al centro. La forma del símbolo no
+  cambia; el movimiento es del simulador y no una variante.
+- El solver expone `BallSeat` y `shuttle_seat`; el modelo lo pasa al dibujo por la FFI. La
+  prueba del dibujo comprueba los tres centros, y las de presión los tres asientos.
+
 ### La bola del shuttle se centra con dos señales — 2026-11-22
 
 - **El shuttle bloquea la salida cuando las dos entradas están vivas e iguales**: la bola

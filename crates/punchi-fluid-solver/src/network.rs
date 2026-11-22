@@ -139,9 +139,45 @@ pub enum PartBehaviour {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PressureElement {
     kind: PressureKind,
+    /// Part of the circuit this element resolves, for the live state of its symbol.
+    part: usize,
     inlet_a: usize,
     inlet_b: usize,
     outlet: usize,
+    /// Last seat of the shuttle's ball; standby keeps it.
+    seat: BallSeat,
+}
+
+/// Seat of a shuttle's ball in its three positions (ADR 0041).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BallSeat {
+    /// Seated on the left seat: the left inlet is closed and the right one feeds.
+    Left,
+    /// Centred: both live inlets push it, both seats close and the outlet is isolated.
+    Centre,
+    /// Seated on the right seat: the right inlet is closed and the left one feeds.
+    Right,
+}
+
+fn next_shuttle_seat(previous: BallSeat, a: f64, b: f64, atmosphere: f64) -> BallSeat {
+    let live_a = a > atmosphere + SHUTTLE_LIVE_BAND_PA;
+    let live_b = b > atmosphere + SHUTTLE_LIVE_BAND_PA;
+    if live_a && live_b {
+        if (a - b).abs() <= SHUTTLE_EQUAL_BAND_PA {
+            BallSeat::Centre
+        } else if a > b {
+            BallSeat::Right
+        } else {
+            BallSeat::Left
+        }
+    } else if live_a {
+        BallSeat::Right
+    } else if live_b {
+        BallSeat::Left
+    } else {
+        // Standby: the ball keeps the seat of the last actuation instead of flickering.
+        previous
+    }
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -1105,9 +1141,10 @@ impl Network {
     /// The transfer is capped by the mass the inlet holds, so the projection never invents
     /// gas. The shuttle holds its outlet when both inlets fall (the seats close); the
     /// two-pressure valve vents it, through the lower inlet or to atmosphere.
-    fn apply_pressure(&self, delta: &mut [f64], mass_out: &mut f64) {
+    fn apply_pressure(&mut self, delta: &mut [f64], mass_out: &mut f64) {
         let gas = AIR_SPECIFIC_GAS_CONSTANT * self.temperature_kelvin;
-        for element in &self.pressure {
+        for index in 0..self.pressure.len() {
+            let element = self.pressure[index];
             let a = self.node_pressure(element.inlet_a);
             let b = self.node_pressure(element.inlet_b);
             let out = self.node_pressure(element.outlet);
@@ -1116,15 +1153,13 @@ impl Network {
             // atmosphere (ADR 0029).
             let feed = match element.kind {
                 PressureKind::Shuttle => {
-                    let live_a = a > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
-                    let live_b = b > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
-                    if live_a && live_b && (a - b).abs() <= SHUTTLE_EQUAL_BAND_PA {
-                        // Both signals push the ball: it centers and closes both seats.
-                        None
-                    } else if a >= b {
-                        Some(element.inlet_a)
-                    } else {
-                        Some(element.inlet_b)
+                    let seat = next_shuttle_seat(element.seat, a, b, self.atmosphere_pa);
+                    self.pressure[index].seat = seat;
+                    match seat {
+                        // Both signals push the ball: it centres and closes both seats.
+                        BallSeat::Centre => None,
+                        BallSeat::Right => Some(element.inlet_a),
+                        BallSeat::Left => Some(element.inlet_b),
                     }
                 }
                 PressureKind::TwoPressure => {
@@ -1141,7 +1176,7 @@ impl Network {
             };
             let volume = self.nodes[element.outlet].volume;
             let Some(feed) = feed else {
-                // The two-pressure valve vents its outlet to atmosphere; the centered
+                // The two-pressure valve vents its outlet to atmosphere; the centred
                 // shuttle closes both seats and its outlet stays where it is.
                 if matches!(element.kind, PressureKind::TwoPressure) && out > self.atmosphere_pa {
                     let dm = ((out - self.atmosphere_pa) * volume / gas)
@@ -1176,6 +1211,18 @@ impl Network {
                 }
             }
         }
+    }
+
+    /// Seat of the shuttle's ball for the part, when the part is one.
+    ///
+    /// The drawing places the ball from this, so the screen and the model agree on which
+    /// inlet is open without the symbol carrying a second copy of the rule.
+    #[must_use]
+    pub fn shuttle_seat(&self, part: usize) -> Option<BallSeat> {
+        self.pressure
+            .iter()
+            .find(|element| element.part == part)
+            .map(|element| element.seat)
     }
 
     fn step_pistons(&mut self, dt: f64) {
@@ -1296,9 +1343,11 @@ fn pressure_elements(
         }
         elements.push(PressureElement {
             kind: *kind,
+            part: index,
             inlet_a: inlets[0],
             inlet_b: inlets[1],
             outlet,
+            seat: BallSeat::Left,
         });
     }
     Ok(elements)
@@ -3057,6 +3106,7 @@ mod pressure_tests {
         }
         let inlet_b = network.port_pressure(3, "1b").expect("an inlet");
         assert!((inlet_b - network.atmosphere_pa).abs() < 1_000.0);
+        assert_eq!(network.shuttle_seat(3), Some(BallSeat::Right));
         assert!(
             network.position() > stroke * 0.5,
             "the cylinder did not extend: {:.1} of {:.1} mm",
@@ -3114,6 +3164,7 @@ mod pressure_tests {
             inlet_a > 4.0e5 && inlet_b > 4.0e5,
             "both inlets are live: {inlet_a:.0} / {inlet_b:.0} Pa"
         );
+        assert_eq!(network.shuttle_seat(3), Some(BallSeat::Centre));
         let outlet = network.port_pressure(3, "2").expect("an outlet");
         assert!(
             (outlet - network.atmosphere_pa).abs() < 2_000.0,
@@ -3124,5 +3175,41 @@ mod pressure_tests {
             "the cylinder moved with both signals: {:.3} mm",
             network.position() * 1000.0
         );
+    }
+
+    #[test]
+    fn the_shuttle_keeps_its_last_seat_in_standby() {
+        // Press 1B, release: the ball stays on the left seat instead of flickering to
+        // the other one, and the outlet vents through the open right inlet.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.shuttle"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
+            (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
+            (PortAddress::new(3, "2"), PortAddress::new(4, "1")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("the shuttle chain builds");
+        assert!(network.press_valve_at(1));
+        for _ in 0..100 {
+            network.advance(0.016).expect("accepted");
+        }
+        assert_eq!(network.shuttle_seat(3), Some(BallSeat::Left));
+        assert!(network.release_valve_at(1));
+        for _ in 0..100 {
+            network.advance(0.016).expect("accepted");
+            assert_eq!(
+                network.shuttle_seat(3),
+                Some(BallSeat::Left),
+                "the ball flickered in standby"
+            );
+        }
     }
 }

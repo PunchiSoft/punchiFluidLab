@@ -9,6 +9,7 @@
 //! physics until connections exist.
 
 use punchi_fluid_catalog::{Catalog, ComponentDefinition, PortRole};
+use punchi_fluid_solver::network::BallSeat;
 
 use crate::orient::{Orientation, Turned};
 use crate::surface::{Bounds, Colour, LineClass, Pt, Rect, Stroke, Surface};
@@ -143,6 +144,8 @@ pub struct Placed<'a> {
     pub extension: f32,
     /// Active position of a valve, `0` for anything that is not one.
     pub valve_position: usize,
+    /// Seat of the shuttle's ball when the model has one for this placement (ADR 0041).
+    pub moving: Option<BallSeat>,
     /// Reading of an instrument, in the unit its definition declares, if it has one.
     pub reading: Option<Reading>,
     /// Samples of a recorder, when this component is one and it is bound.
@@ -248,6 +251,16 @@ pub fn draw_placed_preview(
     draw_placed_with(surface, placements, pipes, catalog, ink, selected, false);
 }
 
+fn symbol_drawer(
+    connections: bool,
+) -> fn(&mut dyn Surface, Rect, &ComponentDefinition, usize, f32, Option<BallSeat>, &Ink) {
+    if connections {
+        symbol::draw_component
+    } else {
+        symbol::draw_component_preview
+    }
+}
+
 fn draw_placed_with(
     surface: &mut dyn Surface,
     placements: &[Placed<'_>],
@@ -263,12 +276,7 @@ fn draw_placed_with(
     for pipe in pipes {
         draw_pipe(surface, placements, &boxes, pipe, catalog, ink);
     }
-    let draw_symbol: fn(&mut dyn Surface, Rect, &ComponentDefinition, usize, f32, &Ink) =
-        if connections {
-            symbol::draw_component
-        } else {
-            symbol::draw_component_preview
-        };
+    let draw_symbol = symbol_drawer(connections);
     // Every placement is drawn from the document and its own state: a cylinder with the
     // extension the network reports for it, a valve with its own position. There is no
     // list of the three components the model knows, because the model follows the sheet.
@@ -302,6 +310,7 @@ fn draw_placed_with(
                 definition,
                 placed.valve_position,
                 placed.extension,
+                placed.moving,
                 ink,
             );
         } else {
@@ -312,6 +321,7 @@ fn draw_placed_with(
                 definition,
                 placed.valve_position,
                 placed.extension,
+                placed.moving,
                 ink,
             );
         }
@@ -689,6 +699,7 @@ mod selection_tests {
             catalog_id: "supply.compressor",
             rect: Rect::from_min_size(Pt::new(10.0, 10.0), 22.0, 22.0),
             extension: 0.0,
+            moving: None,
             valve_position: 0,
             reading: None,
             series: None,

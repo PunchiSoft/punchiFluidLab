@@ -208,6 +208,7 @@ impl Sidebar {
             definition,
             0,
             0.0,
+            None,
             &preview_ink(tokens),
         );
         ui.painter().extend(drawing.shapes);

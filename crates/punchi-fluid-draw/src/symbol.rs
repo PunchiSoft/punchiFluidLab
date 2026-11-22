@@ -11,8 +11,9 @@
 
 use punchi_fluid_catalog::{
     ActuatorKind, Behaviour, ComponentDefinition, Kinematics, LineClass as CatalogLineClass,
-    Primitive, PrimitiveKind, ReturnKind, Side,
+    MovingPart, Primitive, PrimitiveKind, ReturnKind, Side,
 };
+use punchi_fluid_solver::network::BallSeat;
 
 use crate::surface::{Anchor, Colour, LineClass, Pt, Rect, Stroke, Surface, dashes};
 
@@ -127,7 +128,22 @@ pub fn draw_primitives(
     colour: Colour,
     width: f32,
 ) {
-    for primitive in primitives {
+    draw_primitives_seated(surface, rect, primitives, None, colour, width);
+}
+
+/// Draws the primitives and places the declared moving part on its seat.
+///
+/// The part is the ball of a shuttle: the file names the primitive and the three seats, and
+/// the live state chooses one. The radius stays the file's; only the centre moves.
+pub fn draw_primitives_seated(
+    surface: &mut dyn Surface,
+    rect: Rect,
+    primitives: &[Primitive],
+    moving: Option<(&MovingPart, BallSeat)>,
+    colour: Colour,
+    width: f32,
+) {
+    for (index, primitive) in primitives.iter().enumerate() {
         #[allow(clippy::cast_possible_truncation)]
         let stroke_width = width * primitive.stroke.max(0.5) as f32;
         let stroke = Stroke::new(stroke_width, colour).with_class(class_of(primitive));
@@ -167,21 +183,24 @@ pub fn draw_primitives(
                 }
             }
             PrimitiveKind::Circle => {
-                let values: Vec<f32> = primitive
-                    .points
-                    .iter()
-                    .map(|value| {
-                        #[allow(clippy::cast_possible_truncation)]
-                        {
-                            *value as f32
+                if let [cx, cy, radius] = primitive.points.as_slice() {
+                    let (cx, cy) = match moving {
+                        Some((part, seat)) if part.primitive == index => {
+                            let seat = match seat {
+                                BallSeat::Left => 0,
+                                BallSeat::Centre => 1,
+                                BallSeat::Right => 2,
+                            };
+                            (part.seats[seat][0], part.seats[seat][1])
                         }
-                    })
-                    .collect();
-                if let [cx, cy, radius] = values.as_slice() {
-                    let centre = at(rect, f64::from(*cx), f64::from(*cy));
+                        _ => (*cx, *cy),
+                    };
+                    let centre = at(rect, cx, cy);
+                    #[allow(clippy::cast_possible_truncation)]
+                    let radius = *radius as f32 * rect.width().min(rect.height());
                     surface.circle(
                         centre,
-                        radius * rect.width().min(rect.height()),
+                        radius,
                         primitive.filled.then_some(colour),
                         (!primitive.filled).then_some(stroke),
                     );
@@ -1125,7 +1144,7 @@ fn draw_valve_with(
     connections: bool,
 ) {
     let Some([bx, by, bw, bh]) = definition.body else {
-        draw_flat_with(surface, rect, definition, ink, numerals, connections);
+        draw_flat_with(surface, rect, definition, None, ink, numerals, connections);
         return;
     };
     #[allow(clippy::cast_possible_truncation)]
@@ -1326,7 +1345,7 @@ pub fn draw_flat(
     definition: &ComponentDefinition,
     ink: &Ink,
 ) {
-    draw_flat_with(surface, rect, definition, ink, true, true);
+    draw_flat_with(surface, rect, definition, None, ink, true, true);
 }
 
 /// The flat symbol, with or without the numerals its ports declare, and with or without the
@@ -1335,11 +1354,19 @@ fn draw_flat_with(
     surface: &mut dyn Surface,
     rect: Rect,
     definition: &ComponentDefinition,
+    moving: Option<BallSeat>,
     ink: &Ink,
     numerals: bool,
     connections: bool,
 ) {
-    draw_primitives(surface, rect, &definition.symbol, ink.line, LINE);
+    draw_primitives_seated(
+        surface,
+        rect,
+        &definition.symbol,
+        definition.moving.first().zip(moving),
+        ink.line,
+        LINE,
+    );
     // A junction is a filled dot and nothing else (ISO 1219-1): its ports are one point, so
     // three numerals would be drawn on top of each other and read as a smudge.
     if matches!(definition.behaviour, Behaviour::Junction) {
@@ -1542,10 +1569,11 @@ pub fn draw_component(
     definition: &ComponentDefinition,
     active: usize,
     extension: f32,
+    moving: Option<BallSeat>,
     ink: &Ink,
 ) {
     draw_component_with(
-        surface, rect, definition, active, extension, ink, true, true,
+        surface, rect, definition, active, extension, moving, ink, true, true,
     );
 }
 
@@ -1558,10 +1586,11 @@ pub fn draw_component_preview(
     definition: &ComponentDefinition,
     active: usize,
     extension: f32,
+    moving: Option<BallSeat>,
     ink: &Ink,
 ) {
     draw_component_with(
-        surface, rect, definition, active, extension, ink, true, false,
+        surface, rect, definition, active, extension, moving, ink, true, false,
     );
 }
 
@@ -1576,10 +1605,11 @@ pub fn draw_component_without_numerals(
     definition: &ComponentDefinition,
     active: usize,
     extension: f32,
+    moving: Option<BallSeat>,
     ink: &Ink,
 ) {
     draw_component_with(
-        surface, rect, definition, active, extension, ink, false, true,
+        surface, rect, definition, active, extension, moving, ink, false, true,
     );
 }
 
@@ -1591,6 +1621,7 @@ fn draw_component_with(
     definition: &ComponentDefinition,
     active: usize,
     extension: f32,
+    moving: Option<BallSeat>,
     ink: &Ink,
     numerals: bool,
     connections: bool,
@@ -1607,7 +1638,15 @@ fn draw_component_with(
         );
         return;
     }
-    draw_flat_with(surface, rect, definition, ink, numerals, connections);
+    draw_flat_with(
+        surface,
+        rect,
+        definition,
+        moving,
+        ink,
+        numerals,
+        connections,
+    );
     if definition.kinematics == Kinematics::LinearActuator {
         draw_cylinder(surface, rect, definition, extension, ink);
     }
@@ -1641,9 +1680,9 @@ mod tests {
         let definition = valve();
         let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
         let mut sheet = Recording::default();
-        draw_component(&mut sheet, rect, &definition, 0, 0.0, &Ink::print());
+        draw_component(&mut sheet, rect, &definition, 0, 0.0, None, &Ink::print());
         let mut panel = Recording::default();
-        draw_component_preview(&mut panel, rect, &definition, 0, 0.0, &Ink::print());
+        draw_component_preview(&mut panel, rect, &definition, 0, 0.0, None, &Ink::print());
         let circles = |recording: &Recording| {
             recording
                 .calls()
@@ -2304,7 +2343,15 @@ mod tests {
             .clone();
         let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
         let mut recording = Recording::default();
-        draw_component(&mut recording, rect, &definition, 0, 0.0, &Ink::print());
+        draw_component(
+            &mut recording,
+            rect,
+            &definition,
+            0,
+            0.0,
+            None,
+            &Ink::print(),
+        );
 
         let numerals = numerals(recording.calls());
         assert_eq!(numerals.len(), 2, "the two ports carry one numeral each");
@@ -2500,5 +2547,41 @@ mod tests {
             unreachable!("a spring is drawn as a line")
         };
         assert!(points[0].x <= body.min.x + f32::EPSILON);
+    }
+
+    #[test]
+    fn the_moving_ball_takes_the_left_centre_and_right_seats() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut centres = Vec::new();
+        for seat in [BallSeat::Left, BallSeat::Centre, BallSeat::Right] {
+            let mut recording = Recording::default();
+            draw_primitives_seated(
+                &mut recording,
+                rect,
+                &definition.symbol,
+                definition.moving.first().zip(Some(seat)),
+                Ink::print().line,
+                LINE,
+            );
+            let centre = recording
+                .calls()
+                .iter()
+                .find_map(|call| match call {
+                    crate::surface::Call::Circle { centre, radius, .. }
+                        if (radius - 1.0).abs() < 0.2 =>
+                    {
+                        Some(centre.x)
+                    }
+                    _ => None,
+                })
+                .expect("the ball");
+            centres.push(centre);
+        }
+        assert!(
+            centres[0] < centres[1] && centres[1] < centres[2],
+            "the ball stayed put: {centres:?}"
+        );
     }
 }

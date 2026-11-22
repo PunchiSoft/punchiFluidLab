@@ -41,6 +41,7 @@ pub fn build<'a>(
             extension: model
                 .and_then(|model| model.extension(index))
                 .unwrap_or(0.0),
+            moving: model.and_then(|model| model.moving_seat(index)),
             valve_position: model.map_or(0, |model| model.valve_position(index)),
             reading: model.and_then(|model| {
                 definition.and_then(|definition| model.reading(index, definition))
