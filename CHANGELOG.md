@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La simbología es normativa, no nuestra — 2026-11-22
+
+- **La simbología y las convenciones de circuito son las de la norma**, una sola forma, la
+  misma en cualquier aplicación: no hay variante ni transformación de un símbolo nuestra y
+  no se cambia en base a una aplicación de referencia, una captura o una imagen. La regla
+  entra en la skill de simbología, corrige las skills de referencia (la app padre es
+  referencia de comportamiento y flujo, no autoridad de simbología) y queda en AGENTS.md y
+  en el contrato: **el panel muestra el símbolo; el lienzo dibuja sus puntos de conexión**.
+- Sin cambio de código: es una regla de trabajo, no una edición de símbolos.
+
+
 ### La ventana abre el documento que le dan — 2026-11-22
 
 - **La ventana Rust abre un `.pfluid` desde la línea de comandos** (o arranca con un

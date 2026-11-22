@@ -6,11 +6,14 @@ license: GPL-3.0-or-later
 
 # Reference parity
 
-This project replicates the **behaviour and the symbology** of a parent application the owner
-runs on the same machine. That application is the reference; this repository is the
-implementation. The reference is looked at, measured and understood, never traced: every
-symbol is written by hand to conform to the convention (ADR 0009), and no image, sound,
-manual or file from it enters the repository.
+This project replicates the **behaviour and the workflow** of a parent application the owner
+runs on the same machine, and uses it to know **which symbols** the product needs. That
+application is the reference for behaviour; it is **not** the authority for the symbology.
+The symbols are the standard's, one form in every application, and are never changed based on
+the parent app, a screenshot or a capture (see
+[fluid-power-symbology](../fluid-power-symbology/SKILL.md)). The reference is looked at,
+measured and understood, never traced: every symbol is written by hand to conform to ISO
+1219-1 (ADR 0009), and no image, sound, manual or file from it enters the repository.
 
 A change is not finished because it compiles. It is finished when the reference and the
 implementation show the same thing, the evidence is in the repository, and the gate is green.
