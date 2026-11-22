@@ -109,12 +109,12 @@ const ELECTRICAL_CONTROL_WIRES: [Wire; 5] = [
 
 type Composition = (Vec<Part>, &'static [Wire]);
 
-fn worked_example(area: Rect) -> Option<Composition> {
+fn worked_example(area: Rect) -> Composition {
     // The OR circuit of the owner: the supply feeds the service unit, the unit feeds two
     // 3/2 valves, the valves feed the two inlets of the shuttle and the shuttle feeds the
     // single-acting cylinder.
     let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
-    Some((
+    (
         vec![
             Part::at(
                 area,
@@ -164,7 +164,7 @@ fn worked_example(area: Rect) -> Option<Composition> {
             ),
         ],
         &WORKED_EXAMPLE_WIRES,
-    ))
+    )
 }
 
 fn double_acting(area: Rect) -> Composition {
@@ -237,7 +237,7 @@ fn electrical_control(area: Rect) -> Composition {
 
 fn composition(template: Template, area: Rect) -> Option<Composition> {
     match template {
-        Template::WorkedExample => worked_example(area),
+        Template::WorkedExample => Some(worked_example(area)),
         Template::DoubleActing => Some(double_acting(area)),
         Template::AirPreparation => Some(air_preparation(area)),
         Template::ElectricalControl => Some(electrical_control(area)),
