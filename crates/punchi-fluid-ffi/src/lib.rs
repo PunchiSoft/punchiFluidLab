@@ -65,7 +65,7 @@ use punchi_fluid_solver::network::{
 };
 use punchi_fluid_solver::pneumatic::Telemetry;
 
-mod templates;
+use punchi_fluid_session::templates;
 
 /// The call succeeded.
 pub const PF_OK: i32 = 0;

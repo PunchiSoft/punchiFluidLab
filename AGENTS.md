@@ -88,7 +88,7 @@ other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalo
 stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
-page reads them from `core`); `session` on `catalog`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document and the model that runs it meet there; the physics stays in the solver);
+page reads them from `core`); `session` on `core`, `catalog`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document and the model that runs it meet there; the physics stays in the solver);
 `ffi` on all of the above, `export` and `session` included, because the window speaks only
 the ABI and the ABI is the one place that holds both the document and the page it is printed
 on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and

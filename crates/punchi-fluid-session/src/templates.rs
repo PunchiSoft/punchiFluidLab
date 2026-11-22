@@ -11,10 +11,10 @@ use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::{Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 
-pub(crate) const COUNT: u32 = 4;
+pub const COUNT: u32 = 4;
 
-#[derive(Clone, Copy)]
-pub(crate) enum Template {
+#[derive(Debug, Clone, Copy)]
+pub enum Template {
     WorkedExample,
     DoubleActing,
     AirPreparation,
@@ -22,7 +22,7 @@ pub(crate) enum Template {
 }
 
 impl Template {
-    pub(crate) const fn from_index(index: u32) -> Option<Self> {
+    pub const fn from_index(index: u32) -> Option<Self> {
         match index {
             0 => Some(Self::WorkedExample),
             1 => Some(Self::DoubleActing),
@@ -214,7 +214,7 @@ fn composition(template: Template, area: Rect) -> Option<Composition> {
 ///
 /// Returns an error when the index is unknown, the area cannot hold the worked example, or
 /// an effective catalog definition no longer provides one of the ports the template needs.
-pub(crate) fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
+pub fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
     let template = Template::from_index(index)
         .ok_or_else(|| String::from("that start-page template does not exist"))?;
     let (parts, wires) = composition(template, area)
