@@ -217,6 +217,36 @@ core”), con su prueba por pieza.
    **pruebas del catálogo** y las **revisiones de los símbolos** nuevos y corregidos.
 4. Un corte por PR, `check.sh` verde, y espera mi fusión; no fusiona el agente.
 
+**Prompt para continuar en otra sesión** (modo estándar):
+
+```text
+Trabajas en Punchi Fluid Lab (Rust): un simulador de neumática e hidráulica. El producto es
+el núcleo esencial de docs/capabilities.md ("The essential core"); la ventana Qt y el ABI
+son referencia de comportamiento hasta la fase 5 y no reciben nada nuevo; lo mal diseñado
+se descarta, no se migra.
+
+Antes de tocar nada, lee y aplica: AGENTS.md (reglas canónicas: ramas, PR que fusiona el
+propietario, gate, lints, idioma); docs/retomar.md, sección "La migración a Rust: producto,
+descartes y cómo arrancar"; docs/next-steps.md ("The Rust window: what is left", bloque 1);
+y las skills capability-plan, fluid-power-symbology y pull-request-workflow.
+
+Estado: main en c7231aa. Ejecuta el bloque 1 en este orden:
+1. Las ADRs de OR/AND (variante nueva de behaviour) y del silenciador con regulador.
+2. El esquema del catálogo: campos del cilindro (amortiguador, imán) con rangos y
+   validación; las definiciones del núcleo con sus ids (válvulas base 3/2 y 5/2 con la
+   forma por defecto de la norma, compresores corregidos, FRL simplificado y completo,
+   OR/AND, tapones y silenciadores con y sin regulador), con las designaciones de puerto
+   de la norma (número en neumática, letra en hidráulica) y sus etiquetas movibles.
+3. La subida de FORMAT_VERSION con su prueba de migración y la lista de ids retirados.
+4. Las pruebas del catálogo y las revisiones de símbolos (claro/oscuro/300 dpi, medidas y
+   revisión firmada).
+
+Reglas: una rama por cambio desde main actualizado; un commit por cosa; check.sh verde;
+abre la PR y espera a que la fusione el propietario (tú nunca fusionas); no copies material
+de otras aplicaciones ni de capturas, la simbología sigue la norma; antes de commitear,
+enséñame el cambio y espera mi confirmación.
+```
+
 **Preguntas abiertas para ti**: ¿las válvulas accionadas (solenoide/muelle) vuelven como
 variantes del núcleo o se retiran?; ¿los instrumentos (manómetro, caudalímetro) y la
 exportación entran en el núcleo o esperan?; ¿qué se hace con `spikes/`?
