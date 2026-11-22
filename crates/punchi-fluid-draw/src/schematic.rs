@@ -143,13 +143,13 @@ pub fn draw_circuit(
         return;
     };
 
-    symbol::draw_component(surface, placed.supply, supply, 0, 0.0, ink);
+    symbol::draw_component(surface, placed.supply, supply, 0, 0.0, None, ink);
     symbol::draw_valve(surface, placed.valve, valve, system.valve_position(), ink);
     // One call: the cylinder draws its own piston and rod at the state of the model, so
     // it cannot be drawn twice at two different extensions.
     #[allow(clippy::cast_possible_truncation)]
     let extension = system.extension() as f32;
-    symbol::draw_component(surface, placed.cylinder, cylinder, 0, extension, ink);
+    symbol::draw_component(surface, placed.cylinder, cylinder, 0, extension, None, ink);
     draw_labels(surface, placed, system, supply, valve, cylinder, ink);
 }
 

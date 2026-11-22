@@ -14,6 +14,7 @@ fn placed(index: usize, catalog_id: &'static str, rect: Rect) -> Placed<'static>
         catalog_id,
         rect,
         extension: 0.0,
+        moving: None,
         valve_position: 0,
         reading: None,
         series: None,

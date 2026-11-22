@@ -399,6 +399,7 @@ fn the_check_route_matches_the_drawn_route_on_a_tee() {
             catalog_id: placement.catalog_id.as_str(),
             rect: placement.rect(),
             extension: 0.0,
+            moving: None,
             valve_position: 0,
             reading: None,
             series: None,

@@ -61,7 +61,7 @@ use punchi_fluid_draw::{Layout, dashes};
 use punchi_fluid_file::recent::RecentList;
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_solver::network::{
-    Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
+    BallSeat, Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
 };
 use punchi_fluid_solver::pneumatic::Telemetry;
 
@@ -1041,7 +1041,7 @@ impl PfSession {
             text: preview_text,
             scale: scale.max(0.01),
         };
-        punchi_fluid_draw::draw_component(&mut buffer, rect, definition, 0, 0.0, ink);
+        punchi_fluid_draw::draw_component(&mut buffer, rect, definition, 0, 0.0, None, ink);
         PF_OK
     }
 
@@ -7216,6 +7216,19 @@ fn exhaust_marks<'a>(
 /// and not a second construction that could drift from it. `closures` is parallel to the
 /// document's placements and is built by [`closure_pairs`]; the caller owns it for as long as
 /// the returned [`Placed`] list lives.
+fn shuttle_seat_of(
+    placement_part: &[Option<usize>],
+    system: Option<&Network>,
+    index: usize,
+) -> Option<BallSeat> {
+    placement_part
+        .get(index)
+        .copied()
+        .flatten()
+        .zip(system)
+        .and_then(|(part, network)| network.shuttle_seat(part))
+}
+
 fn scene<'a>(
     document: &'a Document,
     catalog: &'a Catalog,
@@ -7253,6 +7266,7 @@ fn scene<'a>(
                 .zip(system)
                 .and_then(|(part, network)| network.extension_of(part))
                 .map_or(0.0, |extension| extension as f32),
+            moving: shuttle_seat_of(placement_part, system, index),
             valve_position: placement_part
                 .get(index)
                 .copied()

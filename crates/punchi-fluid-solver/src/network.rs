@@ -139,9 +139,34 @@ pub enum PartBehaviour {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PressureElement {
     kind: PressureKind,
+    /// Part of the circuit this element resolves, for the live state of its symbol.
+    part: usize,
     inlet_a: usize,
     inlet_b: usize,
     outlet: usize,
+}
+
+/// Seat of a shuttle's ball in its three positions (ADR 0041).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BallSeat {
+    /// Seated on the left seat: the left inlet is closed and the right one feeds.
+    Left,
+    /// Centred: both live inlets push it, both seats close and the outlet is isolated.
+    Centre,
+    /// Seated on the right seat: the right inlet is closed and the left one feeds.
+    Right,
+}
+
+fn shuttle_ball(a: f64, b: f64, atmosphere: f64) -> BallSeat {
+    let live_a = a > atmosphere + SHUTTLE_LIVE_BAND_PA;
+    let live_b = b > atmosphere + SHUTTLE_LIVE_BAND_PA;
+    if live_a && live_b && (a - b).abs() <= SHUTTLE_EQUAL_BAND_PA {
+        BallSeat::Centre
+    } else if a >= b {
+        BallSeat::Right
+    } else {
+        BallSeat::Left
+    }
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -1115,18 +1140,12 @@ impl Network {
             // lower one while both carry pressure, and vents when either falls to
             // atmosphere (ADR 0029).
             let feed = match element.kind {
-                PressureKind::Shuttle => {
-                    let live_a = a > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
-                    let live_b = b > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
-                    if live_a && live_b && (a - b).abs() <= SHUTTLE_EQUAL_BAND_PA {
-                        // Both signals push the ball: it centers and closes both seats.
-                        None
-                    } else if a >= b {
-                        Some(element.inlet_a)
-                    } else {
-                        Some(element.inlet_b)
-                    }
-                }
+                PressureKind::Shuttle => match shuttle_ball(a, b, self.atmosphere_pa) {
+                    // Both signals push the ball: it centres and closes both seats.
+                    BallSeat::Centre => None,
+                    BallSeat::Right => Some(element.inlet_a),
+                    BallSeat::Left => Some(element.inlet_b),
+                },
                 PressureKind::TwoPressure => {
                     if a > self.atmosphere_pa && b > self.atmosphere_pa {
                         if a <= b {
@@ -1176,6 +1195,18 @@ impl Network {
                 }
             }
         }
+    }
+
+    /// Seat of the shuttle's ball for the part, when the part is one.
+    ///
+    /// The drawing places the ball from this, so the screen and the model agree on which
+    /// inlet is open without the symbol carrying a second copy of the rule.
+    #[must_use]
+    pub fn shuttle_seat(&self, part: usize) -> Option<BallSeat> {
+        let element = self.pressure.iter().find(|element| element.part == part)?;
+        let a = self.node_pressure(element.inlet_a);
+        let b = self.node_pressure(element.inlet_b);
+        Some(shuttle_ball(a, b, self.atmosphere_pa))
     }
 
     fn step_pistons(&mut self, dt: f64) {
@@ -1296,6 +1327,7 @@ fn pressure_elements(
         }
         elements.push(PressureElement {
             kind: *kind,
+            part: index,
             inlet_a: inlets[0],
             inlet_b: inlets[1],
             outlet,
@@ -3057,6 +3089,7 @@ mod pressure_tests {
         }
         let inlet_b = network.port_pressure(3, "1b").expect("an inlet");
         assert!((inlet_b - network.atmosphere_pa).abs() < 1_000.0);
+        assert_eq!(network.shuttle_seat(3), Some(BallSeat::Right));
         assert!(
             network.position() > stroke * 0.5,
             "the cylinder did not extend: {:.1} of {:.1} mm",
@@ -3114,6 +3147,7 @@ mod pressure_tests {
             inlet_a > 4.0e5 && inlet_b > 4.0e5,
             "both inlets are live: {inlet_a:.0} / {inlet_b:.0} Pa"
         );
+        assert_eq!(network.shuttle_seat(3), Some(BallSeat::Centre));
         let outlet = network.port_pressure(3, "2").expect("an outlet");
         assert!(
             (outlet - network.atmosphere_pa).abs() < 2_000.0,

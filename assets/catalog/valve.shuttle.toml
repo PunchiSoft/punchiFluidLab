@@ -99,6 +99,12 @@ points = [0.50, 0.50, 0.022]
 filled = true
 line_class = "working"
 
+# The ball (primitive 6) is placed from the live state: left seat, centre, right seat
+# (ADR 0041). 1A pushes it right, 1B left, and two live signals hold it centred.
+[[moving]]
+primitive = 6
+seats = [[0.35, 0.50], [0.50, 0.50], [0.65, 0.50]]
+
 # --------------------------------------------------
 # Ports
 # --------------------------------------------------

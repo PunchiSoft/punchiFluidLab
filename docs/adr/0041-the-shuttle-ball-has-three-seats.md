@@ -34,10 +34,10 @@ picks one inlet when the two carry the same pressure.
 
 - The bands are constants with the tests; the both-live case blocks port 2; the vent of
   ADR 0039 still passes.
-- The schema gains the moving-part declaration, and the draw, the session and the FFI pass
-  the state (next slice); the review captures the three positions.
+- The schema declares the moving part and its three seats, and the draw, the session and the
+  FFI pass the state; the review captures the three positions.
 - **Debt:** the bands are absolute pressures; when both inlets fall the ball follows the
-  vent side; the animation arrives in its own slice after this rule.
+  vent side.
 
 ## Alternatives considered
 

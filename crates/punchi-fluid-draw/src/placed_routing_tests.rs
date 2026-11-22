@@ -406,6 +406,7 @@ fn an_ordinary_port_keeps_its_edge() {
     // A corner port ties two edges at the same distance. `port_edge` keeps the first
     // minimum, and the new function must preserve exactly that even with a hint.
     let corner = ComponentDefinition {
+        moving: Vec::new(),
         schema: 3,
         id: "test.corner".to_owned(),
         name: "Corner".to_owned(),

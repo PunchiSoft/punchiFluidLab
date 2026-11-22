@@ -114,6 +114,7 @@ fn write_review_images(catalog: &Catalog) {
                     catalog_id: &definition.id,
                     rect: inner,
                     extension: 0.0,
+                    moving: None,
                     valve_position: 0,
                     reading: match definition.behaviour {
                         punchi_fluid_catalog::Behaviour::Lamp => {
@@ -133,7 +134,15 @@ fn write_review_images(catalog: &Catalog) {
                 };
                 punchi_fluid_draw::draw_placed(&mut surface, &[placed], &[], catalog, &ink, &[]);
             } else {
-                punchi_fluid_draw::draw_component(&mut surface, inner, definition, 0, 0.5, &ink);
+                punchi_fluid_draw::draw_component(
+                    &mut surface,
+                    inner,
+                    definition,
+                    0,
+                    0.5,
+                    None,
+                    &ink,
+                );
             }
             let bytes = surface.encode().expect("encodes");
             let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

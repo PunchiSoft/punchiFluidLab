@@ -113,10 +113,18 @@ pub fn draw_closures(
         // The closure's own port numeral is suppressed: it is part of the host port, not a
         // component with a number a reader should follow.
         if closure_orientation.is_identity() {
-            symbol::draw_component_without_numerals(surface, box_rect, closure, 0, 0.0, ink);
+            symbol::draw_component_without_numerals(surface, box_rect, closure, 0, 0.0, None, ink);
         } else {
             let mut turned = Turned::new(surface, closure_orientation, box_rect.center());
-            symbol::draw_component_without_numerals(&mut turned, box_rect, closure, 0, 0.0, ink);
+            symbol::draw_component_without_numerals(
+                &mut turned,
+                box_rect,
+                closure,
+                0,
+                0.0,
+                None,
+                ink,
+            );
         }
     }
 }

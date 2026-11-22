@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La bola del shuttle se dibuja en su asiento — 2026-11-22
+
+- **La bola del shuttle se mueve en el dibujo**: el símbolo declara la parte móvil y sus
+  tres posiciones (`[[moving]]`: primitiva y asientos izquierdo, centro y derecho) y el
+  renderizador la coloca según el estado del elemento de presión: 1A la lleva al asiento
+  derecho, 1B al izquierdo y las dos señales la dejan al centro. La forma del símbolo no
+  cambia; el movimiento es del simulador y no una variante.
+- El solver expone `BallSeat` y `shuttle_seat`; el modelo lo pasa al dibujo por la FFI. La
+  prueba del dibujo comprueba los tres centros, y las de presión los tres asientos.
+
 ### La bola del shuttle se centra con dos señales — 2026-11-22
 
 - **El shuttle bloquea la salida cuando las dos entradas están vivas e iguales**: la bola

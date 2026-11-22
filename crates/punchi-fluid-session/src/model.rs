@@ -11,7 +11,7 @@ use punchi_fluid_catalog::{Behaviour, Catalog, ComponentDefinition, PortRole};
 use punchi_fluid_doc::{Document, PlacementEdits};
 use punchi_fluid_draw::placed::Reading;
 use punchi_fluid_solver::network::{
-    Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
+    BallSeat, Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
 };
 use punchi_fluid_solver::pneumatic::Telemetry;
 
@@ -159,6 +159,13 @@ impl Model {
         self.network
             .extension_of(part)
             .map(|extension| extension as f32)
+    }
+
+    /// Seat of the shuttle's ball for the placement, when it is a shuttle (ADR 0041).
+    #[must_use]
+    pub fn moving_seat(&self, index: usize) -> Option<BallSeat> {
+        self.part_of(index)
+            .and_then(|part| self.network.shuttle_seat(part))
     }
 
     /// Active position of the valve a placement became, `0` for anything that is not one.

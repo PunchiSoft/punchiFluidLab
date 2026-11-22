@@ -27,6 +27,7 @@ fn every_symbol_keeps_its_geometry() {
             catalog_id: &definition.id,
             rect: Rect::from_min_size(Pt::new(0.0, 0.0), 40.0, 40.0),
             extension: 0.0,
+            moving: None,
             valve_position: 0,
             reading: None,
             series: None,

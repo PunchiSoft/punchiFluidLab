@@ -19,6 +19,7 @@ fn host<'a>(
         catalog_id: definition.id.as_str(),
         rect,
         extension: 0.0,
+        moving: None,
         valve_position: 0,
         reading: None,
         series: None,
