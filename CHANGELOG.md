@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### La primera plantilla es el circuito OR — 2026-11-22
+
+- **La tarjeta 0 de Inicio** (el ejemplo de trabajo) es el circuito del propietario:
+  suministro, unidad de servicio, dos válvulas 3/2, el shuttle y el cilindro de simple
+  efecto, con sus seis conexiones. La plantilla se compone en la FFI, así que la ven las
+  dos ventanas; el autotest de la Qt espera seis componentes. El resto de plantillas no
+  cambia.
+
 ### La bola del shuttle espera en su último asiento — 2026-11-22
 
 - **En standby la bola no parpadea**: si las dos entradas caen a atmósfera, la bola

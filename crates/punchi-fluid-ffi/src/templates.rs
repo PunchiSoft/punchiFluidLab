@@ -89,10 +89,13 @@ const fn wire(
     }
 }
 
-const WORKED_EXAMPLE_WIRES: [Wire; 3] = [
+const WORKED_EXAMPLE_WIRES: [Wire; 6] = [
     wire(0, "1", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
-    wire(2, "2", 3, "1", WORKING),
+    wire(1, "2", 3, "1", WORKING),
+    wire(2, "2", 4, "1a", WORKING),
+    wire(3, "2", 4, "1b", WORKING),
+    wire(4, "2", 5, "1", WORKING),
 ];
 const DOUBLE_ACTING_WIRES: [Wire; 3] = [
     wire(0, "1", 1, "1", WORKING),
@@ -116,16 +119,58 @@ const ELECTRICAL_CONTROL_WIRES: [Wire; 5] = [
 type Composition = (Vec<Part>, &'static [Wire]);
 
 fn worked_example(area: Rect) -> Option<Composition> {
-    let layout = punchi_fluid_draw::layout(area)?;
+    // The OR circuit of the owner: the supply feeds the service unit, the unit feeds two
+    // 3/2 valves, the valves feed the two inlets of the shuttle and the shuttle feeds the
+    // single-acting cylinder.
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
     Some((
         vec![
-            Part::in_box(punchi_fluid_draw::schematic::SUPPLY_ID, layout.supply),
-            Part::in_box(
-                punchi_fluid_draw::schematic::PREPARATION_ID,
-                layout.preparation,
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::SUPPLY_ID,
+                0.12,
+                0.80,
+                1.0,
+                1.0,
             ),
-            Part::in_box(punchi_fluid_draw::schematic::VALVE_ID, layout.valve),
-            Part::in_box(punchi_fluid_draw::schematic::CYLINDER_ID, layout.cylinder),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::PREPARATION_ID,
+                0.24,
+                0.68,
+                1.0,
+                1.0,
+            ),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::VALVE_ID,
+                0.36,
+                0.56,
+                1.0,
+                1.0,
+            ),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::VALVE_ID,
+                0.52,
+                0.56,
+                1.0,
+                1.0,
+            ),
+            Part::at(area, unit, "valve.shuttle", 0.44, 0.42, 1.0, 1.0),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::CYLINDER_ID,
+                0.54,
+                0.26,
+                2.2,
+                1.0,
+            ),
         ],
         &WORKED_EXAMPLE_WIRES,
     ))
@@ -282,7 +327,7 @@ mod tests {
     fn all_four_templates_are_bounded_connected_starting_documents() {
         let catalog = Catalog::builtin();
         let area = Rect::from_corners(Pt::new(10.0, 10.0), Pt::new(170.0, 100.0));
-        let expected = [(4, 3), (3, 3), (5, 4), (6, 5)];
+        let expected = [(6, 6), (3, 3), (5, 4), (6, 5)];
 
         for (index, (components, pipes)) in expected.into_iter().enumerate() {
             let index = u32::try_from(index).expect("four template ids fit in u32");

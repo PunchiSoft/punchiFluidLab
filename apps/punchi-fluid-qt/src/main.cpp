@@ -5240,8 +5240,8 @@ int main(int argc, char *argv[])
             check(requested, QStringLiteral("templates: a card can request a template"));
             check(!state->window->property("startViewOpen").toBool(),
                   QStringLiteral("templates: choosing one returns to its project"));
-            check(state->session->componentCount() == 4,
-                  QStringLiteral("templates: the 3/2 circuit is copied into the project"));
+            check(state->session->componentCount() == 6,
+                  QStringLiteral("templates: the OR circuit is copied into the project"));
             check(!state->session->modified(),
                   QStringLiteral("templates: a starting circuit is clean, not an edit"));
 
