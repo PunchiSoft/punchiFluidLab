@@ -14,6 +14,7 @@ use eframe::egui;
 use punchi_fluid_doc::Document;
 use punchi_fluid_export::{Page, TitleBlock, sheet};
 
+mod ribbon;
 mod surface;
 mod theme;
 
@@ -32,6 +33,7 @@ fn main() -> eframe::Result<()> {
         "punchi-fluid",
         options,
         Box::new(move |context| {
+            egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
             Ok(Box::new(Window::new(theme)))
@@ -47,6 +49,7 @@ struct Window {
     scale: f32,
     frame_ms: f64,
     theme: theme::Theme,
+    ribbon: ribbon::Ribbon,
 }
 
 impl Window {
@@ -70,18 +73,25 @@ impl Window {
             scale: 1.0,
             frame_ms: 0.0,
             theme,
+            ribbon: ribbon::Ribbon::new(),
         }
     }
 }
 
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
+        let palette = ribbon::Palette::from_theme(&self.theme.tokens);
+        egui::TopBottomPanel::top("ribbon").show(context, |ui| {
+            self.ribbon.show(ui, &palette);
+        });
+
         let (width, height) = self.page.size_mm();
         let ink = self.theme.tokens.ink;
+        let last = self.ribbon.last.clone();
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
             ui.label(
                 egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.2} px/mm · {:.2} ms de dibujo",
+                    "hoja {width:.0}×{height:.0} mm · {:.2} px/mm · {:.2} ms de dibujo · último: {last}",
                     self.scale, self.frame_ms
                 ))
                 .color(ink),
