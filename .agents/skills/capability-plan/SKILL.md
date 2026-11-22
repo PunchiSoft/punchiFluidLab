@@ -85,10 +85,10 @@ hardcoded geometry is the signal to stop: a component is a file
 
 ## Procedure
 
-0. **Read the order first.** [docs/plan.md](../../../docs/plan.md) for the milestone,
-   [docs/capabilities.md](../../../docs/capabilities.md) for the phase,
-   [docs/next-steps.md](../../../docs/next-steps.md) for the step. If this skill and a
-   document disagree, the document wins and this skill is the bug.
+0. **Read the order first.** [docs/plan.md](../../../docs/plan.md) for the milestone and
+   [docs/capabilities.md](../../../docs/capabilities.md) for the capability, its state and
+   its delivery order. If this skill and a document disagree, the document wins and this
+   skill is the bug.
 1. **Name the teaching need.** "A student must be able to re-route a pipe without deleting
    it" is a need; "improve the editor" is not.
 2. **Pick one capability, not a phase.** "Select a pipe and re-route it by dragging" is a

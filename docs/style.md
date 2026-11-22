@@ -9,8 +9,7 @@ is only about writing.
 
 - **English is canonical** for the repository: code identifiers, comments, logs, tests,
   scripts, commit subjects and bodies, pull-request titles and bodies, and `docs/`. The
-  deliberate exceptions are [retomar.md](retomar.md) (the owner's continuity note in
-  Spanish) and [CHANGELOG.md](../CHANGELOG.md) (Spanish by project decision).
+  deliberate exception is [CHANGELOG.md](../CHANGELOG.md) (Spanish by project decision).
 - [README.es.md](../README.es.md) is the Spanish copy of the README and must say the same
   thing; when one changes, the other changes in the same pull request.
 - The interface is Spanish today. A document may name a command in Spanish and gloss it in
@@ -79,7 +78,7 @@ The project pays context for every duplicate that drifts. Put the rule in one pl
 |---|---|
 | What may a person or an agent do? | [AGENTS.md](../AGENTS.md) |
 | What does the program have to do, and what proves it? | [capabilities.md](capabilities.md) |
-| What is built next, in which order? | [next-steps.md](next-steps.md) |
+| What is built next, in which order? | [capabilities.md](capabilities.md), [plan.md](plan.md) |
 | Why is the system shaped this way? | [architecture.md](architecture.md), [adr/](adr/README.md) |
 | What does the interface look like? | [ui-ux.md](ui-ux.md) |
 | What does ISO 1219 require? | [symbology.md](symbology.md) |

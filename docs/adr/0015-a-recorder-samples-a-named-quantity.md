@@ -77,6 +77,6 @@ which is why the document format changes.
 - [ADR 0008](0008-a-gauge-is-a-behaviour.md) and
   [ADR 0014](0014-a-flow-meter-is-a-restriction-that-reports.md), the two instruments this
   one records.
-- [P2.2 in next-steps](../next-steps.md), the F3 entry in
+- P2.2 in the owner's work order, the F3 entry in
   [capabilities.md](../capabilities.md), and the format in
   [docs/reference/sheet-format.md](../reference/sheet-format.md).

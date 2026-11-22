@@ -1,6 +1,10 @@
 # Rust build output
 /target/
 
+# The owner's working notes: local, versioned in their own repository, never part of
+# this one and never a pull request.
+/docs-private/
+
 # Packaging and local artifacts
 /dist/
 *.AppImage

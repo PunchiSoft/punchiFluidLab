@@ -113,8 +113,8 @@ disagree, the document wins and this skill is the bug.
 ## Correcting an existing symbol
 
 The first pass over this library is a **correction**, because a wrong symbol that is already
-in a circuit teaches the wrong thing. The order is fixed by
-[docs/next-steps.md](../../../docs/next-steps.md#stop-before-the-symbols):
+in a circuit teaches the wrong thing. The order is fixed, and it stops before the symbols
+are extended:
 
 1. **Stock-taking first**: list the symbols, the ones under `assets/symbols/review` and the
    state of each review. Do not touch anything before that list exists.

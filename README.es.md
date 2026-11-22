@@ -49,9 +49,9 @@ debería ser lo que el estudiante no puede pagar.
 **Lo que no es:** un visor, un curso ni un servicio en la nube. Sin telemetría, sin
 suscripción, sin «edición educativa» recortada.
 
-> **¿Retomas el proyecto?** [docs/retomar.md](docs/retomar.md) es la nota de
-> continuidad: estado actual, qué se construyó paso a paso, cómo verificarlo, decisiones
-> tomadas y el texto exacto para continuar en una sesión nueva.
+> **¿Retomas el proyecto?** [docs/README.md](docs/README.md) indexa la especificación, las
+> decisiones y el registro; [docs/capabilities.md](docs/capabilities.md) dice qué debe poder
+> hacer el programa y qué lo demuestra.
 
 ## Por qué existe
 
@@ -276,8 +276,8 @@ la física necesitan ojos y una curva de referencia.
 ## Hoja de ruta
 
 Los hitos, sus criterios de aceptación y la evidencia que exige cada uno están en
-[docs/plan.md](docs/plan.md); el libro de cobertura y el orden de entrega están en
-[docs/capabilities.md](docs/capabilities.md) y [docs/next-steps.md](docs/next-steps.md).
+[docs/plan.md](docs/plan.md); el libro de cobertura y su orden de entrega están en
+[docs/capabilities.md](docs/capabilities.md).
 En resumen:
 
 - **v0.1** — workspace, dominio, formato, lienzo, CLI, catálogo de definiciones. *Hecho.*

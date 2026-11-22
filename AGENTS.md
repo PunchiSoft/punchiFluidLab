@@ -4,17 +4,14 @@ This file is canonical for this repository. Skills live in `.agents/skills/` and
 supplement it; user instructions take precedence. The catalog and the reading order are
 in [.agents/skills/README.md](.agents/skills/README.md).
 
-**Resuming work with no context: [docs/retomar.md](docs/retomar.md)** (Spanish) is the
-continuity note: state, history step by step, how to verify it, decisions, open questions
-and the prompt to continue in a new session.
+**Resuming work with no context:** start at [docs/README.md](docs/README.md), the index that
+says which document is current, target or historical, then
+[docs/capabilities.md](docs/capabilities.md) for the product and the test that proves each
+capability.
 
-**The node register is [docs/work-tree.md](docs/work-tree.md)**: every reported problem is a
-node with its options, the code it touches and its state, so a session that loses context
-continues without re-deriving the thread.
-
-**Resuming work: [docs/next-steps.md](docs/next-steps.md)** is the work order — current
-state, the next milestone step by step, the files it touches, its acceptance tests and
-the questions that belong to the project owner.
+The owner keeps the continuity note, the work order, the node register and the other working
+notes in a local, untracked `docs-private/`, written in Spanish and versioned in their own
+repository. They are not part of this repository, and a public document never links to them.
 
 **Before a capability: [docs/capabilities.md](docs/capabilities.md)** is the plan — what a
 student must be able to do, how it behaves, and the test that proves it. The authority is
@@ -54,7 +51,6 @@ README. The exceptions are:
 - **user-facing interface strings**, which are Spanish today and move to translation
   catalogs in F8;
 - **`CHANGELOG.md`**, in Spanish by project decision;
-- **`docs/retomar.md`**, the owner's continuity note;
 - **`README.es.md`**, the Spanish copy of the README.
 
 Conversation may be in Spanish. A Spanish UI label may be quoted inside an English comment
@@ -278,6 +274,10 @@ pass.
   request still open, do not start a parallel branch for an unrelated change: finish it,
   merge it, or set it aside with explicit owner authorization. Parallel branches drift and
   produce structural conflicts.
+- **Working notes stay private.** The owner's continuity note, work order, node register and
+  parity queue live in the ignored `docs-private/`; they are never committed, never reviewed
+  and never open a pull request. A decision or a fact the product needs becomes a document
+  in `docs/` in its own change.
 - **Ask before committing.** Before staging or pushing, ask the owner to confirm that the
   change matches the request and the expected result, and wait for the answer. A request to
   commit does not replace that confirmation unless the exact change was already reviewed.

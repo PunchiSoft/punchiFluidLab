@@ -48,9 +48,9 @@ not be the thing a student cannot afford.
 **What it is not:** a viewer, a course or a cloud service. No telemetry, no subscription, no
 "education edition" with the useful features removed.
 
-> **Continuing this project?** [docs/retomar.md](docs/retomar.md) (Spanish) is the
-> continuity note: current state, what was built step by step, how to verify it, the
-> decisions taken and the exact prompt to resume in a new session.
+> **Continuing this project?** [docs/README.md](docs/README.md) indexes the specification,
+> the decisions and the record; [docs/capabilities.md](docs/capabilities.md) says what the
+> program must do and what proves it.
 
 ## Why this exists
 
@@ -283,8 +283,8 @@ physics still need eyes and a reference curve.
 ## Roadmap
 
 Milestones, acceptance criteria and the evidence each one needs live in
-[docs/plan.md](docs/plan.md); the coverage ledger and the delivery order are
-[docs/capabilities.md](docs/capabilities.md) and [docs/next-steps.md](docs/next-steps.md).
+[docs/plan.md](docs/plan.md); the coverage ledger and its delivery order are
+[docs/capabilities.md](docs/capabilities.md).
 In short:
 
 - **v0.1** — workspace, domain, format, canvas, CLI, catalog of definition files. *Done.*

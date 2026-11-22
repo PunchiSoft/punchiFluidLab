@@ -65,5 +65,4 @@ symbols and its own rules:
 - [ADR 0002](0002-components-are-files.md) and
   [ADR 0014](0014-a-flow-meter-is-a-restriction-that-reports.md) for the behaviour rule.
 - [docs/symbology.md](../symbology.md) for the symbols and the line class.
-- [P5 in next-steps](../next-steps.md) and the F6 entry in
-  [capabilities.md](../capabilities.md).
+- P5 in the owner's work order and the F6 entry in [capabilities.md](../capabilities.md).

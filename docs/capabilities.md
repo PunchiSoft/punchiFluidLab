@@ -12,8 +12,8 @@ repository, and no such program is named here.
 [ADR 0035](adr/0035-the-window-is-rust.md)'s migration runs. The Rust window in
 `apps/punchi-fluid` already implements the shell, the editing commands and the simulation
 core with the live scene; the entries below are its target until phase 5 retires the Qt
-app. The migration's state and remaining queue are in [next-steps.md](next-steps.md) and in
-section 14 of [retomar.md](retomar.md).
+app. The migration's state and remaining queue are recorded in the owner's working notes,
+outside this repository.
 
 ## The essential core (owner decision, 2026-11-22)
 
@@ -177,7 +177,7 @@ someone to miss a function.
 | Drawing in millimetres, `Surface`, PNG/PDF | done |
 | Export from the window and without one | done: the date comes from the caller and the drawing is fitted to the page |
 | Window: ribbon, palette, sheet, status, theme, Simular tab, help | done: the transport, the speed and the state are the **Simular** tab, with large commands like Nuevo, Abrir and Guardar; **Acerca de** and **Licencia** are text links at the right of the tab row, and the GPL text travels in the binary |
-| Window: panels, ribbon depth, icon family, catalog palette, adaptive layout | partial: the shell exists (ribbon, sidebar, status bar, theme and the page-setup pack); the panels fold and remember their state, the ribbon has its planes and the whole action-icon family ([reference/icons.md](reference/icons.md)), and the catalog is a searchable palette of tiles with a remembered width, but the layout still has one breakpoint; the staged plan is [interface-plan.md](interface-plan.md) |
+| Window: panels, ribbon depth, icon family, catalog palette, adaptive layout | partial: the shell exists (ribbon, sidebar, status bar, theme and the page-setup pack); the panels fold and remember their state, the ribbon has its planes and the whole action-icon family ([reference/icons.md](reference/icons.md)), and the catalog is a searchable palette of tiles with a remembered width, but the layout still has one breakpoint; the staged plan is kept in the owner's working notes |
 | Editing: place, move, delete, undo/redo, connect port to port | done |
 | Editing: select/delete and re-route a pipe, T junctions | done |
 | Editing: straighten a hose by snapping its port | done: the drag magnet and `Alt+A`; a one-bend hose is refused |
@@ -208,7 +208,7 @@ that proves it. The order is by *what makes the product usable*, not by what is 
 
 The sheet is the protagonist, so the chrome has to give it room, stay readable and look the
 same on every desktop. The work is delivered in stages, each one a branch and a pull
-request, in [interface-plan.md](interface-plan.md); it changes no file format, no document
+request, in the owner's staged plan; it changes no file format, no document
 state and no physics, and it does not block the libraries or the documents. It covers the
 panels, the ribbon and its icon family, the catalog as a palette, the workspace frame and
 the adaptive shell. Evidence: `--check-theme`, `--check-icons`, `--check-layout`, the
@@ -274,8 +274,8 @@ A circuit can be drawn without a workaround.
   holding on a mixed circuit.
 
 The **electrical connection** — the wire itself, its class and its drawn route — is deferred
-by the owner's decision of 2026-11-20 and recorded as **P-026** in
-[work-tree.md](work-tree.md#p-026--the-electrical-connection-does-not-work-as-planned): it
+by the owner's decision of 2026-11-20 and recorded as **P-026** in the owner's node
+register (outside this repository): it
 does not work as planned and stays at the margin until a future effort. A wire has no tube
 size, no width series and no parts row, and P-024a neither uses, fixes, hides nor tests it.
 An **electrical port also has no closure**: the port menu never lists it, the ABI refuses a

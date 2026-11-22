@@ -69,5 +69,5 @@ A project is **one document** with one or more circuits:
 
 - The reference behaviour, observed for the project selector and the ninth check. No manual,
   symbol, example or file format from it enters this repository (ADR 0009).
-- [P1.8 in next-steps](../next-steps.md), the capability entry in [capabilities.md](../capabilities.md)
-  and the migration tests in `punchi-fluid-file`.
+- P1.8 in the owner's work order, the capability entry in
+  [capabilities.md](../capabilities.md) and the migration tests in `punchi-fluid-file`.

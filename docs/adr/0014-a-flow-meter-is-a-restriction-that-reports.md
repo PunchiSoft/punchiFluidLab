@@ -70,5 +70,4 @@ Add `behaviour = "flow_meter"` to the catalog schema:
 - [ADR 0008](0008-a-gauge-is-a-behaviour.md), the gauge this follows.
 - ISO 6358 through `punchi-fluid-solver::orifice`, the same restriction model as the
   throttle; [docs/symbology.md](../symbology.md) for the symbol contract.
-- [P2 in next-steps](../next-steps.md) and the F3 entry in
-  [capabilities.md](../capabilities.md).
+- P2 in the owner's work order and the F3 entry in [capabilities.md](../capabilities.md).
