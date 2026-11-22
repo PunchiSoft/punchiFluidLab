@@ -22,6 +22,7 @@ pub enum Template {
 }
 
 impl Template {
+    #[must_use]
     pub const fn from_index(index: u32) -> Option<Self> {
         match index {
             0 => Some(Self::WorkedExample),
