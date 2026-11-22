@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La ventana borra, gira, refleja y deshace — 2026-11-22
+
+- **Sobre la selección**: Borrar la quita de la hoja, Girar la cuarta parte y Reflejar la
+  invierten, cada gesto como **una sola operación de deshacer** (`remove_many`/`turn_many`),
+  y Deshacer/Rehacer recorren el historial acotado del documento. Atajos: Supr, Ctrl+Z y
+  Ctrl+Y.
+- **La cinta enciende lo que existe**: Borrar/Girar/Reflejar solo con selección,
+  Deshacer/Rehacer según el historial, y Duplicar/Copiar/Pegar siguen apagados hasta que el
+  portapapeles llegue.
+- **Pruebas**: borrar deja vacía la hoja y el deshacer la repone; girar y reflejar cambian
+  la orientación y el deshacer la devuelve; la cinta sigue a la selección y al historial.
+
 ### La ventana selecciona y mueve en la hoja — 2026-11-22
 
 - **Clic en la hoja selecciona la colocación bajo el puntero** (la de arriba manda, solo en
