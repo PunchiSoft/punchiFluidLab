@@ -8,6 +8,19 @@ use eframe::egui;
 use egui_kittest::kittest::Queryable;
 
 use super::{Palette, Ribbon};
+
+#[test]
+fn the_save_button_waits_for_a_path() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled("Guardar"), "no path, no save");
+    ribbon.savable = true;
+    assert!(ribbon.enabled("Guardar"), "a path enables the save");
+    assert!(
+        !ribbon.enabled("Guardar como"),
+        "the dialog is not here yet"
+    );
+    assert!(!ribbon.enabled("Abrir"), "the open dialog is not here yet");
+}
 use crate::theme::Theme;
 
 fn harness<'a>(ribbon: &'a mut Ribbon, palette: &'a Palette) -> egui_kittest::Harness<'a> {

@@ -109,16 +109,43 @@ impl Window {
             ribbon: ribbon::Ribbon::new(),
         }
     }
+
+    /// Writes the document to the path it was opened from, or says why it cannot.
+    fn save(&mut self) {
+        let Some(path) = self.path.clone() else {
+            self.notice = Some(String::from("sin ruta: abre un documento para guardarlo"));
+            return;
+        };
+        match punchi_fluid_session::save(&self.document, &path) {
+            Ok(()) => {
+                let name = path
+                    .file_name()
+                    .and_then(std::ffi::OsStr::to_str)
+                    .unwrap_or("el documento");
+                self.notice = Some(format!("guardado {name}"));
+            }
+            Err(cause) => self.notice = Some(format!("no se pudo guardar: {cause}")),
+        }
+    }
 }
 
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
+        // The ribbon enables Guardar only when there is a path to write to, and the window
+        // owns that path; the keyboard shortcut is the same command.
+        self.ribbon.savable = self.path.is_some();
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
+            self.save();
+        }
         let palette = ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette);
         });
         if let Some(command) = self.ribbon.take() {
-            self.view.command(&command);
+            match command.as_str() {
+                "Guardar" => self.save(),
+                _ => self.view.command(&command),
+            }
         }
 
         let (width, height) = self.page.size_mm();
@@ -251,6 +278,34 @@ mod tests {
     use punchi_fluid_draw::surface::Recording;
 
     use super::{Window, sheet, theme};
+
+    #[test]
+    fn the_window_saves_the_document_it_was_given() {
+        let path = std::env::temp_dir().join(format!(
+            "punchi-fluid-window-save-{}.pfluid",
+            std::process::id()
+        ));
+        let mut window = Window::new(
+            theme::Theme::fallback(),
+            Document::new(),
+            Some(path.clone()),
+            None,
+        );
+        window.save();
+        let text = std::fs::read_to_string(&path).expect("the window wrote the file");
+        assert!(
+            punchi_fluid_file::sheet::Sheet::parse(&text).is_ok(),
+            "the saved text is a sheet"
+        );
+        assert!(
+            window
+                .notice
+                .as_deref()
+                .is_some_and(|notice| notice.starts_with("guardado")),
+            "the status bar says the save happened"
+        );
+        let _ = std::fs::remove_file(&path);
+    }
 
     #[test]
     fn the_sheet_of_a_new_document_draws_into_a_recording() {
