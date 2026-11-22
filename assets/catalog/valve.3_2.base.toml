@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 3/2 directional valve in its **base form**: two positions, no return and no actuation.
+#
+# This is the body a student places and then configures in the valve dialog: the dialog
+# adds the return and the actuation of each side, and the file stays the base the standard
+# draws. The two squares are equal and side by side, the ports are drawn once at the
+# square they are read with, and each position's arrow is the connection it opens; the
+# blocked port carries its mark inside its own square.
+#
+# The variant files (`valve.3_2.spring_return`, `valve.3_2.solenoid`) are the same body
+# with the parts their file declares. Nothing here is a variant of the symbol: it is the
+# symbol before a return or an actuator is fitted.
+
+schema = 3
+id = "valve.3_2.base"
+name = "3/2 valve"
+name_es = "Válvula 3/2"
+category = "valve"
+summary = "Base 3/2 directional valve: two positions, no return, no actuation."
+
+# Two squares of 0.44 side by side.
+body = [0.06, 0.28, 0.88, 0.44]
+
+# The three ports are drawn at the square of the default position: 1 and 3 below, 2
+# above, each at the same offset inside its own square.
+[[port]]
+id = "1"
+role = "supply"
+position = [0.157, 1.0]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.28, 0.0]
+
+[[port]]
+id = "3"
+role = "exhaust"
+position = [0.403, 1.0]
+
+[behaviour]
+type = "valve"
+# A base valve has no actuator yet: the dialog fits one, and until then the spool stays
+# at the default position. No `[spring]` and no `[actuator]` are declared, which the lint
+# checks against this field.
+actuation = "none"
+default_position = 0
+
+# Position 0, the default square: working line vented, supply shut.
+[[behaviour.positions]]
+name = "position 1"
+name_es = "posición 1"
+blocked = ["1"]
+
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9
+
+# Position 1: supply to working, exhaust shut.
+[[behaviour.positions]]
+name = "position 2"
+name_es = "posición 2"
+blocked = ["3"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "2"
+conductance = 1.0e-9

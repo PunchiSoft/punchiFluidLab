@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Las válvulas base 3/2 y 5/2 — 2026-11-22
+
+- **Dos definiciones nuevas, `valve.3_2.base` y `valve.5_2.base`**, con el cuerpo de la
+  norma en su forma base: cuadros iguales, los puertos dibujados una vez en el cuadro por
+  defecto y las marcas T de los puertos cerrados, sin retorno ni accionamiento. El diálogo
+  de válvula las configura después.
+- **Cada una trae su fixture de geometría y su revisión** (`pending-300dpi`), con las
+  capturas clara, oscura y de 300 dpi generadas por `symbol-sheet`.
+- Prueba: el lint del catálogo, `every_symbol_keeps_its_geometry` y las tres imágenes de
+  cada símbolo.
+
 ### Las capturas de revisión salen del renderizador — 2026-11-22
 
 - **`symbol-sheet` gana `--ink light|dark` y `--fit`**: la captura clara y la oscura de una

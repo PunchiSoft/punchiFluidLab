@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 5/2 directional valve in its **base form**: five ports, two positions, no return and no
+# actuation.
+#
+# Ports: 1 is the supply, 2 and 4 are the working lines, 3 and 5 are the exhausts. The
+# two squares are equal and side by side, the ports are drawn once at the square they are
+# read with, and each position's arrow is the connection it opens; a blocked port carries
+# its mark inside its own square. This is the body the valve dialog configures; the
+# variant files add the return and the actuation.
+
+schema = 3
+id = "valve.5_2.base"
+name = "5/2 valve"
+name_es = "Válvula 5/2"
+category = "valve"
+summary = "Base 5/2 directional valve: two positions, no return, no actuation."
+
+# Two squares of 0.44 side by side.
+body = [0.06, 0.28, 0.88, 0.44]
+
+# Ports are drawn once, at the default square. 4 and 5 on the left, 1 in the middle,
+# 2 and 3 on the right, so each exhaust path keeps its own outer edge.
+[[port]]
+id = "4"
+role = "working"
+position = [0.15, 0.0]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.41, 0.0]
+
+[[port]]
+id = "1"
+role = "supply"
+position = [0.28, 1.0]
+
+[[port]]
+id = "5"
+role = "exhaust"
+position = [0.15, 1.0]
+
+[[port]]
+id = "3"
+role = "exhaust"
+position = [0.41, 1.0]
+
+[behaviour]
+type = "valve"
+# No actuator and no return: the dialog fits them, and until then the spool stays at the
+# default position. The lint checks the absent `[spring]` and `[actuator]` against this.
+actuation = "none"
+default_position = 0
+
+# Position 0, the default square: supply to 2, working 4 vented, exhaust 3 shut.
+[[behaviour.positions]]
+name = "position 1"
+name_es = "posición 1"
+blocked = ["3"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "2"
+conductance = 1.0e-9
+
+[[behaviour.positions.connection]]
+from = "4"
+to = "5"
+conductance = 1.0e-9
+
+# Position 1: supply to 4, working 2 vented, exhaust 5 shut.
+[[behaviour.positions]]
+name = "position 2"
+name_es = "posición 2"
+blocked = ["5"]
+
+[[behaviour.positions.connection]]
+from = "1"
+to = "4"
+conductance = 1.0e-9
+
+[[behaviour.positions.connection]]
+from = "2"
+to = "3"
+conductance = 1.0e-9
