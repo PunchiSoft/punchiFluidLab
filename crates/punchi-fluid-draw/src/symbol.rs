@@ -1174,7 +1174,7 @@ fn draw_valve_with(
                 rect,
                 definition,
                 Some(body),
-                &port.id,
+                port.numeral(),
                 port.position,
                 ink,
             );
@@ -1368,7 +1368,7 @@ fn draw_flat_with(
                 rect,
                 definition,
                 body,
-                &port.id,
+                port.numeral(),
                 port.position,
                 ink,
             );

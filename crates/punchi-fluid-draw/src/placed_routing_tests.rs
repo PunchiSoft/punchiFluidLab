@@ -418,6 +418,7 @@ fn an_ordinary_port_keeps_its_edge() {
             role: PortRole::Working,
             position: [0.0, 0.0],
             show_numeral: true,
+            numeral: None,
         }],
         symbol: Vec::new(),
         body: None,

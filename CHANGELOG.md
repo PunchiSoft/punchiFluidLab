@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El OR/AND entra en el catálogo — 2026-11-22
+
+- **`Behaviour::Pressure` con sus dos tipos, `shuttle` y `two_pressure`**, y el campo
+  `numeral` del puerto: el `id` sigue siendo único para tuberías, documento y solver, y el
+  renderizador imprime el numeral de la norma (las dos entradas `1`, la salida `2`). Los dos
+  símbolos son planos, dibujados a mano con primitivas.
+- **`valve.shuttle` y `valve.two_pressure`** con sus fixtures, revisiones y capturas. El
+  solver los rechaza con un mensaje hasta el corte siguiente, que añade la restricción por
+  paso y sus pruebas de referencia.
+- Prueba: el lint del catálogo, `every_symbol_keeps_its_geometry`, las revisiones y las tres
+  imágenes de cada símbolo.
+
 ### La referencia del propietario, en la skill de simbología — 2026-11-22
 
 - **`fluid-power-symbology` gana el procedimiento de la referencia**: antes de dibujar se

@@ -135,6 +135,11 @@ A port with `show_numeral = false` still connects and routes, but prints no fixe
 It is for a coil terminal whose `Y1` is a connection label the user sets, not a numeral of
 the symbol.
 
+A port whose printed numeral differs from its `id` declares `numeral`: the `id` stays the
+unique key a pipe, the document and the solver use, and the renderer prints the numeral.
+The two supply inlets of a shuttle are `1a` and `1b`, both printed as `1`
+([ADR 0039](../docs/adr/0039-the-pressure-element-is-flat-and-constrained.md)).
+
 ### Behaviour
 
 Exactly one `[behaviour]` table, tagged with `type`.
@@ -243,6 +248,20 @@ the port's node and adds nothing else, and the check stops reporting the port as
 conductance, so a narrow one really slows the cylinder it serves. The acoustic part is not
 modelled and the file does not pretend otherwise
 ([ADR 0016](../docs/adr/0016-a-termination-is-a-component.md)).
+
+```toml
+[behaviour]
+type = "pressure"
+kind = "shuttle"             # shuttle (OR) | two_pressure (AND)
+```
+
+A **pressure element** is a flat symbol with two supply inlets and one working outlet; the
+two inlets print the numeral `1` and the outlet `2`, with distinct ids. The network applies
+the rule of [ADR 0029](../docs/adr/0029-a-two-pressure-valve-decides-by-pressure.md) with
+the flat geometry and the per-step constraint of
+[ADR 0039](../docs/adr/0039-the-pressure-element-is-flat-and-constrained.md); until the
+solver slice lands, a circuit that places one is refused with a message instead of being
+simulated wrong.
 
 ```toml
 [behaviour]

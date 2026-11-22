@@ -3070,6 +3070,14 @@ fn describe_behaviour(text: &mut String, behaviour: &punchi_fluid_catalog::Behav
         } => describe_pressure_switch(text, *threshold_bar, *above, *normally_closed),
         Behaviour::Lamp => describe_indicator(text, false),
         Behaviour::Buzzer => describe_indicator(text, true),
+        Behaviour::Pressure { kind } => {
+            let name = match kind {
+                punchi_fluid_catalog::PressureKind::Shuttle => "selectora (OR)",
+                punchi_fluid_catalog::PressureKind::TwoPressure => "dos presiones (AND)",
+            };
+            let _ = writeln!(text, "Elemento de presión: {name}");
+            text.push_str("Decide por la presión de sus entradas\n");
+        }
         Behaviour::Junction => text.push_str("Tres puertos en un punto\n"),
     }
 }
@@ -5996,6 +6004,7 @@ pub unsafe extern "C" fn pf_session_component_edits(
             | Behaviour::Lamp
             | Behaviour::Buzzer
             | Behaviour::Plug
+            | Behaviour::Pressure { .. }
             | Behaviour::Junction => {}
         }
         // SAFETY: the caller promised a writable structure.
@@ -7082,6 +7091,7 @@ fn apply_edits(definition: &mut punchi_fluid_catalog::ComponentDefinition, edits
         | Behaviour::Lamp
         | Behaviour::Buzzer
         | Behaviour::Plug
+        | Behaviour::Pressure { .. }
         | Behaviour::Junction => {}
     }
 }

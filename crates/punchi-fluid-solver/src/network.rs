@@ -22,7 +22,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use punchi_fluid_catalog::{Actuation, Behaviour, ComponentDefinition, PortRole};
+use punchi_fluid_catalog::{Actuation, Behaviour, ComponentDefinition, PortRole, PressureKind};
 
 use crate::SolverError;
 use crate::orifice::{self, DEFAULT_CRITICAL_RATIO};
@@ -123,6 +123,12 @@ pub enum PartBehaviour {
     },
     /// An electrical component: drawn and checked, not yet simulated (ADR 0017).
     Electrical,
+    /// Passive pressure element: a shuttle or a two-pressure valve (ADR 0029). The rule
+    /// is the next slice; the network refuses it for now instead of guessing.
+    Pressure {
+        /// Which pressure rule it follows.
+        kind: PressureKind,
+    },
 }
 
 /// A part of the circuit: its ports and what it does.
@@ -200,6 +206,7 @@ impl NetworkPart {
             Behaviour::Silencer { conductance } => PartBehaviour::Silencer {
                 conductance: *conductance,
             },
+            Behaviour::Pressure { kind } => PartBehaviour::Pressure { kind: *kind },
             // The electrical control circuit is not simulated yet (ADR 0017): the part
             // exists so the document can hold it, and it contributes nothing to the gas.
             Behaviour::ElectricalSupply { .. }
@@ -483,6 +490,14 @@ impl Network {
         terminations: &[(PortAddress, PortTermination)],
         pipe_count: usize,
     ) -> Result<Self, SolverError> {
+        // The pressure element's rule is the next slice. Refusing it here is better than
+        // building a network that silently drops the element.
+        if let Some(part) = parts
+            .iter()
+            .find(|part| matches!(part.behaviour, PartBehaviour::Pressure { .. }))
+        {
+            return Err(SolverError::UnsupportedBehaviour(part.id.clone()));
+        }
         let atmosphere_pa = punchi_fluid_core::Pressure::ATMOSPHERE.pascal();
         let temperature_kelvin = punchi_fluid_core::Temperature::STANDARD.kelvin();
         let (mut nodes, port_node) = port_nodes(parts, atmosphere_pa, temperature_kelvin);
@@ -2716,6 +2731,18 @@ mod electrical_tests {
         assert!(
             (control.pressure_pa() - pneumatic.pressure_pa()).abs() < 1e-6,
             "the control circuit changed the pressure"
+        );
+    }
+
+    #[test]
+    fn a_pressure_element_is_refused_until_the_rule_lands() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog.get("valve.shuttle").expect("the shuttle exists");
+        let part = NetworkPart::from_definition(definition).expect("a part");
+        let error = Network::build(&[part], &[], &[], 0).expect_err("not modelled yet");
+        assert!(
+            matches!(error, SolverError::UnsupportedBehaviour(ref id) if id == "valve.shuttle"),
+            "unexpected error: {error:?}"
         );
     }
 }

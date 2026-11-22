@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Shuttle valve (OR): the outlet follows the higher of the two inlets.
+#
+# The two inlets carry the numeral 1 and the outlet the numeral 2, as the standard
+# draws them; the ids stay distinct because a pipe, the document and the solver
+# address a port by id. The body, the two check seats and the centre junction are
+# hand-drawn primitives (ADR 0039): the element is a flat symbol, not a position
+# valve, so it declares no `body` for the valve drawer.
+
+schema = 3
+id = "valve.shuttle"
+name = "Shuttle valve (OR)"
+name_es = "Válvula selectora (OR)"
+category = "valve"
+summary = "Passes the higher of two pressures to the outlet and closes the other inlet."
+
+# The square body and the three stubs to the ports.
+[[symbol]]
+kind = "rect"
+points = [0.25, 0.3, 0.5, 0.4]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.0, 0.5, 0.25, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.75, 0.5, 1.0, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.5, 0.0, 0.5, 0.3]
+line_class = "working"
+
+# The through path, the two opposing check seats and their centre junction.
+[[symbol]]
+kind = "line"
+points = [0.25, 0.5, 0.75, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.34, 0.42, 0.42, 0.5, 0.34, 0.58]
+filled = true
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.66, 0.42, 0.58, 0.5, 0.66, 0.58]
+filled = true
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.5, 0.5, 0.025]
+filled = true
+line_class = "working"
+
+[[port]]
+id = "1a"
+role = "supply"
+position = [0.0, 0.5]
+numeral = "1"
+
+[[port]]
+id = "1b"
+role = "supply"
+position = [1.0, 0.5]
+numeral = "1"
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.5, 0.0]
+
+[behaviour]
+type = "pressure"
+kind = "shuttle"

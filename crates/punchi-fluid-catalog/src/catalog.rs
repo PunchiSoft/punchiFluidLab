@@ -228,6 +228,26 @@ fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), Catalog
             ));
         }
     }
+    if matches!(definition.behaviour, Behaviour::Pressure { .. }) {
+        // Two supply inlets and one working outlet, as the shuttle and the two-pressure
+        // valve draw them; nothing else to connect, no spring and no actuator.
+        let supply = definition
+            .port
+            .iter()
+            .filter(|port| port.role == PortRole::Supply)
+            .count();
+        let working = definition
+            .port
+            .iter()
+            .filter(|port| port.role == PortRole::Working)
+            .count();
+        if definition.port.len() != 3 || supply != 2 || working != 1 {
+            return Err(invalid(
+                path,
+                "a pressure element needs two supply inlets and one working outlet",
+            ));
+        }
+    }
 
     for primitive in &definition.symbol {
         check_primitive(primitive).map_err(|reason| invalid(path, &reason))?;
@@ -332,9 +352,18 @@ fn check_behaviour(definition: &ComponentDefinition, path: &Path) -> Result<(), 
             default_position,
             ..
         } => check_valve(definition, path, positions, *default_position),
+        Behaviour::Pressure { .. } => check_pressure(definition, path),
         // A plug closes a port and a junction joins three: neither declares a number.
         Behaviour::Plug | Behaviour::Junction => Ok(()),
     }
+}
+
+/// Checks that a pressure element carries no moving part of a valve.
+fn check_pressure(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
+    if definition.resolved_return().is_some() {
+        return Err(invalid(path, "a pressure element has no return"));
+    }
+    Ok(())
 }
 
 /// Checks the window and the rate of a recorder, and the buffer their product asks for.

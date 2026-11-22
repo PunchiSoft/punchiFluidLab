@@ -57,6 +57,14 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/valve.5_2.base.toml"),
     ),
     (
+        "valve.shuttle.toml",
+        include_str!("../../../assets/catalog/valve.shuttle.toml"),
+    ),
+    (
+        "valve.two_pressure.toml",
+        include_str!("../../../assets/catalog/valve.two_pressure.toml"),
+    ),
+    (
         "cylinder.single_acting_20_100.toml",
         include_str!("../../../assets/catalog/cylinder.single_acting_20_100.toml"),
     ),

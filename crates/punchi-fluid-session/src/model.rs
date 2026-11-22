@@ -288,6 +288,7 @@ fn apply_edits(definition: &mut ComponentDefinition, edits: &PlacementEdits) {
         | Behaviour::Lamp
         | Behaviour::Buzzer
         | Behaviour::Plug
+        | Behaviour::Pressure { .. }
         | Behaviour::Junction => {}
     }
 }
