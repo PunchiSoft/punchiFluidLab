@@ -20,10 +20,12 @@ pub mod surface;
 pub mod symbol;
 
 pub use orient::{Orientation, Turned};
-pub use placed::{Placed, draw_placed, port_point, route, route_offset, selection_ring};
+pub use placed::{
+    Placed, draw_placed, draw_placed_preview, port_point, route, route_offset, selection_ring,
+};
 pub use route::{route_between_boxes, route_between_boxes_avoiding};
 pub use schematic::{
     CYLINDER_RATIO, Layout, SYMBOL_BOX_MM, draw, draw_readouts, draw_with_layout, layout,
 };
 pub use surface::{Anchor, Call, Colour, LineClass, Pt, Recording, Rect, Stroke, Surface, dashes};
-pub use symbol::{Ink, LINE, NUMERAL, draw_component, draw_valve};
+pub use symbol::{Ink, LINE, NUMERAL, draw_component, draw_component_preview, draw_valve};

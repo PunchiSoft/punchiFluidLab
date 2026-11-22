@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### El panel muestra el símbolo, el lienzo los puntos de conexión — 2026-11-22
+
+- **La vista previa del catálogo deja de dibujar los círculos de conexión**: el panel
+  izquierdo muestra el símbolo tal como es; el lienzo sigue dibujando el punto de conexión
+  de cada puerto, que es donde llega la manguera. La distinción está en el renderizador
+  (`draw_placed` para la hoja, `draw_placed_preview` para el panel) y la cubre una prueba
+  que cuenta los círculos de un mismo símbolo en las dos vistas.
+- Sin cambio en el dibujo del lienzo ni en las capturas de revisión de los símbolos.
+
 ### La simbología es normativa, no nuestra — 2026-11-22
 
 - **La simbología y las convenciones de circuito son las de la norma**, una sola forma, la

@@ -219,7 +219,7 @@ fn draw_series(surface: &mut dyn Surface, placed: &Placed<'_>, ink: &Ink) {
     }
 }
 
-/// Draws the sheet.
+/// Draws the sheet: the symbols with the connection points a hose arrives at.
 ///
 /// The three components the model simulates are joined by their pipes when they are all
 /// present; everything else is drawn as its own symbol. Every index in `selected` gets a
@@ -232,12 +232,43 @@ pub fn draw_placed(
     ink: &Ink,
     selected: &[usize],
 ) {
+    draw_placed_with(surface, placements, pipes, catalog, ink, selected, true);
+}
+
+/// Draws the catalog panel's thumbnail: the same symbols **without** the sheet's connection
+/// points. The panel lists symbols; the sheet marks where a hose arrives.
+pub fn draw_placed_preview(
+    surface: &mut dyn Surface,
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
+    catalog: &Catalog,
+    ink: &Ink,
+    selected: &[usize],
+) {
+    draw_placed_with(surface, placements, pipes, catalog, ink, selected, false);
+}
+
+fn draw_placed_with(
+    surface: &mut dyn Surface,
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
+    catalog: &Catalog,
+    ink: &Ink,
+    selected: &[usize],
+    connections: bool,
+) {
     // One box per placement, built once: the router needs them all to skip the symbols a
     // hose does not join. One vector per frame, not one per pipe.
     let boxes: Vec<Rect> = placements.iter().map(|placed| placed.rect).collect();
     for pipe in pipes {
         draw_pipe(surface, placements, &boxes, pipe, catalog, ink);
     }
+    let draw_symbol: fn(&mut dyn Surface, Rect, &ComponentDefinition, usize, f32, &Ink) =
+        if connections {
+            symbol::draw_component
+        } else {
+            symbol::draw_component_preview
+        };
     // Every placement is drawn from the document and its own state: a cylinder with the
     // extension the network reports for it, a valve with its own position. There is no
     // list of the three components the model knows, because the model follows the sheet.
@@ -265,7 +296,7 @@ pub fn draw_placed(
         // A turned symbol is the same drawing seen through a transform, so a direction is
         // never a second copy of the geometry.
         if placed.orientation.is_identity() {
-            symbol::draw_component(
+            draw_symbol(
                 surface,
                 placed.rect,
                 definition,
@@ -275,7 +306,7 @@ pub fn draw_placed(
             );
         } else {
             let mut turned = Turned::new(surface, placed.orientation, placed.rect.center());
-            symbol::draw_component(
+            draw_symbol(
                 &mut turned,
                 placed.rect,
                 definition,
