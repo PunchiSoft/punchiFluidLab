@@ -59,8 +59,16 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/valve.3_2.spring_return.md"),
     ),
     (
+        "valve.3_2.base",
+        include_str!("../../../assets/symbols/review/valve.3_2.base.md"),
+    ),
+    (
         "valve.5_2.spring_return",
         include_str!("../../../assets/symbols/review/valve.5_2.spring_return.md"),
+    ),
+    (
+        "valve.5_2.base",
+        include_str!("../../../assets/symbols/review/valve.5_2.base.md"),
     ),
     (
         "junction.tee",
