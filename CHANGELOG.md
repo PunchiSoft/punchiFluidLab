@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La hoja dibuja el estado del modelo — 2026-11-22
+
+- **La escena de la ventana lee el modelo**: cada colocación lleva la posición de su
+  válvula, la extensión de su cilindro y la lectura de su manómetro o caudalímetro
+  (`Model::valve_position`, `extension` y `reading`), así que al simular la hoja enseña
+  el estado vivo en vez de la posición de reposo.
+- **El `Model` de la sesión expone esos tres valores** desde la red del solver; la física
+  sigue en el solver y la escena solo la lee.
+- Pruebas: la escena de dos válvulas con su tubo sigue construyéndose; la sesión prueba
+  posiciones, extensión y lecturas sobre el circuito de ejemplo.
+
 ### La ventana simula con el modelo de la sesión — 2026-11-22
 
 - **`punchi-fluid-session::Model`**: la red del solver se construye desde el documento

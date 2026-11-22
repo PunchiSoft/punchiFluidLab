@@ -7,6 +7,7 @@
 //! static sheet is the document's geometry. The live valves, readings and flow pulses arrive
 //! with the session's frame path, which is the next slice.
 
+use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed};
 
@@ -19,7 +20,12 @@ pub struct Scene<'a> {
 
 /// Builds the scene of a circuit from the document as it is now.
 #[must_use]
-pub fn build(document: &Document, circuit: u32) -> Scene<'_> {
+pub fn build<'a>(
+    document: &'a Document,
+    catalog: &'a Catalog,
+    circuit: u32,
+    model: Option<&punchi_fluid_session::Model>,
+) -> Scene<'a> {
     let mut scene_of = vec![None; document.placements().len()];
     let mut placed: Vec<Placed<'_>> = Vec::new();
     for (index, placement) in document.placements().iter().enumerate() {
@@ -27,13 +33,18 @@ pub fn build(document: &Document, circuit: u32) -> Scene<'_> {
             continue;
         }
         scene_of[index] = Some(placed.len());
+        let definition = catalog.get(placement.catalog_id.as_str());
         placed.push(Placed {
             index,
             catalog_id: placement.catalog_id.as_str(),
             rect: placement.rect(),
-            extension: 0.0,
-            valve_position: 0,
-            reading: None,
+            extension: model
+                .and_then(|model| model.extension(index))
+                .unwrap_or(0.0),
+            valve_position: model.map_or(0, |model| model.valve_position(index)),
+            reading: model.and_then(|model| {
+                definition.and_then(|definition| model.reading(index, definition))
+            }),
             series: None,
             contact_closed: None,
             orientation: placement.orientation,
@@ -106,7 +117,8 @@ mod tests {
     #[test]
     fn the_scene_holds_the_circuits_placements_and_pipes() {
         let document = document_with_two_valves();
-        let scene = build(&document, document.active_circuit());
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let scene = build(&document, &catalog, document.active_circuit(), None);
         assert_eq!(scene.placed.len(), 2);
         assert_eq!(scene.pipes.len(), 1);
         assert_eq!(scene.pipes[0].from.port, "1");
@@ -117,7 +129,8 @@ mod tests {
         use punchi_fluid_draw::surface::Recording;
 
         let document = document_with_two_valves();
-        let scene = build(&document, document.active_circuit());
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let scene = build(&document, &catalog, document.active_circuit(), None);
         let catalog = punchi_fluid_catalog::default_catalog();
         let mut recording = Recording::default();
         punchi_fluid_draw::draw_placed(

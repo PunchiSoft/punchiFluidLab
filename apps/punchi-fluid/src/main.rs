@@ -571,7 +571,12 @@ impl eframe::App for Window {
                     page_rect.min.y * placement.scale,
                 );
             let mut drawing = EguiSurface::new(context, origin, placement.scale);
-            let mut scene = scene::build(&self.document, self.document.active_circuit());
+            let mut scene = scene::build(
+                &self.document,
+                &self.catalog,
+                self.document.active_circuit(),
+                self.model.as_ref(),
+            );
             // The drag is previewed on the drawing, not written to the document: the document
             // only changes once, when the button comes up.
             if let Some(drag) = &self.drag {

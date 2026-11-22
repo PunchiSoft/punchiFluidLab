@@ -9,6 +9,7 @@
 
 use punchi_fluid_catalog::{Behaviour, Catalog, ComponentDefinition, PortRole};
 use punchi_fluid_doc::{Document, PlacementEdits};
+use punchi_fluid_draw::placed::Reading;
 use punchi_fluid_solver::network::{
     Network, NetworkPart, PartBehaviour, PortAddress, PortTermination,
 };
@@ -148,6 +149,45 @@ impl Model {
     #[must_use]
     pub fn valve_of(&self, index: usize) -> Option<usize> {
         self.valve_of.get(index).copied().flatten()
+    }
+
+    /// Extension of the cylinder a placement is, `0..=1`, when the model has one.
+    #[must_use]
+    pub fn extension(&self, index: usize) -> Option<f32> {
+        let part = self.part_of(index)?;
+        #[allow(clippy::cast_possible_truncation)]
+        self.network
+            .extension_of(part)
+            .map(|extension| extension as f32)
+    }
+
+    /// Active position of the valve a placement became, `0` for anything that is not one.
+    #[must_use]
+    pub fn valve_position(&self, index: usize) -> usize {
+        self.part_of(index)
+            .and_then(|part| self.network.valve_position_at(part))
+            .unwrap_or(0)
+    }
+
+    /// Reading of an instrument at `index`, in the unit its definition declares.
+    #[must_use]
+    pub fn reading(&self, index: usize, definition: &ComponentDefinition) -> Option<Reading> {
+        let part = self.part_of(index)?;
+        match definition.behaviour {
+            Behaviour::Gauge { .. } => {
+                let gauge_port = definition.port.first()?;
+                let pressure = self.network.port_pressure(part, &gauge_port.id)?;
+                #[allow(clippy::cast_possible_truncation)]
+                let reading = ((pressure - self.network.atmosphere_pa()) / 1.0e5) as f32;
+                Some(Reading::Pressure(reading))
+            }
+            Behaviour::FlowMeter { .. } => {
+                #[allow(clippy::cast_possible_truncation)]
+                let reading = self.network.part_flow_l_min(part)? as f32;
+                Some(Reading::Flow(reading))
+            }
+            _ => None,
+        }
     }
 }
 
