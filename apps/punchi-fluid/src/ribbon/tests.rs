@@ -40,7 +40,10 @@ fn the_edit_buttons_follow_the_selection_and_the_history() {
     );
     ribbon.selected = 2;
     assert!(ribbon.enabled("Izquierda"));
-    assert!(!ribbon.enabled("Copiar"), "the clipboard is not here yet");
+    assert!(ribbon.enabled("Copiar"), "a selection enables the copy");
+    assert!(!ribbon.enabled("Pegar"), "an empty clipboard cannot paste");
+    ribbon.has_clipboard = true;
+    assert!(ribbon.enabled("Pegar"));
     assert!(!ribbon.enabled("Deshacer"), "nothing to undo");
     ribbon.can_undo = true;
     assert!(ribbon.enabled("Deshacer"));

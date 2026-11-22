@@ -889,6 +889,30 @@ impl Document {
         index
     }
 
+    /// Places several components as one entry in the history: one paste, one undo.
+    ///
+    /// The copies get fresh identities, so the pipes of the originals stay where they are.
+    pub fn place_many(&mut self, placements: Vec<Placement>) -> Vec<usize> {
+        let mut indices = Vec::with_capacity(placements.len());
+        let mut changes = Vec::with_capacity(placements.len());
+        for placement in placements {
+            let mut placement = placement;
+            placement.circuit = self.active;
+            if placement.id == 0 {
+                placement.id = self.take_id();
+            }
+            self.next_id = self.next_id.max(placement.id + 1);
+            let index = self.placements.len();
+            self.placements.push(placement.clone());
+            changes.push(Change::Added { index, placement });
+            indices.push(index);
+        }
+        if !changes.is_empty() {
+            self.record_group(changes);
+        }
+        indices
+    }
+
     /// Copies several placements displaced by a delta, as one entry in the history.
     ///
     /// The copies keep their catalog ids, boxes, values and orientations and get new
@@ -2025,6 +2049,23 @@ mod tests {
 
     fn close(a: f32, b: f32) -> bool {
         (a - b).abs() < 1e-6
+    }
+
+    #[test]
+    fn placing_several_components_is_one_undo_step() {
+        let mut document = Document::new();
+        let indices = document.place_many(vec![
+            Placement::new("valve.3_2.spring_return", Pt::new(60.0, 60.0), 20.0, 20.0),
+            Placement::new("valve.3_2.spring_return", Pt::new(120.0, 60.0), 20.0, 20.0),
+        ]);
+        assert_eq!(indices, vec![0, 1]);
+        assert_eq!(document.placements().len(), 2);
+        assert_ne!(document.placements()[0].id, document.placements()[1].id);
+        document.undo();
+        assert!(
+            document.placements().is_empty(),
+            "one undo removes the paste"
+        );
     }
 
     fn placement(id: &str, x: f32, y: f32) -> Placement {
