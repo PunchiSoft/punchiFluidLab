@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La selección es múltiple y se alinea y duplica — 2026-11-22
+
+- **Mayús+clic añade o quita de la selección; Ctrl+A selecciona todo el circuito.** El
+  arrastre y Borrar actúan sobre la selección entera, con una sola entrada de deshacer.
+- **Duplicar** (la cinta y Ctrl+D) copia la selección desplazada 10 mm como un solo cambio y
+  deja las copias seleccionadas; **Alinear** (Izquierda/Derecha/Arriba/Abajo) la alinea con
+  el borde más lejano como una sola entrada.
+- La cinta enciende Borrar/Girar/Reflejar/Duplicar con una colocación, Alinear con dos, y
+  mantiene apagados los mandos que aún no existen (portapapeles, repartir, orientación).
+- **Pruebas**: el clic con Mayús alterna la selección y Ctrl+A la toma entera; duplicar deja
+  un paso de historial; alinear usa el borde más lejano y un deshacer lo revierte.
+
 ### La ventana gana el panel del catálogo — 2026-11-22
 
 - **La tercera región de la ventana**: el panel izquierdo lista el catálogo como paleta de

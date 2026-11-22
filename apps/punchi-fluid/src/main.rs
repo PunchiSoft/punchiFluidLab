@@ -13,7 +13,7 @@ use std::time::Instant;
 
 use eframe::egui;
 use punchi_fluid_catalog::Kinematics;
-use punchi_fluid_doc::{Document, Placement, Turn};
+use punchi_fluid_doc::{Align, Document, Placement, Turn};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_placed};
 use punchi_fluid_export::{Page, TitleBlock, sheet};
@@ -164,17 +164,68 @@ impl Window {
         })
     }
 
-    /// Selects what is under `point`, or clears the selection when the sheet is empty there.
-    fn select_at(&mut self, point: Pt) -> Option<usize> {
+    /// Selects what is under `point`, with Shift adding or removing it from the selection,
+    /// or clears the selection when the sheet is empty there. Returns the hit, if any.
+    fn select_at(&mut self, point: Pt, additive: bool) -> Option<usize> {
         let hit = self.hit_placement(point);
-        self.selected = hit.map(|index| vec![index]).unwrap_or_default();
-        self.notice = hit.and_then(|index| {
-            self.document
-                .placements()
-                .get(index)
-                .map(|placement| format!("seleccionado {}", placement.catalog_id))
-        });
+        if let Some(index) = hit {
+            if additive {
+                if self.selected.contains(&index) {
+                    self.selected.retain(|selected| *selected != index);
+                } else {
+                    self.selected.push(index);
+                }
+            } else {
+                self.selected = vec![index];
+            }
+        } else if !additive {
+            self.selected.clear();
+        }
+        self.notice = match self.selected.len() {
+            0 => None,
+            1 => Some(String::from("1 seleccionada")),
+            count => Some(format!("{count} seleccionadas")),
+        };
         hit
+    }
+
+    /// Selects every placement of the active circuit.
+    fn select_all(&mut self) {
+        let circuit = self.document.active_circuit();
+        self.selected = self
+            .document
+            .placements()
+            .iter()
+            .enumerate()
+            .filter(|(_, placement)| placement.circuit == circuit)
+            .map(|(index, _)| index)
+            .collect();
+        let count = self.selected.len();
+        self.notice = (count > 0).then(|| format!("{count} seleccionadas"));
+    }
+
+    /// Copies the selection a little displaced, as one undo entry, and selects the copies.
+    fn duplicate_selected(&mut self) {
+        if self.selected.is_empty() {
+            return;
+        }
+        let copies = self.document.duplicate_many(&self.selected, (10.0, 10.0));
+        if copies.is_empty() {
+            return;
+        }
+        self.selected = copies;
+        let count = self.selected.len();
+        self.notice = Some(format!("duplicadas {count}"));
+    }
+
+    /// Aligns the selection on its furthest edge, as one undo entry.
+    fn align_selected(&mut self, align: Align) {
+        if self.selected.len() < 2 {
+            return;
+        }
+        if self.document.align_many(&self.selected, align) {
+            self.notice = Some(String::from("alineado"));
+        }
     }
 
     /// Ends a drag: one undo entry for the whole gesture, never one per frame.
@@ -252,6 +303,11 @@ impl Window {
             "Borrar" => self.remove_selected(),
             "Girar" => self.rotate_selected(),
             "Reflejar" => self.reflect_selected(),
+            "Duplicar" => self.duplicate_selected(),
+            "Izquierda" => self.align_selected(Align::Left),
+            "Derecha" => self.align_selected(Align::Right),
+            "Arriba" => self.align_selected(Align::Top),
+            "Abajo" => self.align_selected(Align::Bottom),
             "Deshacer" => self.undo(),
             "Rehacer" => self.redo(),
             _ => self.view.command(command),
@@ -275,8 +331,17 @@ impl Window {
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::F)) {
             self.sidebar.focus_search = true;
         }
+        // Select all and duplicate only when no text field has the keyboard: Ctrl+A in the
+        // search selects the search text, not the sheet.
+        let idle = context.memory(|memory| memory.focused().is_none());
+        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::A)) {
+            self.select_all();
+        }
+        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::D)) {
+            self.duplicate_selected();
+        }
         self.ribbon.savable = self.path.is_some();
-        self.ribbon.selection = !self.selected.is_empty();
+        self.ribbon.selected = self.selected.len();
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
     }
@@ -420,12 +485,17 @@ impl Window {
         };
         if response.clicked() {
             if let Some(position) = response.interact_pointer_pos() {
-                self.select_at(to_mm(position));
+                let additive = response.ctx.input(|input| input.modifiers.shift);
+                self.select_at(to_mm(position), additive);
             }
         }
         if response.drag_started_by(egui::PointerButton::Primary) {
             if let Some(position) = response.interact_pointer_pos() {
-                let index = self.select_at(to_mm(position));
+                let additive = response.ctx.input(|input| input.modifiers.shift);
+                if additive {
+                    return;
+                }
+                let index = self.select_at(to_mm(position), false);
                 if index.is_some() {
                     let starts: Vec<(usize, Pt)> = self
                         .selected
@@ -526,149 +596,4 @@ impl Window {
 }
 
 #[cfg(test)]
-mod tests {
-    use eframe::egui;
-    use punchi_fluid_doc::{Document, Placement};
-    use punchi_fluid_draw::surface::Recording;
-
-    use super::{Drag, Pt, Window, sheet, theme};
-
-    #[test]
-    fn a_click_selects_the_placement_under_it_and_clears_the_rest() {
-        let mut document = Document::new();
-        document.place(Placement::new(
-            "valve.5_2",
-            Pt::new(100.0, 80.0),
-            24.0,
-            24.0,
-        ));
-        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
-        assert_eq!(window.select_at(Pt::new(101.0, 81.0)), Some(0));
-        assert_eq!(window.selected, vec![0]);
-        assert_eq!(window.select_at(Pt::new(10.0, 10.0)), None);
-        assert!(window.selected.is_empty());
-    }
-
-    #[test]
-    fn a_drag_commit_moves_the_selection_and_leaves_one_undo_step() {
-        let mut document = Document::new();
-        document.place(Placement::new(
-            "valve.5_2",
-            Pt::new(100.0, 80.0),
-            24.0,
-            24.0,
-        ));
-        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
-        let _ = window.select_at(Pt::new(100.0, 80.0));
-        window.drag = Some(Drag {
-            pointer: egui::pos2(0.0, 0.0),
-            starts: vec![(0, Pt::new(100.0, 80.0))],
-            delta: egui::Vec2::ZERO,
-        });
-        window.commit_drag(1.0, egui::pos2(20.0, 10.0));
-        let moved = window.document.placements()[0].centre;
-        assert!((moved.x - 120.0).abs() < 0.01);
-        assert!((moved.y - 90.0).abs() < 0.01);
-        assert!(window.document.can_undo(), "one drag, one undo entry");
-        assert!(window.drag.is_none());
-    }
-
-    #[test]
-    fn adding_a_component_places_it_at_the_sheet_centre_as_one_undo_step() {
-        let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
-        let centre = window.page.rect().center();
-        window.add_component("valve.3_2.spring_return");
-        assert_eq!(window.document.placements().len(), 1);
-        let placed = window.document.placements()[0].centre;
-        assert!((placed.x - centre.x).abs() < 0.01);
-        assert!((placed.y - centre.y).abs() < 0.01);
-        assert_eq!(window.selected, vec![0]);
-        window.undo();
-        assert!(window.document.placements().is_empty());
-    }
-
-    #[test]
-    fn deleting_the_selection_is_one_undo_step() {
-        let mut document = Document::new();
-        document.place(Placement::new(
-            "valve.5_2",
-            Pt::new(100.0, 80.0),
-            24.0,
-            24.0,
-        ));
-        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
-        let _ = window.select_at(Pt::new(100.0, 80.0));
-        window.remove_selected();
-        assert!(window.document.placements().is_empty());
-        assert!(window.selected.is_empty());
-        window.undo();
-        assert_eq!(
-            window.document.placements().len(),
-            1,
-            "one undo brings it back"
-        );
-    }
-
-    #[test]
-    fn turning_and_reflecting_the_selection_both_undo() {
-        let mut document = Document::new();
-        document.place(Placement::new(
-            "valve.5_2",
-            Pt::new(100.0, 80.0),
-            24.0,
-            24.0,
-        ));
-        let before = document.placements()[0].orientation;
-        let mut window = Window::new(theme::Theme::fallback(), document, None, None);
-        let _ = window.select_at(Pt::new(100.0, 80.0));
-        window.rotate_selected();
-        assert_ne!(window.document.placements()[0].orientation, before);
-        window.undo();
-        assert_eq!(window.document.placements()[0].orientation, before);
-        let _ = window.select_at(Pt::new(100.0, 80.0));
-        window.reflect_selected();
-        assert_ne!(window.document.placements()[0].orientation, before);
-        window.undo();
-        assert_eq!(window.document.placements()[0].orientation, before);
-    }
-
-    #[test]
-    fn the_window_saves_the_document_it_was_given() {
-        let path = std::env::temp_dir().join(format!(
-            "punchi-fluid-window-save-{}.pfluid",
-            std::process::id()
-        ));
-        let mut window = Window::new(
-            theme::Theme::fallback(),
-            Document::new(),
-            Some(path.clone()),
-            None,
-        );
-        window.save();
-        let text = std::fs::read_to_string(&path).expect("the window wrote the file");
-        assert!(
-            punchi_fluid_file::sheet::Sheet::parse(&text).is_ok(),
-            "the saved text is a sheet"
-        );
-        assert!(
-            window
-                .notice
-                .as_deref()
-                .is_some_and(|notice| notice.starts_with("guardado")),
-            "the status bar says the save happened"
-        );
-        let _ = std::fs::remove_file(&path);
-    }
-
-    #[test]
-    fn the_sheet_of_a_new_document_draws_into_a_recording() {
-        let window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
-        let mut recording = Recording::default();
-        sheet::draw(&mut recording, &window.page, &window.block);
-        assert!(
-            !recording.is_empty(),
-            "the sheet must produce calls: {}",
-            recording.len()
-        );
-    }
-}
+mod tests;

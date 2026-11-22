@@ -26,14 +26,21 @@ fn the_save_button_waits_for_a_path() {
 fn the_edit_buttons_follow_the_selection_and_the_history() {
     let mut ribbon = Ribbon::new();
     assert!(!ribbon.enabled("Borrar"), "no selection, no delete");
-    ribbon.selection = true;
+    ribbon.selected = 1;
     assert!(
         ribbon.enabled("Borrar"),
         "a selection enables the edit commands"
     );
     assert!(ribbon.enabled("Girar"));
     assert!(ribbon.enabled("Reflejar"));
-    assert!(!ribbon.enabled("Duplicar"), "the duplicate is not here yet");
+    assert!(ribbon.enabled("Duplicar"));
+    assert!(
+        !ribbon.enabled("Izquierda"),
+        "one placement cannot be aligned"
+    );
+    ribbon.selected = 2;
+    assert!(ribbon.enabled("Izquierda"));
+    assert!(!ribbon.enabled("Copiar"), "the clipboard is not here yet");
     assert!(!ribbon.enabled("Deshacer"), "nothing to undo");
     ribbon.can_undo = true;
     assert!(ribbon.enabled("Deshacer"));
