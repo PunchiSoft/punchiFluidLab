@@ -8,6 +8,13 @@ It is a plan written in our own words. It describes behaviour, never content: no
 icon, sound, example circuit, manual page or file format from another program enters this
 repository, and no such program is named here.
 
+**Status (2026-11-22).** The Qt window is still the product while
+[ADR 0035](adr/0035-the-window-is-rust.md)'s migration runs. The Rust window in
+`apps/punchi-fluid` already implements the shell, the editing commands and the simulation
+core with the live scene; the entries below are its target until phase 5 retires the Qt
+app. The migration's state and remaining queue are in [next-steps.md](next-steps.md) and in
+section 14 of [retomar.md](retomar.md).
+
 ## The gate
 
 A capability starts only when it is written down in this file: what a student must be able

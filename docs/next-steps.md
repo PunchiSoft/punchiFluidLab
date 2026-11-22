@@ -204,6 +204,33 @@ renderer changes (port numerals, line classes, blocking marks) and leave only th
 the redraw and the review for M1.5. If the owner prefers, M1.5's lint can run right
 after M2's first step, before the export backends; nothing else changes.
 
+## The Rust window: what is left (ADR 0035, phases 4–5)
+
+The Qt window below is the product until [ADR 0035](adr/0035-the-window-is-rust.md)'s phase 5
+retires it. The Rust window in `apps/punchi-fluid` already has the fixed layout (ribbon,
+sidebar, sheet, status bar), the theme, the view, open and save, the selection and the
+editing commands, the clipboard, the catalog palette and the simulation core with the live
+scene (the model, the clock, the valves' positions, the cylinder's extension, the
+instruments' readings and the hoses' pressure). The 2026-11-22 slices are in `CHANGELOG.md`.
+
+What is left, in the order it should be done:
+
+1. **The rest of the live frame**: the flow pulses in the hoses, the exhaust jets, the
+   electrical control (relays, contacts, lamps, buzzers, switches) and the recorders'
+   charts, then "Hasta cambio".
+2. **The rest of the editing**: draw pipes port to port, select and drag a pipe, edit the
+   per-instance properties, distribute (needs a document command) and the page orientation.
+3. **The document**: the start view, the open/save-as/new dialogs, the recent files, the
+   unsaved-changes guard, the circuits and their tabs.
+4. **The theme and accessibility**: the `color-scheme` portal read on change, the reduced
+   motion, the accessible names of the drawing, the keyboard order, the IME, and the Rust
+   equivalents of `--check-theme`, `--check-qml`, `--check-icons`, `--check-layout` and
+   `--selftest`.
+5. **The export from the window**: PNG, PDF and SVG, the editable title block and page, the
+   parts list and printing.
+6. **Phase 5**: move the `window` CI job to the Rust window, delete `punchi-fluid-ffi` and
+   `apps/punchi-fluid-qt`, update the packaging and the docs.
+
 ---
 
 > **Toolkit note (2026-11-06).** [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) is accepted:
