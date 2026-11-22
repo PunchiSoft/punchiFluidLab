@@ -144,15 +144,15 @@ tooling, never a runtime dependency).
 - Symbols follow **ISO 1219-1:2012**, in the diagram conventions of ISO 1219-2:2012
   and ISO 1219-3:2016. The contract, the guarantees and the review checklist are in
   [docs/symbology.md](docs/symbology.md).
-- **An owner-provided reference may be analysed; another program's source and assets may
-  not be stored.** The owner is the authority for the intended symbol: photographs, sketches,
-  screenshots from any software, manuals, standard figures, diagrams and annotated images may
-  be read for geometry, proportions, positions and connections when the owner authorizes it
-  ([ADR 0040](docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)). The
-  reconstruction is written as our TOML; the reference image is not stored, and the review
-  records what was observed, what the owner required, what the standard states and what is an
-  assumption. Another program's source code or assets never enter the repository, and
-  `check-docs.sh` keeps failing on those names.
+- **The owner's reference is classified; another program's source and assets may not be
+  stored.** A normative standard figure, or an engineering drawing with the owner's
+  dimensions, may be read for geometry and measures. A capture of another application or a
+  photograph identifies the component, its function and its arrangement; it is not traced or
+  copied. The reconstruction is written as our TOML; the reference image is not stored, and
+  the review records what was observed, what the owner required, what the standard states and
+  what is an assumption ([ADR 0040](docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)).
+  Another program's source code or assets never enter the repository, and `check-docs.sh`
+  keeps failing on those names.
 - **The symbols are normative, not ours.** They are the standard's, one form in every
   application: no variant or transformation of a symbol of ours, and no change based on
   another program. An owner-provided reference may give the intended form and the measures

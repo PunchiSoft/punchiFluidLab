@@ -25,11 +25,14 @@ out of the repository — is a separate matter.
 1. **The owner may provide any visual reference**: photographs, hand-drawn sketches,
    screenshots from any software, technical manuals, normative standard figures, existing
    hydraulic or pneumatic diagrams and annotated images.
-2. **The references may be analysed** to identify geometry, proportions, positions,
-   connections and graphical relationships when the owner authorizes it.
-3. **The agent may extract geometric information** from an owner-provided reference and
-   construct an independent TOML definition with PunchiFluidLab's own primitives and
-   renderer.
+2. **The references are classified and used by origin.** A normative standard figure may be
+   read for its proportions and measures; an owner's engineering drawing or explicit
+   requirements provide the dimensions; a capture of another application or a photograph
+   identifies the component, its function and the intended arrangement, and does not
+   authorize tracing or copying its graphical implementation.
+3. **The agent constructs the TOML** from the normative requirements and the owner's
+   measures. The geometry is our own, with PunchiFluidLab's primitives and renderer, and it
+   does not depend on the image at runtime.
 4. **The record distinguishes five things**: the observed geometry, the owner-provided
    functional requirements, the normative requirements, the engineering interpretations and
    the assumptions that still need confirmation. A normative requirement is never presented
@@ -49,8 +52,9 @@ out of the repository — is a separate matter.
 ## Consequences
 
 - `AGENTS.md`, [docs/symbology.md](../symbology.md) and the `fluid-power-symbology` skill
-  distinguish an owner-provided reference (analysed, with the five categories recorded) from
-  another application's source and assets (forbidden).
+  classify the reference: a normative figure or the owner's engineering requirements feed the
+  geometry, while another application's capture only identifies the component; its source and
+  assets remain forbidden.
 - The `punchi-symbol-reconstruction` skill and its scripts read an owner-provided reference,
   propose the TOML, render it with `symbol-sheet`, and compare it with the reference for a
   person to review.
