@@ -24,7 +24,7 @@ catalog, doc, draw ← check
 catalog, draw, solver ← export
 catalog, check, doc, draw, file, solver, session ← ffi ← apps/punchi-fluid-qt
 core, file, solver ← cli
-core, doc, draw, export ← apps/punchi-fluid
+catalog, core, doc, draw, export, file, session ← apps/punchi-fluid
 doc, draw, file ← session
 ```
 

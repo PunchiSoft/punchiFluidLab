@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### La ventana abre el documento que le dan — 2026-11-22
+
+- **La ventana Rust abre un `.pfluid` desde la línea de comandos** (o arranca con un
+  documento nuevo) por el crate de sesión, y **dibuja el circuito** de la hoja activa: las
+  colocaciones y los tubos del documento, junto a la hoja, el cajetín y la vista ya
+  existentes. Un fichero que no se puede abrir no tumba la ventana: se avisa en la barra de
+  estado y se abre un documento nuevo.
+- **La sesión estrena su primer uso fuera del ABI**: `punchi-fluid-session::load`; la
+  ventana depende ahora de `session`, `catalog` y `file`.
+- **Dos pruebas nuevas** del escenario estático: la escena de dos válvulas con un tubo, y
+  que el circuito produce llamadas de dibujo. Deuda: los estados vivos —válvulas, lecturas,
+  pulsos— llegan con la ruta del fotograma de la sesión.
+
 ### La sesión sale del ABI — 2026-11-22
 
 - **Nuevo crate `punchi-fluid-session`**: la conversión fichero↔documento (el formato de
