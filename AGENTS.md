@@ -144,16 +144,20 @@ tooling, never a runtime dependency).
 - Symbols follow **ISO 1219-1:2012**, in the diagram conventions of ISO 1219-2:2012
   and ISO 1219-3:2016. The contract, the guarantees and the review checklist are in
   [docs/symbology.md](docs/symbology.md).
-- **Never copy material from another program or its manual.** The standard's symbols are
-  normative and identical in every application: a reference of the standard may be used to
-  reconstruct one ([ADR 0040](docs/adr/0040-the-standard-is-the-reference.md)), reading its
-  measures; the standard's figures and text never enter the repository, the geometry is
-  written as our TOML, and the review records the clause, the measures and the reference.
+- **An owner-provided reference may be analysed; another program's source and assets may
+  not be stored.** The owner is the authority for the intended symbol: photographs, sketches,
+  screenshots from any software, manuals, standard figures, diagrams and annotated images may
+  be read for geometry, proportions, positions and connections when the owner authorizes it
+  ([ADR 0040](docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)). The
+  reconstruction is written as our TOML; the reference image is not stored, and the review
+  records what was observed, what the owner required, what the standard states and what is an
+  assumption. Another program's source code or assets never enter the repository, and
+  `check-docs.sh` keeps failing on those names.
 - **The symbols are normative, not ours.** They are the standard's, one form in every
-  application: no variant or transformation of a symbol of ours, and no change based on a
-  reference of another program. A reference of the standard may give the form and the
-  measures (ADR 0040). The sheet's connection points are the diagram's rendering, not a
-  symbol variant; the library panel shows the symbol without them.
+  application: no variant or transformation of a symbol of ours, and no change based on
+  another program. An owner-provided reference may give the intended form and the measures
+  (ADR 0040). The sheet's connection points are the diagram's rendering, not a symbol
+  variant; the library panel shows the symbol without them.
 - A symbol change needs a **conformance review**: the automated `symbol lint` plus the
   manual checklist, with light/dark screenshots attached to the pull request.
 - Normative details are not negotiable for taste: box proportions, arrow direction,
@@ -183,10 +187,9 @@ tooling, never a runtime dependency).
   Every limit has a number, a message and a one-past-it test in the crate that owns
   the data ([.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md)).
 - No telemetry, no network at runtime, no shell-outs.
-- `assets/` may only contain files whose licence and origin are recorded; ISO
-  symbols are drawn from the standard, and a reference of the standard may guide the
-  reconstruction, but no figure or text of the standard or of another program enters
-  `assets/`.
+- `assets/` may only contain files whose licence and origin are recorded; a reference
+  provided by the owner may guide the reconstruction, but no reference image, figure or text
+  enters `assets/`.
 - Catalog files are untrusted input too: they are parsed with unknown keys rejected,
   every number is range-checked, and no file can make the loader allocate or loop
   beyond a bound.

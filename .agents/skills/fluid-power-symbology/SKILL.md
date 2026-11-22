@@ -10,10 +10,12 @@ A schematic that is almost right is worse than one that is obviously a sketch: i
 misleads a reader who trusts it. This skill is the procedure for changing a symbol
 without breaking that trust.
 
-**Hard rule: never copy material from another program.** A reference of the standard is
-the symbol's own definition, one form in every application; [ADR 0040](../../../docs/adr/0040-the-standard-is-the-reference.md)
-allows reconstructing from it and reading its measures. The standard's figures and text are
-never stored: the repository keeps *our* TOML, the fixture, our captures and the review.
+**Hard rule: never store another program's source or assets.** The owner is the authority
+for the intended symbol: their photographs, sketches, screenshots, manuals, standard figures,
+diagrams and annotated images may be analysed for geometry and measures when they authorize
+it ([ADR 0040](../../../docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)).
+The reconstruction is written as our TOML; the reference image is never stored, and the
+review records what was observed, required, stated by the standard and assumed.
 
 ### The symbols are normative, not ours to change
 
@@ -51,18 +53,22 @@ A picture from Wikimedia Commons, a CAD library or a manual is **only** a remind
 symbols exist; it is never the source of a proportion. Those drawings were made by someone
 else, for their own edition, and copying one would break both the licence and the geometry.
 
-### The standard's reference
+### The owner's reference
 
-Before drawing, ask the owner for a capture of the symbol **as the standard defines it**. It
-is the object the project implements, and ADR 0040 allows reading its form and its measures.
+Before drawing, ask the owner for the reference they intend to reproduce. It may be a
+photograph, a sketch, a screenshot from any software, a manual page, a standard figure, an
+existing diagram or an annotated image; ADR 0040 allows reading its form and its measures
+when the owner authorizes it.
 
 - It **may** settle: which symbol exists, which side each port is on, whether the drawing
   has a spring, an actuator, a check seat or a double piston, the proportions, the positions
   and the angles, and whether a student reads it at palette size.
-- It **may never** be material from another program: no capture of another application, its
-  manual or its library drives the reconstruction.
-- Nothing from the reference is stored: no image, no crop, no path. The TOML, the fixture,
-  the captures from our renderer and the review are what the repository keeps.
+- It **may never** supply another program's source code or a stored asset: the repository
+  keeps our TOML, the fixture, our captures and the review, never the reference image.
+- The review separates five things: the observed geometry, the owner's functional
+  requirements, the normative requirements, our engineering interpretation and the
+  assumptions still to confirm. When the reference and the declared behaviour disagree, ask
+  the owner.
 
 After drawing the symbol by hand, look at the capture again as a reader: if ours cannot be
 told apart from the one in it, the drawing is wrong, and the standard's measures still

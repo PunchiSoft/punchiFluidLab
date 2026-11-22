@@ -6,15 +6,17 @@ publicación.
 
 ## Unreleased
 
-### La referencia de la norma, permitida — 2026-11-22
+### La referencia del propietario, permitida — 2026-11-22
 
-- **ADR 0040 enmienda la regla de contenido**: una referencia de la norma —no de otro
-  programa— puede usarse para reconstruir un símbolo y leer sus medidas; las figuras y el
-  texto de la norma no entran en el repositorio, la geometría se escribe como nuestro TOML
-  y la revisión anota la cláusula, las medidas y la referencia. El material de otro programa
-  sigue prohibido.
-- **`AGENTS.md`, `symbology.md` y la skill de simbología** distinguen los dos casos. Sin
-  código todavía: la decisión habilita la skill de reconstrucción.
+- **ADR 0040 enmienda la regla de contenido**: el propietario es la autoridad del símbolo
+  que quiere; sus referencias —fotografías, bocetos, capturas de cualquier programa,
+  manuales, figuras de la norma, diagramas e imágenes anotadas— pueden analizarse para leer
+  geometría y medidas cuando él lo autorice. La reconstrucción se escribe como nuestro TOML,
+  la imagen de referencia no se guarda y la revisión separa lo observado, lo requerido, lo
+  que dice la norma y lo que es interpretación o suposición. El código y los activos de otro
+  programa siguen fuera del repositorio.
+- **`AGENTS.md`, `symbology.md` y la skill de simbología** recogen la distinción. Sin código
+  todavía: la decisión habilita la skill de reconstrucción.
 
 ### El shuttle sigue la geometría del propietario — 2026-11-22
 
