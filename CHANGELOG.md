@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### La ventana Rust gana la cinta — 2026-11-22
+
+- **La cinta del prototipo entra en la ventana**: las cinco pestañas, los grupos con botones
+  grandes y pequeños, los menús, las galerías de Márgenes y Conducto, el *launcher* de
+  Configurar página, el colapso de grupos a su título a 1366 y los atajos del transporte
+  (F9/F8/F10/F5), con el estado que deshabilita Pausa y Detener hasta Iniciar. El comando
+  elegido se anota en la barra de estado hasta que el corte de la sesión cablee las acciones.
+- **Colores y tamaños salen del tema del escritorio**: la cinta no nombra un color; el texto
+  usa los tamaños `small`, `body` y `label` del tema.
+- **Los 55 iconos SVG van compilados en el binario** con `egui_extras` y su cargador SVG
+  (resvg/usvg, MPL-2.0 ya permitida por la allowlist): una ventana instalada no necesita el
+  directorio de assets al lado.
+- **Cuatro pruebas headless** con `egui_kittest`: las pestañas llegan a sus comandos, el
+  transporte sigue su estado, la galería de Márgenes abre sus tarjetas y Alinear colapsa a su
+  título. Deuda: la geometría de la cinta sigue siendo la del prototipo para el tamaño mínimo
+  fijo, y los comandos reales llegan con la sesión.
+
 ### La ventana toma su tema del escritorio — 2026-11-22
 
 - **La ventana Rust lee el tema del escritorio**, no de literales: `kdeglobals` da los
