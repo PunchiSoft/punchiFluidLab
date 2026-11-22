@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### La ventana simula con el modelo de la sesión — 2026-11-22
+
+- **`punchi-fluid-session::Model`**: la red del solver se construye desde el documento
+  (colocaciones con sus valores por instancia, tubos y cierres de puerto) y se avanza sin
+  pasar por el ABI; una definición que el solver no modela queda fuera y un circuito sin
+  cilindro se rechaza con su motivo.
+- **La ventana gana Iniciar/Pausa/Paso/Detener**: Iniciar construye el modelo y avanza el
+  reloj; Paso da un paso de 0,01 s; Detener lo tira para volver a `t = 0`; la barra de
+  estado enseña tiempo, presión, carrera y velocidad. El modelo se rehace solo cuando el
+  documento cambia.
+- **Pruebas**: el circuito de ejemplo construye el modelo y avanza con la presión nunca
+  negativa; un circuito sin cilindro se rechaza; la ventana no arranca sin modelo.
+- **Grafo**: `session` depende ahora de `catalog` y `solver`; la física sigue en el solver.
+
 ### La ventana copia, pega y corta — 2026-11-22
 
 - **Portapapeles de la ventana**: Copiar (Ctrl+C y la cinta) guarda la selección; Pegar

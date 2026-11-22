@@ -81,7 +81,7 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-check` | design faults a circuit can have before it is run | physics, drawing, UI |
 | `crates/punchi-fluid-export` | standard sheets, title block, the PNG and PDF writers | physics, widgets |
 | `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
-| `crates/punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, and the editor state as it moves | physics, widgets |
+| `crates/punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model of a circuit and the editor state as it moves | physics, widgets |
 | `crates/punchi-fluid-cli` | headless validate and simulate | UI |
 | `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter (retires with ADR 0035) | physics, the document |
 | `apps/punchi-fluid` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter (ADR 0035) | physics, the document |
@@ -92,7 +92,7 @@ other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalo
 stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
-page reads them from `core`); `session` on `doc`, `draw` and `file` (the sheet format and the live document meet there);
+page reads them from `core`); `session` on `catalog`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document and the model that runs it meet there; the physics stays in the solver);
 `ffi` on all of the above, `export` and `session` included, because the window speaks only
 the ABI and the ABI is the one place that holds both the document and the page it is printed
 on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
@@ -100,7 +100,7 @@ on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
 Rust depends on a window. During the migration the Qt window depends only on
 `punchi-fluid-ffi` ([ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md)), and the Rust
 window in `apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`,
-`catalog` and `file` — and, as its simulation commands land, on `solver` — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+`catalog` and `file` — the solver reaches it through the session's model — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
 [ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)). A new dependency direction needs an ADR;
 the `Surface` layer that made `draw` and `export` possible is
 [ADR 0003](docs/adr/0003-one-drawing-two-devices.md). `scripts-dev/check-docs.sh` fails if

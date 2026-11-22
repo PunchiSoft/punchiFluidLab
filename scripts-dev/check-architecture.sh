@@ -50,9 +50,11 @@ ALLOWED_EDGES=(
     "punchi-fluid-window punchi-fluid-export"
     "punchi-fluid-window punchi-fluid-file"
     "punchi-fluid-window punchi-fluid-session"
+    "punchi-fluid-session punchi-fluid-catalog"
     "punchi-fluid-session punchi-fluid-doc"
     "punchi-fluid-session punchi-fluid-draw"
     "punchi-fluid-session punchi-fluid-file"
+    "punchi-fluid-session punchi-fluid-solver"
     "punchi-fluid-ffi punchi-fluid-session"
 )
 

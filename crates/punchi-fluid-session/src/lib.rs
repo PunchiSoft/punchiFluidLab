@@ -5,8 +5,9 @@
 //!
 //! The sheet format stores circuits, placements, pipes and the paper; the document is the
 //! live model the window edits. This crate is the one place that converts one to the other,
-//! so the ABI, the window and the tests open and save the same way. The editor state
-//! (selection, tools, undo history) joins it with the next slice.
+//! so the ABI, the window and the tests open and save the same way. The live model of a
+//! circuit is [`Model`]: the window runs it without the ABI. The editor state (selection,
+//! tools, undo history) joins it with the next slice.
 
 use std::path::Path;
 
@@ -14,6 +15,10 @@ use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement, PlacementEdits, Q
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt};
 use punchi_fluid_file::paper::StoredSheet;
+mod model;
+
+pub use model::Model;
+
 use punchi_fluid_file::sheet::{
     SHEET_VERSION, Sheet, StoredBlock, StoredCircuit, StoredEdits, StoredPipe, StoredPlacement,
 };

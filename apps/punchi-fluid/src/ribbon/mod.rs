@@ -106,15 +106,17 @@ impl Ribbon {
     fn enabled(&self, label: &str) -> bool {
         match label {
             "Iniciar" => !self.running,
-            "Pausa" | "Paso" | "Hasta cambio" | "Detener" => self.running,
+            "Pausa" | "Paso" | "Detener" => self.running,
             "Guardar" => self.savable,
             "Borrar" | "Girar" | "Reflejar" | "Duplicar" | "Copiar" => self.selected >= 1,
             "Pegar" => self.has_clipboard,
             "Izquierda" | "Derecha" | "Arriba" | "Abajo" | "Puertos" => self.selected >= 2,
             "Deshacer" => self.can_undo,
             "Rehacer" => self.can_redo,
+            // Run until a state change, the file actions and the rest wait for their
+            // commands or their dialogs.
             "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Horizontal" | "Vertical"
-            | "Apaisado" => false,
+            | "Apaisado" | "Hasta cambio" => false,
             _ => true,
         }
     }
