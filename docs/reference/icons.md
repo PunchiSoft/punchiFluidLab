@@ -4,6 +4,13 @@ Status: current. The inventory of the window's own action-icon family, the drawi
 `apps/punchi-fluid-qt/src/actionicons.cpp`, and the coverage the `--check-icons` run
 asserts. The authority is the code; this page names what the code draws and why.
 
+Since [ADR 0035](../adr/0035-the-window-is-rust.md) the same drawings are also files under
+[`assets/icons/actions`](../../assets/icons/actions): one SVG per id in the table below, in
+the box, stroke and ink that record fixes. `scripts-dev/check-icons.sh` validates every
+file and asserts that the table and the files name the same ids; the 16, 24 and 32 px
+renders in `assets/icons/review/` are the review evidence. The Qt window still draws the
+C++ family until the Rust window loads the files, so the two must stay in step.
+
 ## The count
 
 The family has **55 drawings**. The number counts **drawings**, the ids returned by
