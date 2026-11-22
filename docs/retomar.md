@@ -725,8 +725,10 @@ dos compresores con el diseño corregido; el FRL simplificado y el completo; las
 base editables (3/2, 5/2…), dibujadas como el default de la norma —cuadros iguales, las
 T y los números de puerto— y **con sus etiquetas de puerto movibles** (la designación es
 la de la norma: número en neumática, letra en hidráulica); la OR y la AND; los cilindros con
-amortiguador e imán; los tapones y silenciadores con y sin regulador; y el doble clic con el
-panel de propiedades.
+amortiguador e imán; los tapones y silenciadores con y sin regulador; y el **doble clic
+con el diálogo de configuración** de cada pieza (en la válvula: accionamiento por lado,
+denominación, cuerpo y posiciones, posición inicial). **Corregir**: hoy un clic abre un menú
+en la zona lateral derecha que no corresponde; el diálogo lo reemplaza.
 **Lo mal diseñado no se migra: se descarta**, con la generación nueva del formato y su
 migración (detalle en [capabilities.md](capabilities.md)).
 

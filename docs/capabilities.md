@@ -30,7 +30,7 @@ migrated**, and the catalog and the document take a new generation with its migr
 | The OR and the AND valve | joins two lines with the shuttle (OR) or the two-pressure valve (AND) and watches which one passes air | the solver's invariants for the chosen branch, with its ADR |
 | Cylinders with cushioning and magnet | picks single or double acting and sets the end cushioning and the magnet | the cushioning's reference curve and the sensor tripping at the magnet, with their ADRs |
 | Plugs and silencers, with and without a regulator | fits a plug or a silencer (fixed or regulable) to a port and sees the exhaust restricted | the port closure menu (ADR 0033) and the restricted exhaust in the model |
-| Double click, the property panel | double-clicks a component and edits its values in the panel it opens | the panel's fields, one undo entry per edit and the format's new fields |
+| Double click, the valve's configuration dialog | double-clicks a valve and configures it in the dialog the reference shows — the actuation on each side (spring return, piloted with external supply, pneumatic spring with external supply, muscular effort: mechanical, pneumatic or electric), the component's designation, the valve body (reversible, its positions) and the initial position — and the other components open their own editor the same way | the dialog's fields, one undo entry per edit and the format's new fields. **The current window's flaw is noted**: a single click opens a menu in the right-hand area that does not correspond; it is replaced by this dialog, not by a right-hand inspector |
 
 **Discarded, not migrated:** the legacy definitions with a wrong design (the current
 compressor and any component outside this core) and the ABI's implementation of the
