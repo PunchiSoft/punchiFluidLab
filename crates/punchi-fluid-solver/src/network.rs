@@ -44,6 +44,10 @@ const MAX_SUBSTEPS_PER_CALL: u32 = 500_000;
 /// internal gallery, small enough not to change the circuit and large enough to keep the
 /// explicit integration comfortably stable.
 const PORT_VOLUME: f64 = 2.0e-7;
+/// The shuttle's ball is pushed by a live inlet; below this the inlet is spent.
+const SHUTTLE_LIVE_BAND_PA: f64 = 5_000.0;
+/// Two live inlets this close hold the ball centered, closing both seats.
+const SHUTTLE_EQUAL_BAND_PA: f64 = 2_000.0;
 
 /// Conductance of a hose. A short hose is not the restriction that governs a circuit; the
 /// valve and the throttle are, so a hose conducts an order of magnitude better than the
@@ -1112,7 +1116,12 @@ impl Network {
             // atmosphere (ADR 0029).
             let feed = match element.kind {
                 PressureKind::Shuttle => {
-                    if a >= b {
+                    let live_a = a > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
+                    let live_b = b > self.atmosphere_pa + SHUTTLE_LIVE_BAND_PA;
+                    if live_a && live_b && (a - b).abs() <= SHUTTLE_EQUAL_BAND_PA {
+                        // Both signals push the ball: it centers and closes both seats.
+                        None
+                    } else if a >= b {
                         Some(element.inlet_a)
                     } else {
                         Some(element.inlet_b)
@@ -1132,8 +1141,9 @@ impl Network {
             };
             let volume = self.nodes[element.outlet].volume;
             let Some(feed) = feed else {
-                // The two-pressure valve vents its outlet to atmosphere.
-                if out > self.atmosphere_pa {
+                // The two-pressure valve vents its outlet to atmosphere; the centered
+                // shuttle closes both seats and its outlet stays where it is.
+                if matches!(element.kind, PressureKind::TwoPressure) && out > self.atmosphere_pa {
                     let dm = ((out - self.atmosphere_pa) * volume / gas)
                         .min(self.nodes[element.outlet].mass.max(0.0));
                     if dm > 0.0 {
@@ -3070,6 +3080,49 @@ mod pressure_tests {
             "the rod stayed out at {:.1} of {:.1} mm",
             network.position() * 1000.0,
             stroke * 1000.0
+        );
+    }
+
+    #[test]
+    fn the_shuttle_centers_and_blocks_the_outlet_when_both_inlets_are_alive() {
+        // Two signals at once push the ball to the centre: both seats close and the
+        // outlet 2 is isolated, so the cylinder does not move.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.shuttle"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
+            (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
+            (PortAddress::new(3, "2"), PortAddress::new(4, "1")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("the shuttle chain builds");
+        assert!(network.press_valve_at(0));
+        assert!(network.press_valve_at(1));
+        for _ in 0..100 {
+            network.advance(0.016).expect("accepted");
+        }
+        let inlet_a = network.port_pressure(3, "1a").expect("an inlet");
+        let inlet_b = network.port_pressure(3, "1b").expect("an inlet");
+        assert!(
+            inlet_a > 4.0e5 && inlet_b > 4.0e5,
+            "both inlets are live: {inlet_a:.0} / {inlet_b:.0} Pa"
+        );
+        let outlet = network.port_pressure(3, "2").expect("an outlet");
+        assert!(
+            (outlet - network.atmosphere_pa).abs() < 2_000.0,
+            "the centred ball closed port 2 at {outlet:.0} Pa"
+        );
+        assert!(
+            network.position() < 1e-6,
+            "the cylinder moved with both signals: {:.3} mm",
+            network.position() * 1000.0
         );
     }
 }
