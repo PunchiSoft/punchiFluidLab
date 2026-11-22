@@ -47,6 +47,10 @@ ALLOWED_EDGES=(
     "punchi-fluid-window punchi-fluid-doc"
     "punchi-fluid-window punchi-fluid-draw"
     "punchi-fluid-window punchi-fluid-export"
+    "punchi-fluid-session punchi-fluid-doc"
+    "punchi-fluid-session punchi-fluid-draw"
+    "punchi-fluid-session punchi-fluid-file"
+    "punchi-fluid-ffi punchi-fluid-session"
 )
 
 # `unsafe` lives in the ABI and nowhere else. The one file listed here is where it lives

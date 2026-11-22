@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La sesión sale del ABI — 2026-11-22
+
+- **Nuevo crate `punchi-fluid-session`**: la conversión fichero↔documento (el formato de
+  hoja y el documento vivo) sale de `punchi-fluid-ffi` a un crate propio que el ABI usa y
+  la ventana Rust usará para abrir y guardar. Sin cambio de comportamiento: las 92 pruebas
+  del ABI siguen pasando y el crate lleva dos pruebas de ida y vuelta (un documento nuevo y
+  uno con una colocación).
+- **Grafo**: `session → doc, draw, file`; `ffi` depende de la sesión. La ventana podrá
+  abrir y guardar sin hablar el ABI, y la extracción del estado de edición sigue en el
+  siguiente corte.
+
 ### La ventana Rust mueve la hoja — 2026-11-22
 
 - **La hoja se amplía y se desplaza como en la ventana Qt**: Ctrl+rueda amplía sobre el

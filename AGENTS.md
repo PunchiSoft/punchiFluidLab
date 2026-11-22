@@ -81,6 +81,7 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-check` | design faults a circuit can have before it is run | physics, drawing, UI |
 | `crates/punchi-fluid-export` | standard sheets, title block, the PNG and PDF writers | physics, widgets |
 | `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
+| `crates/punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, and the editor state as it moves | physics, widgets |
 | `crates/punchi-fluid-cli` | headless validate and simulate | UI |
 | `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter (retires with ADR 0035) | physics, the document |
 | `apps/punchi-fluid` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter (ADR 0035) | physics, the document |
@@ -91,9 +92,10 @@ other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalo
 stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
-page reads them from `core`); `ffi` on all of the above, `export` included, because the
-window speaks only the ABI and the ABI is the one place that holds both the document and the
-page it is printed on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
+page reads them from `core`); `session` on `doc`, `draw` and `file` (the sheet format and the live document meet there);
+`ffi` on all of the above, `export` and `session` included, because the window speaks only
+the ABI and the ABI is the one place that holds both the document and the page it is printed
+on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
 `solver`, because it runs the same check and the same model without a window. Nothing in
 Rust depends on a window. During the migration the Qt window depends only on
 `punchi-fluid-ffi` ([ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md)), and the Rust

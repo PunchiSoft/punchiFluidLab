@@ -92,6 +92,7 @@ the point. Free software is how a subject stops being an entrance fee.
 | `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
 | `punchi-fluid-export` | Standard sheets, title block, legend, and the PNG and PDF writers |
 | `punchi-fluid-ffi` | The C ABI the window speaks: the document, the drawing frame, hit tests and export |
+| `punchi-fluid-session` | The document's life between the file and the window: the sheet and document conversion |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
 | `punchi-fluid-cli` | `validate`, `simulate` and `check` without a window |
 | `apps/punchi-fluid-qt` | The window: ribbon, catalog sidebar, sheet, status bar and the desktop's own palette, over the C ABI |

@@ -21,6 +21,7 @@ punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
 punchi-fluid-export = { workspace = true }
 punchi-fluid-file = { workspace = true }
+punchi-fluid-session = { workspace = true }
 punchi-fluid-solver = { workspace = true }
 
 # This crate opts out of the inherited workspace lints on purpose. The workspace sets
