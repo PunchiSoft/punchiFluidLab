@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La ventana corre hasta el cambio — 2026-11-22
+
+- **«Hasta cambio» avanza en pasos de 10 ms hasta que el pistón llega a un tope o cambia
+  la posición de la válvula**, con tope de 60 s simulados: un circuito que no cambia se
+  detiene y lo dice en la barra de estado.
+- **La cinta enciende Paso y Hasta cambio cuando la hoja tiene modelo**, y Pausa/Detener
+  solo mientras corre.
+- Prueba: el circuito de ejemplo extiende el pistón hasta el tope y la ventana lo reporta.
+
 ### Los tubos llevan la presión del modelo — 2026-11-22
 
 - **La hoja colorea cada tubo con la presión que el modelo reporta en su extremo**, como
