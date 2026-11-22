@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### La referencia del propietario, en la skill de simbología — 2026-11-22
+
+- **`fluid-power-symbology` gana el procedimiento de la referencia**: antes de dibujar se
+  pide al propietario una captura del catálogo y del lienzo; sirve para identificar el
+  símbolo, sus puertos y sus partes, nunca para trazar, medir o copiar geometría. Las
+  medidas siguen saliendo de la norma, y el propietario las aprueba.
+- Prueba: `check-docs.sh` (la skill conserva su nombre, su frontmatter y sus enlaces).
+
 ### El elemento de presión, enmendado — 2026-11-22
 
 - **ADR 0039 enmienda la implementación de la ADR 0029**: el shuttle y la válvula de dos
