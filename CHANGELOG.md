@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La bola del shuttle se centra con dos señales — 2026-11-22
+
+- **El shuttle bloquea la salida cuando las dos entradas están vivas e iguales**: la bola
+  se centra, cierra los dos asientos y la salida 2 queda aislada; el cilindro no se mueve.
+  Con una sola entrada sigue pasando la mayor, y al caer las dos ventea (corrección de
+  #202). Bandas: entrada viva > 5 kPa sobre la atmósfera; iguales dentro de 2 kPa.
+- **ADR 0041**: la bola tiene tres asientos (izquierdo, centro, derecho) y el renderizador
+  la moverá con el estado; el símbolo sigue siendo la forma de la norma.
+- Prueba `the_shuttle_centers_and_blocks_the_outlet_when_both_inlets_are_alive`.
+
 ### El shuttle ventea al soltar — 2026-11-22
 
 - **El shuttle sigue la entrada seleccionada al bajar**: cuando las dos entradas caen a
