@@ -5,7 +5,8 @@
 //!
 //! This is the first slice of ADR 0035's phase 3: the window opens at the 1366 × 768 floor,
 //! draws the sheet of a new document and reports the fit and the drawing's own time. The
-//! ribbon, the sidebar and the document's commands arrive in the following slices.
+//! ribbon, the sidebar and the document's commands arrive in the following slices. Colour,
+//! type and motion come from the desktop through `theme`.
 
 use std::time::Instant;
 
@@ -14,10 +15,12 @@ use punchi_fluid_doc::Document;
 use punchi_fluid_export::{Page, TitleBlock, sheet};
 
 mod surface;
+mod theme;
 
 use surface::EguiSurface;
 
 fn main() -> eframe::Result<()> {
+    let theme = theme::Theme::from_desktop();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1366.0, 768.0])
@@ -28,84 +31,26 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "punchi-fluid",
         options,
-        Box::new(|context| {
-            context.egui_ctx.set_theme(egui::ThemePreference::System);
-            install_system_font(&context.egui_ctx)?;
-            Ok(Box::new(Window::new()))
+        Box::new(move |context| {
+            theme::install_font(&context.egui_ctx, theme.font_family())?;
+            theme.apply(&context.egui_ctx);
+            Ok(Box::new(Window::new(theme)))
         }),
     )
 }
 
-/// Installs the desktop's sans-serif face in egui.
-///
-/// The interface rule says colour, size and font come from the desktop, and the toolkit
-/// ships none of them: egui's default fonts are disabled so no font licence travels with the
-/// window. The export crate picks its face the same way, so the window's text and the
-/// printed page agree.
-///
-/// # Errors
-///
-/// Returns an I/O error when the machine has no font database entry that can be read.
-fn install_system_font(context: &egui::Context) -> Result<(), std::io::Error> {
-    let mut database = fontdb::Database::new();
-    database.load_system_fonts();
-    let named = [
-        fontdb::Family::SansSerif,
-        fontdb::Family::Name("DejaVu Sans"),
-        fontdb::Family::Name("Noto Sans"),
-        fontdb::Family::Name("Liberation Sans"),
-    ];
-    let id = database
-        .query(&fontdb::Query {
-            families: &named,
-            weight: fontdb::Weight::NORMAL,
-            style: fontdb::Style::Normal,
-            stretch: fontdb::Stretch::Normal,
-        })
-        .or_else(|| database.faces().next().map(|face| face.id))
-        .ok_or_else(|| std::io::Error::other("no system font is installed"))?;
-    let face = database
-        .face(id)
-        .ok_or_else(|| std::io::Error::other("the system font database has no face"))?;
-    let data = match &face.source {
-        fontdb::Source::Binary(binary) => binary.as_ref().as_ref().to_vec(),
-        fontdb::Source::File(path) => std::fs::read(path)?,
-        fontdb::Source::SharedFile(_path, binary) => binary.as_ref().as_ref().to_vec(),
-    };
-    let name = String::from("system");
-    let mut definitions = egui::FontDefinitions::default();
-    definitions.font_data.insert(
-        name.clone(),
-        std::sync::Arc::new(egui::FontData {
-            font: std::borrow::Cow::Owned(data),
-            index: face.index,
-            tweak: egui::FontTweak::default(),
-        }),
-    );
-    definitions
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(0, name.clone());
-    definitions
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .insert(0, name);
-    context.set_fonts(definitions);
-    Ok(())
-}
-
-/// What the window owns today: the sheet of a new document and the last frame's numbers.
+/// What the window owns today: the sheet of a new document, the desktop's theme and the last
+/// frame's numbers.
 struct Window {
     page: Page,
     block: TitleBlock,
     scale: f32,
     frame_ms: f64,
+    theme: theme::Theme,
 }
 
 impl Window {
-    fn new() -> Self {
+    fn new(theme: theme::Theme) -> Self {
         let document = Document::new();
         let sheet = document.sheet();
         let block = document
@@ -124,6 +69,7 @@ impl Window {
             block,
             scale: 1.0,
             frame_ms: 0.0,
+            theme,
         }
     }
 }
@@ -131,13 +77,15 @@ impl Window {
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         let (width, height) = self.page.size_mm();
+        let ink = self.theme.tokens.ink;
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(format!(
+            ui.label(
+                egui::RichText::new(format!(
                     "hoja {width:.0}×{height:.0} mm · {:.2} px/mm · {:.2} ms de dibujo",
                     self.scale, self.frame_ms
-                ));
-            });
+                ))
+                .color(ink),
+            );
         });
 
         egui::CentralPanel::default().show(context, |ui| {
@@ -162,35 +110,13 @@ impl eframe::App for Window {
 
 #[cfg(test)]
 mod tests {
-    use eframe::egui;
     use punchi_fluid_draw::surface::Recording;
 
-    use super::{Window, install_system_font, sheet};
-
-    #[test]
-    fn the_desktop_font_lays_out_spanish_text() {
-        let context = egui::Context::default();
-        if install_system_font(&context).is_err() {
-            eprintln!("no system font on this machine: the window cannot start here");
-            return;
-        }
-        let mut width = 0.0;
-        let _ = context.run(egui::RawInput::default(), |context| {
-            let galley = context.fonts(|fonts| {
-                fonts.layout_no_wrap(
-                    "áñ".to_owned(),
-                    egui::FontId::proportional(12.0),
-                    egui::Color32::BLACK,
-                )
-            });
-            width = galley.size().x;
-        });
-        assert!(width > 0.0, "the accents must have glyphs");
-    }
+    use super::{Window, sheet, theme};
 
     #[test]
     fn the_sheet_of_a_new_document_draws_into_a_recording() {
-        let window = Window::new();
+        let window = Window::new(theme::Theme::fallback());
         let mut recording = Recording::default();
         sheet::draw(&mut recording, &window.page, &window.block);
         assert!(
