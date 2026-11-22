@@ -1154,9 +1154,11 @@ impl Network {
                     delta[feed] -= dm;
                     delta[element.outlet] += dm;
                 }
-            } else if dm < 0.0 && matches!(element.kind, PressureKind::TwoPressure) {
-                // The double piston lets the outlet fall through the lower inlet; the
-                // shuttle's seat holds it instead.
+            } else if dm < 0.0 {
+                // Both kinds let the outlet fall through the feed: the outlet follows the
+                // selected inlet down and vents through it when both inlets fall. A seat
+                // that held the outlet would trap a single-acting cylinder against its
+                // return spring.
                 let dm = (-dm).min(self.nodes[element.outlet].mass.max(0.0));
                 if dm > 0.0 {
                     delta[element.outlet] -= dm;
@@ -3013,6 +3015,61 @@ mod pressure_tests {
             first.to_bits(),
             second.to_bits(),
             "the same circuit gave two outlets"
+        );
+    }
+
+    #[test]
+    fn the_shuttle_feeds_and_vents_a_single_acting_cylinder() {
+        // The circuit the owner drew: one supply, two 3/2 valves, their working ports to
+        // the two inlets of the shuttle and the shuttle outlet to a single-acting cylinder.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.3_2.spring_return"),
+            part(&catalog, "valve.shuttle"),
+            part(&catalog, "cylinder.single_acting_20_100"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
+            (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
+            (PortAddress::new(3, "2"), PortAddress::new(4, "1")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("the shuttle chain builds");
+        let stroke = network.cylinder().expect("a cylinder").stroke;
+
+        // Pressed, 1a feeds the shuttle, 1b is at atmosphere and the rod goes out.
+        assert!(network.press_valve_at(0));
+        for _ in 0..100 {
+            network.advance(0.016).expect("accepted");
+        }
+        let inlet_b = network.port_pressure(3, "1b").expect("an inlet");
+        assert!((inlet_b - network.atmosphere_pa).abs() < 1_000.0);
+        assert!(
+            network.position() > stroke * 0.5,
+            "the cylinder did not extend: {:.1} of {:.1} mm",
+            network.position() * 1000.0,
+            stroke * 1000.0
+        );
+
+        // Released, both inlets fall and the outlet vents through the selected one, so the
+        // spring returns the rod. A seat that held the air would leave it out.
+        assert!(network.release_valve_at(0));
+        for _ in 0..100 {
+            network.advance(0.016).expect("accepted");
+        }
+        let outlet = network.port_pressure(3, "2").expect("an outlet");
+        assert!(
+            (outlet - network.atmosphere_pa).abs() < 2_000.0,
+            "the shuttle held its outlet at {outlet:.0} Pa"
+        );
+        assert!(
+            network.position() < stroke * 0.1,
+            "the rod stayed out at {:.1} of {:.1} mm",
+            network.position() * 1000.0,
+            stroke * 1000.0
         );
     }
 }
