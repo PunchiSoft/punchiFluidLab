@@ -34,7 +34,10 @@ Numbers, not adjectives. The drawing is checked against this table.
 
 - 300 dpi sheet, print ink:
   `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-300.png`
-  (a 60 mm square, the symbol in a fixed 40 mm box; dark scheme is the next step)
+  (a 60 mm square, the symbol in a fixed 40 mm box)
+- Light and dark captures, fitted to the drawing:
+  `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-light.png --ink light --fit`
+  `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-dark.png --ink dark --fit`
 - Symbol lint: passes
 - Palette legibility at 24–30 px: `<id>-light.png`, `<id>-dark.png`
 
