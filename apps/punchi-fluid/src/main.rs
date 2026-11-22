@@ -23,6 +23,7 @@ mod ribbon;
 mod scene;
 mod sidebar;
 mod sim;
+mod start;
 mod surface;
 mod theme;
 mod view;
@@ -96,6 +97,8 @@ struct Window {
     running: bool,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
+    /// Whether the Inicio page is the screen, not the sheet.
+    start_open: bool,
 }
 
 /// A primary-button drag of the selection.
@@ -148,6 +151,7 @@ impl Window {
             model_revision: 0,
             running: false,
             pressed_valve: None,
+            start_open: true,
         }
     }
 
@@ -560,6 +564,18 @@ impl eframe::App for Window {
             });
 
         egui::CentralPanel::default().show(context, |ui| {
+            if self.start_open {
+                if let Some(index) = start::show(ui) {
+                    let area = self.page.rect();
+                    if let Ok(document) =
+                        punchi_fluid_session::templates::document(index, &self.catalog, area)
+                    {
+                        *self = Window::new(self.theme.clone(), document, None, None);
+                        self.start_open = false;
+                    }
+                }
+                return;
+            }
             let area = ui.available_rect_before_wrap();
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {
