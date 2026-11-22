@@ -68,7 +68,7 @@ line_class = "working"
 # Passage from shuttle ball to central junction
 [[symbol]]
 kind = "line"
-points = [0.375, 0.50, 0.50, 0.50]
+points = [0.283, 0.50, 0.50, 0.50]
 line_class = "working"
 
 # Central junction to right check valve
