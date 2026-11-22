@@ -51,6 +51,27 @@ A picture from Wikimedia Commons, a CAD library or a manual is **only** a remind
 symbols exist; it is never the source of a proportion. Those drawings were made by someone
 else, for their own edition, and copying one would break both the licence and the geometry.
 
+### The owner's reference
+
+Before drawing, ask the owner for a capture of the element in the application they use as a
+reference: the catalog tile and the same element on the canvas. It is an aid to identify the
+symbol, not a source of geometry.
+
+- It **may** settle: which symbol exists, which side each port is on, whether the drawing
+  has a spring, an actuator, a check seat or a double piston, and whether a student reads it
+  at palette size.
+- It **may never** settle: a proportion, an angle, a coordinate, a stroke width or the exact
+  outline of a part. Those come from the requirement written in our words and from our own
+  measures ([docs/symbology.md](../../../docs/symbology.md)), and the review records which
+  clause was checked.
+- Nothing from the capture is traced, measured with a tool or stored in the repository: no
+  image, no crop, no path.
+
+After drawing the symbol by hand, look at the capture again as a reader: if ours cannot be
+told apart from the one in it, the drawing is wrong, and the standard's measures still
+decide the final form. If the capture and the standard disagree, the standard wins; if the
+standard is ambiguous, stop and ask the owner, and leave the review unverified.
+
 ## Standards in force
 
 | Standard | Edition | Governs here |
@@ -82,6 +103,9 @@ disagree, the document wins and this skill is the bug.
   hydraulic symbol may be drawn, but its physics needs a model before it can be claimed.
 
 ## Procedure: changing or adding a symbol
+
+Before step 1, ask the owner for the reference (see *The owner's reference*): it identifies
+the symbol and its ports, and never supplies a measure.
 
 1. **Name the function and the class.** Write the sentence the symbol must let a
    reader say: "pressed, 1 connects to 2; released, 2 connects to 3." If you cannot
@@ -203,6 +227,11 @@ code bug with a test, not a per-file workaround.
 
 ## Gotchas
 
+- **A reference is not a measure.** A capture can say which symbol exists and where its
+  ports sit; it cannot say how long a seat is or how wide a piston is. Tracing it is a
+  licence break and a geometry bug.
+- **The capture does not enter the repository.** No screenshot, crop or path from the
+  owner's reference in a tracked file; `check-docs.sh` fails on a path under `$HOME`.
 - **Position index is counted from the spring end**, not from the left. A spring on the
   right reverses the reading; the test `every_position_shuts_its_blocked_port_inside_its_own_square`
   is the guard.
