@@ -93,10 +93,6 @@ pub enum SolverError {
         /// Positions it declares.
         count: usize,
     },
-
-    /// A definition this build does not simulate yet.
-    #[error("`{0}` is not modelled yet")]
-    UnsupportedBehaviour(String),
 }
 
 /// Solver facade: owns the analysis state and advances the simulation.

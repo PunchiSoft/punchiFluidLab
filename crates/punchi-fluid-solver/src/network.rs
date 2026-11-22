@@ -131,6 +131,15 @@ pub enum PartBehaviour {
     },
 }
 
+/// One passive pressure element, resolved to its three nodes (ADR 0029).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PressureElement {
+    kind: PressureKind,
+    inlet_a: usize,
+    inlet_b: usize,
+    outlet: usize,
+}
+
 /// A part of the circuit: its ports and what it does.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NetworkPart {
@@ -427,6 +436,8 @@ pub struct Network {
     exhaust_sums: Vec<f64>,
     /// Port node to exhaust reading index, for the free vents whose node is the atmosphere.
     exhaust_node: HashMap<usize, usize>,
+    /// Passive pressure elements, resolved to their three nodes (ADR 0029).
+    pressure: Vec<PressureElement>,
 }
 
 impl Network {
@@ -490,17 +501,10 @@ impl Network {
         terminations: &[(PortAddress, PortTermination)],
         pipe_count: usize,
     ) -> Result<Self, SolverError> {
-        // The pressure element's rule is the next slice. Refusing it here is better than
-        // building a network that silently drops the element.
-        if let Some(part) = parts
-            .iter()
-            .find(|part| matches!(part.behaviour, PartBehaviour::Pressure { .. }))
-        {
-            return Err(SolverError::UnsupportedBehaviour(part.id.clone()));
-        }
         let atmosphere_pa = punchi_fluid_core::Pressure::ATMOSPHERE.pascal();
         let temperature_kelvin = punchi_fluid_core::Temperature::STANDARD.kelvin();
         let (mut nodes, port_node) = port_nodes(parts, atmosphere_pa, temperature_kelvin);
+        let pressure = pressure_elements(parts, &port_node)?;
         let supply_pa = attach_supplies(parts, &mut nodes, &port_node);
         let (mut edges, valves, valve_parts) = valve_edges(parts, &port_node)?;
         restriction_edges(parts, &port_node, &mut edges);
@@ -592,6 +596,7 @@ impl Network {
             exhaust_flows,
             exhaust_sums,
             exhaust_node,
+            pressure,
         })
     }
 
@@ -1072,6 +1077,8 @@ impl Network {
             }
         }
 
+        self.apply_pressure(&mut delta, &mut mass_out);
+
         for (node, change) in self.nodes.iter_mut().zip(&delta) {
             if node.reservoir.is_none() {
                 node.mass = (node.mass + change).max(0.0);
@@ -1086,6 +1093,77 @@ impl Network {
         self.exhaust_flows = exhaust_flows;
 
         self.step_pistons(dt);
+    }
+
+    /// Moves each pressure element's outlet toward its rule by transferring mass from the
+    /// inlet that feeds it (ADR 0029, ADR 0039).
+    ///
+    /// The transfer is capped by the mass the inlet holds, so the projection never invents
+    /// gas. The shuttle holds its outlet when both inlets fall (the seats close); the
+    /// two-pressure valve vents it, through the lower inlet or to atmosphere.
+    fn apply_pressure(&self, delta: &mut [f64], mass_out: &mut f64) {
+        let gas = AIR_SPECIFIC_GAS_CONSTANT * self.temperature_kelvin;
+        for element in &self.pressure {
+            let a = self.node_pressure(element.inlet_a);
+            let b = self.node_pressure(element.inlet_b);
+            let out = self.node_pressure(element.outlet);
+            // The shuttle feeds from the higher inlet; the two-pressure valve from the
+            // lower one while both carry pressure, and vents when either falls to
+            // atmosphere (ADR 0029).
+            let feed = match element.kind {
+                PressureKind::Shuttle => {
+                    if a >= b {
+                        Some(element.inlet_a)
+                    } else {
+                        Some(element.inlet_b)
+                    }
+                }
+                PressureKind::TwoPressure => {
+                    if a > self.atmosphere_pa && b > self.atmosphere_pa {
+                        if a <= b {
+                            Some(element.inlet_a)
+                        } else {
+                            Some(element.inlet_b)
+                        }
+                    } else {
+                        None
+                    }
+                }
+            };
+            let volume = self.nodes[element.outlet].volume;
+            let Some(feed) = feed else {
+                // The two-pressure valve vents its outlet to atmosphere.
+                if out > self.atmosphere_pa {
+                    let dm = ((out - self.atmosphere_pa) * volume / gas)
+                        .min(self.nodes[element.outlet].mass.max(0.0));
+                    if dm > 0.0 {
+                        delta[element.outlet] -= dm;
+                        *mass_out += dm;
+                    }
+                }
+                continue;
+            };
+            // Two volumes joined at the element: the mass that equalises them keeps the
+            // projection stable instead of draining one tiny node into the other.
+            let feed_volume = self.nodes[feed].volume;
+            let dm = (self.node_pressure(feed) - out) * (feed_volume * volume)
+                / ((feed_volume + volume) * gas);
+            if dm > 0.0 {
+                let dm = dm.min(self.nodes[feed].mass.max(0.0));
+                if dm > 0.0 {
+                    delta[feed] -= dm;
+                    delta[element.outlet] += dm;
+                }
+            } else if dm < 0.0 && matches!(element.kind, PressureKind::TwoPressure) {
+                // The double piston lets the outlet fall through the lower inlet; the
+                // shuttle's seat holds it instead.
+                let dm = (-dm).min(self.nodes[element.outlet].mass.max(0.0));
+                if dm > 0.0 {
+                    delta[element.outlet] -= dm;
+                    delta[feed] += dm;
+                }
+            }
+        }
     }
 
     fn step_pistons(&mut self, dt: f64) {
@@ -1167,6 +1245,53 @@ fn new_node(nodes: &mut Vec<Node>, atmosphere_pa: f64, temperature_kelvin: f64) 
 
 /// Turns the supply ports into fixed-pressure reservoirs and returns the supply pressure
 /// the drawing colours against.
+fn pressure_elements(
+    parts: &[NetworkPart],
+    port_node: &[HashMap<&str, usize>],
+) -> Result<Vec<PressureElement>, SolverError> {
+    let mut elements = Vec::new();
+    for (index, part) in parts.iter().enumerate() {
+        let PartBehaviour::Pressure { kind } = &part.behaviour else {
+            continue;
+        };
+        let mut inlets = [0_usize; 2];
+        let mut count = 0;
+        let mut outlet = None;
+        for port in &part.ports {
+            let Some(&node) = port_node[index].get(port.id.as_str()) else {
+                continue;
+            };
+            match port.role {
+                PortRole::Supply if count < inlets.len() => {
+                    inlets[count] = node;
+                    count += 1;
+                }
+                PortRole::Working => outlet = Some(node),
+                _ => {}
+            }
+        }
+        let Some(outlet) = outlet else {
+            return Err(SolverError::UnmappedPort {
+                valve: part.id.clone(),
+                port: String::from("2"),
+            });
+        };
+        if count != inlets.len() {
+            return Err(SolverError::UnmappedPort {
+                valve: part.id.clone(),
+                port: String::from("1"),
+            });
+        }
+        elements.push(PressureElement {
+            kind: *kind,
+            inlet_a: inlets[0],
+            inlet_b: inlets[1],
+            outlet,
+        });
+    }
+    Ok(elements)
+}
+
 fn attach_supplies(
     parts: &[NetworkPart],
     nodes: &mut [Node],
@@ -2733,16 +2858,161 @@ mod electrical_tests {
             "the control circuit changed the pressure"
         );
     }
+}
+
+#[cfg(test)]
+mod pressure_tests {
+    use super::tests::build;
+    use super::*;
+    use punchi_fluid_catalog::Catalog;
+
+    fn part(catalog: &Catalog, id: &str) -> NetworkPart {
+        let definition = catalog.get(id).expect("definition");
+        NetworkPart::from_definition(definition).expect("a part")
+    }
+
+    fn supply_at(gauge_bar: f64) -> NetworkPart {
+        NetworkPart {
+            id: format!("supply.test.{gauge_bar}"),
+            ports: vec![PortInfo {
+                id: "1".to_owned(),
+                role: PortRole::Supply,
+            }],
+            behaviour: PartBehaviour::Supply {
+                pressure_pa: gauge_bar * 1.0e5 + punchi_fluid_core::Pressure::ATMOSPHERE.pascal(),
+            },
+        }
+    }
+
+    fn outlet_after(
+        parts: &[NetworkPart],
+        pipes: &[(PortAddress, PortAddress)],
+        element: usize,
+    ) -> f64 {
+        let mut network = build(parts, pipes, &[]).expect("builds");
+        for _ in 0..200 {
+            network.advance(0.001).expect("accepted");
+        }
+        network
+            .port_pressure(element, "2")
+            .expect("the pressure element has an outlet")
+    }
+
+    fn atmosphere() -> f64 {
+        punchi_fluid_core::Pressure::ATMOSPHERE.pascal()
+    }
 
     #[test]
-    fn a_pressure_element_is_refused_until_the_rule_lands() {
-        let catalog = punchi_fluid_catalog::Catalog::builtin();
-        let definition = catalog.get("valve.shuttle").expect("the shuttle exists");
-        let part = NetworkPart::from_definition(definition).expect("a part");
-        let error = Network::build(&[part], &[], &[], 0).expect_err("not modelled yet");
+    fn a_shuttle_passes_the_higher_inlet() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            supply_at(2.0),
+            part(&catalog, "valve.shuttle"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
+        ];
+        let outlet = outlet_after(&parts, &pipes, 2);
         assert!(
-            matches!(error, SolverError::UnsupportedBehaviour(ref id) if id == "valve.shuttle"),
-            "unexpected error: {error:?}"
+            (outlet - (4.0e5 + atmosphere())).abs() < 0.3e5,
+            "the shuttle did not pass the 4 bar inlet: {outlet} Pa"
+        );
+    }
+
+    #[test]
+    fn a_shuttle_passes_its_only_live_inlet() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.shuttle"),
+        ];
+        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1a"))];
+        let outlet = outlet_after(&parts, &pipes, 1);
+        assert!(
+            (outlet - (4.0e5 + atmosphere())).abs() < 0.3e5,
+            "the shuttle did not follow its live inlet: {outlet} Pa"
+        );
+    }
+
+    #[test]
+    fn a_two_pressure_valve_passes_the_lower_inlet() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            supply_at(2.0),
+            part(&catalog, "valve.two_pressure"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
+        ];
+        let outlet = outlet_after(&parts, &pipes, 2);
+        assert!(
+            (outlet - (2.0e5 + atmosphere())).abs() < 0.3e5,
+            "the two-pressure valve did not pass the 2 bar inlet: {outlet} Pa"
+        );
+    }
+
+    #[test]
+    fn a_two_pressure_valve_vents_when_one_inlet_is_at_atmosphere() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "valve.two_pressure"),
+        ];
+        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1a"))];
+        let outlet = outlet_after(&parts, &pipes, 1);
+        assert!(
+            (outlet - atmosphere()).abs() < 0.1e5,
+            "the two-pressure valve did not vent: {outlet} Pa"
+        );
+    }
+
+    #[test]
+    fn a_pressure_element_keeps_the_mass_balance() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            supply_at(2.0),
+            part(&catalog, "valve.two_pressure"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
+        ];
+        let mut network = build(&parts, &pipes, &[]).expect("builds");
+        let initial = network.gas_mass();
+        for _ in 0..100 {
+            network.advance(0.001).expect("accepted");
+        }
+        let expected = initial + network.mass_in() - network.mass_out();
+        let measured = network.gas_mass();
+        assert!(
+            (measured - expected).abs() / expected < 1e-9,
+            "final {measured:e} expected {expected:e}"
+        );
+    }
+
+    #[test]
+    fn a_pressure_element_is_deterministic() {
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            supply_at(2.0),
+            part(&catalog, "valve.shuttle"),
+        ];
+        let pipes = [
+            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
+        ];
+        let first = outlet_after(&parts, &pipes, 2);
+        let second = outlet_after(&parts, &pipes, 2);
+        assert_eq!(
+            first.to_bits(),
+            second.to_bits(),
+            "the same circuit gave two outlets"
         );
     }
 }

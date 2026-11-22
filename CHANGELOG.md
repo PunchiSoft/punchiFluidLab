@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El shuttle sigue la geometría del propietario — 2026-11-22
+
+- **El símbolo del shuttle (OR) se corrige con la geometría del propietario**: cuerpo
+  0,20–0,80, bola con su asiento en V a la izquierda, segundo asiento en V a la derecha
+  conectado al borde, punto central y salida al punto. Se sustituyen los dos triángulos
+  rellenos de la primera versión.
+- Fixture, revisión y capturas regenerados; los puertos y los numerales no cambian.
+
+### El OR/AND se simula — 2026-11-22
+
+- **El solver aplica la restricción por paso de la ADR 0039**: el shuttle alimenta la salida
+  desde la entrada de mayor presión; la válvula de dos presiones, desde la menor mientras
+  ambas llevan presión, y ventea cuando una cae a la atmósfera. La transferencia iguala los
+  dos volúmenes y se limita a la masa disponible: no inventa gas.
+- **Pruebas de referencia**: dos presiones, una, ninguna, balance de masa y determinismo.
+- Con esto F2 queda cubierta en el catálogo y en el modelo.
+
 ### El OR/AND entra en el catálogo — 2026-11-22
 
 - **`Behaviour::Pressure` con sus dos tipos, `shuttle` y `two_pressure`**, y el campo

@@ -1,82 +1,129 @@
+
 # SPDX-FileCopyrightText: 2026 PunchiSoft
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Shuttle valve (OR): the outlet follows the higher of the two inlets.
-#
-# The two inlets carry the numeral 1 and the outlet the numeral 2, as the standard
-# draws them; the ids stay distinct because a pipe, the document and the solver
-# address a port by id. The body, the two check seats and the centre junction are
-# hand-drawn primitives (ADR 0039): the element is a flat symbol, not a position
-# valve, so it declares no `body` for the valve drawer.
+# Shuttle valve (OR)
+# Geometric reconstruction from the supplied reference image.
 
 schema = 3
 id = "valve.shuttle"
 name = "Shuttle valve (OR)"
 name_es = "Válvula selectora (OR)"
 category = "valve"
-summary = "Passes the higher of two pressures to the outlet and closes the other inlet."
+summary = "Selects the higher pressure from two supply inputs."
 
-# The square body and the three stubs to the ports.
+# --------------------------------------------------
+# Main body
+# --------------------------------------------------
+
 [[symbol]]
 kind = "rect"
-points = [0.25, 0.3, 0.5, 0.4]
+points = [0.20, 0.25, 0.60, 0.50]
 line_class = "working"
 
+# --------------------------------------------------
+# External connections
+# --------------------------------------------------
+
+# Left supply connection
 [[symbol]]
 kind = "line"
-points = [0.0, 0.5, 0.25, 0.5]
+points = [0.0, 0.50, 0.20, 0.50]
 line_class = "working"
 
+# Right supply connection
 [[symbol]]
 kind = "line"
-points = [0.75, 0.5, 1.0, 0.5]
+points = [0.80, 0.50, 1.0, 0.50]
 line_class = "working"
 
+# Upper outlet connection
 [[symbol]]
 kind = "line"
-points = [0.5, 0.0, 0.5, 0.3]
+points = [0.50, 0.0, 0.50, 0.50]
 line_class = "working"
 
-# The through path, the two opposing check seats and their centre junction.
+# --------------------------------------------------
+# Internal hydraulic mechanism
+# --------------------------------------------------
+
+# Left horizontal passage
 [[symbol]]
 kind = "line"
-points = [0.25, 0.5, 0.75, 0.5]
+points = [0.20, 0.50, 0.283, 0.50]
 line_class = "working"
 
+# Left check valve seat
 [[symbol]]
-kind = "polygon"
-points = [0.34, 0.42, 0.42, 0.5, 0.34, 0.58]
-filled = true
+kind = "polyline"
+points = [0.375, 0.40, 0.283, 0.50, 0.375, 0.60]
 line_class = "working"
 
+# Shuttle ball
 [[symbol]]
-kind = "polygon"
-points = [0.66, 0.42, 0.58, 0.5, 0.66, 0.58]
-filled = true
+kind = "circle"
+points = [0.35, 0.50, 0.05]
 line_class = "working"
+
+# Passage from shuttle ball to central junction
+[[symbol]]
+kind = "line"
+points = [0.40, 0.50, 0.50, 0.50]
+line_class = "working"
+
+# Central junction to right check valve
+[[symbol]]
+kind = "line"
+points = [0.50, 0.50, 0.72, 0.50]
+line_class = "working"
+
+# Right check valve seat
+[[symbol]]
+kind = "polyline"
+points = [0.63, 0.40, 0.72, 0.50, 0.63, 0.60]
+line_class = "working"
+
+# Passage from the right check to the body edge
+[[symbol]]
+kind = "line"
+points = [0.72, 0.50, 0.80, 0.50]
+line_class = "working"
+
+# --------------------------------------------------
+# Central junction
+# --------------------------------------------------
 
 [[symbol]]
 kind = "circle"
-points = [0.5, 0.5, 0.025]
+points = [0.50, 0.50, 0.022]
 filled = true
 line_class = "working"
+
+# --------------------------------------------------
+# Ports
+# --------------------------------------------------
 
 [[port]]
 id = "1a"
 role = "supply"
-position = [0.0, 0.5]
+position = [0.0, 0.50]
 numeral = "1"
 
 [[port]]
 id = "1b"
 role = "supply"
-position = [1.0, 0.5]
+position = [1.0, 0.50]
 numeral = "1"
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.5, 0.0]
+position = [0.50, 0.0]
+numeral = "2"
+
+# --------------------------------------------------
+# Behaviour
+# --------------------------------------------------
 
 [behaviour]
 type = "pressure"
