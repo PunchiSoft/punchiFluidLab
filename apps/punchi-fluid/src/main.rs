@@ -8,13 +8,18 @@
 //! magnification and the drawing's own time. The sidebar and the document's commands arrive
 //! in the following slices. Colour, type and motion come from the desktop through `theme`.
 
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use eframe::egui;
 use punchi_fluid_doc::Document;
+use punchi_fluid_draw::draw_placed;
+use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_export::{Page, TitleBlock, sheet};
+use punchi_fluid_file::sheet::Sheet;
 
 mod ribbon;
+mod scene;
 mod surface;
 mod theme;
 mod view;
@@ -23,6 +28,21 @@ use surface::EguiSurface;
 
 fn main() -> eframe::Result<()> {
     let theme = theme::Theme::from_desktop();
+    let path = std::env::args().nth(1).map(PathBuf::from);
+    let mut notice = None;
+    let document = match path.as_deref() {
+        Some(path) => match Sheet::read(path)
+            .map_err(|cause| cause.to_string())
+            .and_then(|sheet| punchi_fluid_session::load(&sheet))
+        {
+            Ok(document) => document,
+            Err(cause) => {
+                notice = Some(format!("no se pudo abrir el documento: {cause}"));
+                Document::new()
+            }
+        },
+        None => Document::new(),
+    };
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1366.0, 768.0])
@@ -37,14 +57,18 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
-            Ok(Box::new(Window::new(theme)))
+            Ok(Box::new(Window::new(theme, document, path, notice)))
         }),
     )
 }
 
-/// What the window owns today: the sheet of a new document, the reader's view, the ribbon,
-/// the desktop's theme and the last frame's numbers.
+/// What the window owns today: the document it was given, the sheet it draws, the reader's
+/// view, the ribbon, the desktop's theme and the last frame's numbers.
 struct Window {
+    document: Document,
+    catalog: punchi_fluid_catalog::Catalog,
+    path: Option<PathBuf>,
+    notice: Option<String>,
     page: Page,
     block: TitleBlock,
     view: view::View,
@@ -55,13 +79,15 @@ struct Window {
 }
 
 impl Window {
-    fn new(theme: theme::Theme) -> Self {
-        let document = Document::new();
+    fn new(
+        theme: theme::Theme,
+        document: Document,
+        path: Option<PathBuf>,
+        notice: Option<String>,
+    ) -> Self {
         let sheet = document.sheet();
-        let block = document
-            .circuits()
-            .first()
-            .map_or_else(TitleBlock::default, |circuit| circuit.block.clone());
+        let circuit = document.active_circuit();
+        let block = document.block(circuit).cloned().unwrap_or_default();
         let page = Page {
             paper: sheet.paper,
             orientation: sheet.orientation,
@@ -70,6 +96,10 @@ impl Window {
             parts: None,
         };
         Self {
+            document,
+            catalog: punchi_fluid_catalog::default_catalog(),
+            path,
+            notice,
             page,
             block,
             view: view::View::default(),
@@ -97,10 +127,21 @@ impl eframe::App for Window {
         let last = self.ribbon.last.clone();
         let zoom = self.view.zoom();
         let magnification = self.magnification;
+        let source = self
+            .path
+            .as_deref()
+            .and_then(Path::file_name)
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap_or("sin título");
+        let notice = self
+            .notice
+            .as_deref()
+            .map(|notice| format!(" · {notice}"))
+            .unwrap_or_default();
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
             ui.label(
                 egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last}",
+                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last} · {source}{notice}",
                     zoom * 100.0, self.frame_ms
                 ))
                 .color(ink),
@@ -123,8 +164,17 @@ impl eframe::App for Window {
                     page_rect.min.y * placement.scale,
                 );
             let mut drawing = EguiSurface::new(context, origin, placement.scale);
+            let scene = scene::build(&self.document, self.document.active_circuit());
             let started = Instant::now();
             sheet::draw(&mut drawing, &self.page, &self.block);
+            draw_placed(
+                &mut drawing,
+                &scene.placed,
+                &scene.pipes,
+                &self.catalog,
+                &Ink::print(),
+                &[],
+            );
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let painter = ui.painter().with_clip_rect(ui.max_rect());
             painter.extend(drawing.shapes);
@@ -197,13 +247,14 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
+    use punchi_fluid_doc::Document;
     use punchi_fluid_draw::surface::Recording;
 
     use super::{Window, sheet, theme};
 
     #[test]
     fn the_sheet_of_a_new_document_draws_into_a_recording() {
-        let window = Window::new(theme::Theme::fallback());
+        let window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
         let mut recording = Recording::default();
         sheet::draw(&mut recording, &window.page, &window.block);
         assert!(

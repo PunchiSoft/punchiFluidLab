@@ -66,7 +66,7 @@ fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked 
 | `punchi-fluid-ffi` | the C ABI: one session, one frame, hit tests, layout, export | logic of its own | all of the above |
 | `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, and the editor state as it moves | physics, widgets | `core`, `doc`, `draw`, `file` |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `core`, `file`, `solver`, `catalog`, `check`, `doc`, `draw` |
-| `punchi-fluid-window` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter | physics, the document | `core`, `doc`, `draw`, `export` |
+| `punchi-fluid-window` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter | physics, the document | `core`, `catalog`, `doc`, `draw`, `export`, `file`, `session` |
 
 The Qt window (`apps/punchi-fluid-qt`) is outside Cargo. It owns the ribbon, the sidebar,
 the sheet widget, the status bar, the theme adapter, the icon provider and the QML. It never

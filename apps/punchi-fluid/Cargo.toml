@@ -19,9 +19,12 @@ path = "src/main.rs"
 eframe = { workspace = true }
 egui_extras = { workspace = true }
 fontdb = { workspace = true }
+punchi-fluid-catalog = { workspace = true }
 punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
 punchi-fluid-export = { workspace = true }
+punchi-fluid-file = { workspace = true }
+punchi-fluid-session = { workspace = true }
 
 [dev-dependencies]
 # The headless UI harness WordCraft uses for its ribbon tests.

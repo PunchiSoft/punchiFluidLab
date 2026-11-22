@@ -99,8 +99,8 @@ on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
 `solver`, because it runs the same check and the same model without a window. Nothing in
 Rust depends on a window. During the migration the Qt window depends only on
 `punchi-fluid-ffi` ([ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md)), and the Rust
-window in `apps/punchi-fluid` depends on `core`, `doc`, `draw` and `export` — and, as its
-commands land, on `catalog` and `solver` — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+window in `apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`,
+`catalog` and `file` — and, as its simulation commands land, on `solver` — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
 [ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)). A new dependency direction needs an ADR;
 the `Surface` layer that made `draw` and `export` possible is
 [ADR 0003](docs/adr/0003-one-drawing-two-devices.md). `scripts-dev/check-docs.sh` fails if
