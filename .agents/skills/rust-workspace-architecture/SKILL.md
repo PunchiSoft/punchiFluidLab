@@ -6,7 +6,8 @@ license: GPL-3.0-or-later
 
 # Workspace architecture
 
-The workspace is ten crates plus the Qt window in `apps/punchi-fluid-qt`, with one
+The workspace is eleven crates and, during the migration, two windows: the Qt one in
+`apps/punchi-fluid-qt` and the Rust one in `apps/punchi-fluid`, with one
 allowed dependency graph and exactly three extension points. Both are decisions recorded
 in [docs/adr/](../../../docs/adr/); a new edge or a fourth extension point is an ADR,
 not a refactor.
@@ -23,6 +24,7 @@ catalog, doc, draw ← check
 catalog, draw, solver ← export
 catalog, check, doc, draw, file, solver ← ffi ← apps/punchi-fluid-qt
 core, file, solver ← cli
+core, doc, draw, export ← apps/punchi-fluid
 ```
 
 `catalog` has no internal dependency: the schema is self-contained. `check` reaches
@@ -46,7 +48,8 @@ short form:
 | `punchi-fluid-export` | page geometry, PNG/PDF backends | interaction |
 | `punchi-fluid-ffi` | the C ABI: session, frame, hit test | logic of its own |
 | `punchi-fluid-cli` | headless validate and simulate | UI |
-| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, theme | physics, the document |
+| `apps/punchi-fluid-qt` | the Qt window: ribbon, sidebar, sheet, theme (retires with ADR 0035) | physics, the document |
+| `apps/punchi-fluid` | the Rust window: fixed layout, sheet, ribbon, theme | physics, the document |
 
 ## Procedure: deciding where code goes
 

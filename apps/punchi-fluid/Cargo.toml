@@ -1,0 +1,26 @@
+[package]
+name = "punchi-fluid-window"
+version.workspace = true
+edition.workspace = true
+# The window's graphics stack (eframe 0.32) needs 1.89; the crates keep the workspace
+# floor of 1.85, so the minimum job verifies both separately.
+rust-version = "1.89"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+description = "The window of Punchi Fluid Lab: a fixed layout over the drawing and the document"
+
+[[bin]]
+name = "punchi-fluid"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { workspace = true }
+fontdb = { workspace = true }
+punchi-fluid-doc = { workspace = true }
+punchi-fluid-draw = { workspace = true }
+punchi-fluid-export = { workspace = true }
+
+[lints]
+workspace = true

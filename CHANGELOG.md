@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### La ventana Rust: egui y la primera hoja — 2026-11-22
+
+- **El toolkit es egui** ([ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)): la ventana
+  usa eframe y egui. Los cinco criterios de ADR 0035 quedan medidos: 200 componentes a
+  88–89 fps con 0,67 ms de dibujo y 5,15 ms de teselado, el IME de toolkit, el árbol de
+  accesibilidad (con el nombre del `frame` como deuda de eframe), los 55 iconos SVG y la
+  página impresa idéntica a la del producto (470 089 bytes, tres escritores). Slint se midió
+  y no se elige: 29 fps con texto y 36 sin él en el mismo fotograma.
+- **El workspace gana `apps/punchi-fluid`** (paquete `punchi-fluid-window`, binario
+  `punchi-fluid`): abre a 1366 × 768, dibuja la hoja de un documento nuevo desde
+  `punchi-fluid-export` y muestra el encaje y el tiempo de dibujo en la barra de estado. Sin
+  ABI: enlaza `doc`, `draw` y `export` directamente. La cinta, el panel lateral y los
+  comandos llegan en los siguientes cortes.
+- **La ventana declara Rust 1.89**, porque el árbol de eframe lo exige; los crates del
+  núcleo conservan el suelo de 1.85 y el trabajo de versión mínima verifica los dos. El
+  toolchain fijado (1.98.1) no cambia.
+- **La allowlist de licencias acepta solo BSL-1.0**, la del portapapeles de Windows que
+  arrastra `arboard`; es permisiva y compatible con GPL, y esos crates no se compilan en
+  Linux. **La ventana no empaqueta ninguna fuente**: egui arranca sin fuentes por defecto y
+  la ventana carga la del escritorio al abrirse, como manda la regla de interfaz; no hay
+  licencia de fuente que revisar ni fuente de terceros que distribuir.
+- **La cinta del spike queda como referencia** para las fases siguientes: cinco pestañas,
+  colapso por grupo, galerías, atajos, transporte con estado y pruebas `egui_kittest`.
+
 ### Decisión: la ventana pasa a Rust — 2026-11-21
 
 - **La aplicación será un solo binario Rust.** La [ADR 0035](docs/adr/0035-the-window-is-rust.md)
