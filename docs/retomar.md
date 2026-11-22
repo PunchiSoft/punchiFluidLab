@@ -531,8 +531,10 @@ Resumen; el detalle está en [ui-ux.md](ui-ux.md).
 
 ## 11. Qué se hace a continuación
 
-El orden histórico **M1 → M2 → M1.5 → M3 → M4** se cumplió. Lo que manda hoy es el orden
-de entrega de [next-steps.md](next-steps.md): **P1.7, P1.8, P2.1 y P2.2 entregados**,
+El orden histórico **M1 → M2 → M1.5 → M3 → M4** se cumplió. La migración a la ventana Rust
+(ADR 0035) tiene su estado y su cola propios en la sección 14 de este documento. Lo que
+manda hoy en el producto es el orden de entrega de [next-steps.md](next-steps.md):
+**P1.7, P1.8, P2.1 y P2.2 entregados**,
 P3 edición restante, P4 lista de piezas y SVG, P5–P6 bibliotecas
 eléctrica/digital/GRAFCET, F7 material didáctico y F8 1.0.
 
@@ -660,3 +662,40 @@ Y añade el hito que quieras empezar:
 - `Empezamos P3: el resto de la edición de §4.2.`
 - `Antes de nada, cierra la revisión a 300 dpi de los símbolos.`
 - `Antes de nada, añade el panel de exportación que falta: márgenes, tamaño personalizado y resolución.`
+
+---
+
+## 14. La ventana Rust (ADR 0035): en qué va y qué falta
+
+La migración a una ventana Rust sin ABI ni Qt ([ADR 0035](adr/0035-the-window-is-rust.md),
+[ADR 0036](adr/0036-the-toolkit-is-egui.md)) avanzó en dieciocho cortes el 2026-11-22, todos
+en `CHANGELOG.md`; `main` está en `5da5f56`. Lo que la ventana Rust ya hace:
+
+- **El armazón fijo**: cinta de cinco pestañas con sus iconos, panel del catálogo (búsqueda,
+  categorías plegables, azulejos con el símbolo de su definición y añadir a la hoja), hoja y
+  barra de estado; tema y fuente del escritorio; zoom y desplazamiento.
+- **Documento**: abrir un `.pfluid` y guardar; el documento y el diagrama salen de
+  `punchi-fluid-session`.
+- **Edición**: selección múltiple (Mayús, Ctrl+A), mover, borrar, girar, reflejar, alinear,
+  duplicar, copiar/pegar/cortar y deshacer/rehacer.
+- **Simulación**: el `Model` de la sesión, Iniciar/Pausa/Paso/Detener, válvulas accionables
+  con el ratón y la hoja dibujando la posición de las válvulas, la extensión del cilindro,
+  las lecturas y la presión de cada tubo.
+
+**Lo que falta, en orden** (los detalles en [next-steps.md](next-steps.md)):
+
+1. Fotograma vivo completo: pulsos de flujo y chorros de escape, control eléctrico (relés,
+   lámparas, contactos), registradores y «Hasta cambio».
+2. Edición restante: dibujar tuberías puerto a puerto, seleccionar tubos, editar
+   propiedades, repartir (comando en el documento) y orientación de página.
+3. Documento: Inicio, Abrir/Guardar como/Nuevo con diálogo, recientes, aviso de cambios sin
+   guardar, circuitos y pestañas.
+4. Tema (portal `color-scheme` en caliente), accesibilidad/IME y los checks Rust
+   equivalentes a `--check-theme`/`--check-qml`/`--check-icons`/`--check-layout`/`--selftest`.
+5. Exportar desde la ventana (PNG/PDF/SVG), cajetín y página editables, piezas e impresión.
+6. Fase 5: mover el job `window` de CI a la ventana Rust, retirar `punchi-fluid-ffi` y
+   `apps/punchi-fluid-qt`, empaquetado y documentación.
+
+La **simbología** (correcciones de forma y revisión de 300 dpi) y la **física del tubo**
+(ADR 0037, `proposed`, esperando la fuente de la tabla) quedan para la pasada final, como se
+acordó: primero se termina la conversión.
