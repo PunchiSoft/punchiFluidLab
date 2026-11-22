@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La ventana copia, pega y corta — 2026-11-22
+
+- **Portapapeles de la ventana**: Copiar (Ctrl+C y la cinta) guarda la selección; Pegar
+  (Ctrl+V) la coloca desplazada 10 mm **como una sola operación de deshacer**
+  (`Document::place_many`) y selecciona las copias; Cortar (Ctrl+X) copia y borra.
+- **La cinta enciende Copiar con selección y Pegar solo con portapapeles lleno**, y siguen
+  apagados Repartir y la orientación hasta que existan.
+- **Pruebas**: pegar es un paso de historial y el deshacer quita lo pegado; cortar borra y
+  el pegar posterior repone, deshaciéndolo en un paso; el documento gana `place_many` con
+  su prueba de un solo deshacer.
+
 ### La selección es múltiple y se alinea y duplica — 2026-11-22
 
 - **Mayús+clic añade o quita de la selección; Ctrl+A selecciona todo el circuito.** El

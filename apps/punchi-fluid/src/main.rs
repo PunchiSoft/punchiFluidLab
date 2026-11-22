@@ -85,6 +85,8 @@ struct Window {
     /// The drag in progress: the pointer's press, the selection's start centres and the
     /// millimetres it has moved. The drawing applies the offset live; the release commits it.
     drag: Option<Drag>,
+    /// The window's clipboard: the placements cut or copied, ready to paste.
+    clipboard: Vec<Placement>,
 }
 
 /// A primary-button drag of the selection.
@@ -132,6 +134,7 @@ impl Window {
             sidebar: sidebar::Sidebar::new(),
             selected: Vec::new(),
             drag: None,
+            clipboard: Vec::new(),
         }
     }
 
@@ -228,6 +231,43 @@ impl Window {
         }
     }
 
+    /// Copies the selection into the window's clipboard.
+    fn copy_selected(&mut self) {
+        self.clipboard = self
+            .selected
+            .iter()
+            .filter_map(|index| self.document.placements().get(*index).cloned())
+            .collect();
+        let count = self.clipboard.len();
+        if count > 0 {
+            self.notice = Some(format!("copiadas {count}"));
+        }
+    }
+
+    /// Pastes the clipboard a little displaced, as one undo entry, and selects the copies.
+    fn paste(&mut self) {
+        if self.clipboard.is_empty() {
+            return;
+        }
+        let copies: Vec<Placement> = self
+            .clipboard
+            .iter_mut()
+            .map(|placement| {
+                placement.centre = Pt::new(placement.centre.x + 10.0, placement.centre.y + 10.0);
+                placement.clone()
+            })
+            .collect();
+        self.selected = self.document.place_many(copies);
+        let count = self.selected.len();
+        self.notice = Some(format!("pegadas {count}"));
+    }
+
+    /// Cuts the selection: copies it and removes it as one undo entry.
+    fn cut_selected(&mut self) {
+        self.copy_selected();
+        self.remove_selected();
+    }
+
     /// Ends a drag: one undo entry for the whole gesture, never one per frame.
     fn commit_drag(&mut self, scale: f32, now: egui::Pos2) {
         let Some(drag) = self.drag.take() else {
@@ -304,6 +344,8 @@ impl Window {
             "Girar" => self.rotate_selected(),
             "Reflejar" => self.reflect_selected(),
             "Duplicar" => self.duplicate_selected(),
+            "Copiar" => self.copy_selected(),
+            "Pegar" => self.paste(),
             "Izquierda" => self.align_selected(Align::Left),
             "Derecha" => self.align_selected(Align::Right),
             "Arriba" => self.align_selected(Align::Top),
@@ -340,7 +382,17 @@ impl Window {
         if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::D)) {
             self.duplicate_selected();
         }
+        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::C)) {
+            self.copy_selected();
+        }
+        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::V)) {
+            self.paste();
+        }
+        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::X)) {
+            self.cut_selected();
+        }
         self.ribbon.savable = self.path.is_some();
+        self.ribbon.has_clipboard = !self.clipboard.is_empty();
         self.ribbon.selected = self.selected.len();
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();

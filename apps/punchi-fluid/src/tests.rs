@@ -73,6 +73,52 @@ fn duplicating_the_selection_is_one_undo_step() {
 }
 
 #[test]
+fn copying_and_pasting_is_one_undo_step() {
+    let mut document = Document::new();
+    document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(60.0, 60.0),
+        20.0,
+        20.0,
+    ));
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    let _ = window.select_at(Pt::new(60.0, 60.0), false);
+    window.copy_selected();
+    window.paste();
+    assert_eq!(window.document.placements().len(), 2);
+    assert_eq!(window.selected, vec![1]);
+    window.undo();
+    assert_eq!(
+        window.document.placements().len(),
+        1,
+        "one undo removes the paste"
+    );
+}
+
+#[test]
+fn cutting_removes_the_selection_and_the_paste_brings_it_back() {
+    let mut document = Document::new();
+    document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(60.0, 60.0),
+        20.0,
+        20.0,
+    ));
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    let _ = window.select_at(Pt::new(60.0, 60.0), false);
+    window.cut_selected();
+    assert!(window.document.placements().is_empty());
+    assert!(!window.clipboard.is_empty(), "the cut keeps the clipboard");
+    window.paste();
+    assert_eq!(window.document.placements().len(), 1);
+    window.undo();
+    assert!(
+        window.document.placements().is_empty(),
+        "undo takes the paste back to the cut"
+    );
+}
+
+#[test]
 fn aligning_the_selection_uses_the_furthest_edge() {
     let mut document = Document::new();
     document.place(Placement::new(

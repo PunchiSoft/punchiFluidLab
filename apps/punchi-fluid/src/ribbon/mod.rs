@@ -62,6 +62,8 @@ pub struct Ribbon {
     /// How many placements are selected; the window sets it every frame, so a command can
     /// ask for one, two (align) or the clipboard's own rules.
     pub selected: usize,
+    /// Whether the window's clipboard holds placements; the window sets it every frame.
+    pub has_clipboard: bool,
     /// Whether the document has something to undo or redo; the window sets both every frame.
     pub can_undo: bool,
     pub can_redo: bool,
@@ -79,6 +81,7 @@ impl Ribbon {
             last: String::from("—"),
             savable: false,
             selected: 0,
+            has_clipboard: false,
             can_undo: false,
             can_redo: false,
             pending: None,
@@ -105,12 +108,13 @@ impl Ribbon {
             "Iniciar" => !self.running,
             "Pausa" | "Paso" | "Hasta cambio" | "Detener" => self.running,
             "Guardar" => self.savable,
-            "Borrar" | "Girar" | "Reflejar" | "Duplicar" => self.selected >= 1,
+            "Borrar" | "Girar" | "Reflejar" | "Duplicar" | "Copiar" => self.selected >= 1,
+            "Pegar" => self.has_clipboard,
             "Izquierda" | "Derecha" | "Arriba" | "Abajo" | "Puertos" => self.selected >= 2,
             "Deshacer" => self.can_undo,
             "Rehacer" => self.can_redo,
-            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Copiar" | "Pegar" | "Horizontal"
-            | "Vertical" | "Apaisado" => false,
+            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Horizontal" | "Vertical"
+            | "Apaisado" => false,
             _ => true,
         }
     }
