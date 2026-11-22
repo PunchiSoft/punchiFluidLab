@@ -144,15 +144,16 @@ tooling, never a runtime dependency).
 - Symbols follow **ISO 1219-1:2012**, in the diagram conventions of ISO 1219-2:2012
   and ISO 1219-3:2016. The contract, the guarantees and the review checklist are in
   [docs/symbology.md](docs/symbology.md).
-- **Never trace or copy** a symbol from another program, a screenshot, a manual or the
-  standard itself. Geometry is written by hand to conform, and the review records
-  which requirement was checked.
+- **Never copy material from another program or its manual.** The standard's symbols are
+  normative and identical in every application: a reference of the standard may be used to
+  reconstruct one ([ADR 0040](docs/adr/0040-the-standard-is-the-reference.md)), reading its
+  measures; the standard's figures and text never enter the repository, the geometry is
+  written as our TOML, and the review records the clause, the measures and the reference.
 - **The symbols are normative, not ours.** They are the standard's, one form in every
   application: no variant or transformation of a symbol of ours, and no change based on a
-  reference application, a screenshot or a capture. A reference may only say which symbol
-  exists; the clause and the measures come from the standard. The sheet's connection points
-  are the diagram's rendering, not a symbol variant; the library panel shows the symbol
-  without them.
+  reference of another program. A reference of the standard may give the form and the
+  measures (ADR 0040). The sheet's connection points are the diagram's rendering, not a
+  symbol variant; the library panel shows the symbol without them.
 - A symbol change needs a **conformance review**: the automated `symbol lint` plus the
   manual checklist, with light/dark screenshots attached to the pull request.
 - Normative details are not negotiable for taste: box proportions, arrow direction,
@@ -183,7 +184,9 @@ tooling, never a runtime dependency).
   the data ([.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md)).
 - No telemetry, no network at runtime, no shell-outs.
 - `assets/` may only contain files whose licence and origin are recorded; ISO
-  symbols are drawn from the standard, never traced from another program.
+  symbols are drawn from the standard, and a reference of the standard may guide the
+  reconstruction, but no figure or text of the standard or of another program enters
+  `assets/`.
 - Catalog files are untrusted input too: they are parsed with unknown keys rejected,
   every number is range-checked, and no file can make the loader allocate or loop
   beyond a bound.

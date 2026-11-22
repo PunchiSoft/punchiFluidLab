@@ -10,10 +10,10 @@ A schematic that is almost right is worse than one that is obviously a sketch: i
 misleads a reader who trusts it. This skill is the procedure for changing a symbol
 without breaking that trust.
 
-**Hard rule: never trace or copy a symbol** from another program, a screenshot, a
-manual, a datasheet or the standard itself. Geometry is written by hand to conform,
-and the pull request states which requirement was checked. The normative text is
-copyrighted; this repository records *our* engineering contract, not the standard.
+**Hard rule: never copy material from another program.** A reference of the standard is
+the symbol's own definition, one form in every application; [ADR 0040](../../../docs/adr/0040-the-standard-is-the-reference.md)
+allows reconstructing from it and reading its measures. The standard's figures and text are
+never stored: the repository keeps *our* TOML, the fixture, our captures and the review.
 
 ### The symbols are normative, not ours to change
 
@@ -51,21 +51,18 @@ A picture from Wikimedia Commons, a CAD library or a manual is **only** a remind
 symbols exist; it is never the source of a proportion. Those drawings were made by someone
 else, for their own edition, and copying one would break both the licence and the geometry.
 
-### The owner's reference
+### The standard's reference
 
-Before drawing, ask the owner for a capture of the element in the application they use as a
-reference: the catalog tile and the same element on the canvas. It is an aid to identify the
-symbol, not a source of geometry.
+Before drawing, ask the owner for a capture of the symbol **as the standard defines it**. It
+is the object the project implements, and ADR 0040 allows reading its form and its measures.
 
 - It **may** settle: which symbol exists, which side each port is on, whether the drawing
-  has a spring, an actuator, a check seat or a double piston, and whether a student reads it
-  at palette size.
-- It **may never** settle: a proportion, an angle, a coordinate, a stroke width or the exact
-  outline of a part. Those come from the requirement written in our words and from our own
-  measures ([docs/symbology.md](../../../docs/symbology.md)), and the review records which
-  clause was checked.
-- Nothing from the capture is traced, measured with a tool or stored in the repository: no
-  image, no crop, no path.
+  has a spring, an actuator, a check seat or a double piston, the proportions, the positions
+  and the angles, and whether a student reads it at palette size.
+- It **may never** be material from another program: no capture of another application, its
+  manual or its library drives the reconstruction.
+- Nothing from the reference is stored: no image, no crop, no path. The TOML, the fixture,
+  the captures from our renderer and the review are what the repository keeps.
 
 After drawing the symbol by hand, look at the capture again as a reader: if ours cannot be
 told apart from the one in it, the drawing is wrong, and the standard's measures still
@@ -112,7 +109,8 @@ the symbol and its ports, and never supplies a measure.
    write it, the symbol is not understood yet.
 2. **Collect the normative requirements** for that class from
    [docs/symbology.md](../../../docs/symbology.md) and the checklists below. Read the
-   standard itself when you have access; do not copy its figures.
+   standard's requirements and, when you have its symbol, its measures; its figures and
+   text stay out of the repository.
 3. **Check the existing definition** in `assets/catalog/`. Copying the closest file to
    the user catalog and changing its numbers is the supported path
    ([assets/catalog/README.md](../../../assets/catalog/README.md)).

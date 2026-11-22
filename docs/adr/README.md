@@ -51,6 +51,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0037](0037-the-tube-is-a-restriction-with-its-own-characteristic.md) | The tube is a restriction, and its model needs a measured characteristic | proposed | 2026-11-21 |
 | [0038](0038-a-port-closure-is-a-chain.md) | A port closure is a chain: the regulator and the silencer in series | proposed | 2026-11-22 |
 | [0039](0039-the-pressure-element-is-flat-and-constrained.md) | The pressure element is a flat symbol and a per-step constraint | proposed | 2026-11-22 |
+| [0040](0040-the-standard-is-the-reference.md) | The standard's symbols may be reconstructed from its references | proposed | 2026-11-22 |
 
 ## When a decision needs an ADR
 

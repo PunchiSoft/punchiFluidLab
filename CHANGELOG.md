@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La referencia de la norma, permitida — 2026-11-22
+
+- **ADR 0040 enmienda la regla de contenido**: una referencia de la norma —no de otro
+  programa— puede usarse para reconstruir un símbolo y leer sus medidas; las figuras y el
+  texto de la norma no entran en el repositorio, la geometría se escribe como nuestro TOML
+  y la revisión anota la cláusula, las medidas y la referencia. El material de otro programa
+  sigue prohibido.
+- **`AGENTS.md`, `symbology.md` y la skill de simbología** distinguen los dos casos. Sin
+  código todavía: la decisión habilita la skill de reconstrucción.
+
 ### El shuttle sigue la geometría del propietario — 2026-11-22
 
 - **El símbolo del shuttle (OR) se corrige con la geometría del propietario**: cuerpo
