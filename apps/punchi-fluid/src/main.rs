@@ -12,14 +12,16 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use eframe::egui;
-use punchi_fluid_doc::{Document, Turn};
+use punchi_fluid_catalog::Kinematics;
+use punchi_fluid_doc::{Document, Placement, Turn};
 use punchi_fluid_draw::symbol::Ink;
-use punchi_fluid_draw::{Pt, Rect, draw_placed};
+use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_placed};
 use punchi_fluid_export::{Page, TitleBlock, sheet};
 use punchi_fluid_file::sheet::Sheet;
 
 mod ribbon;
 mod scene;
+mod sidebar;
 mod surface;
 mod theme;
 mod view;
@@ -76,6 +78,8 @@ struct Window {
     frame_ms: f64,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
+    /// The catalog palette: the third region, with its search state.
+    sidebar: sidebar::Sidebar,
     /// The placements the reader selected, as indices into the document.
     selected: Vec<usize>,
     /// The drag in progress: the pointer's press, the selection's start centres and the
@@ -92,6 +96,9 @@ struct Drag {
 
 /// How far beside its edge a placement still accepts the click, in millimetres.
 const HIT_SLACK: f32 = 1.0;
+
+/// The palette's width: 18 grid units, the width the interface specification asks for.
+const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
     fn new(
@@ -122,9 +129,31 @@ impl Window {
             frame_ms: 0.0,
             theme,
             ribbon: ribbon::Ribbon::new(),
+            sidebar: sidebar::Sidebar::new(),
             selected: Vec::new(),
             drag: None,
         }
+    }
+
+    /// Places a catalog entry at the centre of the sheet, as one undo entry, and selects
+    /// it. The box is the canonical one, or the actuator's wider barrel box.
+    fn add_component(&mut self, catalog_id: &str) {
+        let Some(definition) = self.catalog.get(catalog_id) else {
+            self.notice = Some(format!("no está en el catálogo: {catalog_id}"));
+            return;
+        };
+        let (width, height) = if definition.kinematics == Kinematics::LinearActuator {
+            (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)
+        } else {
+            (SYMBOL_BOX_MM, SYMBOL_BOX_MM)
+        };
+        let centre = self.page.rect().center();
+        let index = self
+            .document
+            .place(Placement::new(catalog_id, centre, width, height));
+        self.selected = vec![index];
+        let name = definition.name_es.as_deref().unwrap_or(&definition.name);
+        self.notice = Some(format!("añadida {name}"));
     }
 
     /// The placement under `point` in the active circuit, the one on top first.
@@ -243,6 +272,9 @@ impl Window {
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Y)) {
             self.redo();
         }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::F)) {
+            self.sidebar.focus_search = true;
+        }
         self.ribbon.savable = self.path.is_some();
         self.ribbon.selection = !self.selected.is_empty();
         self.ribbon.can_undo = self.document.can_undo();
@@ -305,6 +337,20 @@ impl eframe::App for Window {
                 .color(ink),
             );
         });
+
+        egui::SidePanel::left("catalog")
+            .exact_width(SIDEBAR_WIDTH)
+            .resizable(false)
+            .frame(
+                egui::Frame::default()
+                    .fill(self.theme.tokens.panel)
+                    .inner_margin(egui::Margin::symmetric(6, 0)),
+            )
+            .show(context, |ui| {
+                if let Some(catalog_id) = self.sidebar.show(ui, &self.theme.tokens, &self.catalog) {
+                    self.add_component(&catalog_id);
+                }
+            });
 
         egui::CentralPanel::default().show(context, |ui| {
             let area = ui.available_rect_before_wrap();
@@ -525,6 +571,20 @@ mod tests {
         assert!((moved.y - 90.0).abs() < 0.01);
         assert!(window.document.can_undo(), "one drag, one undo entry");
         assert!(window.drag.is_none());
+    }
+
+    #[test]
+    fn adding_a_component_places_it_at_the_sheet_centre_as_one_undo_step() {
+        let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+        let centre = window.page.rect().center();
+        window.add_component("valve.3_2.spring_return");
+        assert_eq!(window.document.placements().len(), 1);
+        let placed = window.document.placements()[0].centre;
+        assert!((placed.x - centre.x).abs() < 0.01);
+        assert!((placed.y - centre.y).abs() < 0.01);
+        assert_eq!(window.selected, vec![0]);
+        window.undo();
+        assert!(window.document.placements().is_empty());
     }
 
     #[test]
