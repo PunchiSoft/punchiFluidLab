@@ -91,6 +91,11 @@ rules. None of their text is vendored; only the reference is recorded.
   and [OpenSSF Scorecard](https://github.com/ossf/scorecard) — CI and supply chain.
 - ISO 1219-1:2012, ISO 1219-2:2012, ISO 1219-3:2016 — symbology. Read the standard; do
   not reproduce it.
+- [Emil Kowalski's *Animations on the Web*](https://animations.dev/), through
+  [vercel-labs/open-agents `web-animation-design`](https://github.com/vercel-labs/open-agents/blob/main/.agents/skills/web-animation-design/SKILL.md)
+  — when an interface should move and when it should not. Only the criteria were adapted;
+  the duration and the curve are this project's theme and [Motion](../../docs/ui-ux.md#motion)
+  contract, not the course's.
 
 Adjacent public collections worth reading for a second opinion (not dependencies, and not
 copied here): [morganlinton/BeautifulRust](https://github.com/morganlinton/BeautifulRust)

@@ -51,6 +51,7 @@ link fails the check.
 |---|---|---|---|
 | A new control | [Visual language](../../../docs/ui-ux.md#visual-language); [The window adapts](../../../docs/ui-ux.md#22-the-window-adapts) | `--check-theme`, `--check-qml`, `--check-layout`, `--selftest` | light/dark capture; the manual checklist |
 | A token or theme change | [Visual language](../../../docs/ui-ux.md#visual-language); [theme.cpp](../../../apps/punchi-fluid-qt/src/theme.cpp) (the names) | `--check-theme`, `--check-layout` | the contrast line; the manual unit, motion and no-literal checks |
+| A motion change | [Motion](../../../docs/ui-ux.md#motion); [theme.rs](../../../apps/punchi-fluid/src/theme.rs) (the clock; the Qt adapter retires with ADR 0035) | `--check-theme` (prints `motionMs`); the frame measurement at 200 components | the capture at rest in both themes; the reduced-motion test; the measurement note |
 | A new icon | [ADR 0028](../../../docs/adr/0028-the-ribbon-draws-its-own-icons.md); [actionicons.cpp](../../../apps/punchi-fluid-qt/src/actionicons.cpp); P-033 | `--check-icons`; `--icon-sheet <file> --theme light` and `--icon-sheet <file> --theme dark` | the rendered sheet; the small-size reading |
 | A ribbon change | [The ribbon](../../../docs/ui-ux.md#1-ribbon-top); the P-028 rule it records | `--check-layout`, `--selftest` | the width captures |
 | A layout change | [The window adapts](../../../docs/ui-ux.md#22-the-window-adapts); [qt-adaptive-layout](../qt-adaptive-layout/SKILL.md) | `--check-layout`, `--check-qml` | the size captures |
@@ -88,6 +89,8 @@ status proves nothing.
 - no widget holds a literal colour, size, radius or motion value; the token is used and the
   accent follows the rule in [Visual language](../../../docs/ui-ux.md#visual-language);
 - unit and motion are the theme's, not a literal; `--check-theme` only asserts the contrast;
+- the motion follows the intent table in [Motion](../../../docs/ui-ux.md#motion), and a
+  document command still changes in the frame it was issued;
 - every state exists (normal, hover, pressed, disabled, checked) and none is colour-only;
 - the control is keyboard reachable and exposes an accessible name;
 - the icon reads at the small render size and stands for one concept;
@@ -98,6 +101,7 @@ The references carry the detail for each row:
 
 - [a control](references/controls.md);
 - [a token or theme change](references/tokens.md);
+- [a motion change](references/motion.md);
 - [an icon](references/icons.md);
 - [the ribbon](references/ribbon.md);
 - [the review](references/review.md).
@@ -111,6 +115,9 @@ The references carry the detail for each row:
   the fragment now; carry the rename into every link in the same change.
 - **`--check-theme` asserts contrast only.** It prints the unit and the motion values; a
   green run does not prove them.
+- **The token is the duration; the curve is the intent table's.** A new curve, a spring, a
+  bounce or a faster exit is a contract change in `docs/ui-ux.md`, never a literal in a
+  widget.
 - **A configured build is not the same as a checked window.** Without
   `apps/punchi-fluid-qt/build`, `check.sh` skips the window and says so on stderr.
 - **`--icon-sheet` is not a gate.** It is a manual render used to look at the family; the
