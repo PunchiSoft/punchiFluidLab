@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### El shuttle ventea al soltar — 2026-11-22
+
+- **El shuttle sigue la entrada seleccionada al bajar**: cuando las dos entradas caen a
+  atmósfera, la salida ventea por la entrada que estaba alimentando en vez de quedar
+  retenida; el cilindro de simple efecto vuelve con su muelle. La válvula de dos presiones
+  mantiene su venteo por la entrada menor. Se corrige la frase del asiento retenido de la
+  ADR 0039 (sigue `proposed`).
+- Prueba de referencia `the_shuttle_feeds_and_vents_a_single_acting_cylinder` (extiende y
+  vuelve) además de las de presión.
+
 ### La referencia del propietario, permitida — 2026-11-22
 
 - **ADR 0040 enmienda la regla de contenido**: el propietario es la autoridad del símbolo

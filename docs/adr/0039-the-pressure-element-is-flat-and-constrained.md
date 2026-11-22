@@ -43,7 +43,8 @@ its implementation sentences do not hold against the code:
   - the **two-pressure** valve takes from the lower inlet while both are above atmosphere,
     and vents the outlet to atmosphere when either inlet falls to it;
   - the transfer is capped by the mass the inlet holds, so no mass is invented;
-  - a check seat holds the outlet when it is above the rule, and the circuit consumes it.
+  - the outlet follows the selected inlet down and vents through it when both inlets fall;
+    the circuit consumes the air.
 
   The element stores no state, allocates nothing in the step and stays deterministic.
 - **The reference tests** cover two pressures (the shuttle picks the higher, the
