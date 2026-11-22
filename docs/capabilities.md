@@ -15,6 +15,31 @@ core with the live scene; the entries below are its target until phase 5 retires
 app. The migration's state and remaining queue are in [next-steps.md](next-steps.md) and in
 section 14 of [retomar.md](retomar.md).
 
+## The essential core (owner decision, 2026-11-22)
+
+The product's core is this set of components, built in the Rust window from the catalog and
+the solver. Nothing here is a port of the ABI: **what is badly designed is discarded, not
+migrated**, and the catalog and the document take a new generation with its migration.
+
+| Capability | What the student does | What proves it |
+|---|---|---|
+| The air supply and the two compressors | places the compressed-air source or a compressor (both types, with the corrected symbol) and reads the pressure it holds | the catalog lint, the source pressure in the model, and the conformance review of the corrected symbol |
+| The FRL, simplified and complete | places the simplified unit (filter and regulator) or the complete one (with lubricator) and adjusts the regulated pressure | the regulated pressure and the lubricator's restriction in the model, with the reference of each |
+| Bare, editable valves | places a 3/2, a 5/2 or another valve **in its base form** (no return, no actuation) and edits its parameters | the catalog variants, the property panel and one undo entry per edit |
+| The OR and the AND valve | joins two lines with the shuttle (OR) or the two-pressure valve (AND) and watches which one passes air | the solver's invariants for the chosen branch, with its ADR |
+| Cylinders with cushioning and magnet | picks single or double acting and sets the end cushioning and the magnet | the cushioning's reference curve and the sensor tripping at the magnet, with their ADRs |
+| Plugs and silencers, with and without a regulator | fits a plug or a silencer (fixed or regulable) to a port and sees the exhaust restricted | the port closure menu (ADR 0033) and the restricted exhaust in the model |
+| Double click, the property panel | double-clicks a component and edits its values in the panel it opens | the panel's fields, one undo entry per edit and the format's new fields |
+
+**Discarded, not migrated:** the legacy definitions with a wrong design (the current
+compressor and any component outside this core) and the ABI's implementation of the
+electrical control, the recorders and the rest of the old content. A file that names a
+retired definition is refused or marked as unverified, never guessed.
+
+**Order:** the capacities and the catalog schema; the solver (OR, AND, cushioning, the
+complete FRL); the property panel; the corrected symbol set and its review; then what is
+left of the shell (pipes, the document, the theme and accessibility, the export) and phase 5.
+
 ## The gate
 
 A capability starts only when it is written down in this file: what a student must be able

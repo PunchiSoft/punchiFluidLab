@@ -215,13 +215,24 @@ instruments' readings and the hoses' pressure). The 2026-11-22 slices are in `CH
 
 What is left, in the order it should be done:
 
-1. **The rest of the editing**: draw pipes port to port, select and drag a pipe, edit the
-   per-instance properties, distribute (needs a document command) and the page orientation.
+**The essential core (owner decision, 2026-11-22)** comes first; [capabilities.md](capabilities.md)
+has the entries. Nothing here is a port of the ABI: what is badly designed is discarded.
 
-**Not migrated as-is, and not on the critical path**: the **electrical control** (relays,
-contacts, lamps, buzzers, switches) and the **recorders** are badly designed in the ABI;
-they are redesigned before any code is written, with their own ADR, instead of copied. The
-flow pulses and the exhaust jets (P-037) are not critical either, and stay their own slice.
+1. **The capacities and the catalog schema**: the core written down and the new definitions
+   (the air supply and the two corrected compressors, the two FRLs, the bare valves, the OR
+   and the AND, the cylinders with cushioning and magnet, the plugs and the silencers with
+   and without a regulator).
+2. **The solver**: the OR and the AND, the cushioning, the complete FRL's lubricator, each
+   with its ADR and its reference test.
+3. **The window**: the double click and the property panel.
+4. **The symbol set**: the corrected core set and its conformance review.
+5. **The rest of the shell**: draw pipes, the document and the dialogs, the theme and
+   accessibility, the export, and then phase 5.
+
+**Not migrated as-is, and not critical**: the **electrical control** (relays, contacts,
+lamps, buzzers, switches) and the **recorders** are badly designed in the ABI; they are
+redesigned before any code is written, with their own ADR, instead of copied. The flow
+pulses and the exhaust jets (P-037) are not critical either, and stay their own slice.
 2. **The rest of the editing**: draw pipes port to port, select and drag a pipe, edit the
    per-instance properties, distribute (needs a document command) and the page orientation.
 3. **The document**: the start view, the open/save-as/new dialogs, the recent files, the

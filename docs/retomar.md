@@ -684,14 +684,20 @@ en `CHANGELOG.md`; `main` está en `5da5f56`. Lo que la ventana Rust ya hace:
 
 **Lo que falta, en orden** (los detalles en [next-steps.md](next-steps.md)):
 
-1. Edición restante: dibujar tuberías puerto a puerto, seleccionar tubos, editar
-   propiedades, repartir (comando en el documento) y orientación de página.
-2. Documento: Inicio, Abrir/Guardar como/Nuevo con diálogo, recientes, aviso de cambios sin
-   guardar, circuitos y pestañas.
-3. Tema (portal `color-scheme` en caliente), accesibilidad/IME y los checks Rust
-   equivalentes a `--check-theme`/`--check-qml`/`--check-icons`/`--check-layout`/`--selftest`.
-4. Exportar desde la ventana (PNG/PDF/SVG), cajetín y página editables, piezas e impresión.
-5. Fase 5: mover el job `window` de CI a la ventana Rust, retirar `punchi-fluid-ffi` y
+El **núcleo del producto** (decisión del propietario, 2026-11-22): la fuente de aire y los
+dos compresores con el diseño corregido; el FRL simplificado y el completo; las válvulas
+base editables (3/2, 5/2…); la OR y la AND; los cilindros con amortiguador e imán; los
+tapones y silenciadores con y sin regulador; y el doble clic con el panel de propiedades.
+**Lo mal diseñado no se migra: se descarta**, con la generación nueva del formato y su
+migración (detalle en [capabilities.md](capabilities.md)).
+
+1. Capacidades y esquema del catálogo: el núcleo escrito y las definiciones nuevas.
+2. Solver: la OR y la AND, el amortiguador, el lubricador del FRL (con sus ADRs).
+3. Ventana: el doble clic y el panel de propiedades.
+4. Símbolos: el set del núcleo corregido y su revisión de conformidad.
+5. Lo que queda del armazón: dibujar tuberías, documento y diálogos, tema/accesibilidad y
+   exportar.
+6. Fase 5: mover el job `window` de CI a la ventana Rust, retirar `punchi-fluid-ffi` y
    `apps/punchi-fluid-qt`, empaquetado y documentación.
 
 **Fuera del camino crítico, y no se migran tal cual:** el **control eléctrico** (relés,
