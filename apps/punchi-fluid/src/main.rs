@@ -26,6 +26,7 @@ use crate::ribbon::{Command, Speed};
 mod auto_hide;
 mod block_editor;
 mod branding;
+mod check_panel;
 mod circuit_dialogs;
 mod edit_commands;
 mod export;
@@ -140,6 +141,8 @@ struct Window {
     circuit_dialog: Option<circuit_dialogs::CircuitDialog>,
     /// The export options: format, resolution and the parts list.
     export_options: export_options::ExportOptions,
+    /// The faults panel's last run and selection.
+    check_panel: check_panel::CheckPanel,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -476,6 +479,7 @@ impl Window {
             Command::ProjectSaveAs => self.open_dialog(files::Mode::SaveAs),
             Command::ProjectExport => self.export_dialog(),
             Command::ExportOptions => self.open_export_options(),
+            Command::Check => self.open_check(),
             Command::PageMargin(preset) => self.set_sheet_margins(preset),
             Command::PageOrientation(orientation) => self.set_sheet_orientation(orientation),
             Command::PagePaper(paper) => self.set_sheet_paper(paper),

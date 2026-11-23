@@ -2434,6 +2434,7 @@ name = "punchi-fluid-session"
 version = "0.1.0"
 dependencies = [
  "punchi-fluid-catalog",
+ "punchi-fluid-check",
  "punchi-fluid-core",
  "punchi-fluid-doc",
  "punchi-fluid-draw",

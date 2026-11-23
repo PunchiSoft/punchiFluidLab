@@ -25,7 +25,7 @@ catalog, draw, solver ← export
 catalog, check, doc, draw, file, solver, session ← ffi ← apps/punchi-fluid-qt
 core, file, solver ← cli
 catalog, core, doc, draw, export, file, session ← apps/punchi-fluid
-doc, draw, file ← session
+check, doc, draw, file ← session
 ```
 
 `catalog` has no internal dependency: the schema is self-contained. `check` reaches

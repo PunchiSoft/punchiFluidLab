@@ -11,6 +11,7 @@ description = "The document's life between the file and the window"
 
 [dependencies]
 punchi-fluid-catalog = { workspace = true }
+punchi-fluid-check = { workspace = true }
 punchi-fluid-core = { workspace = true }
 punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }

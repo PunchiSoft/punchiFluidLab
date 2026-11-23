@@ -87,7 +87,7 @@ other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalo
 stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
-page reads them from `core`); `session` on `core`, `catalog`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document and the model that runs it meet there; the physics stays in the solver);
+page reads them from `core`); `session` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document, the design check and the model that runs it meet there; the physics stays in the solver);
 `ffi` retires with the Qt window and has no product consumer; `cli` on `core`, `catalog`,
 `check`, `doc`, `draw`, `file` and `solver`, because it runs the same check and the same
 model without a window. Nothing in Rust depends on a window. The Rust window in

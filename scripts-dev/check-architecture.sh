@@ -56,6 +56,8 @@ ALLOWED_EDGES=(
     "punchi-fluid-session punchi-fluid-file"
     "punchi-fluid-session punchi-fluid-core"
     "punchi-fluid-session punchi-fluid-solver"
+    # ADR 0044: the design check reaches the window through the session.
+    "punchi-fluid-session punchi-fluid-check"
     "punchi-fluid-ffi punchi-fluid-session"
 )
 

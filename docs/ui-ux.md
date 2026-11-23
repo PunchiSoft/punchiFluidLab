@@ -162,7 +162,9 @@ the theme dispatch; the rest is painted disabled until its phase of the ribbon p
 or custom millimetres — the orientation and the margins, by preset or in millimetres.
 **Editar datos…** opens the title block editor: the twelve stored fields, a **Mostrar**
 switch per field, the content model that sets its default field set and the position on the
-sheet. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
+sheet. **Comprobar** runs the design check on the circuit in view and opens the faults
+panel: each fault says what is wrong and where, selecting it marks its component or pipe, and
+an empty list says the circuit passes. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
 circuit, the second confirms removing it with its components and pipes, both as one undo;
 **Cerrar** is disabled with a single circuit and the last one is refused. **Opciones…** sets
 the export format the name defaults to, the PNG resolution and whether the drawing carries a
@@ -173,7 +175,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
-| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
