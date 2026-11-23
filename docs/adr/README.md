@@ -55,6 +55,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0041](0041-the-shuttle-ball-has-three-seats.md) | The shuttle's ball has three seats | proposed | 2026-11-22 |
 | [0042](0042-the-appearance-is-a-setting.md) | The appearance is a setting, and the desktop is its default | proposed | 2026-11-23 |
 | [0043](0043-the-agent-merges-under-guardrails.md) | The agent merges its own pull requests under guardrails | accepted | 2026-11-23 |
+| [0044](0044-the-check-reaches-the-window-through-the-session.md) | The design check reaches the window through the session | accepted | 2026-11-23 |
 
 ## When a decision needs an ADR
 
