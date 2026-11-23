@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### CAD claro, el segundo tema — 2026-11-23
+
+- **CAD claro** entra como semilla clara (papel blanco, lienzo gris frío, tinta azul marino y
+  acento azul) y pasa por la misma derivación y la misma tabla de contraste que el escritorio
+  y Pizarra. `settings.state` guarda `appearance=cad`, la ventana lo aplica en vivo y la
+  galería de Configuración la ofrece como tercera tarjeta.
+- **Sistema** (día/noche) y los temas **Nórdico**, **Azul profundo** y **Grafito** quedan para
+  sus propias ramas.
+
 ### La apariencia se elige en Configuración: Escritorio y Pizarra — 2026-11-23
 
 - **La ventana de Configuración existe**: se abre desde **Ver ▸ Tema**, `Ctrl+,` y el rail de

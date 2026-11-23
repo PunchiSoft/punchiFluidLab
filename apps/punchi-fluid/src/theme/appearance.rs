@@ -19,9 +19,13 @@ pub enum Appearance {
 }
 
 impl Appearance {
-    /// The choices the first window offers, in reading order: the desktop and the dark
-    /// engineering theme.
-    pub const CHOICES: [Self; 2] = [Self::Desktop, Self::Theme(ThemeId::Slate)];
+    /// The choices the window offers, in reading order: the desktop, the light engineering
+    /// theme and the dark one.
+    pub const CHOICES: [Self; 3] = [
+        Self::Desktop,
+        Self::Theme(ThemeId::Cad),
+        Self::Theme(ThemeId::Slate),
+    ];
 
     /// The settings-file value.
     #[must_use]
@@ -55,18 +59,21 @@ impl Appearance {
 /// A compiled theme: a palette, never a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ThemeId {
+    /// The light engineering palette: a white paper, a cool grey canvas and a blue accent.
+    Cad,
     /// The dark engineering palette: deep slate chrome, a blue accent and a lifted paper.
     Slate,
 }
 
 impl ThemeId {
-    /// Every built-in theme, in the order the gallery shows them.
-    pub const ALL: [Self; 1] = [Self::Slate];
+    /// Every built-in theme, in the order the gallery shows them: light, then dark.
+    pub const ALL: [Self; 2] = [Self::Cad, Self::Slate];
 
     /// The stable settings-file id.
     #[must_use]
     pub fn id(self) -> &'static str {
         match self {
+            Self::Cad => "cad",
             Self::Slate => "slate",
         }
     }
@@ -75,6 +82,7 @@ impl ThemeId {
     #[must_use]
     pub fn label_es(self) -> &'static str {
         match self {
+            Self::Cad => "CAD claro",
             Self::Slate => "Pizarra",
         }
     }
@@ -85,8 +93,23 @@ impl ThemeId {
 
     pub(super) fn palette(self) -> Palette {
         match self {
+            Self::Cad => cad_palette(),
             Self::Slate => slate_palette(),
         }
+    }
+}
+
+/// The light engineering palette: a white paper over a cool grey canvas, dark navy ink and a
+/// blue accent; the same derivation lifts the raised plane and measures every pairing.
+fn cad_palette() -> Palette {
+    Palette {
+        window: Rgb::new(248, 250, 252),
+        window_text: Rgb::new(15, 23, 42),
+        base: Rgb::new(255, 255, 255),
+        button: Rgb::new(255, 255, 255),
+        highlight: Rgb::new(29, 78, 216),
+        highlighted_text: WHITE,
+        link: Rgb::new(37, 99, 235),
     }
 }
 

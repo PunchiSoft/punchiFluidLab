@@ -258,8 +258,33 @@ fn the_slate_theme_meets_the_contrast_criteria() {
 }
 
 #[test]
+fn the_cad_theme_is_light_and_meets_the_contrast_criteria() {
+    let theme = Theme::for_appearance(Appearance::Theme(ThemeId::Cad));
+    assert!(!theme.tokens.dark, "the CAD theme is a light one");
+    let contrast = theme.tokens.contrast();
+    assert!(contrast.text >= 4.5, "text {}", contrast.text);
+    assert!(contrast.dim >= 3.0, "secondary {}", contrast.dim);
+    assert!(contrast.accent >= 3.0, "accent {}", contrast.accent);
+    assert!(contrast.line >= 3.0, "line {}", contrast.line);
+    assert!(
+        contrast.paper_sunken >= 1.08,
+        "paper over the canvas {}",
+        contrast.paper_sunken
+    );
+    assert!(
+        contrast.paper_text >= 4.5,
+        "text on the paper {}",
+        contrast.paper_text
+    );
+}
+
+#[test]
 fn an_appearance_reads_its_value_and_an_unknown_one_is_the_desktop() {
     assert_eq!(Appearance::from_value("desktop"), Appearance::Desktop);
+    assert_eq!(
+        Appearance::from_value("cad"),
+        Appearance::Theme(ThemeId::Cad)
+    );
     assert_eq!(
         Appearance::from_value("slate"),
         Appearance::Theme(ThemeId::Slate)
