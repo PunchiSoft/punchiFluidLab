@@ -37,7 +37,7 @@ mod tests;
 
 /// What the page asks the window to do after the frame is drawn.
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Action {
+pub(crate) enum Action {
     /// Load the start template with this index into a clean window.
     Template(u32),
     /// Close Inicio and show the sheet.
@@ -157,7 +157,7 @@ impl Window {
     }
 
     /// Runs what the page asked for.
-    fn apply(&mut self, action: Action) {
+    pub(crate) fn apply(&mut self, action: Action) {
         match action {
             Action::Template(index) => {
                 if let Some(document) = document(index, &self.catalog, self.page.rect()) {

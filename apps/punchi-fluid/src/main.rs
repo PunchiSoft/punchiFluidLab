@@ -20,6 +20,7 @@ use punchi_fluid_export::{Page, TitleBlock, sheet};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
+mod export;
 mod files;
 mod lifecycle;
 mod ribbon;
@@ -404,6 +405,7 @@ impl Window {
             "Abrir" => self.open_dialog(files::Mode::Open),
             "Guardar" => self.save(),
             "Guardar como" => self.open_dialog(files::Mode::SaveAs),
+            "Exportar" => self.export_dialog(),
             "Borrar" => self.remove_selected(),
             "Girar" => self.rotate_selected(),
             "Reflejar" => self.reflect_selected(),
@@ -764,3 +766,6 @@ impl Window {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod tests_acceptance;

@@ -6,7 +6,8 @@
 //! The window carries no platform picker: a toolkit dialog is a dependency this project does
 //! not take, and a dialog of its own keeps the theme tokens, the keyboard rules and the
 //! Spanish strings of the rest of the window. `Abrir` lists the documents the sheet format
-//! can read; `Guardar como` asks for a name and writes it.
+//! can read; `Guardar como` asks for a name and writes it; `Exportar` asks for a name and
+//! prints the drawing as PDF, PNG or SVG.
 //!
 //! The dialog is modal the way the interface contract asks for: while it is open it takes the
 //! keyboard, `Enter` confirms, `Esc` cancels, and a transparent layer over the page keeps the
@@ -31,6 +32,11 @@ use crate::theme::{Theme, Tokens};
 /// Extension of a saved document, as the sheet format writes it.
 pub(crate) const EXTENSION: &str = "pfluid";
 
+/// Extensions the export dialog writes, in the order its name rule documents them. The
+/// rendering itself picks the writer by these; the dialog only lets a reader type one of
+/// them, so a name it accepts is a name the exporter can render.
+pub(crate) const EXPORT_EXTENSIONS: [&str; 3] = ["pdf", "png", "svg"];
+
 /// This build lists at most this many entries of one folder. A folder is untrusted input and
 /// the dialog reads it on the frame it opens; the limit keeps a pathological folder from
 /// making the window allocate without a bound. Reaching it is reported, never silent.
@@ -41,13 +47,27 @@ const MAX_ENTRIES: usize = 1_000;
 /// letting the save fail with a less clear message.
 const MAX_NAME: usize = 255;
 
-/// What the dialog is for: choosing a document to read, or naming a document to write.
+/// What the dialog is for: choosing a document to read, naming a document to write, or
+/// naming an export to print.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Mode {
     /// `Abrir`: pick an existing document.
     Open,
     /// `Guardar como`: name a new document or a new name for the current one.
     SaveAs,
+    /// `Exportar`: name a drawing to print as PDF, PNG or SVG.
+    Export,
+}
+
+/// The two modes that write a file. They share the name rules and the overwrite question,
+/// and differ in the extension they default to and in the outcome they return; a mode that
+/// does not write has no `Write`, so the confirmation never has to guess.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Write {
+    /// A `.pfluid` document the window keeps editing.
+    Document,
+    /// A drawing printed to PDF, PNG or SVG.
+    Export,
 }
 
 impl Mode {
@@ -56,6 +76,7 @@ impl Mode {
         match self {
             Self::Open => "Abrir",
             Self::SaveAs => "Guardar como",
+            Self::Export => "Exportar",
         }
     }
 
@@ -64,6 +85,16 @@ impl Mode {
         match self {
             Self::Open => "Abrir",
             Self::SaveAs => "Guardar",
+            Self::Export => "Exportar",
+        }
+    }
+
+    /// What this dialog writes, or `None` when it only reads.
+    fn write(self) -> Option<Write> {
+        match self {
+            Self::Open => None,
+            Self::SaveAs => Some(Write::Document),
+            Self::Export => Some(Write::Export),
         }
     }
 }
@@ -79,6 +110,8 @@ pub(crate) enum Outcome {
     Open(PathBuf),
     /// Write the document to this path.
     Save(PathBuf),
+    /// Print the drawing to this path.
+    Export(PathBuf),
 }
 
 /// One row of the folder listing.
@@ -120,7 +153,7 @@ impl Dialog {
             name: String::new(),
             error: None,
             confirm_overwrite: false,
-            focus_name: mode == Mode::SaveAs,
+            focus_name: matches!(mode, Mode::SaveAs | Mode::Export),
         };
         dialog.read_directory();
         dialog
@@ -143,11 +176,16 @@ impl Dialog {
         self.read_directory();
     }
 
-    /// Reads the current folder, newest decisions first: folders before documents, each
-    /// group in name order, documents only when the sheet format could read them.
+    /// Reads the current folder, newest decisions first: folders before files, each group in
+    /// name order, and only the files the mode offers. `Abrir` and `Guardar como` list the
+    /// documents the sheet format can read; `Exportar` lists the files it can overwrite.
     fn read_directory(&mut self) {
         self.listing_error = None;
         let mut entries = Vec::new();
+        let listed: fn(&Path) -> bool = match self.mode {
+            Mode::Open | Mode::SaveAs => is_document,
+            Mode::Export => is_export,
+        };
         let read = match std::fs::read_dir(&self.directory) {
             Ok(read) => read,
             Err(cause) => {
@@ -178,7 +216,7 @@ impl Dialog {
                 continue;
             }
             let folder = path.is_dir();
-            if !folder && !is_document(&path) {
+            if !folder && !listed(&path) {
                 continue;
             }
             entries.push(Entry { path, name, folder });
@@ -189,21 +227,24 @@ impl Dialog {
 
     /// Confirms the dialog: what `Enter` and the main button do.
     ///
-    /// `None` means the dialog stays open and [`Self::error`] says why. The sheet's extension
-    /// is appended when the typed name has none; a name that is empty, too long or carries a
-    /// folder is refused. An existing target is confirmed once more before it is replaced.
+    /// `None` means the dialog stays open and [`Self::error`] says why. A document gets the
+    /// sheet's extension when the typed name has none; an export gets `.pdf`, and a typed
+    /// extension has to be one this build renders. A name that is empty, too long or carries
+    /// a folder is refused. An existing target is confirmed once more before it is replaced.
     fn confirm(&mut self) -> Option<Outcome> {
         let name = self.name.trim().to_owned();
         if name.is_empty() {
-            self.error = Some(match self.mode {
-                Mode::Open => String::from("Elige un documento de la lista."),
-                Mode::SaveAs => String::from("Escribe un nombre de archivo."),
-            });
+            self.error = Some(String::from(match self.mode {
+                Mode::Open => "Elige un documento de la lista.",
+                Mode::SaveAs | Mode::Export => "Escribe un nombre de archivo.",
+            }));
             return None;
         }
-        if self.mode == Mode::Open {
+        // `Abrir` reads the name as it is: the listing already offered a document, and the
+        // front end reports whatever the reader cannot open.
+        let Some(write) = self.mode.write() else {
             return Some(Outcome::Open(self.directory.join(name)));
-        }
+        };
         if name.len() > MAX_NAME {
             self.error = Some(String::from("El nombre es demasiado largo."));
             return None;
@@ -212,21 +253,33 @@ impl Dialog {
             self.error = Some(String::from("El nombre no puede llevar una carpeta."));
             return None;
         }
-        let file_name = if Path::new(&name).extension().is_none() {
-            format!("{name}.{EXTENSION}")
-        } else {
-            name
+        let file_name = match write {
+            Write::Document => document_name(name),
+            Write::Export => match export_name(name) {
+                Ok(file_name) => file_name,
+                Err(message) => {
+                    self.error = Some(message);
+                    return None;
+                }
+            },
         };
         let target = self.directory.join(&file_name);
         if target.exists() && !self.confirm_overwrite {
             self.confirm_overwrite = true;
+            let verb = match write {
+                Write::Document => "Guardar",
+                Write::Export => "Exportar",
+            };
             self.error = Some(format!(
-                "«{file_name}» ya existe: pulsa Guardar otra vez para reemplazarlo."
+                "«{file_name}» ya existe: pulsa {verb} otra vez para reemplazarlo."
             ));
             return None;
         }
         self.confirm_overwrite = false;
-        Some(Outcome::Save(target))
+        Some(match write {
+            Write::Document => Outcome::Save(target),
+            Write::Export => Outcome::Export(target),
+        })
     }
 
     /// Draws the dialog over the page and returns what it asked for, if anything.
@@ -340,25 +393,8 @@ impl Dialog {
                 self.set_name(name);
             }
         }
-        if self.mode == Mode::SaveAs {
-            ui.horizontal(|ui| {
-                let label = ui.label(
-                    egui::RichText::new("Nombre")
-                        .size(tokens.text_body)
-                        .color(tokens.ink_dim),
-                );
-                let field = ui
-                    .add(
-                        egui::TextEdit::singleline(&mut self.name)
-                            .hint_text("documento.pfluid")
-                            .desired_width(tokens.unit * 18.0),
-                    )
-                    .labelled_by(label.id);
-                if self.focus_name {
-                    field.request_focus();
-                    self.focus_name = false;
-                }
-            });
+        if self.mode.write().is_some() {
+            self.name_field(ui, tokens);
         }
         if let Some(error) = self.error.as_deref() {
             ui.label(
@@ -378,6 +414,33 @@ impl Dialog {
             }
         });
         button_acted
+    }
+
+    /// The name row of a dialog that writes: the field, its hint for the mode, and the
+    /// keyboard focus it takes on the first frame.
+    fn name_field(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
+        let hint = match self.mode {
+            Mode::Export => "circuito.pdf",
+            Mode::Open | Mode::SaveAs => "documento.pfluid",
+        };
+        ui.horizontal(|ui| {
+            let label = ui.label(
+                egui::RichText::new("Nombre")
+                    .size(tokens.text_body)
+                    .color(tokens.ink_dim),
+            );
+            let field = ui
+                .add(
+                    egui::TextEdit::singleline(&mut self.name)
+                        .hint_text(hint)
+                        .desired_width(tokens.unit * 18.0),
+                )
+                .labelled_by(label.id);
+            if self.focus_name {
+                field.request_focus();
+                self.focus_name = false;
+            }
+        });
     }
 
     /// A transparent layer over the page: the dialog is modal, so the pointer finds nothing
@@ -407,10 +470,47 @@ fn is_document(path: &Path) -> bool {
         .is_some_and(|extension| extension.eq_ignore_ascii_case(EXTENSION))
 }
 
+/// `true` when the path names a file the export dialog can list, matching
+/// [`EXPORT_EXTENSIONS`] in any case.
+fn is_export(path: &Path) -> bool {
+    path.extension()
+        .and_then(OsStr::to_str)
+        .is_some_and(is_export_extension)
+}
+
+/// `true` when `extension` (without the dot) is one this build renders, in any case.
+pub(crate) fn is_export_extension(extension: &str) -> bool {
+    EXPORT_EXTENSIONS
+        .iter()
+        .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+}
+
+/// The name a document save writes: the sheet's extension when the reader typed none.
+fn document_name(name: String) -> String {
+    if Path::new(&name).extension().is_none() {
+        format!("{name}.{EXTENSION}")
+    } else {
+        name
+    }
+}
+
+/// The name an export writes: `.pdf` when the reader typed no extension, else the typed
+/// name, whose extension is kept as typed. A name that asks for another format is refused
+/// with the reason, because a reader who typed `.docx` wanted a file this build cannot draw.
+fn export_name(name: String) -> Result<String, String> {
+    match Path::new(&name).extension().and_then(OsStr::to_str) {
+        None => Ok(format!("{name}.pdf")),
+        Some(extension) if is_export_extension(extension) => Ok(name),
+        Some(_) => Err(String::from(
+            "Un archivo de exportación tiene que ser pdf, png o svg.",
+        )),
+    }
+}
+
 /// Where a file dialog starts: beside the current document, else the user's home, else the
 /// working folder. `HOME` and `USERPROFILE` are read directly because
 /// `std::env::home_dir` is deprecated; the session's recent list resolves the same way.
-fn start_directory(path: Option<&Path>) -> PathBuf {
+pub(crate) fn start_directory(path: Option<&Path>) -> PathBuf {
     if let Some(folder) = path
         .and_then(Path::parent)
         .filter(|folder| !folder.as_os_str().is_empty() && folder.is_dir())
@@ -510,17 +610,27 @@ impl Window {
                     }
                 }
             },
-            Outcome::Save(path) => match punchi_fluid_session::save(&self.document, &path) {
+            Outcome::Save(path) => match self.save_to(&path) {
                 Ok(()) => {
-                    self.path = Some(path.clone());
-                    self.recents.remember(&path);
+                    // The dialog's save is the one that can take a new path: `save_to` leaves
+                    // the window's path alone so an export can reuse it without touching it.
+                    self.path = Some(path);
                     self.dialog = None;
-                    self.notice = Some(format!("guardado {}", display_name(&path)));
-                    self.mark_saved();
                 }
                 Err(cause) => {
                     if let Some(dialog) = self.dialog.as_mut() {
                         dialog.fail(format!("no se pudo guardar: {cause}"));
+                    }
+                }
+            },
+            Outcome::Export(path) => match self.export_to(&path) {
+                Ok(()) => {
+                    self.dialog = None;
+                    self.notice = Some(format!("exportado {}", display_name(&path)));
+                }
+                Err(cause) => {
+                    if let Some(dialog) = self.dialog.as_mut() {
+                        dialog.fail(cause);
                     }
                 }
             },
@@ -564,14 +674,25 @@ impl Window {
             self.open_dialog(Mode::SaveAs);
             return;
         };
-        match punchi_fluid_session::save(&self.document, &path) {
-            Ok(()) => {
-                self.recents.remember(&path);
-                self.notice = Some(format!("guardado {}", display_name(&path)));
-                self.mark_saved();
-            }
-            Err(cause) => self.notice = Some(format!("no se pudo guardar: {cause}")),
+        if let Err(cause) = self.save_to(&path) {
+            self.notice = Some(format!("no se pudo guardar: {cause}"));
         }
+    }
+
+    /// Writes the document to `path`, remembers it and marks it saved. The window's own path
+    /// is left alone: the commands that own the document decide it, and an export prints the
+    /// document without touching it.
+    ///
+    /// # Errors
+    ///
+    /// Returns the session's message when the file cannot be written; nothing is marked
+    /// saved in that case.
+    pub(crate) fn save_to(&mut self, path: &Path) -> Result<(), String> {
+        punchi_fluid_session::save(&self.document, path)?;
+        self.recents.remember(path);
+        self.notice = Some(format!("guardado {}", display_name(path)));
+        self.mark_saved();
+        Ok(())
     }
 
     /// Makes `document` the window's, closes Inicio and the dialog, and rebinds the page the

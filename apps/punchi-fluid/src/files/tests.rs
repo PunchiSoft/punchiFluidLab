@@ -415,3 +415,165 @@ fn a_subfolder_row_enters_it_and_lists_its_documents() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_export_dialog_names_a_format_and_lists_the_files_it_can_replace() {
+    let dir = scratch("export-names");
+    let mut dialog = Dialog::open(Mode::Export, dir.clone());
+    assert!(dialog.focus_name, "the export dialog takes the name field");
+    assert_eq!(dialog.confirm(), None, "an empty name is refused");
+    assert!(
+        dialog
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("nombre")),
+        "the dialog asks for a name: {:?}",
+        dialog.error
+    );
+
+    dialog.set_name("taller");
+    assert_eq!(
+        dialog.confirm(),
+        Some(Outcome::Export(dir.join("taller.pdf"))),
+        "a name without an extension becomes a PDF"
+    );
+    dialog.set_name("taller.PNG");
+    assert_eq!(
+        dialog.confirm(),
+        Some(Outcome::Export(dir.join("taller.PNG"))),
+        "a typed format is accepted in any case and kept as typed"
+    );
+    dialog.set_name("taller.svg");
+    assert_eq!(
+        dialog.confirm(),
+        Some(Outcome::Export(dir.join("taller.svg")))
+    );
+    dialog.set_name("taller.docx");
+    assert_eq!(dialog.confirm(), None, "a foreign format is refused");
+    assert!(
+        dialog
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("pdf")),
+        "the dialog says which formats it writes: {:?}",
+        dialog.error
+    );
+    dialog.set_name("taller.pfluid");
+    assert_eq!(
+        dialog.confirm(),
+        None,
+        "a document extension is not an export"
+    );
+
+    // An existing target is asked about once, exactly as the save dialog does.
+    std::fs::write(dir.join("existe.pdf"), "%PDF- viejo").expect("the existing export");
+    dialog.set_name("existe.pdf");
+    assert_eq!(dialog.confirm(), None, "the first confirmation only asks");
+    assert!(
+        dialog
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("reemplaz")),
+        "the dialog says the next click replaces it: {:?}",
+        dialog.error
+    );
+    assert_eq!(
+        dialog.confirm(),
+        Some(Outcome::Export(dir.join("existe.pdf"))),
+        "the second confirmation replaces"
+    );
+
+    // The listing offers the three formats and the folders, never a document or a text file.
+    std::fs::write(dir.join("dibujo.png"), "").expect("the PNG");
+    std::fs::write(dir.join("vista.svg"), "").expect("the SVG");
+    std::fs::write(dir.join("dibujo.pfluid"), "").expect("the document");
+    std::fs::write(dir.join("notas.txt"), "").expect("the text file");
+    std::fs::create_dir(dir.join("proyectos")).expect("the subfolder");
+    let listing = Dialog::open(Mode::Export, dir.clone());
+    let names: Vec<&str> = listing
+        .entries
+        .iter()
+        .map(|entry| entry.name.as_str())
+        .collect();
+    assert!(names.contains(&"existe.pdf"), "a listed PDF: {names:?}");
+    assert!(names.contains(&"dibujo.png"), "a listed PNG: {names:?}");
+    assert!(names.contains(&"vista.svg"), "a listed SVG: {names:?}");
+    assert!(
+        names.contains(&"proyectos"),
+        "a folder is listed: {names:?}"
+    );
+    assert!(
+        !names.contains(&"dibujo.pfluid"),
+        "a document is not an export: {names:?}"
+    );
+    assert!(
+        !names.contains(&"notas.txt"),
+        "a text file is not an export: {names:?}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn an_export_from_the_dialog_prints_without_saving_the_document() {
+    let dir = scratch("export-command");
+    let recents_file = dir.join("recent.json");
+    let base = dir.join("base.pfluid");
+    let mut window = window_with(Some(base.clone()), Recents::at(Some(recents_file)));
+    window.document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
+    assert!(window.is_modified(), "the edit is unsaved work");
+
+    window.open_dialog(Mode::Export);
+    {
+        let dialog = window.dialog.as_mut().expect("the export dialog is open");
+        assert_eq!(dialog.mode, Mode::Export);
+        dialog.set_name("circuito");
+        let outcome = dialog.confirm().expect("the name is confirmed");
+        assert_eq!(outcome, Outcome::Export(dir.join("circuito.pdf")));
+        window.apply_files(outcome);
+    }
+    let exported = dir.join("circuito.pdf");
+    assert!(
+        window.dialog.is_none(),
+        "a successful export closes the dialog"
+    );
+    assert!(exported.is_file(), "the export reaches the disk");
+    assert!(
+        std::fs::read(&exported)
+            .expect("the exported PDF is readable")
+            .starts_with(b"%PDF-"),
+        "the export is a PDF"
+    );
+    assert_eq!(
+        window.notice.as_deref(),
+        Some("exportado circuito.pdf"),
+        "the status bar names the export"
+    );
+    assert!(window.is_modified(), "an export is not a save");
+    assert_eq!(
+        window.path.as_deref(),
+        Some(base.as_path()),
+        "the document keeps its path"
+    );
+
+    // A path the exporter refuses keeps the dialog open with the reason.
+    window.open_dialog(Mode::Export);
+    window.apply_files(Outcome::Export(dir.join("circuito.docx")));
+    assert!(
+        window.dialog.is_some(),
+        "a failed export keeps the dialog where the reader was"
+    );
+    assert!(
+        window
+            .dialog
+            .as_ref()
+            .and_then(|dialog| dialog.error.as_deref())
+            .is_some_and(|error| error.contains("pdf")),
+        "the dialog explains the refusal"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

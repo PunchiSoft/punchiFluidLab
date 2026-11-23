@@ -33,8 +33,9 @@ and the Qt app leaves the workspace and the CI.
 
 **Acceptance**
 
-- The student's path is covered by the Rust window's headless selftest: Inicio → OR template
-  → edit → save → reopen → run → export.
+- The student's path is covered by the Rust window's headless test:
+  `tests_acceptance::the_student_loop_from_the_start_page_to_an_export` (Inicio → OR
+  template → edit → save → reopen → run → export), green in the gate.
 - `apps/punchi-fluid-qt` is gone, the `window` job is gone, and the workspace still passes the
   full gate.
 - The OR template of the parked pull request is what Inicio offers; the template lives in the

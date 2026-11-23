@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Exportar y el recorrido del alumno, probados de punta a punta — 2026-11-22
+
+- **Exportar llega a la ventana Rust**: el diálogo de archivos gana el modo de exportación
+  (`.pdf` por defecto, también `.png` y `.svg`, con la misma confirmación de reemplazo) y la
+  ventana escribe la hoja con el mismo camino de impresión que el ABI: PDF, PNG a 300 dpi o
+  SVG, con escritura atómica. Exportar no guarda el documento ni toca la copia de seguridad.
+- **Una prueba de aceptación cubre el lote 1 completo**: Inicio → plantilla OR → editar →
+  guardar → reabrir → simular (el vástago del cilindro se mueve) → exportar PDF y PNG, y los
+  recientes recuerdan el documento guardado.
+
 ### El trabajo sin guardar sobrevive a una caída — 2026-11-22
 
 - **Copia de seguridad en la sesión** (`punchi_fluid_session::safety`): se escribe en
