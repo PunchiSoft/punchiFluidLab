@@ -24,6 +24,7 @@ mod export;
 mod files;
 mod inspector;
 mod lifecycle;
+mod panel;
 mod ribbon;
 mod scene;
 mod selection;
@@ -136,9 +137,6 @@ struct Drag {
 
 /// How far beside its edge a placement still accepts the click, in millimetres.
 const HIT_SLACK: f32 = 1.0;
-
-/// The palette's width: 18 grid units, the width the interface specification asks for.
-const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
     /// Places a catalog entry at the centre of the sheet, as one undo entry, and selects
@@ -468,8 +466,9 @@ impl Window {
             self.redo();
         }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::F)) {
-            self.sidebar.focus_search = true;
+            self.sidebar.focus_search();
         }
+        self.catalog_keyboard(context);
         self.inspector_keyboard(context);
         // Select all and duplicate only when no text field has the keyboard: Ctrl+A in the
         // search selects the search text, not the sheet.
@@ -499,10 +498,6 @@ impl Window {
 }
 
 impl eframe::App for Window {
-    #[expect(
-        clippy::too_many_lines,
-        reason = "the update assembles the window's regions in the order the reader sees them"
-    )]
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
@@ -550,21 +545,9 @@ impl eframe::App for Window {
             );
         });
 
-        egui::SidePanel::left("catalog")
-            .exact_width(SIDEBAR_WIDTH)
-            .resizable(false)
-            .frame(
-                egui::Frame::default()
-                    .fill(self.theme.tokens.panel)
-                    .inner_margin(egui::Margin::symmetric(6, 0)),
-            )
-            .show(context, |ui| {
-                if let Some(catalog_id) = self.sidebar.show(ui, &self.theme.tokens, &self.catalog) {
-                    self.add_component(&catalog_id);
-                }
-            });
-        // The right dock sits below the ribbon and above the status bar, so the sheet's
-        // available area follows it as it folds.
+        // The catalog and the right dock sit below the ribbon and above the status bar, so
+        // the sheet's available area follows each one as it folds.
+        self.show_catalog(context);
         self.show_inspector(context);
 
         egui::CentralPanel::default().show(context, |ui| {

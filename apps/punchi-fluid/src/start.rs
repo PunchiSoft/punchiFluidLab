@@ -117,7 +117,7 @@ impl Window {
             .and_then(std::ffi::OsStr::to_str);
         let mut action = None;
         egui::SidePanel::left("start-nav")
-            .exact_width(crate::SIDEBAR_WIDTH)
+            .exact_width(crate::sidebar::DEFAULT_WIDTH)
             .resizable(false)
             .frame(egui::Frame::default().fill(tokens.background))
             .show(context, |ui| {

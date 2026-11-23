@@ -396,9 +396,13 @@ dock is a later decision (stage 6 of the owner's staged plan).
   returns the panels, the zoom and the pan to their defaults. The state is never saved in
   the document and never enters the undo history.
 
-Both panels implement this today: the catalog and the right dock fold to their rail,
-auto-hide is opt-in, the state is remembered and **Restablecer vista** puts it back. The
-adaptive modes that move a panel to a drawer are stage 6 of the owner's staged plan.
+Both panels implement the fold and the reset today: the catalog and the right dock fold to
+their rail, remember their width and visibility for the session, and **Restablecer vista**
+puts both back along with the zoom and the pan; `Ctrl+B` and `Ctrl+J` are their keyboard
+paths. What is still missing is the cross-session memory and auto-hide: the width and
+visibility live only while the window is open, and **Ocultar al salir** is in **Ver** but
+does nothing yet. The adaptive modes that move a panel to a drawer are stage 6 of the
+owner's staged plan.
 
 ### 2.2 The window adapts
 

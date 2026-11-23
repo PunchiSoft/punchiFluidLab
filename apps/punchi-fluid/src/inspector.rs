@@ -3,13 +3,10 @@
 
 //! The right dock: the properties of the current selection.
 //!
-//! A panel is chrome, never a document: hiding it, widening it and `Ctrl+J` are view state
-//! the window remembers for the session, and **Ver ▸ Restablecer vista** puts it back. The
-//! panel itself never edits the document; every field goes through `punchi-fluid-doc`'s own
-//! command, so the undo history keeps working and hiding the panel never enters it.
-//!
-//! The fold lasts the theme's `motion_ms` and is instant when the theme reports reduced
-//! motion, which it does by carrying a zero duration.
+//! The panel itself never edits the document; every field goes through `punchi-fluid-doc`'s
+//! own command, so the undo history keeps working and hiding the panel never enters it. The
+//! fold, the header and the rail are the shared chrome in [`crate::panel`]; the dock keeps its
+//! content, its width bounds and its own open fields.
 
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
@@ -18,6 +15,7 @@ use punchi_fluid_draw::LineClass;
 use punchi_fluid_session::Model;
 
 use crate::Window;
+use crate::panel::{Edge, Panel, Settings};
 use crate::theme::Tokens;
 
 mod fields;
@@ -29,9 +27,6 @@ use fields::{empty_body, multi_body, pipe_body, ports, tube_row};
 pub const DEFAULT_WIDTH: f32 = 360.0;
 const MIN_WIDTH: f32 = 300.0;
 const MAX_WIDTH: f32 = 520.0;
-/// The rail is one unit wide, never below the 24 px the interface specification gives it as
-/// a target.
-const MIN_RAIL: f32 = 24.0;
 
 /// An edit the panel asks the window to make, always through the document's own command.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,28 +40,37 @@ pub enum Action {
     PipeTube { index: usize, tube: Option<u16> },
 }
 
-/// The dock's own state: whether it is open, how wide it is and the field being typed.
-#[derive(Debug, Clone)]
-pub struct Inspector {
-    open: bool,
-    width: f32,
-    /// How far the fold has gone, `0` closed and `1` open, kept so the tests can see the
-    /// animation without a screenshot.
-    shade: f32,
-    /// The designation being typed, and the placement it belongs to, so a frame does not
-    /// throw away what the reader wrote.
+/// The dock's content: the designation being typed and the placement it belongs to, so a
+/// frame does not throw away what the reader wrote.
+#[derive(Debug, Clone, Default)]
+struct Fields {
     buffer: String,
     buffer_for: Option<u64>,
+}
+
+/// The dock: the shared chrome and the fields of the current selection.
+#[derive(Debug, Clone)]
+pub struct Inspector {
+    chrome: Panel,
+    fields: Fields,
 }
 
 impl Default for Inspector {
     fn default() -> Self {
         Self {
-            open: true,
-            width: DEFAULT_WIDTH,
-            shade: 1.0,
-            buffer: String::new(),
-            buffer_for: None,
+            chrome: Panel::new(Settings {
+                edge: Edge::Right,
+                id: "inspector",
+                default_width: DEFAULT_WIDTH,
+                min_width: MIN_WIDTH,
+                max_width: MAX_WIDTH,
+                width_label: "Ancho del panel de propiedades",
+                show_label: "Mostrar el panel de propiedades",
+                hide_label: "Ocultar el panel de propiedades",
+                shortcut: "Ctrl+J",
+                margin: 5,
+            }),
+            fields: Fields::default(),
         }
     }
 }
@@ -81,50 +85,48 @@ impl Inspector {
     #[cfg(test)]
     #[must_use]
     pub fn is_open(&self) -> bool {
-        self.open
+        self.chrome.is_open()
     }
 
     #[cfg(test)]
     #[must_use]
     pub fn width(&self) -> f32 {
-        self.width
+        self.chrome.width()
     }
 
     #[cfg(test)]
     #[must_use]
     pub fn shade(&self) -> f32 {
-        self.shade
+        self.chrome.shade()
     }
 
     /// Hides the dock, or brings it back at the width it had.
     pub fn toggle(&mut self) {
-        self.open = !self.open;
+        self.chrome.toggle();
     }
 
+    #[cfg(test)]
     pub fn open(&mut self) {
-        self.open = true;
+        self.chrome.open();
     }
 
+    #[cfg(test)]
     pub fn close(&mut self) {
-        self.open = false;
+        self.chrome.close();
     }
 
     /// **Restablecer vista**: open again at the preferred width.
     pub fn reset(&mut self) {
-        self.open = true;
-        self.width = DEFAULT_WIDTH;
-        self.buffer_for = None;
+        self.chrome.reset();
+        self.fields.buffer_for = None;
     }
 
-    /// A width drag; clamped so the dock never takes the sheet's floor.
+    #[cfg(test)]
     pub fn resize_by(&mut self, delta: f32) {
-        self.width = (self.width + delta).clamp(MIN_WIDTH, MAX_WIDTH);
+        self.chrome.resize_by(delta);
     }
 
-    /// Draws the panel (or its rail) and returns the edit it asked for, if any.
-    ///
-    /// The panel is always one `SidePanel`: its width is the fold's interpolation, so the
-    /// sheet takes the room in the same gesture instead of after it.
+    /// Draws the dock and returns the edit it asked for, if any.
     #[expect(
         clippy::too_many_arguments,
         reason = "the panel reads the document, the catalog, the model and the selection"
@@ -139,147 +141,55 @@ impl Inspector {
         selected: &[usize],
         selected_pipe: Option<usize>,
     ) -> Option<Action> {
-        let rail = tokens.unit.max(MIN_RAIL);
-        #[allow(
-            clippy::cast_precision_loss,
-            reason = "a motion token in milliseconds is far below the f32 integer range"
-        )]
-        let motion = tokens.motion_ms as f32 / 1_000.0;
-        let id = egui::Id::new("inspector.fold");
-        self.shade = context.animate_bool_with_time(id, self.open, motion);
-        let width = rail + (self.width - rail) * self.shade;
         let title = title_of(document, catalog, selected, selected_pipe);
+        let Inspector { chrome, fields } = self;
+        chrome
+            .show(context, tokens, &title, None, |ui| {
+                fields.show(
+                    ui,
+                    tokens,
+                    document,
+                    catalog,
+                    model,
+                    selected,
+                    selected_pipe,
+                )
+            })
+            .flatten()
+    }
+}
+
+impl Fields {
+    /// The content of the current selection, inside the panel's scroll area.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the body reads the document, the catalog, the model and the selection"
+    )]
+    fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        document: &Document,
+        catalog: &Catalog,
+        model: Option<&Model>,
+        selected: &[usize],
+        selected_pipe: Option<usize>,
+    ) -> Option<Action> {
         let mut action = None;
-        egui::SidePanel::right("inspector")
-            .exact_width(width)
-            .resizable(false)
-            .frame(
-                egui::Frame::default()
-                    .fill(tokens.panel)
-                    .inner_margin(egui::Margin::symmetric(5, 0)),
-            )
-            .show(context, |ui| {
-                if self.shade <= 0.001 && !self.open {
-                    self.rail(ui, tokens);
-                    return;
-                }
-                self.header(ui, tokens, &title);
-                if self.shade < 0.999 {
-                    return;
-                }
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
-                        action = self.body(
-                            ui,
-                            tokens,
-                            document,
-                            catalog,
-                            model,
-                            selected,
-                            selected_pipe,
-                        );
-                    });
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                action = self.body(
+                    ui,
+                    tokens,
+                    document,
+                    catalog,
+                    model,
+                    selected,
+                    selected_pipe,
+                );
             });
         action
-    }
-
-    /// The rail the closed dock leaves at the edge: one unit wide, and a button that brings
-    /// the panel back. The width is the panel's, so the control is a target not a sliver.
-    fn rail(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
-        ui.add_space(tokens.unit * 0.5);
-        let (rect, _) = ui.allocate_exact_size(
-            egui::vec2(ui.available_width(), (tokens.unit * 1.6).max(30.0)),
-            egui::Sense::hover(),
-        );
-        let response = focusable(ui, rect, ui.make_persistent_id("inspector.rail"));
-        if ui.is_rect_visible(rect) {
-            if response.hovered() || response.has_focus() {
-                ui.painter()
-                    .rect_filled(rect, tokens.radius_small, tokens.accent_soft);
-            }
-            draw_panel_glyph(ui, rect, tokens.ink, tokens.accent);
-        }
-        response.widget_info(|| {
-            egui::WidgetInfo::labeled(
-                egui::WidgetType::Button,
-                true,
-                "Mostrar el panel de propiedades",
-            )
-        });
-        if activated(ui, &response) {
-            self.open();
-        }
-        response.on_hover_text("Mostrar el panel de propiedades (Ctrl+J)");
-    }
-
-    /// The header: the title and the control that hides the panel.
-    fn header(&mut self, ui: &mut egui::Ui, tokens: &Tokens, title: &str) {
-        ui.add_space(tokens.unit * 0.35);
-        let mut hide = false;
-        ui.horizontal(|ui| {
-            let (rect, _) = ui.allocate_exact_size(
-                egui::vec2(9.0, (tokens.unit * 1.4).max(24.0)),
-                egui::Sense::hover(),
-            );
-            let grip = focusable(ui, rect, ui.make_persistent_id("inspector.grip"));
-            grip.widget_info(|| {
-                egui::WidgetInfo::labeled(
-                    egui::WidgetType::Other,
-                    true,
-                    "Ancho del panel de propiedades",
-                )
-            });
-            if grip.hovered() || grip.dragged() {
-                ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-            }
-            if grip.dragged() {
-                self.resize_by(-grip.drag_delta().x);
-            }
-            grip.on_hover_text("Arrastra para cambiar el ancho del panel");
-            ui.label(
-                egui::RichText::new(title)
-                    .size(tokens.text_label)
-                    .strong()
-                    .color(tokens.ink),
-            );
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let (rect, _) = ui.allocate_exact_size(
-                    egui::vec2(tokens.unit, tokens.unit),
-                    egui::Sense::hover(),
-                );
-                let button = focusable(ui, rect, ui.make_persistent_id("inspector.hide"));
-                if ui.is_rect_visible(rect) {
-                    if button.hovered() || button.has_focus() {
-                        ui.painter()
-                            .rect_filled(rect, tokens.radius_small, tokens.accent_soft);
-                    }
-                    draw_panel_glyph(ui, rect, tokens.ink, tokens.accent);
-                }
-                button.widget_info(|| {
-                    egui::WidgetInfo::labeled(
-                        egui::WidgetType::Button,
-                        true,
-                        "Ocultar el panel de propiedades",
-                    )
-                });
-                hide = activated(ui, &button);
-                button.on_hover_text("Ocultar el panel de propiedades (Ctrl+J)");
-            });
-        });
-        if hide {
-            self.close();
-        }
-        ui.add_space(tokens.unit * 0.25);
-        let line = ui.max_rect();
-        ui.painter().line_segment(
-            [
-                egui::pos2(line.left(), ui.cursor().top()),
-                egui::pos2(line.right(), ui.cursor().top()),
-            ],
-            egui::Stroke::new(1.0_f32, tokens.line),
-        );
-        ui.add_space(tokens.unit * 0.25);
     }
 
     /// The content of the current selection.
@@ -451,13 +361,15 @@ impl Window {
         }
     }
 
-    /// The **Ver** commands the window owns: the zoom and pan of the view, and the panel.
+    /// The **Ver** commands the window owns: the zoom and pan of the view, and both panels.
     pub(crate) fn view_command(&mut self, command: &str) {
         self.view.command(command);
         match command {
+            "Catálogo" => self.sidebar.toggle(),
             "Propiedades" => self.inspector.toggle(),
             "Restablecer vista" => {
                 self.view.reset();
+                self.sidebar.reset();
                 self.inspector.reset();
             }
             _ => {}
@@ -507,45 +419,6 @@ fn title_of(
         return placement.catalog_id.clone();
     }
     String::from("Propiedades")
-}
-
-/// The project's panel glyph: two rectangles with the side that folds marked. The desktop
-/// icon themes have no panel glyph, and a label alone is not a control.
-fn draw_panel_glyph(ui: &egui::Ui, rect: egui::Rect, ink: egui::Color32, accent: egui::Color32) {
-    // Every measure is a fraction of the control, so the glyph follows the theme's unit
-    // instead of carrying a size of its own.
-    let size = rect.size().min_elem() * 0.72;
-    let body = egui::Rect::from_center_size(rect.center(), egui::vec2(size, size * 0.8));
-    ui.painter().rect_stroke(
-        body,
-        size * 0.14,
-        egui::Stroke::new(1.0_f32, ink),
-        egui::StrokeKind::Inside,
-    );
-    let folded = egui::Rect::from_min_max(
-        egui::pos2(body.left() + size * 0.12, body.top() + size * 0.14),
-        egui::pos2(body.left() + size * 0.32, body.bottom() - size * 0.14),
-    );
-    ui.painter().rect_filled(folded, size * 0.06, accent);
-}
-
-/// A painted control gets the keyboard focus: `Tab` reaches it and the accessibility layer
-/// finds it by its name.
-fn focusable(ui: &mut egui::Ui, rect: egui::Rect, id: egui::Id) -> egui::Response {
-    let response = ui.interact(rect, id, egui::Sense::click_and_drag());
-    let layer = ui.layer_id();
-    ui.memory_mut(|memory| memory.interested_in_focus(id, layer));
-    response
-}
-
-/// Whether the reader activated the control with the pointer or with `Enter`/`Space` while
-/// it has the keyboard.
-fn activated(ui: &egui::Ui, response: &egui::Response) -> bool {
-    response.clicked()
-        || (response.has_focus()
-            && ui.input(|input| {
-                input.key_pressed(egui::Key::Enter) || input.key_pressed(egui::Key::Space)
-            }))
 }
 
 #[cfg(test)]
