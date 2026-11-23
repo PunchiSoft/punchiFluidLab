@@ -528,6 +528,10 @@ impl Window {
 }
 
 impl eframe::App for Window {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the update assembles the window's regions in the order the reader sees them"
+    )]
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
