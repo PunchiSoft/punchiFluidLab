@@ -11,10 +11,10 @@ use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::{Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 
-pub(crate) const COUNT: u32 = 4;
+pub const COUNT: u32 = 4;
 
-#[derive(Clone, Copy)]
-pub(crate) enum Template {
+#[derive(Debug, Clone, Copy)]
+pub enum Template {
     WorkedExample,
     DoubleActing,
     AirPreparation,
@@ -22,7 +22,8 @@ pub(crate) enum Template {
 }
 
 impl Template {
-    pub(crate) const fn from_index(index: u32) -> Option<Self> {
+    #[must_use]
+    pub const fn from_index(index: u32) -> Option<Self> {
         match index {
             0 => Some(Self::WorkedExample),
             1 => Some(Self::DoubleActing),
@@ -48,15 +49,6 @@ impl Part {
             centre: area.point_at(x, y),
             width: unit * w,
             height: unit * h,
-        }
-    }
-
-    fn in_box(catalog_id: &'static str, rect: Rect) -> Self {
-        Self {
-            catalog_id,
-            centre: rect.center(),
-            width: rect.width(),
-            height: rect.height(),
         }
     }
 }
@@ -89,10 +81,13 @@ const fn wire(
     }
 }
 
-const WORKED_EXAMPLE_WIRES: [Wire; 3] = [
+const WORKED_EXAMPLE_WIRES: [Wire; 6] = [
     wire(0, "1", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
-    wire(2, "2", 3, "1", WORKING),
+    wire(1, "2", 3, "1", WORKING),
+    wire(2, "2", 4, "1a", WORKING),
+    wire(3, "2", 4, "1b", WORKING),
+    wire(4, "2", 5, "1", WORKING),
 ];
 const DOUBLE_ACTING_WIRES: [Wire; 3] = [
     wire(0, "1", 1, "1", WORKING),
@@ -115,20 +110,62 @@ const ELECTRICAL_CONTROL_WIRES: [Wire; 5] = [
 
 type Composition = (Vec<Part>, &'static [Wire]);
 
-fn worked_example(area: Rect) -> Option<Composition> {
-    let layout = punchi_fluid_draw::layout(area)?;
-    Some((
+fn worked_example(area: Rect) -> Composition {
+    // The OR circuit of the owner: the supply feeds the service unit, the unit feeds two
+    // 3/2 valves, the valves feed the two inlets of the shuttle and the shuttle feeds the
+    // single-acting cylinder.
+    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+    (
         vec![
-            Part::in_box(punchi_fluid_draw::schematic::SUPPLY_ID, layout.supply),
-            Part::in_box(
-                punchi_fluid_draw::schematic::PREPARATION_ID,
-                layout.preparation,
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::SUPPLY_ID,
+                0.12,
+                0.80,
+                1.0,
+                1.0,
             ),
-            Part::in_box(punchi_fluid_draw::schematic::VALVE_ID, layout.valve),
-            Part::in_box(punchi_fluid_draw::schematic::CYLINDER_ID, layout.cylinder),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::PREPARATION_ID,
+                0.24,
+                0.68,
+                1.0,
+                1.0,
+            ),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::VALVE_ID,
+                0.36,
+                0.56,
+                1.0,
+                1.0,
+            ),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::VALVE_ID,
+                0.52,
+                0.56,
+                1.0,
+                1.0,
+            ),
+            Part::at(area, unit, "valve.shuttle", 0.44, 0.42, 1.0, 1.0),
+            Part::at(
+                area,
+                unit,
+                punchi_fluid_draw::schematic::CYLINDER_ID,
+                0.54,
+                0.26,
+                2.2,
+                1.0,
+            ),
         ],
         &WORKED_EXAMPLE_WIRES,
-    ))
+    )
 }
 
 fn double_acting(area: Rect) -> Composition {
@@ -199,12 +236,12 @@ fn electrical_control(area: Rect) -> Composition {
     )
 }
 
-fn composition(template: Template, area: Rect) -> Option<Composition> {
+fn composition(template: Template, area: Rect) -> Composition {
     match template {
         Template::WorkedExample => worked_example(area),
-        Template::DoubleActing => Some(double_acting(area)),
-        Template::AirPreparation => Some(air_preparation(area)),
-        Template::ElectricalControl => Some(electrical_control(area)),
+        Template::DoubleActing => double_acting(area),
+        Template::AirPreparation => air_preparation(area),
+        Template::ElectricalControl => electrical_control(area),
     }
 }
 
@@ -214,11 +251,10 @@ fn composition(template: Template, area: Rect) -> Option<Composition> {
 ///
 /// Returns an error when the index is unknown, the area cannot hold the worked example, or
 /// an effective catalog definition no longer provides one of the ports the template needs.
-pub(crate) fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
+pub fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
     let template = Template::from_index(index)
         .ok_or_else(|| String::from("that start-page template does not exist"))?;
-    let (parts, wires) = composition(template, area)
-        .ok_or_else(|| String::from("the drawing area is too small for this template"))?;
+    let (parts, wires) = composition(template, area);
 
     for part in &parts {
         if catalog.get(part.catalog_id).is_none() {
@@ -282,7 +318,7 @@ mod tests {
     fn all_four_templates_are_bounded_connected_starting_documents() {
         let catalog = Catalog::builtin();
         let area = Rect::from_corners(Pt::new(10.0, 10.0), Pt::new(170.0, 100.0));
-        let expected = [(4, 3), (3, 3), (5, 4), (6, 5)];
+        let expected = [(6, 6), (3, 3), (5, 4), (6, 5)];
 
         for (index, (components, pipes)) in expected.into_iter().enumerate() {
             let index = u32::try_from(index).expect("four template ids fit in u32");

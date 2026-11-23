@@ -50,9 +50,9 @@ link fails the check.
 | Task | Read (canonical) | Run | Evidence |
 |---|---|---|---|
 | A new control | [Visual language](../../../docs/ui-ux.md#visual-language); [The window adapts](../../../docs/ui-ux.md#22-the-window-adapts) | `--check-theme`, `--check-qml`, `--check-layout`, `--selftest` | light/dark capture; the manual checklist |
-| A token or theme change | [Visual language](../../../docs/ui-ux.md#visual-language); [theme.cpp](../../../apps/punchi-fluid-qt/src/theme.cpp) (the names) | `--check-theme`, `--check-layout` | the contrast line; the manual unit, motion and no-literal checks |
+| A token or theme change | [Visual language](../../../docs/ui-ux.md#visual-language); [theme.cpp](../../../apps/punchi-fluid/src/theme.rs) (the names) | `--check-theme`, `--check-layout` | the contrast line; the manual unit, motion and no-literal checks |
 | A motion change | [Motion](../../../docs/ui-ux.md#motion); [theme.rs](../../../apps/punchi-fluid/src/theme.rs) (the clock; the Qt adapter retires with ADR 0035) | `--check-theme` (prints `motionMs`); the frame measurement at 200 components | the capture at rest in both themes; the reduced-motion test; the measurement note |
-| A new icon | [ADR 0028](../../../docs/adr/0028-the-ribbon-draws-its-own-icons.md); [actionicons.cpp](../../../apps/punchi-fluid-qt/src/actionicons.cpp); P-033 | `--check-icons`; `--icon-sheet <file> --theme light` and `--icon-sheet <file> --theme dark` | the rendered sheet; the small-size reading |
+| A new icon | [ADR 0028](../../../docs/adr/0028-the-ribbon-draws-its-own-icons.md); [actionicons.cpp](../../../apps/punchi-fluid/src/ribbon/icons.rs); P-033 | `--check-icons`; `--icon-sheet <file> --theme light` and `--icon-sheet <file> --theme dark` | the rendered sheet; the small-size reading |
 | A ribbon change | [The ribbon](../../../docs/ui-ux.md#1-ribbon-top); the P-028 rule it records | `--check-layout`, `--selftest` | the width captures |
 | A layout change | [The window adapts](../../../docs/ui-ux.md#22-the-window-adapts); [qt-adaptive-layout](../qt-adaptive-layout/SKILL.md) | `--check-layout`, `--check-qml` | the size captures |
 | A review | the task's row | `./scripts-dev/check.sh` | the checklist marked and the evidence linked |

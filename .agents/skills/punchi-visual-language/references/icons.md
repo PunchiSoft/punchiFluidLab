@@ -9,7 +9,7 @@ desktop's themed icon. A component is never shown by an action icon; it is drawn
 
 - [ADR 0028](../../../../docs/adr/0028-the-ribbon-draws-its-own-icons.md) — the family, its
   grid and stroke, the resolution order and the “nothing copied” rule.
-- [actionicons.cpp](../../../../apps/punchi-fluid-qt/src/actionicons.cpp) — the existing
+- [actionicons.cpp](../../../../apps/punchi-fluid/src/ribbon/icons.rs) — the existing
   drawings and the command table they serve.
 - **P-033** — the family's own node and inventory. Its spec is
   `specs/icon-family.md` in the EGM workspace until `docs/reference/icons.md` lands in this

@@ -23,6 +23,7 @@ mod ribbon;
 mod scene;
 mod sidebar;
 mod sim;
+mod start;
 mod surface;
 mod theme;
 mod view;
@@ -96,6 +97,8 @@ struct Window {
     running: bool,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
+    /// Whether the Inicio page is the screen, not the sheet.
+    start_open: bool,
 }
 
 /// A primary-button drag of the selection.
@@ -112,6 +115,21 @@ const HIT_SLACK: f32 = 1.0;
 const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
+    /// The Inicio page: returns `true` while it is the screen, after loading the template
+    /// the reader chose.
+    fn show_start(&mut self, ui: &mut egui::Ui) -> bool {
+        if !self.start_open {
+            return false;
+        }
+        if let Some(index) = start::show(ui) {
+            if let Some(document) = start::document(index, &self.catalog, self.page.rect()) {
+                *self = Window::new(self.theme.clone(), document, None, None);
+                self.start_open = false;
+            }
+        }
+        true
+    }
+
     fn new(
         theme: theme::Theme,
         document: Document,
@@ -148,6 +166,7 @@ impl Window {
             model_revision: 0,
             running: false,
             pressed_valve: None,
+            start_open: true,
         }
     }
 
@@ -506,6 +525,10 @@ impl Window {
 }
 
 impl eframe::App for Window {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the update assembles the window's regions in the order the reader sees them"
+    )]
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
@@ -560,6 +583,9 @@ impl eframe::App for Window {
             });
 
         egui::CentralPanel::default().show(context, |ui| {
+            if self.show_start(ui) {
+                return;
+            }
             let area = ui.available_rect_before_wrap();
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {

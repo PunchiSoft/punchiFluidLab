@@ -95,13 +95,13 @@ the point. Free software is how a subject stops being an entrance fee.
 | `punchi-fluid-session` | The document's life between the file and the window: the sheet and document conversion |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
 | `punchi-fluid-cli` | `validate`, `simulate` and `check` without a window |
-| `apps/punchi-fluid-qt` | The window: ribbon, catalog sidebar, sheet, status bar and the desktop's own palette, over the C ABI |
+| `apps/punchi-fluid` | The Rust window: the fixed layout, the ribbon, the sheet, the status bar and the desktop's palette |
 
 ## Start here
 
 ```bash
-./setup.sh          # the interactive menu: tools, build, run, try live, tests, gate
-./setup.sh --try    # the live loop directly: save, rebuild, relaunch
+./setup.sh          # the interactive menu: tools, build, run, tests, gate
+./setup.sh --try    # build the window and open it
 ```
 
 `setup.sh` is the friendly entry point, not a system installer: the project is unreleased and
@@ -111,20 +111,20 @@ has no package yet. It opens the same menu as `scripts-dev/menu.sh`.
 
 ```bash
 ./scripts-dev/run.sh                                    # window; builds only if stale
-./scripts-dev/run.sh --toggle                           # starts with the valve actuated
-./scripts-dev/run.sh --no-build --theme dark            # already-built binary, dark palette
-./scripts-dev/run.sh --theme light                      # pin the palette for a screenshot
-./scripts-dev/dev.sh                                   # live loop: save, rebuild, relaunch
-./scripts-dev/menu.sh                                  # interactive menu for the tasks above
-./scripts-dev/menu.sh --try                            # straight into the live rebuild loop
+./scripts-dev/run.sh --no-build                         # already-built binary
+./scripts-dev/run.sh --release                          # release profile
+./scripts-dev/run.sh -- circuito.pfluid                 # open a sheet
+./scripts-dev/dev.sh                                    # live loop: save, rebuild, relaunch
+./scripts-dev/menu.sh                                   # interactive menu for the tasks above
+./scripts-dev/menu.sh --try                             # build the window and open it
 cargo run --bin punchi-fluid-cli -- check circuit.pfluid   # headless check of a sheet
 ```
 
-`run.sh` compiles only when a source changed and then executes the binary directly;
-`--no-build` never invokes Cargo, and `--theme light|dark` is passed to the window. Without
-`--theme`, the window follows the desktop. `--toggle` actuates the valve; it does not start
-the simulation. `check` reads the sheet format the editor saves; `validate` and `simulate`
-still read the legacy circuit format, as [the CLI reference](docs/reference/cli.md) explains.
+`run.sh` compiles only when a source changed and then executes `target/debug/punchi-fluid`
+directly; `--no-build` never invokes Cargo, `--release` uses the release profile, and
+`-- <file>` passes the sheet to open. The window follows the desktop's theme. `check` reads
+the sheet format the editor saves; `validate` and `simulate` still read the legacy circuit
+format, as [the CLI reference](docs/reference/cli.md) explains.
 
 In the window the transport runs the model: **Iniciar** (F9) starts, **Pausa** (F8) pauses,
 **Paso** (F10) advances one frame, **Hasta cambio** stops at the first end stop or valve
@@ -152,18 +152,15 @@ is neither of the two and is the paper most Chilean offices still stock. The pla
 [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); the custom size exists in
 the export API but not in the window, and the last choice is not remembered per user yet.
 
-Requirements: Rust stable (pinned in `rust-toolchain.toml`), Qt 6.5 or newer with Qt Quick,
-CMake and Ninja. The Rust core builds with `cargo build --release -p punchi-fluid-ffi`; the
-window with
+Requirements: Rust stable (pinned in `rust-toolchain.toml`). The window builds with
 
 ```bash
-cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja
-cmake --build apps/punchi-fluid-qt/build
-apps/punchi-fluid-qt/build/punchi-fluid
+cargo build -p punchi-fluid-window --bin punchi-fluid
+target/debug/punchi-fluid
 ```
 
-The core is linked as a static library, so the result is one binary with no runtime search
-path. Keeping it in Rust is what also makes a WebAssembly build possible later.
+The crates are linked statically, so the result is one binary with no runtime search path.
+Keeping everything in Rust is what also makes a WebAssembly build possible later.
 
 ## Components are files, not code
 
