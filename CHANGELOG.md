@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Azul profundo, el cuarto tema — 2026-11-23
+
+- **Azul profundo** entra como semilla índigo (fondo azul noche, paneles profundos, acento
+  cobalto y enlace cian) por la misma derivación y la misma tabla de contraste.
+  `settings.state` guarda `appearance=indigo`; la galería la ofrece como cuarta tarjeta, las
+  tarjetas se reparten en dos filas y la página de Apariencia gana scroll.
+- **Grafito** queda para su propia rama.
+
 ### Nórdico, el tema de alto contraste — 2026-11-23
 
 - **Nórdico** entra como semilla de alto contraste (fondo casi negro, tinta blanca pura y

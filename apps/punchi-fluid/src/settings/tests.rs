@@ -71,6 +71,11 @@ fn the_appearance_round_trips_and_an_unknown_value_reads_the_desktop() {
         parsed.appearance,
         crate::theme::Appearance::Theme(crate::theme::ThemeId::Nordic)
     );
+    let parsed = parse("version=1\nappearance=indigo\n").expect("the version is there");
+    assert_eq!(
+        parsed.appearance,
+        crate::theme::Appearance::Theme(crate::theme::ThemeId::Indigo)
+    );
     let parsed = parse("version=1\nappearance=future\n").expect("the version is there");
     assert_eq!(parsed.appearance, crate::theme::Appearance::Desktop);
 
