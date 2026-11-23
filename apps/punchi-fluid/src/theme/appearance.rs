@@ -23,11 +23,12 @@ pub enum Appearance {
 impl Appearance {
     /// The theme cards the gallery offers, in reading order: light, then dark. The desktop
     /// and the system modes are segments of their own, not cards.
-    pub const CHOICES: [Self; 4] = [
+    pub const CHOICES: [Self; 5] = [
         Self::Theme(ThemeId::Cad),
         Self::Theme(ThemeId::Slate),
         Self::Theme(ThemeId::Nordic),
         Self::Theme(ThemeId::Indigo),
+        Self::Theme(ThemeId::Graphite),
     ];
 
     /// The settings-file value.
@@ -73,11 +74,19 @@ pub enum ThemeId {
     Nordic,
     /// The deep-blue palette: navy chrome, a cobalt accent and a cyan link.
     Indigo,
+    /// The warm graphite palette: muted chrome, soft ink and a muted blue accent.
+    Graphite,
 }
 
 impl ThemeId {
     /// Every built-in theme, in the order the gallery shows them: light, then dark.
-    pub const ALL: [Self; 4] = [Self::Cad, Self::Slate, Self::Nordic, Self::Indigo];
+    pub const ALL: [Self; 5] = [
+        Self::Cad,
+        Self::Slate,
+        Self::Nordic,
+        Self::Indigo,
+        Self::Graphite,
+    ];
 
     /// The stable settings-file id.
     #[must_use]
@@ -87,6 +96,7 @@ impl ThemeId {
             Self::Slate => "slate",
             Self::Nordic => "nordic",
             Self::Indigo => "indigo",
+            Self::Graphite => "graphite",
         }
     }
 
@@ -98,6 +108,7 @@ impl ThemeId {
             Self::Slate => "Pizarra",
             Self::Nordic => "Nórdico",
             Self::Indigo => "Azul profundo",
+            Self::Graphite => "Grafito",
         }
     }
 
@@ -111,6 +122,7 @@ impl ThemeId {
             Self::Slate => slate_palette(),
             Self::Nordic => nordic_palette(),
             Self::Indigo => indigo_palette(),
+            Self::Graphite => graphite_palette(),
         }
     }
 }
@@ -126,6 +138,20 @@ fn cad_palette() -> Palette {
         highlight: Rgb::new(29, 78, 216),
         highlighted_text: WHITE,
         link: Rgb::new(37, 99, 235),
+    }
+}
+
+/// The warm graphite palette: muted chrome, soft ink and a muted blue accent; the same
+/// derivation lifts the paper and measures every pairing.
+fn graphite_palette() -> Palette {
+    Palette {
+        window: Rgb::new(26, 26, 30),
+        window_text: Rgb::new(228, 228, 231),
+        base: Rgb::new(34, 34, 40),
+        button: Rgb::new(44, 44, 52),
+        highlight: Rgb::new(59, 130, 246),
+        highlighted_text: WHITE,
+        link: Rgb::new(96, 165, 250),
     }
 }
 
