@@ -90,6 +90,7 @@ fn main() -> eframe::Result<()> {
             .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
             .with_min_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
             .with_title("Punchi Fluid Lab")
+            .with_app_id(branding::APP_ID)
             .with_icon(branding::window_icon()),
         ..Default::default()
     };
