@@ -28,6 +28,7 @@ skill is the bug.
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
+| [repo-maintenance](repo-maintenance/SKILL.md) | the maintenance pass: local backup first, merged branches and worktrees, `target` and cargo caches, CI caches, and a restore test | after a merge; weekly; when disk, caches or the local backup need review |
 | [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) | breakpoints on available room, Layout versus anchors, per-panel minimums, the size and DPI matrix | resizing the shell; adding a panel, dock or view strip; proving the adaptive stage |
 | [punchi-visual-language](punchi-visual-language/SKILL.md) | route a visual change to its canonical document, its command and its evidence; controls, tokens, icons, ribbon, layout and review | changing a control, token, icon or the ribbon; reviewing the window's visual language |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
@@ -56,6 +57,10 @@ Before the first edit of any change, read
 the branch, the gate and the pull request are one route. At the end of every step, before
 the hand-off, read [step-report](step-report/SKILL.md): the owner reads OK / Falta /
 Siguiente, not a session log.
+
+For the pass after a merge — the local backup, the branch and its worktree, the build and
+the CI caches — read [repo-maintenance](repo-maintenance/SKILL.md): the backup is verified
+before anything is deleted, and an old backup is an alert, not a deletion candidate.
 
 For a plan the owner asks for — anything that spans more than one pull request — read
 [phased-plan](phased-plan/SKILL.md) before the first branch: 0A proves the baseline, 0B
@@ -102,7 +107,9 @@ from updated `main`, the gate, a pull request with its checklist, and a merge. T
 are [phased-plan](phased-plan/SKILL.md)'s: Phase 0 proves the ground and writes the
 evidence, each delivery phase is one merged pull request, and the final phase evaluates and
 audits. The diamond is the merge policy: **manual** by default, **auto** only when an ADR
-authorises it, and one pull request at a time either way.
+authorises it, and one pull request at a time either way. Once the pull request is merged,
+[repo-maintenance](repo-maintenance/SKILL.md) is the pass that closes the branch, the
+worktree and the caches, after the local backup is verified.
 
 ## Where the guidance comes from
 
