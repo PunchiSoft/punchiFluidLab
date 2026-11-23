@@ -21,6 +21,8 @@ use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
+use crate::ribbon::Command;
+
 mod auto_hide;
 mod export;
 mod files;
@@ -442,36 +444,63 @@ impl Window {
     }
 
     /// Runs the command the ribbon picked, whether it edits the document or the view.
-    fn run_command(&mut self, command: &str) {
+    /// Runs a ribbon command. The match is exhaustive, so a command without a handler does
+    /// not compile; the table and this function are the two halves of the same contract.
+    fn dispatch(&mut self, command: Command) {
         match command {
-            "Nuevo" => self.new_document(),
-            "Abrir" => self.open_dialog(files::Mode::Open),
-            "Guardar" => self.save(),
-            "Guardar como" => self.open_dialog(files::Mode::SaveAs),
-            "Exportar" => self.export_dialog(),
-            "Borrar" => self.remove_selected(),
-            "Girar" => self.rotate_selected(),
-            "Reflejar" => self.reflect_selected(),
-            "Duplicar" => self.duplicate_selected(),
-            "Copiar" => self.copy_selected(),
-            "Pegar" => self.paste(),
-            "Izquierda" => self.align_selected(Align::Left),
-            "Derecha" => self.align_selected(Align::Right),
-            "Arriba" => self.align_selected(Align::Top),
-            "Abajo" => self.align_selected(Align::Bottom),
-            "Deshacer" => self.undo(),
-            "Rehacer" => self.redo(),
-            "Iniciar" => self.start(),
-            "Pausa" => self.running = false,
-            "Paso" => {
+            Command::ProjectNew => self.new_document(),
+            Command::ProjectOpen => self.open_dialog(files::Mode::Open),
+            Command::ProjectSave => self.save(),
+            Command::ProjectSaveAs => self.open_dialog(files::Mode::SaveAs),
+            Command::ProjectExport => self.export_dialog(),
+            Command::CircuitNew => self.new_circuit(),
+            Command::Undo => self.undo(),
+            Command::Redo => self.redo(),
+            Command::Copy => self.copy_selected(),
+            Command::Paste => self.paste(),
+            Command::Duplicate => self.duplicate_selected(),
+            Command::Delete => self.remove_selected(),
+            Command::Rotate => self.rotate_selected(),
+            Command::Mirror => self.reflect_selected(),
+            Command::AlignLeft => self.align_selected(Align::Left),
+            Command::AlignRight => self.align_selected(Align::Right),
+            Command::AlignTop => self.align_selected(Align::Top),
+            Command::AlignBottom => self.align_selected(Align::Bottom),
+            Command::ZoomIn => self.view.zoom_in(),
+            Command::ZoomOut => self.view.zoom_out(),
+            Command::ZoomReset => self.view.reset(),
+            Command::Catalog | Command::Properties | Command::Autohide | Command::ResetView => {
+                self.view_command(command);
+            }
+            Command::Theme => self.open_preferences(),
+            Command::Start => self.start(),
+            Command::Pause => self.running = false,
+            Command::Step => {
                 self.running = false;
                 self.advance(0.01);
             }
-            "Detener" => self.stop(),
-            "Hasta cambio" => self.until_change(),
-            "Tema" => self.open_preferences(),
-            _ => self.view_command(command),
+            Command::UntilChange => self.until_change(),
+            Command::Stop => self.stop(),
         }
+    }
+
+    /// **Circuito ▸ Nuevo circuito**: an empty circuit, made active, as one undo. The project
+    /// always keeps at least one circuit, so the document can refuse it; the notice says so.
+    fn new_circuit(&mut self) {
+        let title = format!("Circuito {}", self.document.circuits().len() + 1);
+        let id = self.document.add_circuit(title);
+        if id == 0 {
+            self.notice = Some(String::from("no caben más circuitos"));
+            return;
+        }
+        let (page, block) = files::page_and_block(&self.document);
+        self.page = page;
+        self.block = block;
+        self.selected.clear();
+        self.selected_pipe = None;
+        self.model = None;
+        self.model_revision = 0;
+        self.notice = Some(String::from("circuito nuevo"));
     }
 
     /// The keyboard commands and the ribbon's enabled state, so `update` stays the layout.

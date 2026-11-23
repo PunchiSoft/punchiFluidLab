@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La cinta despacha comandos, no etiquetas — 2026-11-23
+
+- **La cinta deja de despachar por etiqueta**: `ribbon::Command` tipa la tabla y el despacho
+  de la ventana es exhaustivo; un comando sin handler no compila. Los comandos de archivo
+  (Nuevo, Abrir, Guardar como, Exportar) están vivos y **Guardar** sin ruta pide una;
+  **Circuito ▸ Nuevo circuito** crea un circuito vacío y activo en vez de un documento nuevo.
+  Lo que aún no tiene handler se pinta apagado, nunca como un botón que miente.
+- **Pruebas**: la tabla cubre todos los comandos, un comando deshabilitado no despacha, cada
+  comando habilitado despacha el suyo, cada control del conjunto tiene su `Command` y las dos
+  acciones «Nuevo» son comandos distintos.
+
 ### Grafito, el quinto tema — 2026-11-23
 
 - **Grafito** entra como semilla cálida (grafito apagado, tinta suave y azul tenue) por la

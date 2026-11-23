@@ -138,10 +138,10 @@ impl Window {
             Some(Action::Close) => self.preferences.open = false,
             Some(Action::ResetPage) => match page {
                 Page::Appearance => self.apply_appearance(context, Appearance::Desktop),
-                Page::Panels => self.view_command("Restablecer vista"),
+                Page::Panels => self.reset_view(),
             },
             Some(Action::ToggleAutohide) => self.toggle_autohide(),
-            Some(Action::ResetView) => self.view_command("Restablecer vista"),
+            Some(Action::ResetView) => self.reset_view(),
             None => {}
         }
     }

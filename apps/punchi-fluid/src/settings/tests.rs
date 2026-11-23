@@ -431,7 +431,7 @@ fn reset_view_opens_the_panels_at_their_defaults_and_persists_them() {
     assert!(write(&file, &saved));
     let mut window = window_with(Document::new()).with_settings(Store::at(Some(file.clone())));
     assert!(window.autohide_on, "the flag came from the file");
-    window.run_command("Restablecer vista");
+    window.dispatch(crate::ribbon::Command::ResetView);
     assert!(window.sidebar.is_open(), "the reset opens the catalog");
     assert!(window.inspector.is_open(), "the reset opens the dock");
     assert!((window.sidebar.width() - crate::sidebar::DEFAULT_WIDTH).abs() <= f32::EPSILON);
@@ -451,14 +451,14 @@ fn the_autohide_command_flips_the_flag_and_remembers_it() {
     let file = dir.join(FILE_NAME);
     let mut window = window_with(Document::new()).with_settings(Store::at(Some(file.clone())));
     assert!(!window.autohide_on, "auto-hide is off by default");
-    window.run_command("Ocultar al salir");
+    window.dispatch(crate::ribbon::Command::Autohide);
     assert!(window.autohide_on);
     assert_eq!(
         read(&file).map(|settings| settings.autohide),
         Some(true),
         "the flag is remembered"
     );
-    window.run_command("Ocultar al salir");
+    window.dispatch(crate::ribbon::Command::Autohide);
     assert!(!window.autohide_on);
     assert_eq!(read(&file).map(|settings| settings.autohide), Some(false));
     let _ = std::fs::remove_dir_all(&dir);
@@ -498,9 +498,9 @@ fn remembering_the_panels_is_not_a_document_change() {
     window.sidebar.resize_by(30.0);
     window.inspector.close();
     window.inspector.open();
-    window.run_command("Catálogo");
-    window.run_command("Ocultar al salir");
-    window.run_command("Restablecer vista");
+    window.dispatch(crate::ribbon::Command::Catalog);
+    window.dispatch(crate::ribbon::Command::Autohide);
+    window.dispatch(crate::ribbon::Command::ResetView);
     // The auto-hide timers close and open the panels, which is still view state.
     window.start_open = false;
     window.autohide_on = true;

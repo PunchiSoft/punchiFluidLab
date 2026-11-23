@@ -456,39 +456,41 @@ impl Window {
         }
     }
 
-    /// The **Ver** commands the window owns: the zoom and pan of the view, and both panels.
-    pub(crate) fn view_command(&mut self, command: &str) {
-        self.view.command(command);
+    /// The **Ver** commands the window owns: the two panels and the view reset. The zoom is
+    /// dispatched directly by the window.
+    pub(crate) fn view_command(&mut self, command: crate::ribbon::Command) {
         match command {
-            "Catálogo" => {
+            crate::ribbon::Command::Catalog => {
                 if self.layout_mode() == crate::layout::LayoutMode::Compact {
                     self.toggle_drawer(crate::shell::Drawer::Catalog);
                 } else {
                     self.sidebar.toggle();
                 }
             }
-            "Propiedades" => {
+            crate::ribbon::Command::Properties => {
                 if self.layout_mode() == crate::layout::LayoutMode::Compact {
                     self.toggle_drawer(crate::shell::Drawer::Inspector);
                 } else {
                     self.inspector.toggle();
                 }
             }
-            "Ocultar al salir" => self.toggle_autohide(),
-            "Restablecer vista" => {
-                self.view.reset();
-                self.sidebar.reset();
-                self.inspector.reset();
-                self.close_drawer();
-                self.autohide_on = false;
-                self.auto_hide.cancel_all();
-                // The reader asked for the defaults, so they are persisted at once: a close
-                // before the settle delay must not keep the state the reset removed.
-                let settings = self.panel_settings();
-                self.settings.remember(settings);
-            }
+            crate::ribbon::Command::Autohide => self.toggle_autohide(),
+            crate::ribbon::Command::ResetView => self.reset_view(),
             _ => {}
         }
+    }
+
+    /// **Ver ▸ Restablecer vista**: the panels and the view return to the defaults, and the
+    /// answer is persisted at once so a close before the settle delay cannot undo it.
+    pub(crate) fn reset_view(&mut self) {
+        self.view.reset();
+        self.sidebar.reset();
+        self.inspector.reset();
+        self.close_drawer();
+        self.autohide_on = false;
+        self.auto_hide.cancel_all();
+        let settings = self.panel_settings();
+        self.settings.remember(settings);
     }
 
     /// Runs the edit the panel asked for through the document's own command.

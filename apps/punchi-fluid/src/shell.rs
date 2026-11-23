@@ -245,7 +245,7 @@ impl Window {
             self.ribbon.show(ui, &palette);
         });
         if let Some(command) = self.ribbon.take() {
-            self.run_command(&command);
+            self.dispatch(command);
         }
     }
 
