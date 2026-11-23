@@ -547,12 +547,11 @@ row whose text and icon are the measured `onAccent`.
 
 The example cards **divide the page's width between them**, with one unit between cards and
 a minimum of 10 × `unit` before the grid starts a second row. Each card's height follows its
-width: the plate is the content width over the raster's 512:288 aspect, and the card is the
-plate over 0.65, so the plate is 65 % of it and the proportion holds at every breakpoint. At
-the default 18 px unit and a 1280 px window a card is about 342 × 278 px with a plate of
-about 321 × 181 px. Each card is a picture and its label: the picture fills the plate width
-and keeps its aspect, with a transparent band for the 1.2 % difference between the 512 × 288
-raster and the authored 180 × 100 mm area; the plate is `panel` on a `surfaceRaised` card
+width: the plate is the content width over the 16:9 aspect, and the card is the plate over
+0.65, so the plate is 65 % of it and the proportion holds at every breakpoint. At the default
+18 px unit and a 1280 px window a card is about 342 × 278 px with a plate of about
+321 × 181 px. Each card is a picture and its label: the picture fills the plate width and
+keeps its aspect; the plate is `panel` on a `surfaceRaised` card
 (`surfaceSunken` while pressed, `accent` border on hover and focus), and the name is
 `textLabel` with the detail on one elided line below it, both with the picture's left margin,
 plus a tooltip that names the circuit. The default way in (**Nuevo proyecto**) carries the
