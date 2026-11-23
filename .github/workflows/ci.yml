@@ -162,7 +162,7 @@ jobs:
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Build the Rust window
-        run: cargo build -p punchi-fluid
+        run: cargo build -p punchi-fluid-window --bin punchi-fluid
 
       - name: Drive the Rust window headlessly
         run: cargo test -p punchi-fluid-window
