@@ -288,7 +288,7 @@ fn the_inicio_commands_create_a_project_and_open_the_file_dialog() {
 }
 
 #[test]
-fn the_learning_rows_wait_for_their_panels() {
+fn the_learning_rows_keep_the_page_open_behind_their_panel() {
     let mut window = window();
     {
         let mut harness = harness(&mut window);
@@ -299,7 +299,7 @@ fn the_learning_rows_wait_for_their_panels() {
     }
     assert!(
         window.start_open,
-        "a command without its panel keeps the page open"
+        "the panel opens over the page, it does not leave it"
     );
     assert!(window.notice.is_none());
 }

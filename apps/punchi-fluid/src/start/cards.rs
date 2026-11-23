@@ -33,6 +33,54 @@ const PLATE_SHARE: f32 = 0.65;
 /// The «Empezar» card icon size, in grid units: the proposal's `unit * 1.8` raster rule.
 const CARD_ICON: f32 = 1.8;
 
+/// The offer to recover the safety copy found at start, above «Empezar»: what it is, the file
+/// it belongs to when the document has one, and the two answers. The banner is only drawn
+/// while a copy waits, so it leaves without a word once it is answered.
+pub(super) fn recovery_banner(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    document_name: Option<&str>,
+) -> Option<Action> {
+    let mut action = None;
+    egui::Frame::default()
+        .fill(tokens.accent_soft)
+        .stroke(egui::Stroke::new(1.0_f32, tokens.accent))
+        .corner_radius(tokens.radius_control)
+        .inner_margin(tokens.unit * 0.7)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.label(
+                egui::RichText::new("Se encontró trabajo sin guardar")
+                    .size(tokens.text_label)
+                    .strong()
+                    .color(tokens.ink),
+            );
+            let detail = match document_name {
+                Some(name) => format!(
+                    "La copia de seguridad de {name} se escribió mientras había cambios sin guardar."
+                ),
+                None => String::from(
+                    "La copia de seguridad se escribió mientras había cambios sin guardar.",
+                ),
+            };
+            ui.label(
+                egui::RichText::new(detail)
+                    .size(tokens.text_body)
+                    .color(tokens.ink_dim),
+            );
+            ui.add_space(tokens.unit * 0.3);
+            ui.horizontal(|ui| {
+                if ui.button("Recuperar").clicked() {
+                    action = Some(Action::Recover);
+                }
+                if ui.button("Descartar").clicked() {
+                    action = Some(Action::DiscardRecovery);
+                }
+            });
+        });
+    action
+}
+
 /// The two «Empezar» cards: the default way in and the quieter secondary one.
 pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
     let mut action = None;

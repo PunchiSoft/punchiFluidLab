@@ -494,9 +494,14 @@ impl Window {
 
     /// Reads or writes the document the dialog chose. An error keeps the dialog open with
     /// the reason; a success closes it.
-    fn apply_files(&mut self, outcome: Outcome) {
+    pub(crate) fn apply_files(&mut self, outcome: Outcome) {
         match outcome {
-            Outcome::Cancelled => self.dialog = None,
+            Outcome::Cancelled => {
+                // A «Guardar y cerrar» waiting for this dialog stops waiting: the reader chose
+                // to keep working.
+                self.save_cancelled();
+                self.dialog = None;
+            }
             Outcome::Open(path) => match self.open_path(&path) {
                 Ok(()) => self.dialog = None,
                 Err(cause) => {
@@ -511,6 +516,7 @@ impl Window {
                     self.recents.remember(&path);
                     self.dialog = None;
                     self.notice = Some(format!("guardado {}", display_name(&path)));
+                    self.mark_saved();
                 }
                 Err(cause) => {
                     if let Some(dialog) = self.dialog.as_mut() {
@@ -534,6 +540,7 @@ impl Window {
         self.replace_document(document, Some(path.to_path_buf()));
         self.recents.remember(path);
         self.notice = Some(format!("abierto {}", display_name(path)));
+        self.mark_saved();
         Ok(())
     }
 
@@ -544,20 +551,11 @@ impl Window {
         }
     }
 
-    /// `Nuevo`: an empty document with no path, remembered in the same recent list, on the
-    /// sheet instead of Inicio.
+    /// `Nuevo`: an empty document with no path, on the sheet instead of Inicio.
     pub(crate) fn new_document(&mut self) {
-        let theme = self.theme.clone();
-        let recents = std::mem::take(&mut self.recents);
-        let mut window = Self::with_recents(
-            theme,
-            Document::new(),
-            None,
-            Some(String::from("documento nuevo")),
-            recents,
-        );
-        window.start_open = false;
-        *self = window;
+        self.replace_document(Document::new(), None);
+        self.notice = Some(String::from("documento nuevo"));
+        self.mark_saved();
     }
 
     /// `Guardar`: writes to the current path, or asks for one when the document has none.
@@ -570,6 +568,7 @@ impl Window {
             Ok(()) => {
                 self.recents.remember(&path);
                 self.notice = Some(format!("guardado {}", display_name(&path)));
+                self.mark_saved();
             }
             Err(cause) => self.notice = Some(format!("no se pudo guardar: {cause}")),
         }
@@ -577,8 +576,9 @@ impl Window {
 
     /// Makes `document` the window's, closes Inicio and the dialog, and rebinds the page the
     /// sheet draws to the new document's active circuit. The model is dropped so the next
-    /// start builds the new circuit at `t = 0`.
-    fn replace_document(&mut self, document: Document, path: Option<PathBuf>) {
+    /// start builds the new circuit at `t = 0`. The safety copy is not touched here: the
+    /// command that installed the document decides whether to discard it or mark it recovered.
+    pub(crate) fn replace_document(&mut self, document: Document, path: Option<PathBuf>) {
         let (page, block) = page_and_block(&document);
         self.document = document;
         self.path = path;
@@ -587,6 +587,7 @@ impl Window {
         self.selected.clear();
         self.drag = None;
         self.clipboard.clear();
+        self.pressed_valve = None;
         self.stop();
         self.dialog = None;
         self.start_open = false;

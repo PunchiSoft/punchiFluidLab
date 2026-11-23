@@ -115,6 +115,39 @@ fn the_save_dialog_refuses_an_empty_name_and_appends_the_extension() {
 }
 
 #[test]
+fn a_save_from_the_dialog_marks_the_document_saved() {
+    let dir = scratch("dialog-saved");
+    let recents_file = dir.join("recent.json");
+    let copy = dir.join("recovery.pfluid");
+    let mut window = Window::with_safety(
+        Theme::fallback(),
+        Document::new(),
+        Some(dir.join("base.pfluid")),
+        None,
+        Recents::at(Some(recents_file)),
+        punchi_fluid_session::safety::SafetyCopy::at(Some(copy.clone())),
+    );
+    window.document.place(Placement::new(
+        "valve.5_2",
+        Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
+    assert!(window.is_modified(), "the edit is unsaved work");
+    assert!(
+        punchi_fluid_session::safety::SafetyCopy::at(Some(copy.clone())).write(&window.document),
+        "the copy is written before the save"
+    );
+
+    let target = dir.join("guardado.pfluid");
+    window.apply_files(Outcome::Save(target.clone()));
+    assert!(!window.is_modified(), "the dialog's save is a save");
+    assert!(!copy.exists(), "a save removes the safety copy");
+    assert!(target.is_file());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn a_save_asks_once_before_replacing_an_existing_document() {
     let dir = scratch("overwrite");
     let target = dir.join("existe.pfluid");
