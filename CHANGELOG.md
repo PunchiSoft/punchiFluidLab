@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Los dos paneles se pliegan — 2026-11-23
+
+- **Catálogo y propiedades comparten panel**: cabecera con título y control de ocultar, raíl
+  al cerrarse, plegado animado con el token de movimiento e instantáneo con movimiento
+  reducido, ancho recordado en la sesión y la hoja cediendo el espacio. El catálogo se pliega
+  con `Ctrl+B`, el panel de propiedades con `Ctrl+J`, y **Ver ▸ Restablecer vista** devuelve
+  los dos a su ancho por defecto además del zoom y el desplazamiento.
+- **La cromo del panel vive en un solo sitio** (`apps/punchi-fluid/src/panel.rs`): el inspector
+  la usa y el catálogo también, así que el comportamiento no puede divergir.
+- Plegar no toca el documento ni el historial. La memoria entre sesiones y el auto-ocultar
+  siguen pendientes, y `docs/ui-ux.md` lo dice ya con esas palabras.
+
 ### El panel de propiedades de la ventana Rust — 2026-11-23
 
 - **Panel derecho (propiedades)** con la especificación de `ui-ux.md`: cabecera con título y

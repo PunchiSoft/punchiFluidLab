@@ -621,6 +621,8 @@ fn shortcut(label: &str) -> Option<&'static str> {
         "Paso" => Some("F10"),
         "Detener" => Some("F5"),
         "Restablecer" => Some("Ctrl+R"),
+        "Catálogo" => Some("Ctrl+B"),
+        "Propiedades" => Some("Ctrl+J"),
         _ => None,
     }
 }

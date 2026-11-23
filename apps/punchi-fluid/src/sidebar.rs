@@ -7,6 +7,10 @@
 //! own definition by the same renderer as the sheet, through the panel preview: the symbol
 //! without the connection points the sheet adds. A port closure is not a palette entry: it
 //! is fitted to a port instead of being placed (ADR 0033).
+//!
+//! The fold, the header and the rail are the shared chrome in [`crate::panel`]: the catalog
+//! folds to its rail, remembers its width for the session and **Restablecer vista** puts it
+//! back, exactly as the right dock does.
 
 use eframe::egui;
 use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition, Kinematics};
@@ -14,6 +18,8 @@ use punchi_fluid_draw::surface::Colour;
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_component_preview};
 
+use crate::Window;
+use crate::panel::{Edge, Panel, Settings};
 use crate::surface::EguiSurface;
 use crate::theme::Tokens;
 
@@ -26,6 +32,13 @@ const CATEGORIES: [(Category, &str); 6] = [
     (Category::Accessory, "Accesorios"),
     (Category::Sensor, "Sensores e instrumentos"),
 ];
+
+/// The catalog's width when it is open, and the bounds a drag may take it to. The preferred
+/// width is the 18 grid units `docs/ui-ux.md` gives the sidebar; the minimum is the content
+/// floor the same document fixes for it.
+pub const DEFAULT_WIDTH: f32 = 240.0;
+const MIN_WIDTH: f32 = 220.0;
+const MAX_WIDTH: f32 = 400.0;
 
 /// Whether a definition is a palette entry: a port closure is not.
 fn is_entry(definition: &ComponentDefinition) -> bool {
@@ -78,50 +91,116 @@ fn preview_ink(tokens: &Tokens) -> Ink {
     }
 }
 
-/// The sidebar's state the window keeps between frames.
-pub struct Sidebar {
+/// The catalog's content state: the search text and the frame that asks for its focus.
+#[derive(Debug, Clone, Default)]
+struct Body {
     filter: String,
     /// The search asks for the keyboard on the next frame; Ctrl+F sets it.
-    pub focus_search: bool,
+    focus_search: bool,
+}
+
+/// The sidebar: the shared panel chrome and the palette's own search state.
+pub struct Sidebar {
+    chrome: Panel,
+    body: Body,
 }
 
 impl Sidebar {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            filter: String::new(),
-            focus_search: false,
+            chrome: Panel::new(Settings {
+                edge: Edge::Left,
+                id: "catalog",
+                default_width: DEFAULT_WIDTH,
+                min_width: MIN_WIDTH,
+                max_width: MAX_WIDTH,
+                width_label: "Ancho del panel del catálogo",
+                show_label: "Mostrar el panel del catálogo",
+                hide_label: "Ocultar el panel del catálogo",
+                shortcut: "Ctrl+B",
+                margin: 6,
+            }),
+            body: Body::default(),
         }
     }
 
-    /// Draws the palette; returns the entry the reader clicked, if any.
-    pub fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        tokens: &Tokens,
-        catalog: &Catalog,
-    ) -> Option<String> {
-        let entries: Vec<&ComponentDefinition> = CATEGORIES
+    /// How many entries the panel counts in its header: a port closure is not an entry.
+    #[must_use]
+    pub fn entry_count(catalog: &Catalog) -> usize {
+        CATEGORIES
             .iter()
             .flat_map(|(category, _)| catalog.by_category(*category))
             .filter(|definition| is_entry(definition))
-            .collect();
+            .count()
+    }
+
+    /// The catalog's state, read by the tests: the window itself only tells the panel to fold.
+    #[cfg(test)]
+    #[must_use]
+    pub fn is_open(&self) -> bool {
+        self.chrome.is_open()
+    }
+
+    #[cfg(test)]
+    #[must_use]
+    pub fn width(&self) -> f32 {
+        self.chrome.width()
+    }
+
+    #[cfg(test)]
+    #[must_use]
+    pub fn shade(&self) -> f32 {
+        self.chrome.shade()
+    }
+
+    /// Hides the catalog, or brings it back at the width it had.
+    pub fn toggle(&mut self) {
+        self.chrome.toggle();
+    }
+
+    /// Asks the search field for the keyboard on the next frame.
+    pub fn focus_search(&mut self) {
+        self.body.focus_search = true;
+    }
+
+    #[cfg(test)]
+    pub fn close(&mut self) {
+        self.chrome.close();
+    }
+
+    /// **Restablecer vista**: open again at the preferred width.
+    pub fn reset(&mut self) {
+        self.chrome.reset();
+    }
+
+    #[cfg(test)]
+    pub fn resize_by(&mut self, delta: f32) {
+        self.chrome.resize_by(delta);
+    }
+
+    /// Draws the palette and returns the entry the reader clicked, if any.
+    pub fn show(
+        &mut self,
+        context: &egui::Context,
+        tokens: &Tokens,
+        subtitle: &str,
+        catalog: &Catalog,
+    ) -> Option<String> {
+        let Sidebar { chrome, body } = self;
+        chrome
+            .show(context, tokens, "Catálogo", Some(subtitle), |ui| {
+                body.show(ui, tokens, catalog)
+            })
+            .flatten()
+    }
+}
+
+impl Body {
+    /// The search, the category groups, the tiles and the footer.
+    fn show(&mut self, ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalog) -> Option<String> {
         let mut chosen = None;
         ui.add_space(6.0);
-        ui.horizontal(|ui| {
-            ui.label(
-                egui::RichText::new("Catálogo")
-                    .size(tokens.text_label)
-                    .strong()
-                    .color(tokens.ink),
-            );
-            ui.label(
-                egui::RichText::new(format!("{} componentes", entries.len()))
-                    .size(tokens.text_small)
-                    .color(tokens.ink_muted),
-            );
-        });
-        ui.add_space(2.0);
         let search = ui.add(
             egui::TextEdit::singleline(&mut self.filter)
                 .hint_text("Buscar…")
@@ -157,7 +236,7 @@ impl Sidebar {
                     .show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
-                                if Self::tile(ui, tokens, definition, tile_width) {
+                                if tile(ui, tokens, definition, tile_width) {
                                     chosen = Some(definition.id.clone());
                                 }
                             }
@@ -178,72 +257,85 @@ impl Sidebar {
         );
         chosen
     }
+}
 
-    /// One tile: its own symbol, the name on as many lines as it needs, and the id.
-    fn tile(
-        ui: &mut egui::Ui,
-        tokens: &Tokens,
-        definition: &ComponentDefinition,
-        width: f32,
-    ) -> bool {
-        let height = 32.0 + tokens.text_body * 2.6 + tokens.text_small * 1.6;
-        let (rect, response) =
-            ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
-        if !ui.is_rect_visible(rect) {
-            return false;
+/// One tile: its own symbol, the name on as many lines as it needs, and the id.
+fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, width: f32) -> bool {
+    let height = 32.0 + tokens.text_body * 2.6 + tokens.text_small * 1.6;
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
+    if !ui.is_rect_visible(rect) {
+        return false;
+    }
+    if response.hovered() || response.has_focus() {
+        ui.painter().rect_filled(rect, 4.0, tokens.accent_soft);
+    }
+    let symbol = egui::Rect::from_min_size(rect.min, egui::vec2(width, 32.0));
+    let (box_width, box_height) = box_of(definition);
+    let scale = (symbol.width().min(symbol.height()) * 0.8 / box_width.max(box_height)).max(0.05);
+    let origin = symbol.center() - egui::vec2(box_width * scale * 0.5, box_height * scale * 0.5);
+    let mut drawing = EguiSurface::new(ui.ctx(), origin, scale);
+    draw_component_preview(
+        &mut drawing,
+        Rect::from_min_size(Pt::new(0.0, 0.0), box_width, box_height),
+        definition,
+        0,
+        0.0,
+        None,
+        &preview_ink(tokens),
+    );
+    ui.painter().extend(drawing.shapes);
+    let name = definition.name_es.as_deref().unwrap_or(&definition.name);
+    let name_galley = ui.painter().layout(
+        name.to_owned(),
+        egui::FontId::proportional(tokens.text_body),
+        tokens.ink,
+        width - 4.0,
+    );
+    ui.painter().galley(
+        egui::pos2(
+            rect.center().x - name_galley.size().x * 0.5,
+            symbol.max.y + 1.0,
+        ),
+        name_galley,
+        tokens.ink,
+    );
+    let id_galley = ui.painter().layout(
+        definition.id.clone(),
+        egui::FontId::proportional(tokens.text_small),
+        tokens.ink_muted,
+        width - 4.0,
+    );
+    ui.painter().galley(
+        egui::pos2(
+            rect.center().x - id_galley.size().x * 0.5,
+            rect.max.y - id_galley.size().y - 1.0,
+        ),
+        id_galley,
+        tokens.ink_muted,
+    );
+    response
+        .on_hover_text(format!("{name}\n{}", definition.id))
+        .clicked()
+}
+
+impl Window {
+    /// Draws the catalog between the ribbon and the sheet. `update` calls this before the
+    /// right dock, so the sheet's available area follows both panels as they fold.
+    pub(crate) fn show_catalog(&mut self, context: &egui::Context) {
+        let subtitle = format!("{} componentes", Sidebar::entry_count(&self.catalog));
+        let chosen = self
+            .sidebar
+            .show(context, &self.theme.tokens, &subtitle, &self.catalog);
+        if let Some(catalog_id) = chosen {
+            self.add_component(&catalog_id);
         }
-        if response.hovered() || response.has_focus() {
-            ui.painter().rect_filled(rect, 4.0, tokens.accent_soft);
+    }
+
+    /// The keyboard path of the catalog, besides **Ver ▸ Catálogo**.
+    pub(crate) fn catalog_keyboard(&mut self, context: &egui::Context) {
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::B)) {
+            self.sidebar.toggle();
         }
-        let symbol = egui::Rect::from_min_size(rect.min, egui::vec2(width, 32.0));
-        let (box_width, box_height) = box_of(definition);
-        let scale =
-            (symbol.width().min(symbol.height()) * 0.8 / box_width.max(box_height)).max(0.05);
-        let origin =
-            symbol.center() - egui::vec2(box_width * scale * 0.5, box_height * scale * 0.5);
-        let mut drawing = EguiSurface::new(ui.ctx(), origin, scale);
-        draw_component_preview(
-            &mut drawing,
-            Rect::from_min_size(Pt::new(0.0, 0.0), box_width, box_height),
-            definition,
-            0,
-            0.0,
-            None,
-            &preview_ink(tokens),
-        );
-        ui.painter().extend(drawing.shapes);
-        let name = definition.name_es.as_deref().unwrap_or(&definition.name);
-        let name_galley = ui.painter().layout(
-            name.to_owned(),
-            egui::FontId::proportional(tokens.text_body),
-            tokens.ink,
-            width - 4.0,
-        );
-        ui.painter().galley(
-            egui::pos2(
-                rect.center().x - name_galley.size().x * 0.5,
-                symbol.max.y + 1.0,
-            ),
-            name_galley,
-            tokens.ink,
-        );
-        let id_galley = ui.painter().layout(
-            definition.id.clone(),
-            egui::FontId::proportional(tokens.text_small),
-            tokens.ink_muted,
-            width - 4.0,
-        );
-        ui.painter().galley(
-            egui::pos2(
-                rect.center().x - id_galley.size().x * 0.5,
-                rect.max.y - id_galley.size().y - 1.0,
-            ),
-            id_galley,
-            tokens.ink_muted,
-        );
-        response
-            .on_hover_text(format!("{name}\n{}", definition.id))
-            .clicked()
     }
 }
 
