@@ -138,8 +138,8 @@ pub(super) const ARCHIVO: &[Group] = &[
         launcher: false,
         items: &[
             Item::Small("list-add", "Nuevo circuito", Some(Command::CircuitNew)),
-            Item::Small("edit-rename", "Renombrar", None),
-            Item::Small("window-close", "Cerrar", None),
+            Item::Small("edit-rename", "Renombrar", Some(Command::CircuitRename)),
+            Item::Small("window-close", "Cerrar", Some(Command::CircuitClose)),
         ],
     },
     Group {

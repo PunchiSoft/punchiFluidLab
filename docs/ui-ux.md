@@ -159,8 +159,11 @@ the theme dispatch; the rest is painted disabled until its phase of the ribbon p
 or custom millimetres — the orientation and the margins, by preset or in millimetres.
 **Editar datos…** opens the title block editor: the twelve stored fields, a **Mostrar**
 switch per field, the content model that sets its default field set and the position on the
-sheet. In both panels **Aplicar** is one undo, **Cerrar** or `Esc` discards the draft, and an
-impossible change is refused with a notice instead of applied. The grid the reference had is
+sheet. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
+circuit, the second confirms removing it with its components and pipes, both as one undo;
+**Cerrar** is disabled with a single circuit and the last one is refused. In every panel
+**Aplicar** is one undo, **Cerrar** or `Esc` discards the draft, and an impossible change is
+refused with a notice instead of applied. The grid the reference had is
 not in the Rust window yet; it is its own capability, not a control that pretends.
 
 | Tab | Contents |

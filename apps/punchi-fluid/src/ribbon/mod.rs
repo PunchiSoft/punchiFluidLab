@@ -13,6 +13,7 @@ use punchi_fluid_file::recent::Recent;
 use crate::theme::Tokens;
 
 mod command;
+mod enabled;
 mod icons;
 mod model;
 
@@ -77,6 +78,8 @@ pub struct Ribbon {
     pub can_reset_block: bool,
     /// Whether a pipe is selected; the window sets it every frame.
     pub has_pipe: bool,
+    /// Whether the document has more than one circuit; the window sets it.
+    pub can_close_circuit: bool,
     pending: Option<Command>,
 }
 
@@ -97,6 +100,7 @@ impl Ribbon {
             can_redo: false,
             can_reset_block: false,
             has_pipe: false,
+            can_close_circuit: false,
             pending: None,
         }
     }
@@ -109,33 +113,6 @@ impl Ribbon {
             .position(|tab| tab.name.eq_ignore_ascii_case(name))
         {
             self.active = index;
-        }
-    }
-
-    /// Whether the command may run in the current state. The transport is the demo: it
-    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar. Guardar is
-    /// always live: without a path the window asks for one. A control whose command is not
-    /// here yet is not a command at all and is painted disabled.
-    fn enabled(&self, command: Command) -> bool {
-        match command {
-            Command::Start => !self.running,
-            Command::Pause | Command::Stop => self.running,
-            Command::Step | Command::UntilChange => self.can_step,
-            Command::Delete
-            | Command::Rotate
-            | Command::Mirror
-            | Command::Duplicate
-            | Command::Copy => self.selected >= 1,
-            Command::Paste => self.has_clipboard,
-            Command::AlignLeft | Command::AlignRight | Command::AlignTop | Command::AlignBottom => {
-                self.selected >= 2
-            }
-            Command::Undo => self.can_undo,
-            Command::Redo => self.can_redo,
-            Command::BlockReset => self.can_reset_block,
-            Command::PipeClass(_) | Command::Tube => self.has_pipe,
-            Command::Distribute(_) => self.selected >= 2,
-            _ => true,
         }
     }
 
