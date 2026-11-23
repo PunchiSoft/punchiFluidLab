@@ -7,6 +7,15 @@
 use crate::Window;
 
 impl Window {
+    /// Position of the model's cylinder, in metres, or `None` when no model is loaded. The
+    /// acceptance test reads the piston through this accessor instead of the solver's own
+    /// types, so the window stays the only thing it has to know.
+    #[allow(dead_code, reason = "the acceptance test reads the piston through it")]
+    pub(crate) fn cylinder_position(&self) -> Option<f64> {
+        let network = self.model.as_ref()?.network();
+        network.cylinder().map(|_| network.position())
+    }
+
     /// Runs until the piston reaches an end or the valve position changes, with a cap:
     /// a circuit that never changes stops after sixty simulated seconds.
     pub(crate) fn until_change(&mut self) {
