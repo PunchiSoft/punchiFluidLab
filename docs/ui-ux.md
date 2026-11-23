@@ -479,6 +479,12 @@ before a panel is allowed to cover it:
   size is **clamped to the current room** with the same margin, reserve and minimum, not only
   to the minimum, so a window saved on a 1920 monitor reopens inside a 1366 laptop. A
   maximized window keeps the size it had before. The design minimum is 900 × 600.
+- **A returning window is created with its remembered size**, so it does not resize in front
+  of the reader; the place is applied on the first frame, which keeps the monitor the window
+  opened on as the anchor of the fallback. When that monitor reports again and the window no
+  longer lands on it (an extension monitor was unplugged), the shell centres and clamps it
+  back into the room; a window moved to a monitor of another size is left alone, and a
+  secondary of the same size cannot be told apart without the platform's topology.
 - **The mode boundaries follow the spacing unit**, which follows the desktop font, so a
   larger font moves them. The ribbon's own text and heights are still literals; turning
   them into tokens is stage 7.
@@ -511,11 +517,14 @@ before a panel is allowed to cover it:
   its size, its place and whether it was maximized in
   `XDG_DATA_HOME/punchi-fluid/window.state` beside the recent list, and restores them only
   when the place still lands on the room, clamped to the current room with the same margin,
-  reserve and minimum; a maximized window keeps the size it had before. The
+  reserve and minimum; a maximized window keeps the size it had before. A returning window
+  is created with the remembered size and the place lands on the first frame; a window left
+  on an unplugged extension monitor comes back to the room it opened on. The
   `cargo test -p punchi-fluid-window` suite proves the three derivations from widths, the
   first size against the LATAM screen matrix (1024×768 to 4K, including 1080p at 125 and
-  150 %), the clamp and the off-screen rejection, the state file's round trip and its
-  defensive reads, and the compact rails, the drawer and its dismissal, headless;
+  150 %), the clamp and the off-screen rejection, the returning size, the reanchor, the state
+  file's round trip and its defensive reads, and the compact rails, the drawer and its
+  dismissal, headless;
   `--check-layout` and `--selftest` were the Qt window's checks and are not ported to this
   one, so no automated check opens the real desktop window. What is left:
   the **Menú** compact ribbon and the minimized ribbon with its groups as a panel over the

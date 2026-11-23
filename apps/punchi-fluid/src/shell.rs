@@ -67,6 +67,11 @@ pub(crate) struct Shell {
     live: Option<Geometry>,
     /// Whether the first geometry has been sent; the screen is only known after one frame.
     applied: bool,
+    /// The monitor the first geometry was computed on, so a window left on an unplugged
+    /// extension monitor can come back to it.
+    opening_screen: Option<egui::Vec2>,
+    /// The monitor the previous frame reported, to notice a change.
+    last_screen: Option<egui::Vec2>,
     /// Whether the widths a settings file left still have to be clamped to the mode the
     /// window opened in.
     pub(crate) restore_pending: bool,
@@ -91,6 +96,8 @@ impl Shell {
             normal: None,
             live: None,
             applied: false,
+            opening_screen: None,
+            last_screen: None,
             restore_pending: false,
         }
     }
@@ -219,12 +226,24 @@ impl Window {
                 context,
                 window_state::minimum(screen, self.theme.tokens.unit),
             );
-            window_state::apply(context, &geometry);
+            // A window the stored state says was maximized is created maximized; sending the
+            // normal size to a maximized viewport can unmaximize it on some desktops, so the
+            // normal size is only remembered, not applied.
+            let created_maximized = self
+                .shell
+                .restored
+                .as_ref()
+                .is_some_and(|saved| saved.maximized);
+            if !created_maximized {
+                window_state::apply(context, &geometry);
+            }
             self.shell.normal = Some(Geometry {
                 maximized: false,
                 ..geometry
             });
             self.shell.applied = true;
+            self.shell.opening_screen = Some(screen);
+            self.shell.last_screen = Some(screen);
             // The commands take effect on the next frame: this frame's viewport still holds
             // the provisional size, which must not overwrite the remembered one.
             return;
@@ -241,6 +260,33 @@ impl Window {
             position: viewport.outer_rect.map(|rect| rect.min),
             maximized: viewport.maximized.unwrap_or(false),
         };
+        let screen = monitor_size(context);
+        if screen != self.shell.last_screen {
+            // The monitor changed. When the one the window opened on reports again and the
+            // window is outside it, an extension monitor was unplugged: bring the window back.
+            // A window moved to another monitor of a different size is left alone, and the
+            // same-size monitor cannot be told apart without the platform's topology.
+            if let (Some(screen), Some(opening)) = (screen, self.shell.opening_screen)
+                && screen == opening
+                && !live.maximized
+                && let Some(geometry) =
+                    window_state::reanchored(screen, self.theme.tokens.unit, &live)
+            {
+                window_state::apply_minimum(
+                    context,
+                    window_state::minimum(screen, self.theme.tokens.unit),
+                );
+                window_state::apply(context, &geometry);
+                self.shell.normal = Some(Geometry {
+                    maximized: false,
+                    ..geometry
+                });
+                self.shell.live = Some(geometry);
+                self.shell.last_screen = Some(screen);
+                return;
+            }
+            self.shell.last_screen = screen;
+        }
         if !live.maximized {
             self.shell.normal = Some(Geometry {
                 maximized: false,

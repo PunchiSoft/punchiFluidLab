@@ -10,8 +10,9 @@ use std::time::Instant;
 use eframe::egui::{Pos2, Vec2};
 
 use super::{
-    FILE_NAME, Geometry, MAX_BYTES, SETTLE, Store, first_geometry, minimum, opening_geometry,
-    parse, read, remembered_geometry, restored_geometry, write,
+    FILE_NAME, Geometry, MAX_BYTES, MIN_HEIGHT, MIN_WIDTH, SETTLE, Store, first_geometry, minimum,
+    opening_geometry, parse, provisional, read, reanchored, remembered_geometry, restored_geometry,
+    write,
 };
 
 /// The default spacing unit: the desktop font of the reference machine at 10 pt, 16 points.
@@ -100,6 +101,38 @@ fn the_opening_geometry_is_the_first_one_without_a_state_and_the_restored_one_wi
     let restored = opening_geometry(screen, UNIT, Some(&saved));
     assert_eq!(restored.size, Vec2::new(1200.0, 800.0));
     assert_eq!(restored.position, saved.position);
+}
+
+#[test]
+fn the_viewport_is_created_with_the_remembered_size_or_the_floor() {
+    let floor = provisional(None);
+    assert_eq!(floor.size, Vec2::new(MIN_WIDTH, MIN_HEIGHT));
+    assert_eq!(floor.position, None);
+    assert!(!floor.maximized);
+    let saved = geometry((1200.0, 800.0), Some((100.0, 50.0)), true);
+    assert_eq!(
+        provisional(Some(&saved)),
+        saved,
+        "a returning window is created with the size and the maximized state it had"
+    );
+}
+
+#[test]
+fn a_window_left_outside_the_opening_monitor_is_brought_back() {
+    let screen = Vec2::new(1366.0, 768.0);
+    let outside = geometry((1200.0, 700.0), Some((2000.0, 100.0)), false);
+    let fixed = reanchored(screen, UNIT, &outside).expect("the window is outside the room");
+    assert_eq!(fixed.size, Vec2::new(1200.0, 656.0));
+    assert_eq!(fixed.position, Some(Pos2::new(83.0, 16.0)));
+
+    let inside = geometry((1200.0, 650.0), Some((100.0, 50.0)), false);
+    assert_eq!(reanchored(screen, UNIT, &inside), None);
+    let wayland = geometry((1200.0, 700.0), None, false);
+    assert_eq!(
+        reanchored(screen, UNIT, &wayland),
+        None,
+        "without a place the compositor decides"
+    );
 }
 
 #[test]
