@@ -95,6 +95,16 @@ fn the_tokens_meet_the_contrast_criteria() {
         "sheet edge {}",
         contrast.sheet_edge
     );
+    assert!(
+        contrast.paper_sunken >= 1.08,
+        "paper over the canvas {}",
+        contrast.paper_sunken
+    );
+    assert!(
+        contrast.paper_text >= 4.5,
+        "text on the paper {}",
+        contrast.paper_text
+    );
 }
 
 #[test]
@@ -150,4 +160,77 @@ fn the_desktop_font_lays_out_spanish_text() {
         width = galley.size().x;
     });
     assert!(width > 0.0, "the accents must have glyphs");
+}
+
+/// The maintainer's Breeze dark: `[Colors:View]` and `[Colors:Window]` are the same colour,
+/// which is the case the paper token has to survive.
+const BREEZE_DARK: &str = "[Colors:Window]\n\
+BackgroundNormal=36,36,36\n\
+ForegroundNormal=252,252,252\n\
+[Colors:View]\n\
+BackgroundNormal=36,36,36\n\
+[Colors:Button]\n\
+BackgroundNormal=36,36,36\n\
+[Colors:Selection]\n\
+BackgroundNormal=49,91,239\n\
+ForegroundNormal=255,255,255\n\
+[General]\n\
+font=Noto Sans,10,-1,5,50,0,0,0,0,0\n";
+
+#[test]
+fn the_dark_scheme_lifts_the_paper_off_the_window() {
+    let palette = palette_from(BREEZE_DARK).expect("the dark sample has the palette groups");
+    let tokens = tokens_from(palette, &font_from(BREEZE_DARK), 180);
+    assert!(tokens.dark);
+    assert_ne!(
+        (tokens.paper.r(), tokens.paper.g(), tokens.paper.b()),
+        (
+            tokens.background.r(),
+            tokens.background.g(),
+            tokens.background.b()
+        ),
+        "the paper cannot be the window colour"
+    );
+    let contrast = tokens.contrast();
+    assert!(
+        contrast.paper_sunken >= 1.3,
+        "paper over the canvas {}",
+        contrast.paper_sunken
+    );
+    assert!(
+        contrast.paper_text >= 4.5,
+        "text on the paper {}",
+        contrast.paper_text
+    );
+}
+
+/// A dark scheme whose view colour sits below the window: the paper must still be the
+/// raised plane, not a hole in the chrome.
+const DARK_VIEW_BELOW: &str = "[Colors:Window]\n\
+BackgroundNormal=45,45,45\n\
+ForegroundNormal=252,252,252\n\
+[Colors:View]\n\
+BackgroundNormal=30,30,30\n\
+[Colors:Button]\n\
+BackgroundNormal=45,45,45\n\
+[Colors:Selection]\n\
+BackgroundNormal=49,91,239\n\
+ForegroundNormal=255,255,255\n";
+
+#[test]
+fn a_dark_view_below_the_window_still_raises_the_paper() {
+    let palette = palette_from(DARK_VIEW_BELOW).expect("the dark sample has the palette groups");
+    let tokens = tokens_from(palette, &font_from(DARK_VIEW_BELOW), 180);
+    assert!(tokens.dark);
+    assert!(
+        tokens.paper.r() > tokens.background.r(),
+        "paper {} must sit above the window {}",
+        tokens.paper.r(),
+        tokens.background.r()
+    );
+    assert!(
+        tokens.contrast().paper_sunken >= 1.3,
+        "paper over the canvas {}",
+        tokens.contrast().paper_sunken
+    );
 }

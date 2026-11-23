@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La hoja vuelve a leerse: papel elevado y tinta de pantalla — 2026-11-23
+
+- **La ventana dibujaba la hoja con la tinta de la impresión**: negro sobre un fondo
+  36,36,36, así que los símbolos, el marco y el cajetín se perdían. El `Surface` de pantalla
+  traduce ahora la paleta de impresión a los tokens del tema (negro → `ink`, blanco →
+  `paper`, grises → `ink_dim`/`ink_muted`, acento → `accent`); el export sigue pintando
+  negro sobre blanco.
+- **Tres planos con medida**: el lienzo se pinta con `surface_sunken` con medio `unit` de
+  margen, el papel con el token nuevo `paper` —que se eleva cuando el escritorio lo iguala
+  al fondo, como en Breeze oscuro— y un borde `line_strong` y una sombra separan la hoja de
+  los paneles y de la cinta. Las pruebas de contraste exigen papel sobre lienzo y tinta
+  sobre papel.
+- **El contrato queda escrito** en `docs/ui-ux.md`: `paper` entra en la tabla de tokens y
+  la sección de la hoja nombra el mapeo de tinta de la ventana.
+
 ### La documentación pública deja de describir la ventana Qt — 2026-11-23
 
 - **La verdad documental vuelve a coincidir con el producto**: la ventana es el binario Rust
