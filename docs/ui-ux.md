@@ -853,8 +853,7 @@ the rest with the same rules and the same tests. A seed that does not reach a cr
 shifted by `ensure_contrast`, so the shipped look is the measured one. The themes arrive one
 per change, each with its contrast row and its screenshots; **Sistema** is offered once a
 light and a dark theme both exist. **Today** the window offers **Escritorio**, **Sistema** (CAD claro by day, Pizarra by night)
-and **Un tema** with CAD claro, Pizarra, Nórdico or Azul profundo; **Grafito** is the next
-change.
+and **Un tema** with CAD claro, Pizarra, Nórdico, Azul profundo or Grafito.
 
 ### Accessibility
 

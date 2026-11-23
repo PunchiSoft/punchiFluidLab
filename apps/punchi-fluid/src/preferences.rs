@@ -556,6 +556,24 @@ mod tests {
     }
 
     #[test]
+    fn the_window_offers_the_graphite_theme() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Grafito")
+                .click();
+            harness.run();
+        }
+        assert_eq!(
+            window.theme.appearance,
+            Appearance::Theme(ThemeId::Graphite),
+            "the graphite card applies the Graphite theme"
+        );
+    }
+
+    #[test]
     fn the_window_switches_to_system_and_fills_the_night_slot() {
         let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
         window.open_preferences();

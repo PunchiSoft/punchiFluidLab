@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Grafito, el quinto tema — 2026-11-23
+
+- **Grafito** entra como semilla cálida (grafito apagado, tinta suave y azul tenue) por la
+  misma derivación y la misma tabla de contraste. `settings.state` guarda
+  `appearance=graphite` y la galería la ofrece como quinta tarjeta.
+- **La serie de apariencia queda cerrada**: Escritorio, Sistema y los cinco temas de la
+  referencia (Pizarra, CAD claro, Nórdico, Azul profundo y Grafito). Las deudas opcionales
+  (insignia de alto contraste medida, escucha del portal para el cambio claro/oscuro en vivo y
+  capturas clara/oscura) siguen anotadas.
+
 ### Azul profundo, el cuarto tema — 2026-11-23
 
 - **Azul profundo** entra como semilla índigo (fondo azul noche, paneles profundos, acento
