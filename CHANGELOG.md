@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Nórdico, el tema de alto contraste — 2026-11-23
+
+- **Nórdico** entra como semilla de alto contraste (fondo casi negro, tinta blanca pura y
+  acento cobalto) por la misma derivación y la misma tabla de contraste que el resto.
+  `settings.state` guarda `appearance=nordic` y la galería de Configuración la ofrece como
+  tercera tarjeta.
+- **Azul profundo** y **Grafito** quedan para sus propias ramas.
+
 ### Sistema: día y noche con dos temas — 2026-11-23
 
 - **El modo Sistema** elige el tema asignado al esquema claro u oscuro del escritorio: por
