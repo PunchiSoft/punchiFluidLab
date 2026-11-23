@@ -152,8 +152,8 @@ commands of a tab. **Today** the file commands, the sheet commands (**Márgenes*
 **Orientación**, **Tamaño**), the title block commands (**Contenido**, **Posición**,
 **Restablecer**), **Circuito ▸ Nuevo circuito**, the edit commands (including **Conducto**'s
 class and **Diámetro**, **Repartir**, **Todo**), the view commands, the transport with its
-**Restablecer** and speeds, and the theme dispatch; the rest is painted disabled until its
-phase of the ribbon plan.
+**Restablecer** and speeds, **Inicio**, the live **Recientes** list and the theme dispatch;
+the rest is painted disabled until its phase of the ribbon plan.
 
 | Tab | Contents |
 |---|---|

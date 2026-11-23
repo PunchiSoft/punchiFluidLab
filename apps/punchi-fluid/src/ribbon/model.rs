@@ -61,6 +61,7 @@ pub(super) enum Item {
     Small(&'static str, &'static str, Option<Command>),
     Menu(&'static str, &'static str, &'static [MenuEntry]),
     Gallery(&'static str, &'static str, &'static [GalleryEntry]),
+    Recents(&'static str, &'static str),
 }
 
 pub(super) const MARGINS: &[GalleryEntry] = &[
@@ -184,11 +185,10 @@ pub(super) const ARCHIVO: &[Group] = &[
     Group {
         name: "Recientes",
         launcher: false,
-        items: &[Item::Menu(
-            "document-open-recent",
-            "Recientes",
-            &[MenuEntry::unavailable("Sin recientes")],
-        )],
+        items: &[
+            Item::Recents("document-open-recent", "Recientes"),
+            Item::Small("go-home", "Inicio", Some(Command::Home)),
+        ],
     },
 ];
 
