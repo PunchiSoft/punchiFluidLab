@@ -112,7 +112,8 @@ from updated `main`, the gate, a pull request with its checklist, and a merge. T
 are [phased-plan](phased-plan/SKILL.md)'s: Phase 0 proves the ground and writes the
 evidence, each delivery phase is one merged pull request, and the final phase evaluates and
 audits. The diamond is the merge policy: **manual** by default, **auto** only when an ADR
-authorises it, and one pull request at a time either way. Once the pull request is merged,
+authorises it ([ADR 0043](../../docs/adr/0043-the-agent-merges-under-guardrails.md), the
+ribbon pilot), and one pull request at a time either way. Once the pull request is merged,
 [repo-maintenance](repo-maintenance/SKILL.md) is the pass that closes the branch, the
 worktree and the caches, after the local backup is verified.
 

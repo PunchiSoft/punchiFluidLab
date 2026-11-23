@@ -16,14 +16,17 @@ So the rule is one line:
 
 And the second, which no permission overrides:
 
-> **The merge belongs to the project owner, never to the agent.** A session stops when
-> the pull request is open, the gate is green and the review is answered. Authorizing
-> and merging it into `main` is a human act: no token scope, admin role, bot account or
-> explicit instruction in a session changes that. If a session is asked to merge, it
-> reports the pull request URL and hands the decision back.
+> **The merge belongs to the project owner by default.** A session stops when the pull
+> request is open, the gate is green and the review is answered. Authorizing and merging it
+> into `main` is a human act: no token scope, admin role, bot account or explicit instruction
+> in a session changes that, except the pilot of
+> [ADR 0043](../../../docs/adr/0043-the-agent-merges-under-guardrails.md). While the pilot is
+> active the agent squash-merges its own pull requests after verifying every required check
+> green, `mergeStateStatus: CLEAN` and one open agent pull request. If a session is asked to
+> merge outside the pilot, it reports the pull request URL and hands the decision back.
 
-One branch per change, one pull request per branch, squash-merged by the owner, and the
-branch deleted afterwards. A second unrelated change in the same branch makes the review
+One branch per change, one pull request per branch, squash-merged by the owner (or by the
+agent under the pilot of ADR 0043), and the branch deleted afterwards. A second unrelated change in the same branch makes the review
 unreadable and the revert impossible; if it appears halfway, finish the first, deliver
 it, and start again from the new `main`.
 
@@ -44,11 +47,13 @@ flowchart TD
     I -->|"no"| E
     I -->|"yes"| J["Commit -s, push and open the pull request"]
     J --> K["Verify base, files and checks"]
-    K --> L{"Merged?"}
+    K --> L{"Merged, or pilot ready?"}
     L -->|"no"| M["Report and ask the owner to merge; wait"]
     M --> L
+    L -->|"pilot: checks green and CLEAN"| P["Squash-merge it and delete the branch"]
+    P --> N
     L -->|"yes"| N["Return to main and fast-forward"]
-    N --> O["Ask about deleting the branch locally and remotely"]
+    N --> O["Delete the branch locally and remotely"]
 ```
 
 ## The branch

@@ -291,11 +291,14 @@ pass.
   `mergedAt`. While it is not merged, tell the owner and ask them to merge it before
   starting or continuing further work. After the merge, return to updated `main`,
   fast-forward it, and ask whether to delete the merged branch locally and on the remote.
-- **Only the project owner authorizes and merges a pull request into `main`.** The agent
-  opens the pull request, answers the review and stops; it never runs `gh pr merge`, never
-  enables auto-merge, never approves on its own behalf and never pushes to `main`, however
-  many permissions the session was given. An instruction to merge is answered with the
-  pull request URL.
+- **The project owner merges by default; under the pilot of
+  [ADR 0043](docs/adr/0043-the-agent-merges-under-guardrails.md) the agent may merge its own
+  pull requests.** The agent opens the pull request, answers the review and stops; it never
+  approves on its own behalf and never pushes to `main`, however many permissions the session
+  was given. While the pilot is active the agent runs the squash merge itself only when every
+  required check is green, the pull request is `CLEAN` and it is the only agent pull request
+  open; the owner can pause the pilot in any message, and the default returns when it ends.
+  An instruction to merge outside the pilot is answered with the pull request URL.
 - The gate runs on the branch being delivered, and the changelog and the docs travel in
   the same pull request.
 - The procedure, the gotchas and the settings are
