@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La entrada de escritorio da el icono en Wayland — 2026-11-23
+
+- **Nombre de escritorio**: la ventana anuncia `org.punchisoft.PunchiFluidLab` con
+  `ViewportBuilder::with_app_id`. En Wayland el icono de la ventana no lo pone el cliente —winit
+  deja `set_window_icon` vacío en Wayland—, así que el compositor identifica la ventana por ese
+  nombre y saca el icono de su entrada de escritorio.
+- **Entrada**: `packaging/org.punchisoft.PunchiFluidLab.desktop`, con `Icon=punchi-fluid-lab`
+  (la serie de `assets/branding`) y el mismo `StartupWMClass`. El nombre del archivo es el
+  `app_id`, y la prueba del módulo compila la ruta: renombrar uno sin el otro no compila.
+- **Prueba**: `the_desktop_entry_is_named_after_the_desktop_name_the_window_announces`.
+
 ### La cinta edita los datos del cajetín — 2026-11-23
 
 - **Editar datos…** abre el editor del cajetín: los doce campos (propietario, proyecto,

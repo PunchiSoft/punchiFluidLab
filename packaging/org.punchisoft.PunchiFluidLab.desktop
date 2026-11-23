@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Punchi Fluid Lab
+GenericName=Simulador de circuitos neumáticos e hidráulicos
+Comment=Dibuja, conecta y simula circuitos neumáticos e hidráulicos
+Exec=punchi-fluid %f
+Icon=punchi-fluid-lab
+Terminal=false
+Categories=Education;Engineering;
+Keywords=neumática;hidráulica;circuito;símbolo;ISO 1219;
+StartupNotify=true
+StartupWMClass=org.punchisoft.PunchiFluidLab

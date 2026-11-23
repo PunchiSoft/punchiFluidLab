@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The application icon, compiled in from `assets/branding` so an installed window carries it
-//! without an asset directory beside the binary.
+//! The application's identity: the icon, compiled in from `assets/branding` so an installed
+//! window carries it without an asset directory beside the binary, and the desktop name the
+//! compositor matches it by.
 //!
 //! The window manager asks for pixels before the first frame exists, so no vector is
 //! rasterised here: the 256 px plate is decoded from the same PNG the packaging installs. The
@@ -10,6 +11,15 @@
 //! are made and where the drawing comes from.
 
 use eframe::egui;
+
+/// The name the window announces as its desktop identity.
+///
+/// A Wayland compositor does not take an icon from the client: it looks up
+/// `<app_id>.desktop` and reads that entry's `Icon=`. So this string is not a label, it is the
+/// file name of [`packaging/org.punchisoft.PunchiFluidLab.desktop`], and the test below refuses
+/// to compile the two apart. X11 gets the same string as its window class, which is why
+/// `StartupWMClass` in that entry repeats it.
+pub const APP_ID: &str = "org.punchisoft.PunchiFluidLab";
 
 /// The one size the window manager gets: 256 px is what the desktops scale down from, and a
 /// multiple of four, which [`egui::IconData`] asks for.
@@ -63,5 +73,22 @@ mod tests {
             "the bottom-right corner is cut by it too"
         );
         assert_eq!(alpha(128, 128), 255, "the middle of the plate is opaque");
+    }
+
+    /// A compositor finds the icon through the window's desktop name, so the entry's own file
+    /// name is that name and the `app_id` and the entry cannot drift apart: the path is compiled
+    /// in, and a rename that forgets one of them fails to build here.
+    #[test]
+    fn the_desktop_entry_is_named_after_the_desktop_name_the_window_announces() {
+        let entry = include_str!("../../../packaging/org.punchisoft.PunchiFluidLab.desktop");
+        assert_eq!(APP_ID, "org.punchisoft.PunchiFluidLab");
+        assert!(
+            entry.contains("Icon=punchi-fluid-lab"),
+            "the entry names the icon the packaging installs"
+        );
+        assert!(
+            entry.contains(&format!("StartupWMClass={APP_ID}")),
+            "the entry is matched by the same name the window announces"
+        );
     }
 }
