@@ -4,7 +4,7 @@
 //! The sheet menu, the armed move and the two mockup windows, drawn headless.
 
 use eframe::egui;
-use egui_kittest::kittest::{NodeT, Queryable};
+use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Endpoint, Placement};
 use punchi_fluid_draw::{Orientation, Pt};
 
@@ -523,16 +523,20 @@ fn the_mockup_subject_is_the_selected_component_name() {
 }
 
 #[test]
-fn the_disabled_vertical_mirror_says_why() {
+fn the_menu_mirrors_the_selection_vertically() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    let item = harness.get_by_label("Espejo vertical");
-    assert!(
-        item.accesskit_node().is_disabled(),
-        "the vertical mirror waits for phase 2"
+    harness.get_by_label("Espejo vertical").click();
+    harness.run();
+    assert!(!harness.state().menu, "choosing the entry closes the menu");
+    assert_eq!(
+        harness.state().orientation,
+        Some(Orientation::new(2, true)),
+        "the symbol is mirrored top to bottom"
     );
+    assert!(harness.state().can_undo, "the vertical mirror is one undo");
 }
 
 #[test]

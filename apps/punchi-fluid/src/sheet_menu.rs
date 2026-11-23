@@ -365,8 +365,6 @@ impl Window {
     /// it; the transforms and the removal work on the whole selection.
     fn menu_enabled(&self, action: MenuAction) -> bool {
         match action {
-            // The operation does not exist yet: the entry waits for its phase.
-            MenuAction::MirrorVertical => false,
             MenuAction::Configure | MenuAction::Describe => self.selected.len() == 1,
             _ => !self.selected.is_empty(),
         }
@@ -379,9 +377,7 @@ impl Window {
             MenuAction::Move => self.arm_move(),
             MenuAction::Rotate => self.rotate_selected(),
             MenuAction::MirrorHorizontal => self.reflect_selected(),
-            MenuAction::MirrorVertical => {
-                self.notice = Some(String::from("el espejo vertical aún no está disponible"));
-            }
+            MenuAction::MirrorVertical => self.reflect_vertical_selected(),
             MenuAction::Configure => self.open_mockup(Mockup::Configure),
             MenuAction::Properties => self.open_properties(),
             MenuAction::Describe => self.open_mockup(Mockup::Describe),
@@ -541,7 +537,6 @@ fn menu_row(
 /// leaving the reader guessing.
 fn disabled_reason(action: MenuAction) -> Option<&'static str> {
     match action {
-        MenuAction::MirrorVertical => Some("aún no disponible"),
         MenuAction::Configure | MenuAction::Describe => Some("selecciona un solo componente"),
         _ => None,
     }
