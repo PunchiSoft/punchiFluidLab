@@ -15,19 +15,20 @@
 
 use std::path::Path;
 
-use crate::Window;
+use punchi_fluid_catalog::Catalog;
+use punchi_fluid_doc::Document;
+use punchi_fluid_draw::placed::{Pipe, Placed, route_length_mm};
 
-/// Resolution of the PNG export: the print resolution the export offers.
-const PNG_DPI: f32 = 300.0;
+use crate::Window;
 
 impl Window {
     /// `Exportar`: opens the dialog in export mode, starting where the document or the
     /// reader is, exactly like `Guardar como`.
     pub(crate) fn export_dialog(&mut self) {
         let start = crate::files::start_directory(self.path.as_deref());
-        self.dialog = Some(crate::files::Dialog::open(
-            crate::files::Mode::Export,
+        self.dialog = Some(crate::files::Dialog::open_export(
             start,
+            self.export_options.format.extension(),
         ));
     }
 
@@ -63,11 +64,24 @@ impl Window {
         else {
             return Err(String::from("El dibujo no tiene nada que exportar."));
         };
-        // The page the window draws, with the block this export prints. The parts list is
-        // not part of the window's page and an export does not add one.
+        // The page the window draws, with the block this export prints and the parts list
+        // when the reader asked for one.
+        let parts = self
+            .export_options
+            .parts
+            .then(|| {
+                parts_list(
+                    &self.document,
+                    &self.catalog,
+                    &scene.placed,
+                    &scene.pipes,
+                    self.document.active_circuit(),
+                )
+            })
+            .filter(|parts| !parts.is_empty());
         let page = punchi_fluid_export::Page {
             title_block: Some(self.block.clone()),
-            parts: None,
+            parts,
             ..self.page.clone()
         };
         let block = &self.block;
@@ -90,8 +104,13 @@ impl Window {
                 write_atomically(path, "pdf", &bytes)
             }
             "png" => {
-                let bytes = punchi_fluid_export::render_png_with(&page, block, PNG_DPI, draw)
-                    .map_err(|cause| format!("no se pudo escribir el PNG: {cause}"))?;
+                let bytes = punchi_fluid_export::render_png_with(
+                    &page,
+                    block,
+                    f32::from(self.export_options.dpi),
+                    draw,
+                )
+                .map_err(|cause| format!("no se pudo escribir el PNG: {cause}"))?;
                 write_atomically(path, "png", &bytes)
             }
             "svg" => {
@@ -106,6 +125,50 @@ impl Window {
     }
 }
 
+/// The parts list of the active circuit: what the drawing holds, its port closures and its
+/// drawn tubing, grouped by definition.
+fn parts_list(
+    document: &Document,
+    catalog: &Catalog,
+    placements: &[Placed<'_>],
+    pipes: &[Pipe<'_>],
+    circuit: u32,
+) -> punchi_fluid_export::PartsList {
+    let placement_rows = document
+        .placements()
+        .iter()
+        .filter(|placement| placement.circuit == circuit)
+        .map(|placement| {
+            (
+                placement.catalog_id.as_str(),
+                placement.designation.as_deref(),
+            )
+        });
+    let closures = document
+        .placements()
+        .iter()
+        .filter(|placement| placement.circuit == circuit)
+        .flat_map(|placement| {
+            placement.port_closures.iter().map(move |(port, closure)| {
+                (
+                    placement.catalog_id.as_str(),
+                    placement.designation.as_deref(),
+                    port.as_str(),
+                    closure.as_str(),
+                )
+            })
+        });
+    let tubes = pipes.iter().enumerate().filter_map(|(index, pipe)| {
+        let length_mm = route_length_mm(placements, pipes, catalog, index)?;
+        Some(punchi_fluid_export::parts::TubeRowInput {
+            od: pipe.tube_od_hundredths,
+            class: pipe.class,
+            length_mm,
+        })
+    });
+    punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes)
+}
+
 /// Writes `bytes` to `path` through a sibling `.part` file, so a crash leaves no half file:
 /// the same rule `punchi_fluid_export::write_pdf` follows.
 fn write_atomically(path: &Path, extension: &str, bytes: &[u8]) -> Result<(), String> {
@@ -114,4 +177,31 @@ fn write_atomically(path: &Path, extension: &str, bytes: &[u8]) -> Result<(), St
         .map_err(|cause| format!("no se pudo escribir {}: {cause}", temporary.display()))?;
     std::fs::rename(&temporary, path)
         .map_err(|cause| format!("no se pudo reemplazar {}: {cause}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use punchi_fluid_catalog::default_catalog;
+    use punchi_fluid_doc::{Document, Placement};
+    use punchi_fluid_draw::Pt;
+
+    use super::parts_list;
+
+    #[test]
+    fn the_parts_list_groups_the_placed_component() {
+        let mut document = Document::new();
+        document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(60.0, 60.0),
+            24.0,
+            24.0,
+        ));
+        let catalog = default_catalog();
+        let circuit = document.active_circuit();
+        let scene = crate::scene::build(&document, &catalog, circuit, None);
+        let parts = parts_list(&document, &catalog, &scene.placed, &scene.pipes, circuit);
+        assert_eq!(parts.rows.len(), 1, "one definition on the sheet");
+        assert_eq!(parts.rows[0].quantity, 1);
+        assert!(parts.tubes.is_empty(), "no pipes on the sheet");
+    }
 }

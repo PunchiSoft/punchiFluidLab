@@ -29,6 +29,7 @@ mod branding;
 mod circuit_dialogs;
 mod edit_commands;
 mod export;
+mod export_options;
 mod files;
 mod inspector;
 mod layout;
@@ -45,6 +46,7 @@ mod shell;
 mod sidebar;
 mod sim;
 mod start;
+mod start_commands;
 mod state_file;
 mod surface;
 mod theme;
@@ -135,6 +137,8 @@ struct Window {
     block_editor: block_editor::BlockEditor,
     /// The circuit dialog waiting for an answer, if any.
     circuit_dialog: Option<circuit_dialogs::CircuitDialog>,
+    /// The export options: format, resolution and the parts list.
+    export_options: export_options::ExportOptions,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -469,6 +473,7 @@ impl Window {
             Command::ProjectSave => self.save(),
             Command::ProjectSaveAs => self.open_dialog(files::Mode::SaveAs),
             Command::ProjectExport => self.export_dialog(),
+            Command::ExportOptions => self.open_export_options(),
             Command::PageMargin(preset) => self.set_sheet_margins(preset),
             Command::PageOrientation(orientation) => self.set_sheet_orientation(orientation),
             Command::PagePaper(paper) => self.set_sheet_paper(paper),
@@ -518,24 +523,6 @@ impl Window {
             }
             Command::UntilChange => self.until_change(),
             Command::Stop => self.stop(),
-        }
-    }
-
-    /// **Inicio**: the start page, with its templates and the remembered documents.
-    fn open_start(&mut self) {
-        self.start_open = true;
-    }
-
-    /// **Recientes**: the remembered document at `index`, when its file is still there. The
-    /// ribbon already disables a missing one; the command refuses it too, so a stale click or
-    /// a script cannot pretend it opened.
-    fn open_recent(&mut self, index: usize) {
-        let Some(recent) = self.recents.entries().get(index).cloned() else {
-            return;
-        };
-        let path = std::path::PathBuf::from(&recent.path);
-        if let Err(cause) = self.open_path(&path) {
-            self.notice = Some(format!("no se pudo abrir el documento: {cause}"));
         }
     }
 
