@@ -22,7 +22,7 @@ use punchi_fluid_doc::Document;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::safety::SafetyCopy;
 
-use crate::{Window, files, ribbon, sidebar, theme, view};
+use crate::{Window, files, inspector, ribbon, sidebar, theme, view};
 
 /// How often the window rewrites the safety copy while the document has unsaved changes.
 const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5);
@@ -231,7 +231,9 @@ impl Window {
             theme,
             ribbon: ribbon::Ribbon::new(),
             sidebar: sidebar::Sidebar::new(),
+            inspector: inspector::Inspector::new(),
             selected: Vec::new(),
+            selected_pipe: None,
             drag: None,
             clipboard: Vec::new(),
             model: None,

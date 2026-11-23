@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El panel de propiedades de la ventana Rust — 2026-11-23
+
+- **Panel derecho (propiedades)** con la especificación de `ui-ux.md`: cabecera con título y
+  control de ocultar, raíl al cerrarse, plegado animado con el token de movimiento (instantáneo
+  con movimiento reducido), `Ctrl+J`, `Ver ▸ Propiedades` y `Ver ▸ Restablecer vista`, y el
+  ancho dentro de sus mínimos. Nada de eso toca el documento ni el historial.
+- **Qué muestra**: la pieza seleccionada con su nombre, su id de catálogo, la **designación**
+  editable (un solo undo por cambio, vacía la borra), el conducto de su manguera cuando llega
+  una sola, y sus puertos con el papel y la lectura en bar con el modelo en marcha; una
+  tubería seleccionada con su clase de línea y su diámetro editables; sin selección, la guía y
+  el circuito activo con sus cuentas.
+- **Selección de tuberías** en la hoja (con el mismo encaminamiento que el dibujo), con `Supr`
+  para borrarla como un undo.
+
 ### Exportar y el recorrido del alumno, probados de punta a punta — 2026-11-22
 
 - **Exportar llega a la ventana Rust**: el diálogo de archivos gana el modo de exportación
