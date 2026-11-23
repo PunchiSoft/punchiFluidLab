@@ -15,6 +15,7 @@ use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement, PlacementEdits, Q
 use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt};
 use punchi_fluid_file::paper::StoredSheet;
+pub mod check;
 mod model;
 pub mod recents;
 pub mod safety;

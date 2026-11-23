@@ -257,6 +257,11 @@ pub(super) const EDITAR: &[Group] = &[
         ],
     },
     Group {
+        name: "Revisión",
+        launcher: false,
+        items: &[Item::Small("check", "Comprobar", Some(Command::Check))],
+    },
+    Group {
         name: "Conducto",
         launcher: false,
         items: &[Item::Gallery("pipe-working", "Conducto", CONDUCTO)],

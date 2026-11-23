@@ -22,6 +22,15 @@ publicación.
   1024×768 a 4K), `a_screen_below_the_floor_keeps_its_room_as_the_minimum`,
   `the_minimum_follows_the_room_and_keeps_the_design_floor_when_it_fits`, y el primer frame
   en 1920, 1366 y 1366 a 125 %.
+### La cinta comprueba el circuito — 2026-11-23
+
+- **Comprobar** abre el panel de faltas. La sesión expone `check_circuit` (ADR 0044) y la
+  ventana lista cada `Finding` con su descripción y su coordenada; seleccionar una falta
+  selecciona su componente o conducto y la hoja lo marca, y un circuito sin faltas lo dice.
+  **Recomprobar** vuelve a pasar el chequeo.
+- **Arquitectura**: nueva arista `punchi-fluid-session → punchi-fluid-check`, con
+  `ALLOWED_EDGES`, la tabla de `AGENTS.md` y la skill de arquitectura actualizadas en el mismo
+  cambio; la ventana sigue sin depender de la crate del chequeo.
 
 ### La cinta tiene una sola tabla de atajos — 2026-11-23
 
