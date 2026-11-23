@@ -98,8 +98,19 @@ fn every_command_is_on_the_ribbon() {
     let commands = table_commands();
     for command in Command::ALL {
         assert!(
-            commands.iter().any(|(carried, ..)| *carried == command),
+            commands
+                .iter()
+                .any(|(carried, ..)| std::mem::discriminant(carried)
+                    == std::mem::discriminant(&command)),
             "{command:?} has no control"
+        );
+    }
+    for (carried, ..) in &commands {
+        assert!(
+            Command::ALL
+                .iter()
+                .any(|command| std::mem::discriminant(command) == std::mem::discriminant(carried)),
+            "{carried:?} has no dispatch arm"
         );
     }
 }
@@ -176,6 +187,23 @@ fn the_margins_gallery_opens_its_cards() {
     assert!(
         harness.query_by_label("Estrecho").is_some(),
         "the gallery shows its cards"
+    );
+}
+
+#[test]
+fn the_margins_gallery_dispatches_its_command() {
+    let mut ribbon = Ribbon::new();
+    {
+        let palette = palette();
+        let mut harness = harness(&mut ribbon, &palette);
+        harness.get_by_label("Márgenes   ").click();
+        harness.run();
+        harness.get_by_label("Estrecho").click();
+        harness.run();
+    }
+    assert_eq!(
+        ribbon.take(),
+        Some(Command::PageMargin(super::MarginPreset::Narrow))
     );
 }
 

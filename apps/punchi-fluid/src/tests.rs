@@ -498,3 +498,59 @@ fn every_command_has_a_handler() {
         window.dispatch(command);
     }
 }
+
+#[test]
+fn the_margin_gallery_changes_the_sheet() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let before = window.document.sheet().margins;
+    window.dispatch(crate::ribbon::Command::PageMargin(
+        crate::ribbon::MarginPreset::Narrow,
+    ));
+    assert_ne!(
+        window.document.sheet().margins,
+        before,
+        "the margins changed"
+    );
+    assert_eq!(
+        window.page.margins,
+        window.document.sheet().margins,
+        "the page the window draws follows the document"
+    );
+    assert!(window.document.can_undo());
+}
+
+#[test]
+fn the_orientation_menu_changes_the_sheet() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.dispatch(crate::ribbon::Command::PageOrientation(
+        punchi_fluid_doc::paper::Orientation::Portrait,
+    ));
+    assert_eq!(
+        window.document.sheet().orientation,
+        punchi_fluid_doc::paper::Orientation::Portrait
+    );
+}
+
+#[test]
+fn the_paper_menu_changes_the_sheet() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.dispatch(crate::ribbon::Command::PagePaper(
+        punchi_fluid_doc::paper::PaperSize::A3,
+    ));
+    assert_eq!(
+        window.document.sheet().paper,
+        punchi_fluid_doc::paper::PaperSize::A3
+    );
+}
+
+#[test]
+fn the_sheet_change_is_one_undo() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let before = window.document.sheet();
+    window.dispatch(crate::ribbon::Command::PagePaper(
+        punchi_fluid_doc::paper::PaperSize::A3,
+    ));
+    assert!(window.document.can_undo(), "the change is one undo");
+    window.undo();
+    assert_eq!(window.document.sheet(), before, "undo restores the sheet");
+}

@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La cinta cambia la hoja — 2026-11-23
+
+- **Márgenes, Orientación y Tamaño** despachan comandos tipados (`PageMargin`,
+  `PageOrientation`, `PagePaper`) por `Document::set_sheet`: cada cambio es un solo undo, la
+  ventana reajusta la vista y la página que dibuja sigue al documento. La galería ofrece
+  Normal/Estrecho/Moderado/Ancho; orientación Vertical/Apaisado; papel A4/A3/A2.
+- **Personalizado…** y **Configurar página** siguen apagados hasta la fase 6 del plan de la
+  cinta; no se pintan como botones que funcionan.
+- **Pruebas**: cada comando cambia la hoja, el cambio es un undo, la página de la ventana
+  sigue al documento y la galería de la cinta despacha su `Command`.
+
 ### La cinta despacha comandos, no etiquetas — 2026-11-23
 
 - **La cinta deja de despachar por etiqueta**: `ribbon::Command` tipa la tabla y el despacho

@@ -14,7 +14,7 @@ mod command;
 mod icons;
 mod model;
 
-pub(crate) use command::Command;
+pub(crate) use command::{Command, MarginPreset};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
 
 /// The colours the ribbon paints with, taken from the theme tokens.

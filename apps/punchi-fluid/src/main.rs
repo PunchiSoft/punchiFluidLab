@@ -21,7 +21,8 @@ use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
-use crate::ribbon::Command;
+use crate::ribbon::{Command, MarginPreset};
+use punchi_fluid_doc::paper::{Orientation, PaperSize, Sheet as PaperSheet};
 
 mod auto_hide;
 mod export;
@@ -453,6 +454,9 @@ impl Window {
             Command::ProjectSave => self.save(),
             Command::ProjectSaveAs => self.open_dialog(files::Mode::SaveAs),
             Command::ProjectExport => self.export_dialog(),
+            Command::PageMargin(preset) => self.set_sheet_margins(preset),
+            Command::PageOrientation(orientation) => self.set_sheet_orientation(orientation),
+            Command::PagePaper(paper) => self.set_sheet_paper(paper),
             Command::CircuitNew => self.new_circuit(),
             Command::Undo => self.undo(),
             Command::Redo => self.redo(),
@@ -482,6 +486,43 @@ impl Window {
             Command::UntilChange => self.until_change(),
             Command::Stop => self.stop(),
         }
+    }
+
+    /// **Márgenes**: the named preset in millimetres, through the document's sheet.
+    fn set_sheet_margins(&mut self, preset: MarginPreset) {
+        let mut sheet = self.document.sheet();
+        sheet.margins = preset.margins();
+        self.apply_sheet(sheet, false);
+    }
+
+    /// **Orientación**: turns the paper, one undo.
+    fn set_sheet_orientation(&mut self, orientation: Orientation) {
+        let mut sheet = self.document.sheet();
+        sheet.orientation = orientation;
+        self.apply_sheet(sheet, true);
+    }
+
+    /// **Tamaño**: the named paper, one undo.
+    fn set_sheet_paper(&mut self, paper: PaperSize) {
+        let mut sheet = self.document.sheet();
+        sheet.paper = paper;
+        self.apply_sheet(sheet, true);
+    }
+
+    /// Applies a validated sheet, refits the view and rebinds the page the window draws. The
+    /// document records the change; the window only follows it.
+    fn apply_sheet(&mut self, sheet: PaperSheet, refit: bool) {
+        if !self.document.set_sheet(sheet) {
+            self.notice = Some(String::from("la hoja no admite ese cambio"));
+            return;
+        }
+        let (page, block) = files::page_and_block(&self.document);
+        self.page = page;
+        self.block = block;
+        if refit {
+            self.view.reset();
+        }
+        self.notice = Some(String::from("hoja actualizada"));
     }
 
     /// **Circuito ▸ Nuevo circuito**: an empty circuit, made active, as one undo. The project
