@@ -76,6 +76,34 @@ changes physics. Before opening the PR, read
 [github-collaboration](github-collaboration/SKILL.md) for what the body must claim; for a
 workflow change, also [github-actions-security](github-actions-security/SKILL.md).
 
+## The flow at a glance
+
+The catalog is a set of procedures; this is how they chain. Each card names the skills
+that apply at that stage, not all of them: the table above has the full list.
+
+```mermaid
+flowchart TD
+    E["Entrada<br/>docs/README.md · AGENTS.md<br/>capabilities.md · plan.md"] --> P["1 · Planificar<br/>phased-plan · capability-plan<br/>run largo: parity-run"]
+    P --> B["2 · Construir<br/>rust-* · solver-validation · fluid-power-symbology<br/>reference-parity · punchi-visual-language<br/>qt-adaptive-layout · qt-lifetimes"]
+    B --> G["3 · Gate<br/>check.sh · check-docs.sh<br/>machine-resource-budget<br/>rojo 2x o ruta prohibida -> parar"]
+    G --> R["4 · Entregar<br/>pull-request-workflow · github-collaboration<br/>github-actions-security · step-report"]
+    R --> M{"¿Quién fusiona?"}
+    M -->|manual| O["El dueño fusiona<br/>el agente espera y sigue"]
+    M -->|"auto + ADR"| A["El agente fusiona tras CI verde<br/>solo con ADR y guardrails"]
+    O --> Q{"¿Quedan fases?"}
+    A --> Q
+    Q -->|"sí: vuelve a 2"| B
+    Q -->|no| C["5 · Cerrar<br/>evaluación contra los PR fusionados<br/>auditoría del proceso<br/>checklist: hecha con evidencia · pendiente con dueño"]
+    C --> F["Fin"]
+```
+
+The route is the one in [pull-request-workflow](pull-request-workflow/SKILL.md): a branch
+from updated `main`, the gate, a pull request with its checklist, and a merge. The phases
+are [phased-plan](phased-plan/SKILL.md)'s: Phase 0 proves the ground and writes the
+evidence, each delivery phase is one merged pull request, and the final phase evaluates and
+audits. The diamond is the merge policy: **manual** by default, **auto** only when an ADR
+authorises it, and one pull request at a time either way.
+
 ## Where the guidance comes from
 
 The Rust skills are distilled from the sources below, then narrowed to this repository's
@@ -112,6 +140,41 @@ copied here): [morganlinton/BeautifulRust](https://github.com/morganlinton/Beaut
 [github/awesome-copilot](https://github.com/github/awesome-copilot) (GitHub workflow,
 commit and release skills). When one of them disagrees with `AGENTS.md`, this repository
 wins.
+
+## Where the workflow comes from
+
+The flow above is the common shape of professional delivery, narrowed to a solo
+maintainer. None of these is a dependency, and none of their text is vendored: the
+reference is recorded so a session can check the reasoning.
+
+- [Google Engineering Practices: Small CLs](https://google.github.io/eng-practices/review/developer/small-cls.html) —
+  one self-contained change, its test in the same change, stacking when a change depends
+  on another, and never breaking the build.
+- [DORA: trunk-based development](https://dora.dev/capabilities/trunk-based-development/) —
+  small batches, branches measured in hours, three or fewer active, merged at least daily,
+  and a trunk that stays green.
+- [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow) and the
+  [merge queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) —
+  a protected `main`, required checks, and the combined result tested before it lands.
+- [Agent Skills specification](https://agentskills.io/specification) — the `SKILL.md`
+  directory, the frontmatter and the progressive disclosure this catalog follows.
+- [obra/superpowers](https://github.com/obra/superpowers) — the closest public methodology:
+  brainstorm, worktree,
+  [write the plan](https://github.com/obra/superpowers/blob/main/skills/writing-plans/SKILL.md),
+  execute it task by task, and
+  [verify before claiming completion](https://github.com/obra/superpowers/blob/main/skills/verification-before-completion/SKILL.md).
+- [vercel-labs/open-agents](https://github.com/vercel-labs/open-agents) — the
+  `.agents/skills` layout this repository shares and its
+  [plan mode](https://github.com/vercel-labs/open-agents/blob/main/.agents/skills/plan-mode/SKILL.md),
+  which explores, asks, designs, presents the plan and waits for approval before
+  implementing.
+- [Atul Gawande, *A Life-Saving Checklist*](https://www.newyorker.com/magazine/2007/12/10/the-checklist) —
+  the checklist as the tool against forgetting, which is what the delivery checklist is.
+
+The differences are deliberate. This repository has one maintainer, so it holds **one
+active branch** instead of DORA's three, and the owner is the merge queue; a second branch
+needs an explicit exception. Auto-merge exists only behind an ADR, while open-agents makes
+auto-commit and auto-PR a preference, never always-on.
 
 ## Adding a skill
 
