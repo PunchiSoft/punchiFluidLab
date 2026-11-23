@@ -338,7 +338,11 @@ pub(super) const CAJETIN: &[Group] = &[
         name: "Datos",
         launcher: false,
         items: &[
-            Item::Small("x-office-address-book", "Editar datos…", None),
+            Item::Small(
+                "x-office-address-book",
+                "Editar datos…",
+                Some(Command::BlockEdit),
+            ),
             Item::Small("edit-reset", "Restablecer", Some(Command::BlockReset)),
         ],
     },
