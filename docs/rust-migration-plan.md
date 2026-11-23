@@ -14,8 +14,8 @@ remaining work is grouped into **four large batches**; each leaves the Rust wind
 and is delivered as one pull request, or a very small number, not one per control. The
 capability states stay in [docs/capabilities.md](capabilities.md); this document is the order.
 
-The rule for every batch: the Rust window builds, runs and is driven by `--selftest` (or the
-equivalent headless check) at the end of the batch, and nothing in it depends on the Qt app.
+The rule for every batch: the Rust window builds, runs and is driven by its headless test
+suite at the end of the batch, and nothing in it depends on the retired Qt app.
 
 ## Batch 1 — The Rust window is the product
 
@@ -24,25 +24,26 @@ and the Qt app leaves the workspace and the CI.
 
 **Scope**
 
-- **Inicio**: the four start templates (the first is the owner's OR circuit, already composed
-  in the ABI), the recent documents and the welcome page, all in the Rust window.
+- **Inicio**: the four start templates (the first is the owner's OR circuit, composed in the
+  session), the recent documents and the welcome page, all in the Rust window.
 - **Files**: Save, Save As, Open, the recent list, autosave and recovery, the close
   confirmation and the window state, with the Rust window's own dialogs.
-- **Retire the Qt app**: remove `apps/punchi-fluid-qt`, its start page and its selftest, and
-  the `window` job in CI; the ABI stays only where its tests use it.
+- **Retire the Qt app**: `apps/punchi-fluid-qt` and its selftest are gone, and the CI
+  `window` job now builds and tests the Rust window. The C ABI crate is the remaining stub
+  and its removal is the next step.
 
 **Acceptance**
 
 - The student's path is covered by the Rust window's headless test:
   `tests_acceptance::the_student_loop_from_the_start_page_to_an_export` (Inicio → OR
   template → edit → save → reopen → run → export), green in the gate.
-- `apps/punchi-fluid-qt` is gone, the `window` job is gone, and the workspace still passes the
-  full gate.
+- `apps/punchi-fluid-qt` is gone, the `window` job builds the Rust window, and the workspace
+  still passes the full gate. The C ABI removal is a separate code change.
 - The OR template of the parked pull request is what Inicio offers; the template lives in the
   session, so the Rust window reads it without the Qt.
 
 **Risks:** the native file dialog in the Rust window; the recent list and the autosave timing;
-the ABI surface that the Qt tests keep alive.
+the remaining ABI stub and its tests, which do not cover the product.
 
 ## Batch 2 — Interface parity and F8
 

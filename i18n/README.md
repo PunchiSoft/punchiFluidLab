@@ -1,58 +1,42 @@
 # Translations
 
-**Status: target.** Nothing here is loaded at runtime yet. The interface is Spanish and
-its copy lives in the QML and C++ that draws it.
+**Status: target.** Nothing here is loaded at runtime yet. The interface is Spanish and its
+copy is hardcoded in the Rust window and in the crates that hand it sentences.
 
 ## Where the copy lives today
 
-- **QML:** `qsTr()` in `apps/punchi-fluid-qt/*.qml` — the command labels, hints, panels
-  and the About and Licence pages. It is already the marker `lupdate` reads.
-- **C++:** `QStringLiteral` in `apps/punchi-fluid-qt/src/*.cpp` — the state messages and
-  the field labels of the title-block editor. Not wrapped in `tr()` yet, so extraction
-  does not see them.
-- **Rust:** sentences reach the window through the ABI — the check's `message_es`, the
-  title-block headers and the inspector hints. They are not catalogs either.
-- **Catalog data:** `name` and `name_es` in `assets/catalog/*.toml`, already documented
-  in [assets/catalog/README.md](../assets/catalog/README.md).
+- **The Rust window** (`apps/punchi-fluid`): ribbon labels, sidebar categories, status bar,
+  notices and dialog text are Spanish string literals.
+- **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
+  `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
+  keys.
+- **Catalog data:** `name` and `name_es` in `assets/catalog/*.toml`, documented in
+  [assets/catalog/README.md](../assets/catalog/README.md); the window currently chooses
+  `name_es` first.
 
-## The decision
+## The decision that no longer applies
 
-[ADR 0027](../docs/adr/0027-translation-catalogs-are-qts.md) settles the mechanism: the
-catalogs are Qt's.
+[ADR 0027](../docs/adr/0027-translation-catalogs-are-qts.md) chose Qt's `.ts`/`.qm`
+catalogs. That mechanism belonged to the Qt window, which is retired (ADR 0035, ADR 0036):
+there is no QML, no `QTranslator` and no CMake step to extract from. The plan must be
+re-decided for the Rust/egui window before any catalog is written.
 
-- `i18n/punchi-fluid_es.ts` is the Spanish catalog; English is the source language and
-  needs no file. `lupdate` extracts `qsTr()` and `tr()`, `lrelease` compiles the `.qm`,
-  and the window installs a `QTranslator` on start and when the desktop locale changes.
-- The Rust crates return stable English keys, never sentences. The window turns a key into
-  the catalog message.
-- The exporter has no locale: the caller passes the label set for the title block and the
-  parts list, and the default is English.
-- No concatenated sentences and no `(s)` plural: placeholders are `%1` and `%n`.
+## What the new decision must settle
 
-## The pipeline (M6)
-
-```bash
-lupdate apps/punchi-fluid-qt -ts i18n/punchi-fluid_es.ts   # after wrapping the C++ copy
-lrelease i18n/punchi-fluid_es.ts -qm i18n/punchi-fluid_es.qm
-```
-
-1. Wrap the remaining C++ `QStringLiteral` copy in `tr()` and give the ABI keys instead
-   of sentences.
-2. Extract with `lupdate`, translate the `.ts`, and compile it with `lrelease` in CMake so
-   the catalog travels inside the binary.
-3. Load the built-in catalog at start; a `.qm` of the same name under
-   `$XDG_DATA_HOME/punchi-fluid-lab/i18n/` replaces it, so a packaged build ships another
-   language without a new binary.
-4. Add the test that fails on a user-visible string that does not come from a catalog.
-
-## Adding a language
-
-Same steps, one `.ts` per language. A language is complete when the interface, the check
-messages, the title block and the parts list all resolve to it; a missing message falls
-back to English, never to an empty label.
+1. **English first.** English is the default visible language, not a catalogue that appears
+   only when the desktop is English. Spanish remains a selectable translation.
+2. **A translation package, not string replacement.** The candidates are Fluent
+   (`fluent-bundle` with embedded `.ftl` catalogs) and a small project catalog crate with
+   TOML. The mechanism is an ADR; no Spanish sentence is replaced by an English literal in
+   place.
+3. **Keys in the crates.** `FindingKind::as_str` is already a stable key; `message_es` is
+   retired, and the window maps the key to a catalog message. The exporter receives its
+   label set from the caller and stays locale-free.
+4. **No per-frame lookup.** Labels resolve once on language change, not in the draw loop.
+5. **A test that fails on a visible literal** outside a catalog, and a completeness test for
+   every message in every catalog.
 
 ## What is not done
 
-M6 pays the debt: extraction, the Spanish catalog, the C++ `tr()` pass, keys instead of
-sentences in the ABI, the exporter label set and the hardcoded-string test. The branch
-that renamed the content-model tokens to English did not translate any copy.
+No catalog file exists, no runtime loads one, no language switch exists, and the English
+copy has not been written. The current state is the debt the audit records.

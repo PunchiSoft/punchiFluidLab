@@ -13,9 +13,9 @@
 > exactamente eso, todavía no está. Si algo no existe, se dice; si está a medias, se dice
 > qué parte falta.
 
-![La ventana de Punchi Fluid Lab en un escritorio claro: la cinta, el catálogo de componentes a la izquierda y el circuito de arranque sobre la hoja — el compresor abajo a la izquierda con su círculo de conexión, la unidad de mantenimiento a su lado, la válvula 3/2 al centro-derecha y el cilindro encima, con la barra de estado marcando 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-light.png)
+![La ventana Qt anterior de Punchi Fluid Lab en un escritorio claro: la cinta, el catálogo de componentes a la izquierda y el circuito de arranque sobre la hoja — el compresor abajo a la izquierda con su círculo de conexión, la unidad de mantenimiento a su lado, la válvula 3/2 al centro-derecha y el cilindro encima, con la barra de estado marcando 0,00 bar, 0,0 mm y 0,0 mm/s](assets/screenshots/window-light.png)
 
-*La ventana tal como está hoy: cinta, catálogo, hoja y barra de estado, siguiendo la paleta
+*La ventana Qt anterior, conservada hasta que una captura de la ventana Rust la sustituya: cinta, catálogo, hoja y barra de estado, siguiendo la paleta
 del escritorio. El circuito es la hoja con la que abre el programa: un compresor alimenta la
 unidad de mantenimiento, la unidad alimenta una válvula 3/2 en reposo y la válvula alimenta un
 cilindro de simple efecto. Cada puerto lleva su círculo de conexión, y no hay nada en marcha,
@@ -25,14 +25,14 @@ idiomas.*
 
 ![La hoja en movimiento: la válvula accionada, el cilindro desplazándose y los tubos coloreados por la presión](assets/screenshots/run.gif)
 
-*La hoja en movimiento: la válvula accionada y el cilindro desplazándose, con los tubos
+*La hoja en movimiento, en la ventana Qt anterior: la válvula accionada y el cilindro desplazándose, con los tubos
 coloreados por la presión que llevan. 44 segundos a 4× de velocidad. [Vídeo completo]
 (assets/screenshots/run.mp4), MP4, sin sonido.*
 
 Simulador libre de circuitos neumáticos e hidráulicos, hecho para que un estudiante sin
 licencia, sin presupuesto y sin conexión pueda dibujar el esquema, conectar los puertos,
-ejecutar el modelo y ver moverse los actuadores. El modelo, el formato y el dibujo son Rust;
-la ventana es Qt Quick.
+ejecutar el modelo y ver moverse los actuadores. El modelo, el formato, el dibujo y la
+ventana son Rust; la ventana es el binario egui de `apps/punchi-fluid`.
 
 **Estado: `0.1.0`, sin publicar.** Rebanada vertical que funciona: dibujar y editar un
 circuito, conectar puerto a puerto, reunir varios circuitos en un proyecto y cambiar entre
@@ -92,7 +92,7 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 | `punchi-fluid-doc` | El documento editado: colocaciones, comandos y deshacer acotado |
 | `punchi-fluid-draw` | El dibujo único del circuito, en milímetros, tras un trait `Surface` |
 | `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda, y los escritores PNG y PDF |
-| `punchi-fluid-ffi` | El ABI C que habla la ventana: el documento, el cuadro de dibujo, los hit tests y la exportación |
+| `punchi-fluid-ffi` | El ABI C retirado de la ventana Qt; ningún código del producto lo enlaza (ADR 0035; su retirada es deuda) |
 | `punchi-fluid-session` | La vida del documento entre el fichero y la ventana: la conversión hoja↔documento |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
 | `punchi-fluid-cli` | `validate`, `simulate` y `check` sin ventana |
@@ -120,28 +120,27 @@ cambio de válvula, **Detener** (F5) vuelve a edición y **Restablecer** (Ctrl+R
 `t = 0`. Una válvula con muelle se mantiene accionada mientras el puntero está pulsado o
 **Espacio** se mantiene, y el selector de velocidad está junto al transporte (un cilindro de
 20 mm con esta válvula completa la carrera en unos 0,13 s de tiempo simulado). La cinta
-tiene tres pestañas —Archivo, Editar y Ver— y la ayuda de cada comando nombra su atajo
+tiene cinco pestañas —Archivo, Editar, Ver, Cajetín y Simular— y la ayuda de cada comando nombra su atajo
 cuando existe. La barra lateral lista el catálogo con el símbolo propio de cada componente;
 un clic lo selecciona y arrastrarlo lo coloca.
 
 **Exportar** en Archivo abre un diálogo de guardado: un nombre `.pdf` escribe una página
-vectorial, un nombre `.png` un ráster a 300 dpi. El grupo **Hoja** elige uno de los nueve
-papeles con nombre —A5 a A0, Letter, Legal y Oficio— y la orientación apaisada, y marca el
-que está en uso. La página lleva marco, bloque de identificación y leyenda de clases de
-línea y números de puerto, y mientras alguna revisión de símbolo siga abierta lleva además
-la nota de que los símbolos aún no están verificados contra ISO 1219-1. El mismo circuito
-exportado dos veces produce los mismos bytes. Todavía no hay panel de márgenes, tamaño
-personalizado ni resolución del PNG. La fecha es la del día de la exportación, el dibujo se
-escala para encajar y la escala queda escrita en el bloque de identificación, y
-`Ctrl+Shift+E` abre el diálogo.
+vectorial, un nombre `.png` un ráster a 300 dpi y un nombre `.svg` la misma página como
+texto vectorial. **Configurar página** elige A4, A3, A2 o un tamaño personalizado, la
+orientación y los márgenes, y los guarda con el documento. La página lleva marco y bloque de
+identificación, y mientras alguna revisión de símbolo siga abierta lleva además la nota de
+que los símbolos aún no están verificados contra ISO 1219-1. El mismo circuito exportado dos
+veces produce los mismos bytes. La ventana todavía no imprime la lista de piezas ni tiene
+panel de resolución del PNG; son carencias del producto, no comportamiento oculto. El dibujo
+se escala para encajar en el área del marco.
 
 **El papel es una decisión, no un valor por defecto.** Un plano se imprime en la hoja que usa
 la oficina técnica, y no es una sola: ISO 216/5457 A5 a A0 para el mundo ISO;
 Letter y Legal para el norteamericano; y **Oficio/Folio (216 × 330 mm)**, que no es ninguna de
-las dos y es el papel que todavía se encuentra en la mayoría de las oficinas chilenas. El plan
-está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); el tamaño
-personalizado existe en la API de exportación pero no en la ventana, y la última elección
-todavía no se recuerda por usuario.
+las dos y es el papel que todavía se encuentra en la mayoría de las oficinas chilenas. La
+ventana ofrece hoy A4, A3, A2 y un tamaño personalizado; el resto del conjunto existe en la
+API de exportación. El plan está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md),
+y la última elección todavía no se recuerda por usuario.
 
 Requisitos: Rust estable (fijado en `rust-toolchain.toml`). La ventana se compila con
 
@@ -202,9 +201,9 @@ sitio falla una prueba. Los componentes usan su propio símbolo, nunca un set de
 aparte.
 
 **Estado honesto:** las regiones, los tokens, el mapa de teclado y el panel de ayuda
-están hechos. Los iconos simbólicos de Breeze todavía no se cargan (los botones usan
-texto), la *familia* tipográfica del escritorio se lee pero no se carga (el tamaño sí)
-y los textos de la interfaz siguen literales hasta el pase a los catálogos de Qt de M6.
+están hechos en la ventana Rust. Los iconos son su propia familia SVG en `assets/icons/`;
+la familia tipográfica del escritorio se carga; los textos de la interfaz siguen siendo
+literales en español y los catálogos de traducción no han empezado (F8).
 
 La especificación completa —regiones, mapa de teclado, requisitos de contraste y lo
 que el diseño rechaza— está en [docs/ui-ux.md](docs/ui-ux.md). Los hitos con sus
@@ -246,8 +245,8 @@ forma más débil: el restrictor fijo se dibujó sin la norma a mano.
 
 El producto son tres problemas distintos: la física, el formato de archivo y el
 editor de esquemas. Separarlos en crates permite probar el solver sin ventana, migrar
-documentos mientras el editor cambia, y confinar la decisión de toolkit —Qt Quick hoy,
-QML con `cxx-qt` si la app debe verse nativa en Plasma— a un solo crate.
+documentos mientras el editor cambia, y confinar la decisión de toolkit —egui hoy— a un
+solo crate. La ventana Qt y el ABI C se retiraron (ADR 0035, ADR 0036).
 
 El razonamiento completo, incluido lo que cuesta, está en
 [docs/adr/0001-language-and-layout.md](docs/adr/0001-language-and-layout.md).
@@ -327,7 +326,7 @@ decisiones técnicas, la revisión, la validación y todo lo que se publica.
 
 Sus instrucciones viven con el proyecto —[AGENTS.md](AGENTS.md) y [`.agents/`](.agents/)—,
 así que un agente que trabaje aquí sigue las mismas reglas que una persona: unidades
-tipadas, ni `unwrap` ni `panic!` fuera de las pruebas, ni `unsafe` fuera del ABI, símbolos
+tipadas, ni `unwrap` ni `panic!` fuera de las pruebas, ni `unsafe` en el producto, símbolos
 dibujados a mano contra ISO 1219-1 y **nada tomado de otro programa**. Esas reglas las
 escribió y ajustó PunchiSoft para esta arquitectura y este flujo de trabajo, no vienen de
 una plantilla.

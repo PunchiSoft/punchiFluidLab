@@ -1,23 +1,21 @@
 # Action icons
 
-Status: current. The inventory of the window's own action-icon family, the drawings in
-`apps/punchi-fluid-qt/src/actionicons.cpp`, and the coverage the `--check-icons` run
-asserts. The authority is the code; this page names what the code draws and why.
+Status: current. The inventory of the window's own action-icon family: one SVG per id
+under [`assets/icons/actions`](../../assets/icons/actions), compiled into
+`apps/punchi-fluid/src/ribbon/icons.rs` as `ICONS`, in the box, stroke and ink that record
+fixes. The authority is the code; this page names what the code draws and why.
 
-Since [ADR 0035](../adr/0035-the-window-is-rust.md) the same drawings are also files under
-[`assets/icons/actions`](../../assets/icons/actions): one SVG per id in the table below, in
-the box, stroke and ink that record fixes. `scripts-dev/check-icons.sh` validates every
-file and asserts that the table and the files name the same ids; the 16, 24 and 32 px
-renders in `assets/icons/review/` are the review evidence. The Qt window still draws the
-C++ family until the Rust window loads the files, so the two must stay in step.
+The 16, 24 and 32 px renders in `assets/icons/review/` are the review evidence. The
+coverage guard is a debt: `scripts-dev/check-icons.sh` still points at the retired Qt table
+and is not in the gate, so today no automated check asserts that every command's icon
+exists.
 
 ## The count
 
-The family has **55 drawings**. The number counts **drawings**, the ids returned by
-`actionicons::names()`, not commands: one drawing can serve several commands, and some
-commands are generated from the same table. The table below has one row per drawing, and
-`--icon-sheet` prints the same number; if the two disagree, the code is right and this page
-is stale.
+The family has **55 drawings**. The number counts **drawings**, the ids in `ICONS`, not
+commands: one drawing can serve several commands, and some commands are generated from the
+same table. The table below has one row per drawing; if the code and this page disagree, the
+code is right and this page is stale.
 
 The ribbon table, the view strip, the start view and the collapsed menu are the callers.
 The ribbon's command icons are checked in both directions by `--check-icons`: every icon
@@ -111,9 +109,9 @@ window, the theme unit's large and small button values (16 and 24 at the default
 
 ## Entries without an icon
 
-`--check-icons` walks the ribbon table and prints every entry that carries no icon. The
-list is a contract, documented here and asserted in `apps/punchi-fluid-qt/src/main.cpp`;
-a new entry fails the check until it is drawn or added to this list with a reason.
+There is no automated coverage check in the Rust window today; restoring it is a debt.
+The list below is the contract to assert: a new entry either has a drawing or is added here
+with a reason.
 
 - **Custom groups**: `page-setup` (Configurar página) and `recent` (Recientes). The group
   header is a control, not a button; the commands inside it carry icons.
@@ -150,9 +148,9 @@ longer appear in `actionicons::names()`.
 
 ## Checking the family
 
-- `QT_QPA_PLATFORM=offscreen apps/punchi-fluid-qt/build/punchi-fluid --check-icons`:
-  coverage in both directions, the cache bound and the palette key.
-- `--icon-sheet <file> --theme light|dark --scale 2`: the manual review sheet at 16, 24 and
-  32 px, and its 2× raster. This is local evidence, not a gate check.
-- The window checks need a configured Qt build; CI does not configure it. The Rust tests
-  are the CI-enforced part.
+- `cargo test -p punchi-fluid-window`: the window's tests, but **none of them covers the
+  icon inventory** yet.
+- The 16, 24 and 32 px review sheet in `assets/icons/review/` is local visual evidence, not
+  a gate check.
+- `scripts-dev/check-icons.sh` is the intended guard, but it still parses the retired Qt
+  table; it must be rewritten against `ribbon/icons.rs` before it can be trusted.

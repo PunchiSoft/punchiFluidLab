@@ -63,6 +63,7 @@ A document that is not simply current carries a status line under its title:
 | [designs/title-block-and-sheet.md](designs/title-block-and-sheet.md) | design | current | The EGM design for the sheet, the A4 landscape default, the title block and its positions, and the reference zones |
 | [capabilities.md](capabilities.md) | process | current | The coverage ledger: what a student must be able to do, its state and its evidence |
 | [plan.md](plan.md) | process | current | The milestones and their acceptance criteria, with the status of each |
+| [rust-migration-plan.md](rust-migration-plan.md) | process | proposed | The four delivery batches from the Qt window to the Rust one |
 | [architecture.md](architecture.md) | explanation | current | The system map: crates, data flow, extension points, debts |
 | [ui-ux.md](ui-ux.md) | explanation | target | The interface: regions, theme, accessibility, what is still open |
 | [symbology.md](symbology.md) | explanation | current | The ISO 1219 contract, the renderer guarantees and the review checklist |

@@ -16,7 +16,7 @@ is only about writing.
   English, for example **Iniciar** (start). The same applies to a comment that quotes a UI
   label: the label is Spanish, the sentence is English. The i18n plan is
   [i18n/README.md](../i18n/README.md).
-- `--selftest` output, internal diagnostics and test names are English. A Spanish UI label
+- Internal diagnostics and test names are English. A Spanish UI label
   is quoted, never translated into a Spanish sentence.
 - No document names another simulator, copies its manual, its symbols or its examples
   (ADR 0009). When the behaviour of another program is the reference, describe the

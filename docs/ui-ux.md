@@ -317,7 +317,7 @@ The panel that lists the reasons for each skipped file is still target.
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
   `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the
-  label is translated in the session, so the QML never learns the numeric enum.
+  label is translated in the session, so the widget never learns the numeric enum.
 - The sidebar is **a palette of tiles**, two per row: the symbol, the name on two lines
   and the `id` beneath. The header carries the title, the number of entries and the search
   field; the footer names the folder in use and the number of skipped files.
@@ -328,8 +328,8 @@ The panel that lists the reasons for each skipped file is still target.
   palette hides them instead of offering a box with its own hose. They stay in the ABI
   catalog, so an old sheet that already places one still opens and simulates; only the
   palette row is gone, and the catalog index the row would have kept is untouched.
-  The filter is in the session (`readCatalog`), not in QML, so the row index and the search
-  count cannot drift ([ADR 0033](adr/0033-a-port-closure-belongs-to-the-port.md)).
+  The filter is in the session, not in the widget, so the row index and the search count
+  cannot drift ([ADR 0033](adr/0033-a-port-closure-belongs-to-the-port.md)).
 - Search filters by `name`, `id` and a few synonyms; `Ctrl+F` focuses it; typing
   selects the first match and `Enter` starts placing it.
 - The footer names the folder the core reads and the skipped files; a panel that lists the
@@ -558,18 +558,13 @@ raster and the authored 180 × 100 mm area; the plate is `panel` on a `surfaceRa
 plus a tooltip that names the circuit. The default way in (**Nuevo proyecto**) carries the
 accent tint and border, and its text is ink, never a light word over a fill that hover
 repaints.
-Each thumbnail calls the same Rust drawing and Qt replay path as the sheet, then keeps one
-512 × 288 RGBA image until the theme changes or the card is destroyed. The three offered cards
-bound that cache at 1.69 MiB (2.25 MiB if the fourth returns); no image is fetched. The
-start-view icons follow **one raster rule with two sizes**: `Math.round(unit * 1.1)` on the rail
-and `Math.round(unit * 1.8)` on the two «Empezar» cards, each with `sourceSize` at that size so
-the provider rasterises it and `fillMode: Image.PreserveAspectFit`; the tone is always a theme
-token. Every
-`image://theme` URL carries `&v=<session.themeRevision>`: a palette change increments the
-revision and QML re-requests the icons, so the old tint never stays on screen. Template cards
-and recent rows expose their title/name and description to assistive technology. Inicio is
-reachable from **Archivo ▸ Inicio**; the domain chip, the recent thumbnail and the opened time
-are deferred to P-034b, with a preview-by-path bound and a `recent.json` version change.
+Each thumbnail is the template's own document drawn by the same preview path as the sheet,
+fitted into the card's plate with the theme ink; no 512 × 288 raster and no provider cache is
+kept, so a theme change cannot leave a stale tint on screen. The rail and the cards take
+their sizes and tones from the theme tokens. Template cards and recent rows expose their
+title/name and description to assistive technology. Inicio is reachable from **Archivo ▸
+Inicio**; the domain chip, the recent thumbnail and the opened time are deferred to P-034b,
+with a preview-by-path bound and a `recent.json` version change.
 
 ### 3. The sheet
 
@@ -763,11 +758,11 @@ definition count and the mode text are the target, not in the bar yet.
 | motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change ([Motion](#motion)) |
 | icons | the ribbon's own line family, one ink; the rest of the window the desktop theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)) |
 
-A single semantic layer, `apps/punchi-fluid-qt/src/theme.cpp`, converts the palette into
-`ThemeTokens` once per theme change and pushes them into the drawing as `PfInk`. Widgets
-ask the session for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`:
-a hardcoded colour or pixel size in a widget is a bug, and the only literals in the
-application are the two forced palettes used to test light and dark.
+A single semantic layer, `apps/punchi-fluid/src/theme.rs`, reads the desktop's
+`kdeglobals` once at start, derives the tokens and applies them to egui. Widgets ask the
+tokens for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`: a
+hardcoded colour or pixel size in a widget is a bug, and the only literals in the
+application are the fallback palette and the forced palettes used to test light and dark.
 
 A colour that does not reach its criterion against the surface is shifted just enough to
 reach it (`ensureContrast`), because a desktop may hand the application an accent that
@@ -775,31 +770,27 @@ disappears on its own window colour.
 
 ### Following the desktop
 
-1. Colour scheme and palette: the Qt platform plugin has already merged
-   `$XDG_CONFIG_HOME/kdeglobals` and the `org.freedesktop.appearance color-scheme`
-   portal into `QApplication::palette()`. The front end reads that, on start and on
-   `ApplicationPaletteChange`, never per frame.
-2. Accent: `QPalette::Highlight`, shifted by `ensureContrast` when the desktop picks one
-   that cannot be seen on its own window colour.
-3. Secondary greys: `QPalette::WindowText` blended towards `QPalette::Window` by 30 %
-   and 55 %, then measured; the palette names neither.
-4. Font: `[General] font` reaches Qt through the platform plugin; the drawing asks only
-   for a cap height, so a font change needs no layout change.
-5. Icons: `QIcon::fromTheme`, which reads the same Breeze theme, for the whole window
-   except the ribbon, whose commands use the project's line family
-   ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)). Icons are only for actions;
-   components are shown by their own symbol, drawn by `punchi-fluid-draw`.
-6. HiDPI: Qt scales logical pixels; the drawing is in millimetres and the replay applies
-   one scale, so a scale change needs no layout change.
-7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): the platform plugin supplies
-   its own palette and the same code path applies. The application must look deliberate,
-   not broken.
+1. Colour scheme and palette: the window reads `$XDG_CONFIG_HOME/kdeglobals` once at
+   start and derives the tokens from it. A machine without that file gets the light
+   fallback, and the window never reads the file per frame.
+2. Accent: the desktop's highlight colour, shifted by `ensure_contrast` when it cannot be
+   seen on its own surface.
+3. Secondary greys: the text colour blended towards the window colour by 30 % and 55 %,
+   then measured; the palette names neither.
+4. Font: the family and point size come from `[General] font`; `fontdb` loads the family
+   and the text styles are derived from the size.
+5. Icons: the window's own SVG family from `assets/icons/actions`, compiled in; components
+   are shown by their own symbol, drawn by `punchi-fluid-draw`
+   ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)).
+6. HiDPI: egui's points scale with the viewport; the drawing is in millimetres and one
+   scale is applied, so a scale change needs no layout change.
+7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): the light fallback is the same
+   code path. The application must look deliberate, not broken.
 
 ### Accessibility
 
-- Qt exposes roles and names through `QAccessible`/AT-SPI; a `QML_ELEMENT` with a
-  `Q_PROPERTY` is reachable, and a custom item needs `accessibleRole` and
-  `accessibleName` set explicitly.
+- `eframe` exposes the widget tree through accesskit; the frame node's accessible name is
+  a debt recorded in ADR 0036, and every custom control must set its label explicitly.
 - Contrast: text ≥ 4.5:1, lines and icons ≥ 3:1 against their surface, measured in a
   test, not by eye.
 - Keyboard: every action reachable without a pointer. `Tab` cycles regions, arrows pan a
@@ -956,12 +947,12 @@ Rules:
 
 ### Language
 
-UI strings in Qt catalogs (`i18n/punchi-fluid_es.ts`, compiled to `.qm`; English is the
-source language and needs no file), component names in the catalog (`name`, `name_es`).
-The window translates the key the core returns; the core never carries a sentence
-([ADR 0027](adr/0027-translation-catalogs-are-qts.md)). Spanish is the first translation
-because it is the project's own. No string concatenation and no `(s)` plural: a
-translator must be able to reorder the sentence.
+There is **no catalog runtime yet**. The window's strings are Spanish literals; the check
+returns `message_es` and the exporter carries Spanish labels. The Qt catalog plan in
+[ADR 0027](adr/0027-translation-catalogs-are-qts.md) retired with the Qt window and a new
+mechanism for the Rust window is pending ([i18n/README.md](../i18n/README.md)). The target
+is English first, Spanish as a translation, with keys in the crates and no concatenated
+sentences.
 
 ## What this design refuses
 
@@ -982,7 +973,8 @@ translator must be able to reorder the sentence.
 
 ## Still open
 
-- The font family from `[General] font` is read and stored, not loaded; text size is.
+- The font family from `[General] font` is loaded by the window (`fontdb`); the theme's
+  size and contrast rules are tested.
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
   (the owner's staged plan, stage 6).
@@ -993,9 +985,9 @@ translator must be able to reorder the sentence.
   over an existing drawing is a fault the check reports
   ([ADR 0030](adr/0030-the-block-protects-its-own-box.md)); the footprint replaces the band
   with its capability.
-- UI strings move to the Qt catalogs in M6; the two built-in languages already exist as
-  `name` and `name_es` in the catalog ([ADR 0027](adr/0027-translation-catalogs-are-qts.md)).
+- UI strings are still Spanish literals; the English-first catalog mechanism has no ADR
+  yet. The two languages of the catalog data already exist as `name` and `name_es`.
 
-Breeze symbolic icons are no longer open: `QIcon::fromTheme` finds them in the user's
-theme and the theme adapter tints and caches them, and a machine without that theme shows
-the label alone, as a native application does. `--check-icons` is the evidence.
+Breeze symbolic icons are no longer open: the window draws its own SVG action family,
+compiled in from `assets/icons/actions`, and components are shown by their own symbol. The
+coverage guard is a debt (see [reference/icons.md](reference/icons.md)).

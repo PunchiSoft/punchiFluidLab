@@ -13,25 +13,25 @@
 > what it means. If something is not there, it says so; if it is half done, it says which
 > half is missing.
 
-![The Punchi Fluid Lab window on a light desktop: the ribbon, the catalog of components on the left and the starting circuit on the sheet — the compressor at the bottom left with its connection circle, the service unit beside it, the 3/2 valve at the middle right and the cylinder above it, with the status bar reading 0,00 bar, 0,0 mm and 0,0 mm/s](assets/screenshots/window-light.png)
+![The previous Qt window of Punchi Fluid Lab on a light desktop: the ribbon, the catalog of components on the left and the starting circuit on the sheet — the compressor at the bottom left with its connection circle, the service unit beside it, the 3/2 valve at the middle right and the cylinder above it, with the status bar reading 0,00 bar, 0,0 mm and 0,0 mm/s](assets/screenshots/window-light.png)
 
-*The window as it is today: ribbon, catalog, sheet and status bar, following the desktop's
+*The previous Qt window, kept only until a capture of the Rust window replaces it: ribbon, catalog, sheet and status bar, following the desktop's
 own palette. The circuit is the sheet the program opens on: a compressor feeding the service
 unit, the unit feeding a 3/2 valve in its rest position and the valve feeding a single-acting
 cylinder. Every port carries its connection circle, and nothing is running, so the hoses keep
 the neutral ink and the status bar reads `0,00 bar`. The interface is Spanish today —
 [i18n/README.md](i18n/README.md) is the plan for the other languages.*
 
-![The sheet in motion: the valve actuated, the cylinder travelling and the hoses coloured by pressure](assets/screenshots/run.gif)
+![The sheet in motion, in the previous Qt window: the valve actuated, the cylinder travelling and the hoses coloured by pressure](assets/screenshots/run.gif)
 
-*The sheet in motion: the valve actuated and the cylinder moving, with the hoses coloured by
+*The sheet in motion, in the previous Qt window: the valve actuated and the cylinder moving, with the hoses coloured by
 the pressure in them. 44 seconds at 4× playback. [Full video](assets/screenshots/run.mp4),
 MP4, silent.*
 
 A free, open simulator of pneumatic and hydraulic circuits, built so that a student with no
 licence, no budget and no connection can draw a schematic, connect the ports, run the model
-and watch the actuators move. The model, the format and the drawing are Rust; the window is
-Qt Quick.
+and watch the actuators move. The model, the format, the drawing and the window are Rust;
+the window is the egui binary in `apps/punchi-fluid`.
 
 **Status: `0.1.0`, unreleased.** A working vertical slice: draw and edit a circuit, connect
 port to port, keep several circuits in one project and switch between them, save and open
@@ -86,16 +86,16 @@ the point. Free software is how a subject stops being an entrance fee.
 |---|---|
 | `punchi-fluid-core` | Components, ports, connections and typed units (bar, litre, kelvin) |
 | `punchi-fluid-catalog` | Component definitions read from TOML files: schema, validation, override rules |
-| `punchi-fluid-file` | Versioned sheet format (v3), atomic write and the recent-document list |
+| `punchi-fluid-file` | Versioned sheet format (v14), atomic write and the recent-document list |
 | `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
 | `punchi-fluid-doc` | The edited document: placements, commands and bounded undo |
 | `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
-| `punchi-fluid-export` | Standard sheets, title block, legend, and the PNG and PDF writers |
-| `punchi-fluid-ffi` | The C ABI the window speaks: the document, the drawing frame, hit tests and export |
-| `punchi-fluid-session` | The document's life between the file and the window: the sheet and document conversion |
+| `punchi-fluid-export` | Standard sheets, title block, legend, and the PNG, PDF and SVG writers |
+| `punchi-fluid-ffi` | The retired C ABI of the Qt window; no product code links it (ADR 0035; removal is a named debt) |
+| `punchi-fluid-session` | The document's life between the file and the window: the sheet↔document conversion and the live model |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
 | `punchi-fluid-cli` | `validate`, `simulate` and `check` without a window |
-| `apps/punchi-fluid` | The Rust window: the fixed layout, the ribbon, the sheet, the status bar and the desktop's palette |
+| `apps/punchi-fluid` | The Rust window (egui): ribbon, sidebar, sheet, status bar, start view and theme |
 
 ## Start here
 
@@ -131,26 +131,26 @@ In the window the transport runs the model: **Iniciar** (F9) starts, **Pausa** (
 change, **Detener** (F5) returns to editing and **Restablecer** (Ctrl+R) goes back to
 `t = 0`. A spring-return valve is held while the pointer is down or **Espacio** is held, and
 the speed selector sits beside the transport (a 20 mm cylinder with this valve finishes its
-stroke in about 0.13 s of simulated time). The ribbon has three tabs — Archivo, Editar and
-Ver — and the hint beside each command names its shortcut where one exists. The sidebar
+stroke in about 0.13 s of simulated time). The ribbon has five tabs — Archivo, Editar, Ver,
+Cajetín and Simular — and the hint beside each command names its shortcut where one exists. The sidebar
 lists the catalog with each component's own symbol; a click selects and a drag places it.
 
 **Exportar** in Archivo opens a save dialog: a `.pdf` name writes a vector page, a `.png`
-name a raster at 300 dpi. The **Hoja** group chooses one of nine named papers — A5 to A0,
-Letter, Legal and Oficio — and the landscape orientation, and marks the one in use. The page
-carries the frame, the title block and a legend of line classes and port numerals, and while
-any symbol review is open it also carries the note that the symbols are not yet verified
-against ISO 1219-1. The same circuit exported twice produces the same bytes. There is no
-panel for margins, a custom size or the PNG resolution yet. The date is the day you export,
-the drawing is scaled to fit and its scale is recorded in the title block, and
-`Ctrl+Shift+E` opens the dialog.
+name a raster at 300 dpi and a `.svg` name the same page as vector text. **Configurar
+página** chooses A4, A3, A2 or a custom size, the orientation and the margins, and saves
+them with the document. The page carries the frame and the title block, and while any
+symbol review is open it also carries the note that the symbols are not yet verified against
+ISO 1219-1. The same circuit exported twice produces the same bytes. There is no panel for
+PNG resolution and the window does not print the parts list yet; both are product gaps, not
+hidden behaviour. The drawing is scaled to fit the framed area.
 
 **The paper is a decision, not a default.** A drawing is printed on the sheet the drawing
 office uses, and that is not one size: ISO 216/5457 A5 to A0 for the ISO world;
 US Letter and US Legal for the North American one; and **Oficio/Folio (216 × 330 mm)**, which
-is neither of the two and is the paper most Chilean offices still stock. The plan is
-[ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); the custom size exists in
-the export API but not in the window, and the last choice is not remembered per user yet.
+is neither of the two and is the paper most Chilean offices still stock. The window offers
+A4, A3, A2 and a custom size today; the rest of the set exists in the export API. The plan
+is [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md), and the last choice is not
+remembered per user yet.
 
 Requirements: Rust stable (pinned in `rust-toolchain.toml`). The window builds with
 
@@ -207,9 +207,9 @@ A semantic token layer is the only place a colour exists — a `Color32::` anywh
 fails a test. Components use their own symbol, never a separate icon set.
 
 **Honest status:** the regions, the tokens, the keyboard map and the help panel are
-implemented. Breeze symbolic icons are not loaded yet (action buttons are text), the
-desktop font *family* is read but not loaded (size is), and the UI strings are still
-literals until the Qt translation pass in M6.
+implemented in the Rust window. The action icons are its own SVG family under
+`assets/icons/`; the desktop font family is loaded by the window; the UI strings are still
+Spanish literals and the translation catalogs are not started (F8).
 
 The full specification — regions, keyboard map, contrast requirements, what the design
 refuses — is in [docs/ui-ux.md](docs/ui-ux.md). The milestones with their acceptance
@@ -252,12 +252,12 @@ hand.
 The product is three different problems: the physics, the file format and the
 schematic editor. Keeping them in separate crates means the solver can be tested
 without a window, the format can migrate documents while the editor changes, and
-the toolkit is a decision confined to one crate. Today the drawing crosses to the window
-as a command buffer over a C ABI (`punchi-fluid-ffi`), and Qt Quick replays it with
-`QPainter`.
-
-The full reasoning, including what it costs, is in
-[docs/adr/0005-qt-quick-over-a-c-abi.md](docs/adr/0005-qt-quick-over-a-c-abi.md).
+the toolkit is a decision confined to one crate. Today there is one Rust binary: the
+window replays `punchi-fluid-draw` directly, prints through `punchi-fluid-export` and
+carries the document with `punchi-fluid-session`. The C ABI and the Qt window it served
+are retired ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+[ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)); the crate still exists in the workspace
+and its removal is a named debt.
 
 ## The physical model, in one paragraph
 
@@ -273,9 +273,9 @@ right matters more than any UI decision.
 ./scripts-dev/check.sh
 ```
 
-Format, lints with `-D warnings`, all tests and a CLI smoke test over a temporary
-circuit file. A green run proves the crates and the format; the window and the
-physics still need eyes and a reference curve.
+Format, lints with `-D warnings`, all tests, the documentation and architecture
+contracts, and a CLI smoke test over a temporary circuit file. The window's tests run
+headless through `egui_kittest`; the physics still needs reference curves and eyes.
 
 ## Roadmap
 
@@ -296,8 +296,8 @@ In short:
   connect components, orthogonal pipes, save and load. *Done.*
 - **v0.4** — network solver driven by the circuit graph instead of one fixed layout;
   5/2 valves, flow controls, gauges. *Done.*
-- **Next** — a project of circuits, the remaining instruments, the parts list, the
-  electrical and digital libraries, and our own teaching material.
+- **Next** — the check command, the parts list and the export options in the Rust
+  window, the electrical and digital libraries, i18n, and our own teaching material.
 - **v1.0** — hydraulic model, AppImage and Flatpak, translation pipeline.
 
 ## Project documentation
@@ -333,7 +333,8 @@ technical decisions, the review, the validation and everything published.
 
 Their instructions live with the project — [AGENTS.md](AGENTS.md) and
 [`.agents/`](.agents/) — so an agent working on this repository follows the same rules as a
-person: typed units, no `unwrap` or `panic!` outside tests, no `unsafe` outside the ABI,
+person: typed units, no `unwrap` or `panic!` outside tests, no `unsafe` in the product (the retired ABI is
+the only crate that opts out),
 symbols drawn by hand against ISO 1219-1, and **nothing taken from another program**. Those
 rules were written and tuned by PunchiSoft for this architecture and this workflow, not
 inherited from a template.

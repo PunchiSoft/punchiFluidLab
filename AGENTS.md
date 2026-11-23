@@ -37,10 +37,10 @@ circuit or file format from any other program enters this repository.**
 Status: `0.1.0`, unreleased, **under construction** — advanced in the maintainer's free
 time, one capability at a time, with no promised date. A capability that is `missing` or
 `partial` in [docs/capabilities.md](docs/capabilities.md) is not there yet, and nothing may
-pretend otherwise. There is an editor, a network solver, an export, a parts list and the
-first slice of the electrical library with its boolean control model; there is no hydraulic
-model yet, the rest of the electrical, digital and GRAFCET libraries are missing, and the
-300 dpi symbol review is still open.
+pretend otherwise. There is an editor, a network solver, an export and the first slice of the electrical
+library with its boolean control model; the export crate can build a parts list but the
+window does not print one yet. There is no hydraulic model yet; the rest of the electrical,
+digital and GRAFCET libraries are missing, and the 300 dpi symbol review is still open.
 
 ## Language
 
@@ -54,8 +54,8 @@ README. The exceptions are:
 - **`README.es.md`**, the Spanish copy of the README.
 
 Conversation may be in Spanish. A Spanish UI label may be quoted inside an English comment
-(`Edición ▸ Girar`, `Mayús`), but the sentence around it is English. `--selftest` output,
-internal diagnostics and test names are English. No Spanish prose in identifiers, comments,
+(`Edición ▸ Girar`, `Mayús`), but the sentence around it is English. Internal diagnostics
+and test names are English. No Spanish prose in identifiers, comments,
 logs or tests.
 
 ## Stack
@@ -75,12 +75,11 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-draw` | the single drawing of a circuit, in millimetres, behind a `Surface` trait | windows, files, fonts, solving |
 | `crates/punchi-fluid-doc` | the edited document: placements, commands, bounded undo | physics, drawing, files |
 | `crates/punchi-fluid-check` | design faults a circuit can have before it is run | physics, drawing, UI |
-| `crates/punchi-fluid-export` | standard sheets, title block, the PNG and PDF writers | physics, widgets |
-| `crates/punchi-fluid-ffi` | the C ABI a native front end speaks: one session, one frame of drawing | logic of its own |
+| `crates/punchi-fluid-export` | standard sheets, title block, the PNG, PDF and SVG writers | physics, widgets |
+| `crates/punchi-fluid-ffi` | the retired C ABI of the Qt window; no product consumer (ADR 0035; removal is a debt) | product logic |
 | `crates/punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model of a circuit and the editor state as it moves | physics, widgets |
-| `crates/punchi-fluid-cli` | headless validate and simulate | UI |
-| `apps/punchi-fluid-qt` | the window: ribbon, sidebar, sheet, status bar, theme adapter (retires with ADR 0035) | physics, the document |
-| `apps/punchi-fluid` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter (ADR 0035) | physics, the document |
+| `crates/punchi-fluid-cli` | headless check, validate and simulate | UI |
+| `apps/punchi-fluid` | the Rust window: ribbon, sidebar, sheet, status bar, start view and theme adapter, with egui (ADR 0035, ADR 0036) | physics, the document |
 
 Dependency direction: `core` is the base; `catalog` and `file` depend on it and on no
 other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
@@ -89,14 +88,11 @@ stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
 `core`, `catalog`, `draw` and `solver` (the paper and the frame are domain values, so the
 page reads them from `core`); `session` on `core`, `catalog`, `doc`, `draw`, `file` and `solver` (the sheet format, the live document and the model that runs it meet there; the physics stays in the solver);
-`ffi` on all of the above, `export` and `session` included, because the window speaks only
-the ABI and the ABI is the one place that holds both the document and the page it is printed
-on; `cli` on `core`, `catalog`, `check`, `doc`, `draw`, `file` and
-`solver`, because it runs the same check and the same model without a window. Nothing in
-Rust depends on a window. During the migration the Qt window depends only on
-`punchi-fluid-ffi` ([ADR 0005](docs/adr/0005-qt-quick-over-a-c-abi.md)), and the Rust
-window in `apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`,
-`catalog` and `file` — the solver reaches it through the session's model — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+`ffi` retires with the Qt window and has no product consumer; `cli` on `core`, `catalog`,
+`check`, `doc`, `draw`, `file` and `solver`, because it runs the same check and the same
+model without a window. Nothing in Rust depends on a window. The Rust window in
+`apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`, `catalog` and
+`file` — the solver reaches it through the session's model — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
 [ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)). A new dependency direction needs an ADR;
 the `Surface` layer that made `draw` and `export` possible is
 [ADR 0003](docs/adr/0003-one-drawing-two-devices.md). `scripts-dev/check-docs.sh` fails if
@@ -115,7 +111,8 @@ tooling, never a runtime dependency).
 - **No `unwrap`, `expect` or `panic!` outside tests.** The workspace lints deny
   them. Recoverable failures are `thiserror` enums; a value that cannot be trusted
   falls back to a documented default instead of aborting.
-- **No `unsafe`.** Forbidden by the workspace lints.
+- **No `unsafe`.** Forbidden by the workspace lints. The retired `punchi-fluid-ffi` crate is
+  the one exception, it has no product consumer, and removing it is a named debt.
 - **The domain is total.** A component kind knows its ports; a circuit validates
   connections; the file format never produces an invalid domain object silently.
 - **Files are versioned.** Any change to the document shape bumps `FORMAT_VERSION`
@@ -203,11 +200,11 @@ tooling, never a runtime dependency).
 - The interface is specified in [docs/ui-ux.md](docs/ui-ux.md). Three regions: ribbon,
   sidebar that mirrors the catalog, sheet. Adding a fourth needs an ADR.
 - **Colour, size and font come from the theme adapter**
-  (`apps/punchi-fluid-qt/src/theme.cpp`), never from a literal in a widget or in QML.
-  `--check-theme` measures the contrast and fails below the criterion.
-- Follow the desktop: the application palette, which already carries `kdeglobals`, plus
-  the `org.freedesktop.appearance color-scheme` portal, read on start and on change,
-  never per frame.
+  (`apps/punchi-fluid/src/theme.rs`), never from a literal in a widget. The theme's own
+  tests measure the contrast and fail below the criterion.
+- Follow the desktop: the window reads `$XDG_CONFIG_HOME/kdeglobals` once at start for the
+  palette, accent, font and motion; a machine without it gets the light fallback. No file
+  is read per frame.
 - Components are shown by **their own symbol**, never by a separate icon set.
 - State is never colour-only, hover never changes the document, and there is no modal
   on the normal path.
@@ -221,8 +218,8 @@ tooling, never a runtime dependency).
 - Every cache has a bound and an eviction rule; a cache without one is a leak. The procedure is
   [.agents/skills/untrusted-input-bounds](.agents/skills/untrusted-input-bounds/SKILL.md).
 - `Arc` for shared immutables, never `Rc<RefCell<…>>`, no global mutable state.
-- A `QObject` has one owner, a connection ends with its context, and models, images and
-  caches do not grow: [.agents/skills/qt-lifetimes](.agents/skills/qt-lifetimes/SKILL.md).
+- A widget and its state have one owner, and images, models and caches do not grow while
+  the window is idle.
 - A change that moves a budget says so in the pull request, with the measurement.
 
 ## Validation
@@ -249,11 +246,10 @@ because a skipped workflow leaves required checks pending on protected `main`;
 `scripts-dev/changed-paths.sh` classifies the diff and is tested in the gate. The full gate
 still runs on `main` and on a release.
 
-The window is built and driven headlessly when `apps/punchi-fluid-qt/build` has been
-configured: `--check-qml`, `--check-theme`, `--check-icons`, `--check-layout` and
-`--selftest` under `QT_QPA_PLATFORM=offscreen`. A machine without Qt skips that step with a
-message on stderr, and CI does not configure it yet — so a green gate there still does not
-prove the window.
+The window's tests run headlessly through `cargo test -p punchi-fluid-window`
+(`egui_kittest`), and CI has a `window` job that builds the binary and runs that suite. The
+retired `--check-qml`, `--check-theme`, `--check-icons`, `--check-layout` and `--selftest`
+steps belonged to the Qt app and are not part of this product.
 
 During a session, `./scripts-dev/test.sh` runs the same tests and
 `./scripts-dev/run.sh` opens the window; both compile only when a source changed and
