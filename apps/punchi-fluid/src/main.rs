@@ -21,6 +21,7 @@ use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
+mod auto_hide;
 mod export;
 mod files;
 mod inspector;
@@ -30,10 +31,12 @@ mod panel;
 mod ribbon;
 mod scene;
 mod selection;
+mod settings;
 mod shell;
 mod sidebar;
 mod sim;
 mod start;
+mod state_file;
 mod surface;
 mod theme;
 mod view;
@@ -67,6 +70,7 @@ fn main() -> eframe::Result<()> {
     // from the monitor the viewport reports. The provisional size is the support floor, so
     // the window never opens smaller than the interface allows.
     let geometry = window_state::Store::load();
+    let settings = settings::Store::load();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
@@ -83,7 +87,8 @@ fn main() -> eframe::Result<()> {
             theme.apply(&context.egui_ctx);
             Ok(Box::new(
                 Window::with_safety(theme, document, path, notice, recents, safety)
-                    .with_window_state(geometry),
+                    .with_window_state(geometry)
+                    .with_settings(settings),
             ))
         }),
     )
@@ -135,6 +140,12 @@ struct Window {
     dialog: Option<files::Dialog>,
     /// The shell: the layout mode, the compact drawer and the remembered geometry.
     shell: shell::Shell,
+    /// The panel settings store: the file both panels and the auto-hide flag live in.
+    settings: settings::Store,
+    /// The auto-hide timers: the one place that knows the dwell and the linger.
+    auto_hide: auto_hide::AutoHide,
+    /// Whether **Ver ▸ Ocultar al salir** is on.
+    autohide_on: bool,
 }
 
 /// A primary-button drag of the selection.
@@ -515,6 +526,7 @@ impl eframe::App for Window {
     /// window before the settle delay: the next start returns to the size and place they left.
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.flush_window_state();
+        self.flush_panel_settings();
     }
 }
 

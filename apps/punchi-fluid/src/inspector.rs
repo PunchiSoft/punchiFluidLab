@@ -15,7 +15,7 @@ use punchi_fluid_draw::LineClass;
 use punchi_fluid_session::Model;
 
 use crate::Window;
-use crate::panel::{Edge, Panel, Settings};
+use crate::panel::{Edge, Panel, Probe, Settings};
 use crate::theme::Tokens;
 
 mod fields;
@@ -82,8 +82,8 @@ impl Inspector {
         Self::default()
     }
 
-    /// The dock's state, read by the tests: the window itself only tells the panel to fold.
-    #[cfg(test)]
+    /// Whether the panel is open: the window reads it into the settings file and the tests
+    /// read it back.
     #[must_use]
     pub fn is_open(&self) -> bool {
         self.chrome.is_open()
@@ -132,6 +132,33 @@ impl Inspector {
     pub fn reset(&mut self) {
         self.chrome.reset();
         self.fields.buffer_for = None;
+    }
+
+    /// The panel as a settings file left it: open or folded at the remembered width.
+    pub fn restore(&mut self, open: bool, width: f32) {
+        self.chrome.restore(open, width);
+    }
+
+    /// The width the layout mode allows, clamped to the panel's own drag bounds.
+    pub fn set_width(&mut self, width: f32) {
+        self.chrome.set_width(width);
+    }
+
+    /// What the last frame told the auto-hide timers: the shell reads it after the panel drew.
+    #[must_use]
+    pub fn probe(&self) -> Probe {
+        self.chrome.probe()
+    }
+
+    /// Records the drawer's surface, which the shell draws itself in the compact mode.
+    pub fn observe_surface(&mut self, context: &eframe::egui::Context, rect: eframe::egui::Rect) {
+        self.chrome.observe_surface(context, rect);
+    }
+
+    #[cfg(test)]
+    pub fn probe_for_test(&mut self, rail_hovered: bool, pointer_inside: bool, focus_inside: bool) {
+        self.chrome
+            .probe_for_test(rail_hovered, pointer_inside, focus_inside);
     }
 
     #[cfg(test)]
@@ -447,11 +474,18 @@ impl Window {
                     self.inspector.toggle();
                 }
             }
+            "Ocultar al salir" => self.toggle_autohide(),
             "Restablecer vista" => {
                 self.view.reset();
                 self.sidebar.reset();
                 self.inspector.reset();
                 self.close_drawer();
+                self.autohide_on = false;
+                self.auto_hide.cancel_all();
+                // The reader asked for the defaults, so they are persisted at once: a close
+                // before the settle delay must not keep the state the reset removed.
+                let settings = self.panel_settings();
+                self.settings.remember(settings);
             }
             _ => {}
         }

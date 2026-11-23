@@ -244,6 +244,9 @@ impl Window {
             recents: Recents::default(),
             dialog: None,
             shell: crate::shell::Shell::new(),
+            settings: crate::settings::Store::at(None),
+            auto_hide: crate::auto_hide::AutoHide::new(),
+            autohide_on: false,
         }
     }
 
@@ -292,6 +295,12 @@ impl Window {
     /// Whether the document holds work that is not in the file the reader chose.
     pub(crate) fn is_modified(&self) -> bool {
         self.lifecycle.is_modified(&self.document)
+    }
+
+    /// Whether a dialog is in front of the window: the file dialog or one of the informational
+    /// panels. The auto-hide timers never fire while one is open.
+    pub(crate) fn dialog_open(&self) -> bool {
+        self.dialog.is_some() || self.lifecycle.panel.is_some()
     }
 
     /// Turns the current revision of the document into the saved one, and throws the copy

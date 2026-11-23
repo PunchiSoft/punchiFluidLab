@@ -109,6 +109,28 @@ impl LayoutMode {
         }
     }
 
+    /// The widest each panel may open in this mode with `available` points: the room that
+    /// leaves the sheet its floor and the other panel its floor. The compact mode docks no
+    /// panel — the drawer floats over the sheet — so the bound is the room the window has.
+    #[must_use]
+    pub fn max_widths(self, available: f32) -> Widths {
+        let available = if available.is_finite() {
+            available.max(0.0)
+        } else {
+            0.0
+        };
+        match self {
+            Self::Wide | Self::Medium => Widths {
+                catalog: (available - SHEET_MIN_WIDTH - DOCK_MIN_WIDTH).max(CATALOG_MIN_WIDTH),
+                dock: (available - SHEET_MIN_WIDTH - CATALOG_MIN_WIDTH).max(DOCK_MIN_WIDTH),
+            },
+            Self::Compact => Widths {
+                catalog: available.max(RAIL_WIDTH),
+                dock: available.max(RAIL_WIDTH),
+            },
+        }
+    }
+
     /// The room the sheet keeps once the panels took theirs. The tests read it; the shell
     /// itself lets egui do the subtraction.
     #[cfg(test)]

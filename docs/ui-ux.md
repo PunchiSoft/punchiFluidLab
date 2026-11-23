@@ -397,13 +397,25 @@ dock is a later decision (stage 6 of the owner's staged plan).
   returns the panels, the zoom and the pan to their defaults. The state is never saved in
   the document and never enters the undo history.
 
-Both panels implement the fold and the reset today: the catalog and the right dock fold to
-their rail, remember their width and visibility for the session, and **Restablecer vista**
-puts both back along with the zoom and the pan; `Ctrl+B` and `Ctrl+J` are their keyboard
-paths. What is still missing is the cross-session memory and auto-hide: the width and
-visibility live only while the window is open, and **Ocultar al salir** is in **Ver** but
-does nothing yet. The adaptive modes that move a panel to a drawer are stage 6 of the
-owner's staged plan.
+Both panels implement the fold, the memory and the reset now: the catalog and the right dock
+fold to their rail, **Restablecer vista** puts both back along with the zoom and the pan, and
+`Ctrl+B` and `Ctrl+J` are their keyboard paths. Width and visibility are view state
+remembered across sessions in `XDG_DATA_HOME/punchi-fluid/settings.state` beside the recent
+list: a defensive `key=value` file of its own, bounded in bytes and lines, written atomically,
+ignoring unknown keys and refusing an unknown version, which never enters the document, the
+undo history or the modified mark. A width above the maximum of the layout mode the window
+opens in is clamped, and a closed panel starts as its rail. **Ver ▸ Ocultar al salir** is
+auto-hide's toggle, and its label does not change: a dwell of about 350 ms on a closed
+panel's rail opens it and about 800 ms without the pointer closes it, a return cancels the
+pending close, and the timers never fire while a pointer drag is in progress, while the
+keyboard focus is inside the panel or while a dialog is open. The flag is remembered too, and
+**Restablecer vista** returns both panels to their defaults and persists them. What is still
+missing is the persisted ribbon-minimized state: the minimized ribbon is not built in this
+window yet (§2.2), so there is no state to remember, and the title block still opens as an
+invoked editor instead of living in the right dock. The `cargo test -p punchi-fluid-window`
+suite proves the file's round trip and its truncated, out-of-range and unknown-key cases, the
+clamp to the opening mode, the restore, the settle write, the reset and both timers,
+headless.
 
 ### 2.2 The window adapts
 
@@ -477,8 +489,8 @@ before a panel is allowed to cover it:
   dismissal, headless; `--check-layout` and `--selftest` were the Qt window's checks and are
   not ported to this one, so no automated check opens the real desktop window. What is left:
   the **Menú** compact ribbon and the minimized ribbon with its groups as a panel over the
-  drawing area, the ribbon's text and heights from the theme tokens (stage 7), the panels'
-  width and visibility remembered across sessions and the auto-hide.
+  drawing area (and with it, a ribbon state to remember), the ribbon's text and heights from
+  the theme tokens (stage 7).
 
 ### 2.3 The start view: Inicio
 

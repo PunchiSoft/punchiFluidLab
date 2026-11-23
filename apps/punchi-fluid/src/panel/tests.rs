@@ -5,6 +5,9 @@
 //! the view, never touches the document and leaves the sheet its room. The panel is driven
 //! headless, like the inspector's own tests; the right dock's tests keep proving its half.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Placement};
@@ -14,6 +17,8 @@ use crate::Window;
 use crate::inspector;
 use crate::sidebar;
 use crate::theme::Theme;
+
+use super::Probe;
 
 /// A document with one valve, so the dock has an instance to inspect.
 fn valve_document() -> Document {
@@ -48,6 +53,35 @@ fn catalog_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
     }
     harness.run();
     harness
+}
+
+/// The catalog drawn headless with the probe the panel reports after each frame, kept in a
+/// cell the test can read while the harness borrows the window.
+fn catalog_probe_harness(window: &mut Window) -> (egui_kittest::Harness<'_>, Rc<Cell<Probe>>) {
+    let probe = Rc::new(Cell::new(Probe::default()));
+    let reported = Rc::clone(&probe);
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(1366.0, 768.0))
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(240)
+        .build(move |context| {
+            window.show_catalog(context);
+            reported.set(window.sidebar.probe());
+        });
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the panel tests need one");
+    }
+    harness.run();
+    (harness, probe)
+}
+
+/// Moves the pointer to `position` and lets the harness draw one settled frame.
+fn move_pointer(harness: &mut egui_kittest::Harness<'_>, position: egui::Pos2) {
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(position));
+    harness.run();
 }
 
 /// The keyboard path of the window, drawn without its regions: `sync_commands` is what reads
@@ -238,6 +272,48 @@ fn folding_either_panel_is_not_a_document_change() {
     );
     assert_eq!(window.document.can_undo(), undo, "no history entry appears");
     assert_eq!(window.document.can_redo(), redo);
+}
+
+#[test]
+fn the_rail_reports_the_pointer_the_auto_hide_dwell_reads() {
+    let mut window = window_with(Document::new());
+    window.sidebar.close();
+    let (mut harness, probe) = catalog_probe_harness(&mut window);
+    assert!(!probe.get().rail_hovered, "the pointer starts away");
+    move_pointer(&mut harness, egui::pos2(10.0, 20.0));
+    assert!(
+        probe.get().rail_hovered,
+        "the pointer on the rail is reported"
+    );
+    move_pointer(&mut harness, egui::pos2(700.0, 400.0));
+    assert!(
+        !probe.get().rail_hovered,
+        "the sheet is not the rail and cancels the dwell"
+    );
+}
+
+#[test]
+fn the_open_panel_reports_the_pointer_and_the_keyboard_inside_it() {
+    let mut window = window_with(Document::new());
+    let (mut harness, probe) = catalog_probe_harness(&mut window);
+    move_pointer(&mut harness, egui::pos2(100.0, 100.0));
+    assert!(
+        probe.get().pointer_inside,
+        "the pointer inside the open panel is reported"
+    );
+    move_pointer(&mut harness, egui::pos2(700.0, 400.0));
+    assert!(
+        !probe.get().pointer_inside,
+        "the pointer on the sheet starts the linger"
+    );
+    harness
+        .get_by_role(egui::accesskit::Role::TextInput)
+        .focus();
+    harness.run();
+    assert!(
+        probe.get().focus_inside,
+        "the search field has the keyboard, so the close is suspended"
+    );
 }
 
 #[test]

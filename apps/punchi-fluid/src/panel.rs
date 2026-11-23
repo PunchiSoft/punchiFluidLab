@@ -35,6 +35,16 @@ impl Edge {
     }
 }
 
+/// What the last frame told the auto-hide timers about one panel: the pointer rested on the
+/// rail while the panel was closed, the pointer was inside its surface, or the keyboard focus
+/// was. The shell reads it through [`Panel::probe`] and owns the timers.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Probe {
+    pub rail_hovered: bool,
+    pub pointer_inside: bool,
+    pub focus_inside: bool,
+}
+
 /// What one panel's chrome says and the bounds it keeps, so the two panels differ in data
 /// instead of in code.
 #[derive(Debug, Clone, Copy)]
@@ -73,6 +83,8 @@ pub struct Panel {
     hide_label: &'static str,
     shortcut: &'static str,
     margin: i8,
+    /// What the last frame told the auto-hide timers, refreshed on every draw.
+    probe: Probe,
 }
 
 impl Panel {
@@ -92,13 +104,28 @@ impl Panel {
             hide_label: settings.hide_label,
             shortcut: settings.shortcut,
             margin: settings.margin,
+            probe: Probe::default(),
         }
     }
 
-    #[cfg(test)]
     #[must_use]
     pub fn is_open(&self) -> bool {
         self.open
+    }
+
+    /// What the last frame told the auto-hide timers: the shell reads it after the panels drew.
+    #[must_use]
+    pub fn probe(&self) -> Probe {
+        self.probe
+    }
+
+    #[cfg(test)]
+    pub fn probe_for_test(&mut self, rail_hovered: bool, pointer_inside: bool, focus_inside: bool) {
+        self.probe = Probe {
+            rail_hovered,
+            pointer_inside,
+            focus_inside,
+        };
     }
 
     #[must_use]
@@ -145,6 +172,22 @@ impl Panel {
         self.width = self.default_width;
     }
 
+    /// Puts the panel back where a settings file left it: open or folded at the remembered
+    /// width, already folded instead of animating from the default on the first frame.
+    pub fn restore(&mut self, open: bool, width: f32) {
+        self.open = open;
+        self.set_width(width);
+        self.shade = if open { 1.0 } else { 0.0 };
+    }
+
+    /// The width the settings and the layout ask for, clamped to the panel's own bounds: an
+    /// out-of-range number is a bug or a corrupt file, never a panel wider than its drag bound.
+    pub fn set_width(&mut self, width: f32) {
+        if width.is_finite() {
+            self.width = width.clamp(self.min_width, self.max_width);
+        }
+    }
+
     /// A width drag; clamped so the panel never takes the sheet's floor.
     pub fn resize_by(&mut self, delta: f32) {
         self.width = (self.width + delta).clamp(self.min_width, self.max_width);
@@ -171,6 +214,7 @@ impl Panel {
             reason = "a motion token in milliseconds is far below the f32 integer range"
         )]
         let motion = tokens.motion_ms as f32 / 1_000.0;
+        self.probe = Probe::default();
         let animation = egui::Id::new(("panel.fold", self.id));
         self.shade = context.animate_bool_with_time(animation, self.open, motion);
         let target = docked_width.max(rail);
@@ -180,7 +224,7 @@ impl Panel {
             Edge::Right => egui::SidePanel::right(self.id),
         };
         let mut result = None;
-        panel
+        let shown = panel
             .exact_width(width)
             .resizable(false)
             .frame(
@@ -204,6 +248,7 @@ impl Panel {
                 }
                 result = Some(body(ui));
             });
+        self.observe(context, shown.response.rect);
         result
     }
 
@@ -215,8 +260,9 @@ impl Panel {
             Edge::Left => egui::SidePanel::left(self.id),
             Edge::Right => egui::SidePanel::right(self.id),
         };
+        self.probe = Probe::default();
         let mut opened = false;
-        panel
+        let shown = panel
             .exact_width(rail)
             .resizable(false)
             .frame(
@@ -227,6 +273,7 @@ impl Panel {
             .show(context, |ui| {
                 opened = self.rail(ui, tokens);
             });
+        self.observe(context, shown.response.rect);
         opened
     }
 
@@ -240,8 +287,26 @@ impl Panel {
         subtitle: Option<&str>,
         body: impl FnOnce(&mut egui::Ui) -> R,
     ) -> (R, bool) {
+        self.probe = Probe::default();
         let hide = self.header(ui, tokens, title, subtitle);
-        (body(ui), hide)
+        let result = body(ui);
+        self.observe(ui.ctx(), ui.max_rect());
+        (result, hide)
+    }
+
+    /// Records what the pointer and the keyboard did with a surface the shell draws itself
+    /// (the compact drawer): the auto-hide timers read it like a docked panel's.
+    pub fn observe_surface(&mut self, context: &egui::Context, rect: egui::Rect) {
+        self.observe(context, rect);
+    }
+
+    /// Records what the pointer and the keyboard did with the panel this frame. The rail flag
+    /// is set by [`Panel::rail`] itself; this fills the surface and the focus in.
+    fn observe(&mut self, context: &egui::Context, rect: egui::Rect) {
+        self.probe.pointer_inside = context
+            .pointer_hover_pos()
+            .is_some_and(|position| rect.contains(position));
+        self.probe.focus_inside = focus_inside(context, rect);
     }
 
     /// The rail the closed panel leaves at the edge: one unit wide, and a button that brings
@@ -254,6 +319,7 @@ impl Panel {
             egui::Sense::hover(),
         );
         let response = focusable(ui, rect, ui.make_persistent_id((self.id, "rail")));
+        self.probe.rail_hovered = response.hovered();
         if ui.is_rect_visible(rect) {
             if response.hovered() || response.has_focus() {
                 ui.painter()
@@ -385,6 +451,15 @@ fn focusable(ui: &mut egui::Ui, rect: egui::Rect, id: egui::Id) -> egui::Respons
     let layer = ui.layer_id();
     ui.memory_mut(|memory| memory.interested_in_focus(id, layer));
     response
+}
+
+/// Whether the keyboard focus sits on a widget inside `rect`: the auto-hide timers suspend
+/// while the reader is typing in the panel.
+fn focus_inside(context: &egui::Context, rect: egui::Rect) -> bool {
+    context
+        .memory(egui::Memory::focused)
+        .and_then(|id| context.read_response(id))
+        .is_some_and(|focused| rect.contains(focused.rect.center()))
 }
 
 /// Whether the reader activated the control with the pointer or with `Enter`/`Space` while
