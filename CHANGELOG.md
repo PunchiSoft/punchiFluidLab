@@ -6,6 +6,37 @@ publicación.
 
 ## Unreleased
 
+### Los paneles se recuerdan y el auto-ocultar funciona — 2026-11-23
+
+- **La ventana recuerda sus paneles** en `XDG_DATA_HOME/punchi-fluid/settings.state`, al lado
+  de la lista de recientes y con el mismo patrón defensivo que `window.state`: formato
+  `key=value` propio, lectura acotada en bytes y líneas, claves desconocidas ignoradas,
+  versión desconocida rechazada, anchos fuera de rango ignorados y escritura atómica. Guarda,
+  para el catálogo y el panel de propiedades, si están abiertos y su ancho, más el flag de
+  auto-ocultar; se escribe al cerrar y cuando el cambio se asienta. Nada de eso entra en el
+  documento, el historial ni la marca de modificado.
+- **Al arrancar** los paneles vuelven abiertos o plegados como quedaron, con el ancho
+  recordado recortado al máximo del modo con que la ventana se abre; un panel cerrado empieza
+  como raíl. `Ctrl+B`, `Ctrl+J`, **Ver ▸ Catálogo/Propiedades** y **Restablecer vista** siguen
+  como estaban.
+- **Auto-ocultar**: **Ver ▸ Ocultar al salir** pasa a ser su interruptor (la etiqueta no
+  cambia). Con el flag encendido, una permanencia de unos 350 ms en el raíl abre el panel y
+  unos 800 ms sin el puntero lo cierra; volver cancela el cierre pendiente, y nunca dispara
+  mientras hay un arrastre con el puntero, el foco de teclado dentro del panel o un diálogo
+  abierto. Los temporizadores viven en un solo sitio y leen `Instant`, así que las pruebas los
+  conducen con un reloj inventado.
+- **Restablecer vista** devuelve los dos paneles a sus valores por defecto, apaga el
+  auto-ocultar y persiste el resultado.
+- **Pruebas sin ventana**: ida y vuelta del archivo y sus casos truncado, fuera de rango y con
+  claves desconocidas; recorte del ancho al modo; restauración al arrancar; escritura tras el
+  asentamiento; el reset persistido; el plegado y el ancho sobreviviendo a guardar y
+  recargar; el clic en el raíl con el auto-ocultar apagado; la permanencia que abre, la vuelta
+  que cancela y el diálogo o el arrastre que suspenden; y que nada de esto toca la revisión ni
+  el historial del documento.
+- `docs/ui-ux.md` §2.1 y §2.2 dicen lo que ya funciona y nombran lo que falta: el estado
+  minimizado de la cinta no se recuerda porque la cinta minimizada todavía no existe en esta
+  ventana.
+
 ### La ventana se adapta y recuerda su sitio — 2026-11-23
 
 - **Tres modos derivados del espacio**: ancho (catálogo 240 y panel 360), medio (mínimos 220 y

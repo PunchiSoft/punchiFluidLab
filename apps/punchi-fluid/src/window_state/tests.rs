@@ -156,7 +156,7 @@ fn the_state_file_round_trips() {
     assert!(write(&file, &saved));
     assert_eq!(read(&file), Some(saved));
     assert!(
-        !super::temporary_path(&file).exists(),
+        !crate::state_file::temporary_path(&file).exists(),
         "the write leaves no temporary file behind"
     );
     let _ = std::fs::remove_dir_all(&dir);

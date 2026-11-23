@@ -67,6 +67,9 @@ pub(crate) struct Shell {
     live: Option<Geometry>,
     /// Whether the first geometry has been sent; the screen is only known after one frame.
     applied: bool,
+    /// Whether the widths a settings file left still have to be clamped to the mode the
+    /// window opened in.
+    pub(crate) restore_pending: bool,
 }
 
 impl Shell {
@@ -88,6 +91,7 @@ impl Shell {
             normal: None,
             live: None,
             applied: false,
+            restore_pending: false,
         }
     }
 
@@ -113,6 +117,8 @@ impl Window {
         // sheet's chrome, and the start page hides them while it is open.
         if self.start_open {
             self.shell.drawer = None;
+            // The panels are not on screen: no timer may fire behind the start page.
+            self.auto_hide.cancel_all();
             self.show_start(context);
             self.show_files(context);
             return;
@@ -121,6 +127,16 @@ impl Window {
         self.show_status(context);
         self.show_regions(context);
         self.show_sheet(context);
+        // The auto-hide timers read the pointer and the focus the panels reported this frame,
+        // and the settings are noted after both, so a fold or a dwell lands in the file.
+        let now = Instant::now();
+        self.drive_auto_hide(context, now);
+        self.observe_panel_settings(now);
+        if self.settings.is_pending() {
+            // A fold or a width has stopped moving: wake once more to write it, even if the
+            // reader never touches the window again.
+            context.request_repaint_after(crate::settings::SETTLE);
+        }
         // The dialog is the last surface drawn, so it is in front of the sheet and catches the
         // keyboard before the sheet's shortcuts do.
         self.show_files(context);
@@ -130,6 +146,9 @@ impl Window {
     /// so this is the only place that decides it, and the field records the answer.
     pub(crate) fn update_layout_mode(&mut self, context: &egui::Context) {
         self.shell.mode = LayoutMode::from_available(context.screen_rect().width());
+        // The remembered widths are clamped once, against the mode the window really opened
+        // in: the first frame still holds the provisional size the viewport reports.
+        self.restore_panels_to_mode(context);
     }
 
     /// The mode, for the commands: the keyboard path has to know which presentation a panel
@@ -351,6 +370,11 @@ impl Window {
                     }
                 }
             });
+        let surface = response.response.rect;
+        match drawer {
+            Drawer::Catalog => self.sidebar.observe_surface(context, surface),
+            Drawer::Inspector => self.inspector.observe_surface(context, surface),
+        }
         let should_close = response.should_close();
         let (action, hide) = response.inner;
         if hide {

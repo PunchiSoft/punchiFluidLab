@@ -123,3 +123,20 @@ fn the_mode_is_a_consequence_of_the_room_and_not_of_a_screen_list() {
         );
     }
 }
+
+#[test]
+fn the_mode_bounds_the_width_a_remembered_panel_may_open_at() {
+    // A file written on a 1920 screen cannot make a panel wider than the medium mode holds.
+    let bounds = LayoutMode::Medium.max_widths(1020.0);
+    assert!((bounds.catalog - (1020.0 - SHEET_MIN_WIDTH - DOCK_MIN_WIDTH)).abs() <= f32::EPSILON);
+    assert!((bounds.dock - (1020.0 - SHEET_MIN_WIDTH - CATALOG_MIN_WIDTH)).abs() <= f32::EPSILON);
+    // The wide mode still keeps the sheet's floor and the other panel's floor.
+    let bounds = LayoutMode::Wide.max_widths(1440.0);
+    assert!(bounds.catalog + DOCK_MIN_WIDTH + SHEET_MIN_WIDTH <= 1440.0);
+    assert!(bounds.dock + CATALOG_MIN_WIDTH + SHEET_MIN_WIDTH <= 1440.0);
+    // Compact docks no panel: the drawer floats over the sheet at most as wide as the window.
+    let bounds = LayoutMode::Compact.max_widths(900.0);
+    assert!((bounds.catalog - 900.0).abs() <= f32::EPSILON);
+    assert!((bounds.dock - 900.0).abs() <= f32::EPSILON);
+    assert!((LayoutMode::Compact.max_widths(f32::NAN).catalog - RAIL_WIDTH).abs() <= f32::EPSILON);
+}

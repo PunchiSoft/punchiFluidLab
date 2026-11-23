@@ -12,7 +12,6 @@
 //! floor. There is no serde here and no new dependency.
 
 use std::fmt::Write as _;
-use std::io::{Read, Write as _};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -161,7 +160,7 @@ pub fn default_path() -> Option<PathBuf> {
 /// Reads the remembered geometry; `None` when the file is absent, too large or unreadable.
 #[must_use]
 pub fn read(path: &Path) -> Option<Geometry> {
-    let text = read_bounded(path)?;
+    let text = crate::state_file::read_bounded(path, MAX_BYTES)?;
     parse(&text)
 }
 
@@ -175,44 +174,7 @@ pub fn write(path: &Path, geometry: &Geometry) -> bool {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    write_atomically(path, &text)
-}
-
-/// Writes through a temporary created with `create_new`, flushed, and renamed over the
-/// target: a planted symlink at the predictable temporary name is removed first, and a
-/// failure never leaves the previous file truncated.
-fn write_atomically(path: &Path, text: &str) -> bool {
-    let temporary = temporary_path(path);
-    let _ = std::fs::remove_file(&temporary);
-    let Ok(mut file) = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temporary)
-    else {
-        return false;
-    };
-    let written = file
-        .write_all(text.as_bytes())
-        .and_then(|()| file.sync_all())
-        .is_ok();
-    drop(file);
-    if !written {
-        let _ = std::fs::remove_file(&temporary);
-        return false;
-    }
-    if std::fs::rename(&temporary, path).is_err() {
-        let _ = std::fs::remove_file(&temporary);
-        return false;
-    }
-    true
-}
-
-/// The temporary file beside the target, in the same folder so the rename stays on one
-/// filesystem.
-fn temporary_path(path: &Path) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".tmp");
-    path.with_file_name(name)
+    crate::state_file::write_atomically(path, &text)
 }
 
 /// Parses the file's text. A file without a usable size is ignored whole; a broken place is
@@ -285,15 +247,6 @@ pub fn format(geometry: &Geometry) -> Option<String> {
         "maximized=0\n"
     });
     Some(text)
-}
-
-fn read_bounded(path: &Path) -> Option<String> {
-    let file = std::fs::File::open(path).ok()?;
-    let mut text = String::new();
-    file.take((MAX_BYTES as u64) + 1)
-        .read_to_string(&mut text)
-        .ok()?;
-    (text.len() <= MAX_BYTES).then_some(text)
 }
 
 fn dimension(value: &str) -> Option<f32> {

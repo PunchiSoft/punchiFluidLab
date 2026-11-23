@@ -5,6 +5,9 @@
 //! to their rails, the drawer opens over the sheet and closes with `Esc`, with its hide
 //! control and with a click outside, and the sheet keeps the room.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::Document;
@@ -98,6 +101,48 @@ fn shell_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
     }
     harness.run();
     harness
+}
+
+/// Moves the pointer to `position`, as the window would report it.
+fn move_pointer(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2) {
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(position));
+    harness.run();
+}
+
+/// The shell drawn headless with the catalog's probe reported after each frame.
+fn shell_probe_harness(
+    window: &mut Window,
+    size: egui::Vec2,
+) -> (
+    egui_kittest::Harness<'_, Probe>,
+    Rc<Cell<crate::panel::Probe>>,
+) {
+    let reported = Rc::new(Cell::new(crate::panel::Probe::default()));
+    let sink = Rc::clone(&reported);
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(size)
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(240)
+        .build_state(
+            move |context, probe: &mut Probe| {
+                window.update_layout_mode(context);
+                window.sync_commands(context);
+                window.show_ribbon(context);
+                window.show_status(context);
+                window.show_regions(context);
+                probe.drawer = window.shell.drawer;
+                sink.set(window.sidebar.probe());
+            },
+            Probe::default(),
+        );
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the shell tests need one");
+    }
+    harness.run();
+    (harness, reported)
 }
 
 /// A primary click at `position`, as the pointer would report it.
@@ -268,6 +313,33 @@ fn ctrl_b_toggles_the_drawer_closed() {
         harness.run();
         assert_eq!(harness.state().drawer, None, "Ctrl+B closes what it opened");
     }
+}
+
+#[test]
+fn the_drawer_reports_the_pointer_and_the_keyboard_inside_it() {
+    let mut window = window_with();
+    let (mut harness, probe) = shell_probe_harness(&mut window, egui::vec2(900.0, 768.0));
+    harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
+    harness.run();
+    assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
+    move_pointer(&mut harness, egui::pos2(100.0, 300.0));
+    assert!(
+        probe.get().pointer_inside,
+        "the pointer inside the drawer is reported"
+    );
+    move_pointer(&mut harness, egui::pos2(700.0, 400.0));
+    assert!(
+        !probe.get().pointer_inside,
+        "the sheet beside the drawer is outside it"
+    );
+    harness
+        .get_by_role(egui::accesskit::Role::TextInput)
+        .focus();
+    harness.run();
+    assert!(
+        probe.get().focus_inside,
+        "the search field has the keyboard, so the drawer's close is suspended"
+    );
 }
 
 #[test]
