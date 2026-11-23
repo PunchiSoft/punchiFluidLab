@@ -140,6 +140,7 @@ impl Window {
         self.show_status(context);
         self.show_regions(context);
         self.show_sheet(context);
+        self.show_mockups(context);
         // The auto-hide timers read the pointer and the focus the panels reported this frame,
         // and the settings are noted after both, so a fold or a dwell lands in the file.
         let now = Instant::now();
@@ -459,7 +460,7 @@ impl Window {
     }
 
     /// The sheet, its gestures and its drawing: the last region, the one that never gives way.
-    fn show_sheet(&mut self, context: &egui::Context) {
+    pub(crate) fn show_sheet(&mut self, context: &egui::Context) {
         let (width, height) = self.page.size_mm();
         let page_mm = egui::vec2(width, height);
         egui::CentralPanel::default().show(context, |ui| {
@@ -487,12 +488,20 @@ impl Window {
                 self.document.active_circuit(),
                 self.model.as_ref(),
             );
-            // The drag is previewed on the drawing, not written to the document: the document
-            // only changes once, when the button comes up.
-            if let Some(drag) = &self.drag {
-                let delta = drag.delta;
+            // The drag and the armed move are previewed on the drawing, not written to the
+            // document: the document only changes once, when the gesture drops.
+            let preview = self
+                .drag
+                .as_ref()
+                .map(|drag| (drag.delta, drag.starts.as_slice()))
+                .or_else(|| {
+                    self.moving
+                        .as_ref()
+                        .map(|moving| (moving.delta(), moving.starts()))
+                });
+            if let Some((delta, starts)) = preview {
                 for placed in &mut scene.placed {
-                    if drag.starts.iter().any(|(index, _)| *index == placed.index) {
+                    if starts.iter().any(|(index, _)| *index == placed.index) {
                         placed.rect = Rect::from_min_size(
                             Pt::new(placed.rect.min.x + delta.x, placed.rect.min.y + delta.y),
                             placed.rect.max.x - placed.rect.min.x,
@@ -535,6 +544,7 @@ impl Window {
             );
             painter.extend(drawing.shapes);
             self.highlight_selected_pipe(ui, origin, placement.scale);
+            self.show_sheet_menu(&sheet);
         });
     }
 }

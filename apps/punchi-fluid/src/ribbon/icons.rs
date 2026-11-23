@@ -30,6 +30,14 @@ pub const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../../../../assets/icons/actions/check.svg"),
     ),
     (
+        "configure",
+        include_bytes!("../../../../assets/icons/actions/configure.svg"),
+    ),
+    (
+        "describe",
+        include_bytes!("../../../../assets/icons/actions/describe.svg"),
+    ),
+    (
         "distribute-horizontal-equal",
         include_bytes!("../../../../assets/icons/actions/distribute-horizontal-equal.svg"),
     ),
@@ -146,6 +154,10 @@ pub const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../../../../assets/icons/actions/object-flip-horizontal.svg"),
     ),
     (
+        "object-flip-vertical",
+        include_bytes!("../../../../assets/icons/actions/object-flip-vertical.svg"),
+    ),
+    (
         "object-rotate-right",
         include_bytes!("../../../../assets/icons/actions/object-rotate-right.svg"),
     ),
@@ -235,4 +247,12 @@ pub(super) fn map() -> HashMap<String, &'static [u8]> {
         .iter()
         .map(|(name, bytes)| ((*name).to_owned(), *bytes))
         .collect()
+}
+
+/// One drawing by id, for a caller outside the ribbon that paints an action icon.
+pub(crate) fn bytes(id: &str) -> Option<&'static [u8]> {
+    ICONS
+        .iter()
+        .find(|(name, _)| *name == id)
+        .map(|(_, bytes)| *bytes)
 }

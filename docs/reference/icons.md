@@ -12,12 +12,12 @@ exists.
 
 ## The count
 
-The family has **55 drawings**. The number counts **drawings**, the ids in `ICONS`, not
+The family has **58 drawings**. The number counts **drawings**, the ids in `ICONS`, not
 commands: one drawing can serve several commands, and some commands are generated from the
 same table. The table below has one row per drawing; if the code and this page disagree, the
 code is right and this page is stale.
 
-The ribbon table, the view strip, the start view and the collapsed menu are the callers.
+The ribbon table, the view strip, the start view, the collapsed menu and the sheet menu are the callers.
 The ribbon's command icons are checked in both directions by `--check-icons`: every icon
 name a command asks for resolves to a project drawing, and the table entries that carry no
 icon are exactly the documented allowlist below.
@@ -57,17 +57,19 @@ window, the theme unit's large and small button values (16 and 24 at the default
 | `align-vertical-bottom` | Abajo | two boxes against a bottom edge line | Editar ▸ Alinear | 16, 24 | static |
 | `align-vertical-top` | Arriba | two boxes against a top edge line | Editar ▸ Alinear | 16, 24 | static |
 | `check` | Comprobar | circuit outline with a check mark | Editar ▸ Circuito | 16, 24 | static |
+| `configure` | Configurar; menú del símbolo | two slider rows | Menú del símbolo | 16, 24 | static |
+| `describe` | Descripción del componente; menú del símbolo | speech bubble with two lines | Menú del símbolo | 16, 24 | static |
 | `distribute-horizontal-equal` | Horizontal | three boxes with equal gaps across | Editar ▸ Repartir | 16, 24 | static |
 | `distribute-vertical-equal` | Vertical | three boxes with equal gaps down | Editar ▸ Repartir | 16, 24 | static |
 | `document-export` | Exportar | page with an out arrow | Archivo ▸ Proyecto | 16, 24 | static |
 | `document-new` | Nuevo | page with a plus | Archivo ▸ Proyecto; Inicio | 16, 24 | static |
 | `document-open` | Abrir | open folder | Archivo ▸ Proyecto; Inicio | 16, 24 | static |
 | `document-open-recent` | Recientes | clock | Archivo ▸ Recientes | 16, 24 | static |
-| `document-properties` | Opciones…; Propiedades; Personalizado…; Márgenes personalizados…; Configurar página… | page with two slider rows | Archivo ▸ Proyecto, Configurar página; Ver ▸ Paneles; tira de vista | 16, 24 | current |
+| `document-properties` | Opciones…; Propiedades (menú del símbolo); Personalizado…; Márgenes personalizados…; Configurar página… | page with two slider rows | Archivo ▸ Proyecto, Configurar página; Ver ▸ Paneles; tira de vista; menú del símbolo | 16, 24 | current |
 | `document-save` | Guardar | page with a down arrow | Archivo ▸ Proyecto | 16, 24 | static |
 | `document-save-as` | Guardar como | page with a down arrow and a plus | Archivo ▸ Proyecto | 16, 24 | static |
 | `edit-copy` | Copiar | two overlapping pages | Editar ▸ Componente | 16, 24 | static |
-| `edit-delete` | Borrar | trash can | Editar ▸ Componente | 16, 24 | static |
+| `edit-delete` | Borrar; Eliminar (menú del símbolo) | trash can | Editar ▸ Componente; menú del símbolo | 16, 24 | static |
 | `edit-duplicate` | Duplicar | two pages with a plus | Editar ▸ Componente | 16, 24 | static |
 | `edit-paste` | Pegar | clipboard | Editar ▸ Componente | 16, 24 | static |
 | `edit-redo` | Rehacer | curved arrow to the right | Editar ▸ Historial | 16, 24 | static |
@@ -78,15 +80,16 @@ window, the theme unit's large and small button values (16 and 24 at the default
 | `go-bottom` | Inferior derecha; Abajo centrado; Ocultar la tira de vista | down arrow to a line | Cajetín ▸ Posición; tira de vista | 16, 24 | current |
 | `go-home` | Inicio | house | Archivo ▸ Inicio | 16, 24 | static |
 | `go-top` | Superior derecha; Mostrar la tira de vista | up arrow from a line | Cajetín ▸ Posición; tira de vista | 16, 24 | current |
-| `hand` | Mover | palm outline | tira de vista | 16, 24 | current |
+| `hand` | Mover; tira de vista; menú del símbolo | palm outline | tira de vista; menú del símbolo | 16, 24 | current |
 | `list-add` | Nuevo | text lines with a plus | Archivo ▸ Circuito | 16, 24 | static |
 | `media-playback-pause` | Pausa | two filled bars | Simular ▸ Transporte; tira de vista | 16, 24 | static |
 | `media-playback-start` | Iniciar | filled triangle | Simular ▸ Transporte; tira de vista | 16, 24 | static |
 | `media-playback-stop` | Detener | filled rounded square | Simular ▸ Transporte | 16, 24 | static |
 | `media-seek-forward` | Paso | triangle against a bar | Simular ▸ Transporte | 16, 24 | static |
 | `media-skip-forward` | Hasta cambio | two triangles against a bar | Simular ▸ Transporte | 16, 24 | static |
-| `object-flip-horizontal` | Reflejar | two triangles across a vertical axis | Editar ▸ Componente | 16, 24 | static |
-| `object-rotate-right` | Girar; Apaisado | circular arrow | Editar ▸ Componente; Archivo ▸ Configurar página | 16, 24 | current |
+| `object-flip-horizontal` | Reflejar; Espejo horizontal (menú del símbolo) | two triangles across a vertical axis | Editar ▸ Componente; menú del símbolo | 16, 24 | static |
+| `object-flip-vertical` | Espejo vertical; menú del símbolo | two triangles across a horizontal axis | Menú del símbolo | 16, 24 | static |
+| `object-rotate-right` | Girar; Apaisado; menú del símbolo | circular arrow | Editar ▸ Componente; Archivo ▸ Configurar página; menú del símbolo | 16, 24 | current |
 | `open-menu-symbolic` | menú de la cinta | three lines | cinta | 16, 24 | static |
 | `pipe-drain` | Drenaje | pipe with the long-dash class pattern and a flow chevron | Editar ▸ Conducto | 16, 24 | static |
 | `pipe-pilot` | Pilotaje | pipe with the short-dash class pattern and a flow chevron | Editar ▸ Conducto | 16, 24 | static |
@@ -124,10 +127,10 @@ with a reason.
 These commands still share a drawing. Each is recorded here instead of being left
 undocumented; splitting one needs its own metaphor and its own 16 px review.
 
-- **`document-properties`, three meanings.** Export options, the right-dock toggle and
-  the page-setup launcher (custom paper, custom margins, the page panel) still share the
-  same page-with-sliders drawing. They are three different things; giving each its own
-  drawing is the first follow-up, after the P0 set.
+- **`document-properties`, four meanings.** Export options, the right-dock toggle, the
+  page-setup launcher (custom paper, custom margins, the page panel) and **Propiedades** in
+  the sheet menu still share the same page-with-sliders drawing. They are four different
+  things; giving each its own drawing is the first follow-up, after the P0 set.
 - **`edit-undo` as Restablecer.** The title block's Restablecer is a reset, not an undo,
   but it still borrows the undo arrow. Its own reset metaphor is deferred; the label says
   what it does until then.

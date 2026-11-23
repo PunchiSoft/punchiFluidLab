@@ -105,6 +105,66 @@ impl View {
         self.pan += egui::vec2(x * Self::ARROW, y * Self::ARROW);
     }
 
+    /// The sheet's view gestures: `Ctrl` and the wheel zoom about the pointer, the wheel and
+    /// the middle button pan, the arrows pan from the keyboard and `Ctrl+0` returns to 1:1.
+    pub(crate) fn handle_input(
+        &mut self,
+        ui: &egui::Ui,
+        response: &egui::Response,
+        area: egui::Rect,
+        page_mm: egui::Vec2,
+    ) {
+        let (scroll, ctrl, pointer) = ui.input(|input| {
+            (
+                input.raw_scroll_delta,
+                input.modifiers.ctrl,
+                input.pointer.hover_pos(),
+            )
+        });
+        if response.hovered() && scroll != egui::Vec2::ZERO {
+            if ctrl {
+                if let Some(pointer) = pointer {
+                    self.zoom_about((scroll.y * 0.005).exp(), pointer, area, page_mm);
+                }
+            } else {
+                self.pan_by(scroll);
+            }
+        }
+        if response.dragged_by(egui::PointerButton::Middle) {
+            let delta = ui.input(|input| input.pointer.delta());
+            self.pan_by(delta);
+        }
+        let (left, right, up, down, reset) = ui.input(|input| {
+            (
+                input.key_pressed(egui::Key::ArrowLeft),
+                input.key_pressed(egui::Key::ArrowRight),
+                input.key_pressed(egui::Key::ArrowUp),
+                input.key_pressed(egui::Key::ArrowDown),
+                input.modifiers.ctrl && input.key_pressed(egui::Key::Num0),
+            )
+        });
+        if reset {
+            self.reset();
+        }
+        let mut x = 0.0;
+        let mut y = 0.0;
+        if left {
+            x += 1.0;
+        }
+        if right {
+            x -= 1.0;
+        }
+        if up {
+            y += 1.0;
+        }
+        if down {
+            y -= 1.0;
+        }
+        if x != 0.0 || y != 0.0 {
+            self.pan_arrow(x, y);
+        }
+    }
+
     /// The placement of the page for this frame; the pan is bounded to the overhang and
     /// dropped once the page fits.
     #[must_use]

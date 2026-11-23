@@ -35,6 +35,7 @@ mod files;
 mod inspector;
 mod layout;
 mod lifecycle;
+mod move_symbol;
 mod page_setup;
 mod panel;
 mod preferences;
@@ -43,6 +44,7 @@ mod scene;
 mod selection;
 mod settings;
 mod sheet_commands;
+mod sheet_menu;
 mod shell;
 mod shortcuts;
 mod sidebar;
@@ -162,6 +164,13 @@ struct Window {
     /// The drag in progress: the pointer's press, the selection's start centres and the
     /// millimetres it has moved. The drawing applies the offset live; the release commits it.
     drag: Option<Drag>,
+    /// The armed move: the pointer carries the selection and a click drops it. View state,
+    /// not a document edit until the drop.
+    moving: Option<move_symbol::Moving>,
+    /// The sheet's context menu, its position and the revision it belongs to.
+    menu: sheet_menu::SheetMenu,
+    /// The empty Configuración and Descripción windows the menu opens.
+    mockups: sheet_menu::Mockups,
     /// The window's clipboard: the placements cut or copied, ready to paste.
     clipboard: Vec<Placement>,
     /// The live model of the active circuit, rebuilt when the document changes.
@@ -568,6 +577,11 @@ impl Window {
         if self.preferences.open {
             return;
         }
+        // The sheet's menu and the mockups own the keyboard while they are open, as a
+        // dialog does: no document command may run behind them.
+        if self.menu.is_open() || self.mockups.is_open() {
+            return;
+        }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Comma)) {
             self.open_preferences();
             return;
@@ -630,9 +644,19 @@ impl Window {
                 page_min.y + (screen.y - placement.origin.y) / placement.scale,
             )
         };
+        // The armed move, the keyboard menu and the right-click menu own the frame when the
+        // sheet is under them: no selection, valve press or drag happens underneath.
+        if self.handle_menu_gestures(response, placement, page_min) {
+            return;
+        }
         // The reference presses a valve while the button is down: the momentary returns, the
-        // maintained stays. A press on a valve is not a drag of the selection.
-        if response.is_pointer_button_down_on() {
+        // maintained stays. A press on a valve is not a drag of the selection. Only the
+        // primary button presses it; the right button belongs to the menu.
+        if response.is_pointer_button_down_on()
+            && response
+                .ctx
+                .input(|input| input.pointer.button_down(egui::PointerButton::Primary))
+        {
             if let Some(position) = response.interact_pointer_pos() {
                 let hit = self.hit_placement(to_mm(position));
                 if hit != self.pressed_valve {
@@ -716,56 +740,17 @@ impl Window {
         area: egui::Rect,
         page_mm: egui::Vec2,
     ) {
-        let (scroll, ctrl, pointer) = ui.input(|input| {
-            (
-                input.raw_scroll_delta,
-                input.modifiers.ctrl,
-                input.pointer.hover_pos(),
-            )
-        });
-        if response.hovered() && scroll != egui::Vec2::ZERO {
-            if ctrl {
-                if let Some(pointer) = pointer {
-                    self.view
-                        .zoom_about((scroll.y * 0.005).exp(), pointer, area, page_mm);
-                }
-            } else {
-                self.view.pan_by(scroll);
-            }
+        // The armed move pins the view: the pointer carries the symbol, so the sheet must not
+        // slide under it with a wheel or an arrow.
+        if self.moving.is_some() {
+            return;
         }
-        if response.dragged_by(egui::PointerButton::Middle) {
-            let delta = ui.input(|input| input.pointer.delta());
-            self.view.pan_by(delta);
+        // The arrow keys belong to the open menu while it is up; panning the sheet under it
+        // would both move the anchor and steal the key.
+        if self.menu.is_open() {
+            return;
         }
-        let (left, right, up, down, reset) = ui.input(|input| {
-            (
-                input.key_pressed(egui::Key::ArrowLeft),
-                input.key_pressed(egui::Key::ArrowRight),
-                input.key_pressed(egui::Key::ArrowUp),
-                input.key_pressed(egui::Key::ArrowDown),
-                input.modifiers.ctrl && input.key_pressed(egui::Key::Num0),
-            )
-        });
-        if reset {
-            self.view.reset();
-        }
-        let mut x = 0.0;
-        let mut y = 0.0;
-        if left {
-            x += 1.0;
-        }
-        if right {
-            x -= 1.0;
-        }
-        if up {
-            y += 1.0;
-        }
-        if down {
-            y -= 1.0;
-        }
-        if x != 0.0 || y != 0.0 {
-            self.view.pan_arrow(x, y);
-        }
+        self.view.handle_input(ui, response, area, page_mm);
     }
 }
 

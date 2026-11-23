@@ -20,6 +20,12 @@ mod model;
 pub(crate) use command::{Command, MarginPreset, Speed};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
 
+/// One action drawing by id, for the sheet menu, which is not a ribbon surface but uses the
+/// same family.
+pub(crate) fn icon_bytes(id: &str) -> Option<&'static [u8]> {
+    icons::bytes(id)
+}
+
 /// The colours the ribbon paints with, taken from the theme tokens.
 pub struct Palette {
     pub raised: egui::Color32,
