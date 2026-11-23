@@ -24,6 +24,7 @@ use punchi_fluid_session::recents::Recents;
 use crate::ribbon::{Command, Speed};
 
 mod auto_hide;
+mod branding;
 mod edit_commands;
 mod export;
 mod files;
@@ -86,7 +87,8 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
             .with_min_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
-            .with_title("Punchi Fluid Lab"),
+            .with_title("Punchi Fluid Lab")
+            .with_icon(branding::window_icon()),
         ..Default::default()
     };
     eframe::run_native(

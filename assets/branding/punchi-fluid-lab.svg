@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Punchi Fluid Lab application icon, cobalt dual-tone (Reversal icon-theme language).
+  A pipe rises on the left, loops around a manometer as the bowl of the P and returns
+  down the outlet leg; two collars and three chevrons mark the flow.
+  Palette: plate #1B489E, rim #2D68C3, light #90C0F0, medium #2484CC.
+  Geometry is plain shapes and gradients only: no filters, no style blocks, no
+  external reference, so Inkscape, librsvg and a browser render the same picture.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Punchi Fluid Lab</title>
+<defs>
+<linearGradient id="plate" x1="0" y1="0" x2="0.3" y2="1">
+<stop offset="0" stop-color="#1D4CA4"/>
+<stop offset="1" stop-color="#1B489E"/>
+</linearGradient>
+<clipPath id="squircle"><rect width="512" height="512" rx="88"/></clipPath>
+<clipPath id="lightTone"><polygon points="532.6,-771.3 -2.6,947.3 -861.9,679.7 -326.7,-1038.9"/></clipPath>
+</defs>
+<rect width="512" height="512" rx="88" fill="#2D68C3"/>
+<rect x="12" y="12" width="488" height="488" rx="76" fill="url(#plate)"/>
+<g clip-path="url(#squircle)">
+<path d="M 127,206 A 138,138 0 1 0 403,206 A 138,138 0 1 0 127,206 Z M 147,206 A 118,118 0 1 1 383,206 A 118,118 0 1 1 147,206 Z" fill="#2484CC" fill-rule="evenodd"/>
+<g clip-path="url(#lightTone)"><path d="M 127,206 A 138,138 0 1 0 403,206 A 138,138 0 1 0 127,206 Z M 147,206 A 118,118 0 1 1 383,206 A 118,118 0 1 1 147,206 Z" fill="#90C0F0" fill-rule="evenodd"/></g>
+<rect x="126" y="206" width="20" height="306" fill="#90C0F0"/>
+<path d="M 188,295.4 A 118,118 0 0 0 208,309.3 L 208,512 L 188,512 Z" fill="#2484CC"/>
+<path d="M 269.4,106.1 A 100,100 0 0 1 332.6,132.3 L 313,153.7 A 71,71 0 0 0 268.1,135.1 Z" fill="#2484CC"/>
+<path d="M 338.7,138.4 A 100,100 0 0 1 364.9,201.6 L 335.9,202.9 A 71,71 0 0 0 317.3,158 Z" fill="#2484CC"/>
+<path d="M 364.9,210.4 A 100,100 0 0 1 338.7,273.6 L 317.3,254 A 71,71 0 0 0 335.9,209.1 Z" fill="#2484CC"/>
+<path d="M 332.6,279.7 A 100,100 0 0 1 269.4,305.9 L 268.1,276.9 A 71,71 0 0 0 313,258.3 Z" fill="#2484CC"/>
+<path d="M 260.6,305.9 A 100,100 0 0 1 197.4,279.7 L 217,258.3 A 71,71 0 0 0 261.9,276.9 Z" fill="#2484CC"/>
+<path d="M 191.3,273.6 A 100,100 0 0 1 165.1,210.4 L 194.1,209.1 A 71,71 0 0 0 212.7,254 Z" fill="#90C0F0"/>
+<path d="M 165.1,201.6 A 100,100 0 0 1 191.3,138.4 L 212.7,158 A 71,71 0 0 0 194.1,202.9 Z" fill="#90C0F0"/>
+<path d="M 197.4,132.3 A 100,100 0 0 1 260.6,106.1 L 261.9,135.1 A 71,71 0 0 0 217,153.7 Z" fill="#90C0F0"/>
+<path d="M 327,144 L 323.3,151.2 L 283,202.8 L 268.2,188 L 319.8,147.7 Z" fill="#90C0F0"/>
+<circle cx="265" cy="208" r="20" fill="#90C0F0"/>
+<circle cx="265" cy="208" r="10.5" fill="#1B489E"/>
+<rect x="166" y="399" width="66" height="16" fill="#2484CC"/>
+<rect x="102" y="399" width="65" height="16" fill="#90C0F0"/>
+<rect x="108" y="390" width="13" height="9" fill="#90C0F0"/>
+<rect x="213" y="390" width="13" height="9" fill="#2484CC"/>
+<rect x="166" y="423" width="66" height="16" fill="#2484CC"/>
+<rect x="102" y="423" width="65" height="16" fill="#90C0F0"/>
+<rect x="108" y="439" width="13" height="9" fill="#90C0F0"/>
+<rect x="213" y="439" width="13" height="9" fill="#2484CC"/>
+<path d="M 153,341 L 165,317 L 177,341" fill="none" stroke="#90C0F0" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M 153,374 L 165,350 L 177,374" fill="none" stroke="#90C0F0" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M 153,458 L 165,479 L 177,458" fill="none" stroke="#90C0F0" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/>
+</g>
+</svg>
