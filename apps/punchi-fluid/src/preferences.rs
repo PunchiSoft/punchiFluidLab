@@ -214,11 +214,18 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
                 ui.separator();
                 ui.vertical(|ui| {
                     ui.set_width(ui.available_width());
-                    if data.current_page(Page::Appearance) {
-                        appearance_page(ui, data, &mut chosen);
-                    } else {
-                        panels_page(ui, data.tokens, autohide_on, &mut chosen.action);
-                    }
+                    let height = ui.available_height();
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .max_height(height)
+                        .show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            if data.current_page(Page::Appearance) {
+                                appearance_page(ui, data, &mut chosen);
+                            } else {
+                                panels_page(ui, data.tokens, autohide_on, &mut chosen.action);
+                            }
+                        });
                 });
             });
             ui.separator();
@@ -341,7 +348,7 @@ fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
             .size(data.tokens.text_small)
             .color(data.tokens.ink_muted),
     );
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         for (appearance, preview) in data.previews {
             let Appearance::Theme(id) = appearance else {
                 continue;
@@ -527,6 +534,24 @@ mod tests {
             window.theme.appearance,
             Appearance::Theme(ThemeId::Nordic),
             "the high-contrast card applies the Nordic theme"
+        );
+    }
+
+    #[test]
+    fn the_window_offers_the_deep_blue_theme() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Azul profundo")
+                .click();
+            harness.run();
+        }
+        assert_eq!(
+            window.theme.appearance,
+            Appearance::Theme(ThemeId::Indigo),
+            "the deep-blue card applies the Indigo theme"
         );
     }
 
