@@ -23,9 +23,10 @@ user catalog file overriding a built-in one in the real session.
 
 ## M1 — Application shell
 
-**Status:** done, in Qt Quick. [ADR 0005](adr/0005-qt-quick-over-a-c-abi.md) retired the
-egui crates this section was written for; the goals below still describe the product, and
-the code is `apps/punchi-fluid-qt` over `punchi-fluid-ffi`.
+**Status:** done, in the Rust window (egui) over the crates. This section was written for
+the retired Qt/egui split and the paths below are historical; the current window is
+`apps/punchi-fluid` ([ADR 0035](adr/0035-the-window-is-rust.md),
+[ADR 0036](adr/0036-the-toolkit-is-egui.md)). The goals still describe the product.
 
 Ribbon, sidebar, sheet frame, status bar, theme layer.
 
@@ -122,7 +123,8 @@ and the export backends implement the same trait.
 
 ## M3 — Document, undo, palette
 
-**Status:** done, with the format at v3 (designations and orientation included).
+**Status:** done, with the sheet format at v14 (designations, orientation, paper, title
+block, tubes, closures and the later fields included).
 
 The editable document.
 
@@ -171,8 +173,9 @@ From a fixed three-component layout to a graph.
 
 ## M5 — Instruments
 
-**Status:** partial. The pressure gauge and the run-until-change command are in; the flow
-meter, force meter and strip chart are not started.
+**Status:** partial. The pressure gauge, the flow meter and the strip chart are in, and
+run-until-change stops at an end stop or a valve change. The force meter is `not planned`
+until a mechanical domain exists.
 
 Manometer, flow meter, force meter, and a strip chart of pressure and position.
 
@@ -188,7 +191,8 @@ Manometer, flow meter, force meter, and a strip chart of pressure and position.
 
 ## M6 — Language, packaging, 1.0
 
-**Status:** not started.
+**Status:** not started. The translation mechanism must be re-decided for the Rust window;
+the retired Qt catalog plan in ADR 0027 no longer applies.
 
 - `i18n/` with Qt catalogs (`.ts` compiled to `.qm`), English and Spanish complete, no
   string concatenation; the Rust core returns keys, never sentences
@@ -212,7 +216,7 @@ Manometer, flow meter, force meter, and a strip chart of pressure and position.
 
 | Risk | Mitigation |
 |---|---|
-| The UI toolkit stops being enough (accessibility, native look) | Drawing is toolkit-agnostic from M2; a QML front end through `cxx-qt` becomes a new `Surface` implementation, not a rewrite |
+| The UI toolkit stops being enough (accessibility, native look) | Drawing is toolkit-agnostic from M2; a new window becomes a new `Surface` implementation over the same recording, not a rewrite |
 | Ribbon turns into a maze | Four tabs, overflow menu, every action keyboard-reachable, screenshot review per milestone |
 | The catalog schema grows until it is a programming language | Behaviour stays a small closed enum; anything that needs logic is a new variant with an ADR |
 | Export drifts from the screen | One `Surface` trait, call-list comparison test |

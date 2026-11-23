@@ -18,12 +18,14 @@ cd punchi-fluid-lab
 ./scripts-dev/check-docs.sh     # documentation contracts only (index, links, ADRs, labels)
 ./scripts-dev/test.sh           # tests only; add --no-build to skip Cargo entirely
 ./scripts-dev/run.sh            # open the window; add --no-build to run the last build
-cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja   # once, for the window
+cargo build -p punchi-fluid-window --bin punchi-fluid   # the window binary alone
 ```
 
-Rust stable, version pinned in `rust-toolchain.toml`, plus Qt 6.5 or newer with Qt Quick,
-CMake and Ninja for the window. The Rust core is linked into the Qt binary as a static
-library, so the result is one file with no runtime search path to get wrong.
+Rust stable, version pinned in `rust-toolchain.toml`. The window is the egui binary in
+`apps/punchi-fluid`; on Linux it links the graphics stack directly, so the build needs the
+system libraries CI installs (`libgl1-mesa-dev`, `libegl1-mesa-dev`, `libxkbcommon-dev`,
+`libwayland-dev` and the X11 development packages). Everything is Rust and one binary; there
+is no CMake, no Qt and no runtime plugin path.
 
 ## The gate is not negotiable
 
@@ -54,8 +56,9 @@ test is wrong, fix the test in its own commit and say why.
 A symbol change is not a styling change. It needs the automated `symbol lint` plus the
 conformance review from [docs/symbology.md](docs/symbology.md), with light and dark
 screenshots attached to the pull request. Symbols are drawn by hand to conform to
-ISO 1219-1; nothing is traced from another program, a screenshot or the standard
-itself.
+ISO 1219-1. The owner's classified reference may identify a component and give its
+measures, but no reference image, figure or text enters the repository and nothing is
+traced from another program ([ADR 0040](docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)).
 
 ## Branches
 

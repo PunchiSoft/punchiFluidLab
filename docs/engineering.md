@@ -10,27 +10,30 @@ that nobody can check is a wish, not a standard.
 
 | Crate | Owns | Never contains | Milestone |
 |---|---|---|---|
-| `punchi-fluid-core` | components, ports, connections, typed units | numerics, files, widgets | M0 |
-| `punchi-fluid-catalog` | definition files: schema, validation, loading | physics, widgets | M0 |
+| `punchi-fluid-core` | components, ports, connections, typed units, paper and the legacy v1 model | numerics, files, widgets | M0 |
+| `punchi-fluid-catalog` | definition files: schema, validation, loading, lint | physics, widgets | M0 |
 | `punchi-fluid-solver` | lumped volumes, ISO 6358, integration, telemetry | editing, UI, file I/O | M0 |
-| `punchi-fluid-file` | versioned document format, migrations | physics | M0 |
+| `punchi-fluid-file` | versioned document format, migrations, recent list | physics | M0 |
 | `punchi-fluid-draw` | geometry in mm, `Surface` trait, symbol and sheet drawing | windows, I/O | M2 |
-| `punchi-fluid-export` | page geometry, PNG and PDF backends | interaction | M2 |
-| `punchi-fluid-ffi` | the C ABI: one session, one frame of drawing, telemetry, hit test | logic of its own | M5 |
-| `punchi-fluid-doc` | document, commands, undo, autosave | drawing, physics | M3 |
+| `punchi-fluid-export` | page geometry, PNG, PDF and SVG backends | interaction | M2 |
+| `punchi-fluid-ffi` | the retired C ABI of the Qt window; no product consumer | product logic | retired |
+| `punchi-fluid-doc` | document, commands, undo, sheet | drawing, physics | M3 |
 | `punchi-fluid-check` | design checks: the faults a circuit can have before it runs | physics, UI | M3 |
-| `punchi-fluid-cli` | headless validate and simulate | UI | M0 |
+| `punchi-fluid-session` | sheet↔document, live model, recents, safety copy, templates | physics, widgets | M4 |
+| `punchi-fluid-cli` | headless check, validate and simulate | UI | M0 |
+| `punchi-fluid-window` | the egui window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | M5 |
 
-The window is **`apps/punchi-fluid-qt`**, a Qt Quick application outside the Cargo
-workspace. It owns the ribbon, the sidebar, the sheet, the status bar and the theme
-adapter, and it reads the model only through `punchi-fluid-ffi`. ADR 0005 retired
-`punchi-fluid-theme`, `punchi-fluid-ui`, `punchi-fluid-desktop` and
-`punchi-fluid-icons`; the rows above are what exists now.
+The window is **`apps/punchi-fluid`** (package `punchi-fluid-window`), a Rust binary in
+the workspace built with egui (ADR 0035, ADR 0036). It owns the ribbon, the sidebar, the
+sheet, the status bar, the start view and the theme adapter, and it links `doc`, `draw`,
+`export`, `file` and `session` directly. It does not speak an ABI and does not depend on
+the retired Qt app.
 
-Dependency direction is acyclic and enforced by review plus `cargo tree`: `core` ←
-`catalog`/`file` ← `solver`/`doc` ← `draw` ← `ffi`. `export` depends on `draw` and
-nothing above it, and `cli` depends on `file` and `solver`. Nothing in Rust depends on
-the Qt application. A new edge needs an ADR.
+Dependency direction is acyclic and enforced by `scripts-dev/check-architecture.sh` plus
+`cargo tree`: `core` ← `catalog`/`file` ← `solver`/`doc`/`session` ← `draw` ← `export` ←
+`ffi` (retired); the window depends on `catalog`, `doc`, `draw`, `export`, `file` and
+`session`. `cli` depends on `file`, `catalog`, `check`, `doc`, `draw` and `solver`. A new
+edge needs an ADR.
 
 ### Extension points
 
@@ -38,12 +41,21 @@ Three, and no more. New behaviour arrives through one of them or not at all:
 
 1. **A catalog file** — a new valve, cylinder, instrument or symbol. No code, no
    release. This is the point of the project.
-2. **A `Surface` implementation** — a new drawing backend (the Qt frame today, a PDF
-   writer, a future SVG writer).
+2. **A `Surface` implementation** — a new drawing backend (the egui replay today, the
+   PNG, PDF and SVG writers).
 3. **A `behaviour` variant** — only when the physics is genuinely new, with an ADR and
    tests.
 
 Anything else is a change to an existing module, with the review that implies.
+
+### The C ABI retires
+
+`punchi-fluid-ffi` and its `include/punchi_fluid.h` served the Qt Quick window. The Qt
+window is gone and the Rust window links the crates directly, so the ABI has no product
+consumer: only its own 96 tests and an untracked spike still reference it. ADR 0035 retires
+it. The removal is a code change of its own: inventory those tests, port the unique ones to
+`session`/the window, then delete the crate, the header, the `unsafe` exemption and the
+`BIG_ALLOWED` entry. Until then it is dead weight, not an extension point.
 
 ## Memory
 
@@ -55,8 +67,8 @@ Anything else is a change to an existing module, with the review that implies.
 | Symbol geometry cache | ≤ 64 MB, LRU by (definition id, size bucket) | bound in code, test fills it past the limit |
 | Undo history | ≤ 100 entries, ≤ 32 MB | `Arc<Document>` snapshots, oldest dropped |
 | Telemetry ring | 10 Hz × 60 s × 32 B ≈ 19 KB | fixed capacity, no growth |
-| Icon cache | ≤ 200 entries per (size, tint) | LRU |
-| Start-view template thumbnails | ≤ 4 × 512 × 288 RGBA images = 2.25 MiB | one fixed-size image per compiled template; dropped on theme change or item destruction |
+| Icon family | 55 compiled-in SVGs, no runtime cache | `include_bytes!` in `ribbon/icons.rs` |
+| Start-view previews | rendered on demand, bounded by the four templates | no retained bitmap cache |
 | Export bitmap | ≤ 80 Mpx (≈ 320 MB), DPI 72–600, one page | refused before allocation |
 
 ### Rules
@@ -112,7 +124,7 @@ to leak but local content — and nothing may leave the machine.
 
 | Threat | Control |
 |---|---|
-| Malicious catalog or document file | unknown keys rejected, every number range-checked, a sheet read only from a regular file and through a bounded reader, file ≤ 1 MiB, ≤ 512 nodes, no recursion in the format, no path from the file to the filesystem |
+| Malicious catalog or document file | unknown keys rejected, every number range-checked, a sheet read only from a regular file and through a bounded reader, file ≤ 8 MiB, ≤ 2 000 placements, ≤ 4 000 pipes, ≤ 64 circuits, no recursion in the format, no path from the file to the filesystem |
 | Huge export exhausting memory | paper whitelist, DPI 72–600, one page, ≤ 80 Mpx, checked before allocating |
 | Overwriting a file by accident | atomic write (temp + rename), the temporary created with `create_new` and never through a planted symlink, the document's permissions kept, flushed before the rename and removed on failure; refuse to overwrite without explicit confirmation, never write outside the chosen path |
 | Metadata leaking the machine | no path, user name or host name in PDF metadata; title sanitised of control characters and bounded to 200 characters |
@@ -121,12 +133,18 @@ to leak but local content — and nothing may leave the machine.
 | Release tampering | signed tag, SHA-256 checksums published with the artefacts, reproducible build with `SOURCE_DATE_EPOCH` |
 | Font or icon path tricks | read-only access, resolved under `XDG_DATA_DIRS`, no following of symlinks outside the icon roots |
 
-Also: no `unsafe` (workspace lint), no shell-outs, no `eval`, no plugin loading of
-native code. The one exception is deliberate and bounded: the two fixed links in the
-About popup ask the desktop to open the repository or its issue tracker in the user's
-browser **when the user clicks them**. The program runs no command of its own, never
+Also: no `unsafe` in the product (workspace lint), no shell-outs, no `eval`, no plugin
+loading of native code. The retired `punchi-fluid-ffi` crate is the only place that opts
+out, and it has no product consumer; removing it removes the workspace's last `unsafe`.
+The two fixed links in the About panel ask the desktop to open the repository or its
+issue tracker **when the user clicks them**. The program runs no command of its own, never
 takes a URL from a file and never makes a network request. Anything that changes this
 list needs an ADR and a security review.
+
+**Known gap:** the sheet parser still accepts four values that are only checked for being
+finite, and the export's own atomic write uses `fs::write` on a predictable temporary
+instead of the hardened writer in `punchi-fluid-file`. Both are recorded in the private
+node register and must close with tests.
 
 ### Failure behaviour
 
@@ -143,7 +161,7 @@ list needs an ADR and a security review.
 | Level | Proves | Does not prove |
 |---|---|---|
 | `cargo test --workspace` | domain, physics, format, catalog, geometry | that anything looks right |
-| Headless UI tests (Qt, offscreen) | hit areas, click routing, layout maths, the theme contrast | visual quality |
+| Headless UI tests (`cargo test -p punchi-fluid-window`, egui_kittest) | hit areas, click routing, layout maths, the theme contrast | visual quality |
 | Export tests (pixels, call lists) | margins, paper size, determinism | that the symbol is legible |
 | `check.sh` | the gate above plus the CLI | the window, the theme, the packaging |
 | Screenshot review per milestone | what the user actually sees | interaction over time |
@@ -241,8 +259,9 @@ code, never documentation. A push to `main` and a manual run always run the full
 1. `Cargo.toml` version, both READMEs, `AGENTS.md` and the changelog entry updated in
    one commit: `chore(release): 0.x.y`.
 2. Signed tag `v0.x.y`.
-3. `release.yml` builds, runs the gate again, produces the archive, AppImage and
-   checksums, and opens a draft release.
+3. `release.yml` builds, runs the gate again, produces the archive and checksums, and
+   opens a draft release. **It still targets the retired Qt app and must be updated before a
+   tag**; that is a named debt, not a working release path.
 4. The draft lists the changelog section, the known limitations and the validation
    level reached (for example "symbols verified against ISO 1219-1" only when true).
 5. After publishing, `Unreleased` is emptied and the next milestone starts.

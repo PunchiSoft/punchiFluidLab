@@ -28,15 +28,15 @@ whole support policy, and it is here so nobody has to guess what it means.
   issue may wait days and a review a week. That is the pace, not an oversight.
 - **A delivery date for any capability.** There is none, and none will be invented.
 - **Commercial support, a warranty, or a fit for a regulated use.** It is a teaching tool.
-- **Support for systems it was never run on.** Today: Linux with Qt 6.5 or newer, built
-  and tested on Fedora with Plasma and Wayland. Other distributions are expected to work and
-  are not verified.
+- **Support for systems it was never run on.** Today: Linux, built and tested on Fedora
+  with Plasma and Wayland. Other distributions are expected to work and are not verified;
+  Windows and macOS are not supported yet.
 
 ## Before you ask
 
 ```bash
-./scripts-dev/check.sh                 # the whole gate, including the window when configured
-apps/punchi-fluid-qt/build/punchi-fluid --selftest   # the window's own checks, headless
+./scripts-dev/check.sh                         # the whole gate
+cargo test -p punchi-fluid-window              # the window's own tests, headless
 ```
 
 A report that includes what the gate said is answered faster than one that does not.

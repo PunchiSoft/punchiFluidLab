@@ -9,11 +9,16 @@ rules for changing the shape are in
 ## One paragraph
 
 Punchi Fluid Lab is a desktop simulator of pneumatic and hydraulic circuits. The model, the
-file format and the drawing are Rust; the window is Qt Quick over a C ABI. A circuit is a
-sheet of placements and pipes, the catalog says what each placement is, the solver turns
-the sheet into a network of volumes and restrictions, and one drawing serves both the
-screen and the exported page. There is no network, no telemetry and no server: the program
-reads files, writes files and runs.
+file format, the drawing and the window are Rust. A circuit is a sheet of placements and
+pipes, the catalog says what each placement is, the solver turns the sheet into a network
+of volumes and restrictions, and one drawing serves both the screen and the exported page.
+There is no network, no telemetry and no server: the program reads files, writes files and
+runs.
+
+The product is **one Rust binary** in `apps/punchi-fluid` (ADR 0035), built with egui
+(ADR 0036). The C ABI and the Qt Quick window it served are retired; the crate
+`punchi-fluid-ffi` still exists in the workspace, has no product consumer and is scheduled
+for removal. Nothing in the product speaks C.
 
 ## The shape
 
@@ -22,36 +27,29 @@ reads files, writes files and runs.
                               │                              │
                               └──────────────┬───────────────┘
                                              ▼
-                                        Catalog
+                                         Catalog
                                              │
-  user ──▶ Qt Quick window ──▶ C ABI ──▶ PfSession ──┬──▶ Document ──▶ check
-             (apps/…/qt)      (punchi-…-ffi)          │        │
-                                                      │        ▼
-                                                      │   solver::Network ──▶ telemetry
-                                                      │        │
-                                                      └──▶ draw::Surface ──▶ frame ──▶ screen
-                                                                   │
-                                                                   └──▶ export ──▶ PDF / PNG
+  user ──▶ apps/punchi-fluid (egui) ──▶ session ──┬──▶ Document ──▶ check
+                                                 │        │
+                                                 │        ▼
+                                                 │   solver::Network ──▶ telemetry
+                                                 │        │
+                                                 └──▶ draw::Surface ──▶ frame ──▶ screen
+                                                          │
+                                                          └──▶ export ──▶ PDF / PNG / SVG
 
-  CLI ──▶ file + catalog + check + solver        (no window, no Qt)
+  CLI ──▶ file + catalog + check + solver        (no window)
 ```
 
-The Qt window never links a Rust crate directly: it links the static library built from
-`punchi-fluid-ffi` and calls the functions in `include/punchi_fluid.h`. That is why the
-window can be replaced without touching the model, and why a test can drive the same
-session without a display (ADR 0005).
-
-During the migration there is a second window. `apps/punchi-fluid` (ADR 0035, ADR 0036)
-links `doc`, `draw` and `export` directly and speaks no ABI: it replays the drawing, prints
-from the same crate and carries the document it edits. Its first slice opens on the sheet
-of a new document; the ribbon and the commands follow, and the pair `punchi-fluid-ffi` plus
-`apps/punchi-fluid-qt` retires when the new window has replaced their checks (ADR 0035).
+The window links the crates directly: it carries the document through `punchi-fluid-session`,
+replays `punchi-fluid-draw` behind `Surface`, and prints through `punchi-fluid-export`.
+There is no serialisation between two runtimes and no command buffer to keep in step.
 
 ## The crates
 
-`core` is the base. The edges below are the only allowed ones; `scripts-dev/check-architecture.sh`
-fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked against
-`Cargo.toml` by `scripts-dev/check-docs.sh`.
+`core` is the base. The edges below are the only allowed ones;
+`scripts-dev/check-architecture.sh` fails on any other, and the member list in
+[AGENTS.md](../AGENTS.md) is checked against `Cargo.toml` by `scripts-dev/check-docs.sh`.
 
 | Crate | Owns | Never contains | Depends on |
 |---|---|---|---|
@@ -60,51 +58,44 @@ fails on any other, and the member list in [AGENTS.md](../AGENTS.md) is checked 
 | `punchi-fluid-file` | the versioned sheet format, atomic write, migrations, recent list | physics, drawing | `core` |
 | `punchi-fluid-solver` | ISO 6358 orifice flow, the network of volumes, the cylinder model | editing, drawing, files | `core`, `catalog` |
 | `punchi-fluid-doc` | the edited document: placements, pipes, commands, bounded undo, the sheet | physics, drawing, files | `core`, `draw` |
-| `punchi-fluid-draw` | ISO 1219 symbols, sheet geometry, the `Surface` trait, hit-testing geometry | windows, files, fonts, solving | `core`, `catalog`, `solver` |
+| `punchi-fluid-draw` | ISO 1219 symbols, sheet geometry, the `Surface` trait, hit-testing geometry | windows, files, fonts, solving | `catalog`, `solver` |
 | `punchi-fluid-check` | the design faults a sheet can have before it is run | physics, drawing, UI | `catalog`, `doc`, `draw` |
-| `punchi-fluid-export` | page geometry, frame, title block, legend, PNG and PDF writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
-| `punchi-fluid-ffi` | the C ABI: one session, one frame, hit tests, layout, export | logic of its own | all of the above |
-| `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model of a circuit and the editor state as it moves | physics, widgets | `core`, `catalog`, `doc`, `draw`, `file`, `solver` |
-| `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `core`, `file`, `solver`, `catalog`, `check`, `doc`, `draw` |
-| `punchi-fluid-window` | the Rust window: the fixed layout, the sheet, the ribbon, the status bar and the theme adapter | physics, the document | `core`, `catalog`, `doc`, `draw`, `export`, `file`, `session` |
+| `punchi-fluid-export` | page geometry, frame, title block, legend, PNG, PDF and SVG writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
+| `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model, recents, safety copy and templates | physics, widgets | `core`, `catalog`, `doc`, `draw`, `file`, `solver` |
+| `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `catalog`, `check`, `doc`, `draw`, `file`, `solver` |
+| `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `catalog`, `doc`, `draw`, `export`, `file`, `session` |
 
-The Qt window (`apps/punchi-fluid-qt`) is outside Cargo. It owns the ribbon, the sidebar,
-the sheet widget, the status bar, the theme adapter, the icon provider and the QML. It never
-contains a formula or a catalog id: the catalog comes through the ABI and the palette comes
-from the theme adapter. A few pixel sizes are still literals in QML; moving them into the
-adapter is a declared debt, not a finished rule.
-
-The Rust window (`apps/punchi-fluid`, package `punchi-fluid-window`) owns the same regions
-in egui, over the same recording. It never contains a formula either: the document comes
-from `punchi-fluid-doc` and the drawing from `punchi-fluid-draw` behind `Surface`. It has
-no ABI and does not depend on the Qt app or on `punchi-fluid-ffi`.
+The retired `punchi-fluid-ffi` crate is still in the workspace and still has its C header,
+but no product code depends on it. It exists only for its own tests and an untracked spike;
+removing it is a named debt in [engineering.md](engineering.md#the-c-abi-retires).
 
 ## A circuit, from file to motion
 
-1. **Start.** `punchi-fluid-ffi` builds a `Catalog` from the compiled-in files and the
-   user folder. A malformed file is skipped and reported; the program starts with what is
-   valid.
-2. **Edit.** The window sends commands (`pf_session_place_component`, `move_selection`,
-   `rotate_selected`, `set_component_designation`, …). `punchi-fluid-doc` applies one
-   command as one change and pushes a bounded snapshot for undo. The document owns the
-   identity of every placement and the route of every pipe.
-3. **Run.** `rebuild_model` turns the document into `solver::Network`: each placement
-   becomes a volume, a restriction, a valve or a passive part, and each pipe becomes a
-   connection between two ports. A valve position selects a set of open paths by **port
-   role**, not by a Rust type. A definition the solver cannot model is left out of the
-   network and drawn uncoloured; a sheet that names a catalog id which is not installed is
-   not yet a finding, which is a known gap.
-4. **Draw.** `punchi-fluid-draw` walks the placements and pipes and calls `Surface` for
-   every primitive. The same call list is replayed by the window with `QPainter` and by the
-   export writers into a raster or a PDF. A circuit that is on screen and a circuit that is
-   printed cannot drift apart, because there is one drawing (ADR 0003).
-5. **Save.** The sheet is written as JSON in the versioned format (v3 today) through a
-   temporary file and a rename. An older sheet reads with defaults; a newer one is refused
-   with a message. The same document remembers when it was last saved, which is what the
-   `•` in the title and the safety copy use.
-6. **Check.** `punchi-fluid-check` reads the document and the port geometry from the
-   drawing, and returns findings with the place they happen. The window draws a marker
-   there; the CLI returns the same findings as text or JSON (ADR 0010, ADR 0011).
+1. **Start.** The window builds a `Catalog` from the compiled-in files and the user folder.
+   A malformed file is skipped and reported; the program starts with what is valid. A
+   document named on the command line is read through `punchi-fluid-file` and converted by
+   `punchi-fluid-session`.
+2. **Edit.** The window applies one command to the `Document`; `punchi-fluid-doc` pushes a
+   bounded snapshot for undo. The document owns the identity of every placement and the
+   route of every pipe.
+3. **Run.** `punchi-fluid-session::Model` turns the document into a `solver::Network`: each
+   placement becomes a volume, a restriction, a valve or a passive part, and each pipe a
+   connection between two ports. A valve position selects its open paths by **port role**,
+   not by a Rust type. A definition the solver cannot model is left out of the network and
+   drawn uncoloured; a sheet that names a catalog id which is not installed is not yet a
+   finding, which is a known gap.
+4. **Draw.** `punchi-fluid-draw` walks the placements and pipes and calls `Surface` for every
+   primitive. The window replays that recording with egui and the export writers turn it
+   into a raster, a PDF or an SVG. A circuit on screen and a circuit printed cannot drift
+   apart, because there is one drawing (ADR 0003).
+5. **Save.** The sheet is written as JSON in the versioned format (v14) through a temporary
+   file and a rename. An older sheet reads with defaults; a newer one is refused with a
+   message. The same document remembers when it was last saved, which is what the `•` in the
+   title and the safety copy use.
+6. **Check.** `punchi-fluid-check` reads the document and the port geometry from the drawing,
+   and returns findings with the place they happen. The CLI returns them as text or JSON.
+   The Rust window has no check command yet: that is a product gap, not a completed
+   capability.
 
 ## The three extension points
 
@@ -117,13 +108,12 @@ behaviour and its numbers. A new file is a new component. See
 **2. A new `behaviour` variant is the exception.** When a part cannot be described with the
 existing behaviours, a new variant is added to the catalog schema and to the solver, the
 drawing and the check. It needs an ADR, because it is the one place where a component stops
-being only a file. The gauge was added this way (ADR 0008); the electrical library will be
-the next.
+being only a file.
 
 **3. A new device is a new `Surface`.** The drawing speaks millimetres and calls `line`,
-`polygon`, `rect`, `circle`, `arc` and `text`. The window implements `Surface` with
-`QPainter`; the export implements it with `tiny-skia` (PNG) and `printpdf` (PDF). A new
-output — SVG, a plotter, a test recorder — is a new implementation, not a second drawing.
+`polygon`, `rect`, `circle`, `arc` and `text`. The window implements `Surface` with egui;
+the export implements it with `tiny-skia` (PNG), `printpdf` (PDF) and an SVG writer. A new
+output is a new implementation, not a second drawing.
 
 ## Units, time and memory
 
@@ -144,8 +134,10 @@ output — SVG, a plotter, a test recorder — is a new implementation, not a se
 Sheet files and catalog files are untrusted input. The format rejects an unknown version,
 the parser is bounded, and a catalog file that breaks a rule is skipped with a reason
 instead of taking the program down. The save path is a temporary file plus a rename, and
-the recent list is bounded and written the same way. There is no automatic network access
-and no place where a file makes the loader allocate without a bound.
+the recent list and the window state are bounded and written the same way. There is no
+automatic network access. The parser still has values that only need to be finite rather
+than bounded, and the export's own atomic writer is weaker than the sheet's; both are
+recorded debts in [engineering.md](engineering.md#security-and-privacy).
 
 ## How the shape is held
 
@@ -154,7 +146,7 @@ and no place where a file makes the loader allocate without a bound.
 | The crates and their edges | `scripts-dev/check-architecture.sh` |
 | The documents that describe the crates match `Cargo.toml` | `scripts-dev/check-docs.sh` |
 | The drawing on screen and on paper are the same | the caller-drawing and export tests |
-| The window behaves without a display | `--check-qml`, `--check-theme`, `--check-icons`, `--selftest` |
+| The window behaves without a display | `cargo test -p punchi-fluid-window` (egui_kittest) |
 | The model conserves mass and stays finite | the solver invariants and the reference curve |
 | A capability is not called done without its evidence | [capabilities.md](capabilities.md) |
 
@@ -162,15 +154,14 @@ and no place where a file makes the loader allocate without a bound.
 
 - **The legacy v1 model** (`ComponentKind`, `Circuit`) still lives in `punchi-fluid-core`
   and `punchi-fluid-file` for the CLI and the first format. The editor and the sheet use
-  format v3; the old path must not grow.
-- **The ABI owns logic that belongs to the document** in a few places (the starting scene,
-  the export composition). It is the one crate allowed to know both, but it is also the
-  file over the line budget; splitting it is a named debt in
-  `scripts-dev/check-architecture.sh`.
-- **The export panel is incomplete**: margins, custom size and PNG resolution have no field
-  in the window, and the last paper choice is not remembered. The date and the fit are done;
-  the panel is recorded in the ledger.
-- **A project is one document with several circuits** ([ADR 0013](adr/0013-a-project-is-one-document.md)):
-  a circuit list, project-level placements and pipes with a circuit id, and one active
-  sheet. The ninth fault is a pipe that joins two circuits; the reference's geometric
-  crossing on a shared canvas is not planned.
+  format 14; the old path must not grow.
+- **The C ABI retires.** `punchi-fluid-ffi` has no product consumer and the Qt window is
+  gone. Its 96 tests must be inventoried, the unique ones ported, and the crate, its header
+  and the `unsafe` exemption removed (ADR 0035).
+- **The Rust window is not feature-complete.** It has no check command, its export does not
+  print the parts list, and it has no panel for margins, custom paper or PNG resolution.
+  Those are product gaps, not hidden behaviour.
+- **i18n is not started.** The window's strings are Spanish literals; there is no catalog
+  runtime. The English-first plan needs an ADR after ADR 0035.
+- **A project is one document with several circuits** (ADR 0013): a circuit list, project-level
+  placements and pipes with a circuit id, and one active sheet.

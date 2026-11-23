@@ -8,9 +8,13 @@ Targets, in order of usefulness for a teaching tool:
 3. **Windows installer** — the platform where the reference tool runs, and the
    most likely place a teacher will try this.
 
-Nothing is packaged yet: `cargo build --release` produces a working binary, and a
-release needs an explicit request before any artifact is published.
+Nothing is packaged yet: `cargo build --release -p punchi-fluid-window` produces the
+window binary, and a release needs an explicit request before any artifact is published.
 
-The window is Qt Quick and imports **Qt Multimedia** from QML for the event sounds, so
-any bundle has to carry that module and its audio backend: it is a run-time dependency
-only, and building needs just the QML module present in the Qt installation.
+The window is the Rust/egui binary in `apps/punchi-fluid`; it links the graphics stack
+directly and needs no Qt, CMake or QML module. The retired Qt app and its Multimedia
+dependency are not part of a bundle.
+
+The release workflow still targets the retired Qt app and must be updated before a tag;
+until then the archive command in `.github/workflows/release.yml` is a known debt, not a
+working release path.

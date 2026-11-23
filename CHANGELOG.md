@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### La documentación pública deja de describir la ventana Qt — 2026-11-23
+
+- **La verdad documental vuelve a coincidir con el producto**: la ventana es el binario Rust
+  con egui, no Qt; el ABI C es un residuo retirado sin consumidor; el formato de hoja va por
+  14; y el release, los iconos, el empaquetado, la guía de exportación, i18n y las skills
+  describen esa realidad. Se corrigen el README y su copia española, CONTRIBUTING, SUPPORT,
+  AGENTS, la arquitectura, las normas de ingeniería, el plan, capabilities, ui-ux, la
+  referencia de iconos, el plan de migración y el de traducción.
+- **Lo que la ventana Rust no tiene se dice como carencia**: no hay comando de comprobación
+  en la ventana, la exportación no imprime la lista de piezas y no hay panel de resolución
+  del PNG. Las filas del ledger que aún citan el ABI o `--selftest` quedan marcadas como
+  evidencia histórica hasta re-probarse en la ventana Rust.
+
 ### Los paneles se recuerdan y el auto-ocultar funciona — 2026-11-23
 
 - **La ventana recuerda sus paneles** en `XDG_DATA_HOME/punchi-fluid/settings.state`, al lado
