@@ -73,7 +73,11 @@ fn main() -> eframe::Result<()> {
     // The appearance is read before the theme so the window opens in the saved theme,
     // without a frame in the desktop palette first.
     let settings = settings::Store::load();
-    let theme = theme::Theme::for_appearance(settings.remembered().appearance);
+    let theme = theme::Theme::for_appearance(
+        settings.remembered().appearance,
+        settings.remembered().theme_day,
+        settings.remembered().theme_night,
+    );
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
@@ -149,6 +153,10 @@ struct Window {
     auto_hide: auto_hide::AutoHide,
     /// Whether **Ver ▸ Ocultar al salir** is on.
     autohide_on: bool,
+    /// The theme the system mode uses when the desktop is light.
+    appearance_day: theme::ThemeId,
+    /// The theme the system mode uses when the desktop is dark.
+    appearance_night: theme::ThemeId,
     /// The Configuración window: whether it is open and which page it shows.
     preferences: preferences::Preferences,
 }

@@ -68,6 +68,20 @@ fn the_appearance_round_trips_and_an_unknown_value_reads_the_desktop() {
     );
     let parsed = parse("version=1\nappearance=future\n").expect("the version is there");
     assert_eq!(parsed.appearance, crate::theme::Appearance::Desktop);
+
+    let parsed = parse("version=1\nappearance=system\ntheme_day=slate\ntheme_night=cad\n")
+        .expect("the version is there");
+    assert_eq!(parsed.appearance, crate::theme::Appearance::System);
+    assert_eq!(parsed.theme_day, crate::theme::ThemeId::Slate);
+    assert_eq!(parsed.theme_night, crate::theme::ThemeId::Cad);
+}
+
+#[test]
+fn an_unknown_slot_keeps_the_default_theme() {
+    let parsed = parse("version=1\ntheme_day=future\ntheme_night=nope\n").expect("the version");
+    let defaults = Settings::default();
+    assert_eq!(parsed.theme_day, defaults.theme_day);
+    assert_eq!(parsed.theme_night, defaults.theme_night);
 }
 
 #[test]
@@ -100,6 +114,8 @@ fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Set
         },
         autohide,
         appearance: crate::theme::Appearance::Desktop,
+        theme_day: crate::theme::ThemeId::Cad,
+        theme_night: crate::theme::ThemeId::Slate,
     }
 }
 

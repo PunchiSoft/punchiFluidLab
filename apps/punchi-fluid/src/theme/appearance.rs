@@ -14,24 +14,23 @@ pub enum Appearance {
     /// The desktop's palette, read from `kdeglobals`; the default and what a theme returns to.
     #[default]
     Desktop,
-    /// A built-in theme's palette.
+    /// The theme assigned to the light scheme by day and to the dark one by night.
+    System,
+    /// A built-in theme's palette, whatever the desktop scheme.
     Theme(ThemeId),
 }
 
 impl Appearance {
-    /// The choices the window offers, in reading order: the desktop, the light engineering
-    /// theme and the dark one.
-    pub const CHOICES: [Self; 3] = [
-        Self::Desktop,
-        Self::Theme(ThemeId::Cad),
-        Self::Theme(ThemeId::Slate),
-    ];
+    /// The theme cards the gallery offers, in reading order: light, then dark. The desktop
+    /// and the system modes are segments of their own, not cards.
+    pub const CHOICES: [Self; 2] = [Self::Theme(ThemeId::Cad), Self::Theme(ThemeId::Slate)];
 
     /// The settings-file value.
     #[must_use]
     pub fn value(self) -> &'static str {
         match self {
             Self::Desktop => "desktop",
+            Self::System => "system",
             Self::Theme(id) => id.id(),
         }
     }
@@ -39,19 +38,21 @@ impl Appearance {
     /// The appearance a settings value names; an unknown value reads as the desktop.
     #[must_use]
     pub fn from_value(value: &str) -> Self {
-        match ThemeId::from_id(value) {
-            Some(id) => Self::Theme(id),
-            None if value == "desktop" => Self::Desktop,
-            None => Self::Desktop,
+        match value {
+            "desktop" => Self::Desktop,
+            "system" => Self::System,
+            other => ThemeId::from_id(other).map_or(Self::Desktop, Self::Theme),
         }
     }
 
-    /// The label the interface shows.
+    /// The label of the mode segment: a fixed theme reads as "Un tema", because the segment
+    /// chooses the mode and the card chooses which theme.
     #[must_use]
-    pub fn label_es(self) -> &'static str {
+    pub fn mode_label_es(self) -> &'static str {
         match self {
             Self::Desktop => "Escritorio",
-            Self::Theme(id) => id.label_es(),
+            Self::System => "Sistema",
+            Self::Theme(_) => "Un tema",
         }
     }
 }
@@ -87,7 +88,7 @@ impl ThemeId {
         }
     }
 
-    fn from_id(value: &str) -> Option<Self> {
+    pub(crate) fn from_id(value: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|id| id.id() == value)
     }
 

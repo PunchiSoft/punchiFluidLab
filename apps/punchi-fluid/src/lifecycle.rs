@@ -243,6 +243,8 @@ impl Window {
             start_open: true,
             recents: Recents::default(),
             dialog: None,
+            appearance_day: crate::theme::ThemeId::Cad,
+            appearance_night: crate::theme::ThemeId::Slate,
             preferences: crate::preferences::Preferences::new(),
             shell: crate::shell::Shell::new(),
             settings: crate::settings::Store::at(None),
