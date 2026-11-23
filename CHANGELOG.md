@@ -6,6 +6,12 @@ publicación.
 
 ## Unreleased
 
+### El catálogo no se pisa — 2026-11-23
+
+- **La baldosa del catálogo limita el nombre a dos líneas con elipsis y mide su alto con la
+  fuente real**: un nombre de 42 caracteres ya no se dibuja sobre la fila siguiente. El
+  nombre completo sigue en el tooltip y pasa a ser el nombre accesible de la baldosa.
+
 ### La hoja vuelve a leerse: papel elevado y tinta de pantalla — 2026-11-23
 
 - **La ventana dibujaba la hoja con la tinta de la impresión**: negro sobre un fondo

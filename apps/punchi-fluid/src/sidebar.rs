@@ -329,9 +329,15 @@ impl Body {
     }
 }
 
-/// One tile: its own symbol, the name on as many lines as it needs, and the id.
+/// One tile: its own symbol, the name on at most two lines and the id.
 fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, width: f32) -> bool {
-    let height = 32.0 + tokens.text_body * 2.6 + tokens.text_small * 1.6;
+    let name_font = egui::FontId::proportional(tokens.text_body);
+    let id_font = egui::FontId::proportional(tokens.text_small);
+    // Two lines of name and one of id, measured rather than guessed: a 42-character name
+    // used to draw four lines over the next row.
+    let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
+    let id_row = ui.fonts(|fonts| fonts.row_height(&id_font));
+    let height = 32.0 + name_row * 2.0 + 4.0 + id_row + 2.0;
     let (rect, response) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
     if !ui.is_rect_visible(rect) {
         return false;
@@ -355,12 +361,12 @@ fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, wi
     );
     ui.painter().extend(drawing.shapes);
     let name = definition.name_es.as_deref().unwrap_or(&definition.name);
-    let name_galley = ui.painter().layout(
-        name.to_owned(),
-        egui::FontId::proportional(tokens.text_body),
+    let name_galley = ui.painter().layout_job(name_job(
+        name,
+        (width - 4.0).max(1.0),
+        name_font,
         tokens.ink,
-        width - 4.0,
-    );
+    ));
     ui.painter().galley(
         egui::pos2(
             rect.center().x - name_galley.size().x * 0.5,
@@ -371,7 +377,7 @@ fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, wi
     );
     let id_galley = ui.painter().layout(
         definition.id.clone(),
-        egui::FontId::proportional(tokens.text_small),
+        id_font,
         tokens.ink_muted,
         width - 4.0,
     );
@@ -383,9 +389,45 @@ fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, wi
         id_galley,
         tokens.ink_muted,
     );
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(
+            egui::WidgetType::Button,
+            ui.is_enabled(),
+            format!("{name}, {}", definition.id),
+        )
+    });
     response
         .on_hover_text(format!("{name}\n{}", definition.id))
         .clicked()
+}
+
+/// The name of a tile: at most two lines, elided, so a long name cannot grow over the next
+/// tile. The full name stays in the tooltip and in the accessible name.
+fn name_job(
+    name: &str,
+    width: f32,
+    font: egui::FontId,
+    colour: egui::Color32,
+) -> egui::text::LayoutJob {
+    let mut job = egui::text::LayoutJob {
+        wrap: egui::text::TextWrapping {
+            max_width: width,
+            max_rows: 2,
+            break_anywhere: true,
+            overflow_character: Some('…'),
+        },
+        ..Default::default()
+    };
+    job.append(
+        name,
+        0.0,
+        egui::TextFormat {
+            font_id: font,
+            color: colour,
+            ..Default::default()
+        },
+    );
+    job
 }
 
 impl Window {
@@ -432,6 +474,7 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
+    use eframe::egui;
     use punchi_fluid_catalog::Catalog;
 
     use super::{is_entry, matches};
@@ -452,6 +495,30 @@ mod tests {
                 .get("valve.3_2.spring_return")
                 .expect("the valve exists")
         ));
+    }
+
+    #[test]
+    fn a_long_name_stays_on_two_lines() {
+        let context = egui::Context::default();
+        if crate::theme::install_font(&context, None).is_err() {
+            return;
+        }
+        let job = super::name_job(
+            "Válvula 3/2, solenoide, retorno por muelle",
+            104.0,
+            egui::FontId::proportional(11.0),
+            egui::Color32::WHITE,
+        );
+        assert_eq!(job.wrap.max_rows, 2);
+        assert_eq!(job.wrap.overflow_character, Some('…'));
+        let mut rows = 0;
+        let _ = context.run(egui::RawInput::default(), |context| {
+            rows = context
+                .fonts(|fonts| fonts.layout_job(job.clone()))
+                .rows
+                .len();
+        });
+        assert!(rows <= 2, "the tile draws two lines, not {rows}");
     }
 
     #[test]
