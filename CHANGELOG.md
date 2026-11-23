@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### La ventana por defecto respeta el área útil — 2026-11-23
+
+- **La reserva del cromo**: egui solo reporta el monitor, no el área de trabajo. La ventana
+  descuenta el margen de dos unidades y **80 pt** para el título y la barra de tareas/panel,
+  se centra en ese rectángulo y, si no caben los 1440×900 preferidos, abre **maximizada**
+  (1366×768, 1080p a 125 y 150 %, 1600×900, 1280×800); 1920×1080 sigue abriendo 1440×900
+  normal. El tamaño que devuelve desmaximizar también cabe (1366×768 → 1334×656).
+- **El mínimo cede a la pantalla**: si el rectángulo queda por debajo de 900×600 (1366×768 a
+  125 % tiene 502 pt de alto), el mínimo de la ventana es ese rectángulo, no un suelo que la
+  pantalla no puede sostener; la barra de estado no queda bajo la barra de tareas.
+- **La unidad real en la doc y las pruebas**: la unidad por defecto es 16, no 18; los pares
+  de la referencia Qt a 18 quedan como referencia, y la matriz se prueba con 16.
+- **Pruebas**: `the_latam_screen_matrix_opens_a_window_that_fits` (doce pantallas, de
+  1024×768 a 4K), `a_screen_below_the_floor_keeps_its_room_as_the_minimum`,
+  `the_minimum_follows_the_room_and_keeps_the_design_floor_when_it_fits`, y el primer frame
+  en 1920, 1366 y 1366 a 125 %.
+
 ### La cinta tiene una sola tabla de atajos — 2026-11-23
 
 - **Una tabla, dos lecturas**: el atajo y su hint salen de la misma fila

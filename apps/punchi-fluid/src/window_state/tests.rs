@@ -10,12 +10,12 @@ use std::time::Instant;
 use eframe::egui::{Pos2, Vec2};
 
 use super::{
-    FILE_NAME, Geometry, MAX_BYTES, MIN_HEIGHT, MIN_WIDTH, SETTLE, Store, first_geometry,
-    opening_geometry, parse, read, remembered_geometry, restored_geometry, write,
+    FILE_NAME, Geometry, MAX_BYTES, SETTLE, Store, first_geometry, minimum, opening_geometry,
+    parse, read, remembered_geometry, restored_geometry, write,
 };
 
-/// The default spacing unit: the desktop font of the reference machine, 18 points.
-const UNIT: f32 = 18.0;
+/// The default spacing unit: the desktop font of the reference machine at 10 pt, 16 points.
+const UNIT: f32 = 16.0;
 
 /// A folder of its own for the test, removed at the end where possible.
 fn scratch() -> PathBuf {
@@ -41,7 +41,11 @@ fn geometry(size: (f32, f32), position: Option<(f32, f32)>, maximized: bool) -> 
 fn the_first_window_is_the_preferred_size_on_a_screen_with_room() {
     let geometry = first_geometry(Vec2::new(1920.0, 1080.0), UNIT);
     assert_eq!(geometry.size, Vec2::new(1440.0, 900.0));
-    assert_eq!(geometry.position, Some(Pos2::new(240.0, 90.0)));
+    assert_eq!(
+        geometry.position,
+        Some(Pos2::new(240.0, 50.0)),
+        "the preferred window is centred inside the room above the taskbar"
+    );
     assert!(!geometry.maximized);
 }
 
@@ -50,21 +54,41 @@ fn a_smaller_screen_takes_the_largest_size_that_fits_with_the_two_unit_margin() 
     let geometry = first_geometry(Vec2::new(1366.0, 768.0), UNIT);
     assert_eq!(
         geometry.size,
-        Vec2::new(1330.0, 732.0),
-        "the screen minus two 18 point units"
+        Vec2::new(1334.0, 656.0),
+        "the screen minus two 16 point units and the chrome reserve"
     );
-    assert_eq!(geometry.position, Some(Pos2::new(18.0, 18.0)));
+    assert_eq!(geometry.position, Some(Pos2::new(16.0, 16.0)));
+    assert!(
+        geometry.maximized,
+        "the preferred 900 points of height do not fit and the screen opens maximized"
+    );
 }
 
 #[test]
-fn the_minimum_wins_over_a_screen_that_cannot_hold_it() {
-    let geometry = first_geometry(Vec2::new(800.0, 600.0), UNIT);
+fn a_screen_below_the_floor_keeps_its_room_as_the_minimum() {
+    let screen = Vec2::new(800.0, 600.0);
     assert_eq!(
-        geometry.size,
-        Vec2::new(MIN_WIDTH, MIN_HEIGHT),
-        "never below the 900 × 600 floor"
+        minimum(screen, UNIT),
+        Vec2::new(768.0, 488.0),
+        "the floor never makes the window bigger than the screen"
     );
-    assert_eq!(geometry.position, Some(Pos2::new(0.0, 0.0)));
+    let geometry = first_geometry(screen, UNIT);
+    assert_eq!(geometry.size, Vec2::new(768.0, 488.0));
+    assert_eq!(geometry.position, Some(Pos2::new(16.0, 16.0)));
+    assert!(geometry.maximized);
+}
+
+#[test]
+fn the_minimum_follows_the_room_and_keeps_the_design_floor_when_it_fits() {
+    assert_eq!(
+        minimum(Vec2::new(1920.0, 1080.0), UNIT),
+        Vec2::new(900.0, 600.0)
+    );
+    assert_eq!(
+        minimum(Vec2::new(1093.0, 614.0), UNIT),
+        Vec2::new(900.0, 502.0),
+        "1366 × 768 at 125 % has 502 points of height above the taskbar"
+    );
 }
 
 #[test]
@@ -85,13 +109,13 @@ fn a_remembered_geometry_is_clamped_to_a_smaller_screen() {
     let restored = restored_geometry(Vec2::new(1366.0, 768.0), UNIT, &saved);
     assert_eq!(
         restored.size,
-        Vec2::new(1330.0, 732.0),
+        Vec2::new(1334.0, 656.0),
         "a window saved on 1920 reopens inside a 1366 laptop"
     );
     assert_eq!(
         restored.position,
-        Some(Pos2::new(18.0, 18.0)),
-        "the place is clamped into the screen's margin"
+        Some(Pos2::new(16.0, 16.0)),
+        "the place is clamped into the room's margin"
     );
 }
 
@@ -100,22 +124,23 @@ fn a_remembered_size_below_the_floor_grows_to_the_minimum() {
     let saved = geometry((700.0, 500.0), Some((10.0, 10.0)), false);
     let restored = restored_geometry(Vec2::new(1920.0, 1080.0), UNIT, &saved);
     assert_eq!(restored.size, Vec2::new(900.0, 600.0));
+    assert_eq!(restored.position, Some(Pos2::new(16.0, 16.0)));
 }
 
 #[test]
 fn a_position_off_every_screen_is_rejected_and_the_window_opens_centred() {
     let saved = geometry((1200.0, 800.0), Some((-4000.0, -3000.0)), false);
     let restored = restored_geometry(Vec2::new(1366.0, 768.0), UNIT, &saved);
-    assert_eq!(restored.size, Vec2::new(1200.0, 732.0));
+    assert_eq!(restored.size, Vec2::new(1200.0, 656.0));
     assert_eq!(
         restored.position,
-        Some(Pos2::new(83.0, 18.0)),
+        Some(Pos2::new(83.0, 16.0)),
         "an off-screen place falls back to the centre"
     );
 
     let aside = geometry((1200.0, 800.0), Some((5000.0, 4000.0)), false);
     let restored = restored_geometry(Vec2::new(1366.0, 768.0), UNIT, &aside);
-    assert_eq!(restored.position, Some(Pos2::new(83.0, 18.0)));
+    assert_eq!(restored.position, Some(Pos2::new(83.0, 16.0)));
 }
 
 #[test]
@@ -144,8 +169,55 @@ fn a_maximized_window_on_a_smaller_screen_keeps_the_clamped_previous_size() {
     let live = geometry((1920.0, 1080.0), None, true);
     let kept = remembered_geometry(live, Some(&normal));
     let restored = restored_geometry(Vec2::new(1366.0, 768.0), UNIT, &kept);
-    assert_eq!(restored.size, Vec2::new(1330.0, 732.0));
+    assert_eq!(restored.size, Vec2::new(1334.0, 656.0));
     assert!(restored.maximized);
+}
+
+#[test]
+fn the_latam_screen_matrix_opens_a_window_that_fits() {
+    // The monitors the courses use, the normal size each opens with and whether it opens
+    // maximized. The reserved room is the monitor minus two 16 point units and 80 points of
+    // chrome; a normal window never crosses it, and a maximized one keeps a normal size that
+    // fits for the day it is unmaximized.
+    let cases = [
+        ((1024.0, 768.0), (992.0, 656.0), true),
+        ((1280.0, 720.0), (1248.0, 608.0), true),
+        ((1280.0, 800.0), (1248.0, 688.0), true),
+        ((1366.0, 768.0), (1334.0, 656.0), true),
+        ((1536.0, 864.0), (1440.0, 752.0), true),
+        ((1600.0, 900.0), (1440.0, 788.0), true),
+        ((1280.0, 1024.0), (1248.0, 900.0), false),
+        ((1920.0, 1080.0), (1440.0, 900.0), false),
+        ((1920.0, 1200.0), (1440.0, 900.0), false),
+        ((2560.0, 1440.0), (1440.0, 900.0), false),
+        ((3840.0, 2160.0), (1440.0, 900.0), false),
+        ((1093.0, 614.0), (1061.0, 502.0), true),
+    ];
+    for ((width, height), (expected_width, expected_height), maximized) in cases {
+        let screen = Vec2::new(width, height);
+        let geometry = first_geometry(screen, UNIT);
+        assert_eq!(
+            geometry.size,
+            Vec2::new(expected_width, expected_height),
+            "{width}×{height}"
+        );
+        assert_eq!(geometry.maximized, maximized, "{width}×{height}");
+        let room = Vec2::new(width - 32.0, height - 32.0 - 80.0);
+        assert!(
+            geometry.size.x <= room.x && geometry.size.y <= room.y,
+            "{width}×{height} keeps its normal size inside the room"
+        );
+        let position = geometry.position.expect("the first window is placed");
+        assert!(
+            position.x >= 16.0 && position.y >= 16.0,
+            "{width}×{height} keeps the margin"
+        );
+        assert!(
+            position.x + geometry.size.x <= 16.0 + room.x + 0.01
+                && position.y + geometry.size.y <= 16.0 + room.y + 0.01,
+            "{width}×{height} never leaves the room"
+        );
+    }
 }
 
 #[test]
@@ -170,7 +242,7 @@ fn a_state_file_without_a_place_round_trips_and_opens_centred() {
     assert!(write(&file, &saved));
     assert_eq!(read(&file), Some(saved));
     let restored = restored_geometry(Vec2::new(1366.0, 768.0), UNIT, &saved);
-    assert_eq!(restored.position, Some(Pos2::new(18.0, 18.0)));
+    assert_eq!(restored.position, Some(Pos2::new(18.0, 16.0)));
     let _ = std::fs::remove_dir_all(&dir);
 }
 
