@@ -21,8 +21,7 @@ use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
-use crate::ribbon::{Command, MarginPreset};
-use punchi_fluid_doc::paper::{Orientation, PaperSize, Sheet as PaperSheet};
+use crate::ribbon::Command;
 
 mod auto_hide;
 mod export;
@@ -36,6 +35,7 @@ mod ribbon;
 mod scene;
 mod selection;
 mod settings;
+mod sheet_commands;
 mod shell;
 mod sidebar;
 mod sim;
@@ -457,6 +457,9 @@ impl Window {
             Command::PageMargin(preset) => self.set_sheet_margins(preset),
             Command::PageOrientation(orientation) => self.set_sheet_orientation(orientation),
             Command::PagePaper(paper) => self.set_sheet_paper(paper),
+            Command::BlockModel(model) => self.set_block_model(model),
+            Command::BlockPosition(position) => self.set_block_position(position),
+            Command::BlockReset => self.reset_block(),
             Command::CircuitNew => self.new_circuit(),
             Command::Undo => self.undo(),
             Command::Redo => self.redo(),
@@ -486,43 +489,6 @@ impl Window {
             Command::UntilChange => self.until_change(),
             Command::Stop => self.stop(),
         }
-    }
-
-    /// **Márgenes**: the named preset in millimetres, through the document's sheet.
-    fn set_sheet_margins(&mut self, preset: MarginPreset) {
-        let mut sheet = self.document.sheet();
-        sheet.margins = preset.margins();
-        self.apply_sheet(sheet, false);
-    }
-
-    /// **Orientación**: turns the paper, one undo.
-    fn set_sheet_orientation(&mut self, orientation: Orientation) {
-        let mut sheet = self.document.sheet();
-        sheet.orientation = orientation;
-        self.apply_sheet(sheet, true);
-    }
-
-    /// **Tamaño**: the named paper, one undo.
-    fn set_sheet_paper(&mut self, paper: PaperSize) {
-        let mut sheet = self.document.sheet();
-        sheet.paper = paper;
-        self.apply_sheet(sheet, true);
-    }
-
-    /// Applies a validated sheet, refits the view and rebinds the page the window draws. The
-    /// document records the change; the window only follows it.
-    fn apply_sheet(&mut self, sheet: PaperSheet, refit: bool) {
-        if !self.document.set_sheet(sheet) {
-            self.notice = Some(String::from("la hoja no admite ese cambio"));
-            return;
-        }
-        let (page, block) = files::page_and_block(&self.document);
-        self.page = page;
-        self.block = block;
-        if refit {
-            self.view.reset();
-        }
-        self.notice = Some(String::from("hoja actualizada"));
     }
 
     /// **Circuito ▸ Nuevo circuito**: an empty circuit, made active, as one undo. The project
@@ -605,6 +571,7 @@ impl Window {
         self.ribbon.selected = self.selected.len() + usize::from(self.selected_pipe.is_some());
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
+        self.ribbon.can_reset_block = self.block_is_customized();
     }
 }
 

@@ -135,6 +135,20 @@ fn a_command_is_not_its_label() {
 }
 
 #[test]
+fn the_block_reset_is_disabled_when_default() {
+    let mut ribbon = Ribbon::new();
+    assert!(
+        !ribbon.enabled(Command::BlockReset),
+        "a default block has nothing to reset"
+    );
+    ribbon.can_reset_block = true;
+    assert!(
+        ribbon.enabled(Command::BlockReset),
+        "a custom block can reset"
+    );
+}
+
+#[test]
 fn a_disabled_command_does_not_dispatch() {
     let mut ribbon = Ribbon::new();
     ribbon.run_command(Command::Pause);

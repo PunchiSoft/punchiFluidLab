@@ -149,8 +149,9 @@ The list of commands is one table in `apps/punchi-fluid/src/ribbon/model.rs`; th
 groups, the collapsed groups and their flyouts are generated from it, so they cannot drift
 apart. The two help links are drawn in the tab row beside the tabs, because they are not
 commands of a tab. **Today** the file commands, the sheet commands (**Márgenes**,
-**Orientación**, **Tamaño**), **Circuito ▸ Nuevo circuito**, the edit and view commands and
-the transport dispatch; the rest is painted disabled until its phase of the ribbon plan.
+**Orientación**, **Tamaño**), the title block commands (**Contenido**, **Posición**,
+**Restablecer**), **Circuito ▸ Nuevo circuito**, the edit and view commands and the
+transport dispatch; the rest is painted disabled until its phase of the ribbon plan.
 
 | Tab | Contents |
 |---|---|

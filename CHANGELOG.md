@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La cinta edita el cajetín — 2026-11-23
+
+- **Cajetín ▸ Contenido** (Técnico/Escolar/Industrial/Sin cajetín), **Posición** (Superior
+  derecha, Inferior derecha, Inferior centrado) y **Restablecer** despachan comandos tipados
+  por `Document::set_block`: cada cambio es un solo undo, el modelo de contenido fija su juego
+  de campos por defecto y la página que dibuja la ventana sigue al documento. **Restablecer**
+  se deshabilita cuando el cajetín es el de nacimiento; **Editar datos…** queda para la fase 6.
+- **Pruebas**: contenido y posición cambian el bloque, el reset vuelve al predeterminado y la
+  cinta deshabilita el reset cuando no hay nada que restablecer.
+
 ### La cinta cambia la hoja — 2026-11-23
 
 - **Márgenes, Orientación y Tamaño** despachan comandos tipados (`PageMargin`,

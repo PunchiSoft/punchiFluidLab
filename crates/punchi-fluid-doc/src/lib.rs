@@ -572,6 +572,7 @@ enum Change {
 
 pub use punchi_fluid_core::MAX_CIRCUITS;
 pub use punchi_fluid_core::paper;
+pub use punchi_fluid_core::title_block;
 
 /// The document being edited.
 #[derive(Debug, Clone)]
