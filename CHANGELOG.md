@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La leyenda de la hoja se retira — 2026-11-23
+
+- **La leyenda de clases de línea y numeración de puertos no se dibuja.** El propietario no
+  la autorizó y no la quiere: era una banda entre el dibujo y el cajetín que ocupaba área de
+  dibujo, podía quedar debajo de un componente y no tenía ninguna norma que la exigiera. Se
+  borran `draw_legend`, su llamada y el test que la exigía; la hoja conserva marco, zonas,
+  marcas de centrado, cajetín y lista de piezas. No se sustituye por otra leyenda: si algún
+  día hace falta, será un elemento aparte, especificado y autorizado.
+
 ### CAD claro, el segundo tema — 2026-11-23
 
 - **CAD claro** entra como semilla clara (papel blanco, lienzo gris frío, tinta azul marino y

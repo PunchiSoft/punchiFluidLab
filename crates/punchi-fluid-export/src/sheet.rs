@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The sheet around the drawing: frame, identification block and legend.
+//! The sheet around the drawing: frame and identification block.
 //!
-//! Everything a printed diagram needs to be readable away from the program that made
-//! it: which sheet this is, who drew it, when, and what the symbols mean.
+//! Everything a printed diagram needs to be identified away from the program that made
+//! it: which sheet this is, who drew it and when.
 
-use punchi_fluid_draw::{Anchor, Colour, LineClass, Pt, Stroke, Surface};
+use punchi_fluid_draw::{Anchor, Colour, Pt, Stroke, Surface};
 
 use crate::page::{Page, TitleBlock};
 use crate::reference_zones::draw_reference_zones;
@@ -24,7 +24,7 @@ pub(crate) const VALUE: f32 = 3.5;
 pub(crate) const HEADING: f32 = 5.0;
 /// The muted ink of a label and of a reference-zone character.
 pub(crate) const MUTED: Colour = Colour::new(90, 90, 90);
-/// Draws the frame, the reference zones, the centring marks, the title block and the legend.
+/// Draws the frame, the reference zones, the centring marks and the title block.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     // The paper belongs to the drawing, not to the window: the print surface paints it
     // white, and the window's surface maps that white to the theme's `paper` token. It is
@@ -47,7 +47,6 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
         );
     }
 
-    draw_legend(surface, page);
     draw_parts(surface, page);
 }
 
@@ -259,64 +258,13 @@ fn draw_tube_rows(
     }
 }
 
-/// Legend of line classes and port numerals, above the title block.
-fn draw_legend(surface: &mut dyn Surface, page: &Page) {
-    let content = page.content_rect();
-    let title = page.title_rect();
-    let base_y = title.min.y - 5.0;
-    let mut x = content.min.x + 1.0;
-
-    let sample = |surface: &mut dyn Surface, x: &mut f32, class: LineClass, label: &str| {
-        let end = *x + 12.0;
-        let stroke = Stroke::new(RULE, Colour::BLACK).with_class(class);
-        if let Some((dash, gap)) = class.pattern() {
-            // Draw the sample with the same geometry the drawing uses, so the legend
-            // cannot promise a pattern the diagram does not use.
-            let mut position = 0.0_f32;
-            while position < 12.0 {
-                let from = position;
-                let to = (position + dash).min(12.0);
-                surface.line(
-                    &[Pt::new(*x + from, base_y), Pt::new(*x + to, base_y)],
-                    stroke,
-                );
-                position += dash + gap;
-            }
-        } else {
-            surface.line(&[Pt::new(*x, base_y), Pt::new(end, base_y)], stroke);
-        }
-        surface.text(
-            Pt::new(end + 2.0, base_y + LABEL * 0.36),
-            label,
-            LABEL,
-            Colour::BLACK,
-            Anchor::Start,
-        );
-        #[allow(clippy::cast_precision_loss)]
-        let width = label.len() as f32 * LABEL * 0.55;
-        *x = end + 2.0 + width + 6.0;
-    };
-
-    sample(surface, &mut x, LineClass::Working, "working");
-    sample(surface, &mut x, LineClass::Pilot, "pilot");
-    sample(surface, &mut x, LineClass::Drain, "drain");
-
-    surface.text(
-        Pt::new(content.min.x + 1.0, base_y - LABEL * 1.8),
-        "ports: 1 supply · 2 and 4 working · 3 and 5 exhaust · 12 and 14 pilot",
-        LABEL,
-        Colour::BLACK,
-        Anchor::Start,
-    );
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use punchi_fluid_draw::Recording;
 
     #[test]
-    fn the_sheet_draws_frame_block_and_legend() {
+    fn the_sheet_draws_frame_and_block_without_a_legend() {
         let mut recording = Recording::default();
         let block = TitleBlock::new("A circuit", "2026-11-06");
         draw(&mut recording, &Page::a4(block.clone()), &block);
@@ -331,8 +279,15 @@ mod tests {
             })
             .collect();
         assert!(texts.contains(&"Título"));
-        assert!(texts.iter().any(|text| text.contains("1 supply")));
-        assert!(texts.contains(&"working"));
+        assert!(
+            !texts.iter().any(|text| text.contains("1 supply")),
+            "the sheet no longer carries the port legend"
+        );
+        assert!(
+            !texts
+                .iter()
+                .any(|text| matches!(*text, "working" | "pilot" | "drain"))
+        );
         // ISO 5457 §4.3 draws the centring marks as lines: a filled triangle anywhere on
         // the sheet is a mistake, not a decoration.
         let triangles = recording

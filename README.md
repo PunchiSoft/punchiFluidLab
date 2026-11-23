@@ -90,7 +90,7 @@ the point. Free software is how a subject stops being an entrance fee.
 | `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
 | `punchi-fluid-doc` | The edited document: placements, commands and bounded undo |
 | `punchi-fluid-draw` | The one drawing of a circuit, in millimetres, behind a `Surface` trait |
-| `punchi-fluid-export` | Standard sheets, title block, legend, and the PNG, PDF and SVG writers |
+| `punchi-fluid-export` | Standard sheets, title block, and the PNG, PDF and SVG writers |
 | `punchi-fluid-ffi` | The retired C ABI of the Qt window; no product code links it (ADR 0035; removal is a named debt) |
 | `punchi-fluid-session` | The document's life between the file and the window: the sheet↔document conversion and the live model |
 | `punchi-fluid-check` | Design checks: the faults a circuit can have before it is run |
@@ -291,7 +291,7 @@ In short:
 - **M1.5** — symbol conformance against ISO 1219, with a lint and a review per symbol.
   *Structural half and visual review done; the 300 dpi review is open.*
 - **M2** — one drawing, two exports: PDF and PNG from the same calls, standard paper,
-  title block and legend. *Done.*
+  title block. *Done.*
 - **v0.3** — document model with undo, palette built from the catalog, place and
   connect components, orthogonal pipes, save and load. *Done.*
 - **v0.4** — network solver driven by the circuit graph instead of one fixed layout;
