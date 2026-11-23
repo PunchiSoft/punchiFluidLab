@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El menú recupera el bucle en vivo — 2026-11-23
+
+- **El menú de desarrollo vuelve a ofrecer el bucle en vivo** (guardar, recompilar y
+  relanzar): la migración a la ventana Rust lo había dejado fuera aunque `dev.sh` seguía
+  existiendo. Vuelve como primera opción y como `menu.sh --dev`, y el menú deja de decir que
+  no hay recarga en vivo.
+- **`dev.sh` ya no pierde un guardado durante la compilación**: toma la marca antes de
+  compilar, así un archivo guardado mientras cargo trabaja dispara otra pasada. También vigila
+  `assets/icons`, los `Cargo.toml` y `rust-toolchain.toml`, y borra la copia de recuperación en
+  la ruta real (`punchi-fluid/recovery.pfluid`) para que el relanzamiento no ofrezca recuperar
+  la sesión anterior.
+
 ### El catálogo no se pisa — 2026-11-23
 
 - **La baldosa del catálogo limita el nombre a dos líneas con elipsis y mide su alto con la
