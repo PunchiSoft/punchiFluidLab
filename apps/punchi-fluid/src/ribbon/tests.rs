@@ -135,6 +135,33 @@ fn a_command_is_not_its_label() {
 }
 
 #[test]
+fn the_speed_marks_the_active_one() {
+    let mut ribbon = Ribbon::new();
+    ribbon.activate("Simular");
+    click(&mut ribbon, "2×");
+    assert_eq!(ribbon.take(), Some(Command::Speed(super::Speed::Double)));
+    assert_eq!(ribbon.active_speed, "2×");
+}
+
+#[test]
+fn the_pipe_commands_need_a_selected_pipe() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled(Command::PipeClass(punchi_fluid_draw::LineClass::Working)));
+    assert!(!ribbon.enabled(Command::Tube));
+    ribbon.has_pipe = true;
+    assert!(ribbon.enabled(Command::PipeClass(punchi_fluid_draw::LineClass::Working)));
+    assert!(ribbon.enabled(Command::Tube));
+}
+
+#[test]
+fn distributing_needs_two_placements() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled(Command::Distribute(punchi_fluid_doc::Axis::Horizontal)));
+    ribbon.selected = 2;
+    assert!(ribbon.enabled(Command::Distribute(punchi_fluid_doc::Axis::Horizontal)));
+}
+
+#[test]
 fn the_block_reset_is_disabled_when_default() {
     let mut ribbon = Ribbon::new();
     assert!(
@@ -162,6 +189,7 @@ fn pressing_every_control_yields_its_command() {
     for command in Command::ALL {
         let mut ribbon = Ribbon::new();
         ribbon.selected = 2;
+        ribbon.has_pipe = true;
         ribbon.has_clipboard = true;
         ribbon.can_undo = true;
         ribbon.can_redo = true;

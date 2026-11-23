@@ -6,8 +6,10 @@
 //! Every control carries a [`Command`] or nothing. A control with nothing is painted disabled:
 //! it is a command the window does not have yet, and the ribbon never pretends otherwise.
 
-use super::{Command, MarginPreset};
+use super::{Command, MarginPreset, Speed};
+use punchi_fluid_doc::Axis;
 use punchi_fluid_doc::title_block::{BlockPosition, ContentModel};
+use punchi_fluid_draw::LineClass;
 
 pub(super) enum Preview {
     Margins(f32),
@@ -21,15 +23,6 @@ pub(super) struct GalleryEntry {
 }
 
 impl GalleryEntry {
-    /// An entry the window cannot run yet: painted, never dispatched.
-    const fn unavailable(label: &'static str, preview: Preview) -> Self {
-        Self {
-            label,
-            preview,
-            command: None,
-        }
-    }
-
     /// An entry that carries its command.
     const fn command(label: &'static str, preview: Preview, command: Command) -> Self {
         Self {
@@ -94,10 +87,22 @@ pub(super) const MARGINS: &[GalleryEntry] = &[
 ];
 
 pub(super) const CONDUCTO: &[GalleryEntry] = &[
-    GalleryEntry::unavailable("Trabajo", Preview::Pipe("pipe-working")),
-    GalleryEntry::unavailable("Pilotaje", Preview::Pipe("pipe-pilot")),
-    GalleryEntry::unavailable("Drenaje", Preview::Pipe("pipe-drain")),
-    GalleryEntry::unavailable("Diámetro", Preview::Pipe("tube-diameter")),
+    GalleryEntry::command(
+        "Trabajo",
+        Preview::Pipe("pipe-working"),
+        Command::PipeClass(LineClass::Working),
+    ),
+    GalleryEntry::command(
+        "Pilotaje",
+        Preview::Pipe("pipe-pilot"),
+        Command::PipeClass(LineClass::Pilot),
+    ),
+    GalleryEntry::command(
+        "Drenaje",
+        Preview::Pipe("pipe-drain"),
+        Command::PipeClass(LineClass::Drain),
+    ),
+    GalleryEntry::command("Diámetro", Preview::Pipe("tube-diameter"), Command::Tube),
 ];
 
 pub(super) struct Group {
@@ -204,7 +209,7 @@ pub(super) const EDITAR: &[Group] = &[
             Item::Small("edit-paste", "Pegar", Some(Command::Paste)),
             Item::Small("edit-duplicate", "Duplicar", Some(Command::Duplicate)),
             Item::Small("edit-delete", "Borrar", Some(Command::Delete)),
-            Item::Small("edit-select-all", "Todo", None),
+            Item::Small("edit-select-all", "Todo", Some(Command::SelectAll)),
         ],
     },
     Group {
@@ -238,8 +243,16 @@ pub(super) const EDITAR: &[Group] = &[
         name: "Repartir",
         launcher: false,
         items: &[
-            Item::Small("distribute-horizontal-equal", "Horizontal", None),
-            Item::Small("distribute-vertical-equal", "Vertical", None),
+            Item::Small(
+                "distribute-horizontal-equal",
+                "Horizontal",
+                Some(Command::Distribute(Axis::Horizontal)),
+            ),
+            Item::Small(
+                "distribute-vertical-equal",
+                "Vertical",
+                Some(Command::Distribute(Axis::Vertical)),
+            ),
         ],
     },
     Group {
@@ -345,16 +358,16 @@ pub(super) const SIMULAR: &[Group] = &[
                 Some(Command::UntilChange),
             ),
             Item::Large("media-playback-stop", "Detener", Some(Command::Stop)),
-            Item::Large("view-refresh", "Restablecer", None),
+            Item::Large("view-refresh", "Restablecer", Some(Command::SimReset)),
         ],
     },
     Group {
         name: "Velocidad",
         launcher: false,
         items: &[
-            Item::Large("speed-0.25", "0,25×", None),
-            Item::Large("speed-1", "1×", None),
-            Item::Large("speed-2", "2×", None),
+            Item::Large("speed-0.25", "0,25×", Some(Command::Speed(Speed::Quarter))),
+            Item::Large("speed-1", "1×", Some(Command::Speed(Speed::Normal))),
+            Item::Large("speed-2", "2×", Some(Command::Speed(Speed::Double))),
         ],
     },
 ];

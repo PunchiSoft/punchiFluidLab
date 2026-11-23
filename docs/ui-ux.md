@@ -150,8 +150,10 @@ groups, the collapsed groups and their flyouts are generated from it, so they ca
 apart. The two help links are drawn in the tab row beside the tabs, because they are not
 commands of a tab. **Today** the file commands, the sheet commands (**Márgenes**,
 **Orientación**, **Tamaño**), the title block commands (**Contenido**, **Posición**,
-**Restablecer**), **Circuito ▸ Nuevo circuito**, the edit and view commands and the
-transport dispatch; the rest is painted disabled until its phase of the ribbon plan.
+**Restablecer**), **Circuito ▸ Nuevo circuito**, the edit commands (including **Conducto**'s
+class and **Diámetro**, **Repartir**, **Todo**), the view commands, the transport with its
+**Restablecer** and speeds, and the theme dispatch; the rest is painted disabled until its
+phase of the ribbon plan.
 
 | Tab | Contents |
 |---|---|

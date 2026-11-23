@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La cinta edita el conducto, reparte y simula a otra velocidad — 2026-11-23
+
+- **Conducto ▸ clase** (Trabajo/Pilotaje/Drenaje) cambia la clase del conducto seleccionado por
+  `Document::set_pipe_class`; **Diámetro** abre el control del inspector, que ya edita el tubo,
+  sin duplicar la serie en la cinta. Ambos se deshabilitan sin conducto seleccionado.
+- **Repartir** horizontal/vertical usa `Document::space_evenly` y se deshabilita con menos de
+  dos componentes; **Todo** elige el circuito; **Restablecer** de Simular tira el modelo para
+  que el próximo Iniciar empiece en t = 0.
+- **0,25× / 1× / 2×** multiplican el paso del reloj y la cinta marca la velocidad activa.
+- Cada cambio que toca el documento es un solo undo; la clase de línea y el tubo son las
+  mismas vías que el inspector.
+
 ### La cinta edita el cajetín — 2026-11-23
 
 - **Cajetín ▸ Contenido** (Técnico/Escolar/Industrial/Sin cajetín), **Posición** (Superior

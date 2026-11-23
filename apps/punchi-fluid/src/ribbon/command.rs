@@ -7,8 +7,10 @@
 //! different commands, and a label cannot decide an action. The window's dispatch is
 //! exhaustive, so a command without a handler does not compile.
 
+use punchi_fluid_doc::Axis;
 use punchi_fluid_doc::paper::{Orientation, PaperSize};
 use punchi_fluid_doc::title_block::{BlockPosition, ContentModel};
+use punchi_fluid_draw::LineClass;
 
 /// A named set of margins, so the gallery carries a command and the window maps it to the
 /// document's millimetres.
@@ -48,6 +50,36 @@ impl MarginPreset {
     }
 }
 
+/// The simulation's clock speed, the three the reference offers.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Speed {
+    Quarter,
+    Normal,
+    Double,
+}
+
+impl Speed {
+    /// The factor the frame's time step is multiplied by.
+    #[must_use]
+    pub(crate) const fn factor(self) -> f32 {
+        match self {
+            Self::Quarter => 0.25,
+            Self::Normal => 1.0,
+            Self::Double => 2.0,
+        }
+    }
+
+    /// The label the ribbon shows and the status bar repeats.
+    #[must_use]
+    pub(crate) const fn label(self) -> &'static str {
+        match self {
+            Self::Quarter => "0,25×",
+            Self::Normal => "1×",
+            Self::Double => "2×",
+        }
+    }
+}
+
 /// One action the ribbon can ask the window to run.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Command {
@@ -62,6 +94,12 @@ pub(crate) enum Command {
     BlockModel(ContentModel),
     BlockPosition(BlockPosition),
     BlockReset,
+    PipeClass(LineClass),
+    Tube,
+    Distribute(Axis),
+    SelectAll,
+    SimReset,
+    Speed(Speed),
     CircuitNew,
     Undo,
     Redo,
@@ -97,7 +135,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 37] = [
+    pub(crate) const ALL: [Self; 43] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -109,6 +147,12 @@ impl Command {
         Self::BlockModel(ContentModel::Industrial),
         Self::BlockPosition(BlockPosition::BottomRight),
         Self::BlockReset,
+        Self::PipeClass(LineClass::Working),
+        Self::Tube,
+        Self::Distribute(Axis::Horizontal),
+        Self::SelectAll,
+        Self::SimReset,
+        Self::Speed(Speed::Normal),
         Self::CircuitNew,
         Self::Undo,
         Self::Redo,
@@ -152,7 +196,12 @@ impl Command {
             Self::PagePaper(_) => "Tamaño",
             Self::BlockModel(_) => "Contenido",
             Self::BlockPosition(_) => "Posición",
-            Self::BlockReset => "Restablecer",
+            Self::BlockReset | Self::SimReset => "Restablecer",
+            Self::PipeClass(_) => "Conducto",
+            Self::Tube => "Diámetro",
+            Self::Distribute(_) => "Repartir",
+            Self::SelectAll => "Todo",
+            Self::Speed(speed) => speed.label(),
             Self::CircuitNew => "Nuevo circuito",
             Self::Undo => "Deshacer",
             Self::Redo => "Rehacer",

@@ -14,7 +14,7 @@ mod command;
 mod icons;
 mod model;
 
-pub(crate) use command::{Command, MarginPreset};
+pub(crate) use command::{Command, MarginPreset, Speed};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
 
 /// The colours the ribbon paints with, taken from the theme tokens.
@@ -56,7 +56,7 @@ impl Palette {
 pub struct Ribbon {
     icons: HashMap<String, &'static [u8]>,
     active: usize,
-    active_speed: &'static str,
+    pub(crate) active_speed: &'static str,
     running: bool,
     pub last: String,
     /// Whether there is a path to save to; the window sets it every frame.
@@ -73,6 +73,8 @@ pub struct Ribbon {
     pub can_redo: bool,
     /// Whether the active circuit's block differs from its default; the window sets it.
     pub can_reset_block: bool,
+    /// Whether a pipe is selected; the window sets it every frame.
+    pub has_pipe: bool,
     pending: Option<Command>,
 }
 
@@ -92,6 +94,7 @@ impl Ribbon {
             can_undo: false,
             can_redo: false,
             can_reset_block: false,
+            has_pipe: false,
             pending: None,
         }
     }
@@ -128,6 +131,8 @@ impl Ribbon {
             Command::Undo => self.can_undo,
             Command::Redo => self.can_redo,
             Command::BlockReset => self.can_reset_block,
+            Command::PipeClass(_) | Command::Tube => self.has_pipe,
+            Command::Distribute(_) => self.selected >= 2,
             _ => true,
         }
     }
@@ -139,6 +144,7 @@ impl Ribbon {
         match command {
             Command::Start => self.running = true,
             Command::Pause | Command::Stop => self.running = false,
+            Command::Speed(speed) => self.active_speed = speed.label(),
             _ => {}
         }
         self.last = command.label_es().to_string();
@@ -667,7 +673,7 @@ fn shortcut(label: &str) -> Option<&'static str> {
         "Pegar" => Some("Ctrl+V"),
         "Duplicar" => Some("Ctrl+D"),
         "Borrar" => Some("Supr"),
-        "Todo" => Some("Ctrl+E"),
+        "Todo" => Some("Ctrl+A"),
         "Girar" => Some("Alt+R"),
         "Reflejar" => Some("Alt+M"),
         "Puertos" => Some("Alt+A"),
