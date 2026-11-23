@@ -6,6 +6,25 @@ publicación.
 
 ## Unreleased
 
+### La ventana se adapta y recuerda su sitio — 2026-11-23
+
+- **Tres modos derivados del espacio**: ancho (catálogo 240 y panel 360), medio (mínimos 220 y
+  300) y compacto (los dos a raíl de 24 px). La hoja nunca baja de 480 px: el panel se estrecha
+  a su mínimo y luego pasa a raíl o a cajón. Los umbrales salen de las medidas declaradas
+  (1080 y 1000 px por defecto), no de una lista de resoluciones.
+- **En compacto** `Ctrl+B` y `Ctrl+J` abren el panel como cajón sobre la hoja, que no se
+  encoge; se cierra con `Esc`, con el control de ocultar o pulsando fuera.
+- **Primera ventana consciente de la pantalla (P-028)**: 1440×900 si hay sitio; si no, el mayor
+  que quepa con margen, nunca por debajo de 900×600, centrada. El mínimo de la ventana baja de
+  1366×768 a 900×600.
+- **Recuerda tamaño y sitio** en `punchi-fluid/window.state`, con un formato propio y
+  defensivo (lectura acotada, claves desconocidas ignoradas, versión desconocida rechazada,
+  escritura atómica): restaura solo si la ventana aún cae en una pantalla y la recorta a la
+  pantalla actual; maximizada conserva el tamaño previo.
+- `docs/ui-ux.md` y `docs/capabilities.md` (F0) dicen ya lo que la ventana Rust hace y lo que
+  queda (el `Menú` compacto de la cinta, la memoria de los paneles entre sesiones, el
+  auto-ocultar).
+
 ### Los dos paneles se pliegan — 2026-11-23
 
 - **Catálogo y propiedades comparten panel**: cabecera con título y control de ocultar, raíl

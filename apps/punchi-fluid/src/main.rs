@@ -1,41 +1,43 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The window: one fixed layout over the document's sheet.
+//! The window: the shell's three regions over the document's sheet.
 //!
-//! This is ADR 0035's phase 3: the window opens at the 1366 × 768 floor, draws the sheet of a
-//! new document with the ribbon and the view's zoom and pan, and reports the fit, the
-//! magnification and the drawing's own time. The sidebar and the document's commands arrive
-//! in the following slices. Colour, type and motion come from the desktop through `theme`.
+//! This is ADR 0035's phase 3 and `docs/ui-ux.md` §2.2: the shell chooses wide, medium or
+//! compact from the room the window has, the window opens at the screen-aware size and
+//! remembers its size and place, and the sheet keeps its floor. The frame itself lives in
+//! `shell`; this module owns the window's state and the document's commands. Colour, type and
+//! motion come from the desktop through `theme`.
 
-use std::path::{Path, PathBuf};
-use std::time::Instant;
+use std::path::PathBuf;
 
 use eframe::egui;
 use punchi_fluid_catalog::Kinematics;
 use punchi_fluid_doc::{Align, Document, Placement, Turn};
-use punchi_fluid_draw::symbol::Ink;
-use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_placed};
-use punchi_fluid_export::{Page, TitleBlock, sheet};
+use punchi_fluid_draw::{CYLINDER_RATIO, Pt, SYMBOL_BOX_MM};
+#[cfg(test)]
+use punchi_fluid_export::sheet;
+use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
 mod export;
 mod files;
 mod inspector;
+mod layout;
 mod lifecycle;
 mod panel;
 mod ribbon;
 mod scene;
 mod selection;
+mod shell;
 mod sidebar;
 mod sim;
 mod start;
 mod surface;
 mod theme;
 mod view;
-
-use surface::EguiSurface;
+mod window_state;
 
 fn main() -> eframe::Result<()> {
     let theme = theme::Theme::from_desktop();
@@ -61,10 +63,14 @@ fn main() -> eframe::Result<()> {
         None => Document::new(),
     };
     let safety = punchi_fluid_session::safety::SafetyCopy::load();
+    // The screen is only known after the window exists: the first frame sizes and centres it
+    // from the monitor the viewport reports. The provisional size is the support floor, so
+    // the window never opens smaller than the interface allows.
+    let geometry = window_state::Store::load();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1366.0, 768.0])
-            .with_min_inner_size([1366.0, 768.0])
+            .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
+            .with_min_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
             .with_title("Punchi Fluid Lab"),
         ..Default::default()
     };
@@ -75,9 +81,10 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
-            Ok(Box::new(Window::with_safety(
-                theme, document, path, notice, recents, safety,
-            )))
+            Ok(Box::new(
+                Window::with_safety(theme, document, path, notice, recents, safety)
+                    .with_window_state(geometry),
+            ))
         }),
     )
 }
@@ -126,6 +133,8 @@ struct Window {
     recents: Recents,
     /// The file dialog, while it is open.
     dialog: Option<files::Dialog>,
+    /// The shell: the layout mode, the compact drawer and the remembered geometry.
+    shell: shell::Shell,
 }
 
 /// A primary-button drag of the selection.
@@ -499,113 +508,13 @@ impl Window {
 
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
-        self.sync_commands(context);
-        self.tick(context);
-        self.lifecycle_frame(context);
-        // Inicio is the whole window: the ribbon, the status bar and the catalog below are
-        // the sheet's chrome, and the start page hides them while it is open.
-        if self.start_open {
-            self.show_start(context);
-            self.show_files(context);
-            return;
-        }
-        let palette = ribbon::Palette::from_theme(&self.theme.tokens);
-        egui::TopBottomPanel::top("ribbon").show(context, |ui| {
-            self.ribbon.show(ui, &palette);
-        });
-        if let Some(command) = self.ribbon.take() {
-            self.run_command(&command);
-        }
+        self.frame(context);
+    }
 
-        let (width, height) = self.page.size_mm();
-        let page_mm = egui::vec2(width, height);
-        let ink = self.theme.tokens.ink;
-        let last = self.ribbon.last.clone();
-        let zoom = self.view.zoom();
-        let magnification = self.magnification;
-        let source = self
-            .path
-            .as_deref()
-            .and_then(Path::file_name)
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or("sin título");
-        let notice = self
-            .notice
-            .as_deref()
-            .map(|notice| format!(" · {notice}"))
-            .unwrap_or_default();
-        let simulation = self.simulation_line();
-        egui::TopBottomPanel::bottom("status").show(context, |ui| {
-            ui.label(
-                egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last} · {source}{notice}{simulation}",
-                    zoom * 100.0, self.frame_ms
-                ))
-                .color(ink),
-            );
-        });
-
-        // The catalog and the right dock sit below the ribbon and above the status bar, so
-        // the sheet's available area follows each one as it folds.
-        self.show_catalog(context);
-        self.show_inspector(context);
-
-        egui::CentralPanel::default().show(context, |ui| {
-            let area = ui.available_rect_before_wrap();
-            let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
-            sheet.widget_info(|| {
-                egui::WidgetInfo::labeled(egui::WidgetType::Image, true, "hoja de dibujo")
-            });
-            self.handle_view(ui, &sheet, area, page_mm);
-            let placement = self.view.placement(area, page_mm);
-            self.magnification = placement.scale;
-            let page_rect = self.page.rect();
-            let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
-            self.handle_edit(&sheet, &placement, page_min);
-            let origin = placement.origin
-                - egui::vec2(
-                    page_rect.min.x * placement.scale,
-                    page_rect.min.y * placement.scale,
-                );
-            let mut drawing = EguiSurface::new(context, origin, placement.scale);
-            let mut scene = scene::build(
-                &self.document,
-                &self.catalog,
-                self.document.active_circuit(),
-                self.model.as_ref(),
-            );
-            // The drag is previewed on the drawing, not written to the document: the document
-            // only changes once, when the button comes up.
-            if let Some(drag) = &self.drag {
-                let delta = drag.delta;
-                for placed in &mut scene.placed {
-                    if drag.starts.iter().any(|(index, _)| *index == placed.index) {
-                        placed.rect = Rect::from_min_size(
-                            Pt::new(placed.rect.min.x + delta.x, placed.rect.min.y + delta.y),
-                            placed.rect.max.x - placed.rect.min.x,
-                            placed.rect.max.y - placed.rect.min.y,
-                        );
-                    }
-                }
-            }
-            let started = Instant::now();
-            sheet::draw(&mut drawing, &self.page, &self.block);
-            draw_placed(
-                &mut drawing,
-                &scene.placed,
-                &scene.pipes,
-                &self.catalog,
-                &Ink::print(),
-                &self.selected,
-            );
-            self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
-            let painter = ui.painter().with_clip_rect(ui.max_rect());
-            painter.extend(drawing.shapes);
-            self.highlight_selected_pipe(ui, origin, placement.scale);
-        });
-        // The dialog is the last surface drawn, so it is in front of the sheet and catches
-        // the keyboard before the sheet's shortcuts do.
-        self.show_files(context);
+    /// The last geometry the viewport reported is written even when the reader closes the
+    /// window before the settle delay: the next start returns to the size and place they left.
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.flush_window_state();
     }
 }
 
