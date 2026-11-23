@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El trabajo sin guardar sobrevive a una caída — 2026-11-22
+
+- **Copia de seguridad en la sesión** (`punchi_fluid_session::safety`): se escribe en
+  `XDG_DATA_HOME/punchi-fluid/recovery.pfluid` (o `PUNCHI_FLUID_RECOVERY_FILE`), se lee de
+  vuelta, y una copia ilegible es un error explícito. Se borra al guardar, abrir o descartar.
+- **La ventana Rust sabe si hay cambios sin guardar**: el título lo marca con `•`, el
+  autoguardado escribe la copia cada cinco segundos mientras los hay, y al arrancar el Inicio
+  ofrece «Se encontró trabajo sin guardar» con Recuperar/Descartar. Recuperar deja el
+  documento sin ruta y como no guardado, para que el siguiente guardado pida una.
+- **Confirmación de cierre**: Guardar y cerrar / Cerrar sin guardar / Cancelar.
+- **Acerca de y Licencia** con sus paneles; la licencia es el texto completo del `LICENSE`.
+
 ### Los recientes y los archivos llegan a la ventana Rust — 2026-11-22
 
 - **La lista de recientes vive en la sesión** (`punchi_fluid_session::recents`): se lee de

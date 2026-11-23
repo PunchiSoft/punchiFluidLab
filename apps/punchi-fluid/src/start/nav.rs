@@ -94,12 +94,11 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
         action = Some(Action::OpenDialog);
     }
     nav_heading(ui, tokens, "Aprender");
-    // TODO(start page, next slice): "Acerca de" and "Licencia" need their own panels.
     if nav_row(ui, tokens, &NAV_ABOUT) {
-        action = Some(Action::Pending);
+        action = Some(Action::About);
     }
     if nav_row(ui, tokens, &NAV_LICENSE) {
-        action = Some(Action::Pending);
+        action = Some(Action::Licence);
     }
     // The seam between the two planes of the page: the rail's edge, not a colour.
     ui.painter().line_segment(

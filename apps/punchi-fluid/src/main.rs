@@ -21,6 +21,7 @@ use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
 mod files;
+mod lifecycle;
 mod ribbon;
 mod scene;
 mod sidebar;
@@ -55,6 +56,7 @@ fn main() -> eframe::Result<()> {
         },
         None => Document::new(),
     };
+    let safety = punchi_fluid_session::safety::SafetyCopy::load();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1366.0, 768.0])
@@ -69,8 +71,8 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
-            Ok(Box::new(Window::with_recents(
-                theme, document, path, notice, recents,
+            Ok(Box::new(Window::with_safety(
+                theme, document, path, notice, recents, safety,
             )))
         }),
     )
@@ -80,6 +82,8 @@ fn main() -> eframe::Result<()> {
 /// view, the ribbon, the desktop's theme and the last frame's numbers.
 struct Window {
     document: Document,
+    /// The document's saved revision, safety copy, recovery, title and open panel.
+    lifecycle: lifecycle::Lifecycle,
     catalog: punchi_fluid_catalog::Catalog,
     path: Option<PathBuf>,
     notice: Option<String>,
@@ -129,39 +133,6 @@ const HIT_SLACK: f32 = 1.0;
 const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
-    fn new(
-        theme: theme::Theme,
-        document: Document,
-        path: Option<PathBuf>,
-        notice: Option<String>,
-    ) -> Self {
-        let (page, block) = files::page_and_block(&document);
-        Self {
-            document,
-            catalog: punchi_fluid_catalog::default_catalog(),
-            path,
-            notice,
-            page,
-            block,
-            view: view::View::default(),
-            magnification: 1.0,
-            frame_ms: 0.0,
-            theme,
-            ribbon: ribbon::Ribbon::new(),
-            sidebar: sidebar::Sidebar::new(),
-            selected: Vec::new(),
-            drag: None,
-            clipboard: Vec::new(),
-            model: None,
-            model_revision: 0,
-            running: false,
-            pressed_valve: None,
-            start_open: true,
-            recents: Recents::default(),
-            dialog: None,
-        }
-    }
-
     /// Places a catalog entry at the centre of the sheet, as one undo entry, and selects
     /// it. The box is the canonical one, or the actuator's wider barrel box.
     fn add_component(&mut self, catalog_id: &str) {
@@ -520,6 +491,7 @@ impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
+        self.lifecycle_frame(context);
         // Inicio is the whole window: the ribbon, the status bar and the catalog below are
         // the sheet's chrome, and the start page hides them while it is open.
         if self.start_open {

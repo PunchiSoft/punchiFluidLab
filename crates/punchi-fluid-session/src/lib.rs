@@ -17,6 +17,7 @@ use punchi_fluid_draw::surface::{LineClass, Pt};
 use punchi_fluid_file::paper::StoredSheet;
 mod model;
 pub mod recents;
+pub mod safety;
 pub mod templates;
 
 pub use model::Model;

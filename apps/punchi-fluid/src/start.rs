@@ -50,8 +50,14 @@ enum Action {
     OpenRecent(PathBuf),
     /// Drop this remembered document from the list; the file is not touched.
     ForgetRecent(String),
-    /// A command the page shows for the layout but does not act on yet.
-    Pending,
+    /// Read the safety copy found at start and install it, with no path.
+    Recover,
+    /// Throw the safety copy found at start away.
+    DiscardRecovery,
+    /// Open the «Acerca de» panel of the rail.
+    About,
+    /// Open the «Licencia» panel of the rail.
+    Licence,
 }
 
 /// One drawing of the ribbon's action family: its id and its embedded bytes.
@@ -103,6 +109,12 @@ impl Window {
             return;
         }
         let tokens = &self.theme.tokens;
+        let show_recovery = self.has_recovery();
+        let document_name = self
+            .path
+            .as_deref()
+            .and_then(std::path::Path::file_name)
+            .and_then(std::ffi::OsStr::to_str);
         let mut action = None;
         egui::SidePanel::left("start-nav")
             .exact_width(crate::SIDEBAR_WIDTH)
@@ -119,7 +131,14 @@ impl Window {
             )
             .show(context, |ui| {
                 if action.is_none() {
-                    action = page(ui, tokens, &self.catalog, &self.recents);
+                    action = page(
+                        ui,
+                        tokens,
+                        &self.catalog,
+                        &self.recents,
+                        show_recovery,
+                        document_name,
+                    );
                 }
             });
         // The page takes `Esc` before anything behind it, as the interface specification
@@ -153,31 +172,33 @@ impl Window {
                 }
             }
             Action::ForgetRecent(path) => self.forget_recent(&path),
+            Action::Recover => self.recover(),
+            Action::DiscardRecovery => self.discard_recovery(),
+            Action::About => self.open_about(),
+            Action::Licence => self.open_licence(),
             Action::Sheet => self.start_open = false,
-            // TODO(start page, next slice): "Acerca de" and "Licencia" need their own
-            // panels. The rows are drawn and reachable; choosing one keeps the page open
-            // until those panels exist.
-            Action::Pending => {}
         }
     }
 
-    /// Puts a document on a fresh sheet, keeping the window's theme and its recent list: a
-    /// template or a new project starts a new document, not a new window.
+    /// Puts a document on a fresh sheet, keeping the window's theme, its recent list and its
+    /// life outside the document: a template or a new project starts a new document, not a
+    /// new window.
     fn reset_to(&mut self, document: Document, path: Option<PathBuf>, notice: Option<String>) {
-        let theme = self.theme.clone();
-        let recents = std::mem::take(&mut self.recents);
-        let mut window = Window::with_recents(theme, document, path, notice, recents);
-        window.start_open = false;
-        *self = window;
+        self.replace_document(document, path);
+        self.notice = notice;
+        self.mark_saved();
     }
 }
 
-/// Draws the page in reading order: the title, `Empezar`, `Plantillas` and `Recientes`.
+/// Draws the page in reading order: the title, the recovery offer, `Empezar`, `Plantillas`
+/// and `Recientes`.
 fn page(
     ui: &mut egui::Ui,
     tokens: &Tokens,
     catalog: &Catalog,
     recents: &Recents,
+    show_recovery: bool,
+    document_name: Option<&str>,
 ) -> Option<Action> {
     let mut action = None;
     egui::ScrollArea::vertical()
@@ -199,8 +220,17 @@ fn page(
             );
             ui.add_space(tokens.unit * 1.2);
 
+            if show_recovery
+                && let Some(recovery) = cards::recovery_banner(ui, tokens, document_name)
+            {
+                action = Some(recovery);
+            }
+            ui.add_space(tokens.unit * 1.2);
+
             section(ui, tokens, "Empezar", None);
-            action = cards::begin_row(ui, tokens);
+            if action.is_none() {
+                action = cards::begin_row(ui, tokens);
+            }
             ui.add_space(tokens.unit * 1.2);
 
             section(
