@@ -148,9 +148,9 @@ Depth comes from the palette, never from a new hue.
 The list of commands is one table in `apps/punchi-fluid/src/ribbon/model.rs`; the expanded
 groups, the collapsed groups and their flyouts are generated from it, so they cannot drift
 apart. The two help links are drawn in the tab row beside the tabs, because they are not
-commands of a tab. **Today** the file commands, **Circuito ▸ Nuevo circuito**, the edit and
-view commands and the transport dispatch; the rest is painted disabled until its phase of
-the ribbon plan.
+commands of a tab. **Today** the file commands, the sheet commands (**Márgenes**,
+**Orientación**, **Tamaño**), **Circuito ▸ Nuevo circuito**, the edit and view commands and
+the transport dispatch; the rest is painted disabled until its phase of the ribbon plan.
 
 | Tab | Contents |
 |---|---|

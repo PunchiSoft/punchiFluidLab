@@ -6,7 +6,7 @@
 //! Every control carries a [`Command`] or nothing. A control with nothing is painted disabled:
 //! it is a command the window does not have yet, and the ribbon never pretends otherwise.
 
-use super::Command;
+use super::{Command, MarginPreset};
 
 pub(super) enum Preview {
     Margins(f32),
@@ -28,6 +28,15 @@ impl GalleryEntry {
             command: None,
         }
     }
+
+    /// An entry that carries its command.
+    const fn command(label: &'static str, preview: Preview, command: Command) -> Self {
+        Self {
+            label,
+            preview,
+            command: Some(command),
+        }
+    }
 }
 
 pub(super) struct MenuEntry {
@@ -43,6 +52,14 @@ impl MenuEntry {
             command: None,
         }
     }
+
+    /// An option that carries its command.
+    const fn command(label: &'static str, command: Command) -> Self {
+        Self {
+            label,
+            command: Some(command),
+        }
+    }
 }
 
 pub(super) enum Item {
@@ -53,10 +70,26 @@ pub(super) enum Item {
 }
 
 pub(super) const MARGINS: &[GalleryEntry] = &[
-    GalleryEntry::unavailable("Normal", Preview::Margins(0.55)),
-    GalleryEntry::unavailable("Estrecho", Preview::Margins(0.25)),
-    GalleryEntry::unavailable("Moderado", Preview::Margins(0.4)),
-    GalleryEntry::unavailable("Ancho", Preview::Margins(0.15)),
+    GalleryEntry::command(
+        "Normal",
+        Preview::Margins(0.3),
+        Command::PageMargin(MarginPreset::Normal),
+    ),
+    GalleryEntry::command(
+        "Estrecho",
+        Preview::Margins(0.15),
+        Command::PageMargin(MarginPreset::Narrow),
+    ),
+    GalleryEntry::command(
+        "Moderado",
+        Preview::Margins(0.45),
+        Command::PageMargin(MarginPreset::Moderate),
+    ),
+    GalleryEntry::command(
+        "Ancho",
+        Preview::Margins(0.6),
+        Command::PageMargin(MarginPreset::Wide),
+    ),
 ];
 
 pub(super) const CONDUCTO: &[GalleryEntry] = &[
@@ -111,17 +144,32 @@ pub(super) const ARCHIVO: &[Group] = &[
                 "document-properties",
                 "Orientación",
                 &[
-                    MenuEntry::unavailable("Vertical"),
-                    MenuEntry::unavailable("Apaisado"),
+                    MenuEntry::command(
+                        "Vertical",
+                        Command::PageOrientation(punchi_fluid_doc::paper::Orientation::Portrait),
+                    ),
+                    MenuEntry::command(
+                        "Apaisado",
+                        Command::PageOrientation(punchi_fluid_doc::paper::Orientation::Landscape),
+                    ),
                 ],
             ),
             Item::Menu(
                 "x-office-document",
                 "Tamaño",
                 &[
-                    MenuEntry::unavailable("A4"),
-                    MenuEntry::unavailable("A3"),
-                    MenuEntry::unavailable("A2"),
+                    MenuEntry::command(
+                        "A4",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A4),
+                    ),
+                    MenuEntry::command(
+                        "A3",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A3),
+                    ),
+                    MenuEntry::command(
+                        "A2",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A2),
+                    ),
                     MenuEntry::unavailable("Personalizado…"),
                 ],
             ),
