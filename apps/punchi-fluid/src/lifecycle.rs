@@ -230,6 +230,7 @@ impl Window {
             frame_ms: 0.0,
             theme,
             ribbon: ribbon::Ribbon::new(),
+            speed: ribbon::Speed::Normal,
             sidebar: sidebar::Sidebar::new(),
             inspector: inspector::Inspector::new(),
             selected: Vec::new(),

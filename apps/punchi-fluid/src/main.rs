@@ -21,9 +21,10 @@ use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
-use crate::ribbon::Command;
+use crate::ribbon::{Command, Speed};
 
 mod auto_hide;
+mod edit_commands;
 mod export;
 mod files;
 mod inspector;
@@ -120,6 +121,8 @@ struct Window {
     frame_ms: f64,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
+    /// The simulation's clock speed; the ribbon shows the active one.
+    speed: Speed,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -244,7 +247,7 @@ impl Window {
         self.rebuild_if_stale();
         if self.running {
             let dt = f64::from(context.input(|input| input.stable_dt).min(0.1));
-            self.advance(dt);
+            self.advance(dt * f64::from(self.speed.factor()));
         }
     }
 
@@ -460,6 +463,15 @@ impl Window {
             Command::BlockModel(model) => self.set_block_model(model),
             Command::BlockPosition(position) => self.set_block_position(position),
             Command::BlockReset => self.reset_block(),
+            Command::PipeClass(class) => self.set_pipe_class(class),
+            Command::Tube => self.open_pipe_control(),
+            Command::Distribute(axis) => self.distribute(axis),
+            Command::SelectAll => self.select_all(),
+            Command::SimReset => self.reset_simulation(),
+            Command::Speed(speed) => {
+                self.speed = speed;
+                self.ribbon.active_speed = speed.label();
+            }
             Command::CircuitNew => self.new_circuit(),
             Command::Undo => self.undo(),
             Command::Redo => self.redo(),
@@ -572,6 +584,7 @@ impl Window {
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
         self.ribbon.can_reset_block = self.block_is_customized();
+        self.ribbon.has_pipe = self.selected_pipe.is_some();
     }
 }
 

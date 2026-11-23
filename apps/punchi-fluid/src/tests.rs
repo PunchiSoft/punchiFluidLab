@@ -616,3 +616,178 @@ fn the_block_reset_restores_the_default() {
         "the reset is the block a circuit is born with"
     );
 }
+
+/// A window whose document holds one hose between a supply and a valve.
+fn window_with_a_pipe() -> Window {
+    let mut document = Document::new();
+    let supply = document.place(Placement::new(
+        "supply.compressor",
+        Pt::new(50.0, 50.0),
+        24.0,
+        24.0,
+    ));
+    let valve = document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(140.0, 50.0),
+        24.0,
+        24.0,
+    ));
+    let from = document.placements()[supply].id();
+    let to = document.placements()[valve].id();
+    assert!(document.connect(Endpoint::new(from, "1"), Endpoint::new(to, "1"), Some(1000)));
+    Window::new(theme::Theme::fallback(), document, None, None)
+}
+
+/// A window whose document builds the piston model `start` can run.
+fn window_with_a_model() -> Window {
+    let mut document = Document::new();
+    let supply = document.place(Placement::new(
+        "supply.compressor",
+        Pt::new(60.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let valve = document.place(Placement::new(
+        "valve.5_2.spring_return",
+        Pt::new(120.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let cylinder = document.place(Placement::new(
+        "cylinder.double_acting_32_200",
+        Pt::new(200.0, 100.0),
+        44.0,
+        20.0,
+    ));
+    let supply_id = document.placements()[supply].id();
+    let valve_id = document.placements()[valve].id();
+    let cylinder_id = document.placements()[cylinder].id();
+    document.connect(
+        Endpoint::new(supply_id, "1"),
+        Endpoint::new(valve_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "2"),
+        Endpoint::new(cylinder_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "4"),
+        Endpoint::new(cylinder_id, "2"),
+        None,
+    );
+    Window::new(theme::Theme::fallback(), document, None, None)
+}
+
+#[test]
+fn the_pipe_class_gallery_changes_the_pipe() {
+    let mut window = window_with_a_pipe();
+    window.selected_pipe = Some(0);
+    window.dispatch(crate::ribbon::Command::PipeClass(
+        punchi_fluid_draw::LineClass::Drain,
+    ));
+    assert_eq!(
+        window.document.connections()[0].class(),
+        punchi_fluid_draw::LineClass::Drain
+    );
+    assert!(window.document.can_undo(), "the class edit is one undo");
+}
+
+#[test]
+fn the_tube_control_changes_the_tube() {
+    let mut window = window_with_a_pipe();
+    window.selected_pipe = Some(0);
+    window.dispatch(crate::ribbon::Command::Tube);
+    window.apply_inspector(crate::inspector::Action::PipeTube {
+        index: 0,
+        tube: Some(600),
+    });
+    assert_eq!(
+        window.document.connections()[0].tube_od_hundredths(),
+        Some(600)
+    );
+    assert!(window.document.can_undo(), "the tube edit is one undo");
+}
+
+#[test]
+fn distributing_the_selection_spaces_it() {
+    let mut document = Document::new();
+    for x in [40.0, 120.0, 70.0] {
+        document.place(Placement::new(
+            "valve.3_2.spring_return",
+            Pt::new(x, 60.0),
+            20.0,
+            20.0,
+        ));
+    }
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    window.selected = vec![0, 1, 2];
+    let before = window.document.placements()[2].box_rect().center();
+    window.dispatch(crate::ribbon::Command::Distribute(
+        punchi_fluid_doc::Axis::Horizontal,
+    ));
+    let after = window.document.placements()[2].box_rect().center();
+    assert_ne!(before, after, "the middle placement moved");
+    window.undo();
+    assert_eq!(
+        window.document.placements()[2].box_rect().center(),
+        before,
+        "one undo restores the spacing"
+    );
+}
+
+#[test]
+fn the_select_all_command_takes_the_circuit() {
+    let mut document = Document::new();
+    document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(60.0, 60.0),
+        20.0,
+        20.0,
+    ));
+    document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(120.0, 60.0),
+        20.0,
+        20.0,
+    ));
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    window.dispatch(crate::ribbon::Command::SelectAll);
+    assert_eq!(window.selected, vec![0, 1]);
+}
+
+#[test]
+fn the_speed_changes_the_clock() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.dispatch(crate::ribbon::Command::Speed(crate::ribbon::Speed::Double));
+    assert!(
+        (window.speed.factor() - 2.0).abs() < f32::EPSILON,
+        "the clock runs twice as fast"
+    );
+    assert_eq!(window.ribbon.active_speed, "2×", "the ribbon marks it");
+    window.dispatch(crate::ribbon::Command::Speed(crate::ribbon::Speed::Quarter));
+    assert!((window.speed.factor() - 0.25).abs() < f32::EPSILON);
+}
+
+#[test]
+fn the_reset_returns_the_model_to_zero() {
+    let mut window = window_with_a_model();
+    window.start();
+    assert!(window.model.is_some());
+    window.advance(0.5);
+    let time = window
+        .model
+        .as_ref()
+        .map_or(0.0, |model| model.network().telemetry().time);
+    assert!(time > 0.0, "the model advanced");
+    window.dispatch(crate::ribbon::Command::SimReset);
+    assert!(window.model.is_none(), "the model is thrown away");
+    assert!(!window.running);
+    window.start();
+    let time = window
+        .model
+        .as_ref()
+        .map_or(-1.0, |model| model.network().telemetry().time);
+    assert!(time.abs() < 1e-9, "the reset starts at t = 0");
+}
