@@ -60,7 +60,7 @@ pub struct Ribbon {
     icons: HashMap<String, &'static [u8]>,
     active: usize,
     pub(crate) active_speed: &'static str,
-    running: bool,
+    pub(crate) running: bool,
     pub last: String,
     /// Whether there is a path to save to; the window sets it every frame.
     pub savable: bool,
@@ -138,16 +138,6 @@ impl Ribbon {
 
     /// Draws the strip and the active tab; the pick lands in `last`.
     pub fn show(&mut self, ui: &mut egui::Ui, palette: &Palette, recents: &[Recent]) {
-        for (key, command) in [
-            (egui::Key::F9, Command::Start),
-            (egui::Key::F8, Command::Pause),
-            (egui::Key::F10, Command::Step),
-            (egui::Key::F5, Command::Stop),
-        ] {
-            if ui.input(|input| input.key_pressed(key)) {
-                self.run_command(command);
-            }
-        }
         let mut picked: Option<Command> = None;
         let bar = egui::Frame::default()
             .fill(palette.raised)
@@ -423,7 +413,7 @@ impl Ribbon {
                     && ui.input(|input| {
                         input.key_pressed(egui::Key::Enter) || input.key_pressed(egui::Key::Space)
                     })));
-        response.on_hover_text(hint(label));
+        response.on_hover_text(hint(label, command));
         activated
     }
 
@@ -455,7 +445,7 @@ impl Ribbon {
                 ),
             ),
         };
-        response.on_hover_text(hint(label)).clicked()
+        response.on_hover_text(hint(label, command)).clicked()
     }
 
     fn menu(
@@ -697,35 +687,8 @@ fn fit_groups(ui: &egui::Ui, groups: &[Group], palette: &Palette) -> Vec<bool> {
     shown
 }
 
-fn shortcut(label: &str) -> Option<&'static str> {
-    match label {
-        "Nuevo" => Some("Ctrl+N"),
-        "Abrir" => Some("Ctrl+O"),
-        "Guardar" => Some("Ctrl+S"),
-        "Deshacer" => Some("Ctrl+Z"),
-        "Rehacer" => Some("Ctrl+Shift+Z"),
-        "Copiar" => Some("Ctrl+C"),
-        "Pegar" => Some("Ctrl+V"),
-        "Duplicar" => Some("Ctrl+D"),
-        "Borrar" => Some("Supr"),
-        "Todo" => Some("Ctrl+A"),
-        "Girar" => Some("Alt+R"),
-        "Reflejar" => Some("Alt+M"),
-        "Puertos" => Some("Alt+A"),
-        "Diámetro" => Some("Alt+D"),
-        "Iniciar" => Some("F9"),
-        "Pausa" => Some("F8"),
-        "Paso" => Some("F10"),
-        "Detener" => Some("F5"),
-        "Restablecer" => Some("Ctrl+R"),
-        "Catálogo" => Some("Ctrl+B"),
-        "Propiedades" => Some("Ctrl+J"),
-        _ => None,
-    }
-}
-
-fn hint(label: &str) -> String {
-    match shortcut(label) {
+fn hint(label: &str, command: Option<Command>) -> String {
+    match command.and_then(crate::shortcuts::label) {
         Some(key) => format!("{label} ({key})"),
         None => label.to_string(),
     }

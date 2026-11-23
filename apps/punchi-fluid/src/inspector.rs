@@ -444,18 +444,6 @@ impl Window {
         }
     }
 
-    /// The keyboard path of the dock, besides **Ver ▸ Propiedades**. In the compact mode it
-    /// toggles the drawer instead of the docked panel.
-    pub(crate) fn inspector_keyboard(&mut self, context: &egui::Context) {
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::J)) {
-            if self.layout_mode() == crate::layout::LayoutMode::Compact {
-                self.toggle_drawer(crate::shell::Drawer::Inspector);
-            } else {
-                self.inspector.toggle();
-            }
-        }
-    }
-
     /// The **Ver** commands the window owns: the two panels and the view reset. The zoom is
     /// dispatched directly by the window.
     pub(crate) fn view_command(&mut self, command: crate::ribbon::Command) {

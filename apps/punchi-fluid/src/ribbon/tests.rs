@@ -9,6 +9,7 @@ use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_file::recent::Recent;
 
+use super::hint;
 use super::model::{Item, TABS};
 use super::{Command, Palette, Ribbon};
 
@@ -129,6 +130,50 @@ fn every_command_is_on_the_ribbon() {
                 .any(|command| std::mem::discriminant(command) == std::mem::discriminant(carried)),
             "{carried:?} has no dispatch arm"
         );
+    }
+}
+
+#[test]
+fn no_hint_without_a_handler() {
+    fn check(label: &str, command: Option<Command>) {
+        let text = hint(label, command);
+        match command {
+            Some(command) => {
+                assert!(
+                    Command::ALL
+                        .iter()
+                        .any(|known| std::mem::discriminant(known)
+                            == std::mem::discriminant(&command)),
+                    "{command:?} has a hint and no handler"
+                );
+                if crate::shortcuts::label(command).is_some() {
+                    assert!(text.contains('('), "{label} has a shortcut and no hint");
+                }
+            }
+            None => assert_eq!(text, label, "a control with no command announces no key"),
+        }
+    }
+    for tab in TABS {
+        for group in tab.groups {
+            for item in group.items {
+                match item {
+                    Item::Large(_, label, command) | Item::Small(_, label, command) => {
+                        check(label, *command);
+                    }
+                    Item::Menu(_, _, entries) => {
+                        for entry in *entries {
+                            check(entry.label, entry.command);
+                        }
+                    }
+                    Item::Gallery(_, _, entries) => {
+                        for entry in *entries {
+                            check(entry.label, entry.command);
+                        }
+                    }
+                    Item::Recents(_, label) => check(label, None),
+                }
+            }
+        }
     }
 }
 

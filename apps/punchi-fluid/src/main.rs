@@ -43,6 +43,7 @@ mod selection;
 mod settings;
 mod sheet_commands;
 mod shell;
+mod shortcuts;
 mod sidebar;
 mod sim;
 mod start;
@@ -467,6 +468,7 @@ impl Window {
     /// Runs a ribbon command. The match is exhaustive, so a command without a handler does
     /// not compile; the table and this function are the two halves of the same contract.
     fn dispatch(&mut self, command: Command) {
+        self.ribbon.last = command.label_es().to_string();
         match command {
             Command::ProjectNew => self.new_document(),
             Command::ProjectOpen => self.open_dialog(files::Mode::Open),
@@ -559,46 +561,21 @@ impl Window {
             self.open_preferences();
             return;
         }
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::N)) {
-            self.new_document();
+        // Every shortcut comes from the one table, so the hint and the handler cannot
+        // disagree; an editing command waits until no text field has the keyboard.
+        let typing = context.wants_keyboard_input();
+        for (command, shortcut) in crate::shortcuts::ALL {
+            if shortcut.pressed(context) && (!shortcut.editing || !typing) {
+                self.dispatch(*command);
+            }
         }
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::O)) {
-            self.open_dialog(files::Mode::Open);
-        }
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
-            self.save();
-        }
-        if context.input(|input| input.key_pressed(egui::Key::Delete)) {
-            self.remove_selected();
-        }
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Z)) {
-            self.undo();
-        }
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Y)) {
-            self.redo();
+        // Cut is a document edit with no ribbon command of its own yet.
+        if !typing && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::X))
+        {
+            self.cut_selected();
         }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::F)) {
             self.sidebar.focus_search();
-        }
-        self.catalog_keyboard(context);
-        self.inspector_keyboard(context);
-        // Select all and duplicate only when no text field has the keyboard: Ctrl+A in the
-        // search selects the search text, not the sheet.
-        let idle = context.memory(|memory| memory.focused().is_none());
-        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::A)) {
-            self.select_all();
-        }
-        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::D)) {
-            self.duplicate_selected();
-        }
-        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::C)) {
-            self.copy_selected();
-        }
-        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::V)) {
-            self.paste();
-        }
-        if idle && context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::X)) {
-            self.cut_selected();
         }
         self.ribbon.savable = self.path.is_some();
         self.ribbon.can_step = self.model.is_some();
@@ -609,6 +586,7 @@ impl Window {
         self.ribbon.can_reset_block = self.block_is_customized();
         self.ribbon.can_close_circuit = self.document.circuits().len() > 1;
         self.ribbon.has_pipe = self.selected_pipe.is_some();
+        self.ribbon.running = self.running;
     }
 }
 
