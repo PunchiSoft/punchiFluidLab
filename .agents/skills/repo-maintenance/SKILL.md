@@ -128,6 +128,9 @@ assuming one. A file-level tool needs the exclusions above in its own configurat
 
 ## Local backups
 
+For a one-off snapshot before a risky change, [project-backup](../project-backup/SKILL.md)
+is the dedicated procedure; this section is the recurring policy.
+
 - **3-2-1:** three copies, two media, one off-site. A bundle on the same disk is copy one.
 - **Retention:** 7 daily, 4 weekly, 12 monthly. Rotate only after the new copy verifies.
 - **Freshness:** the newest local backup must be under seven days old. An older one is an

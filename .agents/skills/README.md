@@ -29,6 +29,7 @@ skill is the bug.
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
 | [repo-maintenance](repo-maintenance/SKILL.md) | the maintenance pass: local backup first, merged branches and worktrees, `target` and cargo caches, CI caches, and a restore test | after a merge; weekly; when disk, caches or the local backup need review |
+| [project-backup](project-backup/SKILL.md) | a compressed, verified snapshot before a risky change: what to include, the name and format, the README beside it, and the restore | before a test modification, a refactor, a destructive cleanup or a milestone |
 | [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) | breakpoints on available room, Layout versus anchors, per-panel minimums, the size and DPI matrix | resizing the shell; adding a panel, dock or view strip; proving the adaptive stage |
 | [punchi-visual-language](punchi-visual-language/SKILL.md) | route a visual change to its canonical document, its command and its evidence; controls, tokens, icons, ribbon, layout and review | changing a control, token, icon or the ribbon; reviewing the window's visual language |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
@@ -61,6 +62,10 @@ Siguiente, not a session log.
 For the pass after a merge — the local backup, the branch and its worktree, the build and
 the CI caches — read [repo-maintenance](repo-maintenance/SKILL.md): the backup is verified
 before anything is deleted, and an old backup is an alert, not a deletion candidate.
+
+For a one-off snapshot before a risky change — a test modification, a refactor, a destructive
+cleanup — read [project-backup](project-backup/SKILL.md): `tar.zst` outside the repository,
+`target/` excluded, the README beside the archive, and a restore test before trusting it.
 
 For a plan the owner asks for — anything that spans more than one pull request — read
 [phased-plan](phased-plan/SKILL.md) before the first branch: 0A proves the baseline, 0B
