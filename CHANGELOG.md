@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La cinta configura la página — 2026-11-23
+
+- **Configurar página** abre su panel: papel (A5–A0, Letter, Legal, Oficio y un tamaño
+  personalizado en milímetros), orientación y márgenes (Normal/Estrecho/Moderado/Ancho o
+  milímetros). **Aplicar** pasa por `Document::set_sheet` y es un solo undo; **Cerrar** o
+  `Esc` descarta el borrador; una hoja cuyos márgenes no dejan espacio al dibujo se rechaza con
+  aviso, no se aplica a medias.
+- **Pendiente**: la cuadrícula del panel original no existe aún en la ventana Rust — se anota
+  como capacidad propia, no se finge un control; el editor del cajetín llega en la fase 6b.
+
 ### La ventana lleva el icono de la aplicación — 2026-11-23
 
 - **Icono**: la placa cobalto de doble tono —el tubo sube por la izquierda, rodea el manómetro

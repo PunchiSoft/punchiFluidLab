@@ -31,6 +31,7 @@ mod files;
 mod inspector;
 mod layout;
 mod lifecycle;
+mod page_setup;
 mod panel;
 mod preferences;
 mod ribbon;
@@ -125,6 +126,8 @@ struct Window {
     ribbon: ribbon::Ribbon,
     /// The simulation's clock speed; the ribbon shows the active one.
     speed: Speed,
+    /// The page setup panel's draft; the document is only touched on apply.
+    page_setup: page_setup::PageSetup,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -474,6 +477,7 @@ impl Window {
                 self.speed = speed;
                 self.ribbon.active_speed = speed.label();
             }
+            Command::PageSetup => self.open_page_setup(),
             Command::Home => self.open_start(),
             Command::OpenRecent(index) => self.open_recent(index),
             Command::CircuitNew => self.new_circuit(),

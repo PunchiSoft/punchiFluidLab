@@ -289,6 +289,9 @@ impl Ribbon {
                                 Item::Recents(..) => Self::recents_rows(ui, recents, picked),
                             }
                         }
+                        if group.launcher {
+                            self.flyout(ui, "Configurar página", Some(Command::PageSetup), picked);
+                        }
                     },
                 );
                 arrow(ui, response.response.rect, palette.ink);
@@ -364,11 +367,13 @@ impl Ribbon {
                             .size(palette.text_small)
                             .color(palette.muted),
                     );
-                    if group.launcher {
-                        // The page setup panel is not here yet: visible and disabled, never a
-                        // button that lies.
-                        ui.add_enabled(false, egui::Button::new("…"))
-                            .on_hover_text("Configurar página");
+                    if group.launcher
+                        && ui
+                            .add(egui::Button::new("…"))
+                            .on_hover_text("Configurar página")
+                            .clicked()
+                    {
+                        *picked = Some(Command::PageSetup);
                     }
                 });
             },
