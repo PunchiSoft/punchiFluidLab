@@ -23,10 +23,11 @@ pub enum Appearance {
 impl Appearance {
     /// The theme cards the gallery offers, in reading order: light, then dark. The desktop
     /// and the system modes are segments of their own, not cards.
-    pub const CHOICES: [Self; 3] = [
+    pub const CHOICES: [Self; 4] = [
         Self::Theme(ThemeId::Cad),
         Self::Theme(ThemeId::Slate),
         Self::Theme(ThemeId::Nordic),
+        Self::Theme(ThemeId::Indigo),
     ];
 
     /// The settings-file value.
@@ -70,11 +71,13 @@ pub enum ThemeId {
     Slate,
     /// The high-contrast palette: near-black chrome, pure white ink and a cobalt accent.
     Nordic,
+    /// The deep-blue palette: navy chrome, a cobalt accent and a cyan link.
+    Indigo,
 }
 
 impl ThemeId {
     /// Every built-in theme, in the order the gallery shows them: light, then dark.
-    pub const ALL: [Self; 3] = [Self::Cad, Self::Slate, Self::Nordic];
+    pub const ALL: [Self; 4] = [Self::Cad, Self::Slate, Self::Nordic, Self::Indigo];
 
     /// The stable settings-file id.
     #[must_use]
@@ -83,6 +86,7 @@ impl ThemeId {
             Self::Cad => "cad",
             Self::Slate => "slate",
             Self::Nordic => "nordic",
+            Self::Indigo => "indigo",
         }
     }
 
@@ -93,6 +97,7 @@ impl ThemeId {
             Self::Cad => "CAD claro",
             Self::Slate => "Pizarra",
             Self::Nordic => "Nórdico",
+            Self::Indigo => "Azul profundo",
         }
     }
 
@@ -105,6 +110,7 @@ impl ThemeId {
             Self::Cad => cad_palette(),
             Self::Slate => slate_palette(),
             Self::Nordic => nordic_palette(),
+            Self::Indigo => indigo_palette(),
         }
     }
 }
@@ -120,6 +126,20 @@ fn cad_palette() -> Palette {
         highlight: Rgb::new(29, 78, 216),
         highlighted_text: WHITE,
         link: Rgb::new(37, 99, 235),
+    }
+}
+
+/// The deep-blue palette: navy chrome, deep panels, a cobalt accent and a cyan link; the same
+/// derivation lifts the paper and measures every pairing.
+fn indigo_palette() -> Palette {
+    Palette {
+        window: Rgb::new(11, 15, 25),
+        window_text: Rgb::new(248, 250, 252),
+        base: Rgb::new(18, 24, 38),
+        button: Rgb::new(30, 41, 59),
+        highlight: Rgb::new(2, 132, 199),
+        highlighted_text: WHITE,
+        link: Rgb::new(56, 189, 248),
     }
 }
 
