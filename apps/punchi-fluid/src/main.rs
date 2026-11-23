@@ -115,21 +115,6 @@ const HIT_SLACK: f32 = 1.0;
 const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
-    /// The Inicio page: returns `true` while it is the screen, after loading the template
-    /// the reader chose.
-    fn show_start(&mut self, ui: &mut egui::Ui) -> bool {
-        if !self.start_open {
-            return false;
-        }
-        if let Some(index) = start::show(ui) {
-            if let Some(document) = start::document(index, &self.catalog, self.page.rect()) {
-                *self = Window::new(self.theme.clone(), document, None, None);
-                self.start_open = false;
-            }
-        }
-        true
-    }
-
     fn new(
         theme: theme::Theme,
         document: Document,
@@ -532,6 +517,12 @@ impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         self.sync_commands(context);
         self.tick(context);
+        // Inicio is the whole window: the ribbon, the status bar and the catalog below are
+        // the sheet's chrome, and the start page hides them while it is open.
+        if self.start_open {
+            self.show_start(context);
+            return;
+        }
         let palette = ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette);
@@ -583,9 +574,6 @@ impl eframe::App for Window {
             });
 
         egui::CentralPanel::default().show(context, |ui| {
-            if self.show_start(ui) {
-                return;
-            }
             let area = ui.available_rect_before_wrap();
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {
