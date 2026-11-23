@@ -1,14 +1,23 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The two «Empezar» cards, the template gallery and the empty `Recientes` row.
+//! The two «Empezar» cards, the template gallery and the recent documents.
 //!
 //! Each template card is its document rendered by `thumbnail` and the name and description
 //! from `labels`, with the category chip of the circuit's own medium. The first template is
 //! the owner's OR worked example, so it carries the example badge as well.
+//!
+//! The `Recientes` rows are the session's list: the file name, the folder, a click that
+//! opens the document and a small `Quitar` button. A row whose file is gone stays visible,
+//! muted and named as not found: the list explains itself instead of dropping a row behind
+//! the reader's back.
+
+use std::path::{Path, PathBuf};
 
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
+use punchi_fluid_file::recent::Recent;
+use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates::{self, Template};
 
 use super::thumbnail::thumbnail;
@@ -30,7 +39,6 @@ pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
     let spacing = ui.spacing().item_spacing.x;
     let width = ((ui.available_width() - spacing) * 0.5).max(tokens.unit * 6.0);
     ui.horizontal(|ui| {
-        // TODO(start page, next slice): "Nuevo proyecto" opens the new-project dialog.
         if begin_card(
             ui,
             tokens,
@@ -40,9 +48,8 @@ pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
             true,
             width,
         ) {
-            action = Some(Action::Pending);
+            action = Some(Action::NewProject);
         }
-        // TODO(start page, next slice): "Abrir…" opens the file picker for a saved project.
         if begin_card(
             ui,
             tokens,
@@ -52,7 +59,7 @@ pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
             false,
             width,
         ) {
-            action = Some(Action::Pending);
+            action = Some(Action::OpenDialog);
         }
     });
     action
@@ -293,8 +300,216 @@ fn chip(
     rect
 }
 
-/// The empty `Recientes` state: the next step in words, not a blank table. The Rust session
-/// keeps no recent list yet, so the page does not invent one.
+/// The `Recientes` rows, newest first, or the empty state when nothing is remembered.
+pub(super) fn recent_rows(ui: &mut egui::Ui, tokens: &Tokens, recents: &Recents) -> Option<Action> {
+    if recents.entries().is_empty() {
+        recent_placeholder(ui, tokens);
+        return None;
+    }
+    let mut action = None;
+    for recent in recents.entries() {
+        match recent_row(ui, tokens, recent) {
+            Some(RowAction::Open) => {
+                action = Some(Action::OpenRecent(PathBuf::from(&recent.path)));
+            }
+            Some(RowAction::Forget) => {
+                action = Some(Action::ForgetRecent(recent.path.clone()));
+            }
+            None => {}
+        }
+        ui.add_space(tokens.unit * 0.25);
+    }
+    action
+}
+
+/// What a recent row asked for.
+enum RowAction {
+    /// Read the remembered document.
+    Open,
+    /// Drop the row from the list.
+    Forget,
+}
+
+/// One remembered document: its name, its folder, a click that opens it and a small button
+/// that forgets it. A row whose file is gone is painted muted with `no encontrado`, cannot
+/// be opened, and stays until the reader removes it.
+fn recent_row(ui: &mut egui::Ui, tokens: &Tokens, recent: &Recent) -> Option<RowAction> {
+    let path = Path::new(&recent.path);
+    let missing = recent_missing(path);
+    let height = (tokens.unit * 2.6).max(40.0);
+    let (rect, _) = ui.allocate_exact_size(
+        egui::vec2(ui.available_width(), height),
+        egui::Sense::hover(),
+    );
+    // The remove target keeps the interface's 24 px minimum even when the row is at its
+    // floor, and never overlaps the open target: a click does one thing.
+    let remove_rect = egui::Rect::from_center_size(
+        egui::pos2(rect.right() - tokens.unit * 1.5, rect.center().y),
+        egui::vec2(tokens.unit * 2.4, (tokens.unit * 1.6).max(24.0)),
+    );
+    let open_rect = egui::Rect::from_min_max(
+        rect.min,
+        egui::pos2(
+            (remove_rect.left() - tokens.unit * 0.4).max(rect.left()),
+            rect.max.y,
+        ),
+    );
+    let open = focusable(
+        ui,
+        open_rect,
+        ui.make_persistent_id(("start.recent", &recent.path)),
+    );
+    let remove = focusable(
+        ui,
+        remove_rect,
+        ui.make_persistent_id(("start.recent.remove", &recent.path)),
+    );
+    if !ui.is_rect_visible(rect) {
+        return None;
+    }
+    let layout = RecentLayout {
+        rect,
+        remove_rect,
+        open,
+        remove,
+    };
+    let detail = recent_detail(path, missing);
+    paint_recent_row(ui, tokens, recent, missing, &detail, &layout);
+    let accessible = format!("{}. {detail}", recent.name);
+    layout.open.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, !missing, accessible.clone())
+    });
+    let forget_label = format!("Quitar {}", recent.name);
+    layout.remove.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, forget_label.clone())
+    });
+    let forget = activated(ui, &layout.remove);
+    let open_activated = !missing && activated(ui, &layout.open);
+    if missing {
+        layout
+            .open
+            .on_hover_text("El archivo ya no está: quita esta fila para olvidarla.");
+    } else {
+        layout.open.on_hover_text(format!("Abrir {}", recent.name));
+    }
+    layout
+        .remove
+        .on_hover_text(format!("Quitar {} de la lista", recent.name));
+    if forget {
+        Some(RowAction::Forget)
+    } else if open_activated {
+        Some(RowAction::Open)
+    } else {
+        None
+    }
+}
+
+/// The rectangles and presses one recent row owns.
+struct RecentLayout {
+    rect: egui::Rect,
+    remove_rect: egui::Rect,
+    open: egui::Response,
+    remove: egui::Response,
+}
+
+/// Paints one row: its plate, the two text lines and the small `Quitar` label.
+fn paint_recent_row(
+    ui: &egui::Ui,
+    tokens: &Tokens,
+    recent: &Recent,
+    missing: bool,
+    detail: &str,
+    layout: &RecentLayout,
+) {
+    let rect = layout.rect;
+    let remove_rect = layout.remove_rect;
+    let hot = !missing && (layout.open.hovered() || layout.open.is_pointer_button_down_on());
+    ui.painter().rect_filled(
+        rect,
+        tokens.radius_control,
+        if hot {
+            tokens.surface_sunken
+        } else {
+            tokens.surface_raised
+        },
+    );
+    if (!missing && layout.open.has_focus()) || layout.remove.has_focus() {
+        ui.painter().rect_stroke(
+            rect,
+            tokens.radius_control,
+            egui::Stroke::new(1.0_f32, tokens.accent),
+            egui::StrokeKind::Inside,
+        );
+    }
+    if layout.remove.hovered() || layout.remove.has_focus() {
+        ui.painter()
+            .rect_filled(remove_rect, tokens.radius_small, tokens.accent_soft);
+    }
+    let title_left = rect.left() + tokens.unit * 0.7;
+    ui.painter().text(
+        egui::pos2(title_left, rect.center().y - tokens.unit * 0.4),
+        egui::Align2::LEFT_CENTER,
+        &recent.name,
+        egui::FontId::proportional(tokens.text_body),
+        recent_ink(tokens, missing),
+    );
+    ui.painter().text(
+        egui::pos2(title_left, rect.center().y + tokens.unit * 0.5),
+        egui::Align2::LEFT_CENTER,
+        detail,
+        egui::FontId::proportional(tokens.text_small),
+        if missing {
+            tokens.ink_muted
+        } else {
+            tokens.ink_dim
+        },
+    );
+    ui.painter().text(
+        remove_rect.center(),
+        egui::Align2::CENTER_CENTER,
+        "Quitar",
+        egui::FontId::proportional(tokens.text_small),
+        if layout.remove.hovered() || layout.remove.has_focus() {
+            tokens.accent
+        } else {
+            tokens.ink_dim
+        },
+    );
+}
+
+/// The second line of a recent row: the folder, and that the file is gone when it is.
+fn recent_detail(path: &Path, missing: bool) -> String {
+    let folder = folder_of(path);
+    if missing {
+        format!("{folder} · no encontrado")
+    } else {
+        folder
+    }
+}
+
+/// Whether the remembered document is not there to be read. A folder or a dangling link is
+/// not a document either, so the row says so instead of failing when the reader clicks it.
+pub(super) fn recent_missing(path: &Path) -> bool {
+    !path.is_file()
+}
+
+/// The ink of a recent row's name: muted when the document is gone.
+pub(super) fn recent_ink(tokens: &Tokens, missing: bool) -> egui::Color32 {
+    if missing {
+        tokens.ink_muted
+    } else {
+        tokens.ink
+    }
+}
+
+/// The folder a remembered document lives in, or `.` for a path with none.
+fn folder_of(path: &Path) -> String {
+    path.parent()
+        .filter(|folder| !folder.as_os_str().is_empty())
+        .map_or_else(|| String::from("."), |folder| folder.display().to_string())
+}
+
+/// The empty `Recientes` state: the next step in words, not a blank table.
 pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens) {
     egui::Frame::default()
         .fill(tokens.surface_raised)

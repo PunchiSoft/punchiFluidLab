@@ -87,13 +87,11 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
     nav_heading(ui, tokens, "Iniciar");
     // Inicio is the page itself: choosing it keeps the reader where it is.
     nav_row(ui, tokens, &NAV_HOME);
-    // TODO(start page, next slice): the project dialogs are not in the window yet, so the
-    // two rows below are drawn and reachable but keep the page where it is.
     if nav_row(ui, tokens, &NAV_NEW) {
-        action = Some(Action::Pending);
+        action = Some(Action::NewProject);
     }
     if nav_row(ui, tokens, &NAV_OPEN) {
-        action = Some(Action::Pending);
+        action = Some(Action::OpenDialog);
     }
     nav_heading(ui, tokens, "Aprender");
     // TODO(start page, next slice): "Acerca de" and "Licencia" need their own panels.

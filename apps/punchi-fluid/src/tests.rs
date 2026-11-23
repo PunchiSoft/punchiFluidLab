@@ -264,7 +264,89 @@ fn the_window_saves_the_document_it_was_given() {
             .is_some_and(|notice| notice.starts_with("guardado")),
         "the status bar says the save happened"
     );
+    assert_eq!(
+        window.recents.entries().len(),
+        1,
+        "a successful save is remembered"
+    );
+    assert_eq!(window.recents.entries()[0].path, path.to_string_lossy());
     let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn nuevo_clears_the_path_and_starts_an_empty_document() {
+    let mut document = Document::new();
+    document.place(Placement::new(
+        "valve.5_2",
+        Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
+    let path = std::env::temp_dir().join(format!(
+        "punchi-fluid-window-nuevo-{}.pfluid",
+        std::process::id()
+    ));
+    let mut window = Window::new(theme::Theme::fallback(), document, Some(path), None);
+    window.new_document();
+    assert!(window.path.is_none(), "the new document has no path");
+    assert!(
+        window.document.placements().is_empty(),
+        "the new document is empty"
+    );
+    assert!(!window.start_open, "Nuevo leaves the sheet in view");
+    assert_eq!(window.notice.as_deref(), Some("documento nuevo"));
+}
+
+#[test]
+fn guardar_without_a_path_asks_for_one() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.save();
+    assert!(
+        window.dialog.is_some(),
+        "a document with no path opens the save dialog instead of failing"
+    );
+}
+
+#[test]
+fn ctrl_n_starts_a_new_document_and_ctrl_o_opens_the_file_dialog() {
+    let dir = std::env::temp_dir().join(format!(
+        "punchi-fluid-window-shortcuts-{}",
+        std::process::id()
+    ));
+    let base = dir.join("base.pfluid");
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), Some(base), None);
+    let context = egui::Context::default();
+    let _ = context.run(shortcut(egui::Key::N), |context| {
+        window.sync_commands(context);
+    });
+    assert!(
+        window.path.is_none(),
+        "Ctrl+N starts a new document with no path"
+    );
+    assert_eq!(window.notice.as_deref(), Some("documento nuevo"));
+    let _ = context.run(shortcut(egui::Key::O), |context| {
+        window.sync_commands(context);
+    });
+    assert!(
+        window.dialog.is_some(),
+        "Ctrl+O opens the file dialog, as the ribbon and Inicio hint"
+    );
+}
+
+/// One frame of raw input with `Ctrl` and `key` pressed.
+fn shortcut(key: egui::Key) -> egui::RawInput {
+    let mut input = egui::RawInput {
+        modifiers: egui::Modifiers::CTRL,
+        ..Default::default()
+    };
+    input.events.push(egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::CTRL,
+    });
+    input
 }
 
 #[test]
