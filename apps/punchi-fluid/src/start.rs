@@ -8,7 +8,17 @@
 //! first screen; choosing a card loads that template and closes the page.
 
 use eframe::egui;
+use punchi_fluid_draw::surface::Rect;
 use punchi_fluid_session::templates::{self, Template};
+
+/// Builds the document of a start template, when the catalog provides it.
+pub fn document(
+    index: u32,
+    catalog: &punchi_fluid_catalog::Catalog,
+    area: Rect,
+) -> Option<punchi_fluid_doc::Document> {
+    templates::document(index, catalog, area).ok()
+}
 
 /// Draws the page and returns the template the reader chose, by index.
 #[must_use]

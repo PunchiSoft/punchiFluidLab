@@ -122,10 +122,7 @@ impl Window {
             return false;
         }
         if let Some(index) = start::show(ui) {
-            let area = self.page.rect();
-            if let Ok(document) =
-                punchi_fluid_session::templates::document(index, &self.catalog, area)
-            {
+            if let Some(document) = start::document(index, &self.catalog, self.page.rect()) {
                 *self = Window::new(self.theme.clone(), document, None, None);
                 self.start_open = false;
             }
