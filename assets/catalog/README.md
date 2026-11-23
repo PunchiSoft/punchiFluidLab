@@ -36,6 +36,24 @@ A file that does not parse, or that describes something impossible, is skipped: 
 rest of the catalog keeps working and the reason appears in the panel. It never
 stops the application from starting.
 
+## Card images
+
+**Descripción del componente** may show a picture of the physical part beside its name and
+its `summary`. The picture is descriptive, not the schematic symbol: the sheet keeps drawing
+the ISO 1219 symbol from the TOML file, and the card never replaces it.
+
+- One PNG per catalog id in [`cards/`](cards/), named `<catalog_id>.png`, normalized to
+  **800 × 450 px**, 16:9, white background.
+- The text on the card is the definition's own `name` and `summary`; do not write a second
+  description in the image folder.
+- The origin and the licence of every image are recorded in [`cards/README.md`](cards/README.md).
+  A file without a row is not merged. No capture of another application, manual or website
+  enters this folder.
+- An image is added only for an id that exists in this catalog. A reference picture without
+  a definition waits outside the repository.
+- The application compiles the cards in `apps/punchi-fluid/src/cards.rs`; the tests check the
+  normalized size, the definition and the licence row.
+
 ## Removing a component
 
 - Your own file: delete it.

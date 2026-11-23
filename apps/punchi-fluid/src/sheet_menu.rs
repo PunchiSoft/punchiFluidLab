@@ -185,11 +185,22 @@ impl Mockup {
     }
 }
 
-/// The open mockup, if any, and the component it names.
+/// The text a card shows, resolved once when the window opens: the static image and the
+/// definition's English name, summary and id.
+#[derive(Debug, Clone)]
+pub(crate) struct CardView {
+    image: &'static crate::cards::Card,
+    name: String,
+    summary: String,
+    id: String,
+}
+
+/// The open window, if any, the component it names and the card it may show.
 #[derive(Debug, Default)]
 pub(crate) struct Mockups {
     open: Option<Mockup>,
     subject: String,
+    card: Option<CardView>,
 }
 
 impl Mockups {
@@ -203,14 +214,16 @@ impl Mockups {
         self.open.is_some()
     }
 
-    fn open(&mut self, kind: Mockup, subject: String) {
+    fn open(&mut self, kind: Mockup, subject: String, card: Option<CardView>) {
         self.open = Some(kind);
         self.subject = subject;
+        self.card = card;
     }
 
     fn close(&mut self) {
         self.open = None;
         self.subject.clear();
+        self.card = None;
     }
 }
 
@@ -395,27 +408,44 @@ impl Window {
         }
     }
 
-    /// Opens the mockup window with the selected component's name, captured now.
+    /// Opens the window with the selected component's name and, for a description with a
+    /// card, the card text resolved once.
     fn open_mockup(&mut self, kind: Mockup) {
-        let subject = self
+        let catalog_id = self
             .selected
             .last()
             .and_then(|index| self.document.placements().get(*index))
-            .and_then(|placed| self.catalog.get(&placed.catalog_id))
-            .map_or_else(
-                || String::from("Componente"),
-                |definition| {
-                    definition
-                        .name_es
-                        .clone()
-                        .unwrap_or_else(|| definition.name.clone())
-                },
-            );
-        self.mockups.open(kind, subject);
+            .map(|placed| placed.catalog_id.clone());
+        let definition = catalog_id.as_deref().and_then(|id| self.catalog.get(id));
+        let subject = definition.map_or_else(
+            || String::from("Componente"),
+            |definition| {
+                definition
+                    .name_es
+                    .clone()
+                    .unwrap_or_else(|| definition.name.clone())
+            },
+        );
+        let card = if kind == Mockup::Describe {
+            catalog_id
+                .as_deref()
+                .and_then(crate::cards::image)
+                .zip(definition)
+                .map(|(image, definition)| CardView {
+                    image,
+                    name: definition.name.clone(),
+                    summary: definition.summary.clone().unwrap_or_default(),
+                    id: definition.id.clone(),
+                })
+        } else {
+            None
+        };
+        self.mockups.open(kind, subject, card);
     }
 
-    /// Draws the open mockup. It is a shell with a title, the component and the word
-    /// *Maqueta*: no field pretends to configure or describe anything yet.
+    /// Draws the open window. **Descripción del componente** shows the card when the
+    /// catalog id has one: the normalized image, the definition's English name, its summary
+    /// and its id. Without a card it keeps the mockup note; **Configuración** has no card.
     pub(crate) fn show_mockups(&mut self, context: &egui::Context) {
         let Some(kind) = self.mockups.open else {
             return;
@@ -425,7 +455,13 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        let subject = self.mockups.subject.clone();
+        let subject = &self.mockups.subject;
+        let card = self.mockups.card.as_ref();
+        let size = if card.is_some() {
+            egui::vec2(tokens.unit * 35.0, tokens.unit * 29.0)
+        } else {
+            kind.size(tokens.unit)
+        };
         let screen = context.screen_rect();
         egui::Area::new(egui::Id::new("component-mockup.blocker"))
             .order(egui::Order::Middle)
@@ -440,22 +476,26 @@ impl Window {
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
             .resizable(false)
-            .fixed_size(kind.size(tokens.unit))
+            .fixed_size(size)
             .show(context, |ui| {
-                ui.label(
-                    egui::RichText::new(&subject)
-                        .size(tokens.text_label)
-                        .strong()
-                        .color(tokens.ink),
-                );
-                ui.add_space(tokens.unit * 0.5);
-                ui.label(
-                    egui::RichText::new(
-                        "Maqueta · el contenido de este diálogo llegará más adelante.",
-                    )
-                    .size(tokens.text_body)
-                    .color(tokens.ink_muted),
-                );
+                if let Some(card) = card {
+                    card_body(ui, &tokens, card);
+                } else {
+                    ui.label(
+                        egui::RichText::new(subject)
+                            .size(tokens.text_label)
+                            .strong()
+                            .color(tokens.ink),
+                    );
+                    ui.add_space(tokens.unit * 0.5);
+                    ui.label(
+                        egui::RichText::new(
+                            "Maqueta · el contenido de este diálogo llegará más adelante.",
+                        )
+                        .size(tokens.text_body)
+                        .color(tokens.ink_muted),
+                    );
+                }
                 ui.add_space(tokens.unit);
                 ui.separator();
                 ui.horizontal(|ui| {
@@ -468,6 +508,38 @@ impl Window {
             self.mockups.close();
         }
     }
+}
+
+/// The body of a description card: the normalized image, the definition's English name,
+/// its summary and its id. Read-only; the window's own title and the **Cerrar** button stay
+/// in `show_mockups`.
+fn card_body(ui: &mut egui::Ui, tokens: &crate::theme::Tokens, card: &CardView) {
+    let width = tokens.unit * 32.0;
+    let height = width * 9.0 / 16.0;
+    ui.add(
+        egui::Image::from_bytes(card.image.uri, card.image.bytes)
+            .fit_to_exact_size(egui::vec2(width, height))
+            .alt_text(&card.name),
+    );
+    ui.add_space(tokens.unit * 0.5);
+    ui.label(
+        egui::RichText::new(&card.name)
+            .size(tokens.text_label)
+            .strong()
+            .color(tokens.ink),
+    );
+    if !card.summary.is_empty() {
+        ui.label(
+            egui::RichText::new(&card.summary)
+                .size(tokens.text_body)
+                .color(tokens.ink_muted),
+        );
+    }
+    ui.label(
+        egui::RichText::new(&card.id)
+            .size(tokens.text_small)
+            .color(tokens.ink_muted),
+    );
 }
 
 /// One row, left-aligned: the icon in a fixed column and the label beside it. The button's

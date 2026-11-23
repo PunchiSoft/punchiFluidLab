@@ -26,6 +26,7 @@ use crate::ribbon::{Command, Speed};
 mod auto_hide;
 mod block_editor;
 mod branding;
+mod cards;
 mod check_panel;
 mod circuit_dialogs;
 mod edit_commands;
