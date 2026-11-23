@@ -26,6 +26,7 @@ use crate::ribbon::{Command, Speed};
 mod auto_hide;
 mod block_editor;
 mod branding;
+mod circuit_dialogs;
 mod edit_commands;
 mod export;
 mod files;
@@ -132,6 +133,8 @@ struct Window {
     page_setup: page_setup::PageSetup,
     /// The title block editor's draft; the document is only touched on apply.
     block_editor: block_editor::BlockEditor,
+    /// The circuit dialog waiting for an answer, if any.
+    circuit_dialog: Option<circuit_dialogs::CircuitDialog>,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -483,6 +486,8 @@ impl Window {
             }
             Command::PageSetup => self.open_page_setup(),
             Command::BlockEdit => self.open_block_editor(),
+            Command::CircuitRename => self.open_circuit_rename(),
+            Command::CircuitClose => self.open_circuit_close(),
             Command::Home => self.open_start(),
             Command::OpenRecent(index) => self.open_recent(index),
             Command::CircuitNew => self.new_circuit(),
@@ -615,6 +620,7 @@ impl Window {
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
         self.ribbon.can_reset_block = self.block_is_customized();
+        self.ribbon.can_close_circuit = self.document.circuits().len() > 1;
         self.ribbon.has_pipe = self.selected_pipe.is_some();
     }
 }

@@ -95,6 +95,8 @@ pub(crate) enum Command {
     BlockPosition(BlockPosition),
     BlockReset,
     BlockEdit,
+    CircuitRename,
+    CircuitClose,
     PipeClass(LineClass),
     Tube,
     Distribute(Axis),
@@ -139,7 +141,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 47] = [
+    pub(crate) const ALL: [Self; 49] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -152,6 +154,8 @@ impl Command {
         Self::BlockPosition(BlockPosition::BottomRight),
         Self::BlockReset,
         Self::BlockEdit,
+        Self::CircuitRename,
+        Self::CircuitClose,
         Self::PipeClass(LineClass::Working),
         Self::Tube,
         Self::Distribute(Axis::Horizontal),
@@ -206,6 +210,8 @@ impl Command {
             Self::BlockPosition(_) => "Posición",
             Self::BlockReset | Self::SimReset => "Restablecer",
             Self::BlockEdit => "Editar datos",
+            Self::CircuitRename => "Renombrar",
+            Self::CircuitClose => "Cerrar",
             Self::PipeClass(_) => "Conducto",
             Self::Tube => "Diámetro",
             Self::Distribute(_) => "Repartir",

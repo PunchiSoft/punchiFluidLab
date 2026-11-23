@@ -16,6 +16,14 @@ publicación.
   (la serie de `assets/branding`) y el mismo `StartupWMClass`. El nombre del archivo es el
   `app_id`, y la prueba del módulo compila la ruta: renombrar uno sin el otro no compila.
 - **Prueba**: `the_desktop_entry_is_named_after_the_desktop_name_the_window_announces`.
+### La cinta renombra y cierra circuitos — 2026-11-23
+
+- **Circuito ▸ Renombrar** abre un diálogo con el nombre actual; **Renombrar** cambia el
+  título del circuito como un solo undo.
+- **Circuito ▸ Cerrar** confirma y elimina el circuito con sus componentes y conductos como un
+  solo undo; **Cerrar** se deshabilita cuando el proyecto tiene un solo circuito y el último
+  no se puede cerrar. La página que dibuja la ventana pasa al circuito vecino y el modelo se
+  reconstruye en el siguiente Iniciar.
 
 ### La cinta edita los datos del cajetín — 2026-11-23
 

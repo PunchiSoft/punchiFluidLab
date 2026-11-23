@@ -233,6 +233,7 @@ impl Window {
             speed: ribbon::Speed::Normal,
             page_setup: crate::page_setup::PageSetup::default(),
             block_editor: crate::block_editor::BlockEditor::default(),
+            circuit_dialog: None,
             sidebar: sidebar::Sidebar::new(),
             inspector: inspector::Inspector::new(),
             selected: Vec::new(),

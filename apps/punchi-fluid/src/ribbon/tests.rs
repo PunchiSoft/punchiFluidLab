@@ -179,6 +179,14 @@ fn distributing_needs_two_placements() {
 }
 
 #[test]
+fn the_circuit_close_needs_two() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled(Command::CircuitClose));
+    ribbon.can_close_circuit = true;
+    assert!(ribbon.enabled(Command::CircuitClose));
+}
+
+#[test]
 fn the_block_reset_is_disabled_when_default() {
     let mut ribbon = Ribbon::new();
     assert!(
