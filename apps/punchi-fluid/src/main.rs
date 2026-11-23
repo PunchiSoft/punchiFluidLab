@@ -22,9 +22,11 @@ use punchi_fluid_session::recents::Recents;
 
 mod export;
 mod files;
+mod inspector;
 mod lifecycle;
 mod ribbon;
 mod scene;
+mod selection;
 mod sidebar;
 mod sim;
 mod start;
@@ -97,8 +99,13 @@ struct Window {
     ribbon: ribbon::Ribbon,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
+    /// The right dock: the properties of the selection, and its own view state.
+    inspector: inspector::Inspector,
     /// The placements the reader selected, as indices into the document.
     selected: Vec<usize>,
+    /// The selected hose, when the selection is one. A hose and components are never
+    /// selected together: `Supr` has to know which one it removes.
+    selected_pipe: Option<usize>,
     /// The drag in progress: the pointer's press, the selection's start centres and the
     /// millimetres it has moved. The drawing applies the offset live; the release commits it.
     drag: Option<Drag>,
@@ -234,6 +241,7 @@ impl Window {
     fn select_at(&mut self, point: Pt, additive: bool) -> Option<usize> {
         let hit = self.hit_placement(point);
         if let Some(index) = hit {
+            self.selected_pipe = None;
             if additive {
                 if self.selected.contains(&index) {
                     self.selected.retain(|selected| *selected != index);
@@ -245,17 +253,15 @@ impl Window {
             }
         } else if !additive {
             self.selected.clear();
+            self.select_pipe_at(point);
         }
-        self.notice = match self.selected.len() {
-            0 => None,
-            1 => Some(String::from("1 seleccionada")),
-            count => Some(format!("{count} seleccionadas")),
-        };
+        self.sync_selection_notice();
         hit
     }
 
     /// Selects every placement of the active circuit.
     fn select_all(&mut self) {
+        self.selected_pipe = None;
         let circuit = self.document.active_circuit();
         self.selected = self
             .document
@@ -349,8 +355,12 @@ impl Window {
         }
     }
 
-    /// Deletes the selection as one undo entry.
+    /// Deletes the selection as one undo entry: the selected hose when there is one, the
+    /// selected components otherwise.
     fn remove_selected(&mut self) {
+        if self.remove_selected_pipe() {
+            return;
+        }
         if self.selected.is_empty() {
             return;
         }
@@ -386,6 +396,7 @@ impl Window {
     fn undo(&mut self) {
         if self.document.undo() {
             self.selected.clear();
+            self.selected_pipe = None;
             self.notice = Some(String::from("deshecho"));
         }
     }
@@ -394,6 +405,7 @@ impl Window {
     fn redo(&mut self) {
         if self.document.redo() {
             self.selected.clear();
+            self.selected_pipe = None;
             self.notice = Some(String::from("rehecho"));
         }
     }
@@ -426,7 +438,7 @@ impl Window {
             }
             "Detener" => self.stop(),
             "Hasta cambio" => self.until_change(),
-            _ => self.view.command(command),
+            _ => self.view_command(command),
         }
     }
 
@@ -458,6 +470,7 @@ impl Window {
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::F)) {
             self.sidebar.focus_search = true;
         }
+        self.inspector_keyboard(context);
         // Select all and duplicate only when no text field has the keyboard: Ctrl+A in the
         // search selects the search text, not the sheet.
         let idle = context.memory(|memory| memory.focused().is_none());
@@ -479,7 +492,7 @@ impl Window {
         self.ribbon.savable = self.path.is_some();
         self.ribbon.can_step = self.model.is_some();
         self.ribbon.has_clipboard = !self.clipboard.is_empty();
-        self.ribbon.selected = self.selected.len();
+        self.ribbon.selected = self.selected.len() + usize::from(self.selected_pipe.is_some());
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
     }
@@ -550,6 +563,9 @@ impl eframe::App for Window {
                     self.add_component(&catalog_id);
                 }
             });
+        // The right dock sits below the ribbon and above the status bar, so the sheet's
+        // available area follows it as it folds.
+        self.show_inspector(context);
 
         egui::CentralPanel::default().show(context, |ui| {
             let area = ui.available_rect_before_wrap();
@@ -602,6 +618,7 @@ impl eframe::App for Window {
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let painter = ui.painter().with_clip_rect(ui.max_rect());
             painter.extend(drawing.shapes);
+            self.highlight_selected_pipe(ui, origin, placement.scale);
         });
         // The dialog is the last surface drawn, so it is in front of the sheet and catches
         // the keyboard before the sheet's shortcuts do.

@@ -706,6 +706,7 @@ impl Window {
         self.page = page;
         self.block = block;
         self.selected.clear();
+        self.selected_pipe = None;
         self.drag = None;
         self.clipboard.clear();
         self.pressed_valve = None;
