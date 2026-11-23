@@ -202,9 +202,11 @@ tooling, never a runtime dependency).
 - **Colour, size and font come from the theme adapter**
   (`apps/punchi-fluid/src/theme.rs`), never from a literal in a widget. The theme's own
   tests measure the contrast and fail below the criterion.
-- Follow the desktop: the window reads `$XDG_CONFIG_HOME/kdeglobals` once at start for the
-  palette, accent, font and motion; a machine without it gets the light fallback. No file
-  is read per frame.
+- **The desktop is the default appearance**: the window reads `$XDG_CONFIG_HOME/kdeglobals`
+  once at start for the palette, accent, font and motion, and a machine without it gets the
+  light fallback; no file is read per frame. The appearance setting may choose a built-in
+  theme instead ([ADR 0042](docs/adr/0042-the-appearance-is-a-setting.md)), and every theme
+  is a `Palette` seed through the same adapter — no colour literal in a widget.
 - Components are shown by **their own symbol**, never by a separate icon set.
 - State is never colour-only, hover never changes the document, and there is no modal
   on the normal path.

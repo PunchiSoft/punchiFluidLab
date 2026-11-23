@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La apariencia es un ajuste, con Escritorio por defecto — 2026-11-23
+
+- **ADR 0042**: la apariencia pasa a ser estado de vista (`appearance=desktop|system|<tema>`)
+  y no del documento. `Escritorio` sigue siendo el default y conserva la identidad actual; un
+  tema integrado es una semilla de `Palette` que pasa por la misma derivación y las mismas
+  pruebas de contraste, así que no entra ningún color literal en un widget.
+- **La ventana de Configuración** (`Archivo ▸ Configuración`, `Ctrl+,` y el rail de Inicio) se
+  especifica en `ui-ux.md`: páginas de Apariencia y Paneles, aplicación en vivo, `Esc`/`Cerrar`,
+  sin buscador, sin importar temas y un tema por cambio. `Sistema` (día/noche) se ofrece cuando
+  existan un tema claro y uno oscuro.
+
 ### El menú recupera el bucle en vivo — 2026-11-23
 
 - **El menú de desarrollo vuelve a ofrecer el bucle en vivo** (guardar, recompilar y

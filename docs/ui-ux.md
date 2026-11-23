@@ -503,8 +503,8 @@ project opens ([ADR 0031](adr/0031-the-program-opens-on-a-start-view.md)).
 
 **The left region carries the start navigation** while the start view is shown: the catalog's
 column holds a rail with **Iniciar** — **Inicio**, **Nuevo proyecto**, **Abrir…**, each with its
-symbol and the `Ctrl+N`/`Ctrl+O` hint — and **Aprender** — **Acerca de** and **Licencia** — instead
-of a second sidebar. **Atajos** and **ISO 1219** need a panel and content of their own and stay
+symbol and the `Ctrl+N`/`Ctrl+O` hint — **Configuración** (`Ctrl+,`), which opens the window of
+§2.4 — and **Aprender** — **Acerca de** and **Licencia** — instead of a second sidebar. **Atajos** and **ISO 1219** need a panel and content of their own and stay
 out until a node owns them. The right dock is hidden, since with no project it has no inspector
 and no block. The commands that need a document (`Guardar`, `Exportar`) are not shown greyed:
 they appear with the project. `Inicio` is reachable from **Archivo ▸ Inicio**, from the
@@ -564,6 +564,48 @@ their sizes and tones from the theme tokens. Template cards and recent rows expo
 title/name and description to assistive technology. Inicio is reachable from **Archivo ▸
 Inicio**; the domain chip, the recent thumbnail and the opened time are deferred to P-034b,
 with a preview-by-path bound and a `recent.json` version change.
+
+### 2.4 Configuración
+
+**The window is one surface, not a fourth region.** It opens from **Archivo ▸
+Configuración** (`Ctrl+,`) and from the Inicio rail, over the sheet or the start page, and
+closes with `Esc` or **Cerrar**; the focus returns to the command that opened it, and nothing
+it does enters the document, the history or the modified mark. It is a dialog the user
+opens on purpose, the exception to "no modal on the normal path".
+
+**Its shape is a nav, a page and a footer.** A 200 px rail on `panel` lists the pages it can
+show; the page scrolls; the footer carries **Restaurar página** and **Cerrar**. Preferred
+size 880 × 600, minimum 760 × 520, so it fits the 1366 × 768 reference and the 900 × 600
+window floor. The nav is keyboard reachable, and the page has a heading and an accessible
+name.
+
+**The pages exist only when their settings do.** **Apariencia** and **Paneles** are the
+first two; **Catálogo** (the folder in use and the skipped files with their reason) and
+**Atajos** (the command table, read-only) wait for their content. A category with nothing
+behind it is not shown.
+
+**Apariencia** has three modes: **Escritorio** (default; the desktop palette, which already
+switches with light and dark), **Sistema** (the theme assigned to the light or dark scheme)
+and **Un tema** (one fixed theme). Under **Sistema** the page shows two slots, **Día** and
+**Noche**, and choosing a card fills the aimed slot; under **Un tema** a card applies
+directly; under **Escritorio** a card offers to switch to **Un tema**. The gallery is a grid
+of 160 × 98 cards, each a mini window drawn with that theme's tokens (ribbon, panel, canvas,
+paper, accent dot), its name, **Sistema** or **Integrado**, and **En uso** marked with a
+check, never by colour alone. Opening the page reveals the theme in use; arrows move, `Enter`
+applies; **Restaurar apariencia** returns to `Escritorio`. The theme applies live; there is no
+Apply/Cancel.
+
+**Paneles** holds **Ocultar al salir** and **Restablecer vista**. The **Ver** menu keeps the
+quick toggles as shortcuts; Configuración is the same setting with its context, not a second
+owner.
+
+**What it refuses**: a search field with two pages, an account or profile page, importing,
+exporting or following a theme file, and an empty category.
+
+**A theme is a `Palette` seed.** The page never writes a colour: `Theme::for_appearance`
+builds the palette and `tokens_from` derives the tokens, so `paper`, `line`, `ink_dim` and
+the contrast rules are the same as the visual language below. A theme that misses a criterion
+is shifted until it reaches it; the card shows the measured result.
 
 ### 3. The sheet
 
@@ -771,6 +813,11 @@ A colour that does not reach its criterion against the surface is shifted just e
 reach it (`ensureContrast`), because a desktop may hand the application an accent that
 disappears on its own window colour.
 
+**An appearance is a palette, not a second language.** `Escritorio` builds the `Palette` from
+`kdeglobals`; a built-in theme supplies the same seven seed colours, and the table above still
+derives every token from them. No widget learns a theme id; it asks the tokens
+([ADR 0042](adr/0042-the-appearance-is-a-setting.md)).
+
 ### Following the desktop
 
 1. Colour scheme and palette: the window reads `$XDG_CONFIG_HOME/kdeglobals` once at
@@ -789,6 +836,22 @@ disappears on its own window colour.
    scale is applied, so a scale change needs no layout change.
 7. Non-KDE sessions (GNOME, tiling WMs, no `kdeglobals`): the light fallback is the same
    code path. The application must look deliberate, not broken.
+
+### Apariencia
+
+**The desktop is the default, not the only source.** `Escritorio` is what a new install shows
+and what a theme returns to; it reads `kdeglobals` and the portal. The other two modes are
+opt-in and live in `settings.state` (`appearance=desktop|system|<theme>`; with `system`,
+`theme_day` and `theme_night`), never in the document. An unknown value reads as `desktop`,
+and the settings file keeps its version because the keys are optional
+([ADR 0042](adr/0042-the-appearance-is-a-setting.md)).
+
+**A built-in theme is a `Palette`, not a new token set.** Its seven seed colours are compiled
+in Rust; `tokens_from` derives `surface_sunken`, `paper`, `line*`, `ink_dim`, `shadow` and
+the rest with the same rules and the same tests. A seed that does not reach a criterion is
+shifted by `ensure_contrast`, so the shipped look is the measured one. The themes arrive one
+per change, each with its contrast row and its screenshots; **Sistema** is offered once a
+light and a dark theme both exist.
 
 ### Accessibility
 
@@ -959,7 +1022,7 @@ sentences.
 
 ## What this design refuses
 
-- **No modal for the normal path.** Export, save and settings are panels.
+- **No modal for the normal path.** Export and save are panels; **Configuración** is a window the user opens, and closing it returns to the sheet.
 - **No hover that changes state.** It was a real bug in the sibling project: cards
   slid under the pointer and selected themselves in a loop.
 - **No auto-hide by default.** A panel that hides itself during a demonstration is a
@@ -970,6 +1033,8 @@ sentences.
   family is chrome and never stands for a component.
 - **No invented colour for depth.** The planes, the lines and the shadow come from the
   desktop palette; a ribbon with a brand colour of its own is not this project.
+- **No theme file.** A theme is a compiled `Palette`; a file would be an untrusted input
+  with its own parser and bounds ([ADR 0042](adr/0042-the-appearance-is-a-setting.md)).
 - **No colour without a number.** Every colour-coded value also has its value.
 - **No hidden mode.** Edit and simulation look different and are named in the status
   bar.
