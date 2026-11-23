@@ -5,8 +5,10 @@
 //! painted with the theme tokens and the embedded action icons.
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use eframe::egui;
+use punchi_fluid_file::recent::Recent;
 
 use crate::theme::Tokens;
 
@@ -158,7 +160,7 @@ impl Ribbon {
     }
 
     /// Draws the strip and the active tab; the pick lands in `last`.
-    pub fn show(&mut self, ui: &mut egui::Ui, palette: &Palette) {
+    pub fn show(&mut self, ui: &mut egui::Ui, palette: &Palette, recents: &[Recent]) {
         for (key, command) in [
             (egui::Key::F9, Command::Start),
             (egui::Key::F8, Command::Pause),
@@ -235,9 +237,9 @@ impl Ribbon {
                     let expanded = fit_groups(ui, groups, palette);
                     for (index, group) in groups.iter().enumerate() {
                         if expanded[index] {
-                            self.group(ui, group, palette, &mut picked);
+                            self.group(ui, group, palette, recents, &mut picked);
                         } else {
-                            self.collapsed_group(ui, group, palette, &mut picked);
+                            self.collapsed_group(ui, group, palette, recents, &mut picked);
                         }
                         ui.separator();
                     }
@@ -254,6 +256,7 @@ impl Ribbon {
         ui: &mut egui::Ui,
         group: &Group,
         palette: &Palette,
+        recents: &[Recent],
         picked: &mut Option<Command>,
     ) {
         ui.allocate_ui_with_layout(
@@ -283,6 +286,7 @@ impl Ribbon {
                                         self.flyout(ui, entry.label, entry.command, picked);
                                     }
                                 }
+                                Item::Recents(..) => Self::recents_rows(ui, recents, picked),
                             }
                         }
                     },
@@ -313,6 +317,7 @@ impl Ribbon {
         ui: &mut egui::Ui,
         group: &Group,
         palette: &Palette,
+        recents: &[Recent],
         picked: &mut Option<Command>,
     ) {
         ui.allocate_ui_with_layout(
@@ -341,6 +346,9 @@ impl Ribbon {
                             }
                             Item::Gallery(id, label, entries) => {
                                 self.gallery(ui, id, label, entries, palette, picked);
+                            }
+                            Item::Recents(id, label) => {
+                                self.recents_menu(ui, id, label, recents, palette, picked);
                             }
                         }
                     }
@@ -538,6 +546,51 @@ impl Ribbon {
         arrow(ui, response.rect, palette.ink);
     }
 
+    fn recents_menu(
+        &self,
+        ui: &mut egui::Ui,
+        id: &str,
+        label: &str,
+        recents: &[Recent],
+        palette: &Palette,
+        picked: &mut Option<Command>,
+    ) {
+        let text = egui::RichText::new(format!("{label}   "))
+            .size(palette.text_body)
+            .color(palette.ink);
+        let button = match self.icons.get(id) {
+            Some(bytes) => egui::Button::image_and_text(
+                Self::image(bytes, id, label, palette).fit_to_exact_size(egui::vec2(16.0, 16.0)),
+                text,
+            ),
+            None => egui::Button::new(text),
+        };
+        let (response, _) = egui::containers::menu::MenuButton::from_button(button).ui(ui, |ui| {
+            Self::recents_rows(ui, recents, picked);
+        });
+        arrow(ui, response.rect, palette.ink);
+    }
+
+    /// The live documents, newest first; a file that is gone is named and disabled, never a
+    /// command that would fail silently.
+    fn recents_rows(ui: &mut egui::Ui, recents: &[Recent], picked: &mut Option<Command>) {
+        if recents.is_empty() {
+            ui.add_enabled(false, egui::Button::new("Sin recientes"));
+            return;
+        }
+        for (index, recent) in recents.iter().enumerate() {
+            let missing = !Path::new(&recent.path).is_file();
+            let label = if missing {
+                format!("{} (no está)", recent.name)
+            } else {
+                recent.name.clone()
+            };
+            if ui.add_enabled(!missing, egui::Button::new(label)).clicked() && !missing {
+                *picked = Some(Command::OpenRecent(index));
+            }
+        }
+    }
+
     fn card(
         &self,
         ui: &mut egui::Ui,
@@ -701,7 +754,10 @@ fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette) -> f32 {
     for item in group.items {
         width += match item {
             Item::Large(..) => 64.0 + 6.0,
-            Item::Small(_, label, _) | Item::Menu(_, label, _) | Item::Gallery(_, label, _) => {
+            Item::Small(_, label, _)
+            | Item::Menu(_, label, _)
+            | Item::Gallery(_, label, _)
+            | Item::Recents(_, label) => {
                 16.0 + 6.0 + text_width(ui, label, palette.text_body) + 22.0 + 6.0
             }
         };

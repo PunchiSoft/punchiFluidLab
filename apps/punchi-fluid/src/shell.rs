@@ -242,7 +242,7 @@ impl Window {
     fn show_ribbon(&mut self, context: &egui::Context) {
         let palette = crate::ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
-            self.ribbon.show(ui, &palette);
+            self.ribbon.show(ui, &palette, self.recents.entries());
         });
         if let Some(command) = self.ribbon.take() {
             self.dispatch(command);
