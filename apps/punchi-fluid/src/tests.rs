@@ -554,3 +554,65 @@ fn the_sheet_change_is_one_undo() {
     window.undo();
     assert_eq!(window.document.sheet(), before, "undo restores the sheet");
 }
+
+#[test]
+fn the_block_content_menu_changes_the_block() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let id = window.document.active_circuit();
+    window.dispatch(crate::ribbon::Command::BlockModel(
+        punchi_fluid_doc::title_block::ContentModel::School,
+    ));
+    let block = window.document.block(id).expect("the circuit has a block");
+    assert_eq!(
+        block.model,
+        punchi_fluid_doc::title_block::ContentModel::School
+    );
+    assert_eq!(
+        block.visible,
+        punchi_fluid_doc::title_block::ContentModel::School.defaults(),
+        "the model sets its default fields"
+    );
+    assert!(window.document.can_undo(), "the change is one undo");
+}
+
+#[test]
+fn the_block_position_menu_changes_the_block() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let id = window.document.active_circuit();
+    window.dispatch(crate::ribbon::Command::BlockPosition(
+        punchi_fluid_doc::title_block::BlockPosition::BottomFull,
+    ));
+    let block = window.document.block(id).expect("the circuit has a block");
+    assert_eq!(
+        block.position,
+        punchi_fluid_doc::title_block::BlockPosition::BottomFull
+    );
+}
+
+#[test]
+fn the_block_reset_restores_the_default() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let id = window.document.active_circuit();
+    assert!(
+        !window.block_is_customized(),
+        "a new circuit is its default"
+    );
+    window.dispatch(crate::ribbon::Command::BlockModel(
+        punchi_fluid_doc::title_block::ContentModel::Technical,
+    ));
+    assert!(window.block_is_customized(), "the block changed");
+    window.dispatch(crate::ribbon::Command::BlockReset);
+    assert!(!window.block_is_customized(), "the reset is the default");
+    let title = window
+        .document
+        .circuits()
+        .iter()
+        .find(|circuit| circuit.id == id)
+        .map(|circuit| circuit.title.clone())
+        .expect("the active circuit exists");
+    assert_eq!(
+        window.document.block(id).cloned(),
+        Some(punchi_fluid_export::TitleBlock::new(title, "")),
+        "the reset is the block a circuit is born with"
+    );
+}

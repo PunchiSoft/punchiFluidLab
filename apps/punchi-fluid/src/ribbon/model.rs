@@ -7,6 +7,7 @@
 //! it is a command the window does not have yet, and the ribbon never pretends otherwise.
 
 use super::{Command, MarginPreset};
+use punchi_fluid_doc::title_block::{BlockPosition, ContentModel};
 
 pub(super) enum Preview {
     Margins(f32),
@@ -291,10 +292,10 @@ pub(super) const CAJETIN: &[Group] = &[
             "x-office-document",
             "Contenido",
             &[
-                MenuEntry::unavailable("Técnico"),
-                MenuEntry::unavailable("Escolar"),
-                MenuEntry::unavailable("Industrial"),
-                MenuEntry::unavailable("Sin cajetín"),
+                MenuEntry::command("Técnico", Command::BlockModel(ContentModel::Technical)),
+                MenuEntry::command("Escolar", Command::BlockModel(ContentModel::School)),
+                MenuEntry::command("Industrial", Command::BlockModel(ContentModel::Industrial)),
+                MenuEntry::command("Sin cajetín", Command::BlockPosition(BlockPosition::None)),
             ],
         )],
     },
@@ -305,8 +306,18 @@ pub(super) const CAJETIN: &[Group] = &[
             "go-top",
             "Posición",
             &[
-                MenuEntry::unavailable("Superior derecha"),
-                MenuEntry::unavailable("Inferior derecha"),
+                MenuEntry::command(
+                    "Superior derecha",
+                    Command::BlockPosition(BlockPosition::TopRight),
+                ),
+                MenuEntry::command(
+                    "Inferior derecha",
+                    Command::BlockPosition(BlockPosition::BottomRight),
+                ),
+                MenuEntry::command(
+                    "Inferior centrado",
+                    Command::BlockPosition(BlockPosition::BottomFull),
+                ),
             ],
         )],
     },
@@ -315,7 +326,7 @@ pub(super) const CAJETIN: &[Group] = &[
         launcher: false,
         items: &[
             Item::Small("x-office-address-book", "Editar datos…", None),
-            Item::Small("edit-reset", "Restablecer", None),
+            Item::Small("edit-reset", "Restablecer", Some(Command::BlockReset)),
         ],
     },
 ];

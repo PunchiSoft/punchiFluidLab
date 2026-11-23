@@ -71,6 +71,8 @@ pub struct Ribbon {
     /// Whether the document has something to undo or redo; the window sets both every frame.
     pub can_undo: bool,
     pub can_redo: bool,
+    /// Whether the active circuit's block differs from its default; the window sets it.
+    pub can_reset_block: bool,
     pending: Option<Command>,
 }
 
@@ -89,6 +91,7 @@ impl Ribbon {
             has_clipboard: false,
             can_undo: false,
             can_redo: false,
+            can_reset_block: false,
             pending: None,
         }
     }
@@ -124,6 +127,7 @@ impl Ribbon {
             }
             Command::Undo => self.can_undo,
             Command::Redo => self.can_redo,
+            Command::BlockReset => self.can_reset_block,
             _ => true,
         }
     }

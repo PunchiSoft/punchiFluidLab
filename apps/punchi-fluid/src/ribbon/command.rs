@@ -8,6 +8,7 @@
 //! exhaustive, so a command without a handler does not compile.
 
 use punchi_fluid_doc::paper::{Orientation, PaperSize};
+use punchi_fluid_doc::title_block::{BlockPosition, ContentModel};
 
 /// A named set of margins, so the gallery carries a command and the window maps it to the
 /// document's millimetres.
@@ -58,6 +59,9 @@ pub(crate) enum Command {
     PageMargin(MarginPreset),
     PageOrientation(Orientation),
     PagePaper(PaperSize),
+    BlockModel(ContentModel),
+    BlockPosition(BlockPosition),
+    BlockReset,
     CircuitNew,
     Undo,
     Redo,
@@ -93,7 +97,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 34] = [
+    pub(crate) const ALL: [Self; 37] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -102,6 +106,9 @@ impl Command {
         Self::PageMargin(MarginPreset::Normal),
         Self::PageOrientation(Orientation::Portrait),
         Self::PagePaper(PaperSize::A3),
+        Self::BlockModel(ContentModel::Industrial),
+        Self::BlockPosition(BlockPosition::BottomRight),
+        Self::BlockReset,
         Self::CircuitNew,
         Self::Undo,
         Self::Redo,
@@ -143,6 +150,9 @@ impl Command {
             Self::PageMargin(_) => "Márgenes",
             Self::PageOrientation(_) => "Orientación",
             Self::PagePaper(_) => "Tamaño",
+            Self::BlockModel(_) => "Contenido",
+            Self::BlockPosition(_) => "Posición",
+            Self::BlockReset => "Restablecer",
             Self::CircuitNew => "Nuevo circuito",
             Self::Undo => "Deshacer",
             Self::Redo => "Rehacer",
