@@ -567,11 +567,11 @@ with a preview-by-path bound and a `recent.json` version change.
 
 ### 2.4 Configuración
 
-**The window is one surface, not a fourth region.** It opens from **Archivo ▸
-Configuración** (`Ctrl+,`) and from the Inicio rail, over the sheet or the start page, and
-closes with `Esc` or **Cerrar**; the focus returns to the command that opened it, and nothing
-it does enters the document, the history or the modified mark. It is a dialog the user
-opens on purpose, the exception to "no modal on the normal path".
+**The window is one surface, not a fourth region.** It opens from **Ver ▸ Tema**, `Ctrl+,`
+and the Inicio rail, over the sheet or the start page, and closes with `Esc` or **Cerrar**;
+the focus returns to the command that opened it, and nothing it does enters the document, the
+history or the modified mark. It is a dialog the user opens on purpose, the exception to "no
+modal on the normal path".
 
 **Its shape is a nav, a page and a footer.** A 200 px rail on `panel` lists the pages it can
 show; the page scrolls; the footer carries **Restaurar página** and **Cerrar**. Preferred
@@ -593,7 +593,8 @@ of 160 × 98 cards, each a mini window drawn with that theme's tokens (ribbon, p
 paper, accent dot), its name, **Sistema** or **Integrado**, and **En uso** marked with a
 check, never by colour alone. Opening the page reveals the theme in use; arrows move, `Enter`
 applies; **Restaurar apariencia** returns to `Escritorio`. The theme applies live; there is no
-Apply/Cancel.
+Apply/Cancel. **Today** the page shows the two cards, **Escritorio** and **Pizarra**; the
+mode segments and **Sistema** arrive with the first light theme.
 
 **Paneles** holds **Ocultar al salir** and **Restablecer vista**. The **Ver** menu keeps the
 quick toggles as shortcuts; Configuración is the same setting with its context, not a second
@@ -851,7 +852,9 @@ in Rust; `tokens_from` derives `surface_sunken`, `paper`, `line*`, `ink_dim`, `s
 the rest with the same rules and the same tests. A seed that does not reach a criterion is
 shifted by `ensure_contrast`, so the shipped look is the measured one. The themes arrive one
 per change, each with its contrast row and its screenshots; **Sistema** is offered once a
-light and a dark theme both exist.
+light and a dark theme both exist. **Today** the window offers **Escritorio** and
+**Pizarra**; **CAD claro**, **Nórdico**, **Azul profundo** and **Grafito** are the next
+changes, and `Sistema` arrives with the first light theme.
 
 ### Accessibility
 

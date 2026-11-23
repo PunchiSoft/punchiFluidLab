@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La apariencia se elige en Configuración: Escritorio y Pizarra — 2026-11-23
+
+- **La ventana de Configuración existe**: se abre desde **Ver ▸ Tema**, `Ctrl+,` y el rail de
+  Inicio; tiene las páginas Apariencia y Paneles, aplica en vivo y cierra con `Esc` o
+  **Cerrar** sin tocar el documento. El tema se guarda en `settings.state`
+  (`appearance=desktop|slate`) y se aplica antes del primer frame.
+- **Pizarra**, el primer tema integrado: una semilla `Palette` (grafito azulado, acento azul)
+  que pasa por la misma derivación y las mismas pruebas de contraste que el escritorio. Las
+  tarjetas muestran una mini-ventana con los tokens del tema y marcan **En uso**; `Sistema`
+  (día/noche) espera a que exista CAD claro.
+
 ### La apariencia es un ajuste, con Escritorio por defecto — 2026-11-23
 
 - **ADR 0042**: la apariencia pasa a ser estado de vista (`appearance=desktop|system|<tema>`)

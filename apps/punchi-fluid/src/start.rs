@@ -58,6 +58,8 @@ pub(crate) enum Action {
     About,
     /// Open the «Licencia» panel of the rail.
     Licence,
+    /// Open the Configuración window on its appearance page.
+    Preferences,
 }
 
 /// One drawing of the ribbon's action family: its id and its embedded bytes.
@@ -85,6 +87,10 @@ const ICON_BACK: Drawing = (
 const ICON_ABOUT: Drawing = (
     "x-office-address-book",
     include_bytes!("../../../assets/icons/actions/x-office-address-book.svg"),
+);
+const ICON_PREFERENCES: Drawing = (
+    "preferences-desktop-theme",
+    include_bytes!("../../../assets/icons/actions/preferences-desktop-theme.svg"),
 );
 const ICON_LICENSE: Drawing = (
     "x-office-document",
@@ -176,6 +182,7 @@ impl Window {
             Action::DiscardRecovery => self.discard_recovery(),
             Action::About => self.open_about(),
             Action::Licence => self.open_licence(),
+            Action::Preferences => self.open_preferences(),
             Action::Sheet => self.start_open = false,
         }
     }

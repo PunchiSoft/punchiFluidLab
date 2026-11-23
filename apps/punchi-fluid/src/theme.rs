@@ -44,7 +44,13 @@ impl Rgb {
     }
 }
 
-/// The colour groups the Qt adapter reads from `QPalette`.
+mod appearance;
+
+pub use appearance::Appearance;
+#[cfg(test)]
+pub use appearance::ThemeId;
+
+/// The palette the window's tokens are derived from: the desktop's or a built-in theme's.
 #[derive(Debug, Clone, Copy)]
 struct Palette {
     window: Rgb,
@@ -130,28 +136,51 @@ pub struct Contrast {
     pub paper_text: f64,
 }
 
-/// The theme read from the desktop once per process.
+/// The theme read once per process: the tokens, the appearance they came from, and the desktop
+/// font and motion that a preview needs to derive another palette with the same sizes.
 #[derive(Debug, Clone)]
 pub struct Theme {
     pub tokens: Tokens,
+    /// The appearance these tokens were built from.
+    pub appearance: Appearance,
     font_family: Option<String>,
+    font: DesktopFont,
+    motion: u32,
 }
 
 impl Theme {
-    /// Reads the desktop's `kdeglobals` once; a machine without it gets the light fallback.
+    /// Reads the desktop's `kdeglobals` once and derives the tokens for `appearance`. A
+    /// machine without the file gets the light fallback for the desktop and the theme's own
+    /// palette for a built-in.
     #[must_use]
-    pub fn from_desktop() -> Self {
+    pub fn for_appearance(appearance: Appearance) -> Self {
         let text = kdeglobals_path().and_then(|path| std::fs::read_to_string(path).ok());
-        let palette = text
-            .as_deref()
-            .and_then(palette_from)
-            .unwrap_or_else(fallback_palette);
+        let palette = match appearance {
+            Appearance::Desktop => text
+                .as_deref()
+                .and_then(palette_from)
+                .unwrap_or_else(fallback_palette),
+            Appearance::Theme(id) => id.palette(),
+        };
         let font = text.as_deref().map_or_else(DesktopFont::default, font_from);
         let motion = text.as_deref().map_or(180, motion_from);
         let tokens = tokens_from(palette, &font, motion);
         Self {
             tokens,
-            font_family: font.family,
+            appearance,
+            font_family: font.family.clone(),
+            font,
+            motion,
+        }
+    }
+
+    /// The tokens `appearance` would have with this window's font and motion: what a theme
+    /// card shows before the theme is applied.
+    #[must_use]
+    pub fn preview(&self, appearance: Appearance) -> Tokens {
+        match appearance {
+            Appearance::Desktop => self.tokens.clone(),
+            Appearance::Theme(id) => tokens_from(id.palette(), &self.font, self.motion),
         }
     }
 
@@ -162,7 +191,10 @@ impl Theme {
         let font = DesktopFont::default();
         Self {
             tokens: tokens_from(fallback_palette(), &font, 180),
+            appearance: Appearance::Desktop,
             font_family: None,
+            font,
+            motion: 180,
         }
     }
 

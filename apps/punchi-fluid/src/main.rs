@@ -28,6 +28,7 @@ mod inspector;
 mod layout;
 mod lifecycle;
 mod panel;
+mod preferences;
 mod ribbon;
 mod scene;
 mod selection;
@@ -43,7 +44,6 @@ mod view;
 mod window_state;
 
 fn main() -> eframe::Result<()> {
-    let theme = theme::Theme::from_desktop();
     let path = std::env::args().nth(1).map(PathBuf::from);
     let mut notice = None;
     let mut recents = Recents::load();
@@ -70,7 +70,10 @@ fn main() -> eframe::Result<()> {
     // from the monitor the viewport reports. The provisional size is the support floor, so
     // the window never opens smaller than the interface allows.
     let geometry = window_state::Store::load();
+    // The appearance is read before the theme so the window opens in the saved theme,
+    // without a frame in the desktop palette first.
     let settings = settings::Store::load();
+    let theme = theme::Theme::for_appearance(settings.remembered().appearance);
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
@@ -146,6 +149,8 @@ struct Window {
     auto_hide: auto_hide::AutoHide,
     /// Whether **Ver ▸ Ocultar al salir** is on.
     autohide_on: bool,
+    /// The Configuración window: whether it is open and which page it shows.
+    preferences: preferences::Preferences,
 }
 
 /// A primary-button drag of the selection.
@@ -456,6 +461,7 @@ impl Window {
             }
             "Detener" => self.stop(),
             "Hasta cambio" => self.until_change(),
+            "Tema" => self.open_preferences(),
             _ => self.view_command(command),
         }
     }
@@ -465,6 +471,13 @@ impl Window {
         // The dialog owns the keyboard while it is open: no document command may run behind
         // it, and `Enter`/`Esc` belong to it until it closes.
         if self.dialog.is_some() {
+            return;
+        }
+        if self.preferences.open {
+            return;
+        }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Comma)) {
+            self.open_preferences();
             return;
         }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::N)) {

@@ -12,7 +12,7 @@ use eframe::egui;
 
 use super::{
     Action, Drawing, ICON_ABOUT, ICON_BACK, ICON_HOME, ICON_LICENSE, ICON_NEW, ICON_OPEN,
-    activated, focusable, icon,
+    ICON_PREFERENCES, activated, focusable, icon,
 };
 use crate::theme::Tokens;
 
@@ -49,6 +49,12 @@ const NAV_OPEN: NavItem = NavItem {
     label: "Abrir…",
     drawing: ICON_OPEN,
     shortcut: Some("Ctrl+O"),
+    current: false,
+};
+const NAV_PREFERENCES: NavItem = NavItem {
+    label: "Configuración",
+    drawing: ICON_PREFERENCES,
+    shortcut: Some("Ctrl+,"),
     current: false,
 };
 const NAV_ABOUT: NavItem = NavItem {
@@ -92,6 +98,9 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
     }
     if nav_row(ui, tokens, &NAV_OPEN) {
         action = Some(Action::OpenDialog);
+    }
+    if nav_row(ui, tokens, &NAV_PREFERENCES) {
+        action = Some(Action::Preferences);
     }
     nav_heading(ui, tokens, "Aprender");
     if nav_row(ui, tokens, &NAV_ABOUT) {

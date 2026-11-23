@@ -31,8 +31,8 @@ bounds; the looks the owner wants are compiled values, not user files.
    the desktop; `paper`, `line`, `ink_dim`, `shadow` and the rest keep their rules. A seed
    that misses a criterion is shifted by `ensure_contrast`, so the shipped look is the
    measured one and may differ from the reference that inspired it.
-3. **The selector is one window, Configuración**, reached from `Archivo ▸ Configuración`,
-   `Ctrl+,` and the Inicio rail. It applies live, closes with `Esc` or **Cerrar**, returns the
+3. **The selector is one window, Configuración**, reached from **Ver ▸ Tema**, `Ctrl+,`
+   and the Inicio rail. It applies live, closes with `Esc` or **Cerrar**, returns the
    focus and never touches the document. Its first two pages are Apariencia and Paneles; a
    page appears only when its settings exist.
 4. **One theme per change.** A theme arrives as its seed, its card, its row in the contrast
