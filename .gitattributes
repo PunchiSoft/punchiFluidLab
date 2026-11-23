@@ -22,3 +22,8 @@ CHANGELOG.md linguist-documentation
 
 # Component definitions are data the program reads, not a language it is written in.
 assets/** linguist-detectable=false
+
+# The C header is the hand-written declaration of the retired C ABI, generated from
+# crates/punchi-fluid-ffi/src/lib.rs. It is an interface, not the language the program is
+# written in, and no build reads it: the language bar counts Rust, not this declaration.
+crates/punchi-fluid-ffi/include/** linguist-detectable=false

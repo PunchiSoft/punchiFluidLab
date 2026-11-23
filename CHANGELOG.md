@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### El encabezado C deja de contar como lenguaje — 2026-11-23
+
+- **La barra de lenguajes de GitHub marcaba un 1,3 % de C**: era
+  `crates/punchi-fluid-ffi/include/punchi_fluid.h`, la declaración escrita a mano del ABI C
+  retirado, que ningún build lee. Se marca como no detectable, igual que `scripts-dev/`,
+  `docs/` y `assets/`, para que la barra diga lo que el programa es: Rust. La retirada real
+  del crate y de su header sigue siendo un PR de código aparte, porque sus 99 tests hay que
+  inventariarlos y portar los que no estén cubiertos.
+
 ### La documentación pública deja de describir la ventana Qt — 2026-11-23
 
 - **La verdad documental vuelve a coincidir con el producto**: la ventana es el binario Rust
