@@ -7,6 +7,7 @@
 
 use eframe::egui;
 use egui_kittest::kittest::Queryable;
+use punchi_fluid_file::recent::Recent;
 
 use super::model::{Item, TABS};
 use super::{Command, Palette, Ribbon};
@@ -85,7 +86,7 @@ fn table_commands() -> Vec<(Command, &'static str, &'static str, &'static str)> 
                             }
                         }
                     }
-                    Item::Large(_, _, None) | Item::Small(_, _, None) => {}
+                    Item::Large(_, _, None) | Item::Small(_, _, None) | Item::Recents(..) => {}
                 }
             }
         }
@@ -96,14 +97,24 @@ fn table_commands() -> Vec<(Command, &'static str, &'static str, &'static str)> 
 #[test]
 fn every_command_is_on_the_ribbon() {
     let commands = table_commands();
-    for command in Command::ALL {
-        assert!(
-            commands
+    let has_recents = TABS.iter().any(|tab| {
+        tab.groups.iter().any(|group| {
+            group
+                .items
                 .iter()
-                .any(|(carried, ..)| std::mem::discriminant(carried)
-                    == std::mem::discriminant(&command)),
-            "{command:?} has no control"
-        );
+                .any(|item| matches!(item, Item::Recents(..)))
+        })
+    });
+    for command in Command::ALL {
+        let covered = if matches!(command, Command::OpenRecent(_)) {
+            // The rows are the session's list at paint time; the table carries the menu.
+            has_recents
+        } else {
+            commands.iter().any(|(carried, ..)| {
+                std::mem::discriminant(carried) == std::mem::discriminant(&command)
+            })
+        };
+        assert!(covered, "{command:?} has no control");
     }
     for (carried, ..) in &commands {
         assert!(
@@ -223,7 +234,7 @@ fn the_transport_follows_the_state() {
 fn the_margins_gallery_opens_its_cards() {
     let mut ribbon = Ribbon::new();
     let palette = palette();
-    let mut harness = harness(&mut ribbon, &palette);
+    let mut harness = harness(&mut ribbon, &palette, &[]);
     harness.get_by_label("Márgenes   ").click();
     harness.run();
     assert!(
@@ -233,11 +244,60 @@ fn the_margins_gallery_opens_its_cards() {
 }
 
 #[test]
+fn the_recent_menu_lists_the_real_documents() {
+    let path = std::env::temp_dir().join(format!(
+        "punchi-ribbon-recent-{}.pfluid",
+        std::process::id()
+    ));
+    std::fs::write(&path, b"").expect("a temporary document");
+    let recents = vec![Recent::new(path.to_string_lossy())];
+    let name = path
+        .file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+    let mut ribbon = Ribbon::new();
+    {
+        let palette = palette();
+        let mut harness = harness(&mut ribbon, &palette, &recents);
+        harness.get_by_label("Recientes   ").click();
+        harness.run();
+        assert!(
+            harness.query_by_label(&name).is_some(),
+            "the menu lists the remembered document"
+        );
+        harness.get_by_label(&name).click();
+        harness.run();
+    }
+    assert_eq!(ribbon.take(), Some(Command::OpenRecent(0)));
+    std::fs::remove_file(&path).ok();
+}
+
+#[test]
+fn a_missing_recent_is_marked_and_refused() {
+    let recents = vec![Recent::new("/punchi/no-existe.pfluid")];
+    let mut ribbon = Ribbon::new();
+    {
+        let palette = palette();
+        let mut harness = harness(&mut ribbon, &palette, &recents);
+        harness.get_by_label("Recientes   ").click();
+        harness.run();
+        assert!(
+            harness
+                .query_by_label("no-existe.pfluid (no está)")
+                .is_some(),
+            "the missing file is named"
+        );
+        harness.get_by_label("no-existe.pfluid (no está)").click();
+        harness.run();
+    }
+    assert_eq!(ribbon.take(), None, "a missing file does not dispatch");
+}
+
+#[test]
 fn the_margins_gallery_dispatches_its_command() {
     let mut ribbon = Ribbon::new();
     {
         let palette = palette();
-        let mut harness = harness(&mut ribbon, &palette);
+        let mut harness = harness(&mut ribbon, &palette, &[]);
         harness.get_by_label("Márgenes   ").click();
         harness.run();
         harness.get_by_label("Estrecho").click();
@@ -254,7 +314,7 @@ fn the_row_keeps_a_group_title_when_it_collapses() {
     let mut ribbon = Ribbon::new();
     ribbon.activate("Editar");
     let palette = palette();
-    let harness = harness(&mut ribbon, &palette);
+    let harness = harness(&mut ribbon, &palette, &[]);
     assert!(
         harness.query_by_label("Copiar").is_some(),
         "Componente stays open"
@@ -269,8 +329,12 @@ fn the_row_keeps_a_group_title_when_it_collapses() {
     );
 }
 
-fn harness<'a>(ribbon: &'a mut Ribbon, palette: &'a Palette) -> egui_kittest::Harness<'a> {
-    let mut harness = egui_kittest::Harness::new_ui(move |ui| ribbon.show(ui, palette));
+fn harness<'a>(
+    ribbon: &'a mut Ribbon,
+    palette: &'a Palette,
+    recents: &'a [Recent],
+) -> egui_kittest::Harness<'a> {
+    let mut harness = egui_kittest::Harness::new_ui(move |ui| ribbon.show(ui, palette, recents));
     harness.set_size(egui::vec2(1366.0, 768.0));
     // The window ships no font: the harness gets the desktop's, as the app does at start.
     if crate::theme::install_font(&harness.ctx, None).is_err() {
@@ -282,7 +346,7 @@ fn harness<'a>(ribbon: &'a mut Ribbon, palette: &'a Palette) -> egui_kittest::Ha
 
 fn click(ribbon: &mut Ribbon, label: &str) {
     let palette = palette();
-    let mut harness = harness(ribbon, &palette);
+    let mut harness = harness(ribbon, &palette, &[]);
     harness.get_by_label(label).click();
     harness.run();
 }

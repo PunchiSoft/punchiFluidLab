@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La cinta abre Inicio y los recientes — 2026-11-23
+
+- **Inicio** abre la página de inicio desde Archivo. **Recientes** se genera de la lista real
+  de la sesión, la más nueva primero: cada fila abre su documento con `OpenRecent`, un archivo
+  que ya no está se nombra **“no está”** y se deshabilita, y el comando lo rechaza también. Sin
+  recientes, una línea lo dice.
+- **Pruebas**: Inicio abre la página, el menú lista el documento real y despacha `OpenRecent`,
+  y un archivo ausente se marca y no se abre.
+
 ### La cinta edita el conducto, reparte y simula a otra velocidad — 2026-11-23
 
 - **Conducto ▸ clase** (Trabajo/Pilotaje/Drenaje) cambia la clase del conducto seleccionado por

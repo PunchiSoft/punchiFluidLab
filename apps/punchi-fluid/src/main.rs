@@ -472,6 +472,8 @@ impl Window {
                 self.speed = speed;
                 self.ribbon.active_speed = speed.label();
             }
+            Command::Home => self.open_start(),
+            Command::OpenRecent(index) => self.open_recent(index),
             Command::CircuitNew => self.new_circuit(),
             Command::Undo => self.undo(),
             Command::Redo => self.redo(),
@@ -500,6 +502,24 @@ impl Window {
             }
             Command::UntilChange => self.until_change(),
             Command::Stop => self.stop(),
+        }
+    }
+
+    /// **Inicio**: the start page, with its templates and the remembered documents.
+    fn open_start(&mut self) {
+        self.start_open = true;
+    }
+
+    /// **Recientes**: the remembered document at `index`, when its file is still there. The
+    /// ribbon already disables a missing one; the command refuses it too, so a stale click or
+    /// a script cannot pretend it opened.
+    fn open_recent(&mut self, index: usize) {
+        let Some(recent) = self.recents.entries().get(index).cloned() else {
+            return;
+        };
+        let path = std::path::PathBuf::from(&recent.path);
+        if let Err(cause) = self.open_path(&path) {
+            self.notice = Some(format!("no se pudo abrir el documento: {cause}"));
         }
     }
 
