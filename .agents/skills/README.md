@@ -22,8 +22,8 @@ skill is the bug.
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
 | [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
-| [step-report](step-report/SKILL.md) | the end-of-step checklist: what is OK, what is missing and who unblocks it, the one next step | handing a branch, pull request or phase back to the owner; the owner asks for a status |
-| [phased-plan](phased-plan/SKILL.md) | a requested plan as Phase 0 (baseline, scope, specification), delivery phases with a checklist per pull request, and a final evaluation and process audit | the owner asks for a plan; a run spans several pull requests; a phase closes |
+| [step-report](step-report/SKILL.md) | the end-of-step checklist: what is OK, what is missing and who unblocks it, the one next step, and the plan board when the step is a phase | handing a branch, pull request or phase back to the owner; the owner asks for a status |
+| [phased-plan](phased-plan/SKILL.md) | a requested plan as Phase 0 (baseline, scope, specification), delivery phases with a phase board and a checklist per pull request, and a final evaluation and process audit | the owner asks for a plan; a run spans several pull requests; a phase closes |
 | [github-actions-security](github-actions-security/SKILL.md) | workflow threat model and hardening | writing or reviewing `.github/workflows`; permissions, secrets, caches |
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
@@ -57,7 +57,7 @@ Before the first edit of any change, read
 [pull-request-workflow](pull-request-workflow/SKILL.md): no work happens on `main`, and
 the branch, the gate and the pull request are one route. At the end of every step, before
 the hand-off, read [step-report](step-report/SKILL.md): the owner reads OK / Falta /
-Siguiente, not a session log.
+Siguiente, or the plan board plus those three when the step is a phase, not a session log.
 
 For the pass after a merge — the local backup, the branch and its worktree, the build and
 the CI caches — read [repo-maintenance](repo-maintenance/SKILL.md): the backup is verified

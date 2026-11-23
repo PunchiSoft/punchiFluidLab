@@ -41,6 +41,12 @@ in Spanish (`Fase`, `Hecho`, `Falta`); the marks are the ones below.
 **Scope:** <one sentence a student would recognise>.
 **Out of scope:** <what this plan does not do, and why>.
 
+## Phase board
+- [ ] 0 — preparation (0A–0C) — in progress
+- [ ] 1 — <name> — pending
+- [ ] 2 — <name> — pending
+- [ ] final — evaluation and audit — pending
+
 ## Phase 0 — Preparation (no product change)
 
 ### 0A — Baseline
@@ -122,6 +128,10 @@ finished when the owner merges it ([pull-request-workflow](../pull-request-workf
 The next phase starts from updated `main`, unless the owner explicitly authorises parallel
 work; in that case the branch is created from `main` and the plan says so.
 
+After the merge, mark the phase `[x]` on the board and carry the board into the
+[step-report](../step-report/SKILL.md). The board is the plan's state; the phase checklist
+is the phase's state. A report with one but not the other is half a report.
+
 ## The delivery checklist
 
 Every pull request that delivers a phase carries the phase's checklist in its body, in
@@ -169,6 +179,7 @@ The last phase is never "everything done". It evaluates, and then it audits.
 - the capability rows updated to their real state, `covered` only with the test that proves
   it;
 - the changelog and the documents that travelled with the code;
+- the phase board closed: every phase `[x]` or carried with a named reason;
 - the debts that remain, named with their owner and the next plan that carries them.
 
 **Process audit** — how the work was delivered:
@@ -198,7 +209,9 @@ public document in its own change; the audit itself stays in the owner's notes.
 5. **Get the plan approved** by the owner before Phase 1. The plan is a document, not code;
    a phase that starts before 0C is a guess with a branch.
 6. **Deliver each phase** through [pull-request-workflow](../pull-request-workflow/SKILL.md),
-   with its checklist in the body and [step-report](../step-report/SKILL.md) at hand-off.
+   with its checklist in the body, mark its row on the board, and hand off with
+   [step-report](../step-report/SKILL.md); the board is what the owner reads to know what
+   remains.
 7. **Close with the final phase**: evaluation, audit, verdict and the carried items.
 
 ## Where the plan lives
@@ -239,6 +252,10 @@ links the rest.
   `main`, and the plan records it; a branch stacked on another phase is not a phase.
 - **The plan is not the ledger.** Link `docs/capabilities.md`; do not copy its states into the
   plan.
+- **A plan without a board is a list of phases.** The board is what the owner reads to know
+  what remains; the phase checklist is the phase, not the plan.
+- **A `[x]` on the board without a merged pull request (or an approved Phase 0) is a false
+  claim.** The board is updated after the merge, not after the push.
 - **The final audit reads the repository, not the plan.** Git, CI and the merged pull
   requests are the evidence; the plan is the claim under audit.
 - **A checked list with a silent gap is worse than an honest one.** A missing item that is

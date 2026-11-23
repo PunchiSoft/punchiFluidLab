@@ -8,8 +8,12 @@ license: GPL-3.0-or-later
 
 A step is finished when it has a gate result, an owner's decision or a merged pull
 request, not when the code compiles. The owner reads the report to decide what to
-merge, not to reconstruct the session. Three sections, no prose: **OK**, **Falta**,
-**Siguiente**.
+merge, not to reconstruct the session.
+
+A standalone step has three sections: **OK**, **Falta**, **Siguiente**. A step that is a
+phase of a [phased-plan](../phased-plan/SKILL.md) has four, with **Plan** first: the board
+of every phase, then OK, Falta and Siguiente. The board answers what is missing from the
+plan; the other three answer what is missing from the phase.
 
 This is the reporting half of
 [pull-request-workflow](../pull-request-workflow/SKILL.md). The route (branch, gate,
@@ -19,21 +23,35 @@ pull request, merge) stays there; this skill only says how the hand-off is writt
 
 1. **Name the step and its scope.** One line: the branch, the pull request or the phase,
    and what it was supposed to deliver.
-2. **Prove every OK item from the tool, not from memory.** Re-read `gh pr view`,
+2. **If it is a phase, start with the plan board.** Copy the board from the plan: every
+   phase and the final evaluation and audit appear, `[x]` only for a merged phase (or an
+   approved Phase 0), `[ ]` for an open pull request or a pending phase. Name in one line
+   what remains. The board is the answer to "what is missing from the complete plan"; do
+   not reconstruct it from memory. If the plan has no board, add it to the plan first; the
+   report copies it, never invents it.
+3. **Prove every OK item from the tool, not from memory.** Re-read `gh pr view`,
    `gh pr checks`, `git status` and the gate output. Each bullet names its evidence: the
    test, the gate exit, the check name, the merge state.
-3. **List what is missing and who unblocks it.** A pending owner merge, a decision, a
+4. **List what is missing and who unblocks it.** A pending owner merge, a decision, a
    screenshot that could not be taken headlessly, a deferred theme. Never hide a gap in
-   the OK list to make the step look finished.
-4. **Name exactly one next step.** What it is, what it depends on, and whether it waits
+   the OK list to make the step look finished. The board carries the plan-level gaps; this
+   section carries the phase-level ones.
+5. **Name exactly one next step.** What it is, what it depends on, and whether it waits
    for the merge.
-5. **Write it in the language of the conversation** (Spanish today). The skill and the
+6. **Write it in the language of the conversation** (Spanish today). The skill and the
    template stay in English.
 
 ## Template
 
 ```markdown
 ## Estado — <step>
+**Plan — phase <n> of <N>**
+- [x] <phase 1> — <name> — merged #<n>
+- [x] <phase 2> — <name> — merged #<n>
+- [ ] <phase 3> — <name> — PR #<n>, checks green, waiting for merge
+- [ ] <phase 4> — <name> — pending
+- [ ] final — evaluation and audit — pending
+**Remaining in the plan:** <phases still `[ ]`, including the final audit>
 **OK**
 - <what is done> — <evidence: test / gate / check / merge state>
 **Falta**
@@ -42,10 +60,22 @@ pull request, merge) stays there; this skill only says how the hand-off is writt
 - <one step> — <what unblocks it>
 ```
 
+Omit the `Plan` block for a step that is not a phase. The board is copied from the plan
+file, not invented in the report; it is a checklist, not prose, and it names the final
+audit even when no phase has reached it.
+
 ## Gotchas
 
 - A `CLEAN` pull request is not merged. Only `state: MERGED` with a `mergedAt` closes
-  the step.
+  the step, and only then the phase goes `[x]` on the board.
+- **A phase report that names only the next phase hides the rest of the plan.** The board
+  lists every phase and the final audit, and the `Remaining in the plan` line says it in
+  one sentence; the `Siguiente` is one step, not the plan.
+- **The board is copied from the plan and updated in the same hand-off.** A board that
+  disagrees with the plan is the bug; fix both in the same pass.
+- **The board is the plan; OK, Falta and Siguiente are the phase.** Do not merge them into
+  one list: the board says which phases remain, the other three say what the phase still
+  owes.
 - A green local gate does not prove CI, and a green CI does not prove the window draws.
   Say which one ran.
 - `git branch -d` refuses a squash-merged branch. Prove it has no unique content with
@@ -67,4 +97,6 @@ gh pr checks <n>
 ```
 
 The report names the branch and the pull request, every OK item has a command or a
-link, every missing item names who unblocks it, and there is exactly one next step.
+link, every missing item names who unblocks it, and there is exactly one next step. When
+the step is a phase, the board names every phase and the final audit, and no `[x]` lacks a
+merged pull request (or an approved Phase 0).
