@@ -6,6 +6,29 @@ publicación.
 
 ## Unreleased
 
+### El menú contextual del símbolo — 2026-11-23
+
+- **Ocho entradas sobre el símbolo**: el clic derecho sobre un componente de la hoja lo
+  selecciona y abre **Mover**, **Girar**, **Espejo horizontal**, **Espejo vertical**,
+  **Configurar**, **Propiedades**, **Descripción del componente** y **Eliminar**, en el orden de la
+  referencia. `Shift+F10` abre el mismo menú para la selección; `Esc`, un clic fuera o un
+  cambio de vista lo cierran. Abrirlo no cambia el documento, el historial ni el archivo, y el
+  botón derecho ya no acciona una válvula: la presión del vástago queda en el botón primario.
+- **Mover**: la entrada arma el gesto; la selección sigue al puntero sin saltar, las flechas
+  la empujan 1 mm (`Shift` 10 mm), un clic o `Enter` la suelta como **un solo deshacer** y
+  `Esc` o el botón derecho cancelan. La vista queda fija mientras dura el gesto.
+- **Ventanas maqueta**: **Configurar** y **Descripción del componente** abren **Configuración** y
+  **Descripción**, vacías, con el nombre del componente y el aviso *Maqueta*; no fingen
+  campos, no tocan el documento y se cierran con **Cerrar** o `Esc`. El registro las deja
+  `partial` con lo que falta.
+- **Espejo vertical**: la entrada se ve con su icono y queda deshabilitada con su motivo hasta
+  la fase que implementa la operación.
+- **Iconos**: `configure`, `describe` y `object-flip-vertical` entran en la familia; la hoja
+  de revisión y el inventario se actualizan.
+- **Pruebas**: veintiuna nuevas en la ventana, de `right_click_selects_the_symbol_and_opens_its_menu`
+  a `the_mockup_subject_is_the_selected_component_name`, incluida
+  `the_first_menu_entry_takes_the_keyboard`; la suite de la ventana pasa de 270 a **291**.
+
 ### La ventana vuelve y se reengancha — 2026-11-23
 
 - **La vuelta no redimensiona**: si hay geometría recordada, el viewport se crea con ese
