@@ -131,6 +131,7 @@ pub(super) const ARCHIVO: &[Group] = &[
                 Some(Command::ProjectSaveAs),
             ),
             Item::Small("document-export", "Exportar", Some(Command::ProjectExport)),
+            Item::Small("document-export", "Opciones…", Some(Command::ExportOptions)),
         ],
     },
     Group {

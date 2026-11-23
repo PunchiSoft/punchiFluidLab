@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La cinta configura la exportación — 2026-11-23
+
+- **Opciones…** de la exportación fija el formato (PDF/PNG/SVG, el que el diálogo de archivo
+  sugiere como extensión), la resolución del PNG (72/150/300/600 ppp) y si el dibujo lleva
+  **lista de piezas**. La lista agrupa los componentes por definición, los cierres de puerto y
+  los tubos con su longitud dibujada.
+- Las opciones son estado de vista: cambiarlas no es un undo ni marca el documento; la
+  exportación sigue eligiendo el escritor por la extensión que el lector escribe.
+
 ### La entrada de escritorio da el icono en Wayland — 2026-11-23
 
 - **Nombre de escritorio**: la ventana anuncia `org.punchisoft.PunchiFluidLab` con

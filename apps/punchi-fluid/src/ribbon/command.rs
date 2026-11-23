@@ -88,6 +88,7 @@ pub(crate) enum Command {
     ProjectSave,
     ProjectSaveAs,
     ProjectExport,
+    ExportOptions,
     PageMargin(MarginPreset),
     PageOrientation(Orientation),
     PagePaper(PaperSize),
@@ -141,12 +142,13 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 49] = [
+    pub(crate) const ALL: [Self; 50] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
         Self::ProjectSaveAs,
         Self::ProjectExport,
+        Self::ExportOptions,
         Self::PageMargin(MarginPreset::Normal),
         Self::PageOrientation(Orientation::Portrait),
         Self::PagePaper(PaperSize::A3),
@@ -203,6 +205,7 @@ impl Command {
             Self::ProjectSave => "Guardar",
             Self::ProjectSaveAs => "Guardar como",
             Self::ProjectExport => "Exportar",
+            Self::ExportOptions => "Opciones…",
             Self::PageMargin(_) => "Márgenes",
             Self::PageOrientation(_) => "Orientación",
             Self::PagePaper(_) => "Tamaño",

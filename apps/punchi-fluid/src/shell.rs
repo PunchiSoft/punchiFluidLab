@@ -125,6 +125,7 @@ impl Window {
             self.show_page_setup(context);
             self.show_block_editor(context);
             self.show_circuit_dialogs(context);
+            self.show_export_options(context);
             return;
         }
         self.show_ribbon(context);
@@ -148,6 +149,7 @@ impl Window {
         self.show_page_setup(context);
         self.show_block_editor(context);
         self.show_circuit_dialogs(context);
+        self.show_export_options(context);
     }
 
     /// The mode the room the window has calls for. The layout is a consequence of the limits,

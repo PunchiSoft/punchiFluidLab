@@ -234,6 +234,7 @@ impl Window {
             page_setup: crate::page_setup::PageSetup::default(),
             block_editor: crate::block_editor::BlockEditor::default(),
             circuit_dialog: None,
+            export_options: crate::export_options::ExportOptions::default(),
             sidebar: sidebar::Sidebar::new(),
             inspector: inspector::Inspector::new(),
             selected: Vec::new(),

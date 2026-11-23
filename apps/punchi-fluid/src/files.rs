@@ -140,6 +140,8 @@ pub(crate) struct Dialog {
     confirm_overwrite: bool,
     /// Whether the name field still has to take the keyboard, on the first frame.
     focus_name: bool,
+    /// Extension an export defaults to when the reader types none.
+    export_extension: &'static str,
 }
 
 impl Dialog {
@@ -154,8 +156,16 @@ impl Dialog {
             error: None,
             confirm_overwrite: false,
             focus_name: matches!(mode, Mode::SaveAs | Mode::Export),
+            export_extension: "pdf",
         };
         dialog.read_directory();
+        dialog
+    }
+
+    /// Opens the export dialog with the extension the export options chose.
+    pub(crate) fn open_export(start: PathBuf, extension: &'static str) -> Self {
+        let mut dialog = Self::open(Mode::Export, start);
+        dialog.export_extension = extension;
         dialog
     }
 
@@ -255,7 +265,7 @@ impl Dialog {
         }
         let file_name = match write {
             Write::Document => document_name(name),
-            Write::Export => match export_name(name) {
+            Write::Export => match export_name(name, self.export_extension) {
                 Ok(file_name) => file_name,
                 Err(message) => {
                     self.error = Some(message);
@@ -497,9 +507,9 @@ fn document_name(name: String) -> String {
 /// The name an export writes: `.pdf` when the reader typed no extension, else the typed
 /// name, whose extension is kept as typed. A name that asks for another format is refused
 /// with the reason, because a reader who typed `.docx` wanted a file this build cannot draw.
-fn export_name(name: String) -> Result<String, String> {
+fn export_name(name: String, extension: &str) -> Result<String, String> {
     match Path::new(&name).extension().and_then(OsStr::to_str) {
-        None => Ok(format!("{name}.pdf")),
+        None => Ok(format!("{name}.{extension}")),
         Some(extension) if is_export_extension(extension) => Ok(name),
         Some(_) => Err(String::from(
             "Un archivo de exportación tiene que ser pdf, png o svg.",

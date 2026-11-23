@@ -244,13 +244,22 @@ fn the_transport_follows_the_state() {
     assert_eq!(ribbon.last, "Detener");
 }
 
+/// Opens the margins gallery, or the collapsed group's flyout, which lists its cards.
+fn open_margins(harness: &mut egui_kittest::Harness<'_>) {
+    if harness.query_by_label("Márgenes   ").is_some() {
+        harness.get_by_label("Márgenes   ").click();
+    } else {
+        harness.get_by_label("Configurar página   ").click();
+    }
+    harness.run();
+}
+
 #[test]
 fn the_margins_gallery_opens_its_cards() {
     let mut ribbon = Ribbon::new();
     let palette = palette();
     let mut harness = harness(&mut ribbon, &palette, &[]);
-    harness.get_by_label("Márgenes   ").click();
-    harness.run();
+    open_margins(&mut harness);
     assert!(
         harness.query_by_label("Estrecho").is_some(),
         "the gallery shows its cards"
@@ -310,7 +319,19 @@ fn a_missing_recent_is_marked_and_refused() {
 fn the_page_launcher_dispatches_its_command() {
     let mut ribbon = Ribbon::new();
     ribbon.activate("Archivo");
-    click(&mut ribbon, "…");
+    let palette = palette();
+    {
+        let mut harness = harness(&mut ribbon, &palette, &[]);
+        if harness.query_by_label("…").is_some() {
+            harness.get_by_label("…").click();
+        } else {
+            // The row collapsed the group: the launcher is a row of its flyout.
+            harness.get_by_label("Configurar página   ").click();
+            harness.run();
+            harness.get_by_label("Configurar página").click();
+        }
+        harness.run();
+    }
     assert_eq!(ribbon.take(), Some(Command::PageSetup));
 }
 
@@ -320,8 +341,7 @@ fn the_margins_gallery_dispatches_its_command() {
     {
         let palette = palette();
         let mut harness = harness(&mut ribbon, &palette, &[]);
-        harness.get_by_label("Márgenes   ").click();
-        harness.run();
+        open_margins(&mut harness);
         harness.get_by_label("Estrecho").click();
         harness.run();
     }

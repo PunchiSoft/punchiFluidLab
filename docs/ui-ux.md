@@ -161,9 +161,10 @@ or custom millimetres — the orientation and the margins, by preset or in milli
 switch per field, the content model that sets its default field set and the position on the
 sheet. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
 circuit, the second confirms removing it with its components and pipes, both as one undo;
-**Cerrar** is disabled with a single circuit and the last one is refused. In every panel
-**Aplicar** is one undo, **Cerrar** or `Esc` discards the draft, and an impossible change is
-refused with a notice instead of applied. The grid the reference had is
+**Cerrar** is disabled with a single circuit and the last one is refused. **Opciones…** sets
+the export format the name defaults to, the PNG resolution and whether the drawing carries a
+parts list. In every panel **Aplicar** is one undo, **Cerrar** or `Esc` discards the draft, and
+an impossible change is refused with a notice instead of applied. The grid the reference had is
 not in the Rust window yet; it is its own capability, not a control that pretends.
 
 | Tab | Contents |
