@@ -96,23 +96,23 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 | `punchi-fluid-session` | La vida del documento entre el fichero y la ventana: la conversión hoja↔documento |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
 | `punchi-fluid-cli` | `validate`, `simulate` y `check` sin ventana |
-| `apps/punchi-fluid-qt` | La ventana: cinta, barra lateral de catálogo, hoja, barra de estado y la paleta del escritorio, sobre el ABI C |
+| `apps/punchi-fluid` | La ventana Rust: el diseño fijo, la cinta, la hoja, la barra de estado y la paleta del escritorio |
 
 ## Compilar y ejecutar
 
 ```bash
 ./scripts-dev/run.sh                                    # ventana; compila solo si hace falta
-./scripts-dev/run.sh --toggle                           # arranca con la válvula accionada
-./scripts-dev/run.sh --no-build --theme dark            # binario ya compilado, paleta oscura
-./scripts-dev/run.sh --theme light                      # fija la paleta para una captura
+./scripts-dev/run.sh --no-build                         # binario ya compilado
+./scripts-dev/run.sh --release                          # perfil release
+./scripts-dev/run.sh -- circuito.pfluid                 # abre una hoja
 cargo run --bin punchi-fluid-cli -- check circuito.pfluid   # comprobación sin ventana
 ```
 
-`run.sh` compila solo cuando cambió un fuente y después ejecuta el binario directamente;
-`--no-build` no invoca Cargo, y `--theme light|dark` se pasa a la ventana. Sin `--theme`,
-la ventana sigue al escritorio. `--toggle` acciona la válvula; no arranca la simulación.
-`check` lee el formato de hoja que guarda el editor; `validate` y `simulate` todavía leen el
-formato de circuito antiguo, como explica [la referencia de la CLI](docs/reference/cli.md).
+`run.sh` compila solo cuando cambió un fuente y después ejecuta `target/debug/punchi-fluid`
+directamente; `--no-build` no invoca Cargo, `--release` usa el perfil release y `-- <fichero>`
+pasa la hoja que se abre. La ventana sigue el tema del escritorio. `check` lee el formato de
+hoja que guarda el editor; `validate` y `simulate` todavía leen el formato de circuito
+antiguo, como explica [la referencia de la CLI](docs/reference/cli.md).
 
 En la ventana el transporte ejecuta el modelo: **Iniciar** (F9) arranca, **Pausa** (F8)
 pausa, **Paso** (F10) avanza un cuadro, **Hasta cambio** se detiene en el primer tope o
@@ -143,19 +143,16 @@ está en [ADR 0012](docs/adr/0012-the-paper-a-drawing-is-printed-on.md); el tama
 personalizado existe en la API de exportación pero no en la ventana, y la última elección
 todavía no se recuerda por usuario.
 
-Requisitos: Rust estable (fijado en `rust-toolchain.toml`), Qt 6.5 o superior con Qt Quick,
-CMake y Ninja. El núcleo en Rust se compila con `cargo build --release -p punchi-fluid-ffi`;
-la ventana con
+Requisitos: Rust estable (fijado en `rust-toolchain.toml`). La ventana se compila con
 
 ```bash
-cmake -S apps/punchi-fluid-qt -B apps/punchi-fluid-qt/build -G Ninja
-cmake --build apps/punchi-fluid-qt/build
-apps/punchi-fluid-qt/build/punchi-fluid
+cargo build -p punchi-fluid-window --bin punchi-fluid
+target/debug/punchi-fluid
 ```
 
-El núcleo se enlaza como biblioteca estática, así que el resultado es un solo binario sin
-ruta de búsqueda. Mantenerlo en Rust es lo que además permite una compilación a
-WebAssembly más adelante.
+Los crates se enlazan estáticamente, así que el resultado es un solo binario sin ruta de
+búsqueda. Mantenerlo todo en Rust es lo que además permite una compilación a WebAssembly
+más adelante.
 
 ## Los componentes son archivos, no código
 
