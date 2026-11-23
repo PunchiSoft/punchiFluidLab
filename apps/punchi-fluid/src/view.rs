@@ -124,16 +124,6 @@ impl View {
             origin: area.center() - page_px * 0.5 + self.pan,
         }
     }
-
-    /// The commands of the Ver tab that the view owns.
-    pub fn command(&mut self, command: &str) {
-        match command {
-            "Aumentar" => self.zoom_in(),
-            "Disminuir" => self.zoom_out(),
-            "Tamaño original" | "Restablecer vista" => self.reset(),
-            _ => {}
-        }
-    }
 }
 
 fn fit(area: egui::Rect, page_mm: egui::Vec2) -> f32 {
@@ -209,17 +199,17 @@ mod tests {
     #[test]
     fn the_ver_commands_stay_inside_the_zoom_range() {
         let mut view = View::default();
-        view.command("Aumentar");
+        view.zoom_in();
         assert!((view.zoom() - View::STEP).abs() < 1e-5);
         for _ in 0..40 {
-            view.command("Aumentar");
+            view.zoom_in();
         }
         assert!((view.zoom() - View::MAX_ZOOM).abs() < f32::EPSILON);
         for _ in 0..40 {
-            view.command("Disminuir");
+            view.zoom_out();
         }
         assert!((view.zoom() - View::MIN_ZOOM).abs() < f32::EPSILON);
-        view.command("Tamaño original");
+        view.reset();
         assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
     }
 }

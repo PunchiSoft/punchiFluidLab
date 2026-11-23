@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! The ribbon data: tabs, groups, commands and the gallery previews.
+//!
+//! Every control carries a [`Command`] or nothing. A control with nothing is painted disabled:
+//! it is a command the window does not have yet, and the ribbon never pretends otherwise.
+
+use super::Command;
 
 pub(super) enum Preview {
     Margins(f32),
@@ -11,51 +16,54 @@ pub(super) enum Preview {
 pub(super) struct GalleryEntry {
     pub(super) label: &'static str,
     pub(super) preview: Preview,
+    pub(super) command: Option<Command>,
+}
+
+impl GalleryEntry {
+    /// An entry the window cannot run yet: painted, never dispatched.
+    const fn unavailable(label: &'static str, preview: Preview) -> Self {
+        Self {
+            label,
+            preview,
+            command: None,
+        }
+    }
+}
+
+pub(super) struct MenuEntry {
+    pub(super) label: &'static str,
+    pub(super) command: Option<Command>,
+}
+
+impl MenuEntry {
+    /// An option the window cannot run yet: painted, never dispatched.
+    const fn unavailable(label: &'static str) -> Self {
+        Self {
+            label,
+            command: None,
+        }
+    }
 }
 
 pub(super) enum Item {
-    Large(&'static str, &'static str),
-    Small(&'static str, &'static str),
-    Menu(&'static str, &'static str, &'static [&'static str]),
+    Large(&'static str, &'static str, Option<Command>),
+    Small(&'static str, &'static str, Option<Command>),
+    Menu(&'static str, &'static str, &'static [MenuEntry]),
     Gallery(&'static str, &'static str, &'static [GalleryEntry]),
 }
 
 pub(super) const MARGINS: &[GalleryEntry] = &[
-    GalleryEntry {
-        label: "Normal",
-        preview: Preview::Margins(0.55),
-    },
-    GalleryEntry {
-        label: "Estrecho",
-        preview: Preview::Margins(0.25),
-    },
-    GalleryEntry {
-        label: "Moderado",
-        preview: Preview::Margins(0.4),
-    },
-    GalleryEntry {
-        label: "Ancho",
-        preview: Preview::Margins(0.15),
-    },
+    GalleryEntry::unavailable("Normal", Preview::Margins(0.55)),
+    GalleryEntry::unavailable("Estrecho", Preview::Margins(0.25)),
+    GalleryEntry::unavailable("Moderado", Preview::Margins(0.4)),
+    GalleryEntry::unavailable("Ancho", Preview::Margins(0.15)),
 ];
 
 pub(super) const CONDUCTO: &[GalleryEntry] = &[
-    GalleryEntry {
-        label: "Trabajo",
-        preview: Preview::Pipe("pipe-working"),
-    },
-    GalleryEntry {
-        label: "Pilotaje",
-        preview: Preview::Pipe("pipe-pilot"),
-    },
-    GalleryEntry {
-        label: "Drenaje",
-        preview: Preview::Pipe("pipe-drain"),
-    },
-    GalleryEntry {
-        label: "Diámetro",
-        preview: Preview::Pipe("tube-diameter"),
-    },
+    GalleryEntry::unavailable("Trabajo", Preview::Pipe("pipe-working")),
+    GalleryEntry::unavailable("Pilotaje", Preview::Pipe("pipe-pilot")),
+    GalleryEntry::unavailable("Drenaje", Preview::Pipe("pipe-drain")),
+    GalleryEntry::unavailable("Diámetro", Preview::Pipe("tube-diameter")),
 ];
 
 pub(super) struct Group {
@@ -74,20 +82,24 @@ pub(super) const ARCHIVO: &[Group] = &[
         name: "Proyecto",
         launcher: false,
         items: &[
-            Item::Large("document-new", "Nuevo"),
-            Item::Large("document-open", "Abrir"),
-            Item::Large("document-save", "Guardar"),
-            Item::Small("document-save-as", "Guardar como"),
-            Item::Small("document-export", "Exportar"),
+            Item::Large("document-new", "Nuevo", Some(Command::ProjectNew)),
+            Item::Large("document-open", "Abrir", Some(Command::ProjectOpen)),
+            Item::Large("document-save", "Guardar", Some(Command::ProjectSave)),
+            Item::Small(
+                "document-save-as",
+                "Guardar como",
+                Some(Command::ProjectSaveAs),
+            ),
+            Item::Small("document-export", "Exportar", Some(Command::ProjectExport)),
         ],
     },
     Group {
         name: "Circuito",
         launcher: false,
         items: &[
-            Item::Small("list-add", "Nuevo"),
-            Item::Small("edit-rename", "Renombrar"),
-            Item::Small("window-close", "Cerrar"),
+            Item::Small("list-add", "Nuevo circuito", Some(Command::CircuitNew)),
+            Item::Small("edit-rename", "Renombrar", None),
+            Item::Small("window-close", "Cerrar", None),
         ],
     },
     Group {
@@ -98,12 +110,20 @@ pub(super) const ARCHIVO: &[Group] = &[
             Item::Menu(
                 "document-properties",
                 "Orientación",
-                &["Vertical", "Apaisado"],
+                &[
+                    MenuEntry::unavailable("Vertical"),
+                    MenuEntry::unavailable("Apaisado"),
+                ],
             ),
             Item::Menu(
                 "x-office-document",
                 "Tamaño",
-                &["A4", "A3", "A2", "Personalizado…"],
+                &[
+                    MenuEntry::unavailable("A4"),
+                    MenuEntry::unavailable("A3"),
+                    MenuEntry::unavailable("A2"),
+                    MenuEntry::unavailable("Personalizado…"),
+                ],
             ),
         ],
     },
@@ -113,7 +133,7 @@ pub(super) const ARCHIVO: &[Group] = &[
         items: &[Item::Menu(
             "document-open-recent",
             "Recientes",
-            &["Sin recientes"],
+            &[MenuEntry::unavailable("Sin recientes")],
         )],
     },
 ];
@@ -123,46 +143,54 @@ pub(super) const EDITAR: &[Group] = &[
         name: "Historial",
         launcher: false,
         items: &[
-            Item::Small("edit-undo", "Deshacer"),
-            Item::Small("edit-redo", "Rehacer"),
+            Item::Small("edit-undo", "Deshacer", Some(Command::Undo)),
+            Item::Small("edit-redo", "Rehacer", Some(Command::Redo)),
         ],
     },
     Group {
         name: "Componente",
         launcher: false,
         items: &[
-            Item::Small("edit-copy", "Copiar"),
-            Item::Small("edit-paste", "Pegar"),
-            Item::Small("edit-duplicate", "Duplicar"),
-            Item::Small("edit-delete", "Borrar"),
-            Item::Small("edit-select-all", "Todo"),
+            Item::Small("edit-copy", "Copiar", Some(Command::Copy)),
+            Item::Small("edit-paste", "Pegar", Some(Command::Paste)),
+            Item::Small("edit-duplicate", "Duplicar", Some(Command::Duplicate)),
+            Item::Small("edit-delete", "Borrar", Some(Command::Delete)),
+            Item::Small("edit-select-all", "Todo", None),
         ],
     },
     Group {
         name: "Transformar",
         launcher: false,
         items: &[
-            Item::Small("object-rotate-right", "Girar"),
-            Item::Small("object-flip-horizontal", "Reflejar"),
+            Item::Small("object-rotate-right", "Girar", Some(Command::Rotate)),
+            Item::Small("object-flip-horizontal", "Reflejar", Some(Command::Mirror)),
         ],
     },
     Group {
         name: "Alinear",
         launcher: false,
         items: &[
-            Item::Small("align-horizontal-left", "Izquierda"),
-            Item::Small("align-horizontal-right", "Derecha"),
-            Item::Small("align-vertical-top", "Arriba"),
-            Item::Small("align-vertical-bottom", "Abajo"),
-            Item::Small("align-ports", "Puertos"),
+            Item::Small(
+                "align-horizontal-left",
+                "Izquierda",
+                Some(Command::AlignLeft),
+            ),
+            Item::Small(
+                "align-horizontal-right",
+                "Derecha",
+                Some(Command::AlignRight),
+            ),
+            Item::Small("align-vertical-top", "Arriba", Some(Command::AlignTop)),
+            Item::Small("align-vertical-bottom", "Abajo", Some(Command::AlignBottom)),
+            Item::Small("align-ports", "Puertos", None),
         ],
     },
     Group {
         name: "Repartir",
         launcher: false,
         items: &[
-            Item::Small("distribute-horizontal-equal", "Horizontal"),
-            Item::Small("distribute-vertical-equal", "Vertical"),
+            Item::Small("distribute-horizontal-equal", "Horizontal", None),
+            Item::Small("distribute-vertical-equal", "Vertical", None),
         ],
     },
     Group {
@@ -177,25 +205,33 @@ pub(super) const VER: &[Group] = &[
         name: "Vista",
         launcher: false,
         items: &[
-            Item::Small("zoom-in", "Aumentar"),
-            Item::Small("zoom-out", "Disminuir"),
-            Item::Small("zoom-original", "Tamaño original"),
+            Item::Small("zoom-in", "Aumentar", Some(Command::ZoomIn)),
+            Item::Small("zoom-out", "Disminuir", Some(Command::ZoomOut)),
+            Item::Small("zoom-original", "Tamaño original", Some(Command::ZoomReset)),
         ],
     },
     Group {
         name: "Paneles",
         launcher: false,
         items: &[
-            Item::Small("view-list-details", "Catálogo"),
-            Item::Small("document-properties", "Propiedades"),
-            Item::Small("go-bottom", "Ocultar al salir"),
-            Item::Small("edit-reset", "Restablecer vista"),
+            Item::Small("view-list-details", "Catálogo", Some(Command::Catalog)),
+            Item::Small(
+                "document-properties",
+                "Propiedades",
+                Some(Command::Properties),
+            ),
+            Item::Small("go-bottom", "Ocultar al salir", Some(Command::Autohide)),
+            Item::Small("edit-reset", "Restablecer vista", Some(Command::ResetView)),
         ],
     },
     Group {
         name: "Tema",
         launcher: false,
-        items: &[Item::Small("preferences-desktop-theme", "Tema")],
+        items: &[Item::Small(
+            "preferences-desktop-theme",
+            "Tema",
+            Some(Command::Theme),
+        )],
     },
 ];
 
@@ -206,7 +242,12 @@ pub(super) const CAJETIN: &[Group] = &[
         items: &[Item::Menu(
             "x-office-document",
             "Contenido",
-            &["Técnico", "Escolar", "Industrial", "Sin cajetín"],
+            &[
+                MenuEntry::unavailable("Técnico"),
+                MenuEntry::unavailable("Escolar"),
+                MenuEntry::unavailable("Industrial"),
+                MenuEntry::unavailable("Sin cajetín"),
+            ],
         )],
     },
     Group {
@@ -215,15 +256,18 @@ pub(super) const CAJETIN: &[Group] = &[
         items: &[Item::Menu(
             "go-top",
             "Posición",
-            &["Superior derecha", "Inferior derecha"],
+            &[
+                MenuEntry::unavailable("Superior derecha"),
+                MenuEntry::unavailable("Inferior derecha"),
+            ],
         )],
     },
     Group {
         name: "Datos",
         launcher: false,
         items: &[
-            Item::Small("x-office-address-book", "Editar datos…"),
-            Item::Small("edit-reset", "Restablecer"),
+            Item::Small("x-office-address-book", "Editar datos…", None),
+            Item::Small("edit-reset", "Restablecer", None),
         ],
     },
 ];
@@ -233,21 +277,25 @@ pub(super) const SIMULAR: &[Group] = &[
         name: "Transporte",
         launcher: false,
         items: &[
-            Item::Large("media-playback-start", "Iniciar"),
-            Item::Large("media-playback-pause", "Pausa"),
-            Item::Large("media-skip-forward", "Paso"),
-            Item::Large("media-seek-forward", "Hasta cambio"),
-            Item::Large("media-playback-stop", "Detener"),
-            Item::Large("view-refresh", "Restablecer"),
+            Item::Large("media-playback-start", "Iniciar", Some(Command::Start)),
+            Item::Large("media-playback-pause", "Pausa", Some(Command::Pause)),
+            Item::Large("media-skip-forward", "Paso", Some(Command::Step)),
+            Item::Large(
+                "media-seek-forward",
+                "Hasta cambio",
+                Some(Command::UntilChange),
+            ),
+            Item::Large("media-playback-stop", "Detener", Some(Command::Stop)),
+            Item::Large("view-refresh", "Restablecer", None),
         ],
     },
     Group {
         name: "Velocidad",
         launcher: false,
         items: &[
-            Item::Large("speed-0.25", "0,25×"),
-            Item::Large("speed-1", "1×"),
-            Item::Large("speed-2", "2×"),
+            Item::Large("speed-0.25", "0,25×", None),
+            Item::Large("speed-1", "1×", None),
+            Item::Large("speed-2", "2×", None),
         ],
     },
 ];

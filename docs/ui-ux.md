@@ -77,17 +77,17 @@ target (the owner's staged plan, stage 6).
 
 ### 1. Ribbon (top)
 
-The icons are the **desktop's own** everywhere except the ribbon: each action names a
-freedesktop icon (`document-new`, `edit-undo`, `media-playback-start`), `QIcon::fromTheme`
-finds it in the user's theme and rasterises it; a machine with no such icon gets the label
-alone, as a native application does. The ribbon's commands use the project's own line
-family instead, so one command looks the same on every desktop
-([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)); the family falls back to the
-desktop's symbol and then to the label. **Today** every command in the ribbon uses the project family — 46 names, from Nuevo and
-Abrir to Alinear, Borrar, Iniciar and Menú — and the desktop icon remains only as the
-fallback for a command that had no drawing. The rest of the window keeps the desktop's
-own icons. See
-[ADR 0004](adr/0004-icons-from-the-desktop.md).
+The ribbon's commands use the **project's own line family**, embedded from `assets/icons`
+and tinted by the theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)), so one
+command looks the same on every desktop; a command without a drawing falls back to its
+label. The rest of the window keeps the desktop's own icons
+([ADR 0004](adr/0004-icons-from-the-desktop.md)).
+
+**The table carries a command, not a label.** `ribbon::Command` names each action the window
+handles; a control with no handler is painted disabled and cannot dispatch, and the window's
+dispatch is exhaustive, so a command without a handler does not compile. Two controls that
+read alike — the project's **Nuevo** and the circuit's **Nuevo circuito** — are different
+commands.
 
 The toolbar is a **ribbon**: a tab row, then the commands of the open tab in labelled
 groups with a hair line between them. The simulation transport is the **Simular** tab,
@@ -145,9 +145,12 @@ Depth comes from the palette, never from a new hue.
   fetches anything. Both popups close with **Cerrar**, `Esc` or a click outside, and
   opening one never changes the document.
 
-The list of commands lives in one table in `RibbonBar.qml`; the expanded groups and the
-collapsed menu are generated from it, so they cannot drift apart. The two help links are
-a second, short table beside it, because they are not commands of a tab.
+The list of commands is one table in `apps/punchi-fluid/src/ribbon/model.rs`; the expanded
+groups, the collapsed groups and their flyouts are generated from it, so they cannot drift
+apart. The two help links are drawn in the tab row beside the tabs, because they are not
+commands of a tab. **Today** the file commands, **Circuito ▸ Nuevo circuito**, the edit and
+view commands and the transport dispatch; the rest is painted disabled until its phase of
+the ribbon plan.
 
 | Tab | Contents |
 |---|---|

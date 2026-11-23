@@ -488,3 +488,13 @@ fn until_change_stops_at_the_piston_end() {
         .map_or(0.0, |model| model.network().telemetry().position);
     assert!(position > 0.0, "the piston moved towards the far end");
 }
+
+#[test]
+fn every_command_has_a_handler() {
+    // The dispatch is an exhaustive match, so this is the runtime half of the same promise: a
+    // command carried by the table reaches a handler instead of a catch-all.
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    for command in crate::ribbon::Command::ALL {
+        window.dispatch(command);
+    }
+}

@@ -10,10 +10,12 @@ use eframe::egui;
 
 use crate::theme::Tokens;
 
+mod command;
 mod icons;
 mod model;
 
-use model::{GalleryEntry, Group, Item, Preview, TABS};
+pub(crate) use command::Command;
+use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
 
 /// The colours the ribbon paints with, taken from the theme tokens.
 pub struct Palette {
@@ -69,7 +71,7 @@ pub struct Ribbon {
     /// Whether the document has something to undo or redo; the window sets both every frame.
     pub can_undo: bool,
     pub can_redo: bool,
-    pending: Option<String>,
+    pending: Option<Command>,
 }
 
 impl Ribbon {
@@ -103,60 +105,61 @@ impl Ribbon {
     }
 
     /// Whether the command may run in the current state. The transport is the demo: it
-    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar. Guardar
-    /// needs a path, and the file actions whose dialogs are not here yet stay dimmed instead
-    /// of pretending to work.
-    fn enabled(&self, label: &str) -> bool {
-        match label {
-            "Iniciar" => !self.running,
-            "Pausa" | "Detener" => self.running,
-            "Paso" | "Hasta cambio" => self.can_step,
-            "Guardar" => self.savable,
-            "Borrar" | "Girar" | "Reflejar" | "Duplicar" | "Copiar" => self.selected >= 1,
-            "Pegar" => self.has_clipboard,
-            "Izquierda" | "Derecha" | "Arriba" | "Abajo" | "Puertos" => self.selected >= 2,
-            "Deshacer" => self.can_undo,
-            "Rehacer" => self.can_redo,
-            // Run until a state change, the file actions and the rest wait for their
-            // commands or their dialogs.
-            "Nuevo" | "Abrir" | "Guardar como" | "Exportar" | "Horizontal" | "Vertical"
-            | "Apaisado" => false,
+    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar. Guardar is
+    /// always live: without a path the window asks for one. A control whose command is not
+    /// here yet is not a command at all and is painted disabled.
+    fn enabled(&self, command: Command) -> bool {
+        match command {
+            Command::Start => !self.running,
+            Command::Pause | Command::Stop => self.running,
+            Command::Step | Command::UntilChange => self.can_step,
+            Command::Delete
+            | Command::Rotate
+            | Command::Mirror
+            | Command::Duplicate
+            | Command::Copy => self.selected >= 1,
+            Command::Paste => self.has_clipboard,
+            Command::AlignLeft | Command::AlignRight | Command::AlignTop | Command::AlignBottom => {
+                self.selected >= 2
+            }
+            Command::Undo => self.can_undo,
+            Command::Redo => self.can_redo,
             _ => true,
         }
     }
 
-    fn run_command(&mut self, label: &str) {
-        if !self.enabled(label) {
+    fn run_command(&mut self, command: Command) {
+        if !self.enabled(command) {
             return;
         }
-        match label {
-            "Iniciar" => self.running = true,
-            "Detener" => self.running = false,
+        match command {
+            Command::Start => self.running = true,
+            Command::Pause | Command::Stop => self.running = false,
             _ => {}
         }
-        self.last = label.to_string();
-        self.pending = Some(label.to_string());
+        self.last = command.label_es().to_string();
+        self.pending = Some(command);
     }
 
     /// Takes the command the reader just chose, for the window to act on; the last command
     /// stays in `last` for the status bar.
-    pub fn take(&mut self) -> Option<String> {
+    pub fn take(&mut self) -> Option<Command> {
         self.pending.take()
     }
 
     /// Draws the strip and the active tab; the pick lands in `last`.
     pub fn show(&mut self, ui: &mut egui::Ui, palette: &Palette) {
-        for (key, label) in [
-            (egui::Key::F9, "Iniciar"),
-            (egui::Key::F8, "Pausa"),
-            (egui::Key::F10, "Paso"),
-            (egui::Key::F5, "Detener"),
+        for (key, command) in [
+            (egui::Key::F9, Command::Start),
+            (egui::Key::F8, Command::Pause),
+            (egui::Key::F10, Command::Step),
+            (egui::Key::F5, Command::Stop),
         ] {
             if ui.input(|input| input.key_pressed(key)) {
-                self.run_command(label);
+                self.run_command(command);
             }
         }
-        let mut picked = None;
+        let mut picked: Option<Command> = None;
         let bar = egui::Frame::default()
             .fill(palette.raised)
             .inner_margin(egui::Margin::symmetric(8, 3))
@@ -224,7 +227,7 @@ impl Ribbon {
                         if expanded[index] {
                             self.group(ui, group, palette, &mut picked);
                         } else {
-                            Self::collapsed_group(ui, group, palette, &mut picked);
+                            self.collapsed_group(ui, group, palette, &mut picked);
                         }
                         ui.separator();
                     }
@@ -232,15 +235,16 @@ impl Ribbon {
             });
 
         if let Some(picked) = picked {
-            self.run_command(&picked);
+            self.run_command(picked);
         }
     }
 
     fn collapsed_group(
+        &self,
         ui: &mut egui::Ui,
         group: &Group,
         palette: &Palette,
-        picked: &mut Option<String>,
+        picked: &mut Option<Command>,
     ) {
         ui.allocate_ui_with_layout(
             egui::vec2(
@@ -256,12 +260,17 @@ impl Ribbon {
                     |ui| {
                         for item in group.items {
                             match item {
-                                Item::Large(_, label)
-                                | Item::Small(_, label)
-                                | Item::Menu(_, label, _)
-                                | Item::Gallery(_, label, _) => {
-                                    if ui.button(*label).clicked() {
-                                        *picked = Some((*label).to_string());
+                                Item::Large(_, label, command) | Item::Small(_, label, command) => {
+                                    self.flyout(ui, label, *command, picked);
+                                }
+                                Item::Menu(_, _, entries) => {
+                                    for entry in *entries {
+                                        self.flyout(ui, entry.label, entry.command, picked);
+                                    }
+                                }
+                                Item::Gallery(_, _, entries) => {
+                                    for entry in *entries {
+                                        self.flyout(ui, entry.label, entry.command, picked);
                                     }
                                 }
                             }
@@ -273,12 +282,28 @@ impl Ribbon {
         );
     }
 
+    /// One line of a collapsed group's flyout: enabled only when the window can run it now.
+    fn flyout(
+        &self,
+        ui: &mut egui::Ui,
+        label: &str,
+        command: Option<Command>,
+        picked: &mut Option<Command>,
+    ) {
+        let enabled = command.is_some_and(|command| self.enabled(command));
+        if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
+            if let Some(command) = command {
+                *picked = Some(command);
+            }
+        }
+    }
+
     fn group(
         &self,
         ui: &mut egui::Ui,
         group: &Group,
         palette: &Palette,
-        picked: &mut Option<String>,
+        picked: &mut Option<Command>,
     ) {
         ui.allocate_ui_with_layout(
             egui::vec2(estimate(ui, group, palette).max(96.0), 78.0),
@@ -287,18 +312,22 @@ impl Ribbon {
                 ui.horizontal_top(|ui| {
                     for item in group.items {
                         match item {
-                            Item::Large(id, label) => {
-                                if self.large(ui, id, label, palette) {
-                                    *picked = Some((*label).to_string());
+                            Item::Large(id, label, command) => {
+                                if self.large(ui, id, label, *command, palette) {
+                                    if let Some(command) = command {
+                                        *picked = Some(*command);
+                                    }
                                 }
                             }
-                            Item::Small(id, label) => {
-                                if self.small(ui, id, label, palette) {
-                                    *picked = Some((*label).to_string());
+                            Item::Small(id, label, command) => {
+                                if self.small(ui, id, label, *command, palette) {
+                                    if let Some(command) = command {
+                                        *picked = Some(*command);
+                                    }
                                 }
                             }
-                            Item::Menu(id, label, options) => {
-                                self.menu(ui, id, label, options, palette, picked);
+                            Item::Menu(id, label, entries) => {
+                                self.menu(ui, id, label, entries, palette, picked);
                             }
                             Item::Gallery(id, label, entries) => {
                                 self.gallery(ui, id, label, entries, palette, picked);
@@ -317,21 +346,26 @@ impl Ribbon {
                             .size(palette.text_small)
                             .color(palette.muted),
                     );
-                    if group.launcher
-                        && ui
-                            .small_button("…")
-                            .on_hover_text("Configurar página")
-                            .clicked()
-                    {
-                        *picked = Some(format!("{}…", group.name));
+                    if group.launcher {
+                        // The page setup panel is not here yet: visible and disabled, never a
+                        // button that lies.
+                        ui.add_enabled(false, egui::Button::new("…"))
+                            .on_hover_text("Configurar página");
                     }
                 });
             },
         );
     }
 
-    fn large(&self, ui: &mut egui::Ui, id: &str, label: &str, palette: &Palette) -> bool {
-        let enabled = self.enabled(label);
+    fn large(
+        &self,
+        ui: &mut egui::Ui,
+        id: &str,
+        label: &str,
+        command: Option<Command>,
+        palette: &Palette,
+    ) -> bool {
+        let enabled = command.is_some_and(|command| self.enabled(command));
         let ink = if enabled { palette.ink } else { palette.muted };
         let (rect, _) = ui.allocate_exact_size(egui::vec2(64.0, 58.0), egui::Sense::hover());
         let widget = ui.make_persistent_id(("ribbon.large", id, label));
@@ -393,8 +427,15 @@ impl Ribbon {
         activated
     }
 
-    fn small(&self, ui: &mut egui::Ui, id: &str, label: &str, palette: &Palette) -> bool {
-        let enabled = self.enabled(label);
+    fn small(
+        &self,
+        ui: &mut egui::Ui,
+        id: &str,
+        label: &str,
+        command: Option<Command>,
+        palette: &Palette,
+    ) -> bool {
+        let enabled = command.is_some_and(|command| self.enabled(command));
         let ink = if enabled { palette.ink } else { palette.muted };
         let response = match self.icons.get(id) {
             Some(bytes) => {
@@ -422,9 +463,9 @@ impl Ribbon {
         ui: &mut egui::Ui,
         id: &str,
         label: &str,
-        options: &'static [&'static str],
+        entries: &'static [MenuEntry],
         palette: &Palette,
-        picked: &mut Option<String>,
+        picked: &mut Option<Command>,
     ) {
         let text = egui::RichText::new(format!("{label}   "))
             .size(palette.text_body)
@@ -437,9 +478,15 @@ impl Ribbon {
             None => egui::Button::new(text),
         };
         let (response, _) = egui::containers::menu::MenuButton::from_button(button).ui(ui, |ui| {
-            for option in options {
-                if ui.button(*option).clicked() {
-                    *picked = Some((*option).to_string());
+            for entry in entries {
+                let enabled = entry.command.is_some_and(|command| self.enabled(command));
+                if ui
+                    .add_enabled(enabled, egui::Button::new(entry.label))
+                    .clicked()
+                {
+                    if let Some(command) = entry.command {
+                        *picked = Some(command);
+                    }
                 }
             }
         });
@@ -453,7 +500,7 @@ impl Ribbon {
         label: &str,
         entries: &'static [GalleryEntry],
         palette: &Palette,
-        picked: &mut Option<String>,
+        picked: &mut Option<Command>,
     ) {
         let text = egui::RichText::new(format!("{label}   "))
             .size(palette.text_body)
@@ -486,12 +533,14 @@ impl Ribbon {
         ui: &mut egui::Ui,
         entry: &GalleryEntry,
         palette: &Palette,
-        picked: &mut Option<String>,
+        picked: &mut Option<Command>,
     ) {
+        let enabled = entry.command.is_some_and(|command| self.enabled(command));
+        let ink = if enabled { palette.ink } else { palette.muted };
         let (rect, response) =
             ui.allocate_exact_size(egui::vec2(132.0, 78.0), egui::Sense::click());
         if ui.is_rect_visible(rect) {
-            let background = if response.hovered() {
+            let background = if enabled && response.hovered() {
                 palette.hover
             } else {
                 palette.raised
@@ -538,13 +587,16 @@ impl Ribbon {
                 egui::Align2::CENTER_CENTER,
                 entry.label,
                 egui::FontId::proportional(11.0),
-                palette.ink,
+                ink,
             );
         }
-        response
-            .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, entry.label));
-        if response.clicked() {
-            *picked = Some(entry.label.to_string());
+        response.widget_info(|| {
+            egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, entry.label)
+        });
+        if enabled && response.clicked() {
+            if let Some(command) = entry.command {
+                *picked = Some(command);
+            }
             ui.close();
         }
     }
@@ -639,7 +691,7 @@ fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette) -> f32 {
     for item in group.items {
         width += match item {
             Item::Large(..) => 64.0 + 6.0,
-            Item::Small(_, label) | Item::Menu(_, label, _) | Item::Gallery(_, label, _) => {
+            Item::Small(_, label, _) | Item::Menu(_, label, _) | Item::Gallery(_, label, _) => {
                 16.0 + 6.0 + text_width(ui, label, palette.text_body) + 22.0 + 6.0
             }
         };

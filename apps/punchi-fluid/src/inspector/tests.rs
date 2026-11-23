@@ -13,6 +13,7 @@ use punchi_fluid_draw::Pt;
 
 use super::{Action, DEFAULT_WIDTH};
 use crate::Window;
+use crate::ribbon::Command;
 use crate::theme::Theme;
 
 /// A document with one valve, so the panel has an instance to inspect.
@@ -98,9 +99,9 @@ fn the_dock_toggles_remembers_its_width_and_resets() {
 #[test]
 fn the_properties_command_toggles_the_dock() {
     let mut window = window_with(Document::new());
-    window.run_command("Propiedades");
+    window.dispatch(Command::Properties);
     assert!(!window.inspector.is_open(), "Ver ▸ Propiedades hides it");
-    window.run_command("Propiedades");
+    window.dispatch(Command::Properties);
     assert!(
         window.inspector.is_open(),
         "Ver ▸ Propiedades brings it back"
@@ -129,7 +130,7 @@ fn reset_view_opens_the_dock_and_returns_its_width() {
     let mut window = window_with(Document::new());
     window.inspector.close();
     window.inspector.resize_by(-40.0);
-    window.run_command("Restablecer vista");
+    window.dispatch(Command::ResetView);
     assert!(window.inspector.is_open(), "the reset opens the dock");
     assert!(
         (window.inspector.width() - DEFAULT_WIDTH).abs() <= f32::EPSILON,
@@ -145,8 +146,8 @@ fn hiding_and_showing_the_dock_is_not_a_document_change() {
     let redo = window.document.can_redo();
     window.inspector.close();
     window.inspector.open();
-    window.run_command("Propiedades");
-    window.run_command("Propiedades");
+    window.dispatch(Command::Properties);
+    window.dispatch(Command::Properties);
     assert_eq!(
         window.document.revision(),
         revision,

@@ -15,6 +15,7 @@ use punchi_fluid_draw::Pt;
 
 use crate::Window;
 use crate::inspector;
+use crate::ribbon::Command;
 use crate::sidebar;
 use crate::theme::Theme;
 
@@ -114,9 +115,9 @@ fn ctrl_b_toggles_the_catalog() {
 #[test]
 fn the_catalog_command_toggles_the_panel() {
     let mut window = window_with(Document::new());
-    window.run_command("Catálogo");
+    window.dispatch(Command::Catalog);
     assert!(!window.sidebar.is_open(), "Ver ▸ Catálogo hides it");
-    window.run_command("Catálogo");
+    window.dispatch(Command::Catalog);
     assert!(window.sidebar.is_open(), "Ver ▸ Catálogo brings it back");
 }
 
@@ -238,7 +239,7 @@ fn reset_view_opens_both_panels_at_their_default_widths() {
     window.inspector.close();
     window.sidebar.resize_by(-10.0);
     window.inspector.resize_by(40.0);
-    window.run_command("Restablecer vista");
+    window.dispatch(Command::ResetView);
     assert!(window.sidebar.is_open(), "the reset opens the catalog");
     assert!(
         (window.sidebar.width() - sidebar::DEFAULT_WIDTH).abs() <= f32::EPSILON,
@@ -261,10 +262,10 @@ fn folding_either_panel_is_not_a_document_change() {
     window.sidebar.toggle();
     window.inspector.toggle();
     window.inspector.toggle();
-    window.run_command("Catálogo");
-    window.run_command("Catálogo");
-    window.run_command("Propiedades");
-    window.run_command("Propiedades");
+    window.dispatch(Command::Catalog);
+    window.dispatch(Command::Catalog);
+    window.dispatch(Command::Properties);
+    window.dispatch(Command::Properties);
     assert_eq!(
         window.document.revision(),
         revision,

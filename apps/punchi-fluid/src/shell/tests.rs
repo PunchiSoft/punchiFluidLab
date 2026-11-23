@@ -14,6 +14,7 @@ use punchi_fluid_doc::Document;
 
 use crate::Window;
 use crate::layout::LayoutMode;
+use crate::ribbon::Command;
 use crate::shell::Drawer;
 use crate::theme::Theme;
 use crate::window_state::{self, Geometry};
@@ -351,7 +352,7 @@ fn reset_view_closes_an_open_drawer() {
         harness.run();
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
     }
-    window.run_command("Restablecer vista");
+    window.dispatch(Command::ResetView);
     assert_eq!(
         window.shell.drawer, None,
         "Restablecer vista dismisses the drawer with the panels and the view"
