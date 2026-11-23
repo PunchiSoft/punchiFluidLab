@@ -54,6 +54,35 @@ fn same(left: f32, right: f32) -> bool {
     (left - right).abs() <= f32::EPSILON
 }
 
+#[test]
+fn the_appearance_round_trips_and_an_unknown_value_reads_the_desktop() {
+    let parsed = parse("version=1\nappearance=slate\n").expect("the version is there");
+    assert_eq!(
+        parsed.appearance,
+        crate::theme::Appearance::Theme(crate::theme::ThemeId::Slate)
+    );
+    let parsed = parse("version=1\nappearance=future\n").expect("the version is there");
+    assert_eq!(parsed.appearance, crate::theme::Appearance::Desktop);
+}
+
+#[test]
+fn choosing_an_appearance_wears_it_and_remembers_it() {
+    let mut window = window_with(valve_document());
+    let context = egui::Context::default();
+    window.apply_appearance(
+        &context,
+        crate::theme::Appearance::Theme(crate::theme::ThemeId::Slate),
+    );
+    assert_eq!(
+        window.theme.appearance,
+        crate::theme::Appearance::Theme(crate::theme::ThemeId::Slate)
+    );
+    assert_eq!(
+        window.panel_settings().appearance,
+        crate::theme::Appearance::Theme(crate::theme::ThemeId::Slate)
+    );
+}
+
 fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Settings {
     Settings {
         catalog: PanelState {
@@ -65,6 +94,7 @@ fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Set
             width: inspector.1,
         },
         autohide,
+        appearance: crate::theme::Appearance::Desktop,
     }
 }
 

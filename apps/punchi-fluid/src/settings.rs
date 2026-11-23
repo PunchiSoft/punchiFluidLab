@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The window's panel settings: which panels are open, how wide they are and whether auto-hide
-//! is on, remembered across sessions in a small `key=value` file of its own.
+//! The window's settings: which panels are open, how wide they are, whether auto-hide is on
+//! and the appearance, remembered across sessions in a small `key=value` file of its own.
 //!
 //! `docs/ui-ux.md` §2.1: width and visibility of both panels are **view state**, never the
 //! document's and never the undo history's; **Ver ▸ Restablecer vista** returns them to their
@@ -20,6 +20,7 @@ use eframe::egui;
 
 use crate::Window;
 use crate::layout::LayoutMode;
+use crate::theme::Appearance;
 
 /// The file's size bound, its line bound and the name it lives under, beside the recent list.
 pub const MAX_BYTES: usize = 4_096;
@@ -53,7 +54,7 @@ impl PanelState {
     }
 }
 
-/// Everything the settings file remembers: both panels and the auto-hide flag. The defaults
+/// Everything the settings file remembers: both panels, the auto-hide flag and the appearance. The defaults
 /// are the `Restablecer vista` values: both panels open at their preferred widths and
 /// auto-hide off.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -63,6 +64,8 @@ pub struct Settings {
     /// **Ver ▸ Ocultar al salir** is on: the rail opens after a dwell and the panel closes
     /// after the pointer leaves it.
     pub autohide: bool,
+    /// The appearance the window wears: the desktop's palette or a built-in theme.
+    pub appearance: Appearance,
 }
 
 impl Default for Settings {
@@ -77,6 +80,7 @@ impl Default for Settings {
                 width: crate::inspector::DEFAULT_WIDTH,
             },
             autohide: false,
+            appearance: Appearance::Desktop,
         }
     }
 }
@@ -175,6 +179,7 @@ pub fn parse(text: &str) -> Option<Settings> {
                     settings.autohide = autohide;
                 }
             }
+            "appearance" => settings.appearance = Appearance::from_value(value),
             // Unknown keys are ignored on purpose: the format is additive.
             _ => {}
         }
@@ -189,16 +194,17 @@ pub fn format(settings: &Settings) -> Option<String> {
         return None;
     }
     let mut text = format!(
-        "# Punchi Fluid Lab panel settings. Written by the program; safe to delete.\nversion={VERSION}\n"
+        "# Punchi Fluid Lab window settings. Written by the program; safe to delete.\nversion={VERSION}\n"
     );
     let _ = write!(
         text,
-        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\n",
+        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\n",
         number(settings.catalog.open),
         settings.catalog.width,
         number(settings.inspector.open),
         settings.inspector.width,
         number(settings.autohide),
+        settings.appearance.value(),
     );
     Some(text)
 }
@@ -357,6 +363,7 @@ impl Window {
                 width: self.inspector.width(),
             },
             autohide: self.autohide_on,
+            appearance: self.theme.appearance,
         }
     }
 

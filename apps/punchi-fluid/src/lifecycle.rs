@@ -243,6 +243,7 @@ impl Window {
             start_open: true,
             recents: Recents::default(),
             dialog: None,
+            preferences: crate::preferences::Preferences::new(),
             shell: crate::shell::Shell::new(),
             settings: crate::settings::Store::at(None),
             auto_hide: crate::auto_hide::AutoHide::new(),

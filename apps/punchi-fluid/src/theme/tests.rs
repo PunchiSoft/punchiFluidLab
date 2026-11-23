@@ -4,7 +4,8 @@
 //! The theme tests: the desktop palette, the contrast floors, the fallback and the font.
 
 use super::{
-    Theme, Tokens, font_from, groups, install_font, motion_from, palette_from, tokens_from,
+    Appearance, Theme, ThemeId, Tokens, font_from, groups, install_font, motion_from, palette_from,
+    tokens_from,
 };
 
 const SAMPLE: &str = "[Colors:Window]\n\
@@ -233,4 +234,37 @@ fn a_dark_view_below_the_window_still_raises_the_paper() {
         "paper over the canvas {}",
         tokens.contrast().paper_sunken
     );
+}
+
+#[test]
+fn the_slate_theme_meets_the_contrast_criteria() {
+    let theme = Theme::for_appearance(Appearance::Theme(ThemeId::Slate));
+    assert!(theme.tokens.dark, "the slate theme is a dark one");
+    let contrast = theme.tokens.contrast();
+    assert!(contrast.text >= 4.5, "text {}", contrast.text);
+    assert!(contrast.dim >= 3.0, "secondary {}", contrast.dim);
+    assert!(contrast.accent >= 3.0, "accent {}", contrast.accent);
+    assert!(contrast.line >= 3.0, "line {}", contrast.line);
+    assert!(
+        contrast.paper_sunken >= 1.08,
+        "paper over the canvas {}",
+        contrast.paper_sunken
+    );
+    assert!(
+        contrast.paper_text >= 4.5,
+        "text on the paper {}",
+        contrast.paper_text
+    );
+}
+
+#[test]
+fn an_appearance_reads_its_value_and_an_unknown_one_is_the_desktop() {
+    assert_eq!(Appearance::from_value("desktop"), Appearance::Desktop);
+    assert_eq!(
+        Appearance::from_value("slate"),
+        Appearance::Theme(ThemeId::Slate)
+    );
+    assert_eq!(Appearance::from_value("future"), Appearance::Desktop);
+    assert_eq!(Appearance::Theme(ThemeId::Slate).value(), "slate");
+    assert_eq!(Appearance::Desktop.label_es(), "Escritorio");
 }

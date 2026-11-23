@@ -121,6 +121,7 @@ impl Window {
             self.auto_hide.cancel_all();
             self.show_start(context);
             self.show_files(context);
+            self.show_preferences(context);
             return;
         }
         self.show_ribbon(context);
@@ -140,6 +141,7 @@ impl Window {
         // The dialog is the last surface drawn, so it is in front of the sheet and catches the
         // keyboard before the sheet's shortcuts do.
         self.show_files(context);
+        self.show_preferences(context);
     }
 
     /// The mode the room the window has calls for. The layout is a consequence of the limits,
