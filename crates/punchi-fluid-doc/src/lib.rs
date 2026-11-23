@@ -73,6 +73,8 @@ pub enum Turn {
     Anticlockwise,
     /// A reflection on the symbol's own vertical axis: `Edición ▸ Reflejar`.
     Reflect,
+    /// A reflection on the symbol's own horizontal axis: the menu's **Espejo vertical**.
+    ReflectVertical,
 }
 
 impl Turn {
@@ -83,6 +85,7 @@ impl Turn {
             Self::Clockwise => orientation.turned_clockwise(),
             Self::Anticlockwise => orientation.turned_anticlockwise(),
             Self::Reflect => orientation.reflected(),
+            Self::ReflectVertical => orientation.reflected_vertically(),
         }
     }
 }
@@ -1497,6 +1500,11 @@ impl Document {
         self.turn_many(&[index], Turn::Reflect)
     }
 
+    /// Reflects a placement about its own horizontal axis: the menu's **Espejo vertical**.
+    pub fn reflect_vertical(&mut self, index: usize) -> bool {
+        self.turn_many(&[index], Turn::ReflectVertical)
+    }
+
     /// Lines several placements up on the one that is furthest out, as one change.
     ///
     /// The reference moves the marked objects until they reach the one already at that
@@ -2642,6 +2650,25 @@ mod tests {
             .duplicate(index, None)
             .map(|copy| document.placements()[copy].orientation);
         assert_eq!(copy, Some(Orientation::new(0, true)));
+    }
+
+    #[test]
+    fn a_vertical_mirror_is_one_undo_and_twice_is_the_symbol() {
+        let mut document = Document::new();
+        let index = document.place(placement("valve.3_2.spring_return", 10.0, 10.0));
+        assert!(document.reflect_vertical(index));
+        assert_eq!(
+            document.orientation_of(index),
+            Some(Orientation::new(2, true))
+        );
+        assert!(document.reflect_vertical(index));
+        assert_eq!(document.orientation_of(index), Some(Orientation::NONE));
+        assert!(document.undo());
+        assert_eq!(
+            document.orientation_of(index),
+            Some(Orientation::new(2, true)),
+            "one vertical mirror is one undo"
+        );
     }
 
     #[test]

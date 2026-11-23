@@ -712,18 +712,18 @@ schematic simulator lives by, and the one the reference tool uses:
 
 **A placed symbol carries its own commands.** A right click on the sheet selects the symbol
 under the pointer and opens the reference's menu over it: **Mover**, **Girar**, **Espejo
-horizontal**, **Espejo vertical**, **Configurar**, **Propiedades**, **Descripción del componente** and
-**Eliminar**. The empty sheet and a hose open nothing and keep what was selected. `Shift+F10`
+horizontal**, **Espejo vertical**, **Configurar**, **Propiedades**, **Descripción del
+componente** and **Eliminar**. The empty sheet and a hose open nothing and keep what was selected. `Shift+F10`
 opens the same menu for the selection from the keyboard, and `Esc` or a click outside closes
 it. While it is open the view stays fixed, so the arrow keys belong to the menu.
 **Mover** arms the gesture instead of requiring a drag: the selection follows the pointer,
 the arrows nudge it 1 mm (`Shift` 10 mm), a click or `Enter` drops it as one undo and `Esc`
 cancels. Opening the menu is view state, never a document edit; the right button
-never presses a valve. **Configurar** and **Descripción del componente** open the **Configuración**
-and **Descripción** windows, which are empty mockups with the component's name and the word
+never presses a valve. **Configurar** and **Descripción del componente** open the
+**Configuración** and **Descripción** windows, which are empty mockups with the component's name and the word
 *Maqueta* until their content exists; the ledger in [capabilities.md](capabilities.md) names
-what is missing. The vertical mirror is listed with the rest but stays disabled until its
-operation and tests land.
+what is missing. **Espejo vertical** flips the selection top to bottom as one undo; the
+ribbon button and a direct shortcut are not there yet, so the menu is its keyboard path.
 
 - Infinite scrollable surface with a configurable grid. The **Configurar página** panel
   offers 5 (the default), 10, 20 or 25 mm,

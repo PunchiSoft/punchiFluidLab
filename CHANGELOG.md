@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El espejo vertical del menú — 2026-11-23
+
+- **Espejo vertical activo**: la entrada del menú deja de estar deshabilitada y voltea la
+  selección de arriba abajo como **un solo deshacer**. La operación compone la orientación
+  existente (`R² ∘ M`), sin campo nuevo ni cambio de formato; los puertos y los tubos siguen
+  la colocación.
+- **Pruebas**: `a_vertical_mirror_moves_the_top_edge_to_the_bottom`,
+  `a_vertical_mirror_twice_is_the_symbol_as_it_was_drawn`,
+  `a_vertical_mirror_keeps_the_horizontal_turn`,
+  `a_vertical_mirror_is_one_undo_and_twice_is_the_symbol` y
+  `the_menu_mirrors_the_selection_vertically`.
+- **Pendiente**: el botón de la cinta y el atajo directo; el menú (`Shift+F10`) es hoy el
+  camino de teclado.
+
 ### El menú contextual del símbolo — 2026-11-23
 
 - **Ocho entradas sobre el símbolo**: el clic derecho sobre un componente de la hoja lo

@@ -464,6 +464,19 @@ impl Window {
         }
     }
 
+    /// Reflects the selection on its own horizontal axis, as one undo entry.
+    fn reflect_vertical_selected(&mut self) {
+        if self.selected.is_empty() {
+            return;
+        }
+        if self
+            .document
+            .turn_many(&self.selected, Turn::ReflectVertical)
+        {
+            self.notice = Some(String::from("reflejado"));
+        }
+    }
+
     /// Steps the document's history back. The selection is dropped: a restored placement may
     /// have taken an index the selection still names.
     fn undo(&mut self) {

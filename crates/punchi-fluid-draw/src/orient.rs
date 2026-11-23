@@ -76,6 +76,15 @@ impl Orientation {
         Self::new(self.quarter_turns, !self.mirrored)
     }
 
+    /// The vertical mirror: the top edge moves to the bottom, keeping the quarter turns.
+    ///
+    /// The stored mirror is about the vertical axis, so the vertical reflection is
+    /// `R² ∘ M`: it flips the mirror and turns the symbol half a turn about its centre.
+    #[must_use]
+    pub const fn reflected_vertically(self) -> Self {
+        Self::new(2 + 4 - self.quarter_turns, !self.mirrored)
+    }
+
     /// `true` when the symbol stands on its side, so its box swaps width and height.
     #[must_use]
     pub const fn swaps_axes(self) -> bool {
@@ -281,6 +290,36 @@ mod tests {
         let left = Pt::new(40.0, 20.0);
         let landed = Orientation::NONE.reflected().map(centre(), left);
         assert!((landed.x - 60.0).abs() < 1e-4, "{landed:?}");
+    }
+
+    #[test]
+    fn a_vertical_mirror_moves_the_top_edge_to_the_bottom() {
+        let top = Pt::new(50.0, 10.0);
+        let landed = Orientation::NONE.reflected_vertically().map(centre(), top);
+        assert!((landed.x - 50.0).abs() < 1e-4, "{landed:?}");
+        assert!((landed.y - 30.0).abs() < 1e-4, "{landed:?}");
+    }
+
+    #[test]
+    fn a_vertical_mirror_twice_is_the_symbol_as_it_was_drawn() {
+        assert!(
+            Orientation::NONE
+                .reflected_vertically()
+                .reflected_vertically()
+                .is_identity()
+        );
+    }
+
+    #[test]
+    fn a_vertical_mirror_keeps_the_horizontal_turn() {
+        // The top of a quarter-turned symbol lands where the vertical reflection of that
+        // quarter turn puts it: on the right, not on the left.
+        let top = Pt::new(50.0, 10.0);
+        let landed = Orientation::new(1, false)
+            .reflected_vertically()
+            .map(centre(), top);
+        assert!((landed.x - 60.0).abs() < 1e-4, "{landed:?}");
+        assert!((landed.y - 20.0).abs() < 1e-4, "{landed:?}");
     }
 
     #[test]
