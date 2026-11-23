@@ -23,7 +23,11 @@ pub enum Appearance {
 impl Appearance {
     /// The theme cards the gallery offers, in reading order: light, then dark. The desktop
     /// and the system modes are segments of their own, not cards.
-    pub const CHOICES: [Self; 2] = [Self::Theme(ThemeId::Cad), Self::Theme(ThemeId::Slate)];
+    pub const CHOICES: [Self; 3] = [
+        Self::Theme(ThemeId::Cad),
+        Self::Theme(ThemeId::Slate),
+        Self::Theme(ThemeId::Nordic),
+    ];
 
     /// The settings-file value.
     #[must_use]
@@ -64,11 +68,13 @@ pub enum ThemeId {
     Cad,
     /// The dark engineering palette: deep slate chrome, a blue accent and a lifted paper.
     Slate,
+    /// The high-contrast palette: near-black chrome, pure white ink and a cobalt accent.
+    Nordic,
 }
 
 impl ThemeId {
     /// Every built-in theme, in the order the gallery shows them: light, then dark.
-    pub const ALL: [Self; 2] = [Self::Cad, Self::Slate];
+    pub const ALL: [Self; 3] = [Self::Cad, Self::Slate, Self::Nordic];
 
     /// The stable settings-file id.
     #[must_use]
@@ -76,6 +82,7 @@ impl ThemeId {
         match self {
             Self::Cad => "cad",
             Self::Slate => "slate",
+            Self::Nordic => "nordic",
         }
     }
 
@@ -85,6 +92,7 @@ impl ThemeId {
         match self {
             Self::Cad => "CAD claro",
             Self::Slate => "Pizarra",
+            Self::Nordic => "Nórdico",
         }
     }
 
@@ -96,6 +104,7 @@ impl ThemeId {
         match self {
             Self::Cad => cad_palette(),
             Self::Slate => slate_palette(),
+            Self::Nordic => nordic_palette(),
         }
     }
 }
@@ -111,6 +120,20 @@ fn cad_palette() -> Palette {
         highlight: Rgb::new(29, 78, 216),
         highlighted_text: WHITE,
         link: Rgb::new(37, 99, 235),
+    }
+}
+
+/// The high-contrast palette: near-black chrome, pure white ink, a cobalt accent and a paper
+/// lifted off the window by the same derivation.
+fn nordic_palette() -> Palette {
+    Palette {
+        window: Rgb::new(13, 13, 17),
+        window_text: Rgb::new(255, 255, 255),
+        base: Rgb::new(22, 22, 28),
+        button: Rgb::new(32, 32, 42),
+        highlight: Rgb::new(37, 99, 235),
+        highlighted_text: WHITE,
+        link: Rgb::new(59, 130, 246),
     }
 }
 
