@@ -115,6 +115,24 @@ const HIT_SLACK: f32 = 1.0;
 const SIDEBAR_WIDTH: f32 = 240.0;
 
 impl Window {
+    /// The Inicio page: returns `true` while it is the screen, after loading the template
+    /// the reader chose.
+    fn show_start(&mut self, ui: &mut egui::Ui) -> bool {
+        if !self.start_open {
+            return false;
+        }
+        if let Some(index) = start::show(ui) {
+            let area = self.page.rect();
+            if let Ok(document) =
+                punchi_fluid_session::templates::document(index, &self.catalog, area)
+            {
+                *self = Window::new(self.theme.clone(), document, None, None);
+                self.start_open = false;
+            }
+        }
+        true
+    }
+
     fn new(
         theme: theme::Theme,
         document: Document,
@@ -507,23 +525,6 @@ impl Window {
             Err(cause) => self.notice = Some(format!("no se pudo guardar: {cause}")),
         }
     }
-}
-
-/// The Inicio page: returns `true` while it is the screen, after loading the template
-/// the reader chose.
-fn show_start(&mut self, ui: &mut egui::Ui) -> bool {
-    if !self.start_open {
-        return false;
-    }
-    if let Some(index) = start::show(ui) {
-        let area = self.page.rect();
-        if let Ok(document) = punchi_fluid_session::templates::document(index, &self.catalog, area)
-        {
-            *self = Window::new(self.theme.clone(), document, None, None);
-            self.start_open = false;
-        }
-    }
-    true
 }
 
 impl eframe::App for Window {
