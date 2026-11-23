@@ -23,6 +23,7 @@ skill is the bug.
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
 | [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
 | [step-report](step-report/SKILL.md) | the end-of-step checklist: what is OK, what is missing and who unblocks it, the one next step | handing a branch, pull request or phase back to the owner; the owner asks for a status |
+| [phased-plan](phased-plan/SKILL.md) | a requested plan as Phase 0 (baseline, scope, specification), delivery phases with a checklist per pull request, and a final evaluation and process audit | the owner asks for a plan; a run spans several pull requests; a phase closes |
 | [github-actions-security](github-actions-security/SKILL.md) | workflow threat model and hardening | writing or reviewing `.github/workflows`; permissions, secrets, caches |
 | [fluid-power-symbology](fluid-power-symbology/SKILL.md) | ISO 1219 conformance for pneumatic and hydraulic symbols | drawing or changing a symbol; running lint; conformance review |
 | [solver-validation](solver-validation/SKILL.md) | units, invariants, ISO 6358, reference curves | implementing or tuning physics; writing a solver test |
@@ -55,6 +56,11 @@ Before the first edit of any change, read
 the branch, the gate and the pull request are one route. At the end of every step, before
 the hand-off, read [step-report](step-report/SKILL.md): the owner reads OK / Falta /
 Siguiente, not a session log.
+
+For a plan the owner asks for — anything that spans more than one pull request — read
+[phased-plan](phased-plan/SKILL.md) before the first branch: 0A proves the baseline, 0B
+fixes the scope and 0C writes the acceptance and the checklists, so no phase starts as code
+and every delivery arrives with its marked list.
 
 For a change to the window — a panel, a dock, the ribbon, the view strip or a new
 breakpoint — read [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) before choosing a
