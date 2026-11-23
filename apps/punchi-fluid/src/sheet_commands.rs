@@ -79,7 +79,7 @@ impl Window {
     }
 
     /// Rebinds the page the window draws after a block or sheet change.
-    fn refresh_page(&mut self) {
+    pub(crate) fn refresh_page(&mut self) {
         let (page, block) = files::page_and_block(&self.document);
         self.page = page;
         self.block = block;

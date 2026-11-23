@@ -105,10 +105,16 @@ fn every_command_is_on_the_ribbon() {
                 .any(|item| matches!(item, Item::Recents(..)))
         })
     });
+    let has_launcher = TABS
+        .iter()
+        .any(|tab| tab.groups.iter().any(|group| group.launcher));
     for command in Command::ALL {
         let covered = if matches!(command, Command::OpenRecent(_)) {
             // The rows are the session's list at paint time; the table carries the menu.
             has_recents
+        } else if matches!(command, Command::PageSetup) {
+            // The page setup panel is the group's launcher, not a table item.
+            has_launcher
         } else {
             commands.iter().any(|(carried, ..)| {
                 std::mem::discriminant(carried) == std::mem::discriminant(&command)
@@ -290,6 +296,14 @@ fn a_missing_recent_is_marked_and_refused() {
         harness.run();
     }
     assert_eq!(ribbon.take(), None, "a missing file does not dispatch");
+}
+
+#[test]
+fn the_page_launcher_dispatches_its_command() {
+    let mut ribbon = Ribbon::new();
+    ribbon.activate("Archivo");
+    click(&mut ribbon, "…");
+    assert_eq!(ribbon.take(), Some(Command::PageSetup));
 }
 
 #[test]

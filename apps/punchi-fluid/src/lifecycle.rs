@@ -231,6 +231,7 @@ impl Window {
             theme,
             ribbon: ribbon::Ribbon::new(),
             speed: ribbon::Speed::Normal,
+            page_setup: crate::page_setup::PageSetup::default(),
             sidebar: sidebar::Sidebar::new(),
             inspector: inspector::Inspector::new(),
             selected: Vec::new(),

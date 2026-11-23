@@ -100,6 +100,7 @@ pub(crate) enum Command {
     SelectAll,
     SimReset,
     Speed(Speed),
+    PageSetup,
     Home,
     OpenRecent(usize),
     CircuitNew,
@@ -137,7 +138,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 45] = [
+    pub(crate) const ALL: [Self; 46] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -155,6 +156,7 @@ impl Command {
         Self::SelectAll,
         Self::SimReset,
         Self::Speed(Speed::Normal),
+        Self::PageSetup,
         Self::Home,
         Self::OpenRecent(0),
         Self::CircuitNew,
@@ -206,6 +208,7 @@ impl Command {
             Self::Distribute(_) => "Repartir",
             Self::SelectAll => "Todo",
             Self::Speed(speed) => speed.label(),
+            Self::PageSetup => "Configurar página",
             Self::Home => "Inicio",
             Self::OpenRecent(_) => "Abrir reciente",
             Self::CircuitNew => "Nuevo circuito",

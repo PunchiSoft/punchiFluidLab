@@ -122,6 +122,7 @@ impl Window {
             self.show_start(context);
             self.show_files(context);
             self.show_preferences(context);
+            self.show_page_setup(context);
             return;
         }
         self.show_ribbon(context);
@@ -142,6 +143,7 @@ impl Window {
         // keyboard before the sheet's shortcuts do.
         self.show_files(context);
         self.show_preferences(context);
+        self.show_page_setup(context);
     }
 
     /// The mode the room the window has calls for. The layout is a consequence of the limits,
