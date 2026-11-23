@@ -2,8 +2,8 @@
 
 The token list is the table under
 [Visual language](../../../../docs/ui-ux.md#visual-language). Its implementation is
-[theme.cpp](../../../../apps/punchi-fluid-qt/src/theme.cpp), which builds `ThemeTokens` from
-the desktop palette; [theme.h](../../../../apps/punchi-fluid-qt/src/theme.h) declares the
+[theme.cpp](../../../../apps/punchi-fluid/src/theme.rs), which builds `ThemeTokens` from
+the desktop palette; [theme.h](../../../../apps/punchi-fluid/src/theme.rs) declares the
 names. There is no second token file: a copied table is a second source of truth and drifts.
 
 ## Read first
@@ -14,7 +14,7 @@ names. There is no second token file: a copied table is a second source of truth
   portal sources, read on a change, never per frame.
 - [Accessibility](../../../../docs/ui-ux.md#accessibility) — contrast, reduced motion and the
   state rule.
-- [theme.cpp](../../../../apps/punchi-fluid-qt/src/theme.cpp) — `tokensFrom`,
+- [theme.cpp](../../../../apps/punchi-fluid/src/theme.rs) — `tokensFrom`,
   `ensureContrast`, `measure` and `forcedPalette`. The only colour literals in the
   application live in the forced test palettes.
 

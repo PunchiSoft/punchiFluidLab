@@ -12,8 +12,8 @@ from its definition and never by this path.
   and the control's room change with the window.
 - [Accessibility](../../../../docs/ui-ux.md#accessibility) — names, roles, keyboard, targets
   and reduced motion.
-- [theme.cpp](../../../../apps/punchi-fluid-qt/src/theme.cpp) and
-  [theme.h](../../../../apps/punchi-fluid-qt/src/theme.h) — the token names the control may
+- [theme.cpp](../../../../apps/punchi-fluid/src/theme.rs) and
+  [theme.h](../../../../apps/punchi-fluid/src/theme.rs) — the token names the control may
   ask for. There is no other palette.
 
 ## Procedure
