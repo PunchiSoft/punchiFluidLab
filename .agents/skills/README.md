@@ -22,6 +22,7 @@ skill is the bug.
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
 | [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
+| [session-start](session-start/SKILL.md) | the read-only start of a session: load the project, report the context and wait for the owner's theme, without asking what to fix | the first message asks to read the project and get in context |
 | [step-report](step-report/SKILL.md) | the end-of-step checklist: what is OK, what is missing and who unblocks it, the one next step, and the plan board when the step is a phase | handing a branch, pull request or phase back to the owner; the owner asks for a status |
 | [phased-plan](phased-plan/SKILL.md) | a requested plan as Phase 0 (baseline, scope, specification), delivery phases with a phase board and a checklist per pull request, and a final evaluation and process audit | the owner asks for a plan; a run spans several pull requests; a phase closes |
 | [github-actions-security](github-actions-security/SKILL.md) | workflow threat model and hardening | writing or reviewing `.github/workflows`; permissions, secrets, caches |
@@ -52,6 +53,10 @@ skill is the bug.
    what it brings in.
 9. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
    survive, and how to find the process when it cannot.
+
+At the start of a session, when the owner asks to read the project and get in context,
+read [session-start](session-start/SKILL.md): it is read-only, it ends with the context and
+the owner's theme, and it asks no diagnostic question. Work starts when the theme is named.
 
 Before the first edit of any change, read
 [pull-request-workflow](pull-request-workflow/SKILL.md): no work happens on `main`, and
