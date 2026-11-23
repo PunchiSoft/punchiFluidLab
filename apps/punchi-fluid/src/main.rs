@@ -18,7 +18,9 @@ use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_placed};
 use punchi_fluid_export::{Page, TitleBlock, sheet};
 use punchi_fluid_file::sheet::Sheet;
+use punchi_fluid_session::recents::Recents;
 
+mod files;
 mod ribbon;
 mod scene;
 mod sidebar;
@@ -34,12 +36,18 @@ fn main() -> eframe::Result<()> {
     let theme = theme::Theme::from_desktop();
     let path = std::env::args().nth(1).map(PathBuf::from);
     let mut notice = None;
+    let mut recents = Recents::load();
     let document = match path.as_deref() {
         Some(path) => match Sheet::read(path)
             .map_err(|cause| cause.to_string())
             .and_then(|sheet| punchi_fluid_session::load(&sheet))
         {
-            Ok(document) => document,
+            Ok(document) => {
+                // A document named on the command line is a document the page offers to
+                // reopen, exactly as if it had been opened from the dialog.
+                recents.remember(path);
+                document
+            }
             Err(cause) => {
                 notice = Some(format!("no se pudo abrir el documento: {cause}"));
                 Document::new()
@@ -61,7 +69,9 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
-            Ok(Box::new(Window::new(theme, document, path, notice)))
+            Ok(Box::new(Window::with_recents(
+                theme, document, path, notice, recents,
+            )))
         }),
     )
 }
@@ -99,6 +109,10 @@ struct Window {
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.
     start_open: bool,
+    /// The documents Inicio offers to reopen, and where they are written.
+    recents: Recents,
+    /// The file dialog, while it is open.
+    dialog: Option<files::Dialog>,
 }
 
 /// A primary-button drag of the selection.
@@ -121,16 +135,7 @@ impl Window {
         path: Option<PathBuf>,
         notice: Option<String>,
     ) -> Self {
-        let sheet = document.sheet();
-        let circuit = document.active_circuit();
-        let block = document.block(circuit).cloned().unwrap_or_default();
-        let page = Page {
-            paper: sheet.paper,
-            orientation: sheet.orientation,
-            margins: sheet.margins,
-            title_block: Some(block.clone()),
-            parts: None,
-        };
+        let (page, block) = files::page_and_block(&document);
         Self {
             document,
             catalog: punchi_fluid_catalog::default_catalog(),
@@ -152,6 +157,8 @@ impl Window {
             running: false,
             pressed_valve: None,
             start_open: true,
+            recents: Recents::default(),
+            dialog: None,
         }
     }
 
@@ -422,7 +429,10 @@ impl Window {
     /// Runs the command the ribbon picked, whether it edits the document or the view.
     fn run_command(&mut self, command: &str) {
         match command {
+            "Nuevo" => self.new_document(),
+            "Abrir" => self.open_dialog(files::Mode::Open),
             "Guardar" => self.save(),
+            "Guardar como" => self.open_dialog(files::Mode::SaveAs),
             "Borrar" => self.remove_selected(),
             "Girar" => self.rotate_selected(),
             "Reflejar" => self.reflect_selected(),
@@ -449,6 +459,17 @@ impl Window {
 
     /// The keyboard commands and the ribbon's enabled state, so `update` stays the layout.
     fn sync_commands(&mut self, context: &egui::Context) {
+        // The dialog owns the keyboard while it is open: no document command may run behind
+        // it, and `Enter`/`Esc` belong to it until it closes.
+        if self.dialog.is_some() {
+            return;
+        }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::N)) {
+            self.new_document();
+        }
+        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::O)) {
+            self.open_dialog(files::Mode::Open);
+        }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
             self.save();
         }
@@ -489,24 +510,6 @@ impl Window {
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
     }
-
-    /// Writes the document to the path it was opened from, or says why it cannot.
-    fn save(&mut self) {
-        let Some(path) = self.path.clone() else {
-            self.notice = Some(String::from("sin ruta: abre un documento para guardarlo"));
-            return;
-        };
-        match punchi_fluid_session::save(&self.document, &path) {
-            Ok(()) => {
-                let name = path
-                    .file_name()
-                    .and_then(std::ffi::OsStr::to_str)
-                    .unwrap_or("el documento");
-                self.notice = Some(format!("guardado {name}"));
-            }
-            Err(cause) => self.notice = Some(format!("no se pudo guardar: {cause}")),
-        }
-    }
 }
 
 impl eframe::App for Window {
@@ -521,6 +524,7 @@ impl eframe::App for Window {
         // the sheet's chrome, and the start page hides them while it is open.
         if self.start_open {
             self.show_start(context);
+            self.show_files(context);
             return;
         }
         let palette = ribbon::Palette::from_theme(&self.theme.tokens);
@@ -625,6 +629,9 @@ impl eframe::App for Window {
             let painter = ui.painter().with_clip_rect(ui.max_rect());
             painter.extend(drawing.shapes);
         });
+        // The dialog is the last surface drawn, so it is in front of the sheet and catches
+        // the keyboard before the sheet's shortcuts do.
+        self.show_files(context);
     }
 }
 

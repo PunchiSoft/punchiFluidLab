@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Los recientes y los archivos llegan a la ventana Rust — 2026-11-22
+
+- **La lista de recientes vive en la sesión** (`punchi_fluid_session::recents`): se lee de
+  `XDG_DATA_HOME/punchi-fluid/recent.json` (o `PUNCHI_FLUID_RECENT_FILE`), se escribe al
+  guardar o abrir y un archivo corrupto se lee como lista vacía. Con pruebas de recordar,
+  olvidar, sin archivo y archivo roto.
+- **El Inicio muestra los recientes de verdad**, con abrir y quitar, y una fila que no
+  desaparece sin avisar cuando el archivo ya no está.
+- **Nuevo, Abrir y Guardar como** con su propio diálogo de archivos de la ventana Rust, sin
+  dependencias nuevas.
+
 ### La migración a Rust, en cuatro lotes — 2026-11-22
 
 - **`docs/rust-migration-plan.md` fija el orden**: (1) la ventana Rust es el producto —Inicio,

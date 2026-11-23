@@ -16,6 +16,7 @@ use punchi_fluid_draw::Orientation;
 use punchi_fluid_draw::surface::{LineClass, Pt};
 use punchi_fluid_file::paper::StoredSheet;
 mod model;
+pub mod recents;
 pub mod templates;
 
 pub use model::Model;

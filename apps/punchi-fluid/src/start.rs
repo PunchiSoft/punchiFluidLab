@@ -16,10 +16,13 @@
 //! 800-line budget: `nav` is the rail, `cards` is the page's choices and `thumbnail` is the
 //! rendered document.
 
+use std::path::PathBuf;
+
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::Rect as SheetRect;
+use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates;
 
 use crate::Window;
@@ -33,12 +36,20 @@ mod thumbnail;
 mod tests;
 
 /// What the page asks the window to do after the frame is drawn.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Action {
     /// Load the start template with this index into a clean window.
     Template(u32),
     /// Close Inicio and show the sheet.
     Sheet,
+    /// Start an empty project on the sheet.
+    NewProject,
+    /// Open the file dialog to read a document.
+    OpenDialog,
+    /// Read this remembered document and close Inicio.
+    OpenRecent(PathBuf),
+    /// Drop this remembered document from the list; the file is not touched.
+    ForgetRecent(String),
     /// A command the page shows for the layout but does not act on yet.
     Pending,
 }
@@ -108,12 +119,14 @@ impl Window {
             )
             .show(context, |ui| {
                 if action.is_none() {
-                    action = page(ui, tokens, &self.catalog);
+                    action = page(ui, tokens, &self.catalog, &self.recents);
                 }
             });
         // The page takes `Esc` before anything behind it, as the interface specification
         // says; with no document to return to, the sheet is the empty one the window opened.
+        // While a dialog is open it owns `Esc`, and the page leaves the key alone.
         if action.is_none()
+            && self.dialog.is_none()
             && context
                 .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
         {
@@ -124,28 +137,48 @@ impl Window {
         }
     }
 
-    /// Runs what the page asked for. The dialogs and the about/license panels are not in
-    /// this window yet, so their commands only keep the page where it is.
+    /// Runs what the page asked for.
     fn apply(&mut self, action: Action) {
         match action {
             Action::Template(index) => {
                 if let Some(document) = document(index, &self.catalog, self.page.rect()) {
-                    *self = Window::new(self.theme.clone(), document, None, None);
-                    self.start_open = false;
+                    self.reset_to(document, None, None);
                 }
             }
+            Action::NewProject => self.new_document(),
+            Action::OpenDialog => self.open_dialog(crate::files::Mode::Open),
+            Action::OpenRecent(path) => {
+                if let Err(cause) = self.open_path(&path) {
+                    self.notice = Some(format!("no se pudo abrir el documento: {cause}"));
+                }
+            }
+            Action::ForgetRecent(path) => self.forget_recent(&path),
             Action::Sheet => self.start_open = false,
-            // TODO(start page, next slice): "Nuevo proyecto" and "Abrir…" need the project
-            // dialogs, and "Acerca de" and "Licencia" their own panels. The rail rows and the
-            // two «Empezar» cards are drawn and reachable; choosing one keeps the page open
-            // until those actions exist.
+            // TODO(start page, next slice): "Acerca de" and "Licencia" need their own
+            // panels. The rows are drawn and reachable; choosing one keeps the page open
+            // until those panels exist.
             Action::Pending => {}
         }
+    }
+
+    /// Puts a document on a fresh sheet, keeping the window's theme and its recent list: a
+    /// template or a new project starts a new document, not a new window.
+    fn reset_to(&mut self, document: Document, path: Option<PathBuf>, notice: Option<String>) {
+        let theme = self.theme.clone();
+        let recents = std::mem::take(&mut self.recents);
+        let mut window = Window::with_recents(theme, document, path, notice, recents);
+        window.start_open = false;
+        *self = window;
     }
 }
 
 /// Draws the page in reading order: the title, `Empezar`, `Plantillas` and `Recientes`.
-fn page(ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalog) -> Option<Action> {
+fn page(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    catalog: &Catalog,
+    recents: &Recents,
+) -> Option<Action> {
     let mut action = None;
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
@@ -187,7 +220,9 @@ fn page(ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalog) -> Option<Action>
                 "Recientes",
                 Some("Los proyectos que abras o guardes aparecerán aquí."),
             );
-            cards::recent_placeholder(ui, tokens);
+            if let Some(recent) = cards::recent_rows(ui, tokens, recents) {
+                action = Some(recent);
+            }
             ui.add_space(tokens.unit);
         });
     action
