@@ -101,10 +101,23 @@ impl Panel {
         self.open
     }
 
-    #[cfg(test)]
     #[must_use]
     pub fn width(&self) -> f32 {
         self.width
+    }
+
+    /// The width the panel asks for when it floats over the sheet: the width the reader gave
+    /// it, inside the drag bounds.
+    #[must_use]
+    pub fn floating_width(&self) -> f32 {
+        self.width.clamp(self.min_width, self.max_width)
+    }
+
+    /// The panel frame's horizontal inner margin, in points, so the floating surface keeps
+    /// the content aligned with the docked one.
+    #[must_use]
+    pub fn margin(&self) -> i8 {
+        self.margin
     }
 
     #[cfg(test)]
@@ -137,7 +150,9 @@ impl Panel {
         self.width = (self.width + delta).clamp(self.min_width, self.max_width);
     }
 
-    /// Draws the panel (or its rail) and returns what its content asked for, if anything.
+    /// Draws the panel (or its rail) at `docked_width` and returns what its content asked
+    /// for, if anything. The layout decides that width: the wide mode leaves the reader's
+    /// own width, the medium one gives the minimum.
     ///
     /// The panel is always one `SidePanel`: its width is the fold's interpolation, so the
     /// sheet takes the room in the same gesture instead of after it.
@@ -147,6 +162,7 @@ impl Panel {
         tokens: &Tokens,
         title: &str,
         subtitle: Option<&str>,
+        docked_width: f32,
         body: impl FnOnce(&mut egui::Ui) -> R,
     ) -> Option<R> {
         let rail = tokens.unit.max(MIN_RAIL);
@@ -157,7 +173,8 @@ impl Panel {
         let motion = tokens.motion_ms as f32 / 1_000.0;
         let animation = egui::Id::new(("panel.fold", self.id));
         self.shade = context.animate_bool_with_time(animation, self.open, motion);
-        let width = rail + (self.width - rail) * self.shade;
+        let target = docked_width.max(rail);
+        let width = rail + (target - rail) * self.shade;
         let panel = match self.edge {
             Edge::Left => egui::SidePanel::left(self.id),
             Edge::Right => egui::SidePanel::right(self.id),
@@ -173,10 +190,15 @@ impl Panel {
             )
             .show(context, |ui| {
                 if self.shade <= 0.001 && !self.open {
-                    self.rail(ui, tokens);
+                    if self.rail(ui, tokens) {
+                        self.open();
+                    }
                     return;
                 }
-                self.header(ui, tokens, title, subtitle);
+                let hide = self.header(ui, tokens, title, subtitle);
+                if hide {
+                    self.close();
+                }
                 if self.shade < 0.999 {
                     return;
                 }
@@ -185,9 +207,47 @@ impl Panel {
         result
     }
 
+    /// Draws only the rail, for the compact shell, and reports whether the reader asked for
+    /// the panel. The rail does not change the open flag: the drawer is the shell's state.
+    pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
+        let rail = tokens.unit.max(MIN_RAIL);
+        let panel = match self.edge {
+            Edge::Left => egui::SidePanel::left(self.id),
+            Edge::Right => egui::SidePanel::right(self.id),
+        };
+        let mut opened = false;
+        panel
+            .exact_width(rail)
+            .resizable(false)
+            .frame(
+                egui::Frame::default()
+                    .fill(tokens.panel)
+                    .inner_margin(egui::Margin::symmetric(self.margin, 0)),
+            )
+            .show(context, |ui| {
+                opened = self.rail(ui, tokens);
+            });
+        opened
+    }
+
+    /// Draws the header, the rule and the body in a floating surface (the compact drawer).
+    /// Reports the body's answer and whether the hide control asked to close the panel.
+    pub fn show_body<R>(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        title: &str,
+        subtitle: Option<&str>,
+        body: impl FnOnce(&mut egui::Ui) -> R,
+    ) -> (R, bool) {
+        let hide = self.header(ui, tokens, title, subtitle);
+        (body(ui), hide)
+    }
+
     /// The rail the closed panel leaves at the edge: one unit wide, and a button that brings
     /// the panel back. The width is the panel's, so the control is a target not a sliver.
-    fn rail(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
+    /// Returns whether the reader asked for the panel.
+    fn rail(&mut self, ui: &mut egui::Ui, tokens: &Tokens) -> bool {
         ui.add_space(tokens.unit * 0.5);
         let (rect, _) = ui.allocate_exact_size(
             egui::vec2(ui.available_width(), (tokens.unit * 1.6).max(30.0)),
@@ -204,15 +264,20 @@ impl Panel {
         response.widget_info(|| {
             egui::WidgetInfo::labeled(egui::WidgetType::Button, true, self.show_label)
         });
-        if activated(ui, &response) {
-            self.open();
-        }
+        let activated = activated(ui, &response);
         response.on_hover_text(format!("{} ({})", self.show_label, self.shortcut));
+        activated
     }
 
     /// The header: the title, the control that hides the panel and, on the inner edge, the
-    /// grip that widens it.
-    fn header(&mut self, ui: &mut egui::Ui, tokens: &Tokens, title: &str, subtitle: Option<&str>) {
+    /// grip that widens it. Returns whether the hide control was used.
+    fn header(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        title: &str,
+        subtitle: Option<&str>,
+    ) -> bool {
         ui.add_space(tokens.unit * 0.35);
         let mut hide = false;
         ui.horizontal(|ui| {
@@ -240,9 +305,6 @@ impl Panel {
                 }
             });
         });
-        if hide {
-            self.close();
-        }
         ui.add_space(tokens.unit * 0.25);
         let line = ui.max_rect();
         ui.painter().line_segment(
@@ -253,6 +315,7 @@ impl Panel {
             egui::Stroke::new(1.0_f32, tokens.line),
         );
         ui.add_space(tokens.unit * 0.25);
+        hide
     }
 
     /// The control that hides the panel: the project glyph, its name and its keyboard hint.

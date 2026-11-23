@@ -34,10 +34,10 @@ const CATEGORIES: [(Category, &str); 6] = [
 ];
 
 /// The catalog's width when it is open, and the bounds a drag may take it to. The preferred
-/// width is the 18 grid units `docs/ui-ux.md` gives the sidebar; the minimum is the content
-/// floor the same document fixes for it.
-pub const DEFAULT_WIDTH: f32 = 240.0;
-const MIN_WIDTH: f32 = 220.0;
+/// width and the floor are the interface constants `docs/ui-ux.md` §2.2 fixes for the
+/// sidebar; the maximum is the drag bound, not a layout measurement.
+pub const DEFAULT_WIDTH: f32 = crate::layout::CATALOG_PREFERRED_WIDTH;
+const MIN_WIDTH: f32 = crate::layout::CATALOG_MIN_WIDTH;
 const MAX_WIDTH: f32 = 400.0;
 
 /// Whether a definition is a palette entry: a port closure is not.
@@ -142,10 +142,22 @@ impl Sidebar {
         self.chrome.is_open()
     }
 
-    #[cfg(test)]
     #[must_use]
     pub fn width(&self) -> f32 {
         self.chrome.width()
+    }
+
+    /// The width the panel takes when it floats over the sheet in the compact mode.
+    #[must_use]
+    pub fn floating_width(&self) -> f32 {
+        self.chrome.floating_width()
+    }
+
+    /// The panel frame's horizontal inner margin, so the drawer's content lines up with the
+    /// docked one.
+    #[must_use]
+    pub fn margin(&self) -> i8 {
+        self.chrome.margin()
     }
 
     #[cfg(test)]
@@ -164,7 +176,12 @@ impl Sidebar {
         self.body.focus_search = true;
     }
 
-    #[cfg(test)]
+    /// Opens the panel: the docked one in the wide and medium modes, or its drawer.
+    pub fn open(&mut self) {
+        self.chrome.open();
+    }
+
+    /// Closes the panel, whether it was docked or floated.
     pub fn close(&mut self) {
         self.chrome.close();
     }
@@ -186,13 +203,39 @@ impl Sidebar {
         tokens: &Tokens,
         subtitle: &str,
         catalog: &Catalog,
+        docked_width: f32,
     ) -> Option<String> {
         let Sidebar { chrome, body } = self;
         chrome
-            .show(context, tokens, "Catálogo", Some(subtitle), |ui| {
-                body.show(ui, tokens, catalog)
-            })
+            .show(
+                context,
+                tokens,
+                "Catálogo",
+                Some(subtitle),
+                docked_width,
+                |ui| body.show(ui, tokens, catalog),
+            )
             .flatten()
+    }
+
+    /// Draws only the rail, for the compact shell: the catalog is one click from its drawer.
+    pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
+        self.chrome.show_rail(context, tokens)
+    }
+
+    /// Draws the palette in the floating drawer. Reports the entry chosen and whether the
+    /// hide control asked to close the panel.
+    pub fn show_drawer(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        subtitle: &str,
+        catalog: &Catalog,
+    ) -> (Option<String>, bool) {
+        let Sidebar { chrome, body } = self;
+        chrome.show_body(ui, tokens, "Catálogo", Some(subtitle), |ui| {
+            body.show(ui, tokens, catalog)
+        })
     }
 }
 
@@ -319,22 +362,43 @@ fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, wi
 }
 
 impl Window {
-    /// Draws the catalog between the ribbon and the sheet. `update` calls this before the
-    /// right dock, so the sheet's available area follows both panels as they fold.
+    /// Draws the catalog between the ribbon and the sheet. The shell calls this before the
+    /// right dock, so the sheet's available area follows both panels as they fold; the
+    /// catalog computes its docked width from the same mode the shell derived.
     pub(crate) fn show_catalog(&mut self, context: &egui::Context) {
+        let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
+        if mode == crate::layout::LayoutMode::Compact {
+            return;
+        }
+        let docked = mode
+            .widths(
+                context.screen_rect().width(),
+                self.sidebar.width(),
+                self.inspector.width(),
+            )
+            .catalog;
         let subtitle = format!("{} componentes", Sidebar::entry_count(&self.catalog));
-        let chosen = self
-            .sidebar
-            .show(context, &self.theme.tokens, &subtitle, &self.catalog);
+        let chosen = self.sidebar.show(
+            context,
+            &self.theme.tokens,
+            &subtitle,
+            &self.catalog,
+            docked,
+        );
         if let Some(catalog_id) = chosen {
             self.add_component(&catalog_id);
         }
     }
 
-    /// The keyboard path of the catalog, besides **Ver ▸ Catálogo**.
+    /// The keyboard path of the catalog, besides **Ver ▸ Catálogo**. In the compact mode it
+    /// toggles the drawer instead of the docked panel.
     pub(crate) fn catalog_keyboard(&mut self, context: &egui::Context) {
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::B)) {
-            self.sidebar.toggle();
+            if self.layout_mode() == crate::layout::LayoutMode::Compact {
+                self.toggle_drawer(crate::shell::Drawer::Catalog);
+            } else {
+                self.sidebar.toggle();
+            }
         }
     }
 }

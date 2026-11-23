@@ -52,7 +52,8 @@ a popup about the program, never a command of the circuit, so no command exists 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
 `18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600.
-**1366×768 is the support floor** (the entry and education laptop): there the ribbon is
+**1366×768 is the reference screen** (the entry and education laptop, and the window opens
+inside it with a margin); there the ribbon is
 **one row of the seven groups**, and a group that does not fit becomes a titled button
 that opens its commands in a non-modal flyout instead of being clipped. The collapse
 priority, from the least to the most used, is **Repartir, Alinear, Paleta, Historial,
@@ -413,11 +414,13 @@ before a panel is allowed to cover it:
 |---|---|---|---|---|
 | **Ancha** | the sheet, the catalog and the dock fit at their preferred widths | full | docked | docked |
 | **Media** | the preferred widths no longer fit but the minimums do | full | docked, narrower | docked, narrower |
-| **Compacta** | the minimums do not fit (about 1036 px and below at the default font) | tabs and **Menú**; optionally minimized | rail, opened as a drawer | rail, opened as a drawer |
+| **Compacta** | the minimums do not fit (below 1000 px at the default font in the Rust shell) | the groups that fit, collapsing as they do today | rail, opened as a drawer | rail, opened as a drawer |
 
 - The minimums are content measurements, not magic numbers: the sheet keeps 480 px, the
-  catalog 220 px and the right dock 300 px. At the default font the wide mode starts at
-  **1200 px** and the medium one at **1036 px**; a larger font moves both, because the panel
+  catalog 220 px and the right dock 300 px. The Rust shell derives the modes from those
+  measurements and the panels' preferred widths (240 and 360): wide from **1080 px**,
+  medium from **1000 px**, compact below that at the default font. The retired Qt shell added
+  its own chrome and so had larger figures; a larger font moves both, because the panel
   widths follow the spacing unit.
 - **The ribbon can be minimized** by the user, with the control at the right end of the tab
   row: the tab row stays and the open tab's groups appear as a panel over the drawing area
@@ -450,15 +453,32 @@ before a panel is allowed to cover it:
 - **Layouts or anchors, never both in the same item.** A region placed by a layout must not
   set `x`, `y`, `width` or `height`, and an anchored region must not declare `Layout.*`:
   mixing them produces geometry conflicts and binding cycles.
-- **Today** the stage is built: `layoutMode` derives the three modes from the content
-  minimums, the sheet never drops below 480 px, the compact window folds both panels to
-  their 24 px rails and opens them as drawers, the ribbon folds to its tab row, the window
-  opens at the screen-aware size and remembers its size and place. `--check-layout` proves
-  it at seven widths, with the drawer open, with the ribbon folded and with the geometry
-  restored, at 1.25×, 1.5× and 2× density and with a 1.5× font
-  (the owner's staged plan, stage 6a). `--selftest` proves the first-window
-  sizes and the restored clamp with synthetic screen areas, so it does not depend on the
-  machine's own screen.
+- **Today** the Rust shell builds the modes and the geometry. `LayoutMode` derives **Ancha**,
+  **Media** and **Compacta** from the room the window has and the declared measurements, in
+  device-independent points: the sheet keeps 480 px, the catalog 220 px and the right dock
+  300 px, and the preferred widths are 240 px and 360 px, so **Ancha** begins at 1080 points
+  and **Media** at 1000 (the widths are still the interface constants, not spacing-unit
+  multiples; the ribbon's text and heights are literals too). **Ancha** docks both panels at
+  the width the reader gave them, **Media** at their minimums, and **Compacta** folds both to
+  their rails and keeps the sheet its floor. In **Compacta** `Ctrl+B` and `Ctrl+J` open the
+  panel as a drawer over the drawing area, never pushing it: a modal overlay that closes on
+  `Esc`, on a click outside and on its hide control, one panel at a time. **Restablecer
+  vista** also dismisses an open drawer. The ribbon keeps the collapsing it had: each group
+  folds to its own title button by available width; the **Menú** compact ribbon and the
+  minimized ribbon are not built in this slice. The window opens at 1440 × 900 when the
+  screen has room, otherwise at the largest size that fits the screen minus a two-unit
+  margin, never below 900 × 600, centred; it remembers its size, its place and whether it
+  was maximized in `XDG_DATA_HOME/punchi-fluid/window.state` beside the recent list, and
+  restores them only when the place still lands on a screen, clamped to the current screen
+  with the same margin and minimum; a maximized window keeps the size it had before. The
+  `cargo test -p punchi-fluid-window` suite proves the three derivations from widths, the
+  first size against synthetic screens, the clamp and the off-screen rejection, the state
+  file's round trip and its defensive reads, and the compact rails, the drawer and its
+  dismissal, headless; `--check-layout` and `--selftest` were the Qt window's checks and are
+  not ported to this one, so no automated check opens the real desktop window. What is left:
+  the **Menú** compact ribbon and the minimized ribbon with its groups as a panel over the
+  drawing area, the ribbon's text and heights from the theme tokens (stage 7), the panels'
+  width and visibility remembered across sessions and the auto-hide.
 
 ### 2.3 The start view: Inicio
 

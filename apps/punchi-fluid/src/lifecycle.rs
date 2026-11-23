@@ -243,7 +243,15 @@ impl Window {
             start_open: true,
             recents: Recents::default(),
             dialog: None,
+            shell: crate::shell::Shell::new(),
         }
+    }
+
+    /// Attaches the geometry store read at start, so the first frame can size and place the
+    /// window from the screen the viewport reports.
+    pub(crate) fn with_window_state(mut self, state: crate::window_state::Store) -> Self {
+        self.shell = crate::shell::Shell::with_store(state);
+        self
     }
 
     /// The window `main` opens, carrying the safety copy it loaded. The recovery it found is

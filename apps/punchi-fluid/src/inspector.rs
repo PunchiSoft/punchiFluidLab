@@ -23,9 +23,10 @@ mod fields;
 use fields::{empty_body, multi_body, pipe_body, ports, tube_row};
 
 /// The dock's width when it is open, and the bounds a drag may take it to. The preferred
-/// width is the one `docs/ui-ux.md` gives the right panels.
-pub const DEFAULT_WIDTH: f32 = 360.0;
-const MIN_WIDTH: f32 = 300.0;
+/// width and the floor are the interface constants `docs/ui-ux.md` §2.2 fixes for the right
+/// dock; the maximum is the drag bound, not a layout measurement.
+pub const DEFAULT_WIDTH: f32 = crate::layout::DOCK_PREFERRED_WIDTH;
+const MIN_WIDTH: f32 = crate::layout::DOCK_MIN_WIDTH;
 const MAX_WIDTH: f32 = 520.0;
 
 /// An edit the panel asks the window to make, always through the document's own command.
@@ -88,10 +89,22 @@ impl Inspector {
         self.chrome.is_open()
     }
 
-    #[cfg(test)]
     #[must_use]
     pub fn width(&self) -> f32 {
         self.chrome.width()
+    }
+
+    /// The width the panel takes when it floats over the sheet in the compact mode.
+    #[must_use]
+    pub fn floating_width(&self) -> f32 {
+        self.chrome.floating_width()
+    }
+
+    /// The panel frame's horizontal inner margin, so the drawer's content lines up with the
+    /// docked one.
+    #[must_use]
+    pub fn margin(&self) -> i8 {
+        self.chrome.margin()
     }
 
     #[cfg(test)]
@@ -105,12 +118,12 @@ impl Inspector {
         self.chrome.toggle();
     }
 
-    #[cfg(test)]
+    /// Opens the panel: the docked one in the wide and medium modes, or its drawer.
     pub fn open(&mut self) {
         self.chrome.open();
     }
 
-    #[cfg(test)]
+    /// Closes the panel, whether it was docked or floated.
     pub fn close(&mut self) {
         self.chrome.close();
     }
@@ -140,11 +153,12 @@ impl Inspector {
         model: Option<&Model>,
         selected: &[usize],
         selected_pipe: Option<usize>,
+        docked_width: f32,
     ) -> Option<Action> {
         let title = title_of(document, catalog, selected, selected_pipe);
         let Inspector { chrome, fields } = self;
         chrome
-            .show(context, tokens, &title, None, |ui| {
+            .show(context, tokens, &title, None, docked_width, |ui| {
                 fields.show(
                     ui,
                     tokens,
@@ -156,6 +170,42 @@ impl Inspector {
                 )
             })
             .flatten()
+    }
+
+    /// Draws only the rail, for the compact shell.
+    pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
+        self.chrome.show_rail(context, tokens)
+    }
+
+    /// Draws the dock's content in the floating drawer. Reports the edit it asked for and
+    /// whether the hide control asked to close the panel.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the drawer reads the document, the catalog, the model and the selection"
+    )]
+    pub fn show_drawer(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        document: &Document,
+        catalog: &Catalog,
+        model: Option<&Model>,
+        selected: &[usize],
+        selected_pipe: Option<usize>,
+    ) -> (Option<Action>, bool) {
+        let title = title_of(document, catalog, selected, selected_pipe);
+        let Inspector { chrome, fields } = self;
+        chrome.show_body(ui, tokens, &title, None, |ui| {
+            fields.show(
+                ui,
+                tokens,
+                document,
+                catalog,
+                model,
+                selected,
+                selected_pipe,
+            )
+        })
     }
 }
 
@@ -337,9 +387,21 @@ impl Fields {
 }
 
 impl Window {
-    /// Draws the right dock between the ribbon and the status bar. `update` calls this after
-    /// the status panel and before the sheet, so the sheet's available area follows it.
+    /// Draws the right dock between the ribbon and the status bar. The shell calls this after
+    /// the status panel and before the sheet, so the sheet's available area follows it; the
+    /// dock computes its docked width from the same mode the shell derived.
     pub(crate) fn show_inspector(&mut self, context: &egui::Context) {
+        let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
+        if mode == crate::layout::LayoutMode::Compact {
+            return;
+        }
+        let docked = mode
+            .widths(
+                context.screen_rect().width(),
+                self.sidebar.width(),
+                self.inspector.width(),
+            )
+            .dock;
         let action = self.inspector.show(
             context,
             &self.theme.tokens,
@@ -348,16 +410,22 @@ impl Window {
             self.model.as_ref(),
             &self.selected,
             self.selected_pipe,
+            docked,
         );
         if let Some(action) = action {
             self.apply_inspector(action);
         }
     }
 
-    /// The keyboard path of the dock, besides **Ver ▸ Propiedades**.
+    /// The keyboard path of the dock, besides **Ver ▸ Propiedades**. In the compact mode it
+    /// toggles the drawer instead of the docked panel.
     pub(crate) fn inspector_keyboard(&mut self, context: &egui::Context) {
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::J)) {
-            self.inspector.toggle();
+            if self.layout_mode() == crate::layout::LayoutMode::Compact {
+                self.toggle_drawer(crate::shell::Drawer::Inspector);
+            } else {
+                self.inspector.toggle();
+            }
         }
     }
 
@@ -365,19 +433,32 @@ impl Window {
     pub(crate) fn view_command(&mut self, command: &str) {
         self.view.command(command);
         match command {
-            "Catálogo" => self.sidebar.toggle(),
-            "Propiedades" => self.inspector.toggle(),
+            "Catálogo" => {
+                if self.layout_mode() == crate::layout::LayoutMode::Compact {
+                    self.toggle_drawer(crate::shell::Drawer::Catalog);
+                } else {
+                    self.sidebar.toggle();
+                }
+            }
+            "Propiedades" => {
+                if self.layout_mode() == crate::layout::LayoutMode::Compact {
+                    self.toggle_drawer(crate::shell::Drawer::Inspector);
+                } else {
+                    self.inspector.toggle();
+                }
+            }
             "Restablecer vista" => {
                 self.view.reset();
                 self.sidebar.reset();
                 self.inspector.reset();
+                self.close_drawer();
             }
             _ => {}
         }
     }
 
     /// Runs the edit the panel asked for through the document's own command.
-    fn apply_inspector(&mut self, action: Action) {
+    pub(crate) fn apply_inspector(&mut self, action: Action) {
         let changed = match action {
             Action::Designation { index, text } => self.document.designate(index, Some(&text)),
             Action::PipeClass { index, class } => self.document.set_pipe_class(index, class),
