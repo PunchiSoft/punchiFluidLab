@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La ventana lleva el icono de la aplicación — 2026-11-23
+
+- **Icono**: la placa cobalto de doble tono —el tubo sube por la izquierda, rodea el manómetro
+  como bowl de la P y baja por la pata de salida— reconstruida aquí como SVG propio en
+  `assets/branding`, con la serie de 16 a 512 px. Sin filtros, estilos ni referencias externas:
+  Inkscape, librsvg y el navegador dibujan lo mismo, que es justo lo que la primera versión no
+  hacía (un `feDropShadow` hacía desaparecer la placa en Inkscape).
+- **Ventana**: `ViewportBuilder::with_icon` recibe la placa de 256 px decodificada antes del
+  primer fotograma, sin dependencia nueva (`tiny-skia` ya estaba en el árbol); una placa que no
+  decodifique deja la ventana sin icono y la prueba del módulo lo impide.
+- **Pendiente**: el `.desktop` y la instalación en hicolor siguen siendo deuda de `packaging/`.
+
 ### La cinta abre Inicio y los recientes — 2026-11-23
 
 - **Inicio** abre la página de inicio desde Archivo. **Recientes** se genera de la lista real

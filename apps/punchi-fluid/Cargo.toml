@@ -25,6 +25,7 @@ punchi-fluid-draw = { workspace = true }
 punchi-fluid-export = { workspace = true }
 punchi-fluid-file = { workspace = true }
 punchi-fluid-session = { workspace = true }
+tiny-skia = { workspace = true }
 
 [dev-dependencies]
 # The headless UI harness WordCraft uses for its ribbon tests.
