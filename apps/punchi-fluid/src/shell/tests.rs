@@ -59,6 +59,24 @@ fn commands<'a>(harness: &'a egui_kittest::Harness<'_>) -> &'a [egui::ViewportCo
         .commands
 }
 
+/// Puts the harness's viewport on `screen`, at `position` and with `size`, so a frame reads the
+/// window the way a real desktop reports it.
+fn place_viewport(
+    harness: &mut egui_kittest::Harness<'_>,
+    screen: egui::Vec2,
+    position: egui::Pos2,
+    size: egui::Vec2,
+) {
+    let viewport = harness
+        .input_mut()
+        .viewports
+        .get_mut(&egui::ViewportId::ROOT)
+        .expect("the root viewport");
+    viewport.monitor_size = Some(screen);
+    viewport.outer_rect = Some(egui::Rect::from_min_size(position, size));
+    viewport.inner_rect = Some(egui::Rect::from_min_size(position, size));
+}
+
 /// The central panel's default frame: eight points of inner margin on each side, so the
 /// sheet's available width is the room the panels leave minus this inset.
 const SHEET_INSET: f32 = 16.0;
@@ -467,6 +485,70 @@ fn a_1366_laptop_at_125_percent_opens_maximized_with_the_room_as_the_floor() {
     );
     drop(harness);
     assert!(window.shell.applied);
+}
+
+#[test]
+fn the_first_geometry_is_applied_once_and_not_repeated() {
+    let mut window = window_with();
+    window.start_open = false;
+    let mut harness = frame_harness(&mut window, egui::vec2(1920.0, 1080.0));
+    harness.step();
+    harness.step();
+    let sent = commands(&harness);
+    assert!(
+        !sent.iter().any(|command| matches!(
+            command,
+            egui::ViewportCommand::InnerSize(_)
+                | egui::ViewportCommand::OuterPosition(_)
+                | egui::ViewportCommand::MinInnerSize(_)
+                | egui::ViewportCommand::Maximized(_)
+        )),
+        "the second frame does not fight the window: {sent:?}"
+    );
+}
+
+#[test]
+fn a_window_left_on_a_disconnected_monitor_returns_to_the_opening_one() {
+    let dir = scratch();
+    let file = dir.join(window_state::FILE_NAME);
+    let saved = Geometry {
+        size: egui::vec2(1200.0, 700.0),
+        position: Some(egui::pos2(16.0, 16.0)),
+        maximized: false,
+    };
+    assert!(window_state::write(&file, &saved));
+    let mut window = window_with().with_window_state(window_state::Store::at(Some(file.clone())));
+    window.start_open = false;
+    let mut harness = frame_harness(&mut window, egui::vec2(1366.0, 768.0));
+    harness.step();
+    // The window was moved to a 1920 extension monitor.
+    place_viewport(
+        &mut harness,
+        egui::vec2(1920.0, 1080.0),
+        egui::pos2(1366.0, 100.0),
+        egui::vec2(1200.0, 700.0),
+    );
+    harness.step();
+    // The extension is unplugged; the window still reports its old place.
+    place_viewport(
+        &mut harness,
+        egui::vec2(1366.0, 768.0),
+        egui::pos2(1366.0, 100.0),
+        egui::vec2(1200.0, 700.0),
+    );
+    harness.step();
+    let sent = commands(&harness);
+    assert!(
+        sent.contains(&egui::ViewportCommand::InnerSize(egui::vec2(1200.0, 656.0))),
+        "the window is clamped to the room it came back to: {sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::OuterPosition(egui::pos2(
+            83.0, 16.0
+        ))),
+        "the window is brought back into the screen it opened on: {sent:?}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La ventana vuelve y se reengancha — 2026-11-23
+
+- **La vuelta no redimensiona**: si hay geometría recordada, el viewport se crea con ese
+  tamaño y su estado maximizado, centrado; el sitio se aplica en el primer frame. La primera
+  ejecución sigue abriendo en 900×600 y da un salto de un frame, límite de eframe 0.32: la
+  ventana se muestra antes de que se procesen los comandos del primer frame.
+- **Reenganche al desconectar la extensión**: la ventana guarda el tamaño del monitor con el
+  que abrió; si ese monitor vuelve a reportarse y la ventana ya no cae en él, se recentra y se
+  recorta en su rectángulo. No mueve una ventana que se arrastró a un monitor de otro tamaño;
+  un secundario del mismo tamaño no se distingue sin la topología de la plataforma, y el
+  compositor decide.
+- **Pruebas**: `the_viewport_is_created_with_the_remembered_size_or_the_floor`,
+  `a_window_left_outside_the_opening_monitor_is_brought_back`,
+  `the_first_geometry_is_applied_once_and_not_repeated` y
+  `a_window_left_on_a_disconnected_monitor_returns_to_the_opening_one`.
+
 ### La ventana por defecto respeta el área útil — 2026-11-23
 
 - **La reserva del cromo**: egui solo reporta el monitor, no el área de trabajo. La ventana

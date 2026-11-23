@@ -136,6 +136,32 @@ pub fn opening_geometry(screen: Vec2, unit: f32, remembered: Option<&Geometry>) 
     }
 }
 
+/// The geometry the viewport is created with, before the screen is known: the remembered size
+/// and maximized state, or the support floor. The place is applied on the first frame, not
+/// here, so a window saved on a second monitor does not move the opening anchor away from the
+/// primary the disconnect fallback returns to.
+#[must_use]
+pub fn provisional(remembered: Option<&Geometry>) -> Geometry {
+    remembered.copied().unwrap_or(Geometry {
+        size: Vec2::new(MIN_WIDTH, MIN_HEIGHT),
+        position: None,
+        maximized: false,
+    })
+}
+
+/// The geometry that brings a live window back into the room when it is outside it: a window
+/// left on an extension monitor that was unplugged. `None` when the window still lands on the
+/// room or when the desktop reports no place (Wayland, where the compositor places it).
+#[must_use]
+pub fn reanchored(screen: Vec2, unit: f32, live: &Geometry) -> Option<Geometry> {
+    let position = live.position?;
+    let room = room(screen, unit);
+    if lands_on_screen(position, live.size, room, unit) {
+        return None;
+    }
+    Some(restored_geometry(screen, unit, live))
+}
+
 /// The geometry to reopen with: the remembered size clamped to the current screen's room with
 /// the same margin, reserve and minimum, and the remembered place only when it still lands on
 /// that room, else centred. A maximized window keeps the size it had before, carried in

@@ -79,9 +79,11 @@ fn main() -> eframe::Result<()> {
     };
     let safety = punchi_fluid_session::safety::SafetyCopy::load();
     // The screen is only known after the window exists: the first frame sizes and centres it
-    // from the monitor the viewport reports. The provisional size is the support floor, so
-    // the window never opens smaller than the interface allows.
+    // from the monitor the viewport reports. The provisional size is the remembered one when
+    // there is a state, so a returning window does not jump; its place is applied on the first
+    // frame, which keeps the opening monitor as the anchor for the disconnect fallback.
     let geometry = window_state::Store::load();
+    let opening = window_state::provisional(geometry.remembered());
     // The appearance is read before the theme so the window opens in the saved theme,
     // without a frame in the desktop palette first.
     let settings = settings::Store::load();
@@ -90,13 +92,18 @@ fn main() -> eframe::Result<()> {
         settings.remembered().theme_day,
         settings.remembered().theme_night,
     );
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size(opening.size)
+        .with_min_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
+        .with_title("Punchi Fluid Lab")
+        .with_app_id(branding::APP_ID)
+        .with_icon(branding::window_icon());
+    if opening.maximized {
+        viewport = viewport.with_maximized(true);
+    }
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
-            .with_min_inner_size([window_state::MIN_WIDTH, window_state::MIN_HEIGHT])
-            .with_title("Punchi Fluid Lab")
-            .with_app_id(branding::APP_ID)
-            .with_icon(branding::window_icon()),
+        viewport,
+        centered: true,
         ..Default::default()
     };
     eframe::run_native(
