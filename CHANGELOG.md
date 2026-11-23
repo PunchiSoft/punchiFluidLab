@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### Sistema: día y noche con dos temas — 2026-11-23
+
+- **El modo Sistema** elige el tema asignado al esquema claro u oscuro del escritorio: por
+  defecto CAD claro de día y Pizarra de noche. `settings.state` guarda `appearance=system`,
+  `theme_day` y `theme_night`; la página de Apariencia muestra los modos
+  Escritorio/Sistema/Un tema, los dos slots y las tarjetas, y una tarjeta llena el slot que se
+  está editando.
+- **Nórdico**, **Azul profundo** y **Grafito** quedan para sus propias ramas.
+
 ### La leyenda de la hoja se retira — 2026-11-23
 
 - **La leyenda de clases de línea y numeración de puertos no se dibuja.** El propietario no

@@ -20,7 +20,7 @@ use eframe::egui;
 
 use crate::Window;
 use crate::layout::LayoutMode;
-use crate::theme::Appearance;
+use crate::theme::{Appearance, ThemeId};
 
 /// The file's size bound, its line bound and the name it lives under, beside the recent list.
 pub const MAX_BYTES: usize = 4_096;
@@ -54,7 +54,8 @@ impl PanelState {
     }
 }
 
-/// Everything the settings file remembers: both panels, the auto-hide flag and the appearance. The defaults
+/// Everything the settings file remembers: both panels, the auto-hide flag, the appearance
+/// and the two themes the system mode uses. The defaults
 /// are the `Restablecer vista` values: both panels open at their preferred widths and
 /// auto-hide off.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -66,6 +67,10 @@ pub struct Settings {
     pub autohide: bool,
     /// The appearance the window wears: the desktop's palette or a built-in theme.
     pub appearance: Appearance,
+    /// The theme the system mode uses when the desktop is light.
+    pub theme_day: ThemeId,
+    /// The theme the system mode uses when the desktop is dark.
+    pub theme_night: ThemeId,
 }
 
 impl Default for Settings {
@@ -81,6 +86,8 @@ impl Default for Settings {
             },
             autohide: false,
             appearance: Appearance::Desktop,
+            theme_day: ThemeId::Cad,
+            theme_night: ThemeId::Slate,
         }
     }
 }
@@ -180,6 +187,16 @@ pub fn parse(text: &str) -> Option<Settings> {
                 }
             }
             "appearance" => settings.appearance = Appearance::from_value(value),
+            "theme_day" => {
+                if let Some(id) = ThemeId::from_id(value) {
+                    settings.theme_day = id;
+                }
+            }
+            "theme_night" => {
+                if let Some(id) = ThemeId::from_id(value) {
+                    settings.theme_night = id;
+                }
+            }
             // Unknown keys are ignored on purpose: the format is additive.
             _ => {}
         }
@@ -198,13 +215,15 @@ pub fn format(settings: &Settings) -> Option<String> {
     );
     let _ = write!(
         text,
-        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\n",
+        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\n",
         number(settings.catalog.open),
         settings.catalog.width,
         number(settings.inspector.open),
         settings.inspector.width,
         number(settings.autohide),
         settings.appearance.value(),
+        settings.theme_day.id(),
+        settings.theme_night.id(),
     );
     Some(text)
 }
@@ -346,6 +365,8 @@ impl Window {
         self.inspector
             .restore(remembered.inspector.open, remembered.inspector.width);
         self.autohide_on = remembered.autohide;
+        self.appearance_day = remembered.theme_day;
+        self.appearance_night = remembered.theme_night;
         self.shell.restore_pending = store.found();
         self.settings = store;
         self
@@ -364,6 +385,8 @@ impl Window {
             },
             autohide: self.autohide_on,
             appearance: self.theme.appearance,
+            theme_day: self.appearance_day,
+            theme_night: self.appearance_night,
         }
     }
 

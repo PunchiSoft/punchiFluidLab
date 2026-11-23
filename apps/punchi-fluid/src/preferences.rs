@@ -11,7 +11,7 @@
 use eframe::egui;
 
 use crate::Window;
-use crate::theme::{Appearance, Tokens};
+use crate::theme::{Appearance, ThemeId, Tokens};
 
 /// The page the window shows.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -26,11 +26,29 @@ impl Page {
         [(Self::Appearance, "Apariencia"), (Self::Panels, "Paneles")];
 }
 
-/// The window's state: whether it is open and which page it shows.
+/// Which of the two system slots a theme card fills.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum Slot {
+    #[default]
+    Day,
+    Night,
+}
+
+impl Slot {
+    fn label_es(self) -> &'static str {
+        match self {
+            Self::Day => "Día",
+            Self::Night => "Noche",
+        }
+    }
+}
+
+/// The window's state: whether it is open, which page it shows and which slot it edits.
 #[derive(Debug, Default)]
 pub(crate) struct Preferences {
     pub(crate) open: bool,
     page: Page,
+    aimed: Slot,
 }
 
 impl Preferences {
@@ -53,7 +71,11 @@ impl Window {
         if self.theme.appearance == appearance {
             return;
         }
-        self.theme = crate::theme::Theme::for_appearance(appearance);
+        self.theme = crate::theme::Theme::for_appearance(
+            appearance,
+            self.appearance_day,
+            self.appearance_night,
+        );
         self.theme.apply(context);
         let settings = self.panel_settings();
         self.settings.remember(settings);
@@ -72,17 +94,45 @@ impl Window {
         let tokens = self.theme.tokens.clone();
         let current = self.theme.appearance;
         let page = self.preferences.page;
-        let autohide_on = self.autohide_on;
+        let aimed = self.preferences.aimed;
+        let (day, night) = (self.appearance_day, self.appearance_night);
         let previews: Vec<(Appearance, Tokens)> = Appearance::CHOICES
             .iter()
             .map(|appearance| (*appearance, self.theme.preview(*appearance)))
             .collect();
-        let chosen = preferences_window(context, &tokens, page, current, autohide_on, &previews);
+        let day_preview = self.theme.preview(Appearance::Theme(day));
+        let night_preview = self.theme.preview(Appearance::Theme(night));
+        let data = PageData {
+            page,
+            tokens: &tokens,
+            previews: &previews,
+            current,
+            day,
+            night,
+            aimed,
+            day_preview,
+            night_preview,
+        };
+        let chosen = preferences_window(context, &data, self.autohide_on);
         if let Some(candidate) = chosen.page {
             self.preferences.page = candidate;
         }
-        if let Some(appearance) = chosen.appearance {
-            self.apply_appearance(context, appearance);
+        if let Some(slot) = chosen.slot {
+            self.preferences.aimed = slot;
+        }
+        if let Some(mode) = chosen.appearance {
+            self.apply_appearance(context, mode);
+        }
+        if let Some(id) = chosen.theme {
+            if self.theme.appearance == Appearance::System {
+                match self.preferences.aimed {
+                    Slot::Day => self.appearance_day = id,
+                    Slot::Night => self.appearance_night = id,
+                }
+                self.apply_appearance(context, Appearance::System);
+            } else {
+                self.apply_appearance(context, Appearance::Theme(id));
+            }
         }
         match chosen.action {
             Some(Action::Close) => self.preferences.open = false,
@@ -111,18 +161,26 @@ enum Action {
 struct Chosen {
     page: Option<Page>,
     appearance: Option<Appearance>,
+    theme: Option<ThemeId>,
+    slot: Option<Slot>,
     action: Option<Action>,
 }
 
-/// The window's frame: the blocker, the nav, the page and the footer.
-fn preferences_window(
-    context: &egui::Context,
-    tokens: &Tokens,
+/// The values the page draws with, gathered before the window borrows nothing from the app.
+struct PageData<'a> {
     page: Page,
+    tokens: &'a Tokens,
+    previews: &'a [(Appearance, Tokens)],
     current: Appearance,
-    autohide_on: bool,
-    previews: &[(Appearance, Tokens)],
-) -> Chosen {
+    day: ThemeId,
+    night: ThemeId,
+    aimed: Slot,
+    day_preview: Tokens,
+    night_preview: Tokens,
+}
+
+/// The window's frame: the blocker, the nav, the page and the footer.
+fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on: bool) -> Chosen {
     let mut chosen = Chosen::default();
     // The layer under the window keeps the pointer out of the sheet while it is open.
     let screen = context.screen_rect();
@@ -138,14 +196,17 @@ fn preferences_window(
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .collapsible(false)
         .resizable(false)
-        .fixed_size(egui::vec2(tokens.unit * 46.0, tokens.unit * 30.0))
+        .fixed_size(egui::vec2(data.tokens.unit * 46.0, data.tokens.unit * 30.0))
         .show(context, |ui| {
             ui.horizontal_top(|ui| {
                 ui.vertical(|ui| {
-                    ui.set_width(tokens.unit * 10.5);
-                    ui.add_space(tokens.unit * 0.4);
+                    ui.set_width(data.tokens.unit * 10.5);
+                    ui.add_space(data.tokens.unit * 0.4);
                     for (candidate, label) in Page::ALL {
-                        if ui.selectable_label(page == candidate, label).clicked() {
+                        if ui
+                            .selectable_label(data.current_page(candidate), label)
+                            .clicked()
+                        {
                             chosen.page = Some(candidate);
                         }
                     }
@@ -153,16 +214,10 @@ fn preferences_window(
                 ui.separator();
                 ui.vertical(|ui| {
                     ui.set_width(ui.available_width());
-                    match page {
-                        Page::Appearance => appearance_page(
-                            ui,
-                            tokens,
-                            previews,
-                            current,
-                            &mut chosen.appearance,
-                            &mut chosen.action,
-                        ),
-                        Page::Panels => panels_page(ui, tokens, autohide_on, &mut chosen.action),
+                    if data.current_page(Page::Appearance) {
+                        appearance_page(ui, data, &mut chosen);
+                    } else {
+                        panels_page(ui, data.tokens, autohide_on, &mut chosen.action);
                     }
                 });
             });
@@ -181,59 +236,146 @@ fn preferences_window(
     chosen
 }
 
-/// The appearance page: the mode's note, the two cards and the reset.
-fn appearance_page(
-    ui: &mut egui::Ui,
-    tokens: &Tokens,
-    previews: &[(Appearance, Tokens)],
-    current: Appearance,
-    choose: &mut Option<Appearance>,
-    action: &mut Option<Action>,
-) {
+impl PageData<'_> {
+    /// The page the window shows: kept on the data so the closure does not read the app.
+    fn current_page(&self, candidate: Page) -> bool {
+        self.page == candidate
+    }
+}
+
+/// The appearance page: the three modes, the two system slots and the theme cards.
+fn appearance_page(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
     ui.heading(
         egui::RichText::new("Apariencia")
-            .size(tokens.text_label)
-            .color(tokens.ink),
+            .size(data.tokens.text_label)
+            .color(data.tokens.ink),
     );
     ui.label(
         egui::RichText::new("Colores, tema y contraste.")
-            .size(tokens.text_body)
-            .color(tokens.ink_dim),
+            .size(data.tokens.text_body)
+            .color(data.tokens.ink_dim),
     );
-    ui.add_space(tokens.unit * 0.8);
+    ui.add_space(data.tokens.unit * 0.6);
+    mode_segments(ui, data, chosen);
+    ui.add_space(data.tokens.unit * 0.7);
+    if data.current == Appearance::System {
+        slot_row(ui, data, chosen);
+        ui.add_space(data.tokens.unit * 0.6);
+    }
+    theme_cards(ui, data, chosen);
+    ui.add_space(data.tokens.unit * 0.6);
+    if ui.button("Restaurar apariencia").clicked() {
+        chosen.action = Some(Action::ResetPage);
+    }
+}
+
+/// The three modes: the desktop palette, the system slots and a fixed theme.
+fn mode_segments(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
+    let fixed = match data.current {
+        Appearance::Theme(id) => id,
+        _ => data.day,
+    };
+    let modes = [
+        Appearance::Desktop,
+        Appearance::System,
+        Appearance::Theme(fixed),
+    ];
     ui.horizontal(|ui| {
-        for (appearance, preview) in previews {
+        for mode in modes {
+            let selected = match mode {
+                Appearance::Desktop => data.current == Appearance::Desktop,
+                Appearance::System => data.current == Appearance::System,
+                Appearance::Theme(_) => matches!(data.current, Appearance::Theme(_)),
+            };
+            if ui
+                .selectable_label(selected, mode.mode_label_es())
+                .clicked()
+            {
+                chosen.appearance = Some(mode);
+            }
+        }
+    });
+}
+
+/// The two slots the system mode uses: the day theme and the night theme.
+fn slot_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
+    ui.label(
+        egui::RichText::new("Día / Noche")
+            .size(data.tokens.text_small)
+            .color(data.tokens.ink_muted),
+    );
+    ui.horizontal(|ui| {
+        for (slot, id, preview) in [
+            (Slot::Day, data.day, &data.day_preview),
+            (Slot::Night, data.night, &data.night_preview),
+        ] {
             ui.vertical(|ui| {
-                let selected = *appearance == current;
-                if theme_card(ui, tokens, preview, selected, appearance.label_es()) {
-                    *choose = Some(*appearance);
+                let aimed = data.aimed == slot;
+                if preview_card(ui, data.tokens, preview, aimed, slot.label_es()) {
+                    chosen.slot = Some(slot);
                 }
                 ui.label(
-                    egui::RichText::new(appearance.label_es())
-                        .size(tokens.text_body)
-                        .color(tokens.ink),
+                    egui::RichText::new(slot.label_es())
+                        .size(data.tokens.text_body)
+                        .color(data.tokens.ink),
                 );
-                let note = match appearance {
-                    Appearance::Desktop => "Sistema",
-                    Appearance::Theme(_) => "Integrado",
-                };
-                let state = if selected { "En uso" } else { note };
                 ui.label(
-                    egui::RichText::new(state)
-                        .size(tokens.text_small)
-                        .color(if selected {
-                            tokens.accent
+                    egui::RichText::new(if aimed { "Editando" } else { id.label_es() })
+                        .size(data.tokens.text_small)
+                        .color(if aimed {
+                            data.tokens.accent
                         } else {
-                            tokens.ink_muted
+                            data.tokens.ink_muted
                         }),
                 );
-                ui.add_space(tokens.unit);
+                ui.add_space(data.tokens.unit * 0.8);
             });
         }
     });
-    if ui.button("Restaurar apariencia").clicked() {
-        *action = Some(Action::ResetPage);
-    }
+}
+
+/// The theme cards: a light and a dark engineering theme.
+fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
+    ui.label(
+        egui::RichText::new("Temas")
+            .size(data.tokens.text_small)
+            .color(data.tokens.ink_muted),
+    );
+    ui.horizontal(|ui| {
+        for (appearance, preview) in data.previews {
+            let Appearance::Theme(id) = appearance else {
+                continue;
+            };
+            let selected = match data.current {
+                Appearance::Theme(current) => current == *id,
+                Appearance::System => match data.aimed {
+                    Slot::Day => data.day == *id,
+                    Slot::Night => data.night == *id,
+                },
+                Appearance::Desktop => false,
+            };
+            ui.vertical(|ui| {
+                if preview_card(ui, data.tokens, preview, selected, id.label_es()) {
+                    chosen.theme = Some(*id);
+                }
+                ui.label(
+                    egui::RichText::new(id.label_es())
+                        .size(data.tokens.text_body)
+                        .color(data.tokens.ink),
+                );
+                ui.label(
+                    egui::RichText::new(if selected { "En uso" } else { "Integrado" })
+                        .size(data.tokens.text_small)
+                        .color(if selected {
+                            data.tokens.accent
+                        } else {
+                            data.tokens.ink_muted
+                        }),
+                );
+                ui.add_space(data.tokens.unit);
+            });
+        }
+    });
 }
 
 /// The panel page: the auto-hide flag and the view reset, the same settings as **Ver**.
@@ -260,7 +402,7 @@ fn panels_page(ui: &mut egui::Ui, tokens: &Tokens, autohide_on: bool, action: &m
 }
 
 /// A mini window drawn with the theme's own tokens: ribbon, panel, canvas, paper and accent.
-fn theme_card(
+fn preview_card(
     ui: &mut egui::Ui,
     tokens: &Tokens,
     preview: &Tokens,
@@ -367,6 +509,37 @@ mod tests {
             window.theme.appearance,
             Appearance::Theme(ThemeId::Cad),
             "the light card applies the light theme"
+        );
+    }
+
+    #[test]
+    fn the_window_switches_to_system_and_fills_the_night_slot() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Sistema")
+                .click();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Noche")
+                .click();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "CAD claro")
+                .click();
+            harness.run();
+        }
+        assert_eq!(
+            window.theme.appearance,
+            Appearance::System,
+            "Sistema is the mode in force"
+        );
+        assert_eq!(
+            window.appearance_night,
+            ThemeId::Cad,
+            "the card filled the aimed night slot"
         );
     }
 

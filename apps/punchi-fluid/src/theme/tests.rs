@@ -238,7 +238,11 @@ fn a_dark_view_below_the_window_still_raises_the_paper() {
 
 #[test]
 fn the_slate_theme_meets_the_contrast_criteria() {
-    let theme = Theme::for_appearance(Appearance::Theme(ThemeId::Slate));
+    let theme = Theme::for_appearance(
+        Appearance::Theme(ThemeId::Slate),
+        ThemeId::Cad,
+        ThemeId::Slate,
+    );
     assert!(theme.tokens.dark, "the slate theme is a dark one");
     let contrast = theme.tokens.contrast();
     assert!(contrast.text >= 4.5, "text {}", contrast.text);
@@ -259,7 +263,11 @@ fn the_slate_theme_meets_the_contrast_criteria() {
 
 #[test]
 fn the_cad_theme_is_light_and_meets_the_contrast_criteria() {
-    let theme = Theme::for_appearance(Appearance::Theme(ThemeId::Cad));
+    let theme = Theme::for_appearance(
+        Appearance::Theme(ThemeId::Cad),
+        ThemeId::Cad,
+        ThemeId::Slate,
+    );
     assert!(!theme.tokens.dark, "the CAD theme is a light one");
     let contrast = theme.tokens.contrast();
     assert!(contrast.text >= 4.5, "text {}", contrast.text);
@@ -290,6 +298,9 @@ fn an_appearance_reads_its_value_and_an_unknown_one_is_the_desktop() {
         Appearance::Theme(ThemeId::Slate)
     );
     assert_eq!(Appearance::from_value("future"), Appearance::Desktop);
+    assert_eq!(Appearance::from_value("system"), Appearance::System);
     assert_eq!(Appearance::Theme(ThemeId::Slate).value(), "slate");
-    assert_eq!(Appearance::Desktop.label_es(), "Escritorio");
+    assert_eq!(Appearance::Desktop.mode_label_es(), "Escritorio");
+    assert_eq!(Appearance::System.mode_label_es(), "Sistema");
+    assert_eq!(Appearance::Theme(ThemeId::Cad).mode_label_es(), "Un tema");
 }

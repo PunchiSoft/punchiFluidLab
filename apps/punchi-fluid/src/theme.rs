@@ -46,9 +46,7 @@ impl Rgb {
 
 mod appearance;
 
-pub use appearance::Appearance;
-#[cfg(test)]
-pub use appearance::ThemeId;
+pub use appearance::{Appearance, ThemeId};
 
 /// The palette the window's tokens are derived from: the desktop's or a built-in theme's.
 #[derive(Debug, Clone, Copy)]
@@ -153,13 +151,19 @@ impl Theme {
     /// machine without the file gets the light fallback for the desktop and the theme's own
     /// palette for a built-in.
     #[must_use]
-    pub fn for_appearance(appearance: Appearance) -> Self {
+    pub fn for_appearance(appearance: Appearance, day: ThemeId, night: ThemeId) -> Self {
         let text = kdeglobals_path().and_then(|path| std::fs::read_to_string(path).ok());
+        let desktop = text.as_deref().and_then(palette_from);
+        let desktop_dark = desktop.is_some_and(|palette| relative_luminance(palette.window) < 0.35);
         let palette = match appearance {
-            Appearance::Desktop => text
-                .as_deref()
-                .and_then(palette_from)
-                .unwrap_or_else(fallback_palette),
+            Appearance::Desktop => desktop.unwrap_or_else(fallback_palette),
+            Appearance::System => {
+                if desktop_dark {
+                    night.palette()
+                } else {
+                    day.palette()
+                }
+            }
             Appearance::Theme(id) => id.palette(),
         };
         let font = text.as_deref().map_or_else(DesktopFont::default, font_from);
@@ -179,7 +183,7 @@ impl Theme {
     #[must_use]
     pub fn preview(&self, appearance: Appearance) -> Tokens {
         match appearance {
-            Appearance::Desktop => self.tokens.clone(),
+            Appearance::Desktop | Appearance::System => self.tokens.clone(),
             Appearance::Theme(id) => tokens_from(id.palette(), &self.font, self.motion),
         }
     }
