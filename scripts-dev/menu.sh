@@ -11,7 +11,7 @@
 #   ./scripts-dev/menu.sh                 # interactive menu
 #   ./scripts-dev/menu.sh --check-deps    # report tools and exit
 #   ./scripts-dev/menu.sh --build         # one action, then exit
-#   ./scripts-dev/menu.sh --run | --try | --dev | --test | --gate | --docs
+#   ./scripts-dev/menu.sh --run | --try | --test | --gate | --docs
 set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -19,11 +19,9 @@ cd "$ROOT_DIR"
 # shellcheck source=limits.sh
 source "$ROOT_DIR/scripts-dev/limits.sh"
 
-build_dir=apps/punchi-fluid-qt/build
-binary="$build_dir/punchi-fluid"
+binary=target/debug/punchi-fluid
 no_color=0
 action=""
-theme=""
 
 if [[ -t 1 ]]; then
     bold=$'\033[1m'; dim=$'\033[2m'; green=$'\033[32m'; yellow=$'\033[33m'; red=$'\033[31m'; reset=$'\033[0m'
@@ -58,7 +56,7 @@ binary_state() {
 check_deps() {
     local missing=0
     local tool
-    for tool in cargo cmake ninja qmake6 pkg-config; do
+    for tool in cargo rustc git; do
         if command -v "$tool" >/dev/null 2>&1; then
             ok "  $tool  $(command -v "$tool")"
         else
@@ -66,12 +64,6 @@ check_deps() {
             missing=1
         fi
     done
-    if qmake6 -query QT_VERSION >/dev/null 2>&1; then
-        ok "  Qt      $(qmake6 -query QT_VERSION)"
-    else
-        bad "  Qt      not found by qmake6"
-        missing=1
-    fi
     if cargo fmt --version >/dev/null 2>&1; then
         ok "  rustfmt $(cargo fmt --version | awk '{print $2}')"
     else
@@ -88,36 +80,32 @@ check_deps() {
 show_header() {
     printf '\n%s\n' "${bold}Punchi Fluid Lab — development menu${reset}"
     printf '%s\n' "${dim}version $(project_version) · branch $(branch) · $(binary_state)${reset}"
-    printf '%s\n\n' "${dim}$(uname -srm) · Qt $(qmake6 -query QT_VERSION 2>/dev/null || printf '?')${reset}"
+    printf '%s\n\n' "${dim}$(uname -srm) · $(rustc --version 2>/dev/null || printf 'rustc ?')${reset}"
 }
 
 build_window() {
     header "Build the window"
-    if [[ ! -f "$build_dir/build.ninja" && ! -f "$build_dir/Makefile" ]]; then
-        cmake -S apps/punchi-fluid-qt -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev
-    fi
-    cmake --build "$build_dir"
+    cargo build -p punchi-fluid-window --bin punchi-fluid
 }
 
 run_window() {
-    local args=()
-    [[ -n "$theme" ]] && args+=(--theme "$theme")
-    ./scripts-dev/run.sh --no-build "${args[@]}"
+    header "Run the window"
+    ./scripts-dev/run.sh --no-build
 }
 
-run_dev() {
-    local args=()
-    [[ -n "$theme" ]] && args+=(--theme "$theme")
-    ./scripts-dev/dev.sh "${args[@]}"
+build_and_run() {
+    header "Build and run the window"
+    cargo build -p punchi-fluid-window --bin punchi-fluid
+    ./scripts-dev/run.sh --no-build
 }
 
 clean_build() {
     header "Remove the window build"
-    warn "This deletes $build_dir; the next build starts from scratch."
+    warn "This deletes the window crate's artifacts under target/ (including $binary); cached dependencies stay, and the next build recompiles the window."
     read -r -p "Type yes to remove it: " answer
     if [[ "$answer" == "yes" ]]; then
-        rm -rf "$build_dir"
-        ok "removed $build_dir"
+        cargo clean -p punchi-fluid-window
+        ok "removed the window build"
     else
         say "kept"
     fi
@@ -140,7 +128,7 @@ menu() {
     while true; do
         show_header
         cat <<'EOF'
-  1) Try live: save, rebuild and reload   <- the one to keep open while editing
+  1) Build and run the window              <- rebuild, then open; there is no live reload
   2) Check dependencies
   3) Build the window
   4) Run the window
@@ -148,14 +136,13 @@ menu() {
   6) Full gate (scripts-dev/check.sh)
   7) Documentation check
   8) Check a sheet with the CLI
-  9) Theme for the next run (light/dark/clear)
- 10) Remove the window build
+  9) Remove the window build
   q) Quit
 EOF
         read -r -p "Choice [1]: " choice
         choice=${choice:-1}
         case "$choice" in
-            1) run_dev ;;
+            1) build_and_run ;;
             2) check_deps || true; pause ;;
             3) build_window; pause ;;
             4) run_window ;;
@@ -163,10 +150,7 @@ EOF
             6) ./scripts-dev/check.sh; pause ;;
             7) ./scripts-dev/check-docs.sh; pause ;;
             8) cli_check; pause ;;
-            9)
-                read -r -p "Theme (light/dark, empty clears): " theme
-                [[ -z "$theme" ]] && theme=""
-                ;;
+            9) clean_build ;;
             q|Q) exit 0 ;;
             *) warn "No such choice: $choice" ;;
         esac
@@ -178,12 +162,11 @@ while (($# > 0)); do
         --check-deps) action=deps ;;
         --build) action=build ;;
         --run) action=run ;;
-        --dev | --try) action=dev ;;
+        --try) action=try ;;
         --test) action=test ;;
         --gate) action=gate ;;
         --docs) action=docs ;;
         --clean) action=clean ;;
-        --theme) [[ $# -gt 1 ]] && { theme="$2"; shift; } ;;
         --no-color) no_color=1 ;;
         --help | -h)
             awk 'NR > 4 && /^set -euo/{exit} NR > 4{print}' "$0" | sed 's/^# \{0,1\}//'
@@ -202,7 +185,7 @@ case "$action" in
     deps) check_deps ;;
     build) build_window ;;
     run) run_window ;;
-    dev) run_dev ;;
+    try) build_and_run ;;
     test) ./scripts-dev/test.sh ;;
     gate) ./scripts-dev/check.sh ;;
     docs) ./scripts-dev/check-docs.sh ;;
@@ -211,7 +194,7 @@ case "$action" in
         if [[ -t 0 ]]; then
             menu
         else
-            bad "No terminal for the interactive menu; pass --check-deps, --build, --run, --dev, --test, --gate or --docs."
+            bad "No terminal for the interactive menu; pass --check-deps, --build, --run, --try, --test, --gate or --docs."
             exit 2
         fi
         ;;
