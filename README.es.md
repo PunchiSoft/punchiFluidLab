@@ -91,7 +91,7 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 | `punchi-fluid-solver` | Integración de masa de gas, cilindro con muelle, amortiguamiento y rozamiento, flujo ISO 6358 |
 | `punchi-fluid-doc` | El documento editado: colocaciones, comandos y deshacer acotado |
 | `punchi-fluid-draw` | El dibujo único del circuito, en milímetros, tras un trait `Surface` |
-| `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, leyenda, y los escritores PNG y PDF |
+| `punchi-fluid-export` | Hojas normalizadas, bloque de identificación, y los escritores PNG y PDF |
 | `punchi-fluid-ffi` | El ABI C retirado de la ventana Qt; ningún código del producto lo enlaza (ADR 0035; su retirada es deuda) |
 | `punchi-fluid-session` | La vida del documento entre el fichero y la ventana: la conversión hoja↔documento |
 | `punchi-fluid-check` | Comprobaciones de diseño: las faltas que un circuito puede tener antes de ejecutarse |
@@ -284,7 +284,7 @@ En resumen:
 - **M1.5** — conformidad de símbolos con ISO 1219, con lint y revisión por símbolo.
   *Mitad estructural y revisión visual hechas; la revisión a 300 dpi está abierta.*
 - **M2** — un solo dibujo, dos exportaciones: PDF y PNG desde las mismas llamadas, papel
-  normalizado, bloque de identificación y leyenda. *Hecho.*
+  normalizado y bloque de identificación. *Hecho.*
 - **v0.3** — documento con deshacer, paleta generada del catálogo, colocar y conectar
   componentes, tuberías ortogonales, guardar y cargar. *Hecho.*
 - **v0.4** — solver de red guiado por el grafo del circuito en vez de una disposición

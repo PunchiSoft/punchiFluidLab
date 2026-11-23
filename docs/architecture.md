@@ -60,7 +60,7 @@ There is no serialisation between two runtimes and no command buffer to keep in 
 | `punchi-fluid-doc` | the edited document: placements, pipes, commands, bounded undo, the sheet | physics, drawing, files | `core`, `draw` |
 | `punchi-fluid-draw` | ISO 1219 symbols, sheet geometry, the `Surface` trait, hit-testing geometry | windows, files, fonts, solving | `catalog`, `solver` |
 | `punchi-fluid-check` | the design faults a sheet can have before it is run | physics, drawing, UI | `catalog`, `doc`, `draw` |
-| `punchi-fluid-export` | page geometry, frame, title block, legend, PNG, PDF and SVG writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
+| `punchi-fluid-export` | page geometry, frame, title block, PNG, PDF and SVG writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model, recents, safety copy and templates | physics, widgets | `core`, `catalog`, `doc`, `draw`, `file`, `solver` |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `catalog`, `check`, `doc`, `draw`, `file`, `solver` |
 | `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `catalog`, `doc`, `draw`, `export`, `file`, `session` |

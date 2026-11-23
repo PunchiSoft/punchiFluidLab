@@ -79,7 +79,8 @@ contract is [symbology.md](symbology.md); this milestone is what executes it.
 3. Every built-in symbol has a review file; the export stops adding the unverified
    note only when all of them do — asserted by a test that reads the review folder.
 4. Visual review of the four symbols against Part 1, recorded in the pull request.
-5. The legend of line classes and port numerals appears in the exported title block.
+5. The sheet does not carry a legend: the line classes and port numerals belong to the
+   drawing's own labels, not to a separate key (owner decision, 2026-11-23).
 
 ## M2 — One drawing, two exports
 
