@@ -53,8 +53,10 @@ stop_window() {
         wait "$running" 2>/dev/null || true
     fi
     running=
-    local autosave="${XDG_DATA_HOME:-$HOME/.local/share}/PunchiSoft/Punchi Fluid Lab/autosave.pfluid"
-    rm -f "$autosave"
+    # The killed window leaves a recovery copy; remove it so the relaunch does not offer
+    # to recover the run that was just replaced.
+    local recovery="${XDG_DATA_HOME:-$HOME/.local/share}/punchi-fluid/recovery.pfluid"
+    rm -f "$recovery"
 }
 
 cleanup() {
@@ -65,16 +67,17 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 rebuild_and_run() {
+    # Take the stamp before the build: a save that lands while cargo is running is newer
+    # than the build it did not reach, so the next pass rebuilds it instead of losing it.
+    touch "$stamp"
     printf '\n[dev] building at %s\n' "$(date +%H:%M:%S)"
     if ! cargo build -p punchi-fluid-window --bin punchi-fluid; then
         printf '[dev] build failed; waiting for the next save\n'
-        touch "$stamp"
         return 0
     fi
     stop_window
     "$binary" "${app_args[@]}" &
     running=$!
-    touch "$stamp"
     printf '[dev] running pid %s; save a source file to rebuild and relaunch\n' "$running"
 }
 
@@ -82,9 +85,10 @@ rebuild_and_run
 
 while true; do
     sleep 0.4
-    changed=$(find crates apps/punchi-fluid assets/catalog assets/symbols \
-        -type f \( -name '*.rs' -o -name '*.toml' -o -name '*.png' \) \
-        -newer "$stamp" -not -path '*/target/*' 2>/dev/null | head -5)
+    changed=$(find crates apps/punchi-fluid assets/catalog assets/symbols assets/icons \
+        Cargo.toml rust-toolchain.toml \
+        -type f \( -name '*.rs' -o -name '*.toml' -o -name '*.png' -o -name '*.svg' \) \
+        -newer "$stamp" -not -path '*/target/*' 2>/dev/null | sed -n '1,5p')
     if [[ -n "$changed" ]]; then
         printf '\n[dev] changed:\n%s\n' "$changed"
         rebuild_and_run

@@ -253,7 +253,9 @@ steps belonged to the Qt app and are not part of this product.
 
 During a session, `./scripts-dev/test.sh` runs the same tests and
 `./scripts-dev/run.sh` opens the window; both compile only when a source changed and
-accept `--no-build` to execute the previous build directly.
+accept `--no-build` to execute the previous build directly. `./scripts-dev/dev.sh` is the
+live loop: it watches the sources, rebuilds what changed and relaunches the window; the
+menu's first entry and `menu.sh --dev` start it.
 A green run proves the crates and the format; it does not prove the window draws
 correctly or that a model matches reality.
 

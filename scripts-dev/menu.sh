@@ -11,7 +11,7 @@
 #   ./scripts-dev/menu.sh                 # interactive menu
 #   ./scripts-dev/menu.sh --check-deps    # report tools and exit
 #   ./scripts-dev/menu.sh --build         # one action, then exit
-#   ./scripts-dev/menu.sh --run | --try | --test | --gate | --docs
+#   ./scripts-dev/menu.sh --run | --try | --dev | --test | --gate | --docs
 set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -99,6 +99,11 @@ build_and_run() {
     ./scripts-dev/run.sh --no-build
 }
 
+run_dev() {
+    header "Live loop: save, rebuild and relaunch"
+    ./scripts-dev/dev.sh
+}
+
 clean_build() {
     header "Remove the window build"
     warn "This deletes the window crate's artifacts under target/ (including $binary); cached dependencies stay, and the next build recompiles the window."
@@ -128,29 +133,31 @@ menu() {
     while true; do
         show_header
         cat <<'EOF'
-  1) Build and run the window              <- rebuild, then open; there is no live reload
-  2) Check dependencies
-  3) Build the window
-  4) Run the window
-  5) Tests (scripts-dev/test.sh)
-  6) Full gate (scripts-dev/check.sh)
-  7) Documentation check
-  8) Check a sheet with the CLI
-  9) Remove the window build
+  1) Live loop: save, rebuild and relaunch  <- the one to keep open while editing
+  2) Build and run the window once
+  3) Check dependencies
+  4) Build the window
+  5) Run the window
+  6) Tests (scripts-dev/test.sh)
+  7) Full gate (scripts-dev/check.sh)
+  8) Documentation check
+  9) Check a sheet with the CLI
+ 10) Remove the window build
   q) Quit
 EOF
         read -r -p "Choice [1]: " choice
         choice=${choice:-1}
         case "$choice" in
-            1) build_and_run ;;
-            2) check_deps || true; pause ;;
-            3) build_window; pause ;;
-            4) run_window ;;
-            5) ./scripts-dev/test.sh; pause ;;
-            6) ./scripts-dev/check.sh; pause ;;
-            7) ./scripts-dev/check-docs.sh; pause ;;
-            8) cli_check; pause ;;
-            9) clean_build ;;
+            1) run_dev ;;
+            2) build_and_run ;;
+            3) check_deps || true; pause ;;
+            4) build_window; pause ;;
+            5) run_window ;;
+            6) ./scripts-dev/test.sh; pause ;;
+            7) ./scripts-dev/check.sh; pause ;;
+            8) ./scripts-dev/check-docs.sh; pause ;;
+            9) cli_check; pause ;;
+           10) clean_build ;;
             q|Q) exit 0 ;;
             *) warn "No such choice: $choice" ;;
         esac
@@ -163,6 +170,7 @@ while (($# > 0)); do
         --build) action=build ;;
         --run) action=run ;;
         --try) action=try ;;
+        --dev) action=dev ;;
         --test) action=test ;;
         --gate) action=gate ;;
         --docs) action=docs ;;
@@ -186,6 +194,7 @@ case "$action" in
     build) build_window ;;
     run) run_window ;;
     try) build_and_run ;;
+    dev) run_dev ;;
     test) ./scripts-dev/test.sh ;;
     gate) ./scripts-dev/check.sh ;;
     docs) ./scripts-dev/check-docs.sh ;;
@@ -194,7 +203,7 @@ case "$action" in
         if [[ -t 0 ]]; then
             menu
         else
-            bad "No terminal for the interactive menu; pass --check-deps, --build, --run, --try, --test, --gate or --docs."
+            bad "No terminal for the interactive menu; pass --check-deps, --build, --run, --try, --dev, --test, --gate or --docs."
             exit 2
         fi
         ;;
