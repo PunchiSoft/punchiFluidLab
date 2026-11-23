@@ -26,6 +26,10 @@ pub(crate) const HEADING: f32 = 5.0;
 pub(crate) const MUTED: Colour = Colour::new(90, 90, 90);
 /// Draws the frame, the reference zones, the centring marks, the title block and the legend.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
+    // The paper belongs to the drawing, not to the window: the print surface paints it
+    // white, and the window's surface maps that white to the theme's `paper` token. It is
+    // the first call so the frame, the block and the circuit sit on top of it.
+    surface.rect(page.rect(), 0.0, Some(Colour::WHITE), None);
     let content = page.content_rect();
     surface.rect(content, 0.0, None, Some(Stroke::new(FRAME, Colour::BLACK)));
     draw_reference_zones(surface, page);

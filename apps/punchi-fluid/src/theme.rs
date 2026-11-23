@@ -83,6 +83,8 @@ pub struct Tokens {
     pub dark: bool,
     pub background: Color32,
     pub panel: Color32,
+    /// The sheet's paper: the plane the drawing and the frame sit on.
+    pub paper: Color32,
     pub surface_raised: Color32,
     pub surface_sunken: Color32,
     pub ink: Color32,
@@ -124,6 +126,8 @@ pub struct Contrast {
     pub accent_soft_text: f64,
     pub accent_text: f64,
     pub sheet_edge: f64,
+    pub paper_sunken: f64,
+    pub paper_text: f64,
 }
 
 /// The theme read from the desktop once per process.
@@ -589,8 +593,31 @@ fn tokens_from(palette: Palette, font: &DesktopFont, motion: u32) -> Tokens {
         surface_raised = blend(background, ink, 0.07);
     }
     let surface_sunken = plane_below(background);
-    let ink_dim = ensure_contrast(blend(ink, background, 0.30), surface_raised, 3.0);
-    let ink_muted = ensure_contrast(blend(ink, background, 0.55), surface_raised, 3.0);
+    let dark = relative_luminance(background) < 0.35;
+    // Breeze dark makes `[Colors:View]` equal to `[Colors:Window]` (36,36,36), and some
+    // dark schemes make it darker than the window. The sheet is the raised plane either
+    // way, so the paper is lifted towards the ink when the desktop does not put it above
+    // the chrome. A light scheme keeps the white view colour: there the canvas and the
+    // edge do the separating.
+    let mut paper = palette.base;
+    let paper_is_above = relative_luminance(paper) > relative_luminance(background);
+    if dark && (!paper_is_above || contrast_ratio(paper, background) < 1.10) {
+        paper = blend(background, ink, 0.11);
+    }
+    // The secondary inks must read on both the paper and the raised plane: in a light
+    // scheme the raised plane is the darker of the two and therefore the harder one, while
+    // in a dark scheme it is the other way round. The second pass only moves the colour
+    // further from the ink's side, so it cannot undo the first.
+    let ink_dim = ensure_contrast(
+        ensure_contrast(blend(ink, background, 0.30), paper, 3.0),
+        surface_raised,
+        3.0,
+    );
+    let ink_muted = ensure_contrast(
+        ensure_contrast(blend(ink, background, 0.55), paper, 3.0),
+        surface_raised,
+        3.0,
+    );
     let accent = ensure_contrast(palette.highlight, background, 3.0);
     let mut on_accent = palette.highlighted_text;
     if contrast_ratio(on_accent, accent) < 4.5 {
@@ -603,13 +630,12 @@ fn tokens_from(palette: Palette, font: &DesktopFont, motion: u32) -> Tokens {
     let accent_soft = soften(accent, surface_raised, ink, 4.5);
     let line_strong = ensure_contrast(blend(ink, background, 0.45), surface_raised, 3.0);
     let line = blend(ink, background, 0.62);
-    let shadow = if relative_luminance(background) < 0.35 {
+    let shadow = if dark {
         Color32::from_black_alpha(90)
     } else {
         Color32::from_black_alpha(40)
     };
     let supply = ensure_contrast(palette.link, background, 3.0);
-    let dark = relative_luminance(background) < 0.35;
     let unit = unit_from(font);
     let text_small = (unit * 0.55).max(10.0).round();
     let text_body = (unit * 0.61).max(11.0).round();
@@ -619,6 +645,7 @@ fn tokens_from(palette: Palette, font: &DesktopFont, motion: u32) -> Tokens {
         dark,
         background: background.colour(),
         panel: palette.base.colour(),
+        paper: paper.colour(),
         surface_raised: surface_raised.colour(),
         surface_sunken: surface_sunken.colour(),
         ink: ink.colour(),
@@ -666,6 +693,8 @@ impl Tokens {
             accent_soft_text: ratio(self.ink, self.accent_soft),
             accent_text: ratio(self.on_accent, self.accent),
             sheet_edge: ratio(self.line_strong, self.surface_sunken),
+            paper_sunken: ratio(self.paper, self.surface_sunken),
+            paper_text: ratio(self.ink, self.paper),
         }
     }
 }

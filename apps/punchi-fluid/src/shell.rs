@@ -20,7 +20,7 @@ use crate::inspector::Action;
 use crate::layout::LayoutMode;
 use crate::scene;
 use crate::sidebar::Sidebar;
-use crate::surface::EguiSurface;
+use crate::surface::{EguiSurface, ScreenInk};
 use crate::window_state::{self, Geometry};
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Pt, Rect, draw_placed};
@@ -415,7 +415,8 @@ impl Window {
                     page_rect.min.x * placement.scale,
                     page_rect.min.y * placement.scale,
                 );
-            let mut drawing = EguiSurface::new(context, origin, placement.scale);
+            let mut drawing = EguiSurface::new(context, origin, placement.scale)
+                .with_screen_ink(ScreenInk::from_tokens(&self.theme.tokens));
             let mut scene = scene::build(
                 &self.document,
                 &self.catalog,
@@ -447,7 +448,27 @@ impl Window {
                 &self.selected,
             );
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
+            let tokens = &self.theme.tokens;
             let painter = ui.painter().with_clip_rect(ui.max_rect());
+            // Three planes tell the sheet from the chrome: the canvas is the sunken
+            // workspace, the paper is the raised card, and one shadow keeps the card off
+            // the canvas. The paper itself is the drawing's first call, so the print
+            // surface paints white and the screen maps that white to `paper`.
+            painter.rect_filled(area.shrink(tokens.unit * 0.5), 0.0, tokens.surface_sunken);
+            let paper = egui::Rect::from_min_size(
+                placement.origin,
+                egui::vec2(
+                    page_rect.width() * placement.scale,
+                    page_rect.height() * placement.scale,
+                ),
+            );
+            painter.rect_filled(paper.translate(egui::vec2(0.0, 3.0)), 0.0, tokens.shadow);
+            painter.rect_stroke(
+                paper,
+                0.0,
+                egui::Stroke::new(1.0_f32, tokens.line_strong),
+                egui::StrokeKind::Inside,
+            );
             painter.extend(drawing.shapes);
             self.highlight_selected_pipe(ui, origin, placement.scale);
         });

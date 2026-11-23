@@ -568,11 +568,14 @@ with a preview-by-path bound and a `recent.json` version change.
 ### 3. The sheet
 
 **The sheet is a raised card on a sunken workspace.** The canvas fills the drawing area
-inside **half a `unit`** of margin over `surface_sunken`; the paper is filled with `panel`, edged
-with `line_strong` and carries the `shadow` token offset once behind it. The drawing's own
-background follows the paper, so a symbol that erases against the page matches. Every
-floating editor is one `Card` with the same radius, edge and shadow; the shadow is drawn,
-never blurred per frame, and none of it changes the zoom, the pan, the check or the print.
+inside **half a `unit`** of margin over `surface_sunken`; the paper is filled with `paper`,
+edged with `line_strong` and carries the `shadow` token offset once behind it. The drawing's
+own background follows the paper, so a symbol that erases against the page matches. The
+drawing is written for the page, black ink on white; the window's `Surface` maps that palette
+to the theme's `ink`, `paper`, `ink_dim` and `ink_muted`, so the same recording is legible on
+both devices. Every floating editor is one `Card` with the same radius, edge and shadow; the
+shadow is drawn, never blurred per frame, and none of it changes the zoom, the pan, the check
+or the print.
 
 **An empty sheet says what to do.** With no components it carries a short invitation — a
 first line *Arrastra símbolos a la hoja para empezar* and a second one naming the catalog and
@@ -743,6 +746,7 @@ definition count and the mode text are the target, not in the bar yet.
 | Token | Source |
 |---|---|
 | `surface`, `surface_alt`, `surface_raised` | `[Colors:Window]` / `[Colors:View]` / `[Colors:Button]` |
+| `paper` | the sheet: `[Colors:View]`, lifted towards the ink when the desktop makes it equal to the window (Breeze dark: `Window` and `View` are both 36,36,36), so the card reads over `surface_sunken` |
 | `line`, `line_strong` | `text_muted` blended towards the surface and measured; a line that carries meaning reaches 3:1 |
 | `shadow` | the ink at low alpha, drawn once behind the paper, never a per-frame blur |
 | `text`, `text_muted`, `text_disabled` | `[Colors:Window] ForegroundNormal/Inactive` |

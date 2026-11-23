@@ -5,7 +5,7 @@
 
 use eframe::egui;
 use punchi_fluid_doc::{Align, Document, Endpoint, Placement};
-use punchi_fluid_draw::surface::Recording;
+use punchi_fluid_draw::surface::{Call, Colour, Recording};
 
 use super::{Drag, Pt, Window, sheet, theme};
 
@@ -358,6 +358,15 @@ fn the_sheet_of_a_new_document_draws_into_a_recording() {
         !recording.is_empty(),
         "the sheet must produce calls: {}",
         recording.len()
+    );
+    assert!(
+        matches!(
+            recording.calls().first(),
+            Some(Call::Rect { rect, fill: Some(paper), .. })
+                if *paper == Colour::WHITE && *rect == window.page.rect()
+        ),
+        "the sheet starts with its paper: {:?}",
+        recording.calls().first()
     );
 }
 #[test]
