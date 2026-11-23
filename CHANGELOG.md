@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La cinta tiene una sola tabla de atajos — 2026-11-23
+
+- **Una tabla, dos lecturas**: el atajo y su hint salen de la misma fila
+  (`apps/punchi-fluid/src/shortcuts.rs`), que nombra el comando que despacha; un comando sin
+  fila no anuncia tecla y un control sin comando no muestra atajo. La ventana despacha los
+  atajos por esa tabla y la cinta deja de tener su propia lista de teclas.
+- **Alineados e implementados**: Ctrl+N/O/S, Ctrl+Shift+S/E, Ctrl+Z, Ctrl+Shift+Z (y Ctrl+Y),
+  Ctrl+C/V, Ctrl+D, Supr, Ctrl+A, Alt+R/M, Alt+D, Ctrl+R, Ctrl+T, F2, Ctrl+W, Ctrl+B/J,
+  Ctrl+0 y F9/F8/F10/F5. Se retira el hint de **Puertos** (Alt+A) porque no tiene comando.
+
 ### La cinta configura la exportación — 2026-11-23
 
 - **Opciones…** de la exportación fija el formato (PDF/PNG/SVG, el que el diálogo de archivo

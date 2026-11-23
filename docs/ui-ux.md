@@ -147,7 +147,9 @@ Depth comes from the palette, never from a new hue.
 
 The list of commands is one table in `apps/punchi-fluid/src/ribbon/model.rs`; the expanded
 groups, the collapsed groups and their flyouts are generated from it, so they cannot drift
-apart. The two help links are drawn in the tab row beside the tabs, because they are not
+apart. The shortcuts and their hints come from one shortcut table
+(`apps/punchi-fluid/src/shortcuts.rs`) whose rows name the command they dispatch, so a hint
+cannot announce a key no handler answers. The two help links are drawn in the tab row beside the tabs, because they are not
 commands of a tab. **Today** the file commands, the sheet commands (**Márgenes**,
 **Orientación**, **Tamaño**), the title block commands (**Contenido**, **Posición**,
 **Restablecer**), **Circuito ▸ Nuevo circuito**, the edit commands (including **Conducto**'s
@@ -170,7 +172,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 | Tab | Contents |
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
-| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+E`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
+| **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |

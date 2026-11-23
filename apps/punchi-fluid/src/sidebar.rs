@@ -458,18 +458,6 @@ impl Window {
             self.add_component(&catalog_id);
         }
     }
-
-    /// The keyboard path of the catalog, besides **Ver ▸ Catálogo**. In the compact mode it
-    /// toggles the drawer instead of the docked panel.
-    pub(crate) fn catalog_keyboard(&mut self, context: &egui::Context) {
-        if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::B)) {
-            if self.layout_mode() == crate::layout::LayoutMode::Compact {
-                self.toggle_drawer(crate::shell::Drawer::Catalog);
-            } else {
-                self.sidebar.toggle();
-            }
-        }
-    }
 }
 
 #[cfg(test)]

@@ -333,10 +333,10 @@ fn ctrl_n_starts_a_new_document_and_ctrl_o_opens_the_file_dialog() {
     );
 }
 
-/// One frame of raw input with `Ctrl` and `key` pressed.
-fn shortcut(key: egui::Key) -> egui::RawInput {
+/// One frame of raw input with `modifiers` and `key` pressed.
+fn shortcut_with(key: egui::Key, modifiers: egui::Modifiers) -> egui::RawInput {
     let mut input = egui::RawInput {
-        modifiers: egui::Modifiers::CTRL,
+        modifiers,
         ..Default::default()
     };
     input.events.push(egui::Event::Key {
@@ -344,9 +344,49 @@ fn shortcut(key: egui::Key) -> egui::RawInput {
         physical_key: None,
         pressed: true,
         repeat: false,
-        modifiers: egui::Modifiers::CTRL,
+        modifiers,
     });
     input
+}
+
+/// One frame of raw input with `Ctrl` and `key` pressed.
+fn shortcut(key: egui::Key) -> egui::RawInput {
+    shortcut_with(key, egui::Modifiers::CTRL)
+}
+
+#[test]
+fn ctrl_z_and_ctrl_shift_z_walk_the_history() {
+    let mut document = Document::new();
+    document.place(Placement::new(
+        "valve.3_2.spring_return",
+        Pt::new(60.0, 60.0),
+        20.0,
+        20.0,
+    ));
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    window.selected = vec![0];
+    let before = window.document.placements()[0].orientation;
+    window.dispatch(crate::ribbon::Command::Rotate);
+    let turned = window.document.placements()[0].orientation;
+    assert_ne!(turned, before, "the rotate turned the symbol");
+    let context = egui::Context::default();
+    let _ = context.run(shortcut(egui::Key::Z), |context| {
+        window.sync_commands(context);
+    });
+    assert_eq!(
+        window.document.placements()[0].orientation,
+        before,
+        "Ctrl+Z walks one step back"
+    );
+    let _ = context.run(
+        shortcut_with(egui::Key::Z, egui::Modifiers::CTRL | egui::Modifiers::SHIFT),
+        |context| window.sync_commands(context),
+    );
+    assert_eq!(
+        window.document.placements()[0].orientation,
+        turned,
+        "Ctrl+Shift+Z walks the step back"
+    );
 }
 
 #[test]
