@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### La cinta edita los datos del cajetín — 2026-11-23
+
+- **Editar datos…** abre el editor del cajetín: los doce campos (propietario, proyecto,
+  equipo, título, número, revisión, fecha, preparado/revisado/aprobado por, escala y normas),
+  la casilla **Mostrar** de cada uno, el modelo de contenido (Escolar/Técnico/Industrial, que
+  fija su juego de campos por defecto) y la posición (superior derecha, inferior derecha,
+  inferior centrado o sin cajetín). **Aplicar** es un solo undo; **Cerrar** o `Esc` descartan el
+  borrador y la página que dibuja la ventana sigue al documento.
+
 ### La cinta configura la página — 2026-11-23
 
 - **Configurar página** abre su panel: papel (A5–A0, Letter, Legal, Oficio y un tamaño

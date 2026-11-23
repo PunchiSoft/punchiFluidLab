@@ -24,6 +24,7 @@ use punchi_fluid_session::recents::Recents;
 use crate::ribbon::{Command, Speed};
 
 mod auto_hide;
+mod block_editor;
 mod branding;
 mod edit_commands;
 mod export;
@@ -128,6 +129,8 @@ struct Window {
     speed: Speed,
     /// The page setup panel's draft; the document is only touched on apply.
     page_setup: page_setup::PageSetup,
+    /// The title block editor's draft; the document is only touched on apply.
+    block_editor: block_editor::BlockEditor,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
     /// The right dock: the properties of the selection, and its own view state.
@@ -478,6 +481,7 @@ impl Window {
                 self.ribbon.active_speed = speed.label();
             }
             Command::PageSetup => self.open_page_setup(),
+            Command::BlockEdit => self.open_block_editor(),
             Command::Home => self.open_start(),
             Command::OpenRecent(index) => self.open_recent(index),
             Command::CircuitNew => self.new_circuit(),
