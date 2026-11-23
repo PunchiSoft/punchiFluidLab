@@ -405,12 +405,68 @@ fn the_first_frame_sizes_and_centres_the_window_from_the_monitor_it_finds() {
     );
     assert!(
         sent.contains(&egui::ViewportCommand::OuterPosition(egui::pos2(
-            240.0, 90.0
+            240.0, 50.0
         ))),
-        "the window is centred: {sent:?}"
+        "the window is centred above the taskbar: {sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::MinInnerSize(egui::vec2(
+            900.0, 600.0
+        ))),
+        "the design floor goes to the viewport: {sent:?}"
     );
     drop(harness);
     assert!(window.shell.applied, "the first geometry was applied once");
+}
+
+#[test]
+fn a_1366_laptop_opens_maximized_with_a_normal_size_that_fits() {
+    let mut window = window_with();
+    window.start_open = false;
+    let mut harness = frame_harness(&mut window, egui::vec2(1366.0, 768.0));
+    harness.step();
+    let sent = commands(&harness);
+    assert!(
+        sent.contains(&egui::ViewportCommand::Maximized(true)),
+        "the preferred size does not fit and the window opens maximized: {sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::InnerSize(egui::vec2(1334.0, 656.0))),
+        "the normal size that unmaximizing returns fits the screen: {sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::MinInnerSize(egui::vec2(
+            900.0, 600.0
+        ))),
+        "the design floor still fits this screen: {sent:?}"
+    );
+    drop(harness);
+    assert!(window.shell.applied);
+}
+
+#[test]
+fn a_1366_laptop_at_125_percent_opens_maximized_with_the_room_as_the_floor() {
+    let mut window = window_with();
+    window.start_open = false;
+    let mut harness = frame_harness(&mut window, egui::vec2(1093.0, 614.0));
+    harness.step();
+    let sent = commands(&harness);
+    assert!(
+        sent.contains(&egui::ViewportCommand::Maximized(true)),
+        "{sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::MinInnerSize(egui::vec2(
+            900.0, 502.0
+        ))),
+        "the floor yields to the room the screen has: {sent:?}"
+    );
+    assert!(
+        sent.contains(&egui::ViewportCommand::InnerSize(egui::vec2(1061.0, 502.0))),
+        "the normal size is the room, never the 900 × 600 floor: {sent:?}"
+    );
+    drop(harness);
+    assert!(window.shell.applied);
 }
 
 #[test]

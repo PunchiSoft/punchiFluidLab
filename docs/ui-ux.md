@@ -51,9 +51,10 @@ a popup about the program, never a command of the circuit, so no command exists 
 
 Fixed sizes come from the theme, never from literals: the tab row is one `row_height`,
 the ribbon's icon and label sizes are tokens of their own, the sidebar
-`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600.
-**1366×768 is the reference screen** (the entry and education laptop, and the window opens
-inside it with a margin); there the ribbon is
+`18 × grid_unit` wide and resizable, the status bar one row. Minimum window 900 × 600,
+unless the room a screen has is smaller: then the minimum is the room (§2.2).
+**1366×768 is the reference screen** (the entry and education laptop; the window opens
+maximized there, filling its work area); there the ribbon is
 **one row of the seven groups**, and a group that does not fit becomes a titled button
 that opens its commands in a non-modal flyout instead of being clipped. The collapse
 priority, from the least to the most used, is **Repartir, Alinear, Paleta, Historial,
@@ -459,17 +460,23 @@ before a panel is allowed to cover it:
   (never over the panels' headers), closing after a command or `Esc`. The state is
   remembered with the panels. Below the collapse threshold the ribbon already folds to
   **Menú** instead.
-- **The first window is screen-aware** (P-028): with no remembered size it opens at
-  **1440×900** on a 1080p screen. On a smaller screen it takes the largest size that fits
-  the available area minus a two-unit margin, never below 900 × 600, and it is centred in
-  the area. A 1366×768 panel therefore opens about **1330×732**, above the 1280 fold;
-  1280×800 opens below it, and at 125 % the logical area shrinks and the folded form
-  applies.
-- **The window remembers its size and place**, and only when the place still lands on a
-  screen: a laptop undocked from a second monitor must not reopen off-screen. A remembered
-  size is **clamped to the current screen** with the same margin and minimum, not only to
-  the minimum, so a window saved on a 1920 monitor reopens inside a 1366 laptop. A
-  maximized window keeps the size it had before. The minimum is 900 × 600.
+- **The first window is screen-aware** (P-028, revised 2026-11-23): with no remembered size
+  it opens at **1440×900** on a 1080p screen. The toolkit reports the monitor, not the work
+  area, so the shell subtracts a **two-unit margin** and an **80-point chrome reserve** (the
+  title bar plus the taskbar or panel) and sizes the window inside what is left; the window
+  is centred in that room, not in the monitor. When the room is shorter than 900 points the
+  window opens **maximized**, so the compositor fits the real work area instead of the shell
+  guessing it: 1366×768, 1536×864 (1080p at 125 %), 1280×720 (1080p at 150 %), 1600×900 and
+  1280×800 open maximized with a normal size that fits (1366×768 keeps **1334×656** for the
+  day it is unmaximized); 1920×1080 and 1920×1200 open at 1440×900 normal. If the room is
+  below 900×600 the minimum follows the room (1366×768 at 125 % has 502 points of height), so
+  no window state hides the status bar under the taskbar. The 1366-wide panel keeps the
+  unfolded ribbon; at 125 % its ~1093 logical points fold it, as before.
+- **The window remembers its size and place**, and only when the place still lands on the
+  room: a laptop undocked from a second monitor must not reopen off-screen. A remembered
+  size is **clamped to the current room** with the same margin, reserve and minimum, not only
+  to the minimum, so a window saved on a 1920 monitor reopens inside a 1366 laptop. A
+  maximized window keeps the size it had before. The design minimum is 900 × 600.
 - **The mode boundaries follow the spacing unit**, which follows the desktop font, so a
   larger font moves them. The ribbon's own text and heights are still literals; turning
   them into tokens is stage 7.
@@ -497,17 +504,18 @@ before a panel is allowed to cover it:
   `Esc`, on a click outside and on its hide control, one panel at a time. **Restablecer
   vista** also dismisses an open drawer. The ribbon keeps the collapsing it had: each group
   folds to its own title button by available width; the **Menú** compact ribbon and the
-  minimized ribbon are not built in this slice. The window opens at 1440 × 900 when the
-  screen has room, otherwise at the largest size that fits the screen minus a two-unit
-  margin, never below 900 × 600, centred; it remembers its size, its place and whether it
-  was maximized in `XDG_DATA_HOME/punchi-fluid/window.state` beside the recent list, and
-  restores them only when the place still lands on a screen, clamped to the current screen
-  with the same margin and minimum; a maximized window keeps the size it had before. The
+  minimized ribbon are not built in this slice. The window opens at 1440×900 when the room
+  has it, otherwise maximized at the largest normal size that fits the room; it remembers
+  its size, its place and whether it was maximized in
+  `XDG_DATA_HOME/punchi-fluid/window.state` beside the recent list, and restores them only
+  when the place still lands on the room, clamped to the current room with the same margin,
+  reserve and minimum; a maximized window keeps the size it had before. The
   `cargo test -p punchi-fluid-window` suite proves the three derivations from widths, the
-  first size against synthetic screens, the clamp and the off-screen rejection, the state
-  file's round trip and its defensive reads, and the compact rails, the drawer and its
-  dismissal, headless; `--check-layout` and `--selftest` were the Qt window's checks and are
-  not ported to this one, so no automated check opens the real desktop window. What is left:
+  first size against the LATAM screen matrix (1024×768 to 4K, including 1080p at 125 and
+  150 %), the clamp and the off-screen rejection, the state file's round trip and its
+  defensive reads, and the compact rails, the drawer and its dismissal, headless;
+  `--check-layout` and `--selftest` were the Qt window's checks and are not ported to this
+  one, so no automated check opens the real desktop window. What is left:
   the **Menú** compact ribbon and the minimized ribbon with its groups as a panel over the
   drawing area (and with it, a ribbon state to remember), the ribbon's text and heights from
   the theme tokens (stage 7).

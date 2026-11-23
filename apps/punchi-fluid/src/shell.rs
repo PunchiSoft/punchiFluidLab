@@ -211,6 +211,12 @@ impl Window {
                 self.theme.tokens.unit,
                 self.shell.restored.as_ref(),
             );
+            // The floor goes first: a screen below 900 × 600 must clamp the window to its own
+            // room, never to a minimum the monitor cannot hold.
+            window_state::apply_minimum(
+                context,
+                window_state::minimum(screen, self.theme.tokens.unit),
+            );
             window_state::apply(context, &geometry);
             self.shell.normal = Some(Geometry {
                 maximized: false,

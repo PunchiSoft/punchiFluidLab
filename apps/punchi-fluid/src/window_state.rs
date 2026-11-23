@@ -6,7 +6,10 @@
 //! The shell sizes itself from the screen it finds, never from a remembered resolution:
 //! [`first_geometry`] and [`restored_geometry`] take the monitor's size in device-independent
 //! points, so the same functions answer for a 1366 laptop, a 4K monitor or a synthetic screen
-//! in a test. The remembered geometry lives beside the recent list in a small `key=value`
+//! in a test. The toolkit reports the monitor, not the work area, so a reserve for the title
+//! bar and the taskbar or panel is taken from the height and a screen that cannot hold the
+//! preferred size opens maximized, which lets the compositor fit the real work area. The
+//! remembered geometry lives beside the recent list in a small `key=value`
 //! file the reader parses defensively: bounded size, unknown keys ignored, anything
 //! unreadable ignored, because a stale file must never keep a window off-screen or below the
 //! floor. There is no serde here and no new dependency.
@@ -17,18 +20,25 @@ use std::time::{Duration, Instant};
 
 use eframe::egui::{Pos2, Rect, Vec2};
 
-/// The window's minimum content size: the support floor of `docs/ui-ux.md` §2.2. A smaller
-/// screen cannot make the window smaller than this, only let it hang over the edge.
+/// The window's minimum content size: the design support floor of `docs/ui-ux.md` §2.2. A
+/// screen whose room is smaller lowers the floor to the room, so no window state hangs over
+/// the taskbar.
 pub const MIN_WIDTH: f32 = 900.0;
 pub const MIN_HEIGHT: f32 = 600.0;
 
-/// The size the window opens with when the screen has room for it.
+/// The size the window opens with when the room has it.
 pub const PREFERRED_WIDTH: f32 = 1440.0;
 pub const PREFERRED_HEIGHT: f32 = 900.0;
 
-/// The screen-aware margin around the window, in spacing units: one unit on each side, two
-/// in total, so a 1366×768 screen opens the window about 1330×732 at 18 points per unit.
+/// The screen-aware margin around the window, in spacing units: one unit on each side, two in
+/// total. The room also takes [`CHROME_RESERVE`] from the height.
 pub const SCREEN_MARGIN_UNITS: f32 = 2.0;
+
+/// The room the toolkit does not report, in points: the title bar plus the taskbar or panel.
+/// The desktop hands egui the monitor's size and nothing else, so this reserve is the honest
+/// approximation of `desktopAvailableWidth/Height`. It covers Windows 10 and 11 (title 31-32,
+/// taskbar 40-48) and KDE Breeze (title 30, panel 44); the exact work area needs the platform.
+pub const CHROME_RESERVE: f32 = 80.0;
 
 /// How much of the window has to land on the screen for a remembered place to be kept.
 /// Anything smaller is treated as a place on a monitor that is no longer there.
@@ -67,24 +77,51 @@ pub struct Geometry {
 /// The two-unit margin around a window, in points, for a spacing unit.
 #[must_use]
 pub fn margin(unit: f32) -> f32 {
-    let unit = if unit.is_finite() && unit > 0.0 {
-        unit
-    } else {
-        0.0
-    };
-    SCREEN_MARGIN_UNITS * unit
+    SCREEN_MARGIN_UNITS * edge(unit)
 }
 
-/// The first geometry: 1440 × 900 when the screen has room, else the largest size that fits
-/// inside the screen minus the two-unit margin, never below the minimum, centred.
+/// The room a window may take, in points: the monitor minus one spacing unit on each side and
+/// the chrome reserve at the bottom. The rectangle's origin is one unit in from the monitor's
+/// top-left corner.
+fn room(screen: Vec2, unit: f32) -> Vec2 {
+    let screen = usable(screen);
+    Vec2::new(
+        (screen.x - margin(unit)).max(0.0),
+        (screen.y - margin(unit) - CHROME_RESERVE).max(0.0),
+    )
+}
+
+/// The window's floor: the design minimum, unless the room is smaller; then the room is the
+/// floor. A screen can never make the window bigger than the room it has.
+fn floor(room: Vec2) -> Vec2 {
+    Vec2::new(
+        MIN_WIDTH.min(room.x).max(1.0),
+        MIN_HEIGHT.min(room.y).max(1.0),
+    )
+}
+
+/// The minimum content size the viewport must enforce on `screen`: 900 × 600 when the room
+/// holds it, the room itself when the screen is smaller (1366 × 768 at 125 % has 502 points of
+/// height). Sending this to the viewport keeps unmaximizing from hiding the status bar under
+/// the taskbar.
+#[must_use]
+pub fn minimum(screen: Vec2, unit: f32) -> Vec2 {
+    floor(room(screen, unit))
+}
+
+/// The first geometry: 1440 × 900 when the room has it, else the largest size that fits inside
+/// the room, never below its floor, centred. A screen whose room is shorter than the preferred
+/// 900 points opens maximized, so the compositor fits the work area instead of the shell
+/// guessing the taskbar.
 #[must_use]
 pub fn first_geometry(screen: Vec2, unit: f32) -> Geometry {
-    let screen = usable(screen);
-    let size = clamp_size(Vec2::new(PREFERRED_WIDTH, PREFERRED_HEIGHT), screen, unit);
+    let room = room(screen, unit);
+    let floor = floor(room);
+    let size = clamp_size(Vec2::new(PREFERRED_WIDTH, PREFERRED_HEIGHT), room, floor);
     Geometry {
         size,
-        position: Some(centred(screen, size)),
-        maximized: false,
+        position: Some(centred(room, size, unit)),
+        maximized: room.y < PREFERRED_HEIGHT,
     }
 }
 
@@ -99,23 +136,25 @@ pub fn opening_geometry(screen: Vec2, unit: f32, remembered: Option<&Geometry>) 
     }
 }
 
-/// The geometry to reopen with: the remembered size clamped to the current screen with the
-/// same margin and minimum, and the remembered place only when it still lands on that screen,
-/// else centred. A maximized window keeps the size it had before, carried in `saved.size`.
+/// The geometry to reopen with: the remembered size clamped to the current screen's room with
+/// the same margin, reserve and minimum, and the remembered place only when it still lands on
+/// that room, else centred. A maximized window keeps the size it had before, carried in
+/// `saved.size`.
 ///
 /// The desktop reports the current monitor's size but not the virtual desktop's origin, so a
-/// place that only intersects the screen rectangle from its origin is kept; a window saved on
-/// a monitor placed to the left of the primary therefore reopens centred rather than possibly
-/// out of sight. That is the conservative answer for the undocked laptop this is for.
+/// place that only intersects the room from its origin is kept; a window saved on a monitor
+/// placed to the left of the primary therefore reopens centred rather than possibly out of
+/// sight. That is the conservative answer for the undocked laptop this is for.
 #[must_use]
 pub fn restored_geometry(screen: Vec2, unit: f32, saved: &Geometry) -> Geometry {
-    let screen = usable(screen);
-    let size = clamp_size(saved.size, screen, unit);
+    let room = room(screen, unit);
+    let floor = floor(room);
+    let size = clamp_size(saved.size, room, floor);
     let position = match saved.position {
-        Some(position) if lands_on_screen(position, size, screen) => {
-            Some(clamp_position(position, size, screen, unit))
+        Some(position) if lands_on_screen(position, size, room, unit) => {
+            Some(clamp_position(position, size, room, unit))
         }
-        _ => Some(centred(screen, size)),
+        _ => Some(centred(room, size, unit)),
     };
     Geometry {
         size,
@@ -147,6 +186,12 @@ pub fn apply(context: &eframe::egui::Context, geometry: &Geometry) {
     if geometry.maximized {
         context.send_viewport_cmd(eframe::egui::ViewportCommand::Maximized(true));
     }
+}
+
+/// Sends the minimum the viewport must enforce on the screen it found. Sent before the size,
+/// so a screen smaller than 900 × 600 never has to clamp a window to a floor it cannot hold.
+pub fn apply_minimum(context: &eframe::egui::Context, minimum: Vec2) {
+    context.send_viewport_cmd(eframe::egui::ViewportCommand::MinInnerSize(minimum));
 }
 
 /// The file the geometry lives in: the user data folder beside the recent list, or the
@@ -271,7 +316,7 @@ fn valid_coordinate(value: f32) -> bool {
     value.is_finite() && value.abs() <= MAX_COORDINATE
 }
 
-/// A screen size that can be reasoned about: finite and at least the window's minimum.
+/// A screen size that can be reasoned about: finite and positive.
 fn usable(screen: Vec2) -> Vec2 {
     Vec2::new(
         if screen.x.is_finite() && screen.x > 0.0 {
@@ -287,39 +332,45 @@ fn usable(screen: Vec2) -> Vec2 {
     )
 }
 
-fn clamp_size(size: Vec2, screen: Vec2, unit: f32) -> Vec2 {
-    let width = (screen.x - margin(unit)).max(MIN_WIDTH);
-    let height = (screen.y - margin(unit)).max(MIN_HEIGHT);
-    Vec2::new(
-        size.x.max(MIN_WIDTH).min(width),
-        size.y.max(MIN_HEIGHT).min(height),
-    )
-}
-
-fn centred(screen: Vec2, size: Vec2) -> Pos2 {
-    Pos2::new(
-        ((screen.x - size.x) * 0.5).max(0.0),
-        ((screen.y - size.y) * 0.5).max(0.0),
-    )
-}
-
-fn lands_on_screen(position: Pos2, size: Vec2, screen: Vec2) -> bool {
-    let window = Rect::from_min_size(position, size);
-    let visible = window.intersect(Rect::from_min_size(Pos2::ZERO, screen));
-    visible.width() >= MIN_VISIBLE && visible.height() >= MIN_VISIBLE
-}
-
-/// Keeps one spacing unit between the window and each screen edge, which is the two-unit
-/// margin around both sides.
-fn clamp_position(position: Pos2, size: Vec2, screen: Vec2, unit: f32) -> Pos2 {
-    let edge = if unit.is_finite() && unit > 0.0 {
+/// One spacing unit as a length, or zero when the unit is not usable.
+fn edge(unit: f32) -> f32 {
+    if unit.is_finite() && unit > 0.0 {
         unit
     } else {
         0.0
-    };
+    }
+}
+
+fn clamp_size(size: Vec2, room: Vec2, floor: Vec2) -> Vec2 {
+    Vec2::new(
+        size.x.max(floor.x).min(room.x.max(floor.x)),
+        size.y.max(floor.y).min(room.y.max(floor.y)),
+    )
+}
+
+/// Centres the window in the room, whose origin is one unit in from the monitor's corner.
+fn centred(room: Vec2, size: Vec2, unit: f32) -> Pos2 {
+    let edge = edge(unit);
+    Pos2::new(
+        edge + ((room.x - size.x) * 0.5).max(0.0),
+        edge + ((room.y - size.y) * 0.5).max(0.0),
+    )
+}
+
+fn lands_on_screen(position: Pos2, size: Vec2, room: Vec2, unit: f32) -> bool {
+    let edge = edge(unit);
+    let window = Rect::from_min_size(position, size);
+    let visible = window.intersect(Rect::from_min_size(Pos2::new(edge, edge), room));
+    visible.width() >= MIN_VISIBLE && visible.height() >= MIN_VISIBLE
+}
+
+/// Keeps the window inside the room, so its bottom stays above the taskbar and its top-left
+/// keeps the margin.
+fn clamp_position(position: Pos2, size: Vec2, room: Vec2, unit: f32) -> Pos2 {
+    let edge = edge(unit);
     let max = Pos2::new(
-        (screen.x - size.x - edge).max(edge),
-        (screen.y - size.y - edge).max(edge),
+        (edge + room.x - size.x).max(edge),
+        (edge + room.y - size.y).max(edge),
     );
     Pos2::new(position.x.clamp(edge, max.x), position.y.clamp(edge, max.y))
 }
