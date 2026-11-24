@@ -158,7 +158,9 @@ Rules that hold for all of them:
   meeting at the centre. The proportions are the shape's, not an accident of the box.
 - **Twenty millimetres, whatever the paper.** A symbol is read by shape, so its box is a
   project size and not a fraction of the sheet: **20 mm square** for every component and
-  **44 × 20 mm** for a cylinder, whose barrel is the one rectangle. A3 does not make a valve
+  **44 × 20 mm** for a cylinder, whose barrel is the one rectangle. A cylinder's barrel
+  fills 18.48 × 8.40 mm of that box (2.2 : 1; the figure's barrel is 2.23 : 1) and the rest
+  of the box is the rod's travel. A3 does not make a valve
   bigger and a crowded A4 does not make it smaller. The worked example composes with
   `min(0.26 · height, 0.17 · width, 20 mm)`, so a thumbnail shrinks below the rule and a full
   sheet stops at it ([`schematic::layout`](../crates/punchi-fluid-draw/src/schematic.rs)).
@@ -234,21 +236,39 @@ An arrow that does not cross the element it adjusts reads as a flow direction.
   not faded lines, and a grey part is the first one to disappear in a photocopy.
 - The piston **crosses the internal length the definition declares**: the chamber is the
   stroke plus the dead length, so at full extension the piston stops with only the dead
-  length left against the rod-side wall. That residual space is where the return spring
-  is compressed, and it is not a fraction chosen by the renderer: a cylinder that only
+  length left against the rod-side cap's inner face. That residual space is where the return
+  spring is compressed, and it is not a fraction chosen by the renderer: a cylinder that only
   used part of its chamber would read as a cylinder that had not finished its stroke.
 - The piston **meets both walls of the bore** at every position of the stroke. A line that
   stops short of the walls reads as a bar floating inside the barrel; the piston is the
   seal between the two chambers and is drawn as such.
 - A double-acting cylinder shows the same barrel, piston and rod and **no spring**, with
   **two ports, one drilled in each end cap**. Both leave their cap **downwards, at the same
-  depth**, so the pair reads at a glance as one cylinder driven from both ends. The two ways
-  this is not drawn: a port tucked into the corner where an end wall meets the barrel's edge
-  reads as part of the outline, and a port laid over the rod on the centreline reads as the
-  rod. Neither is used.
-- **Every cylinder port is drilled in a cap.** A single-acting cylinder has the one port in
-  the cap end and none at the rod end, because that absence is what makes it single-acting;
-  a double-acting cylinder has one in each cap. A port anywhere else is a different machine.
+  depth** — in the 44 × 20 mm box each sits 0.92 mm from its end wall and its stub runs
+  5.8 mm below the barrel — and inside the cap, not in the chamber the piston crosses, so
+  the pair reads at a glance as one cylinder driven from both ends. The two ways this is
+  not drawn: a port drawn on the corner itself merges with the outline, and a port laid
+  over the rod on the centreline reads as the rod. Neither is used.
+- **Every cylinder port is drilled in a cap.** The cap is the end region between the end
+  wall and the cap's inner face, which in the 44 × 20 mm box is 2.03 mm deep (a tenth of
+  the barrel's length, as the figure draws it); the chamber the piston crosses starts at
+  that face. A port drilled inside the chamber is swept by the piston: a single-acting
+  cylinder would pressurise the spring chamber at rest and a double-acting one would lose
+  the connection when its piston passed over it. A single-acting cylinder has its **working**
+  port in the cap end and none at the rod end, because that absence of a working line is
+  what makes it single-acting; a double-acting cylinder has one working port in each cap. A
+  port anywhere else is a different machine.
+- **The figure's spring-chamber connection is a separate matter.** `X11440` is registered as
+  a single-acting cylinder whose spring chamber carries a connection, and prints a second
+  stub in that chamber, at the rod end. The catalog's single-acting cylinder declares the
+  working port only: the model gives it one working chamber, and the schema has no breather
+  role, so the second connection is recorded against `RF052` in its review instead of being
+  forced into a `working` or `exhaust` role that would change what the part is.
+- **The cap's inner face is an inset, not a second rectangle.** The figure draws it as a
+  line at the cap end; our barrel is the one rectangle the file declares and the cap is the
+  renderer's 11 % inset, so the line is not drawn separately. The port is inside the cap,
+  which is what the function needs; the missing line is an open item of the cylinder
+  reviews, not a variant of the symbol.
 - **The numeral of a port on a horizontal edge is written beside its own stub**, on the
   side where no other port is written, in the band between the body edge and the end of the
   stub. Three places are wrong and each is wrong for its own reason: between two neighbouring

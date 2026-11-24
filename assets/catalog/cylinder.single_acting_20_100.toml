@@ -4,10 +4,15 @@
 # Single-acting cylinder with a return spring, 20 mm bore and 100 mm stroke.
 #
 # The piston, the rod and the spring are drawn by the renderer, because they
-# move: the symbol here holds the barrel, the end cap and the port. The spring
+# move: the symbol here holds the barrel, the end caps and the port. The spring
 # side is declared so the renderer puts the return spring at the rod side, where
 # it belongs. The mechanical values describe a small cylinder loaded with half a
 # kilogram.
+#
+# X11440 prints the working port in the cap end and a second connection in the
+# spring chamber at the rod end. The model gives a single-acting cylinder one
+# working chamber, so this file declares the working port only; the review
+# records the omitted spring-chamber connection against RF052.
 
 schema = 3
 id = "cylinder.single_acting_20_100"
@@ -22,13 +27,14 @@ kinematics = "linear_actuator"
 side = "right"
 
 # The port of a single-acting cylinder is drilled in the cap end, and it is drawn leaving
-# that cap downwards: the cap is the face the air pushes on, and the bottom edge is where a
-# reader looks for the connection. The rod end carries no port at all — that is what makes
-# it single-acting — so nothing is drawn on that side but the spring and the rod.
+# that cap downwards. It sits between the end wall and the cap's inner face, clear of the
+# chamber the piston crosses: a port inside that chamber would be swept by the piston and
+# would pressurise the spring chamber at rest. The rod end carries no working port — that is
+# what makes it single-acting — so nothing is drawn on that side but the spring and the rod.
 [[port]]
 id = "1"
 role = "working"
-position = [0.16, 1.0]
+position = [0.101, 1.0]
 
 [behaviour]
 type = "cylinder"
@@ -43,13 +49,15 @@ friction = 1.5
 
 # Barrel. The piston, the rod and the return spring are drawn by the renderer
 # from `kinematics` and the current extension. The chamber inside this barrel is
-# stroke plus dead length, so the piston crosses all of it; the rest of the box is
-# the rod, which reaches its edge at full stroke and still shows at rest.
+# stroke plus dead length, between the two end caps, so the piston crosses all of
+# it; the rest of the box is the rod, which reaches its edge at full stroke and
+# still shows at rest. The barrel is 18.48 × 8.4 mm in the 44 × 20 mm box, 2.2 : 1,
+# as the figure's barrel is 2.23 : 1.
 [[symbol]]
 kind = "rect"
-points = [0.08, 0.28, 0.42, 0.44]
+points = [0.08, 0.29, 0.42, 0.42]
 
 [[symbol]]
 kind = "line"
-points = [0.16, 0.72, 0.16, 1.0]
+points = [0.101, 0.71, 0.101, 1.0]
 line_class = "working"

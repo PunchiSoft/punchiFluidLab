@@ -8,9 +8,9 @@
 # rod and the ports are all the renderer's job, so the animation follows the same
 # geometry as this declaration.
 #
-# Driving it needs two working lines, which is the network solver of M4: today the
-# fixed circuit still has one single-acting cylinder. The definition is here so the
-# catalog and the symbol are already right, and so a circuit that uses it is a file.
+# Driving it needs two working lines, which the network solver already models as two
+# chambers; the fixed circuit still uses the single-acting cylinder. The definition is
+# here so the catalog and the symbol are right, and so a circuit that uses it is a file.
 
 schema = 3
 id = "cylinder.double_acting_32_200"
@@ -20,18 +20,19 @@ category = "actuator"
 summary = "32 mm bore, 200 mm stroke, two working ports."
 kinematics = "linear_actuator"
 
-# Port 1 extends, port 2 retracts, one drilled in each end cap. Both leave their cap
-# downwards and at the same depth, so the pair reads as one cylinder driven from both
-# ends, and neither is squeezed into a corner of the body or laid over the rod.
+# Port 1 extends, port 2 retracts, one drilled in each end cap. Both sit between an end
+# wall and its cap's inner face, at the same depth from their wall and leaving their cap
+# downwards, so the pair reads as one cylinder driven from both ends. Neither is laid over
+# the rod, and neither is inside the chamber the piston crosses.
 [[port]]
 id = "1"
 role = "working"
-position = [0.16, 1.0]
+position = [0.101, 1.0]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.42, 1.0]
+position = [0.479, 1.0]
 
 [behaviour]
 type = "cylinder"
@@ -46,17 +47,19 @@ damping = 4.0
 friction = 2.5
 
 # Barrel, shared with the single-acting cylinder. The chamber inside it is the stroke
-# plus the dead length, so the piston crosses all of it; the rest of the box is the rod.
+# plus the dead length, between the two end caps, so the piston crosses all of it; the
+# rest of the box is the rod. The barrel is 18.48 × 8.4 mm in the 44 × 20 mm box, 2.2 : 1,
+# as the figure's barrel is 2.23 : 1.
 [[symbol]]
 kind = "rect"
-points = [0.08, 0.28, 0.42, 0.44]
+points = [0.08, 0.29, 0.42, 0.42]
 
 [[symbol]]
 kind = "line"
-points = [0.16, 0.72, 0.16, 1.0]
+points = [0.101, 0.71, 0.101, 1.0]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.42, 0.72, 0.42, 1.0]
+points = [0.479, 0.71, 0.479, 1.0]
 line_class = "working"

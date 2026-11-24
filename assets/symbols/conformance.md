@@ -37,10 +37,16 @@ this pass and keeps its own record.
 | `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `pending` | [review](review/valve.5_2.spring_return.md) |
 | `valve.shuttle` | valve | `X10740` (7.1.5.5) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.shuttle.md) |
 | `valve.two_pressure` | valve | `X10620` (7.1.3.6) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.two_pressure.md) |
-| `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1) | 1 | `pending` | [review](review/cylinder.single_acting_20_100.md) |
-| `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2) | 2 | `pending` | [review](review/cylinder.double_acting_32_200.md) |
+| `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.1 hydraulic) | 1: `1` working, cap end | `in review` | [review](review/cylinder.single_acting_20_100.md) |
+| `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.2 hydraulic) | 2: `1` and `2`, one per cap | `in review` | [review](review/cylinder.double_acting_32_200.md) |
 | `plug.blind` | accessory | `F038V1` (8.2.10) and the plugged-port rule | 1 | `pending` | [review](review/plug.blind.md) |
 | `silencer.pneumatic` | accessory | `2033V1` (8.7.37) | 1 exhaust | `pending` | [review](review/silencer.pneumatic.md) |
+
+The two cylinders are `in review` after the Phase 5 pass: their records, fixtures and
+captures are rewritten and their state waits for the 300 dpi signature. `X11440` also prints
+a spring-chamber connection at the rod end; the catalog declares the working port only, a
+recorded `RF052` omission (the model has one working chamber and the schema has no breather
+role), so the row does not claim `done`.
 
 ## Outside this pass
 
