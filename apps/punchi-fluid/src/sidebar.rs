@@ -351,7 +351,6 @@ impl Body {
             })
             .max_height(ui.available_height() - footer_height)
             .show(ui, |ui| {
-                let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
                 for (category, label) in CATEGORIES {
                     let label = language.text(label);
                     let matching: Vec<&ComponentDefinition> = catalog
@@ -371,6 +370,9 @@ impl Body {
                     .id_salt(category.as_str())
                     .default_open(true)
                     .show(ui, |ui| {
+                        // The width comes from the group's body: the collapsing header indents
+                        // it, and a width measured outside made the tiles wrap to one column.
+                        let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
                                 let (action, tile_rect) = tile(
