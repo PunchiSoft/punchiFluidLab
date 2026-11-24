@@ -203,7 +203,13 @@ fn the_title_names_the_document_and_marks_unsaved_work() {
     let mut untitled = window_with(None, SafetyCopy::at(None));
     assert_eq!(
         titles(&frame(&context, &mut untitled, egui::RawInput::default())),
-        vec![String::from("punchi-fluid — sin guardar")]
+        vec![String::from("punchi-fluid — unsaved")]
+    );
+    untitled.language = punchi_fluid_i18n::Language::Spanish;
+    assert_eq!(
+        titles(&frame(&context, &mut untitled, egui::RawInput::default())),
+        vec![String::from("punchi-fluid — sin guardar")],
+        "the title follows the language"
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El exportador lee sus etiquetas del catálogo — 2026-11-24
+
+- **Etiquetas**: los juegos inglés/español de `Labels` salen de la crate de exportación y
+  pasan a `i18n/en.toml`/`i18n/es.toml` (`export.field.*`, `export.list.*`, `export.class.*`,
+  `export.port.*`). La ventana construye `Labels` con `Language`; la crate solo conserva la
+  estructura y un juego de pruebas.
+- **Textos restantes de la ventana**: los nombres de ejemplo del diálogo de archivo, «sin
+  guardar» del título y el nombre accesible de la hoja leen el catálogo.
+- **API**: `Labels` ya no tiene constructores; `Page::a4` arranca con etiquetas vacías y el
+  llamante las pone (`Page::labels`). El FFI retirado conserva su juego inglés fijo.
+- **Pruebas**: la suite de la ventana sigue en **317** y la de exportación en **50**; el
+  barrido de literales visibles de producto queda limpio salvo tests y datos.
+- **Fase 5 en curso**: faltan cobertura/transición en caliente, capturas y auditoría final.
+
 ### El exportador recibe sus etiquetas — 2026-11-24
 
 - **Exportación**: nuevo `Labels` en `punchi-fluid-export` con los rótulos del bloque de

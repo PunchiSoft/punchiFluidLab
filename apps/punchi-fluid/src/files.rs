@@ -447,8 +447,8 @@ impl Dialog {
     /// keyboard focus it takes on the first frame.
     fn name_field(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
         let hint = match self.mode {
-            Mode::Export => "circuito.pdf",
-            Mode::Open | Mode::SaveAs => "documento.pfluid",
+            Mode::Export => self.language.text("file.hint_export"),
+            Mode::Open | Mode::SaveAs => self.language.text("file.hint_document"),
         };
         ui.horizontal(|ui| {
             let label = ui.label(
@@ -578,7 +578,7 @@ pub(crate) fn page_and_block(document: &Document) -> (Page, TitleBlock) {
         margins: sheet.margins,
         title_block: Some(block.clone()),
         parts: None,
-        labels: Labels::english(),
+        labels: Labels::default(),
     };
     (page, block)
 }

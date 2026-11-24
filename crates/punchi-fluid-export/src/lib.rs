@@ -296,3 +296,84 @@ pub fn block_with_review_state(title: &str, date: impl Into<String>) -> TitleBlo
         None => block,
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_labels {
+    //! Label sets for the tests: the crate itself carries no user-visible words.
+
+    use crate::labels::{LabelLanguage, Labels};
+
+    pub(crate) fn english() -> Labels {
+        Labels {
+            language: LabelLanguage::English,
+            owner: "Company / owner",
+            project: "Project / installation",
+            equipment: "Equipment / system",
+            title: "Title",
+            number: "Drawing no.",
+            revision: "Revision",
+            date: "Date",
+            prepared: "Drawn by",
+            checked: "Checked by",
+            approved: "Approved by",
+            scale: "Scale",
+            norms: "Standards applied",
+            sheet: "Sheet",
+            parts_heading: "parts list",
+            parts_omitted: "… and {count} more parts",
+            closures_omitted: "… and {count} more closures",
+            tubes_omitted: "… and {count} more hoses",
+            tube: "Hose",
+            unspecified: "unspecified",
+            class_working: "working",
+            class_pilot: "pilot",
+            class_drain: "drain",
+            class_electrical: "electrical",
+            port_supply: "supply",
+            port_working: "working",
+            port_exhaust: "exhaust",
+            port_mechanical: "mechanical",
+            port_electrical: "electrical",
+            tube_note: "length = drawn route, no offsets, fittings or waste",
+            under_tenth: "< 0.1 m",
+            decimal_separator: '.',
+        }
+    }
+
+    pub(crate) fn spanish() -> Labels {
+        Labels {
+            language: LabelLanguage::Spanish,
+            owner: "Empresa / propietario",
+            project: "Proyecto / instalación",
+            equipment: "Equipo / sistema",
+            title: "Título",
+            number: "Nº de plano",
+            revision: "Revisión",
+            date: "Fecha",
+            prepared: "Dibujado",
+            checked: "Revisado",
+            approved: "Aprobado",
+            scale: "Escala",
+            norms: "Normas aplicadas",
+            sheet: "Hoja",
+            parts_heading: "lista de piezas",
+            parts_omitted: "… y {count} piezas más",
+            closures_omitted: "… y {count} cierres más",
+            tubes_omitted: "… y {count} tubos más",
+            tube: "Tubo",
+            unspecified: "sin especificar",
+            class_working: "trabajo",
+            class_pilot: "pilotaje",
+            class_drain: "drenaje",
+            class_electrical: "eléctrico",
+            port_supply: "suministro",
+            port_working: "trabajo",
+            port_exhaust: "escape",
+            port_mechanical: "mecánico",
+            port_electrical: "eléctrico",
+            tube_note: "longitud = recorrido dibujado, sin desvíos, racores ni merma",
+            under_tenth: "< 0,1 m",
+            decimal_separator: ',',
+        }
+    }
+}

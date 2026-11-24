@@ -45,7 +45,7 @@ impl Page {
             margins: Margins::standard(),
             title_block: Some(title_block),
             parts: None,
-            labels: Labels::english(),
+            labels: Labels::default(),
         }
     }
 
@@ -269,7 +269,7 @@ mod tests {
             ],
             [],
             [],
-            &crate::labels::Labels::spanish(),
+            &crate::test_labels::spanish(),
         ));
         let with = page.drawing_rect();
         let parts = page.parts_rect();

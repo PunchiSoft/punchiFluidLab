@@ -360,7 +360,7 @@ mod tests {
             ],
             [],
             [],
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(list.rows.len(), 2);
         let cylinders = list
@@ -401,23 +401,23 @@ mod tests {
                     length_mm: 50,
                 },
             ],
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(list.tubes.len(), 3);
         assert_eq!(list.tubes[0].od, Some(400));
         assert_eq!(
-            list.tubes[0].text(&Labels::spanish()),
+            list.tubes[0].text(&crate::test_labels::spanish()),
             "Tubo 4 mm · trabajo · 0,3 m"
         );
         assert_eq!(list.tubes[1].od, Some(1000));
         assert_eq!(list.tubes[1].length_mm, 3_400);
         assert_eq!(
-            list.tubes[1].text(&Labels::spanish()),
+            list.tubes[1].text(&crate::test_labels::spanish()),
             "Tubo 10 mm · trabajo · 3,4 m"
         );
         assert_eq!(list.tubes[2].class, LineClass::Pilot);
         assert_eq!(
-            list.tubes[2].text(&Labels::spanish()),
+            list.tubes[2].text(&crate::test_labels::spanish()),
             "Tubo 10 mm · pilotaje · < 0,1 m"
         );
     }
@@ -433,10 +433,10 @@ mod tests {
                 class: LineClass::Drain,
                 length_mm: 4_000,
             }],
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(
-            list.tubes[0].text(&Labels::spanish()),
+            list.tubes[0].text(&crate::test_labels::spanish()),
             "Tubo sin especificar · drenaje · 4,0 m"
         );
     }
@@ -462,7 +462,7 @@ mod tests {
                 ),
             ],
             [],
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(list.closures.len(), 1, "one port, one grouped row");
         assert_eq!(list.closures[0].quantity, 2);
@@ -475,7 +475,7 @@ mod tests {
             [],
             [("valve.3_2.spring_return", None, "3", "plug.blind")],
             [],
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(
             only.closures[0].text(),
@@ -507,7 +507,7 @@ mod tests {
                 class: LineClass::Working,
                 length_mm: 100,
             }),
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(list.rows.len(), 1);
         // The component row leaves room for `MAX_ROWS - 1` closures; the rest are cut and
@@ -533,7 +533,7 @@ mod tests {
                 class: LineClass::Working,
                 length_mm: 100,
             }),
-            &Labels::spanish(),
+            &crate::test_labels::spanish(),
         );
         assert_eq!(list.rows.len(), 1);
         assert_eq!(list.tubes.len(), MAX_ROWS - 1);

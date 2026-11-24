@@ -270,7 +270,9 @@ mod tests {
     fn the_sheet_draws_frame_and_block_without_a_legend() {
         let mut recording = Recording::default();
         let block = TitleBlock::new("A circuit", "2026-11-06");
-        draw(&mut recording, &Page::a4(block.clone()), &block);
+        let mut page = Page::a4(block.clone());
+        page.labels = crate::test_labels::english();
+        draw(&mut recording, &page, &block);
         assert!(recording.len() > 10);
 
         let texts: Vec<&str> = recording
@@ -366,9 +368,9 @@ mod tests {
             ],
             [],
             [],
-            &crate::labels::Labels::spanish(),
+            &crate::test_labels::spanish(),
         ));
-        page.labels = Labels::spanish();
+        page.labels = crate::test_labels::spanish();
         let block = page.title_block.clone().unwrap_or_default();
         let mut recording = Recording::default();
         draw(&mut recording, &page, &block);
@@ -401,7 +403,9 @@ mod tests {
         block.remark = String::from("NOTA QUE NO SE IMPRIME");
         block.sheet = String::from("2/3");
         let mut recording = Recording::default();
-        draw(&mut recording, &Page::a4(block.clone()), &block);
+        let mut page = Page::a4(block.clone());
+        page.labels = crate::test_labels::english();
+        draw(&mut recording, &page, &block);
         let texts: Vec<String> = recording
             .calls()
             .iter()

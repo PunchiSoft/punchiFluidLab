@@ -182,11 +182,47 @@ fn parts_list(
     punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes, labels)
 }
 
-/// The words the printed page carries in the reader's language.
+/// The words the printed page carries in the reader's language, from the catalogs.
 fn export_labels(language: Language) -> Labels {
-    match language {
-        Language::English => Labels::english(),
-        Language::Spanish => Labels::spanish(),
+    Labels {
+        language: match language {
+            Language::English => punchi_fluid_export::labels::LabelLanguage::English,
+            Language::Spanish => punchi_fluid_export::labels::LabelLanguage::Spanish,
+        },
+        owner: language.text("export.field.owner"),
+        project: language.text("export.field.project"),
+        equipment: language.text("export.field.equipment"),
+        title: language.text("export.field.title"),
+        number: language.text("export.field.number"),
+        revision: language.text("export.field.revision"),
+        date: language.text("export.field.date"),
+        prepared: language.text("export.field.prepared"),
+        checked: language.text("export.field.checked"),
+        approved: language.text("export.field.approved"),
+        scale: language.text("export.field.scale"),
+        norms: language.text("export.field.norms"),
+        sheet: language.text("export.field.sheet"),
+        parts_heading: language.text("export.list.heading"),
+        parts_omitted: language.text("export.list.omitted"),
+        closures_omitted: language.text("export.list.closures_omitted"),
+        tubes_omitted: language.text("export.list.tubes_omitted"),
+        tube: language.text("export.list.tube"),
+        unspecified: language.text("export.list.unspecified"),
+        class_working: language.text("export.class.working"),
+        class_pilot: language.text("export.class.pilot"),
+        class_drain: language.text("export.class.drain"),
+        class_electrical: language.text("export.class.electrical"),
+        port_supply: language.text("export.port.supply"),
+        port_working: language.text("export.port.working"),
+        port_exhaust: language.text("export.port.exhaust"),
+        port_mechanical: language.text("export.port.mechanical"),
+        port_electrical: language.text("export.port.electrical"),
+        tube_note: language.text("export.list.note"),
+        under_tenth: language.text("export.list.under_tenth"),
+        decimal_separator: match language {
+            Language::English => '.',
+            Language::Spanish => ',',
+        },
     }
 }
 
@@ -245,7 +281,7 @@ mod tests {
             &scene.placed,
             &scene.pipes,
             circuit,
-            &punchi_fluid_export::Labels::english(),
+            &punchi_fluid_export::Labels::default(),
         );
         assert_eq!(parts.rows.len(), 1, "one definition on the sheet");
         assert_eq!(parts.rows[0].quantity, 1);

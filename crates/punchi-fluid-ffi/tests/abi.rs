@@ -675,7 +675,7 @@ fn the_seeded_example_stays_clear_of_the_title_block_on_a4() {
         },
         title_block: Some(punchi_fluid_export::TitleBlock::default()),
         parts: None,
-        labels: punchi_fluid_export::Labels::english(),
+        labels: punchi_fluid_export::Labels::default(),
     };
     let block = page.title_rect();
     assert!(!block.is_empty(), "A4 has a title block");

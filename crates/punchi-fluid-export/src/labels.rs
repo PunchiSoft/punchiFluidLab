@@ -62,85 +62,47 @@ pub struct Labels {
     pub decimal_separator: char,
 }
 
-impl Labels {
-    /// The English set.
-    #[must_use]
-    pub const fn english() -> Self {
+impl Default for Labels {
+    /// No words: a page a caller prints without labels, never the window's path.
+    fn default() -> Self {
         Self {
             language: LabelLanguage::English,
-            owner: "Company / owner",
-            project: "Project / installation",
-            equipment: "Equipment / system",
-            title: "Title",
-            number: "Drawing no.",
-            revision: "Revision",
-            date: "Date",
-            prepared: "Drawn by",
-            checked: "Checked by",
-            approved: "Approved by",
-            scale: "Scale",
-            norms: "Standards applied",
-            sheet: "Sheet",
-            parts_heading: "parts list",
-            parts_omitted: "… and {count} more parts",
-            closures_omitted: "… and {count} more closures",
-            tubes_omitted: "… and {count} more hoses",
-            tube: "Hose",
-            unspecified: "unspecified",
-            class_working: "working",
-            class_pilot: "pilot",
-            class_drain: "drain",
-            class_electrical: "electrical",
-            port_supply: "supply",
-            port_working: "working",
-            port_exhaust: "exhaust",
-            port_mechanical: "mechanical",
-            port_electrical: "electrical",
-            tube_note: "length = drawn route, no offsets, fittings or waste",
-            under_tenth: "< 0.1 m",
+            owner: "",
+            project: "",
+            equipment: "",
+            title: "",
+            number: "",
+            revision: "",
+            date: "",
+            prepared: "",
+            checked: "",
+            approved: "",
+            scale: "",
+            norms: "",
+            sheet: "",
+            parts_heading: "",
+            parts_omitted: "",
+            closures_omitted: "",
+            tubes_omitted: "",
+            tube: "",
+            unspecified: "",
+            class_working: "",
+            class_pilot: "",
+            class_drain: "",
+            class_electrical: "",
+            port_supply: "",
+            port_working: "",
+            port_exhaust: "",
+            port_mechanical: "",
+            port_electrical: "",
+            tube_note: "",
+            under_tenth: "",
             decimal_separator: '.',
         }
     }
+}
 
-    /// The Spanish set.
-    #[must_use]
-    pub const fn spanish() -> Self {
-        Self {
-            language: LabelLanguage::Spanish,
-            owner: "Empresa / propietario",
-            project: "Proyecto / instalación",
-            equipment: "Equipo / sistema",
-            title: "Título",
-            number: "Nº de plano",
-            revision: "Revisión",
-            date: "Fecha",
-            prepared: "Dibujado",
-            checked: "Revisado",
-            approved: "Aprobado",
-            scale: "Escala",
-            norms: "Normas aplicadas",
-            sheet: "Hoja",
-            parts_heading: "lista de piezas",
-            parts_omitted: "… y {count} piezas más",
-            closures_omitted: "… y {count} cierres más",
-            tubes_omitted: "… y {count} tubos más",
-            tube: "Tubo",
-            unspecified: "sin especificar",
-            class_working: "trabajo",
-            class_pilot: "pilotaje",
-            class_drain: "drenaje",
-            class_electrical: "eléctrico",
-            port_supply: "suministro",
-            port_working: "trabajo",
-            port_exhaust: "escape",
-            port_mechanical: "mecánico",
-            port_electrical: "eléctrico",
-            tube_note: "longitud = recorrido dibujado, sin desvíos, racores ni merma",
-            under_tenth: "< 0,1 m",
-            decimal_separator: ',',
-        }
-    }
-
+impl Labels {
     /// The omitted note with its count filled in.
     #[must_use]
     pub fn with_count(template: &str, count: usize) -> String {
