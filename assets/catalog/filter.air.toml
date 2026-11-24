@@ -3,12 +3,14 @@
 #
 # Filter: takes the solid particles out of the air.
 #
-# The diamond is the filter, and it is drawn as a **square turned 45°**, so its four sides are
-# equal and its diagonals meet at the centre. The flow crosses it from vertex to vertex, which
-# is why the working line stops at each vertex instead of being drawn through the inside.
+# X11980 is a square turned 45° with the flow crossing it from vertex to vertex and the
+# element drawn as a dashed line **across** the diamond, perpendicular to the flow. The
+# standard draws that figure with the flow vertical and the element horizontal; X12190 draws
+# the same diamond with the flow horizontal, so this file uses the horizontal form and the
+# element runs from the top vertex to the bottom one.
 #
-# Connection points are the small open circles the reference set uses, so a reader can see
-# where a hose is meant to arrive.
+# The working line stops at each vertex and is not drawn through the inside: what is inside
+# the diamond is the element, and a line across it would read as two overlapping drawings.
 
 schema = 3
 id = "filter.air"
@@ -38,10 +40,10 @@ kind = "polygon"
 points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
 filled = false
 
-# The filter element: the dashed line on the upper half of the vertical diagonal.
+# The element, across the diamond from vertex to vertex.
 [[symbol]]
 kind = "line"
-points = [0.5, 0.28, 0.5, 0.5]
+points = [0.5, 0.28, 0.5, 0.72]
 line_class = "drain"
 
 [[symbol]]
@@ -53,4 +55,3 @@ line_class = "working"
 kind = "line"
 points = [0.72, 0.5, 0.94, 0.5]
 line_class = "working"
-

@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### El tratamiento del aire — 2026-11-24
+
+- El filtro es `X11980`: el rombo de lados iguales y el **elemento discontinuo de vértice a
+  vértice**, perpendicular al flujo, sin línea de trabajo por dentro.
+- El filtro con purga manual es `X12190`: el mismo rombo, el elemento discontinuo hasta la
+  **cuerda del recipiente**, la cuerda sólida sobre la parte baja y el **vástago de purga**
+  desde el vértice inferior. Se van el triángulo de recipiente y los trazos interiores que
+  copiaba la referencia.
+- El lubricador es `X12240`: el rombo con una **línea llana desde el vértice superior**, sin
+  elemento discontinuo y **sin punta de flecha**; la flecha de la referencia se retira porque
+  la norma no la imprime y una punta leería como sentido del flujo.
+- La unidad de servicio es `X12160`: el **rombo del lubricador** que faltaba, el **triángulo
+  de venteo** del regulador, su **línea de realimentación** discontinua, la cuerda del
+  recipiente del filtro y su purga, y la aguja del manómetro como **flecha desde el centro**
+  con el punto de toma. Se quitan los círculos de conexión que el archivo dibujaba y que el
+  renderizador ya dibuja.
+- La unidad simplificada es la representación simplificada de `X12160`: el cuerpo, el
+  elemento discontinuo a la izquierda, el manómetro con su aguja y la **marca corta del borde
+  superior**; se quita la flecha de purga inferior, que esa representación no imprime.
+- Revisión, medidas, capturas claro/oscuro/300 dpi y fixtures de los cinco símbolos. La
+  matriz de conformidad cierra `X12190` y la forma simplificada de `X12160`; quedan abiertos
+  la firma del segundo lector y, anotado, el marco de conjunto (la norma lo dibuja de trazo y
+  punto y el renderizador aún no tiene esa clase).
+
 ### El compresor con su eje y sus dos puertos — 2026-11-24
 
 - El compresor es `X11400`: el vértice del triángulo en la descarga, la **barra del eje** a

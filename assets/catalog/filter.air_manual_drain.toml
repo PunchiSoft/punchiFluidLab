@@ -3,10 +3,15 @@
 #
 # Filter with a manual drain: filters the air and lets the condensate out by hand.
 #
-# Same square-turned-45° diamond as the plain filter, with two additions that carry the
-# meaning: the **dashed line along the vertical diagonal** is the filter element, and the
-# **stem leaving the bottom vertex** is the drain. Without the stem the symbol is a filter and
-# not a separator with a drain, so one is never drawn as the other.
+# X12190 is the same square-turned-45° diamond as the plain filter, with three marks that
+# carry the meaning: the dashed element on the vertical diagonal, a **solid chord across the
+# lower part** (the bowl the condensate collects in), and the **drain stem** leaving the
+# bottom vertex. The element stops at the chord because the bowl occupies the space below
+# it; that is why the dashed line does not reach the bottom vertex.
+#
+# Without the chord and the stem this is the plain filter, so one is never drawn as the
+# other. The drain is drawn as the standard draws it and is not a port of this component:
+# the model keeps the two working ports and does not empty a bowl.
 
 schema = 3
 id = "filter.air_manual_drain"
@@ -31,43 +36,33 @@ conductance = 2.0e-9
 
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.26, 0.70, 0.46, 0.5, 0.66, 0.30, 0.46]
+points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
 filled = false
 
+# The element, from the top vertex down to the bowl chord.
 [[symbol]]
 kind = "line"
-points = [0.5, 0.26, 0.5, 0.46]
+points = [0.5, 0.28, 0.5, 0.642]
 line_class = "drain"
 
+# The bowl: the solid chord across the lower part of the diamond.
 [[symbol]]
 kind = "line"
-points = [0.06, 0.46, 0.30, 0.46]
+points = [0.422, 0.642, 0.578, 0.642]
+line_class = "working"
+
+# The drain stem, leaving the bottom vertex.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.72, 0.5, 0.9]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.70, 0.46, 0.94, 0.46]
-line_class = "working"
-
-
-# The bowl under the element and the drain, the reference's mark for a filter that can be
-# purged by hand.
-[[symbol]]
-kind = "polygon"
-points = [0.42, 0.66, 0.58, 0.66, 0.5, 0.78]
+points = [0.06, 0.5, 0.28, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.45, 0.68, 0.49, 0.74]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.51, 0.68, 0.55, 0.74]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.5, 0.78, 0.5, 0.90]
+points = [0.72, 0.5, 0.94, 0.5]
 line_class = "working"

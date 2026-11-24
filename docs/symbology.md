@@ -133,10 +133,10 @@ reference set so that a hose is visibly meant to arrive there.
 | **Compressor** | The same triangle inside a **circle**, apex up, the point touching the delivery where the stem leaves the top; the **shaft bar** at the drive side, a thick bar at mid-height, because a machine shows its drive; the delivery above (port 2) and the intake below (port 1) |
 | **Adjustable compressor** | The compressor plus the **adjustability arrow** on the diameter, at 45°, with a filled head at the upper end; the standard allows a longer arrow |
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
-| **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal** and the **drain stem** leaving the bottom vertex. Without the stem it is a filter, not a separator with a drain |
-| **Oil lubricator** | The same diamond and **no dashed element**: nothing is filtered here, oil is added. The absent element is the difference |
-| **Service unit, full** | A **dashed frame** around the three functions, in the order the air meets them: the filter diamond, the regulator as an **upright square with the two facing arrows** inside and its setting **spring on top**, and the regulator's **dial** as a gauge on a stem that taps the line after it. The spring carries a **diagonal arrow**, which is what says the setting is adjustable |
-| **Service unit, simplified** | One body with the **dashed element line** and the **dial** inside it, and the **drain leaving the bottom** as an arrow. A plain rectangle is not this symbol |
+| **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal**, a **solid chord across the lower part** (the bowl the condensate collects in) and the **drain stem** leaving the bottom vertex. The element stops at the chord because the bowl owns the space below it. Without the chord and the stem it is a filter, not a separator with a drain |
+| **Oil lubricator** | The same diamond, a **plain line from the top vertex toward the centre** and **no dashed element**: nothing is filtered here, oil is added. The line has no arrowhead, because a head would read as a flow direction; the absent element and the line are the difference |
+| **Service unit, full** | A **frame** around the functions, in the order the air meets them: the filter diamond with its bowl chord and drain, the regulator as an **upright square with the flow through it and the two facing arrows**, its **setting spring on top** with the **diagonal arrow** that says the setting is adjustable, its **vent** as an open triangle on the left and its **sensing line** from the outlet back to its underside, the **dial** as a gauge on a stem that taps the line after the regulator, and the **lubricator diamond** at the right |
+| **Service unit, simplified** | One body with the **dashed element line at the left**, the **dial** inside it and the **short mark on the top edge at the right**. It prints no drain: the drain belongs to the filter, and this form does not draw the filter as a separate part. A plain rectangle is not this symbol |
 
 Rules that hold for all of them:
 
@@ -157,10 +157,14 @@ Rules that hold for all of them:
   A box that is not that size stretches the drawing: a 3/2 valve placed in a 1.2 : 1 box came
   out wide, which is a drawing that is not the symbol. The templates and the worked example
   are checked for the aspect ratio, and the capture `assets/screenshots/symbol-size-light.png`
-  records it with the 10 mm grid, where one box is two cells across.
+  records it with the 10 mm grid, where one box is two cells across. The service unit is the
+  one crowded symbol: the standard draws `X12160` wider than tall and the square box
+  compresses the band, so its lubricator is smaller than its filter. Every mark is present and
+  the review records the compression instead of claiming the proportions are the figure's.
 - **The line stops at the symbol.** A working line is not drawn through the inside of a
-  diamond or a square: what is inside those shapes is their own symbol, and a line across it
-  reads as two overlapping drawings.
+  diamond: what is inside it is the element or the oil mark, and a line across it reads as two
+  overlapping drawings. A square is different only when it is a valve body and the line is its
+  flow path, as the regulator's square is; a line through any other closed shape is a defect.
 - **The air reaches the circuit through the conditioning parts**, in the order source, unit,
   valve — never the unit after the valve, because what leaves the unit is the line pressure the
   rest of the circuit is designed around.

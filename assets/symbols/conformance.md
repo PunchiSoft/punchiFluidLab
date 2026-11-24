@@ -26,10 +26,10 @@ this pass and keeps its own record.
 | `supply.compressor` | supply | `X11400` (7.2.4) | 2: `1` intake, `2` delivery | `pending` | [review](review/supply.compressor.md) |
 | `supply.compressor_adjustable` | supply | `X11400` + `RF040` | 2: `1` intake, `2` delivery | `pending` | [review](review/supply.compressor_adjustable.md) |
 | `filter.air` | conditioning | `X11980` (7.4.4.1) | 2 | `pending` | [review](review/filter.air.md) |
-| `filter.air_manual_drain` | conditioning | to read (filter with manual drain) | 2 + drain mark | `pending` | [review](review/filter.air_manual_drain.md) |
+| `filter.air_manual_drain` | conditioning | `X12190` (7.4.4.20) | 2 + drain mark | `pending` | [review](review/filter.air_manual_drain.md) |
 | `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `pending` | [review](review/lubricator.oil.md) |
 | `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2 | `pending` | [review](review/preparation.service_unit.md) |
-| `preparation.service_unit_simple` | conditioning | `X12160` family; simplified form to read | 2 | `pending` | [review](review/preparation.service_unit_simple.md) |
+| `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation | 2 | `pending` | [review](review/preparation.service_unit_simple.md) |
 | `valve.3_2.base` | valve | `X10280` (7.1.2.8) family | 3 | `pending` | [review](review/valve.3_2.base.md) |
 | `valve.3_2.spring_return` | valve | `X10280` + spring | 3 | `pending` | [review](review/valve.3_2.spring_return.md) |
 | `valve.3_2.solenoid` | valve | `X10290` (7.1.2.9) | 3 + coil | `pending` | [review](review/valve.3_2.solenoid.md) |
