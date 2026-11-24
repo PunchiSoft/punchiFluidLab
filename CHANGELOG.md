@@ -6,6 +6,31 @@ publicación.
 
 ## Unreleased
 
+### Las válvulas — 2026-11-24
+
+- La 3/2 sigue `X10280` y `X10270`: la alimentación `1` y la salida `2` comparten su
+  posición dentro del cuadrado (2,2 mm del borde en la caja de 20 mm) y el escape `3` va al
+  otro cuarto (6,6 mm), así que la posición accionada es recta y la de reposo es la
+  diagonal; `1` y `3` abajo, `2` arriba.
+- La 5/2 sigue `X10400`: los puertos de trabajo `4` y `2` van arriba, `5`, `1` y `3`
+  abajo, con `1` en el medio y cada escape bajo su propio trabajo. El orden anterior
+  estaba invertido y se corrige; los caminos rectos y las marcas de bloqueo siguen la
+  figura.
+- `valve.3_2.solenoid` se centra en y 0,28 como las demás 3/2 y declara las marcas de
+  bloqueo que le faltaban (`1` en reposo, `3` accionada); la revisión cita `X10280`, la
+  válvula completa que representa, y no `X10290`, que añade un enclavamiento manual que el
+  archivo no dibuja.
+- La palanca se corrige: el **círculo de pivote va en el cuerpo** y la barra de agarre en el
+  extremo lejano (`688V1`, y el rodillo de `X10270` en el mismo extremo); el pilotaje
+  dibuja el triángulo con el vértice **hacia el cuerpo** (`F044V1`/`F043V1`, `X10410`,
+  `X10460`); el botón es el **estribo** del empuje (`682V1`, `X10210`) y no una barra de
+  extremos redondeados. Tres pruebas nuevas fijan los tres glifos y no se toca ninguna
+  existente.
+- Revisión, medidas, capturas claro/oscuro/300 dpi y fixtures de las cinco válvulas. La
+  matriz deja de decir «to read» en las filas 5/2. Queda abierto el segundo lector y,
+  anotado, que ninguna `X` registra la combinación exacta de palanca llana con muelle en la
+  3/2 y la 5/2: se citan las figuras completas de las que se componen.
+
 ### El tratamiento del aire — 2026-11-24
 
 - El filtro es `X11980`: el rombo de lados iguales y el **elemento discontinuo de vértice a

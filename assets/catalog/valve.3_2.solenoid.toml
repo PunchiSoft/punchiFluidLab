@@ -18,7 +18,7 @@ category = "valve"
 summary = "Pressurises the working line while its coil is energised."
 
 # Two squares of 0.44 side by side.
-body = [0.06, 0.24, 0.88, 0.44]
+body = [0.06, 0.28, 0.88, 0.44]
 
 [spring]
 side = "right"
@@ -27,20 +27,24 @@ side = "right"
 kind = "solenoid"
 side = "left"
 
+# The three ports are drawn at the square of the rest position: in each square 1 and 2
+# share the left quarter and 3 sits at the right quarter, 1 and 3 below and 2 above.
+# The body and the port geometry are the same as `valve.3_2.spring_return`: only the
+# actuator (and its coil terminal) separates the two files.
 [[port]]
 id = "1"
 role = "supply"
-position = [0.597, 1.0]
+position = [0.61, 1.0]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.72, 0.0]
+position = [0.61, 0.0]
 
 [[port]]
 id = "3"
 role = "exhaust"
-position = [0.843, 1.0]
+position = [0.83, 1.0]
 
 # The coil terminal, at the actuator end: this is where the control circuit arrives.
 [[port]]
@@ -55,18 +59,23 @@ actuation = "momentary"
 spring_return = true
 default_position = 0
 
+# Position 0, rest: the spring holds the spool so the working line vents and the supply
+# is shut. Port 1 carries its blocking mark inside this square.
 [[behaviour.positions]]
 name = "rest"
 name_es = "reposo"
+blocked = ["1"]
 
 [[behaviour.positions.connection]]
 from = "2"
 to = "3"
 conductance = 1.0e-9
 
+# Position 1, actuated: the coil feeds the working line and the exhaust is shut.
 [[behaviour.positions]]
 name = "actuated"
 name_es = "accionada"
+blocked = ["3"]
 
 [[behaviour.positions.connection]]
 from = "1"

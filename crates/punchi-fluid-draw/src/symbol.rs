@@ -700,29 +700,15 @@ pub fn draw_actuator(
     }
 }
 
-/// The bar across an actuator's stem: the part a hand, a cam or a stop meets.
-#[allow(clippy::too_many_arguments)]
-fn stem_bar(
-    surface: &mut dyn Surface,
-    p: &impl Fn(f32, f32) -> Pt,
-    at: f32,
-    half: f32,
-    colour: Colour,
-    width: f32,
-) {
-    surface.line(
-        &[p(at, -half), p(at, half)],
-        Stroke::new(width * 1.8, colour),
-    );
-}
-
-/// A hand lever: a bar against the body that carries the arm, the arm itself, and the
-/// pivot it turns about.
+/// A hand lever: the pivot circle where the arm meets the body, the arm, and the bar of
+/// the general manual actuation as its grip at the far end.
 ///
-/// ISO 1219-1 reads a lever by its pivot: the small circle at the far end is what separates
-/// it from the general manual actuation, which is a bar and nothing else. The bar against
-/// the body is the arm's foot, and it is what a reader looks at to see which way the spool
-/// is pushed.
+/// ISO 1219-1 reads a lever by its pivot: the small circle sits at the **body end**, at
+/// the point the arm turns about, and the bar a hand pushes is at the far end of the arm
+/// (8.5.16, `688V1`; the roller lever of 6.1.2.5, `X10270`, puts its pivot against the
+/// body and its roller at the far end for the same reason). A circle at the far end reads
+/// as a roller and a bar against the body reads as the general manual actuation, which is
+/// why the two ends are not interchangeable.
 #[allow(clippy::too_many_arguments)]
 fn draw_lever(
     surface: &mut dyn Surface,
@@ -735,42 +721,49 @@ fn draw_lever(
     detent: bool,
 ) {
     let stroke = Stroke::new(width, colour);
-    let foot = step * 0.2;
-    stem_bar(surface, p, foot, step * 0.9, colour, width);
-    let pivot_at = foot + reach * 1.05;
-    surface.line(&[p(foot, 0.0), p(pivot_at, 0.0)], stroke);
-    surface.circle(
-        p(pivot_at + step * 0.34, 0.0),
-        step * 0.34,
-        None,
-        Some(stroke),
+    let foot = step * 0.5;
+    let pivot = p(foot, 0.0);
+    surface.circle(pivot, step * 0.34, None, Some(stroke));
+    // The arm leaves the pivot at 20° from the actuation axis, which is the angle the
+    // standard's lever module carries.
+    let angle = 20.0_f32.to_radians();
+    let arm = reach * 1.05;
+    let along = (angle.cos(), angle.sin());
+    let across = (-along.1, along.0);
+    let at = |fraction: f32, lateral: f32| {
+        p(
+            foot + arm * along.0 * fraction + across.0 * lateral,
+            arm * along.1 * fraction + across.1 * lateral,
+        )
+    };
+    let tip = at(1.0, 0.0);
+    surface.line(&[pivot, tip], stroke);
+    // The grip is the bar of the general manual actuation, across the far end.
+    let half = step * 0.9;
+    surface.line(
+        &[at(1.0, -half), at(1.0, half)],
+        Stroke::new(width * 1.8, colour),
     );
     let _ = edge;
     if detent {
-        // The catch keeps the spool where it is left: a tick across the arm says the lever
-        // stays put instead of springing back.
+        // The catch keeps the spool where it is left: a V notch across the arm says the
+        // lever stays put instead of springing back.
+        let notch = step * 0.5;
+        let contact = |sign: f32| at(0.55, notch * sign);
+        let apex = at(0.55 - notch / arm, 0.0);
         surface.line(
-            &[
-                p(foot + step * 0.35, -step * 0.75),
-                p(foot + step * 0.35, step * 0.75),
-            ],
-            Stroke::new(width * 1.4, colour),
-        );
-        surface.line(
-            &[
-                p(foot + step * 0.35, step * 0.75),
-                p(foot + step * 1.0, step * 1.15),
-            ],
-            stroke,
+            &[contact(-1.0), apex, contact(1.0)],
+            Stroke::new(width * 1.2, colour),
         );
     }
 }
 
-/// A push button: a stem ending in the rounded head a finger presses.
+/// A push button: a stem ending in the bracket a finger pushes.
 ///
-/// The rounding is the difference that carries meaning: a plain bar is the general manual
-/// actuation, and a rounded one is a button. A bar with square ends and a bar with round
-/// ends are the same size in the drawing and different machines in the catalog.
+/// The standard's element for a control mechanism operated by pushing (`682V1`, and the
+/// 2/2 valve `X10210`) is a bar across the end of the stem with two short prongs back
+/// toward the body, not a rounded cap: the bracket is what a reader sees, and a rounded
+/// bar is a bar with no bracket, which reads as the general manual actuation.
 #[allow(clippy::too_many_arguments)]
 fn draw_push_button(
     surface: &mut dyn Surface,
@@ -782,25 +775,16 @@ fn draw_push_button(
     width: f32,
 ) {
     let stroke = Stroke::new(width, colour);
-    let head = step * 0.2 + reach * 1.0;
-    surface.line(&[p(0.0, 0.0), p(head, 0.0)], stroke);
-    let half = step * 0.95;
-    let radius = step * 0.22;
-    let shaft = half - radius;
-    let mut outline = Vec::with_capacity(20);
-    // A stadium across the stem, drawn as a polygon so it scales with the symbol and not
-    // with a font or a pen cap.
-    for index in 0..=6 {
-        #[allow(clippy::cast_precision_loss)]
-        let turn = std::f32::consts::PI * (index as f32 / 6.0) - std::f32::consts::FRAC_PI_2;
-        outline.push(p(head + turn.cos() * radius, -shaft + turn.sin() * radius));
-    }
-    for index in 0..=6 {
-        #[allow(clippy::cast_precision_loss)]
-        let turn = std::f32::consts::PI * (index as f32 / 6.0) + std::f32::consts::FRAC_PI_2;
-        outline.push(p(head + turn.cos() * radius, shaft + turn.sin() * radius));
-    }
-    surface.polygon(&outline, None, Some(stroke));
+    let plate = reach * 0.85;
+    surface.line(&[p(0.0, 0.0), p(plate, 0.0)], stroke);
+    let half = step * 1.05;
+    let prong = step * 0.75;
+    surface.line(
+        &[p(plate, -half), p(plate, half)],
+        Stroke::new(width * 1.8, colour),
+    );
+    surface.line(&[p(plate, -half), p(plate - prong, -half)], stroke);
+    surface.line(&[p(plate, half), p(plate - prong, half)], stroke);
 }
 
 /// A mushroom head: a stem with a dome a palm presses, not a finger.
@@ -832,7 +816,7 @@ fn draw_mushroom(
     );
 }
 
-/// A pedal: the same foot as a lever, with the plate the foot stands on at its far end.
+/// A pedal: the lever's pivot and arm, with the plate a foot stands on at the far end.
 #[allow(clippy::too_many_arguments)]
 fn draw_pedal(
     surface: &mut dyn Surface,
@@ -844,10 +828,11 @@ fn draw_pedal(
     width: f32,
 ) {
     let stroke = Stroke::new(width, colour);
-    let foot = step * 0.2;
-    stem_bar(surface, p, foot, step * 0.9, colour, width);
+    let foot = step * 0.5;
+    let pivot = p(foot, 0.0);
+    surface.circle(pivot, step * 0.34, None, Some(stroke));
     let tip = foot + reach * 1.05;
-    surface.line(&[p(foot, 0.0), p(tip, 0.0)], stroke);
+    surface.line(&[pivot, p(tip, 0.0)], stroke);
     // The plate is drawn at a slight angle, which is what makes a pedal read as something a
     // foot rests on instead of a second hand lever.
     surface.line(
@@ -950,11 +935,14 @@ fn draw_roller(
     }
 }
 
-/// Pilot actuation: a box on the end face with a triangle inside it, pointing away from the
-/// body. The triangle is filled for a pneumatic pilot and hollow for a hydraulic one.
+/// Pilot actuation: a box on the end face with a triangle inside it, pointing **toward the
+/// body**, the direction the pressure pushes the valving element. The triangle is open for
+/// a pneumatic pilot and filled for a hydraulic one.
 ///
 /// The box is not decoration: without it a pilot cannot be told from a plain arrow marking a
-/// flow, and the difference between the two media would be invisible in a photocopy.
+/// flow, and the difference between the two media would be invisible in a photocopy. The
+/// direction is the standard's: `F044V1` and `F043V1` draw the triangle with its apex at the
+/// valve, and the complete valves `X10410` and `X10460` repeat it.
 #[allow(clippy::too_many_arguments)]
 fn draw_pressure_line(
     surface: &mut dyn Surface,
@@ -976,10 +964,12 @@ fn draw_pressure_line(
         Some(stroke),
     );
     let inset = step * 0.25;
+    // The apex sits at the body end: the pressure acts on the valving element, so the
+    // triangle points that way. A triangle pointing away reads as a flow arrow.
     let triangle = [
-        p(far - inset, 0.0),
-        p(near + inset, -half + inset),
-        p(near + inset, half - inset),
+        p(near + inset, 0.0),
+        p(far - inset, -half + inset),
+        p(far - inset, half - inset),
     ];
     if filled {
         surface.polygon(&triangle, Some(colour), None);
@@ -2448,6 +2438,139 @@ mod tests {
         assert!(
             filled(ActuatorKind::PilotHydraulic),
             "hydraulic pilot: the filled triangle is what separates the two fluids"
+        );
+    }
+
+    #[test]
+    fn the_push_button_is_a_bracket_open_toward_the_body() {
+        // 8.5.10 (`682V1`) and the 2/2 valve `X10210` draw the pushing element as a bar
+        // across the end of the stem with two prongs back toward the body: a bracket, not
+        // a rounded cap. The bracket is the shape a reader recognises as "push".
+        let body = Rect::from_min_size(Pt::new(50.0, 20.0), 40.0, 20.0);
+        let mut recording = Recording::default();
+        draw_actuator(
+            &mut recording,
+            body,
+            ActuatorKind::PushButton,
+            Side::Left,
+            Colour::BLACK,
+            LINE,
+        );
+        let calls = recording.calls();
+        let lines: Vec<&Vec<Pt>> = calls
+            .iter()
+            .filter_map(|call| match call {
+                crate::surface::Call::Line { points, .. } => Some(points),
+                _ => None,
+            })
+            .collect();
+        let min_x = touched(calls)
+            .iter()
+            .map(|point| point.x)
+            .fold(f32::INFINITY, f32::min);
+        let bar = lines
+            .iter()
+            .find(|points| {
+                points.len() == 2
+                    && (points[0].x - min_x).abs() < 1.0e-3
+                    && (points[1].x - min_x).abs() < 1.0e-3
+            })
+            .expect("the bracket bar across the far end");
+        assert!(
+            (bar[0].y - bar[1].y).abs() > 1.0e-3,
+            "the bar lies along the stem instead of across it: {bar:?}"
+        );
+        for end in [bar[0], bar[1]] {
+            let meets =
+                |point: &Pt| (point.x - end.x).abs() < 1.0e-3 && (point.y - end.y).abs() < 1.0e-3;
+            let prong = lines.iter().any(|points| {
+                points.len() == 2
+                    && points.iter().any(meets)
+                    && points.iter().any(|point| point.x > end.x + 1.0e-3)
+            });
+            assert!(
+                prong,
+                "the bar end {end:?} has no prong back toward the body: {bar:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_pilot_triangle_points_at_the_body() {
+        // `F044V1`/`F043V1` and the complete valves `X10410`/`X10460` draw the triangle
+        // with its apex at the valve: the pressure pushes the valving element. On a left
+        // actuator the body is at the larger x, so the apex must be the rightmost vertex.
+        let body = Rect::from_min_size(Pt::new(50.0, 20.0), 40.0, 20.0);
+        for kind in [ActuatorKind::Pilot, ActuatorKind::PilotHydraulic] {
+            let mut recording = Recording::default();
+            draw_actuator(&mut recording, body, kind, Side::Left, Colour::BLACK, LINE);
+            let triangle = recording
+                .calls()
+                .iter()
+                .find_map(|call| match call {
+                    crate::surface::Call::Polygon { points, .. } if points.len() == 3 => {
+                        Some(points.clone())
+                    }
+                    _ => None,
+                })
+                .expect("the pilot triangle is a polygon of three points");
+            let min_x = triangle
+                .iter()
+                .map(|point| point.x)
+                .fold(f32::INFINITY, f32::min);
+            let max_x = triangle
+                .iter()
+                .map(|point| point.x)
+                .fold(f32::NEG_INFINITY, f32::max);
+            assert!(
+                max_x > min_x + 1.0e-3,
+                "{kind:?}: the triangle has no side to point along: {triangle:?}"
+            );
+            let apexes = triangle
+                .iter()
+                .filter(|point| (point.x - max_x).abs() < 1.0e-3)
+                .count();
+            assert_eq!(
+                apexes, 1,
+                "{kind:?}: exactly one apex sits at the body end: {triangle:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_lever_pivots_against_the_body_and_grips_at_the_far_end() {
+        // 8.5.16 (`688V1`) and the roller lever `X10270` put the pivot circle at the body
+        // end and the part a hand pushes at the far end; the other way round reads as a
+        // roller on the body and a bar on the far end, which is a different machine.
+        let body = Rect::from_min_size(Pt::new(50.0, 20.0), 40.0, 20.0);
+        let mut recording = Recording::default();
+        draw_actuator(
+            &mut recording,
+            body,
+            ActuatorKind::Lever,
+            Side::Left,
+            Colour::BLACK,
+            LINE,
+        );
+        let calls = recording.calls();
+        let pivot = calls
+            .iter()
+            .find_map(|call| match call {
+                crate::surface::Call::Circle { centre, .. } => Some(*centre),
+                _ => None,
+            })
+            .expect("the lever draws its pivot circle");
+        let far = touched(calls)
+            .iter()
+            .map(|point| point.x)
+            .fold(f32::INFINITY, f32::min);
+        assert!(
+            pivot.x < body.min.x,
+            "the pivot is outside the body: {pivot:?}"
+        );
+        assert!(
+            pivot.x > f32::midpoint(body.min.x, far),
+            "the pivot must sit on the body half of the glyph: pivot {pivot:?}, far end {far}"
         );
     }
 

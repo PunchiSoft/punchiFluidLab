@@ -89,6 +89,14 @@ application.** This project implements them; it does not own them and may not ad
   numerals, stubs attached to the body at fixed x. Port positions are read inside the
   symbol box and then brought to the body edge, so a stub is straight and vertical (or
   horizontal) whatever the body margins are.
+- **The sides and offsets are the figure's.** In a 3/2 or 5/2, the working ports (`2` and
+  `4`) sit on the top edge, the supply (`1`) and the exhausts (`3` and `5`) on the bottom.
+  In a 3/2 the supply and its working port share the same offset inside the square, so the
+  actuated path is straight and the rest path is the diagonal to the exhaust at the other
+  quarter (`X10280`, `X10270`). In a 5/2 the two working ports sit at the outer quarters,
+  the supply in the middle, and each exhaust directly under its own working port, so each
+  position reads as one straight supply path and one straight exhaust path (`X10400`). A
+  port order that is not the figure's is a different symbol.
 - **Inside each square**, the flow path of that position, drawn **entirely inside that
   square**: a straight line from the port it leaves to the port it reaches, with the
   arrowhead at the port the flow goes to. A path never crosses into the neighbouring
@@ -180,25 +188,25 @@ these are not interchangeable decorations:
 
 | Actuation | Glyph |
 |---|---|
-| Spring return | A zigzag of four peaks against the body face, drawn in the same ink and weight as the other functional lines |
+| Spring return | A zigzag against the body face, its ends on the actuation axis, drawn in the same ink and weight as the other functional lines (`2002V1`; the standard fixes the form, not a number of turns) |
 | Manual, general | A bar across the end of the stem, square ends |
-| Lever | The bar of the general actuation, the arm, and the **pivot circle** at its far end |
-| Lever with detent | The lever plus the notch that keeps the spool where it is left |
-| Push button | The stem ending in a bar with **rounded** ends: the rounding is what makes it a button and not a manual lever |
+| Lever | The **pivot circle at the body end**, the arm leaving it at an angle, and the bar of the general actuation as the grip at the far end (`688V1`; the roller lever `X10270` puts its roller where a plain lever puts the grip) |
+| Lever with detent | The lever plus the V notch that keeps the spool where it is left (`655V1`, and the manual override of `X10290`) |
+| Push button | The stem ending in a **bracket**: a bar across the end with two short prongs back toward the body (`682V1`, and the 2/2 valve `X10210`) |
 | Mushroom button | A stem with a **dome** a palm presses |
-| Pedal | The lever's foot with the slanting plate a foot stands on |
+| Pedal | The lever's pivot circle and arm, with the slanting plate a foot stands on at the far end (`689V1`) |
 | Piston (tappet) | A **dome sitting on the body**, with no stem and nothing to grip |
-| Roller | A circle on a short arm with its **axle** marked at the centre |
-| Roller, one direction | The roller plus the tick that says it only picks the cam up one way |
-| Pneumatic pilot | A **box** on the end face with an **open** triangle inside, pointing away from the body |
-| Hydraulic pilot | The same box with the triangle **filled**: open for air, filled for oil |
-| Solenoid | A box with a diagonal through it, one box per winding |
-| Motor | A circle with an `M` drawn as lines, so it scales with the symbol and not with a font |
+| Roller | A circle on a short arm with its **axle** marked at the centre (`712V1`) |
+| Roller, one direction | The roller plus the tick that says it only picks the cam up one way (`X10060`) |
+| Pneumatic pilot | A **box** on the end face with an **open** triangle inside, its apex **at the body**: the pressure pushes the valving element (`F044V1`, and the complete valves `X10410`, `X10460`) |
+| Hydraulic pilot | The same box with the triangle **filled**: open for air, filled for oil (`F043V1`) |
+| Solenoid | A box with a diagonal through it, one box per winding (`212V1`) |
+| Motor | A circle with an `M` drawn as lines, so it scales with the symbol and not with a font (`F019V1`) |
 
-A pilot without its box cannot be told from an arrow marking a flow, and a lever without
-its pivot cannot be told from a plain manual actuation. When a definition file names an
-actuation, this table is what the renderer must draw, and a change to a glyph is a change
-to the standard's reading of it.
+A pilot without its box cannot be told from an arrow marking a flow, a lever without
+its pivot from a plain manual actuation, and a push button without its bracket from a bar.
+When a definition file names an actuation, this table is what the renderer must draw, and a
+change to a glyph is a change to the standard's reading of it.
 
 ### What is adjustable
 
