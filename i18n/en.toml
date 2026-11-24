@@ -463,7 +463,15 @@ discarded = "recovery copy discarded"
 [about]
 title = "About"
 version = "Version {version}"
-body = "A simulator of pneumatic and hydraulic circuits for learning."
+body = "A simulator of pneumatic and hydraulic circuits. Free and open, so that a student without a licence and without a budget can learn the subject."
+development = "Unreleased development version"
+repository = "Website"
+help = "Help"
+issues = "Report a problem"
+copyright = "© 2026 PunchiSoft · GPL-3.0-or-later"
+author = "PunchiSoft"
+read_licence = "Read the license"
+closing = "Made for the community, so that learning pneumatics and hydraulics does not depend on a commercial licence."
 
 [licence]
 title = "License"

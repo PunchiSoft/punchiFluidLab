@@ -463,7 +463,15 @@ discarded = "copia descartada"
 [about]
 title = "Acerca de"
 version = "Versión {version}"
-body = "Simulador de circuitos neumáticos e hidráulicos para aprender."
+body = "Simulador de circuitos neumáticos e hidráulicos. Libre y abierto, para que un estudiante sin licencia y sin presupuesto pueda aprender la materia."
+development = "Versión en desarrollo, sin publicar"
+repository = "Sitio web"
+help = "Ayuda"
+issues = "Informar de un problema"
+copyright = "© 2026 PunchiSoft · GPL-3.0-or-later"
+author = "PunchiSoft"
+read_licence = "Leer la licencia"
+closing = "Hecho para la comunidad, para que aprender neumática e hidráulica no dependa de una licencia comercial."
 
 [licence]
 title = "Licencia"

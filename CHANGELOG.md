@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### «Acerca de» con el mensaje completo — 2026-11-24
+
+- **Acerca de**: popup centrado sobre un fondo que no oscurece pero se traga los clics; nombre,
+  versión, **«Versión en desarrollo, sin publicar»**, el **mensaje que buscaba ofrecer** («libre
+  y abierto, para que un estudiante sin licencia y sin presupuesto pueda aprender la materia»),
+  **Sitio web** (repositorio) y **Ayuda** (incidencias) como enlaces que abren el navegador del
+  escritorio solo al pulsarlos —el programa no descarga nada—, copyright **© 2026 PunchiSoft ·
+  GPL-3.0-or-later** con **Leer la licencia** (abre el popup de Licencia), autoría y la frase de
+  cierre «Hecho para la comunidad…». Cierra con **Cerrar**, `Esc` o un clic fuera; abrirlo no
+  cambia el documento.
+- **Pruebas**: `the_about_popup_carries_the_message_the_links_and_the_licence` y
+  `the_licence_popup_shows_the_full_text_and_closes_with_escape`; la suite de la ventana
+  pasa a **356**.
+- **Anexo E cerrado**: con él termina el plan de anexos; queda solo el anexo D (la tira de
+  circuitos al pie de la hoja) como trabajo aparte.
+
 ### La rail de Inicio según la referencia — 2026-11-24
 
 - **Rail**: **Inicio** elegida con **píldora clara** (y estado *selected* para accesibilidad, no
