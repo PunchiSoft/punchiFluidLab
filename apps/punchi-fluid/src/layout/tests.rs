@@ -18,7 +18,17 @@ fn the_drawing_area_leaves_the_strip_gutter_on_the_right() {
         (drawing.min.x - canvas.min.x).abs() < f32::EPSILON
             && (drawing.min.y - canvas.min.y).abs() < f32::EPSILON
     );
-    assert!((drawing.max.y - canvas.max.y).abs() < f32::EPSILON);
+    assert!(
+        (drawing.max.y - (canvas.max.y - super::circuit_strip_height(16.0))).abs() < f32::EPSILON,
+        "the drawing area reserves the circuit strip's band at the foot"
+    );
+    let strip = super::circuit_strip_rect(canvas, 16.0);
+    assert!((strip.max.y - canvas.max.y).abs() < f32::EPSILON);
+    assert!((strip.min.y - drawing.max.y).abs() < f32::EPSILON);
+    assert!(
+        strip.width() < canvas.width(),
+        "the view strip keeps its gutter on the right"
+    );
     assert!((view_strip_gutter(16.0) - 56.0).abs() < f32::EPSILON);
     assert!((canvas.right() - drawing.right() - view_strip_gutter(16.0)).abs() < f32::EPSILON);
 }

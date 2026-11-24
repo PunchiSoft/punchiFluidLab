@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La tira de circuitos al pie de la hoja — 2026-11-24
+
+- **Tira**: un **tab por circuito** con su documento y nombre, la pestaña activa con relleno y
+  **regla de acento de 2 px en la costura**, la inactiva atenuada; **Inicio** fijo a la izquierda,
+  separado del proyecto; la tira se desplaza sola hasta la pestaña activa cuando cambia.
+- **Cambio de circuito como estado de vista**: clic, `Enter`/`Space` o
+  `Ctrl+Tab`/`Ctrl+Shift+Tab`; sin undo, la selección se limpia y el modelo se reconstruye para
+  el circuito en vista. El lienzo **reserva la banda** al pie (2·unit − 8, mínimo 28), así que
+  la tira no tapa el papel.
+- **Pruebas**: `the_strip_lists_one_tab_per_circuit_and_the_home_control`,
+  `switching_a_circuit_is_a_view_change_without_undo` y la reserva en `layout`; la suite pasa a
+  **358**.
+- **D1 hecho**; quedan **D2** (renombrar en la pestaña, × y +) y **D3** (evaluación y capturas)
+  del anexo D.
+
 ### «Acerca de» con el mensaje completo — 2026-11-24
 
 - **Acerca de**: popup centrado sobre un fondo que no oscurece pero se traga los clics; nombre,

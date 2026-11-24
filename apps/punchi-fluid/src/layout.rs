@@ -154,13 +154,34 @@ pub fn view_strip_gutter(unit: f32) -> f32 {
     unit.max(0.0) * VIEW_STRIP_GUTTER_UNITS
 }
 
-/// The drawing area: the canvas minus the view strip's gutter on the right. The paper is
-/// fitted and centred in this rectangle; the gutter stays part of the canvas, where the strip
-/// floats, so the strip never covers the sheet and the page never enters it.
+/// The height the circuit strip takes at the foot of the drawing region: the reference's
+/// `2·unit − 8`, with a 28 point floor so the tabs stay legible at the smallest unit.
+#[must_use]
+pub fn circuit_strip_height(unit: f32) -> f32 {
+    (unit.max(0.0) * 2.0 - 8.0).max(28.0)
+}
+
+/// The strip's band at the foot of the drawing region, spanning the canvas up to the view
+/// strip's gutter: the paper is fitted above it, so the strip never covers the sheet.
+#[must_use]
+pub fn circuit_strip_rect(canvas: egui::Rect, unit: f32) -> egui::Rect {
+    let right = (canvas.right() - view_strip_gutter(unit)).max(canvas.left());
+    let top = (canvas.bottom() - circuit_strip_height(unit)).max(canvas.top());
+    egui::Rect::from_min_max(
+        egui::pos2(canvas.left(), top),
+        egui::pos2(right, canvas.bottom()),
+    )
+}
+
+/// The drawing area: the canvas minus the view strip's gutter on the right and the circuit
+/// strip's band at the foot. The paper is fitted and centred in this rectangle; both reserved
+/// bands stay part of the canvas, so neither the floating strip nor the circuit strip covers
+/// the sheet and the page never enters them.
 #[must_use]
 pub fn drawing_area(canvas: egui::Rect, unit: f32) -> egui::Rect {
     let right = (canvas.right() - view_strip_gutter(unit)).max(canvas.left());
-    egui::Rect::from_min_max(canvas.min, egui::pos2(right, canvas.max.y))
+    let bottom = (canvas.bottom() - circuit_strip_height(unit)).max(canvas.top());
+    egui::Rect::from_min_max(canvas.min, egui::pos2(right, bottom))
 }
 
 /// A value kept between two bounds even when the room is smaller than the floor: the floor

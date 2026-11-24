@@ -28,6 +28,7 @@ mod branding;
 mod cards;
 mod check_panel;
 mod circuit_dialogs;
+mod circuit_strip;
 mod edit_commands;
 mod export;
 mod export_options;
