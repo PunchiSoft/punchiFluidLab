@@ -98,6 +98,13 @@ struct Body {
     filter: String,
     /// The search asks for the keyboard on the next frame; Ctrl+F sets it.
     focus_search: bool,
+    /// The tile the reader chose: the accent bar and the name say it, never hover.
+    chosen: Option<String>,
+    /// The tile whose menu is open, with the screen point where it opened.
+    menu: Option<(String, egui::Pos2)>,
+    /// The tiles' rectangles of the last frame, for the tests that drive the pointer.
+    #[cfg(test)]
+    tiles: Vec<(String, egui::Rect)>,
 }
 
 /// The sidebar: the shared panel chrome and the palette's own search state.
@@ -127,6 +134,12 @@ impl Sidebar {
             body: Body::default(),
             language: Language::English,
         }
+    }
+
+    /// The tiles' rectangles of the last frame, for the tests that drive the pointer.
+    #[cfg(test)]
+    pub(crate) fn tile_rects(&self) -> &[(String, egui::Rect)] {
+        &self.body.tiles
     }
 
     /// How many entries the panel counts in its header: a port closure is not an entry.
@@ -288,6 +301,10 @@ impl Body {
         language: Language,
     ) -> Option<String> {
         let mut chosen = None;
+        let mut select = None;
+        let mut open_menu = None;
+        #[cfg(test)]
+        self.tiles.clear();
         ui.add_space(6.0);
         let search = ui.add(
             egui::TextEdit::singleline(&mut self.filter)
@@ -325,8 +342,27 @@ impl Body {
                     .show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
-                                if tile(ui, tokens, definition, tile_width, language) {
-                                    chosen = Some(definition.id.clone());
+                                let (action, tile_rect) = tile(
+                                    ui,
+                                    tokens,
+                                    definition,
+                                    tile_width,
+                                    language,
+                                    self.chosen.as_deref() == Some(&definition.id),
+                                );
+                                #[cfg(test)]
+                                self.tiles.push((definition.id.clone(), tile_rect));
+                                #[cfg(not(test))]
+                                let _ = tile_rect;
+                                match action {
+                                    TileAction::None => {}
+                                    TileAction::Select => select = Some(definition.id.clone()),
+                                    TileAction::Add => {
+                                        chosen = Some(definition.id.clone());
+                                    }
+                                    TileAction::Menu(position) => {
+                                        open_menu = Some((definition.id.clone(), position));
+                                    }
                                 }
                             }
                         });
@@ -345,18 +381,97 @@ impl Body {
                 .size(tokens.text_small)
                 .color(tokens.ink_muted),
         );
+        if let Some(id) = select {
+            self.chosen = Some(id);
+        }
+        if let Some(menu) = open_menu {
+            self.menu = Some(menu);
+        }
+        if let Some(id) = self.tile_menu(ui, tokens, language) {
+            chosen = Some(id);
+        }
+        chosen
+    }
+
+    /// The tile's menu: one entry, the same placement as the keyboard's. Returns the id the
+    /// reader asked to add, or `None`.
+    fn tile_menu(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        language: Language,
+    ) -> Option<String> {
+        let (id, position) = self.menu.clone()?;
+        let mut add = false;
+        let mut chosen = None;
+        let area = egui::Area::new(egui::Id::new("catalog.tile.menu"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(position)
+            .show(ui.ctx(), |ui| {
+                egui::Frame::default()
+                    .fill(tokens.panel)
+                    .stroke(egui::Stroke::new(1.0_f32, tokens.line))
+                    .inner_margin(egui::Margin::same(6))
+                    .show(ui, |ui| {
+                        if ui.button(language.text("catalog.add_to_sheet")).clicked() {
+                            add = true;
+                        }
+                    });
+            });
+        let pointer = ui.input(|input| input.pointer.interact_pos());
+        let clicked_out = ui.input(|input| input.pointer.primary_clicked())
+            && pointer.is_some_and(|at| !area.response.rect.contains(at));
+        let escaped =
+            ui.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
+        if add {
+            self.chosen = Some(id.clone());
+            self.menu = None;
+            chosen = Some(id);
+        } else if clicked_out || escaped {
+            self.menu = None;
+        }
         chosen
     }
 }
 
-/// One tile: its own symbol, the name on at most two lines and the id.
+/// What a tile asks for: nothing, a selection, the centre placement or its own menu.
+enum TileAction {
+    None,
+    Select,
+    Add,
+    Menu(egui::Pos2),
+}
+
+/// A painted control gets the keyboard focus and the accessibility layer's name.
+fn focusable(ui: &mut egui::Ui, rect: egui::Rect, id: egui::Id) -> egui::Response {
+    let response = ui.interact(rect, id, egui::Sense::click());
+    let layer = ui.layer_id();
+    ui.memory_mut(|memory| memory.interested_in_focus(id, layer));
+    response
+}
+
+/// Whether the reader activated the control with `Enter` or `Space`.
+fn activated(ui: &egui::Ui, response: &egui::Response) -> bool {
+    response.has_focus()
+        && ui.input(|input| {
+            input.key_pressed(egui::Key::Enter) || input.key_pressed(egui::Key::Space)
+        })
+}
+
+/// One tile: its own symbol, the name on at most two lines and the id. A click chooses it;
+/// the keyboard or its menu add it; the right button opens the menu and never carries.
+#[expect(
+    clippy::too_many_lines,
+    reason = "the tile measures, paints, names and drives itself in one place"
+)]
 fn tile(
     ui: &mut egui::Ui,
     tokens: &Tokens,
     definition: &ComponentDefinition,
     width: f32,
     language: Language,
-) -> bool {
+    chosen: bool,
+) -> (TileAction, egui::Rect) {
     let name_font = egui::FontId::proportional(tokens.text_body);
     let id_font = egui::FontId::proportional(tokens.text_small);
     // Two lines of name and one of id, measured rather than guessed: a 42-character name
@@ -364,12 +479,29 @@ fn tile(
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
     let id_row = ui.fonts(|fonts| fonts.row_height(&id_font));
     let height = 32.0 + name_row * 2.0 + 4.0 + id_row + 2.0;
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
-        return false;
+        return (TileAction::None, rect);
     }
-    if response.hovered() || response.has_focus() {
+    let id = ui.make_persistent_id(("catalog.tile", &definition.id));
+    let response = focusable(ui, rect, id);
+    if chosen {
+        ui.painter().rect_filled(rect, 4.0, tokens.panel);
+        ui.painter().rect_filled(
+            egui::Rect::from_min_size(rect.min, egui::vec2(2.0, rect.height())),
+            0.0,
+            tokens.accent,
+        );
+    } else if response.hovered() || response.has_focus() {
         ui.painter().rect_filled(rect, 4.0, tokens.accent_soft);
+    }
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect,
+            4.0,
+            egui::Stroke::new(1.0_f32, tokens.accent),
+            egui::StrokeKind::Inside,
+        );
     }
     let symbol = egui::Rect::from_min_size(rect.min, egui::vec2(width, 32.0));
     let (box_width, box_height) = box_of(definition);
@@ -419,15 +551,32 @@ fn tile(
         tokens.ink_muted,
     );
     response.widget_info(|| {
-        egui::WidgetInfo::labeled(
+        egui::WidgetInfo::selected(
             egui::WidgetType::Button,
             ui.is_enabled(),
+            chosen,
             format!("{name}, {}", definition.id),
         )
     });
-    response
-        .on_hover_text(format!("{name}\n{}", definition.id))
-        .clicked()
+    let clicked = response.clicked();
+    let secondary = response.secondary_clicked();
+    let placed = activated(ui, &response);
+    let focus = response.has_focus();
+    let menu_key = focus && ui.input(|input| input.key_pressed(egui::Key::F10));
+    response.on_hover_text(format!("{name}\n{}", definition.id));
+    if clicked {
+        ui.memory_mut(|memory| memory.request_focus(id));
+    }
+    let action = if secondary || menu_key {
+        TileAction::Menu(rect.center())
+    } else if placed {
+        TileAction::Add
+    } else if clicked {
+        TileAction::Select
+    } else {
+        TileAction::None
+    };
+    (action, rect)
 }
 
 /// The name of a tile: at most two lines, elided, so a long name cannot grow over the next
@@ -494,64 +643,4 @@ impl Window {
 }
 
 #[cfg(test)]
-mod tests {
-    use eframe::egui;
-    use punchi_fluid_catalog::Catalog;
-
-    use super::{is_entry, matches};
-
-    #[test]
-    fn the_palette_hides_the_port_closures() {
-        let catalog = Catalog::builtin();
-        assert!(!is_entry(
-            catalog.get("plug.blind").expect("the plug exists")
-        ));
-        assert!(!is_entry(
-            catalog
-                .get("silencer.pneumatic")
-                .expect("the silencer exists")
-        ));
-        assert!(is_entry(
-            catalog
-                .get("valve.3_2.spring_return")
-                .expect("the valve exists")
-        ));
-    }
-
-    #[test]
-    fn a_long_name_stays_on_two_lines() {
-        let context = egui::Context::default();
-        if crate::theme::install_font(&context, None).is_err() {
-            return;
-        }
-        let job = super::name_job(
-            "Válvula 3/2, solenoide, retorno por muelle",
-            104.0,
-            egui::FontId::proportional(11.0),
-            egui::Color32::WHITE,
-        );
-        assert_eq!(job.wrap.max_rows, 2);
-        assert_eq!(job.wrap.overflow_character, Some('…'));
-        let mut rows = 0;
-        let _ = context.run(egui::RawInput::default(), |context| {
-            rows = context
-                .fonts(|fonts| fonts.layout_job(job.clone()))
-                .rows
-                .len();
-        });
-        assert!(rows <= 2, "the tile draws two lines, not {rows}");
-    }
-
-    #[test]
-    fn the_search_matches_the_name_the_spanish_name_and_the_id() {
-        let catalog = Catalog::builtin();
-        let valve = catalog
-            .get("valve.3_2.spring_return")
-            .expect("the valve exists");
-        assert!(matches(valve, ""));
-        assert!(matches(valve, "válvula"));
-        assert!(matches(valve, "3/2"));
-        assert!(matches(valve, "valve.3_2"));
-        assert!(!matches(valve, "cilindro"));
-    }
-}
+mod tests;

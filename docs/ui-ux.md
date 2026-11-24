@@ -335,7 +335,9 @@ The sidebar is generated from the catalog, so it is exactly as complete as
 file adds an entry; deleting the file removes it; `disabled = true` hides it.
 
 **Today** the sidebar is the palette: the count, the search, the collapsible categories,
-two-column tiles and the footer, with a width the user can drag and the session remembers.
+two-column tiles (a click chooses one; its menu or the keyboard adds it at the centre) and the
+footer, with a width the user can drag and the session remembers; the drag from the palette is
+the next slice.
 The panel that lists the reasons for each skipped file is still target.
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
@@ -369,7 +371,7 @@ The panel that lists the reasons for each skipped file is still target.
 - A connection is refused, never silently dropped, when it would join a port to itself,
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.
-- **Dragging a tile owns the pointer until the release.** The palette sits in a scroll area, and a scroll area that takes the gesture past its threshold cancels the carry: the preview disappears halfway when the hand drifts diagonally. The tile prevents that steal, so the gesture survives any path over the panel, the docks and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. Releasing outside the sheet still cancels, and the two-step and tolerance work is recorded as the next slice in [capabilities.md](capabilities.md).
+- **Target, not migrated: dragging a tile owns the pointer until the release.** The palette sits in a scroll area, and a scroll area that takes the gesture past its threshold cancels the carry: the preview disappears halfway when the hand drifts diagonally. Today the palette chooses on click and adds from the menu or the keyboard; the carry is the next slice. The tile prevents that steal, so the gesture survives any path over the panel, the docks and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. Releasing outside the sheet still cancels, and the two-step and tolerance work is recorded as the next slice in [capabilities.md](capabilities.md).
 - **Right-click or `Shift+F10` on a tile opens its menu**, with **Añadir a la hoja**: the entry is
   placed at the centre of the sheet through the same path as the search, as one undo. The menu
   is offered while editing, names the entry it will add for assistive technology, and the right
