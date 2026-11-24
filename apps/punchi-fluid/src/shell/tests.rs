@@ -188,9 +188,7 @@ fn the_wide_mode_docks_both_panels_at_their_preferred_widths() {
         let harness = shell_harness(&mut window, egui::vec2(1440.0, 900.0));
         sheet = harness.state().sheet_width;
         assert!(
-            harness
-                .query_by_label("Ocultar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Hide catalog panel").is_some(),
             "the catalog is docked"
         );
         assert!(
@@ -230,9 +228,7 @@ fn the_compact_mode_folds_both_panels_to_their_rails_and_leaves_the_sheet_its_ro
         let harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
         sheet = harness.state().sheet_width;
         assert!(
-            harness
-                .query_by_label("Mostrar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Show catalog panel").is_some(),
             "the closed catalog leaves its rail control"
         );
         assert!(
@@ -242,7 +238,7 @@ fn the_compact_mode_folds_both_panels_to_their_rails_and_leaves_the_sheet_its_ro
             "the closed dock leaves its rail control"
         );
         assert!(
-            harness.query_by_label("Catálogo integrado").is_none(),
+            harness.query_by_label("Built-in catalog").is_none(),
             "no panel content is docked in the compact mode"
         );
     }
@@ -266,13 +262,11 @@ fn ctrl_b_opens_the_catalog_as_a_drawer_over_the_sheet() {
         open_sheet = harness.state().sheet_width;
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
         assert!(
-            harness.query_by_label("Catálogo integrado").is_some(),
+            harness.query_by_label("Built-in catalog").is_some(),
             "the drawer holds the palette"
         );
         assert!(
-            harness
-                .query_by_label("Ocultar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Hide catalog panel").is_some(),
             "the drawer has its hide control"
         );
     }
@@ -382,9 +376,7 @@ fn clicking_a_rail_opens_the_drawer() {
     let mut window = window_with();
     {
         let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
-        harness
-            .get_by_label("Mostrar el panel del catálogo")
-            .click();
+        harness.get_by_label("Show catalog panel").click();
         harness.run();
         assert_eq!(
             harness.state().drawer,
@@ -401,9 +393,7 @@ fn the_drawer_hide_control_closes_both_the_drawer_and_the_panel() {
         let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
-        harness
-            .get_by_label("Ocultar el panel del catálogo")
-            .click();
+        harness.get_by_label("Hide catalog panel").click();
         harness.run();
         assert_eq!(harness.state().drawer, None, "the hide control closes it");
     }

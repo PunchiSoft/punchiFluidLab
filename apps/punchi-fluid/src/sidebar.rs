@@ -17,20 +17,21 @@ use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition, Ki
 use punchi_fluid_draw::surface::Colour;
 use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_component_preview};
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::panel::{Edge, Panel, Probe, Settings};
 use crate::surface::EguiSurface;
 use crate::theme::Tokens;
 
-/// The categories in the palette's order, with the Spanish label the interface shows.
+/// The categories in the palette's order, with their catalog key.
 const CATEGORIES: [(Category, &str); 6] = [
-    (Category::Supply, "Alimentación"),
-    (Category::Valve, "Válvulas"),
-    (Category::Actuator, "Actuadores"),
-    (Category::Throttle, "Cierre y control de caudal"),
-    (Category::Accessory, "Accesorios"),
-    (Category::Sensor, "Sensores e instrumentos"),
+    (Category::Supply, "catalog.category.supply"),
+    (Category::Valve, "catalog.category.valve"),
+    (Category::Actuator, "catalog.category.actuator"),
+    (Category::Throttle, "catalog.category.throttle"),
+    (Category::Accessory, "catalog.category.accessory"),
+    (Category::Sensor, "catalog.category.sensor"),
 ];
 
 /// The catalog's width when it is open, and the bounds a drag may take it to. The preferred
@@ -103,6 +104,8 @@ struct Body {
 pub struct Sidebar {
     chrome: Panel,
     body: Body,
+    /// The language the panel and its content draw with; the window sets it each frame.
+    pub(crate) language: Language,
 }
 
 impl Sidebar {
@@ -115,13 +118,14 @@ impl Sidebar {
                 default_width: DEFAULT_WIDTH,
                 min_width: MIN_WIDTH,
                 max_width: MAX_WIDTH,
-                width_label: "Ancho del panel del catálogo",
-                show_label: "Mostrar el panel del catálogo",
-                hide_label: "Ocultar el panel del catálogo",
+                width_label: "panel.catalog.width",
+                show_label: "panel.catalog.show",
+                hide_label: "panel.catalog.hide",
                 shortcut: "Ctrl+B",
                 margin: 6,
             }),
             body: Body::default(),
+            language: Language::English,
         }
     }
 
@@ -232,21 +236,23 @@ impl Sidebar {
         catalog: &Catalog,
         docked_width: f32,
     ) -> Option<String> {
-        let Sidebar { chrome, body } = self;
+        let Sidebar {
+            chrome,
+            body,
+            language,
+        } = self;
+        chrome.set_language(*language);
+        let title = language.text("catalog.title");
         chrome
-            .show(
-                context,
-                tokens,
-                "Catálogo",
-                Some(subtitle),
-                docked_width,
-                |ui| body.show(ui, tokens, catalog),
-            )
+            .show(context, tokens, title, Some(subtitle), docked_width, |ui| {
+                body.show(ui, tokens, catalog, *language)
+            })
             .flatten()
     }
 
     /// Draws only the rail, for the compact shell: the catalog is one click from its drawer.
     pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
+        self.chrome.set_language(self.language);
         self.chrome.show_rail(context, tokens)
     }
 
@@ -259,21 +265,33 @@ impl Sidebar {
         subtitle: &str,
         catalog: &Catalog,
     ) -> (Option<String>, bool) {
-        let Sidebar { chrome, body } = self;
-        chrome.show_body(ui, tokens, "Catálogo", Some(subtitle), |ui| {
-            body.show(ui, tokens, catalog)
+        let Sidebar {
+            chrome,
+            body,
+            language,
+        } = self;
+        chrome.set_language(*language);
+        let title = language.text("catalog.title");
+        chrome.show_body(ui, tokens, title, Some(subtitle), |ui| {
+            body.show(ui, tokens, catalog, *language)
         })
     }
 }
 
 impl Body {
     /// The search, the category groups, the tiles and the footer.
-    fn show(&mut self, ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalog) -> Option<String> {
+    fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        catalog: &Catalog,
+        language: Language,
+    ) -> Option<String> {
         let mut chosen = None;
         ui.add_space(6.0);
         let search = ui.add(
             egui::TextEdit::singleline(&mut self.filter)
-                .hint_text("Buscar…")
+                .hint_text(language.text("catalog.search"))
                 .desired_width(f32::INFINITY),
         );
         if self.focus_search {
@@ -287,6 +305,7 @@ impl Body {
             .show(ui, |ui| {
                 let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
                 for (category, label) in CATEGORIES {
+                    let label = language.text(label);
                     let matching: Vec<&ComponentDefinition> = catalog
                         .by_category(category)
                         .filter(|definition| {
@@ -306,7 +325,7 @@ impl Body {
                     .show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
-                                if tile(ui, tokens, definition, tile_width) {
+                                if tile(ui, tokens, definition, tile_width, language) {
                                     chosen = Some(definition.id.clone());
                                 }
                             }
@@ -316,9 +335,10 @@ impl Body {
             });
         let skipped = catalog.problems().len();
         let footer_text = if skipped == 0 {
-            String::from("Catálogo integrado")
+            language.text("catalog.integrated").to_owned()
         } else {
-            format!("Catálogo integrado · {skipped} omitidos")
+            let skipped = skipped.to_string();
+            language.format("catalog.integrated_skipped", &[("count", &skipped)])
         };
         ui.label(
             egui::RichText::new(footer_text)
@@ -330,7 +350,13 @@ impl Body {
 }
 
 /// One tile: its own symbol, the name on at most two lines and the id.
-fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, width: f32) -> bool {
+fn tile(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    definition: &ComponentDefinition,
+    width: f32,
+    language: Language,
+) -> bool {
     let name_font = egui::FontId::proportional(tokens.text_body);
     let id_font = egui::FontId::proportional(tokens.text_small);
     // Two lines of name and one of id, measured rather than guessed: a 42-character name
@@ -360,7 +386,10 @@ fn tile(ui: &mut egui::Ui, tokens: &Tokens, definition: &ComponentDefinition, wi
         &preview_ink(tokens),
     );
     ui.painter().extend(drawing.shapes);
-    let name = definition.name_es.as_deref().unwrap_or(&definition.name);
+    let name = match language {
+        Language::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
+        Language::English => &definition.name,
+    };
     let name_galley = ui.painter().layout_job(name_job(
         name,
         (width - 4.0).max(1.0),
@@ -435,6 +464,7 @@ impl Window {
     /// right dock, so the sheet's available area follows both panels as they fold; the
     /// catalog computes its docked width from the same mode the shell derived.
     pub(crate) fn show_catalog(&mut self, context: &egui::Context) {
+        self.sidebar.language = self.language;
         let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
         if mode == crate::layout::LayoutMode::Compact {
             return;
@@ -446,7 +476,10 @@ impl Window {
                 self.inspector.width(),
             )
             .catalog;
-        let subtitle = format!("{} componentes", Sidebar::entry_count(&self.catalog));
+        let count = Sidebar::entry_count(&self.catalog).to_string();
+        let subtitle = self
+            .language
+            .format("catalog.components", &[("count", &count)]);
         let chosen = self.sidebar.show(
             context,
             &self.theme.tokens,

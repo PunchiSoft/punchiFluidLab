@@ -12,6 +12,7 @@ use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Placement};
 use punchi_fluid_draw::Pt;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::inspector;
@@ -163,28 +164,20 @@ fn the_catalog_rail_brings_it_back_at_the_width_it_had() {
     let width = window.sidebar.width();
     {
         let mut harness = catalog_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel del catálogo")
-            .click();
+        harness.get_by_label("Hide catalog panel").click();
         harness.run();
         assert!(
-            harness
-                .query_by_label("Mostrar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Show catalog panel").is_some(),
             "the closed catalog leaves the rail control"
         );
         assert!(
-            harness.query_by_label("Catálogo").is_none(),
+            harness.query_by_label("Catalog").is_none(),
             "the header is gone with the panel"
         );
-        harness
-            .get_by_label("Mostrar el panel del catálogo")
-            .click();
+        harness.get_by_label("Show catalog panel").click();
         harness.run();
         assert!(
-            harness
-                .query_by_label("Ocultar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Hide catalog panel").is_some(),
             "the header is back"
         );
     }
@@ -202,9 +195,7 @@ fn the_catalog_fold_uses_the_theme_motion_and_reduced_motion_is_instant() {
     window.theme.tokens.motion_ms = 0;
     {
         let mut harness = catalog_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel del catálogo")
-            .click();
+        harness.get_by_label("Hide catalog panel").click();
         // One frame applies the click, the next one draws the fold.
         harness.step();
         harness.step();
@@ -219,9 +210,7 @@ fn the_catalog_fold_uses_the_theme_motion_and_reduced_motion_is_instant() {
     let mut window = window_with(Document::new());
     {
         let mut harness = catalog_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel del catálogo")
-            .click();
+        harness.get_by_label("Hide catalog panel").click();
         harness.step();
         harness.step();
     }
@@ -318,6 +307,44 @@ fn the_open_panel_reports_the_pointer_and_the_keyboard_inside_it() {
 }
 
 #[test]
+fn the_catalog_follows_the_language() {
+    let mut window = window_with(Document::new());
+    {
+        let harness = catalog_harness(&mut window);
+        assert!(harness.query_by_label("Catalog").is_some());
+        assert!(harness.query_by_label_contains("components").is_some());
+        assert!(harness.query_by_label_contains("Supply").is_some());
+        assert!(harness.query_by_label("Built-in catalog").is_some());
+        assert!(harness.query_by_label("Hide catalog panel").is_some());
+        assert!(
+            harness
+                .query_by_label_contains("Compressor, 4 bar")
+                .is_some(),
+            "the English definition name is the visible one"
+        );
+    }
+    window.language = Language::Spanish;
+    {
+        let harness = catalog_harness(&mut window);
+        assert!(harness.query_by_label("Catálogo").is_some());
+        assert!(harness.query_by_label_contains("componentes").is_some());
+        assert!(harness.query_by_label_contains("Alimentación").is_some());
+        assert!(harness.query_by_label("Catálogo integrado").is_some());
+        assert!(
+            harness
+                .query_by_label("Ocultar el panel del catálogo")
+                .is_some()
+        );
+        assert!(
+            harness
+                .query_by_label_contains("Compresor, 4 bar")
+                .is_some(),
+            "the Spanish name is the visible one"
+        );
+    }
+}
+
+#[test]
 fn the_catalog_content_stays_in_the_open_panel() {
     let mut window = window_with(Document::new());
     let harness = catalog_harness(&mut window);
@@ -328,15 +355,15 @@ fn the_catalog_content_stays_in_the_open_panel() {
         "the search is offered"
     );
     assert!(
-        harness.query_by_label_contains("componentes").is_some(),
+        harness.query_by_label_contains("components").is_some(),
         "the header counts the entries"
     );
     assert!(
-        harness.query_by_label_contains("Alimentación").is_some(),
+        harness.query_by_label_contains("Supply").is_some(),
         "the categories are there"
     );
     assert!(
-        harness.query_by_label("Catálogo integrado").is_some(),
+        harness.query_by_label("Built-in catalog").is_some(),
         "the footer is there"
     );
 }
@@ -362,18 +389,14 @@ fn the_sheet_area_follows_the_catalog() {
     }
     harness.run();
     let open = *harness.state();
-    harness
-        .get_by_label("Ocultar el panel del catálogo")
-        .click();
+    harness.get_by_label("Hide catalog panel").click();
     harness.run();
     let closed = *harness.state();
     assert!(
         closed > open,
         "the closed catalog gives its width back to the sheet: {closed} > {open}"
     );
-    harness
-        .get_by_label("Mostrar el panel del catálogo")
-        .click();
+    harness.get_by_label("Show catalog panel").click();
     harness.run();
     let reopened = *harness.state();
     assert!(

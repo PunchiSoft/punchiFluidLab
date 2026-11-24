@@ -415,8 +415,11 @@ impl Window {
                 ui.set_min_height(height);
                 match drawer {
                     Drawer::Catalog => {
-                        let subtitle =
-                            format!("{} componentes", Sidebar::entry_count(&self.catalog));
+                        self.sidebar.language = self.language;
+                        let count = Sidebar::entry_count(&self.catalog).to_string();
+                        let subtitle = self
+                            .language
+                            .format("catalog.components", &[("count", &count)]);
                         let (chosen, hide) =
                             self.sidebar
                                 .show_drawer(ui, &tokens, &subtitle, &self.catalog);

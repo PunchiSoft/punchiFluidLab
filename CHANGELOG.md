@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### El catálogo elige idioma — 2026-11-24
+
+- **La barra lateral**: título, búsqueda, categorías, subtítulo, pie y los nombres de las
+  fichas leen el catálogo. En inglés se muestra `name`; en español, `name_es` cuando existe.
+- **El cromo del panel**: los rótulos accesibles de ancho, mostrar y ocultar, y la pista del
+  borde, pasan por `Language`; el inspector conserva sus rótulos españoles hasta su superficie.
+- **Pruebas**: `the_catalog_follows_the_language`; la suite de la ventana pasa a **303**.
+- **Pendiente**: el inspector, los paneles de diálogo, Inicio, el estado, el chequeo, el
+  exportador y el CLI; el catálogo es la segunda superficie de la ventana.
+
 ### La cinta también lee el catálogo — 2026-11-24
 
 - **La cinta completa**: pestañas, grupos, botones, galerías, menús, recientes, pistas y el

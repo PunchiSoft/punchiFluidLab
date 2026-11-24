@@ -408,13 +408,11 @@ fn the_panels_open_where_the_file_left_them_and_a_closed_one_starts_as_a_rail() 
     {
         let harness = panel_harness(&mut window, egui::vec2(1440.0, 900.0));
         assert!(
-            harness
-                .query_by_label("Mostrar el panel del catálogo")
-                .is_some(),
+            harness.query_by_label("Show catalog panel").is_some(),
             "a closed panel starts as its rail"
         );
         assert!(
-            harness.query_by_label("Catálogo integrado").is_none(),
+            harness.query_by_label("Built-in catalog").is_none(),
             "the closed panel has no content"
         );
         assert!(
@@ -499,9 +497,7 @@ fn a_click_on_the_rail_still_opens_the_panel_with_auto_hide_off() {
     window.sidebar.close();
     {
         let mut harness = catalog_harness(&mut window);
-        harness
-            .get_by_label("Mostrar el panel del catálogo")
-            .click();
+        harness.get_by_label("Show catalog panel").click();
         harness.run();
     }
     assert!(
