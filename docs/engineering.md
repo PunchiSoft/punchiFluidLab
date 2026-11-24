@@ -220,6 +220,21 @@ code, never documentation. A push to `main` and a manual run always run the full
 `scripts-dev/test-changed-paths.sh` exercises the classifier in `check.sh`, because a wrong
 `docs` answer would skip the tests on a change they can observe.
 
+### Delivery modes
+
+Manual is the default: the owner merges. A code change starts only after the owner approved
+its plan; a one-pull-request change uses a short plan, two or more use the formal
+[phased-plan](../.agents/skills/phased-plan/SKILL.md). The hand-off carries the report table
+of [step-report](../.agents/skills/step-report/SKILL.md).
+
+The owner may ask for `piloto automatico`; the run follows
+[auto-pilot](../.agents/skills/auto-pilot/SKILL.md) and
+[ADR 0046](../docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md). It needs an approved
+phased plan with a board and at least two phases, and it stops on a red gate after three
+attempts, a blocked or unknown merge, an exception, `detener` or the end of the plan. The
+branch, gate and checklist rules are those of
+[pull-request-workflow](../.agents/skills/pull-request-workflow/SKILL.md).
+
 ### Files that must exist
 
 | File | Purpose |

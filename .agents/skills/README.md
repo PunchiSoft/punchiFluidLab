@@ -20,7 +20,7 @@ skill is the bug.
 | [security-review](security-review/SKILL.md) | the surface a change touches, the control that already exists, the hostile case and the record | a change reads or writes a file, resolves a path, exports, pastes, autosaves, opens a link, or touches dependencies, workflows or a release |
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
-| [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
+| [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner or the approved automatic pilot | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
 | [session-start](session-start/SKILL.md) | the read-only start of a session: load the project, report the context and wait for the owner's theme, without asking what to fix | the first message asks to read the project and get in context |
 | [step-report](step-report/SKILL.md) | the end-of-step checklist: what is OK, what is missing and who unblocks it, the one next step, and the plan board when the step is a phase | handing a branch, pull request or phase back to the owner; the owner asks for a status |
 | [phased-plan](phased-plan/SKILL.md) | a requested plan as Phase 0 (baseline, scope, specification), delivery phases with a phase board and a checklist per pull request, and a final evaluation and process audit | the owner asks for a plan; a run spans several pull requests; a phase closes |
@@ -33,6 +33,7 @@ skill is the bug.
 | [punchi-visual-language](punchi-visual-language/SKILL.md) | route a visual change in the Rust window to its canonical document, its code and its evidence; controls, tokens, icons, ribbon, layout and language | changing a control, token, icon, ribbon, layout or string; reviewing the window's visual language |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
 | [parity-run](parity-run/SKILL.md) | the loop of an owner-authorized long run: queue, one commit per capability, gate, one pull request | a parity run is authorized or resumed; a fresh session continues it after a reset |
+| [auto-pilot](auto-pilot/SKILL.md) | run an approved phased plan unattended: one phase at a time, gate, PR, CI, squash merge under ADR 0046, main check and cleanup | the owner says `piloto automatico` and a phased plan is approved |
 | [reference-parity](reference-parity/SKILL.md) | inspect the running parent app as the reference for symbols, animations and workflow, then prove parity without copying | a symbol, animation or workflow must match the parent app; the owner says the result does not look like the reference |
 | [parent-source-review](parent-source-review/SKILL.md) | read the parent app's installed code and data read-only to derive behaviour, then reimplement it in Rust without copying bytes or files | the running app does not answer how a rule works; a timing, port order, threshold or binding must be matched |
 
@@ -99,10 +100,10 @@ flowchart TD
     E["Entrada<br/>docs/README.md · AGENTS.md<br/>capabilities.md · plan.md"] --> P["1 · Planificar<br/>phased-plan · capability-plan<br/>run largo: parity-run"]
     P --> B["2 · Construir<br/>rust-* · solver-validation · fluid-power-symbology<br/>reference-parity · punchi-visual-language"]
     B --> G["3 · Gate<br/>check.sh · check-docs.sh<br/>machine-resource-budget<br/>rojo 2x o ruta prohibida -> parar"]
-    G --> R["4 · Entregar<br/>pull-request-workflow · github-collaboration<br/>github-actions-security · step-report"]
+    G --> R["4 · Entregar<br/>pull-request-workflow · auto-pilot<br/>github-collaboration · github-actions-security · step-report"]
     R --> M{"¿Quién fusiona?"}
     M -->|manual| O["El dueño fusiona<br/>el agente espera y sigue"]
-    M -->|"auto + ADR"| A["El agente fusiona tras CI verde<br/>solo con ADR y guardrails"]
+    M -->|"auto: piloto automatico + plan aprobado"| A["El agente fusiona tras CI verde<br/>solo con ADR 0046 y guardrails"]
     O --> Q{"¿Quedan fases?"}
     A --> Q
     Q -->|"sí: vuelve a 2"| B
@@ -114,11 +115,14 @@ The route is the one in [pull-request-workflow](pull-request-workflow/SKILL.md):
 from updated `main`, the gate, a pull request with its checklist, and a merge. The phases
 are [phased-plan](phased-plan/SKILL.md)'s: Phase 0 proves the ground and writes the
 evidence, each delivery phase is one merged pull request, and the final phase evaluates and
-audits. The diamond is the merge policy: **manual** by default, **auto** only when an ADR
-authorises it ([ADR 0043](../../docs/adr/0043-the-agent-merges-under-guardrails.md), the
-ribbon pilot), and one pull request at a time either way. Once the pull request is merged,
-[repo-maintenance](repo-maintenance/SKILL.md) is the pass that closes the branch, the
-worktree and the caches, after the local backup is verified.
+audits. The diamond is the merge policy: **manual** by default; **automatic** only when the
+owner says `piloto automatico` and an approved phased plan exists, under
+[ADR 0046](../../docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md)
+([auto-pilot](auto-pilot/SKILL.md)); [ADR 0043](../../docs/adr/0043-the-agent-merges-under-guardrails.md)
+is the historical ribbon pilot. One pull request at a time either way. In the automatic run,
+auto-pilot closes the branch and continues; [repo-maintenance](repo-maintenance/SKILL.md) is
+the periodic pass that closes the branch, the worktree and the caches, after the local backup
+is verified.
 
 ## Where the guidance comes from
 

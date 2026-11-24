@@ -60,6 +60,35 @@ Conversation may be in Spanish. A Spanish UI label may be quoted inside an Engli
 and test names are English. No Spanish prose in identifiers, comments,
 logs or tests.
 
+## Request modes and the plan gate
+
+- **Plan before code.** A request that changes code — a feature, a fix, a failing test, a
+  refactor — starts with an implementation plan approved by the owner. A question that only
+  asks for information does not need one; if it turns into a change, the plan comes first.
+  - One pull request: a short plan in the conversation that names what changes, the files, the
+    evidence and the risk, approved before editing.
+  - Two or more pull requests: the formal
+    [phased-plan](.agents/skills/phased-plan/SKILL.md), with Phase 0, a phase board and a
+    checklist per phase, approved before Phase 1.
+  - No code, stash, commit or push before the owner approves the plan.
+- **Manual mode is the default.** The owner merges. The hand-off carries the report table of
+  [step-report](.agents/skills/step-report/SKILL.md) and asks for the merge.
+- **Automatic pilot.** The owner may ask for `piloto automatico` (case-insensitive). It runs
+  only an approved `phased-plan` with a board and at least two phases; without one the agent
+  answers exactly: `Se necesita planificación previa; no se procede.` and waits. It follows
+  [auto-pilot](.agents/skills/auto-pilot/SKILL.md) and
+  [ADR 0046](docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md): one phase at a time, the
+  gate before the commit, every required CI check green and `mergeStateStatus: CLEAN` before
+  the squash merge, up to three fix attempts, the post-merge check, the cleanup and the next
+  phase. The agent merges only under that mode and its guardrails; it never approves on its
+  own behalf, pushes to `main` or enables GitHub auto-merge. Changes to workflows, secrets,
+  dependencies, the ABI removal, this file, an ADR or this policy stay manual. The owner stops
+  it with `detener` (case-insensitive); the run records its state in the private journal.
+- **The report.** In manual mode, between pull requests, the hand-off includes the table
+  `Ítem | Estado | Evidencia | Bloqueo` plus the plan board and OK / Falta / Siguiente. In
+  automatic mode the same table is written after each merged phase; it does not replace the
+  plan board.
+
 ## Stack
 
 Rust, stable toolchain pinned in `rust-toolchain.toml`. See
@@ -276,9 +305,10 @@ pass.
 - Prove the base from Git, never from a branch name:
   `git rev-list --left-right --count main...HEAD` is `0 <n>` and
   `git log --oneline origin/main..HEAD` lists exactly the commits being delivered.
-- One branch per change, one thing per commit, squash-merged by the owner, and the branch
-  deleted afterwards. A sub-branch created from another feature branch is an exception and
-  needs a stated reason.
+- One branch per change, one thing per commit, squash-merged by the owner or by the agent in
+  an approved automatic run ([ADR 0046](docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md)),
+  and the branch deleted afterwards. A sub-branch created from another feature branch is an
+  exception and needs a stated reason.
 - **One active branch at a time.** While a branch holds unmerged work, including a pull
   request still open, do not start a parallel branch for an unrelated change: finish it,
   merge it, or set it aside with explicit owner authorization. Parallel branches drift and
@@ -289,19 +319,25 @@ pass.
   in `docs/` in its own change.
 - **Ask before committing.** Before staging or pushing, ask the owner to confirm that the
   change matches the request and the expected result, and wait for the answer. A request to
-  commit does not replace that confirmation unless the exact change was already reviewed.
+  commit does not replace that confirmation unless the exact change was already reviewed. In
+  an approved automatic run the approved plan is that confirmation; outside it, the question
+  stands.
 - **Verify the merge.** After opening or updating the pull request, read its `state` and
-  `mergedAt`. While it is not merged, tell the owner and ask them to merge it before
-  starting or continuing further work. After the merge, return to updated `main`,
-  fast-forward it, and ask whether to delete the merged branch locally and on the remote.
-- **The project owner merges by default; under the pilot of
-  [ADR 0043](docs/adr/0043-the-agent-merges-under-guardrails.md) the agent may merge its own
-  pull requests.** The agent opens the pull request, answers the review and stops; it never
-  approves on its own behalf and never pushes to `main`, however many permissions the session
-  was given. While the pilot is active the agent runs the squash merge itself only when every
-  required check is green, the pull request is `CLEAN` and it is the only agent pull request
-  open; the owner can pause the pilot in any message, and the default returns when it ends.
-  An instruction to merge outside the pilot is answered with the pull request URL.
+  `mergedAt`. In manual mode, while it is not merged, tell the owner and ask them to merge it
+  before starting or continuing further work. After the merge, return to updated `main`,
+  fast-forward it, and ask whether to delete the merged branch locally and on the remote. In
+  an approved automatic run, the run verifies, merges, fast-forwards and deletes according to
+  [auto-pilot](.agents/skills/auto-pilot/SKILL.md) without asking between phases.
+- **The project owner merges by default.** The exception is the approved automatic run of
+  [ADR 0046](docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md); the historical ribbon
+  pilot of [ADR 0043](docs/adr/0043-the-agent-merges-under-guardrails.md) records a past run,
+  not a standing permission. Under ADR 0046 the agent
+  squash-merges its own pull requests only in `piloto automatico`, one at a time, after every
+  required check is green, the pull request is `MERGEABLE` with `mergeStateStatus: CLEAN`, and
+  the full gate ran on the branch; a red, conflicting or unknown state stops the run. The
+  agent never approves on its own behalf, never pushes to `main` and never enables GitHub
+  auto-merge, however many permissions the session was given. Outside the approved automatic
+  run, an instruction to merge is answered with the pull request URL.
 - The gate runs on the branch being delivered, and the changelog and the docs travel in
   the same pull request.
 - The procedure, the gotchas and the settings are
