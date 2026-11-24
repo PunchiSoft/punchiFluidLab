@@ -90,8 +90,8 @@ const ICON_ABOUT: Drawing = (
     include_bytes!("../../../assets/icons/actions/x-office-address-book.svg"),
 );
 const ICON_PREFERENCES: Drawing = (
-    "preferences-desktop-theme",
-    include_bytes!("../../../assets/icons/actions/preferences-desktop-theme.svg"),
+    "preferences-system",
+    include_bytes!("../../../assets/icons/actions/preferences-system.svg"),
 );
 const ICON_LICENSE: Drawing = (
     "x-office-document",
@@ -117,6 +117,9 @@ impl Window {
         }
         let tokens = &self.theme.tokens;
         let language = self.language;
+        // The way back belongs to a document the reader can return to: a file or a sheet
+        // with something on it, never the empty page at launch.
+        let has_document = self.path.is_some() || !self.document.placements().is_empty();
         let show_recovery = self.has_recovery();
         let document_name = self
             .path
@@ -129,7 +132,7 @@ impl Window {
             .resizable(false)
             .frame(egui::Frame::default().fill(tokens.background))
             .show(context, |ui| {
-                action = nav::nav(ui, tokens, language);
+                action = nav::nav(ui, tokens, language, has_document);
             });
         egui::CentralPanel::default()
             .frame(

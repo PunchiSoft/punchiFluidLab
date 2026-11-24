@@ -182,6 +182,10 @@ pub const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../../../../assets/icons/actions/preferences-desktop-theme.svg"),
     ),
     (
+        "preferences-system",
+        include_bytes!("../../../../assets/icons/actions/preferences-system.svg"),
+    ),
+    (
         "speed-0.25",
         include_bytes!("../../../../assets/icons/actions/speed-0.25.svg"),
     ),

@@ -205,7 +205,7 @@ fn the_start_page_follows_the_language() {
 fn the_page_draws_the_rail_the_two_ways_in_the_templates_and_the_placeholder() {
     let mut window = window();
     let harness = harness(&mut window);
-    for label in ["Back to the sheet", "About", "License"] {
+    for label in ["About", "License", "Settings"] {
         assert!(
             harness.query_all_by_label(label).count() >= 1,
             "{label} is in the rail"
@@ -230,6 +230,14 @@ fn the_page_draws_the_rail_the_two_ways_in_the_templates_and_the_placeholder() {
     assert!(
         harness.query_by_label("No recent documents yet").is_some(),
         "the empty Recientes says so instead of a blank table"
+    );
+    assert!(
+        harness.query_by_label("Punchi Fluid Lab").is_none(),
+        "the rail carries no brand: the page names the product"
+    );
+    assert!(
+        harness.query_by_label("Learn").is_none(),
+        "the group headings of the retired layout are gone"
     );
     for name in [
         "OR circuit",
@@ -265,6 +273,12 @@ fn choosing_a_template_loads_it_and_closes_the_page() {
 #[test]
 fn the_keyboard_reaches_the_rail_and_volver_a_la_hoja_closes_the_page() {
     let mut window = window();
+    window.document.place(punchi_fluid_doc::Placement::new(
+        "valve.3_2.spring_return",
+        punchi_fluid_draw::Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
     {
         let mut harness = harness(&mut window);
         harness.get_by_label("Back to the sheet").focus();
@@ -275,6 +289,32 @@ fn the_keyboard_reaches_the_rail_and_volver_a_la_hoja_closes_the_page() {
     assert!(
         !window.start_open,
         "Enter on the focused rail row returns to the sheet"
+    );
+}
+
+#[test]
+fn the_back_row_appears_only_with_a_document() {
+    let mut empty = window();
+    {
+        let harness = harness(&mut empty);
+        assert!(
+            harness.query_by_label("Back to the sheet").is_none(),
+            "the empty page at launch has no sheet to go back to"
+        );
+    }
+    let mut with_document = window();
+    with_document
+        .document
+        .place(punchi_fluid_doc::Placement::new(
+            "valve.3_2.spring_return",
+            punchi_fluid_draw::Pt::new(100.0, 80.0),
+            24.0,
+            24.0,
+        ));
+    let harness = harness(&mut with_document);
+    assert!(
+        harness.query_by_label("Back to the sheet").is_some(),
+        "a document open puts the way back in the rail"
     );
 }
 

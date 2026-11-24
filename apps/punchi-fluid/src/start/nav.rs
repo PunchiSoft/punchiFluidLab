@@ -71,27 +71,21 @@ const NAV_LICENSE: NavItem = NavItem {
     current: false,
 };
 
-/// Draws the rail: the brand, the way back, the `Iniciar` group and the `Aprender` group.
-pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> Option<Action> {
+/// Draws the rail the reference shows: Inicio chosen, the two ways in, the settings gear and,
+/// at the foot, Acerca de and Licencia. The way back to the sheet appears only when a document
+/// is open; the title and the group headings of the retired layout are gone.
+pub(super) fn nav(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    language: Language,
+    has_document: bool,
+) -> Option<Action> {
     let mut action = None;
     let seam = ui.max_rect();
     ui.add_space(tokens.unit * 0.75);
-    ui.horizontal(|ui| {
-        ui.add_space(tokens.unit * 0.5);
-        ui.label(
-            egui::RichText::new("Punchi Fluid Lab")
-                .size(tokens.text_label)
-                .strong()
-                .color(tokens.ink),
-        );
-    });
-    ui.add_space(tokens.unit * 0.6);
-    ui.separator();
-    ui.add_space(tokens.unit * 0.6);
-    if nav_row(ui, tokens, &NAV_TO_SHEET, language) {
+    if has_document && nav_row(ui, tokens, &NAV_TO_SHEET, language) {
         action = Some(Action::Sheet);
     }
-    nav_heading(ui, tokens, language.text("start.nav.group_start"));
     // Inicio is the page itself: choosing it keeps the reader where it is.
     nav_row(ui, tokens, &NAV_HOME, language);
     if nav_row(ui, tokens, &NAV_NEW, language) {
@@ -100,10 +94,15 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> Opt
     if nav_row(ui, tokens, &NAV_OPEN, language) {
         action = Some(Action::OpenDialog);
     }
+    ui.separator();
     if nav_row(ui, tokens, &NAV_PREFERENCES, language) {
         action = Some(Action::Preferences);
     }
-    nav_heading(ui, tokens, language.text("start.nav.group_learn"));
+    // Acerca de and Licencia keep the foot of the rail: the space between them and the
+    // settings row is what the capture calls the rail's quiet end.
+    let height = (tokens.unit * 2.0).max(32.0);
+    let foot = height * 2.0 + ui.spacing().item_spacing.y;
+    ui.add_space((ui.available_height() - foot).max(0.0));
     if nav_row(ui, tokens, &NAV_ABOUT, language) {
         action = Some(Action::About);
     }
@@ -136,14 +135,12 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Languag
     if !ui.is_rect_visible(rect) {
         return false;
     }
-    let ink = if item.current {
-        tokens.on_accent
-    } else {
-        tokens.ink
-    };
+    let ink = tokens.ink;
     if item.current {
+        // The capture's chosen row is a light pill, not the accent: the ink stays readable
+        // and the mark is not colour-only, the accessibility layer says selected.
         ui.painter()
-            .rect_filled(rect, tokens.radius_control, tokens.accent);
+            .rect_filled(rect, tokens.radius_control, tokens.surface_raised);
     } else if response.hovered() || response.has_focus() {
         ui.painter()
             .rect_filled(rect, tokens.radius_control, tokens.accent_soft);
@@ -168,19 +165,6 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Languag
         egui::FontId::proportional(tokens.text_body),
         ink,
     );
-    if let Some(shortcut) = item.shortcut {
-        ui.painter().text(
-            egui::pos2(rect.right() - tokens.unit * 0.6, rect.center().y),
-            egui::Align2::RIGHT_CENTER,
-            shortcut,
-            egui::FontId::proportional(tokens.text_small),
-            if item.current {
-                tokens.on_accent
-            } else {
-                tokens.ink_muted
-            },
-        );
-    }
     let current = item.current;
     response.widget_info(|| {
         if current {
@@ -197,16 +181,15 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Languag
     activated
 }
 
-/// The small heading of a rail group.
-fn nav_heading(ui: &mut egui::Ui, tokens: &Tokens, text: &str) {
-    ui.add_space(tokens.unit * 0.6);
-    ui.horizontal(|ui| {
-        ui.add_space(tokens.unit * 0.5);
-        ui.label(
-            egui::RichText::new(text)
-                .size(tokens.text_small)
-                .color(tokens.ink_dim),
+#[cfg(test)]
+mod tests {
+    use super::NAV_PREFERENCES;
+
+    #[test]
+    fn the_settings_row_uses_the_gear() {
+        assert_eq!(
+            NAV_PREFERENCES.drawing.0, "preferences-system",
+            "Settings wears the gear, not the theme brush"
         );
-    });
-    ui.add_space(tokens.unit * 0.2);
+    }
 }

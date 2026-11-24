@@ -543,10 +543,13 @@ the top edge to the bottom, including the 1366×768 support floor. The view clos
 project opens ([ADR 0031](adr/0031-the-program-opens-on-a-start-view.md)).
 
 **The left region carries the start navigation** while the start view is shown: the catalog's
-column holds a rail with **Iniciar** — **Inicio**, **Nuevo proyecto**, **Abrir…**, each with its
-symbol and the `Ctrl+N`/`Ctrl+O` hint — **Configuración** (`Ctrl+,`), which opens the window of
-§2.4 — and **Aprender** — **Acerca de** and **Licencia** — instead of a second sidebar. **Atajos** and **ISO 1219** need a panel and content of their own and stay
-out until a node owns them. The right dock is hidden, since with no project it has no inspector
+column holds a rail with **Inicio** chosen, **Nuevo proyecto** and **Abrir…**, a separator,
+**Configuración** with its **gear**, which opens the window of §2.4, and at the foot
+**Acerca de** and **Licencia**, instead of a second sidebar. The rail carries no brand and no
+group headings; the shortcuts live in the tooltips, not in the row, and the chosen row is a
+light pill named *selected* to the accessibility layer, never colour alone. With a document
+open, **Volver a la hoja** sits above **Inicio**; at launch it is absent. **Atajos** and
+**ISO 1219** need a panel and content of their own and stay out until a node owns them. The right dock is hidden, since with no project it has no inspector
 and no block. The commands that need a document (`Guardar`, `Exportar`) are not shown greyed:
 they appear with the project. `Inicio` is reachable from **Archivo ▸ Inicio**, from the
 **strip's home control** at the foot of the sheet, and from `Ctrl+Home`; with a project open the
@@ -561,10 +564,10 @@ card of its own, as in the suite's other start pages — no box wraps a whole gr
 default way in, **Nuevo proyecto**, is tinted with `accentSoft` and bordered with the accent;
 its text stays in the ink, so a hover cannot repaint a fill under a light-on-dark word.
 **Abrir…** is the quieter secondary card. The rail keeps the catalog's width and tokens,
-gives each row its symbol and its shortcut, and marks the current view with a filled accent
-row whose text and icon are the measured `onAccent`.
+gives each row its symbol, marks the current view with a light pill and exposes it as
+selected.
 
-**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver a la hoja**, with **Esc** or with **Nuevo**. Inicio takes the whole window: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place; the window title names the program, never an untitled document. It offers, in reading order:
+**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver a la hoja**, with **Esc** or with **Nuevo**. Inicio takes the whole window: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place with **Inicio**, **Nuevo proyecto**, **Abrir…**, **Configuración** and, at the foot, **Acerca de** and **Licencia**; the window title names the program, never an untitled document. It offers, in reading order:
 
 - **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The page
   lists at most `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, newest first, with the
