@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### El catálogo vuelve a la tarjeta de la referencia — 2026-11-24
+
+- El catálogo acoplado se dibuja como la **tarjeta flotante** de la referencia: margen propio,
+  esquinas redondeadas y **sombra del tema**, con el riel fuera del borde de la ventana; cada
+  baldosa es una **tarjeta** con su relleno y su regla, y la elegida se marca con el acento.
+- **Pruebas**: la suite de la ventana sigue en **362**; capturas claro/oscuro pendientes como
+  evidencia manual.
+
 ### La tira flotante es la tarjeta de la referencia — 2026-11-24
 
 - El marco de la tira flotante y el de su panel de zoom usan ahora el **radio de control y la
