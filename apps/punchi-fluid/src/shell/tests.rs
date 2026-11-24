@@ -19,6 +19,7 @@ use crate::ribbon::Command;
 use crate::shell::{Drawer, SheetProbe};
 
 mod sheet_gestures;
+mod view_strip;
 use crate::theme::Theme;
 use crate::window_state::{self, Geometry};
 
@@ -86,6 +87,10 @@ const SHEET_INSET: f32 = 16.0;
 
 /// What one frame says about the shell, read from the harness after it runs.
 #[derive(Debug, Default)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the probe records independent facts of one frame, not a state machine"
+)]
 struct Probe {
     sheet_width: f32,
     drawer: Option<Drawer>,
@@ -94,6 +99,10 @@ struct Probe {
     zoom_armed: bool,
     pan: egui::Vec2,
     zoom: f32,
+    block: bool,
+    strip_folded: bool,
+    strip_panel: bool,
+    strip_compact: bool,
 }
 
 /// A window the tests can draw: no path, no dialog, no safety copy.
@@ -150,6 +159,10 @@ fn sheet_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
                 probe.zoom_armed = window.zoom_window_armed;
                 probe.pan = window.view.pan();
                 probe.zoom = window.view.zoom();
+                probe.block = window.show_block;
+                probe.strip_folded = window.strip.folded;
+                probe.strip_panel = window.strip.panel_open;
+                probe.strip_compact = window.strip.compact_open;
             },
             Probe::default(),
         );

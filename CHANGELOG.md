@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La tira de vista flotante — 2026-11-24
+
+- **Tira**: flota sobre el borde derecho del lienzo, en el canal que el área de dibujo reserva;
+  no quita ancho al papel ni es una cuarta región. Controles: **Mover** (mano), **Ajustar al
+  marco**, **Zoom** con su panel (Disminuir, Aumentar, Zoom a una zona, Vista anterior),
+  **Cajetín** de solo vista, **Iniciar/Pausa** y **plegado** a un botón; tamaños de `unit`,
+  nombres accesibles y teclado; en compacto arranca plegada.
+- **Persistencia**: `strip_folded` y `block_visible` se recuerdan en `settings.state`; la tira
+  no toca el documento.
+- **Pruebas**: `the_strip_buttons_dispatch_the_same_commands`, `the_strip_folds_and_unfolds`,
+  `the_compact_window_starts_with_the_strip_folded`,
+  `every_strip_button_has_an_accessible_name`,
+  `the_strip_floats_over_the_canvas_and_clear_of_the_frame` y
+  `the_strip_fold_and_the_block_visibility_round_trip`; la suite de la ventana pasa a **340**.
+- **Fase 4 cerrada**: la tira flotante está en la ventana; la cuadrícula (fase 5) sigue.
+
 ### Ventana de zoom y modo Mover — 2026-11-24
 
 - **Zoom a una zona**: **Ver ▸ Zoom a una zona** arma el rectángulo; el arrastre izquierdo lo

@@ -523,3 +523,13 @@ working = "working"
 exhaust = "exhaust"
 mechanical = "mechanical"
 electrical = "electrical"
+
+[strip]
+pan = "Pan"
+pan_on = "Stop panning"
+fit = "Fit the frame"
+zoom = "Zoom"
+block_show = "Show the title block"
+block_hide = "Hide the title block"
+fold = "Fold the view strip"
+unfold = "Show the view strip"

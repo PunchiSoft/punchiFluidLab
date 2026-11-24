@@ -286,6 +286,7 @@ impl Window {
             hand_mode: false,
             zoom_window_armed: false,
             zoom_drag: None,
+            strip: crate::view_strip::ViewStrip::default(),
             pressed_valve: None,
             start_open: true,
             recents: Recents::default(),
