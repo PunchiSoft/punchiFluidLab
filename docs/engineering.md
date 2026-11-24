@@ -171,6 +171,11 @@ node register and must close with tests.
 A claim in a pull request names the level it rests on. "Works" without a level is not
 a claim.
 
+The skill catalog is data the model loads at runtime: a malformed frontmatter makes a skill
+disappear without failing a build. `scripts-dev/check-skills.sh` parses every `SKILL.md`,
+matches it with its catalog row and resolves its links; `check-docs.sh` runs it on the real
+tree, and `test-check-skills.sh` proves the failure modes.
+
 ## GitHub practices
 
 ### Where the community files live

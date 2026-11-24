@@ -313,6 +313,14 @@ then
     status=1
 fi
 
+# The real tree also carries the skill catalog. The fixture trees set ROOT on purpose and
+# do not need to repeat this check; `test-check-skills.sh` proves it separately.
+if [[ -z ${ROOT:-} ]]; then
+    if ! ./scripts-dev/check-skills.sh; then
+        status=1
+    fi
+fi
+
 if ((status == 0)); then
     echo "check-docs: the workspace documents match Cargo.toml"
     echo "check-docs: the documentation index, links and ADRs are complete"
