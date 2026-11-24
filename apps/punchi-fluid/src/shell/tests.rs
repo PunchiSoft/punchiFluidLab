@@ -17,6 +17,8 @@ use crate::Window;
 use crate::layout::LayoutMode;
 use crate::ribbon::Command;
 use crate::shell::{Drawer, SheetProbe};
+
+mod sheet_gestures;
 use crate::theme::Theme;
 use crate::window_state::{self, Geometry};
 
@@ -88,6 +90,10 @@ struct Probe {
     sheet_width: f32,
     drawer: Option<Drawer>,
     sheet: Option<SheetProbe>,
+    hand: bool,
+    zoom_armed: bool,
+    pan: egui::Vec2,
+    zoom: f32,
 }
 
 /// A window the tests can draw: no path, no dialog, no safety copy.
@@ -140,6 +146,10 @@ fn sheet_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
                 window.show_regions(context);
                 window.show_sheet(context);
                 probe.sheet = window.sheet_probe;
+                probe.hand = window.hand_mode;
+                probe.zoom_armed = window.zoom_window_armed;
+                probe.pan = window.view.pan();
+                probe.zoom = window.view.zoom();
             },
             Probe::default(),
         );

@@ -381,3 +381,11 @@ fn hiding_the_block_changes_nothing_in_the_document() {
         "the block's visibility is view state, not an edit"
     );
 }
+
+#[test]
+fn entering_the_simulation_leaves_the_hand_mode() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.hand_mode = true;
+    window.dispatch(crate::ribbon::Command::Start);
+    assert!(!window.hand_mode, "a click actuates while the model runs");
+}

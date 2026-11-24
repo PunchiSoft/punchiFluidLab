@@ -176,6 +176,12 @@ struct Window {
     running: bool,
     /// Whether the sheet draws the title block on screen: view state, never a document field.
     show_block: bool,
+    /// The hand mode: the primary drag pans the sheet instead of selecting.
+    hand_mode: bool,
+    /// Whether the next left drag on the sheet arms the zoom window.
+    zoom_window_armed: bool,
+    /// The rectangle being dragged for the zoom window, in sheet millimetres.
+    zoom_drag: Option<crate::view::ZoomWindow>,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.
@@ -262,6 +268,8 @@ impl Window {
 
     /// Starts the clock if the sheet has a model.
     fn start(&mut self) {
+        // A click actuates while the model runs, so entering the simulation leaves the hand.
+        self.hand_mode = false;
         self.rebuild_if_stale();
         if self.model.is_some() {
             self.running = true;
@@ -579,6 +587,13 @@ impl Window {
             Command::ZoomReset => self.view.fit(),
             Command::ViewBack => self.view.back(),
             Command::BlockVisible => self.show_block = !self.show_block,
+            Command::ZoomWindow => {
+                self.zoom_window_armed = true;
+                self.zoom_drag = None;
+                self.moving = None;
+                self.drag = None;
+            }
+            Command::Hand => self.hand_mode = !self.hand_mode,
             Command::Catalog | Command::Properties | Command::Autohide | Command::ResetView => {
                 self.view_command(command);
             }
@@ -628,6 +643,22 @@ impl Window {
         if self.menu.is_open() || self.mockups.is_open() {
             return;
         }
+        // The view gestures own `Esc` while they are armed: the zoom window and the hand.
+        if (self.zoom_window_armed || self.zoom_drag.is_some())
+            && context
+                .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+        {
+            self.zoom_window_armed = false;
+            self.zoom_drag = None;
+            return;
+        }
+        if self.hand_mode
+            && context
+                .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+        {
+            self.hand_mode = false;
+            return;
+        }
         if context.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::Comma)) {
             self.open_preferences();
             return;
@@ -675,109 +706,7 @@ impl eframe::App for Window {
     }
 }
 
-impl Window {
-    /// The sheet's editing gestures: a click selects the placement under the pointer, a
-    /// primary drag moves the selection with a live preview, and the release commits one
-    /// undo entry.
-    fn handle_edit(
-        &mut self,
-        response: &egui::Response,
-        placement: &view::Placement,
-        page_min: egui::Vec2,
-    ) {
-        let to_mm = |screen: egui::Pos2| {
-            Pt::new(
-                page_min.x + (screen.x - placement.origin.x) / placement.scale,
-                page_min.y + (screen.y - placement.origin.y) / placement.scale,
-            )
-        };
-        // The armed move, the keyboard menu and the right-click menu own the frame when the
-        // sheet is under them: no selection, valve press or drag happens underneath.
-        if self.handle_menu_gestures(response, placement, page_min) {
-            return;
-        }
-        // The reference presses a valve while the button is down: the momentary returns, the
-        // maintained stays. A press on a valve is not a drag of the selection. Only the
-        // primary button presses it; the right button belongs to the menu.
-        if response.is_pointer_button_down_on()
-            && response
-                .ctx
-                .input(|input| input.pointer.button_down(egui::PointerButton::Primary))
-        {
-            if let Some(position) = response.interact_pointer_pos() {
-                let hit = self.hit_placement(to_mm(position));
-                if hit != self.pressed_valve {
-                    if let Some(previous) = self.pressed_valve.take() {
-                        if let Some(model) = self.model.as_mut() {
-                            let _ = model.release_valve(previous);
-                        }
-                    }
-                    if let Some(index) = hit {
-                        let pressed = self
-                            .model
-                            .as_mut()
-                            .is_some_and(|model| model.press_valve(index));
-                        if pressed {
-                            self.pressed_valve = Some(index);
-                        }
-                    }
-                }
-            }
-        } else if let Some(index) = self.pressed_valve.take() {
-            if let Some(model) = self.model.as_mut() {
-                let _ = model.release_valve(index);
-            }
-        }
-        if response.clicked() {
-            if let Some(position) = response.interact_pointer_pos() {
-                let additive = response.ctx.input(|input| input.modifiers.shift);
-                self.select_at(to_mm(position), additive);
-            }
-        }
-        if response.drag_started_by(egui::PointerButton::Primary) {
-            if let Some(position) = response.interact_pointer_pos() {
-                let additive = response.ctx.input(|input| input.modifiers.shift);
-                if additive || self.pressed_valve.is_some() {
-                    return;
-                }
-                let index = self.select_at(to_mm(position), false);
-                if index.is_some() {
-                    let starts: Vec<(usize, Pt)> = self
-                        .selected
-                        .iter()
-                        .filter_map(|index| {
-                            self.document
-                                .placements()
-                                .get(*index)
-                                .map(|placement| (*index, placement.centre))
-                        })
-                        .collect();
-                    self.drag = Some(Drag {
-                        pointer: position,
-                        starts,
-                        delta: egui::Vec2::ZERO,
-                    });
-                }
-            }
-        }
-        if response.dragged_by(egui::PointerButton::Primary) {
-            if let Some(drag) = &mut self.drag {
-                if let Some(position) = response.interact_pointer_pos() {
-                    drag.delta = egui::vec2(
-                        (position.x - drag.pointer.x) / placement.scale,
-                        (position.y - drag.pointer.y) / placement.scale,
-                    );
-                }
-            }
-        }
-        if response.drag_stopped_by(egui::PointerButton::Primary) {
-            match response.interact_pointer_pos() {
-                Some(position) => self.commit_drag(placement.scale, position),
-                None => self.drag = None,
-            }
-        }
-    }
-}
+impl Window {}
 
 #[cfg(test)]
 mod tests;

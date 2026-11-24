@@ -6,6 +6,24 @@ publicación.
 
 ## Unreleased
 
+### Ventana de zoom y modo Mover — 2026-11-24
+
+- **Zoom a una zona**: **Ver ▸ Zoom a una zona** arma el rectángulo; el arrastre izquierdo lo
+  dibuja sobre la hoja, el soltar lo encuadra y lo centra (un rectángulo menor que 4 mm no
+  hace nada y deja el arma lista), y `Esc` cancela. Deja un paso de historial.
+- **Mover**: **Ver ▸ Mover** enciende el modo mano; el arrastre izquierdo desplaza la hoja con
+  el puntero de mano, el resto de gestos sigue igual, `Esc` o el mismo botón lo dejan y entrar
+  en simulación sale del modo (un clic debe accionar).
+- **Desplazamiento**: el pan se acota al **papel**, no al marco, como la fila F0: así los
+  márgenes pueden entrar en vista y la ventana de zoom centra el rectángulo hasta cerca del
+  borde.
+- **Pruebas**: `the_zoom_window_frames_the_rectangle_and_centres_it`,
+  `the_zoom_window_magnifies_the_rectangle`, `escape_cancels_the_zoom_window`,
+  `the_hand_mode_pans_and_leaves_on_escape`, `entering_the_simulation_leaves_the_hand_mode` y
+  `the_pan_is_bounded_to_the_paper`; la suite de la ventana pasa a **334**.
+- **Fase 3 cerrada**: historial, ventana de zoom, mano, cajetín de vista y ajuste al marco
+  están en la ventana; la tira flotante es la fase 4.
+
 ### Vista: una vuelta atrás y el cajetín de vista — 2026-11-24
 
 - **Vista anterior**: el ajuste, el zoom y la ventana de zoom dejan **un paso** de historial;
