@@ -3,9 +3,9 @@
 **Status: target.** The mechanism is decided and its first slice is implemented:
 `punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
 and the whole Rust window is translated: the ribbon, the catalog, the inspector, Configuración,
-the check panel, the start page, the status bar, the lifecycle panels and every dialog. The
-check's own finding sentences, the file and session error causes, the exporter and the CLI are
-the remaining phase-4 debt.
+the check panel and its finding sentences, the start page, the status bar, the lifecycle panels
+and every dialog. The file and session error causes, the exporter and the catalog summary are
+the remaining phase-4 debt; the CLI is a fixed English contract.
 
 ## The decision
 
@@ -53,9 +53,10 @@ migration plan are the owner's working notes, outside the repository.
 
 ## Where the copy lives today
 
-- **The Rust window** (`apps/punchi-fluid`): every surface reads the catalog. The check's
-  finding sentences (`message_es`), the error causes from `punchi-fluid-file` and
-  `punchi-fluid-session`, the exporter and the CLI are phase-4 debt.
+- **The Rust window** (`apps/punchi-fluid`): every surface reads the catalog, and the check
+  crate returns only a stable `kind`; the panel maps it to `check.finding.*`. The error causes
+  from `punchi-fluid-file` and `punchi-fluid-session`, the exporter and the catalog summary are
+  phase-4 debt.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
   `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
   keys.
@@ -67,8 +68,9 @@ migration plan are the owner's working notes, outside the repository.
 
 ## What is not done
 
-- The check's own finding sentences, the file and session error causes, the exporter and the
-  CLI still return Spanish; the whole Rust window is on the catalog today.
+- The file and session error causes, the exporter and the catalog summary still return
+  Spanish; the whole Rust window and the check findings are on the catalog today, and the CLI
+  speaks English.
 - The manual classification of every string, test and contract is still pending for the
   surfaces after the pilot; the pilot's key map is the first classified slice.
 - The catalog data (`name_es`, `summary`) and the Spanish translation of the rest of the

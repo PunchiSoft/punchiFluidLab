@@ -429,3 +429,17 @@ body = "El documento tiene cambios que no están en ningún archivo. ¿Qué hago
 save_close = "Guardar y cerrar"
 close_without = "Cerrar sin guardar"
 cancel = "Cancelar"
+
+[check.finding]
+outside_sheet = "un componente se sale de la hoja"
+overlapping_components = "dos componentes se solapan"
+pipe_through_component = "un tubo cruza un componente"
+overlapping_pipes = "dos tubos se superponen"
+open_connection = "una conexión neumática queda abierta"
+duplicate_designation = "dos cilindros llevan la misma designación"
+pipe_across_circuits = "un tubo une dos circuitos"
+mismatched_connection = "una conexión une dos terminales que no encajan"
+short_circuit = "el positivo del raíl y su retorno están unidos"
+under_title_block = "un componente cae bajo el cajetín"
+bad_port_closure = "un cierre no encaja con el puerto que lo lleva"
+at = "{message} en ({x}, {y}) mm"

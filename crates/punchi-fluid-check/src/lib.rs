@@ -86,24 +86,6 @@ impl FindingKind {
             Self::BadPortClosure => "bad_port_closure",
         }
     }
-
-    /// The sentence the interface shows.
-    #[must_use]
-    pub const fn message_es(self) -> &'static str {
-        match self {
-            Self::OutsideSheet => "un componente se sale de la hoja",
-            Self::OverlappingComponents => "dos componentes se solapan",
-            Self::PipeThroughComponent => "un tubo cruza un componente",
-            Self::OverlappingPipes => "dos tubos se superponen",
-            Self::OpenConnection => "una conexión neumática queda abierta",
-            Self::DuplicateDesignation => "dos cilindros llevan la misma designación",
-            Self::PipeAcrossCircuits => "un tubo une dos circuitos",
-            Self::MismatchedConnection => "una conexión une dos terminales que no encajan",
-            Self::ShortCircuit => "el positivo del raíl y su retorno están unidos",
-            Self::UnderTitleBlock => "un componente cae bajo el cajetín",
-            Self::BadPortClosure => "un cierre no encaja con el puerto que lo lleva",
-        }
-    }
 }
 
 /// One fault, with the place it happens.
@@ -117,19 +99,6 @@ pub struct Finding {
     pub component: Option<usize>,
     /// Index of the pipe involved, when there is one.
     pub pipe: Option<usize>,
-}
-
-impl Finding {
-    /// One line for a report.
-    #[must_use]
-    pub fn describe(&self) -> String {
-        format!(
-            "{} en ({:.0}, {:.0}) mm",
-            self.kind.message_es(),
-            self.at.x,
-            self.at.y
-        )
-    }
 }
 
 /// Checks a document against `sheet`, using `catalog` for the ports of every pipe.

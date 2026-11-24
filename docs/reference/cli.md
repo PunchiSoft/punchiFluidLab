@@ -42,7 +42,9 @@ punchi-fluid-cli check circuito.pfluid --json
 punchi-fluid-cli check circuito.pfluid --strict
 ```
 
-- Without `--json` it prints `ok: sin faltas`, or one line per finding plus the count.
+- Without `--json` it prints `ok: no faults`, or one line per finding plus `N fault(s)`.
+  The command is a fixed English contract ([ADR 0045](../adr/0045-the-interface-speaks-english-through-embedded-toml-catalogs.md));
+  the window translates the same `kind` through its catalog.
 - `--json` prints one object, described below.
 - `--strict` changes only the exit code: without it, a sheet with findings still exits `0`;
   with it, it exits `3`. It never changes what is printed.
@@ -50,25 +52,27 @@ punchi-fluid-cli check circuito.pfluid --strict
   against the built-in one; a user definition the build does not have is not seen at all.
   `--catalog` is a later phase.
 
-The nine findings this build knows, in the order the report uses:
+The findings this build knows, in the order the report uses:
 
-| `kind` | Message (Spanish) |
+| `kind` | Message (English) |
 |---|---|
-| `outside_sheet` | un componente se sale de la hoja |
-| `overlapping_components` | dos componentes se solapan |
-| `pipe_through_component` | un tubo cruza un componente |
-| `overlapping_pipes` | dos tubos se superponen |
-| `open_connection` | una conexión neumática queda abierta |
-| `duplicate_designation` | dos cilindros llevan la misma designación |
-| `pipe_across_circuits` | un tubo une dos circuitos |
-| `mismatched_connection` | una conexión une dos terminales que no encajan |
-| `short_circuit` | el positivo del raíl y su retorno están unidos |
+| `outside_sheet` | a component falls outside the sheet |
+| `overlapping_components` | two components overlap |
+| `pipe_through_component` | a hose crosses a component |
+| `overlapping_pipes` | two hoses overlap |
+| `open_connection` | a pneumatic connection is left open |
+| `duplicate_designation` | two cylinders carry the same designation |
+| `pipe_across_circuits` | a hose joins two circuits |
+| `mismatched_connection` | a connection joins two terminals that do not match |
+| `short_circuit` | the live rail and its return are joined |
+| `under_title_block` | a component falls under the title block |
+| `bad_port_closure` | a closure does not match the port that carries it |
 
 The check runs the geometry faults on the **active circuit** and the cross-circuit fault on
 the whole project, because that one is about a pipe whose ends are in different circuits.
 The active circuit is the `active` index the project file stores.
 
-All nine are implemented. The reference's ninth — a label that does not match — is not
+All eleven are implemented. The reference's ninth — a label that does not match — is not
 applicable to this model: it couples a coil and its contact by name, and our control circuit
 couples them by wire. The ninth fault here is the equivalent mistake under our rules, the
 live rail joined to its return, and the ledger in [capabilities.md](../capabilities.md) says
@@ -107,7 +111,7 @@ A wrong command line prints a usage line on stderr. A missing file is `1`, not `
   "findings": [
     {
       "kind": "outside_sheet",
-      "message": "un componente se sale de la hoja",
+      "message": "a component falls outside the sheet",
       "x": 250.000,
       "y": 60.000,
       "component": 0,
@@ -115,7 +119,7 @@ A wrong command line prints a usage line on stderr. A missing file is `1`, not `
     },
     {
       "kind": "open_connection",
-      "message": "una conexión neumática queda abierta",
+      "message": "a pneumatic connection is left open",
       "x": 145.000,
       "y": 97.000,
       "component": 2,

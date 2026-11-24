@@ -918,7 +918,7 @@ fn without_a_block_the_frame_is_free_and_enabling_one_reports_the_collision() {
         .to_string_lossy()
         .into_owned();
     assert!(
-        report.contains("bajo el cajetín"),
+        report.contains("under_title_block"),
         "the component is under the block: {report}"
     );
     // SAFETY: the session is still alive.
@@ -1083,7 +1083,7 @@ fn the_check_measures_the_document_sheet_and_not_a_fixed_area() {
         .to_string_lossy()
         .into_owned();
     assert!(
-        report.contains("se sale de la hoja"),
+        report.contains("outside_sheet"),
         "the frame is the drawing space: {report}"
     );
 
@@ -1121,7 +1121,7 @@ fn the_check_measures_the_document_sheet_and_not_a_fixed_area() {
         .to_string_lossy()
         .into_owned();
     assert!(
-        !report.contains("se sale de la hoja"),
+        !report.contains("outside_sheet"),
         "the box is inside the new sheet: {report}"
     );
     // SAFETY: the session is still alive.
