@@ -1,8 +1,8 @@
 # supply.compressor_adjustable — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: compressor, 4 bar, with an adjustable delivery
 
 ## The claim
@@ -63,9 +63,16 @@
 
 ## What is still open
 
-- The second reader's signature.
 - The arrow's reach is the capture's, not the standard's; the standard allows any length.
 - The same intake and numeral questions as `supply.compressor`.
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

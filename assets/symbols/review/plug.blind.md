@@ -1,8 +1,8 @@
 # Review record: `plug.blind`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, pending a person's sign-off
+    reviewer: Cristian Muñoz (owner), second reader
     function: caps a port so the line ends there on purpose
 
 ## The claim
@@ -90,11 +90,10 @@ absolute size is the closure box's, as the standard allows a symbol to be scaled
 | Does the arrow point at the far end of the connection? | No arrow: a plug closes, it does not direct flow. |
 | Are spring and actuator on the declared sides? | No spring and no actuator. |
 | Is the symbol legible at palette size? | Yes: `plug.blind-light.png`, `plug.blind-dark.png`. |
-| Is the symbol legible at 300 dpi? | Yes: `plug.blind-300.png`; the second reader's signature is still owed. |
+| Is the symbol legible at 300 dpi? | Yes: `plug.blind-300.png`. |
 
 ## Open items
 
-- The second reader's signature is owed (the record is `pending-300dpi`).
 - **The F038V1 difference**: the standard's `F038V1` is a square plug inside a fluid
   line; a closure fitted on a port uses `2172V1`'s bar. The two are different figures and
   the record states which one the definition draws. If the owner wants the in-line square
@@ -113,8 +112,8 @@ absolute size is the closure box's, as the standard allows a symbol to be scaled
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: automated pass, pending a person's sign-off
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the record was rewritten with the 2172V1 and
   F038V1 clauses and their difference, the measures in millimetres of the closure box,

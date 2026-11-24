@@ -1,8 +1,8 @@
 # supply.compressor — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: compressor, 4 bar: the machine that makes the compressed air
 
 ## The claim
@@ -70,11 +70,18 @@
 
 ## What is still open
 
-- The second reader's signature.
 - The 2012 text is read through the Japanese adoption (MOD), not the ISO text itself.
 - The intake's `exhaust` role is a mapping that must be read with the review: the role says
   "open to the atmosphere", not "air leaves here".
 - The numeral's room above or to the left (`RF053`) is an open question of the contract.
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

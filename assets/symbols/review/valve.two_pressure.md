@@ -1,8 +1,8 @@
 # Review record: `valve.two_pressure`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, pending a person's sign-off
+    reviewer: Cristian Muñoz (owner), second reader
     function: two-pressure valve (AND); the outlet follows the lower inlet while both carry pressure
 
 ## The claim
@@ -89,11 +89,10 @@ millimetres of that box; the figure's proportions are in M, with M = 2 mm.
 | Does the arrow point at the far end of the connection? | No flow arrow on this flat symbol: the double piston carries the meaning. |
 | Are spring and actuator on the declared sides? | No spring and no actuator. |
 | Is the symbol legible at palette size? | Yes: `valve.two_pressure-light.png`, `valve.two_pressure-dark.png`. |
-| Is the symbol legible at 300 dpi? | Yes: `valve.two_pressure-300.png`; the second reader's signature is still owed. |
+| Is the symbol legible at 300 dpi? | Yes: `valve.two_pressure-300.png`. |
 
 ## Open items
 
-- The second reader's signature is owed (the record is `pending-300dpi`).
 - **The clause number differs between the editions**: ISO 1219-1:2006 prints the figure at
   7.1.3.6 and JIS B 0125-1:2020 at 7.1.3.5. The `X10620` registration number is the same;
   the review cites both instead of choosing one.
@@ -110,8 +109,8 @@ millimetres of that box; the figure's proportions are in M, with M = 2 mm.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: automated pass, pending a person's sign-off
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the body follows the figure's 8M × 4M (it was
   10 × 8 mm), the through line and the line from the outlet to the piston are removed,

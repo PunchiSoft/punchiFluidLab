@@ -1,8 +1,8 @@
 # supply.network — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: compressed-air network, 4 bar: the air arrives from the plant
 
 ## The claim
@@ -59,10 +59,17 @@
 
 ## What is still open
 
-- The second reader's signature.
 - Whether a source's single connection should print `1` (the supply line) or `2` (an outlet,
   `RF053`) is a contract question, recorded here rather than decided alone.
 - The 2012 text is read through the Japanese adoption (MOD).
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

@@ -1,8 +1,8 @@
 # lubricator.oil — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: oil lubricator
 
 ## The claim
@@ -60,13 +60,20 @@
 
 ## What is still open
 
-- The second reader's signature.
 - The 2012 text is read through the Japanese adoption, not the ISO text itself.
 - The model adds no oil: the file is a two-port restriction, and the review does not claim
   lubrication.
 - The earlier record described a "short arrow ... as the reference draws a lubricator"; the
   standard does not print the head, and the reference is not a shape authority
   ([ADR 0040](../../docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)).
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

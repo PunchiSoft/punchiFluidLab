@@ -3,9 +3,9 @@
 
 # Review record: `valve.5_2.spring_return`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: 5/2 directional control valve, spring return, manual lever
 
 ## The claim
@@ -89,12 +89,12 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 | Does the arrow point at the far end of the connection? | yes: each supply path at its working port, each exhaust path at its exhaust |
 | Are spring and actuator on the declared sides? | yes: lever at the left, spring at the right, opposite ends |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the port sides were inverted; they now follow
   `X10400` (`4`/`2` above, `5`/`1`/`3` below), and the file's header comment now states
@@ -104,8 +104,6 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - No registered X-number combines the 5/2 body with a plain lever and a mechanical
   spring only: `X10400` is treadle-controlled, `X10460` has the air spring. The review
   cites both and records the substitution instead of inventing a figure.

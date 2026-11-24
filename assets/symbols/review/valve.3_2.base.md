@@ -3,9 +3,9 @@
 
 # Review record: `valve.3_2.base`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: 3/2 directional control valve in its base form — two positions, three ports, no return and no actuation
 
 ## The claim
@@ -84,12 +84,12 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 | Does the arrow point at the far end of the connection? | yes: at `3` in position 0, at `2` in position 1 |
 | Are spring and actuator on the declared sides? | there is no spring and no actuator in the base form |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the ports moved to the figure's offsets (`1`
   and `2` aligned, `3` at the other quarter), so the two paths and the two blocking marks
@@ -97,8 +97,6 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - The base is a composition and has no single registered X-number. That is the catalog's
   existing organisation; if the base must itself carry a figure, the catalog would need a
   different split, which is outside this phase.

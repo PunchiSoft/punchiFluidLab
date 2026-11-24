@@ -3,9 +3,9 @@
 
 # Review record: `valve.3_2.spring_return`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: 3/2 directional control valve, spring return, normally closed, manual lever
 
 ## The claim
@@ -87,12 +87,12 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 | Does the arrow point at the far end of the connection? | yes: at `3` at rest, at `2` when actuated |
 | Are spring and actuator on the declared sides? | yes: lever at the left, spring at the right, opposite ends |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the file's comment placed position 0 at the
   leftmost square while the spring is on the right; the comment is corrected and the
@@ -102,8 +102,6 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - `X10270`'s lever carries a roller; this file uses the plain lever `688V1`. No
   registered X-number covers that combination, so the review cites `X10270` for the body
   and the return and `688V1` for the actuation.

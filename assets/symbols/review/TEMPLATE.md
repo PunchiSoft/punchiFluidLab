@@ -51,6 +51,8 @@ Numbers, not adjectives. The drawing is checked against this table.
 - Light and dark captures, fitted to the drawing:
   `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-light.png --ink light --fit`
   `cargo run -p punchi-fluid-export --bin symbol-sheet -- <id> review/<id>-dark.png --ink dark --fit`
+- Every built-in at once, with the same three names and options:
+  `cargo run -p punchi-fluid-export --bin symbol-sheet -- --all assets/symbols/review`
 - Symbol lint: passes
 - Palette legibility at 24–30 px: `<id>-light.png`, `<id>-dark.png`
 

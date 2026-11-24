@@ -1,8 +1,8 @@
 # Review record: `silencer.pneumatic`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, pending a person's sign-off
+    reviewer: Cristian Muñoz (owner), second reader
     function: vents an exhaust to atmosphere through a restriction
 
 ## The claim
@@ -88,7 +88,7 @@ edge and the middle from the bottom edge.
 | Does the arrow point at the far end of the connection? | No arrow: the cone and its relief lines carry the meaning. |
 | Are spring and actuator on the declared sides? | No spring and no actuator. |
 | Is the symbol legible at palette size? | Yes: `silencer.pneumatic-light.png`, `silencer.pneumatic-dark.png`. |
-| Is the symbol legible at 300 dpi? | Yes: `silencer.pneumatic-300.png`; the second reader's signature is still owed. |
+| Is the symbol legible at 300 dpi? | Yes: `silencer.pneumatic-300.png`. |
 
 ## Open items
 
@@ -96,7 +96,6 @@ edge and the middle from the bottom edge.
   contract (ADR 0016) draws a cone with two. The record does not claim the cone is the
   standard's figure. Settling it needs the owner to choose between the standard's box and
   the contract's cone; changing the form would also change ADR 0016 and this record.
-- The second reader's signature is owed (the record is `pending-300dpi`).
 - The acoustic part is not modelled: a conductance is the whole of the physics.
 - The cone's relief lines are two; the standard's box carries three. The difference is
   recorded instead of adding a third line to make the cone look like the box.
@@ -109,8 +108,8 @@ edge and the middle from the bottom edge.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: automated pass, pending a person's sign-off
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the cone was turned around so it widens away
   from the port, its two relief lines now end on the cone's walls, and the record states
