@@ -13,6 +13,14 @@ schematic that is almost right is worse than one that is obviously a sketch.
 | ISO 1219-3 | 2016 | Symbol modules and connected symbols in circuit diagrams |
 | ISO 6358 | — | Flow through a pneumatic restriction: sonic conductance and critical ratio |
 
+### What has been read
+
+The rules below were read in a copy of **ISO 1219-1:2006** and confirmed against
+**JIS B 0125-1:2020**, the Japanese adoption prepared on ISO 1219-1:2012 with Amendment
+1:2016. The registration numbers (`X11400`, `RF052`…) name a symbol or a rule across
+editions; a clause number is the one of the edition read, and a review records which
+edition it read.
+
 ### National adoptions
 
 A norm is what a country applies, not what an international committee published. Where the
@@ -98,6 +106,20 @@ application.** This project implements them; it does not own them and may not ad
   each class with its own pattern; a definition declares which class a line belongs
   to instead of picking a random dash pattern.
 
+### Ports and their designations
+
+- **Every port of a symbol is drawn** (`RF052`): a machine shows its intake and its delivery,
+  a valve shows its ways, and a part shows its terminals. A connection the symbol omits is a
+  connection the reader cannot make.
+- **The numeral says what the port is**: `1` is the inlet, `2` and `4` the outlets, `3` and
+  `5` the exhausts, `12` and `14` the pilot ports (`RF053`, which refers the pneumatic
+  numbering to ISO 11727 and the hydraulic letters — `P`, `T`, `A`, `B`, `X`, `Y` — to
+  ISO 9461).
+- **The designation has its own room**, above or to the left of the port (`RF053`). The
+  renderer places it beside its stub on the clear side; whether the standard asks for that
+  position or only for the room is an open question of this contract, recorded here until
+  the owner settles it.
+
 ### The air line
 
 The source and the parts that condition the air are a set, and a reader recognises them by
@@ -108,7 +130,8 @@ reference set so that a hose is visibly meant to arrive there.
 | Symbol | Shape, and what carries the meaning |
 |---|---|
 | Compressed-air **network** | The bare **outline triangle** on a stem, **apex up at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering downwards, away from its own line |
-| **Compressor** | The same triangle inside a **circle**, apex up, its delivery leaving the top through that stem and ending in the connection circle |
+| **Compressor** | The same triangle inside a **circle**, apex up, the point touching the delivery where the stem leaves the top; the **shaft bar** at the drive side, a thick bar at mid-height, because a machine shows its drive; the delivery above (port 2) and the intake below (port 1) |
+| **Adjustable compressor** | The compressor plus the **adjustability arrow** on the diameter, at 45°, with a filled head at the upper end; the standard allows a longer arrow |
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
 | **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal** and the **drain stem** leaving the bottom vertex. Without the stem it is a filter, not a separator with a drain |
 | **Oil lubricator** | The same diamond and **no dashed element**: nothing is filtered here, oil is added. The absent element is the difference |
@@ -172,6 +195,17 @@ A pilot without its box cannot be told from an arrow marking a flow, and a lever
 its pivot cannot be told from a plain manual actuation. When a definition file names an
 actuation, this table is what the renderer must draw, and a change to a glyph is a change
 to the standard's reading of it.
+
+### What is adjustable
+
+An adjustable setting is shown by an **arrow**, and where it goes is not a matter of taste:
+
+- on a **machine** (a pump, a compressor), the arrow sits on the **diameter** of the circle
+  and may be longer (`RF040`); it carries a filled head;
+- on an **adjustable element** (the regulator's spring, a throttle), the arrow goes
+  **through the element** (`RF048`), which is the arrow the service unit's spring carries.
+
+An arrow that does not cross the element it adjusts reads as a flow direction.
 
 ### Actuators and the rest
 
@@ -371,6 +405,11 @@ Manual, once per symbol, signed off in the pull request:
 
 - the five checks above plus a side-by-side against the Part 1 symbol for that
   function, done by reading the standard — not by comparing with another program;
+- every port the symbol has is drawn (`RF052`) and carries the numeral `RF053` gives it
+  (`1` inlet, `2`/`4` outlets, `3`/`5` exhausts, `12`/`14` pilots);
+- a machine shows its drive bar on the standard's side (`RF038`), and an adjustable one its
+  arrow on the diameter (`RF040`) or through the element (`RF048`);
+- the record names the edition read and the registration number of the figure;
 - every port designation sits clear of the outer boundary, the body and the primitive
   lines, inside or outside but never on a line, in both themes;
 - the symbol is legible at 24 px (palette) and at 300 dpi (PDF export);
@@ -399,24 +438,26 @@ drawn by hand, and checked with the lint and the manual list.
 
 ## Current state, honestly
 
-The structural half of the contract is **implemented**, the visual half is **reviewed at
-palette and canvas size**, and the 300 dpi half is **open** until the export exists.
+The structural half of the contract is **implemented** and the visual half is **reviewed at
+palette and canvas size**. Every built-in has its 300 dpi capture; the **second reader's
+signature** is what is still owed.
 
 | Requirement | State | Evidence |
 |---|---|---|
 | One equal square per position, impossible to make ragged | **enforced** | the renderer splits the declared `body`; the lint checks the width |
 | Blocking mark on every closed port of a position | **enforced** | drawn from `blocked`, never authored |
 | Port numerals from the `port` table | **enforced** | `parts::draw_port_numeral`; the file has no shape to disagree with |
+| Port designation per `RF053` | **partial** | the numerals come from the port table; whether the designation belongs above/left of the port is open (see “Ports and their designations”) |
 | A port designation clear of the symbol | **enforced for `preparation.service_unit`; the general rule is in the drawing** | `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing`; P-018b extends it to the rest |
 | Flow path arrows along the connection | **enforced** | the path is routed from `connection`, the arrow points at its far end |
 | Spring and actuator as declared parts | **enforced** | `[spring]` / `[actuator]`, required by the lint |
 | Line classes with their own dash pattern | **enforced** | `line_class` on every line and polyline |
-| Pipe stroke from the tube size, capped below the frame | **enforced, reviewed by hand** | `tube_width_mm` and `the_line_width_is_the_series_width_below_the_frame`; the manual checklist and the 4/10/16 mm captures in `specs/evidence/` |
+| Pipe stroke from the tube size, capped below the frame | **enforced, reviewed by hand** | `tube_width_mm` and `the_line_width_is_the_series_width_below_the_frame`; the manual checklist and the 4/10/16 mm captures attached to the pull request |
 | Flow direction shown on a line that carries air | **enforced** | solid arrowhead on the line, straight from the sign of the flow |
-| Junction dots at three-way junctions | **not drawn** | needs pipes (M4) |
+| Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **not drawn** | M2 |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **open** | needs the export pipeline (M2) |
+| Legible at 300 dpi | **open** | the capture exists for every built-in; the second reader has not signed |
 | Second reader's signature | **open** | the reviews are an automated pass |
 
 Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/)

@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### El contrato de simbología lee la norma — 2026-11-24
+
+- El contrato cita ahora la edición leída (ISO 1219-1:2006, confirmada en la base 2012 por
+  JIS B 0125-1:2020) y los números de registro de cada figura y regla: `X11400` para el
+  compresor, `RF052` para «todos los puertos se dibujan», `RF053` para la numeración
+  (`1` entrada, `2`/`4` salidas, `3`/`5` escapes, `12`/`14` pilotajes), `RF040` para la
+  flecha de regulación sobre el diámetro y `RF038` para el eje de una máquina.
+- El compresor queda descrito con su barra del eje, su vértice en la descarga y sus dos
+  puertos, y el compresor regulable con la flecha sobre el diámetro y punta rellena.
+- La plantilla de revisión pide la edición leída, el número de registro, la procedencia de
+  la referencia y los supuestos, además de las medidas; la matriz de conformidad
+  (`assets/symbols/conformance.md`) lista el núcleo, su figura y el estado de su revisión.
+- Se corrigen afirmaciones viejas: los puntos de unión ya se dibujan, la captura a 300 dpi
+  existe y lo que falta es la firma del segundo lector, y la evidencia de los tubos ya no
+  apunta a una carpeta que no existe.
+
 ### Animación de la simulación — 2026-11-24
 
 - La ventana repinta mientras Play está activo y deja de despertar al pausar. El dibujo Rust
