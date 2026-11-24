@@ -37,7 +37,7 @@ use closure::{identifier_is_valid, is_closed};
 /// release drew on, a block whose title is the circuit title, whose revision is `A`, whose
 /// scale is `S/E`, whose model is the full industrial block and whose note is empty, a
 /// pipe whose tube is unspecified, and a component whose ports are all open.
-pub const SHEET_VERSION: u32 = 14;
+pub const SHEET_VERSION: u32 = 15;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;

@@ -510,7 +510,7 @@ impl Network {
             parts.push(NetworkPart::from_definition(definition)?);
         }
         let pipes = [
-            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (0, PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (2, PortAddress::new(2, "2"), PortAddress::new(3, "1")),
         ];
@@ -1367,7 +1367,15 @@ fn attach_supplies(
         let PartBehaviour::Supply { pressure_pa } = part.behaviour else {
             continue;
         };
-        let Some(&node) = port_node[index].values().next() else {
+        // The reservoir belongs on the port that supplies pressure, not on whichever port
+        // the map happens to yield first: with two ports (a compressor's intake and its
+        // delivery) the iteration order would decide where the pressure lands.
+        let Some(node) = part
+            .ports
+            .iter()
+            .find(|port| port.role == PortRole::Supply)
+            .and_then(|port| port_node[index].get(port.id.as_str()).copied())
+        else {
             continue;
         };
         nodes[node].reservoir = Some(Reservoir {
@@ -1886,7 +1894,7 @@ mod tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         build(&parts, &pipes, &[]).expect("the chain builds")
@@ -2010,7 +2018,7 @@ mod tests {
             part(&catalog, "junction.tee"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(3, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "3")),
             (PortAddress::new(3, "3"), PortAddress::new(2, "1")),
@@ -2034,7 +2042,7 @@ mod tests {
             part(&catalog, "gauge.pressure"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
         ];
@@ -2076,7 +2084,7 @@ mod tests {
         // Port 4 is the line the valve feeds while actuated, so it goes to the cap end
         // and port 2, fed at rest, to the rod end.
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "4"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "2")),
         ];
@@ -2126,7 +2134,7 @@ mod tests {
         // The meter sits in the line the valve feeds: port 1 towards the valve, port 2
         // towards the cylinder, which is what fixes the sign of the reading.
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
@@ -2210,7 +2218,7 @@ mod tests {
         };
         assert!(conductance > 0.0, "the meter has no conductance");
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
@@ -2261,7 +2269,7 @@ mod tests {
             part(&catalog, "supply.compressor"),
             part(&catalog, "throttle.fixed"),
         ];
-        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
+        let pipes = [(PortAddress::new(0, "2"), PortAddress::new(1, "1"))];
         let network = build(&parts, &pipes, &[]).expect("builds");
         assert_eq!(network.part_flow(0), None, "a supply owns no restriction");
         assert_eq!(network.part_flow(9), None, "there is no ninth part");
@@ -2281,7 +2289,7 @@ mod tests {
             conductance: 2.0e-11,
         };
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
             (PortAddress::new(3, "2"), PortAddress::new(2, "1")),
         ];
@@ -2324,11 +2332,11 @@ mod tests {
             part(&catalog, "silencer.pneumatic"),
         ];
         let direct_pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let silenced_pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
@@ -2373,7 +2381,7 @@ mod tests {
             part(&catalog, "plug.blind"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
         ];
@@ -2408,7 +2416,7 @@ mod tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let terminations = [(PortAddress::new(1, "3"), PortTermination::Closed)];
@@ -2466,7 +2474,7 @@ mod tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let terminations = [(PortAddress::new(1, "2"), PortTermination::Closed)];
@@ -2491,7 +2499,7 @@ mod tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let silencer = part(&catalog, "silencer.pneumatic");
@@ -2568,7 +2576,7 @@ mod tests {
             part(&catalog, "silencer.pneumatic"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "4"), PortAddress::new(2, "2")),
             (PortAddress::new(1, "3"), PortAddress::new(3, "1")),
@@ -2611,8 +2619,9 @@ mod tests {
             .collect();
         assert_eq!(
             atmosphere.len(),
-            2,
-            "one atmosphere vent for each exhaust, not a second free one"
+            3,
+            "the valve's two exhaust paths and the compressor's intake, one atmosphere \
+             boundary each, not a second free one"
         );
         let vents = |node: usize| {
             network
@@ -2636,14 +2645,21 @@ mod tests {
             0,
             "the host exhaust must not add a free vent on top of the silencer path"
         );
+        // The source's intake is an atmosphere boundary at its own node, with no pipe and
+        // no edge; every other atmosphere boundary is fed by exactly one edge.
+        assert_eq!(
+            vents(network.port_nodes[0]["1"]),
+            0,
+            "the intake is its own boundary, not a vent edge"
+        );
         assert_eq!(
             network
                 .edges
                 .iter()
                 .filter(|edge| atmosphere.contains(&edge.b))
                 .count(),
-            atmosphere.len(),
-            "each atmosphere reservoir is fed by one edge"
+            atmosphere.len() - 1,
+            "every atmosphere reservoir a pipe or a closure opens is fed by one edge"
         );
     }
 
@@ -2665,7 +2681,7 @@ mod tests {
     fn a_pipe_to_a_missing_port_is_ignored_not_fatal() {
         let catalog = Catalog::builtin();
         let parts = [part(&catalog, "supply.compressor")];
-        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(7, "1"))];
+        let pipes = [(PortAddress::new(0, "2"), PortAddress::new(7, "1"))];
         let network = build(&parts, &pipes, &[]).expect("still builds");
         assert!(network.cylinder().is_none());
     }
@@ -2689,7 +2705,7 @@ mod tests {
         );
 
         let supply = network
-            .port_pressure(0, "1")
+            .port_pressure(0, "2")
             .expect("the supply port is in the model");
         let valve = network
             .port_pressure(1, "1")
@@ -2746,7 +2762,7 @@ mod tests {
             part(&catalog, "gauge.pressure"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1")),
         ];
@@ -2774,7 +2790,7 @@ mod tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (0, PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let mut network = Network::build(&parts, &pipes, &[], pipes.len()).expect("it builds");
@@ -2821,7 +2837,7 @@ mod tests {
             part(&catalog, "supply.compressor"),
             part(&catalog, "valve.3_2.spring_return"),
         ];
-        let pipes = [(0, PortAddress::new(0, "1"), PortAddress::new(1, "1"))];
+        let pipes = [(0, PortAddress::new(0, "2"), PortAddress::new(1, "1"))];
         let mut network = Network::build(&parts, &pipes, &[], 1).expect("it builds");
         assert!(network.press_valve(), "the actuator is in the model");
         for _ in 0..5 {
@@ -2852,7 +2868,7 @@ mod tests {
             part(&catalog, "valve.3_2.spring_return"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "3"), PortAddress::new(9, "1")),
         ];
         let mut network = build(&parts, &pipes, &[]).expect("the modelled hose still builds");
@@ -2900,7 +2916,7 @@ mod electrical_tests {
         with.push(part(&catalog, "electrical.supply"));
         with.push(part(&catalog, "electrical.contact"));
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let mut pneumatic = build(&base, &pipes, &[]).expect("builds");
@@ -2967,6 +2983,28 @@ mod pressure_tests {
     }
 
     #[test]
+    fn the_supply_reservoir_goes_on_its_supply_port() {
+        // The compressor has two ports: the intake (`1`, open to the atmosphere) and the
+        // delivery (`2`). A reservoir attached to the wrong one would leave the circuit at
+        // atmosphere, and the map's iteration order must not decide which one it is.
+        let catalog = Catalog::builtin();
+        let parts = [
+            part(&catalog, "supply.compressor"),
+            part(&catalog, "gauge.pressure"),
+        ];
+        let pipes = [(PortAddress::new(0, "2"), PortAddress::new(1, "1"))];
+        let mut network = build(&parts, &pipes, &[]).expect("builds");
+        for _ in 0..200 {
+            network.advance(0.001).expect("accepted");
+        }
+        let reading = network.port_pressure(1, "1").expect("the gauge has a port");
+        assert!(
+            (reading - (4.0e5 + atmosphere())).abs() < 0.3e5,
+            "the gauge did not read the delivery: {reading} Pa"
+        );
+    }
+
+    #[test]
     fn a_shuttle_passes_the_higher_inlet() {
         let catalog = Catalog::builtin();
         let parts = [
@@ -2975,7 +3013,7 @@ mod pressure_tests {
             part(&catalog, "valve.shuttle"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1a")),
             (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
         ];
         let outlet = outlet_after(&parts, &pipes, 2);
@@ -2992,7 +3030,7 @@ mod pressure_tests {
             part(&catalog, "supply.compressor"),
             part(&catalog, "valve.shuttle"),
         ];
-        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1a"))];
+        let pipes = [(PortAddress::new(0, "2"), PortAddress::new(1, "1a"))];
         let outlet = outlet_after(&parts, &pipes, 1);
         assert!(
             (outlet - (4.0e5 + atmosphere())).abs() < 0.3e5,
@@ -3009,7 +3047,7 @@ mod pressure_tests {
             part(&catalog, "valve.two_pressure"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1a")),
             (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
         ];
         let outlet = outlet_after(&parts, &pipes, 2);
@@ -3026,7 +3064,7 @@ mod pressure_tests {
             part(&catalog, "supply.compressor"),
             part(&catalog, "valve.two_pressure"),
         ];
-        let pipes = [(PortAddress::new(0, "1"), PortAddress::new(1, "1a"))];
+        let pipes = [(PortAddress::new(0, "2"), PortAddress::new(1, "1a"))];
         let outlet = outlet_after(&parts, &pipes, 1);
         assert!(
             (outlet - atmosphere()).abs() < 0.1e5,
@@ -3043,7 +3081,7 @@ mod pressure_tests {
             part(&catalog, "valve.two_pressure"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1a")),
             (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
         ];
         let mut network = build(&parts, &pipes, &[]).expect("builds");
@@ -3068,7 +3106,7 @@ mod pressure_tests {
             part(&catalog, "valve.shuttle"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1a")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1a")),
             (PortAddress::new(1, "1"), PortAddress::new(2, "1b")),
         ];
         let first = outlet_after(&parts, &pipes, 2);
@@ -3093,8 +3131,8 @@ mod pressure_tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
             (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
             (PortAddress::new(3, "2"), PortAddress::new(4, "1")),
@@ -3149,8 +3187,8 @@ mod pressure_tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
             (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
             (PortAddress::new(3, "2"), PortAddress::new(4, "1")),
@@ -3193,8 +3231,8 @@ mod pressure_tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (PortAddress::new(0, "1"), PortAddress::new(1, "1")),
-            (PortAddress::new(0, "1"), PortAddress::new(2, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(1, "1")),
+            (PortAddress::new(0, "2"), PortAddress::new(2, "1")),
             (PortAddress::new(1, "2"), PortAddress::new(3, "1a")),
             (PortAddress::new(2, "2"), PortAddress::new(3, "1b")),
             (PortAddress::new(3, "2"), PortAddress::new(4, "1")),

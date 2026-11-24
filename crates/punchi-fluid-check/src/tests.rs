@@ -40,7 +40,7 @@ fn two_cylinders_with_one_designation_are_reported_at_the_second_one() {
     let valve = place(&mut document, "valve.5_2.spring_return", 100.0, 90.0);
     let first = place(&mut document, "cylinder.double_acting_32_200", 160.0, 40.0);
     let second = place(&mut document, "cylinder.double_acting_32_200", 160.0, 100.0);
-    join(&mut document, (supply, "1"), (valve, "1"));
+    join(&mut document, (supply, "2"), (valve, "1"));
     join(&mut document, (valve, "2"), (first, "1"));
     join(&mut document, (valve, "4"), (second, "1"));
     // Unnamed, the two cylinders are not duplicates: a name is what makes them clash.
@@ -86,7 +86,7 @@ fn a_clean_circuit_has_no_findings() {
     let supply = place(&mut document, "supply.compressor", 40.0, 40.0);
     let valve = place(&mut document, "valve.3_2.spring_return", 100.0, 90.0);
     let cylinder = place(&mut document, "cylinder.single_acting_20_100", 160.0, 40.0);
-    join(&mut document, (supply, "1"), (valve, "1"));
+    join(&mut document, (supply, "2"), (valve, "1"));
     join(&mut document, (valve, "2"), (cylinder, "1"));
     // The valve's port 3 is its exhaust: open to the room, and not a fault.
     let findings = check(&document, &catalog(), sheet(), 0);
@@ -162,7 +162,7 @@ fn a_port_with_no_pipe_is_reported_but_an_exhaust_is_not() {
     assert!(open.iter().all(|finding| finding.component.is_some()));
 
     // Joining the supply removes exactly one of them.
-    join(&mut document, (supply, "1"), (valve, "1"));
+    join(&mut document, (supply, "2"), (valve, "1"));
     let after = check(&document, &catalog(), sheet(), 0);
     let open_after = after
         .iter()
@@ -234,7 +234,7 @@ fn a_component_between_the_ports_is_routed_around() {
     place(&mut document, "throttle.fixed", 90.0, 60.0);
     assert!(
         document.connect(
-            Endpoint::new(supply, "1"),
+            Endpoint::new(supply, "2"),
             Endpoint::new(valve, "1"),
             Some(1000)
         ),
@@ -258,7 +258,7 @@ fn a_dragged_pipe_through_a_third_component_is_reported() {
     place(&mut document, "throttle.fixed", 90.0, 60.0);
     assert!(
         document.connect(
-            Endpoint::new(supply, "1"),
+            Endpoint::new(supply, "2"),
             Endpoint::new(valve, "1"),
             Some(1000)
         ),

@@ -61,7 +61,7 @@ fn sheet() -> Sheet {
         pipe: vec![StoredPipe {
             circuit: 0,
             from: 1,
-            from_port: String::from("1"),
+            from_port: String::from("2"),
             to: 2,
             to_port: String::from("2"),
             offset_tenths: 25,
@@ -135,7 +135,7 @@ fn the_tube_size_round_trips_and_a_format_twelve_sheet_reads_as_unspecified() {
     let text = older
         .to_json()
         .expect("valid")
-        .replace("\"format\": 14", "\"format\": 12");
+        .replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 12");
     assert!(!text.contains("tube_od_hundredths"), "{text}");
     let read = Sheet::parse(&text).expect("a format 12 sheet reads");
     assert_eq!(read.format, SHEET_VERSION, "reading it upgrades it");
@@ -202,7 +202,7 @@ fn the_closure_round_trips_and_an_old_sheet_has_none() {
     open.placement[1].port_closures.clear();
     let text = open.to_json().expect("valid");
     assert!(!text.contains("port_closures"), "{text}");
-    let older = text.replace("\"format\": 14", "\"format\": 13");
+    let older = text.replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 13");
     let read = Sheet::parse(&older).expect("a format 13 sheet reads");
     assert_eq!(read.format, SHEET_VERSION, "reading it upgrades it");
     assert!(read.placement[1].port_closures.is_empty());
@@ -263,10 +263,10 @@ fn a_port_closure_outside_the_bounds_is_refused() {
 #[test]
 fn a_pipe_on_a_closed_port_is_a_malformed_sheet() {
     let mut sheet = sheet();
-    // The default pipe ends on component 1, port 1; close exactly that port.
+    // The default pipe ends on component 1's delivery, port 2; close exactly that port.
     sheet.placement[0]
         .port_closures
-        .insert(String::from("1"), String::from("plug.blind"));
+        .insert(String::from("2"), String::from("plug.blind"));
     assert!(matches!(
         sheet.validate(),
         Err(SheetError::Invalid(message)) if message.contains("closed port")
@@ -279,7 +279,7 @@ fn a_pipe_on_a_closed_port_is_a_malformed_sheet() {
     let text = open
         .to_json()
         .expect("valid")
-        .replace("\"format\": 14", "\"format\": 13");
+        .replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 13");
     let read = Sheet::parse(&text).expect("a format 13 sheet with the pipe reads");
     assert!(read.placement[0].port_closures.is_empty());
     assert_eq!(read.pipe.len(), 1);
@@ -429,7 +429,7 @@ fn a_version_nine_sheet_gains_the_industrial_model() {
     // Format 9 already had the twelve fields but no model or visibility.
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 14", "\"format\": 9")
+        .replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 9")
         .replace("\"model\": \"industrial\",", "");
     let read = Sheet::parse(&json).expect("a version 9 sheet reads");
     assert_eq!(read.format, SHEET_VERSION);
@@ -445,7 +445,7 @@ fn a_version_eleven_sheet_reads_its_retired_model_names() {
         let json = sheet()
             .to_json()
             .expect("valid")
-            .replace("\"format\": 14", "\"format\": 11")
+            .replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 11")
             .replace(
                 "\"model\": \"industrial\",",
                 &format!("\"model\": \"{retired}\","),
@@ -538,7 +538,7 @@ fn the_block_position_is_checked_and_round_trips() {
 fn a_version_ten_sheet_maps_the_old_positions_and_gains_the_note() {
     let saved = sheet().to_json().expect("valid");
     let json = saved
-        .replace("\"format\": 14", "\"format\": 10")
+        .replace(&format!("\"format\": {SHEET_VERSION}"), "\"format\": 10")
         .replace("\"position\": \"bottom-right\"", "\"position\": \"left\"");
     let read = Sheet::parse(&json).expect("a version 10 sheet reads");
     assert_eq!(read.circuits[0].block.position, "bottom-right");
@@ -762,4 +762,33 @@ fn a_file_over_the_limit_is_refused_before_it_is_read() {
         Sheet::read(&path).expect_err("refuses"),
         SheetError::TooLarge
     ));
+}
+
+#[test]
+fn a_format_fourteen_sheet_moves_the_compressor_hose_to_its_discharge() {
+    // Format 14 stored the compressor's only port as `1`, which was the delivery; the new
+    // generation gave the intake `1` and moved the delivery to `2`.
+    let text = r#"{
+      "format": 14,
+      "circuits": [{"id": 0, "title": "Circuito"}],
+      "active": 0,
+      "placement": [
+        {"id": 1, "catalog": "supply.compressor", "x": 10.0, "y": 20.0, "width": 20.0, "height": 20.0},
+        {"id": 2, "catalog": "valve.3_2.spring_return", "x": 60.0, "y": 20.0, "width": 20.0, "height": 20.0},
+        {"id": 3, "catalog": "cylinder.single_acting_20_100", "x": 110.0, "y": 20.0, "width": 44.0, "height": 20.0}
+      ],
+      "pipe": [
+        {"from": 1, "from_port": "1", "to": 2, "to_port": "1"},
+        {"from": 2, "from_port": "2", "to": 3, "to_port": "1"}
+      ]
+    }"#;
+    let sheet = Sheet::parse(text).expect("a format 14 sheet reads");
+    assert_eq!(sheet.format, SHEET_VERSION);
+    assert_eq!(sheet.pipe[0].from_port, "2", "the hose was on the delivery");
+    assert_eq!(sheet.pipe[0].to_port, "1", "the valve end is untouched");
+    assert_eq!(sheet.pipe[1].from_port, "2", "another pipe is untouched");
+    assert_eq!(
+        sheet.pipe[1].to_port, "1",
+        "a cylinder's port 1 is not the compressor's"
+    );
 }

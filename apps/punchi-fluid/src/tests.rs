@@ -436,7 +436,7 @@ fn the_transport_runs_the_model_the_session_builds() {
     let valve_id = document.placements()[valve].id();
     let cylinder_id = document.placements()[cylinder].id();
     document.connect(
-        Endpoint::new(supply_id, "1"),
+        Endpoint::new(supply_id, "2"),
         Endpoint::new(valve_id, "1"),
         None,
     );
@@ -490,7 +490,7 @@ fn a_running_simulation_requests_frames_until_it_is_paused() {
     let valve_id = document.placements()[valve].id();
     let cylinder_id = document.placements()[cylinder].id();
     document.connect(
-        Endpoint::new(supply_id, "1"),
+        Endpoint::new(supply_id, "2"),
         Endpoint::new(valve_id, "1"),
         None,
     );
@@ -571,7 +571,7 @@ fn until_change_stops_at_the_piston_end() {
     let valve_id = document.placements()[valve].id();
     let cylinder_id = document.placements()[cylinder].id();
     document.connect(
-        Endpoint::new(supply_id, "1"),
+        Endpoint::new(supply_id, "2"),
         Endpoint::new(valve_id, "1"),
         None,
     );

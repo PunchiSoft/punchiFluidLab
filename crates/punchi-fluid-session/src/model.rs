@@ -347,7 +347,7 @@ mod tests {
         let valve_id = document.placements()[valve].id();
         let cylinder_id = document.placements()[cylinder].id();
         document.connect(
-            Endpoint::new(supply_id, "1"),
+            Endpoint::new(supply_id, "2"),
             Endpoint::new(valve_id, "1"),
             None,
         );

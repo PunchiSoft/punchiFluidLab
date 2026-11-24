@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El compresor con su eje y sus dos puertos — 2026-11-24
+
+- El compresor es `X11400`: el vértice del triángulo en la descarga, la **barra del eje** a
+  la izquierda y los dos puertos que pide la norma: **1 admisión** (atmósfera) abajo y
+  **2 descarga** (4 bar) arriba. El regulable añade la flecha sobre el diámetro, a 45°, con
+  punta rellena (`RF040`).
+- La admisión va declarada con el rol `exhaust` («abierto a la atmósfera»): el chequeo la
+  deja sin tubo y el modelo la sitúa a la atmósfera.
+- El reservorio de la fuente va al puerto `supply` y no al primero de un mapa: con dos
+  puertos, el orden del mapa habría decidido dónde cae la presión.
+- Formato 15: un tubo guardado en el puerto 1 del compresor era el de descarga y pasa al 2;
+  plantillas, ejemplo y pruebas usan el 2.
+- La red de aire cita `RF059` (triángulo de contorno, altura `4M`); el compresor y el
+  regulable estrenan capturas y revisión con la cláusula y las medidas.
+- Pruebas nuevas: el vértice en el borde del círculo, la barra del eje, la flecha sobre el
+  diámetro, el reservorio en la descarga y la migración 14 → 15.
+
 ### El contrato de simbología lee la norma — 2026-11-24
 
 - El contrato cita ahora la edición leída (ISO 1219-1:2006, confirmada en la base 2012 por

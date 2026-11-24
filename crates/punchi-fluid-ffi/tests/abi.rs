@@ -1893,7 +1893,7 @@ fn a_five_port_valve_and_a_double_acting_cylinder_are_a_circuit_of_files() {
     let valve_index = u32::try_from(valve_index).unwrap_or_default();
     let cylinder_index = u32::try_from(cylinder_index).unwrap_or_default();
 
-    let supply = CString::new("1").unwrap_or_default();
+    let supply = CString::new("2").unwrap_or_default();
     let one = CString::new("1").unwrap_or_default();
     let two = CString::new("2").unwrap_or_default();
     let four = CString::new("4").unwrap_or_default();
@@ -2213,7 +2213,7 @@ fn an_old_supply_without_an_edit_reads_the_new_default() {
     { "id": 3, "catalog": "cylinder.single_acting_20_100", "x": 160.0, "y": 80.0, "width": 44.0, "height": 20.0 }
   ],
   "pipe": [
-    { "from": 1, "from_port": "1", "to": 2, "to_port": "1" },
+    { "from": 1, "from_port": "2", "to": 2, "to_port": "1" },
     { "from": 2, "from_port": "2", "to": 3, "to_port": "1" }
   ]
 }"#,
@@ -2658,7 +2658,7 @@ fn a_hose_between_parallel_ports_straightens_and_a_bent_one_is_refused() {
     // A hose between a top port and a side port has a bend by construction; moving one
     // component cannot make it straight, so the command refuses instead of guessing.
     let supply = component_with(session, "supply.");
-    let supply_port = port_of(session, supply, "1");
+    let supply_port = port_of(session, supply, "2");
     // SAFETY: live session.
     let bent = unsafe { pf_session_pipe_at(session, supply_port.0, supply_port.1, 2.0) };
     assert!(bent >= 0, "the one-bend hose is under the point");
@@ -4688,14 +4688,18 @@ fn an_old_pipe_reads_as_unspecified_and_keeps_its_width() {
             .unwrap_or_default(),
     )
     .expect("the sheet is written");
-    assert!(text.contains("\"format\": 14"), "this build writes 14");
+    let version = format!("\"format\": {}", punchi_fluid_file::sheet::SHEET_VERSION);
+    assert!(
+        text.contains(&version),
+        "this build writes the current format"
+    );
     assert!(
         !text.contains("tube_od_hundredths"),
         "an unspecified pipe writes no key"
     );
 
     // What a format-12 release wrote: the same sheet without the key.
-    let older = text.replace("\"format\": 14", "\"format\": 12");
+    let older = text.replace(&version, "\"format\": 12");
     let older_path = directory.path().join("older.pfluid");
     std::fs::write(&older_path, older).expect("the older sheet is written");
     let older_path = CString::new(older_path.to_str().unwrap_or_default()).expect("a path");

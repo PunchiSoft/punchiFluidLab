@@ -190,3 +190,144 @@ fn the_bounds_cover_the_boxes_and_the_pipe_route() {
     assert!(bounds.contains(Pt::new(0.0, 0.0)), "{bounds:?}");
     assert!(bounds.contains(Pt::new(140.0, 20.0)), "{bounds:?}");
 }
+
+/// Draws one built-in into a 20 mm box and returns the calls, for the shape tests below.
+fn draw_builtin(id: &str) -> Vec<Call> {
+    let catalog = Catalog::builtin();
+    let definition = catalog.get(id).expect("the built-in exists");
+    let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+    let mut surface = Recording::default();
+    crate::symbol::draw_component(&mut surface, rect, definition, 0, 0.0, None, &Ink::print());
+    surface.calls().to_vec()
+}
+
+#[test]
+fn the_compressor_triangle_leaves_from_the_top_of_its_circle() {
+    // X11400: the gas triangle's point meets the circle where the delivery leaves, so the
+    // point, the circle's top and the stem are one place, not three near places.
+    let calls = draw_builtin("supply.compressor");
+    let (centre, radius) = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Circle { centre, radius, .. } => Some((*centre, *radius)),
+            _ => None,
+        })
+        .expect("the compressor draws its circle");
+    // An outlined polygon is recorded as its closed polyline: apex, two base points, apex.
+    let triangle = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Line { points, .. }
+                if points.len() == 4
+                    && (points[0].x - points[3].x).abs() < 0.01
+                    && (points[0].y - points[3].y).abs() < 0.01 =>
+            {
+                Some(points.clone())
+            }
+            _ => None,
+        })
+        .expect("the compressor draws its triangle");
+    let apex = triangle
+        .iter()
+        .take(3)
+        .copied()
+        .reduce(|a, b| if b.y < a.y { b } else { a })
+        .expect("the triangle has three points");
+    assert!(
+        (apex.x - centre.x).abs() < 0.01 && ((centre.y - radius) - apex.y).abs() < 0.01,
+        "the apex {apex:?} is not the top of the circle at ({}, {})",
+        centre.x,
+        centre.y - radius
+    );
+    let delivery = calls.iter().any(|call| match call {
+        Call::Line { points, .. } => {
+            points.len() == 2
+                && points
+                    .iter()
+                    .any(|point| (point.x - apex.x).abs() < 0.01 && (point.y - apex.y).abs() < 0.01)
+        }
+        _ => false,
+    });
+    assert!(delivery, "no line ends at the triangle's apex");
+}
+
+#[test]
+fn the_compressor_shows_its_drive_shaft() {
+    // The machine's drive is a thick bar at the left, one radius long, at mid-height
+    // (X11400, RF038).
+    let calls = draw_builtin("supply.compressor");
+    let (centre, radius) = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Circle { centre, radius, .. } => Some((*centre, *radius)),
+            _ => None,
+        })
+        .expect("the compressor draws its circle");
+    let bar = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Rect { rect, .. } => Some(*rect),
+            _ => None,
+        })
+        .expect("the compressor draws its shaft bar");
+    assert!(
+        (bar.max.x - (centre.x - radius)).abs() < 0.01,
+        "the bar does not meet the circle's left: {bar:?}"
+    );
+    assert!(
+        (bar.min.y.midpoint(bar.max.y) - centre.y).abs() < 0.01,
+        "the bar is not at mid-height: {bar:?}"
+    );
+    assert!(
+        (bar.width() - radius).abs() < 0.1,
+        "the bar is not one radius long: {bar:?}"
+    );
+}
+
+#[test]
+fn the_adjustable_arrow_crosses_the_centre_at_forty_five_degrees() {
+    // RF040: the adjustability arrow sits on the diameter of the machine and may be longer
+    // than the circle; the head is filled.
+    let calls = draw_builtin("supply.compressor_adjustable");
+    let (centre, radius) = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Circle { centre, radius, .. } => Some((*centre, *radius)),
+            _ => None,
+        })
+        .expect("the symbol draws its circle");
+    let (a, b) = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Line { points, .. } if points.len() == 2 => {
+                let (a, b) = (points[0], points[1]);
+                let (dx, dy) = ((b.x - a.x).abs(), (b.y - a.y).abs());
+                (dx > 5.0 && (dx - dy).abs() < 0.1).then_some((a, b))
+            }
+            _ => None,
+        })
+        .expect("the arrow is a diagonal line");
+    let length = ((b.x - a.x).powi(2) + (b.y - a.y).powi(2)).sqrt();
+    let distance = ((b.x - a.x) * (a.y - centre.y) - (a.x - centre.x) * (b.y - a.y)).abs() / length;
+    assert!(
+        distance < 0.25,
+        "the arrow does not pass through the centre: {distance} mm away"
+    );
+    let head = calls
+        .iter()
+        .find_map(|call| match call {
+            Call::Polygon { points, fill, .. } if fill.is_some() && points.len() == 3 => {
+                Some(points.clone())
+            }
+            _ => None,
+        })
+        .expect("the arrow has a filled head");
+    let farthest = head
+        .iter()
+        .map(|point| ((point.x - centre.x).powi(2) + (point.y - centre.y).powi(2)).sqrt())
+        .fold(0.0_f32, f32::max);
+    assert!(
+        farthest > radius,
+        "the head does not reach past the circle: {farthest} mm"
+    );
+}

@@ -95,6 +95,30 @@ impl Sheet {
         // absent field `None`, which is "unspecified" and keeps the old 0.42 mm width; the
         // writer never adds the key for an unspecified pipe, so an old sheet re-saved by
         // this build still looks as it did.
+        // 14 → 15: the compressor gained its intake. Format 14 stored the compressor's only
+        // port as `1`, and that port was the delivery; the intake took `1` and the delivery
+        // moved to `2`. A pipe the old sheet stored on the compressor's port `1` therefore
+        // moves with the delivery, and no other port changes.
+        if self.format < 15 {
+            let placements = &self.placement;
+            let is_compressor = |id: u64| {
+                placements.iter().any(|placement| {
+                    placement.id == id
+                        && matches!(
+                            placement.catalog.as_str(),
+                            "supply.compressor" | "supply.compressor_adjustable"
+                        )
+                })
+            };
+            for pipe in &mut self.pipe {
+                if pipe.from_port == "1" && is_compressor(pipe.from) {
+                    pipe.from_port = String::from("2");
+                }
+                if pipe.to_port == "1" && is_compressor(pipe.to) {
+                    pipe.to_port = String::from("2");
+                }
+            }
+        }
         self.format = SHEET_VERSION;
         Ok(())
     }

@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2026 PunchiSoft
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Compressor: the machine that makes the compressed air, not the air itself.
+# Compressor with an adjustable delivery: X11400 plus the adjustability arrow.
 #
-# The circle with the **outline** triangle inside it is the source symbol of ISO 1219-1 for a
-# gas; a filled triangle is the hydraulic source, so the fill is a medium and not a style
-# choice. The triangle stands on its base line inside the circle, and the delivery leaves the
-# bottom through a short stem that ends in the small open circle of a connection point.
+# The body is the compressor's: the outline triangle of a gas, its point at the delivery, the
+# shaft bar at the drive side (RF038), the intake below (port 1) and the delivery above
+# (port 2, RF052). The arrow is the one difference, and the standard fixes where it goes:
+# on the **diameter** of the machine's circle (RF040), with a filled head, and it may be
+# longer than the circle it crosses.
 #
 # A compressor alone is not a usable air line: the air it delivers is wet and its pressure
 # wanders. The service unit (`preparation.service_unit`) is what makes it usable.
@@ -14,14 +15,21 @@
 schema = 3
 id = "supply.compressor_adjustable"
 name = "Adjustable compressor, 4 bar"
-name_es = "Compresor ajustable, 4 bar"
+name_es = "Compresor regulable, 4 bar"
 category = "supply"
 summary = "Makes the compressed air, with an adjustable delivery."
 
+# The delivery, above: port 2.
+[[port]]
+id = "2"
+role = "supply"
+position = [0.64, 0.06]
+
+# The intake, below: port 1, open to the atmosphere.
 [[port]]
 id = "1"
-role = "supply"
-position = [0.5, 0.06]
+role = "exhaust"
+position = [0.64, 0.858]
 
 [behaviour]
 type = "supply"
@@ -29,48 +37,35 @@ pressure_bar = 4.0
 
 [[symbol]]
 kind = "circle"
-points = [0.5, 0.45, 0.28]
+points = [0.64, 0.45, 0.28]
 
-# The same triangle as the network's, apex up: the delivery leaves through the point and
-# the stem goes up to the connection. The bottom connection is the intake/condensate the
-# reference draws with a second circle.
 [[symbol]]
 kind = "polygon"
-points = [0.5, 0.33, 0.66, 0.67, 0.34, 0.67]
+points = [0.64, 0.17, 0.736, 0.334, 0.544, 0.334]
 filled = false
 
 [[symbol]]
+kind = "rect"
+points = [0.08, 0.405, 0.28, 0.09]
+
+[[symbol]]
 kind = "line"
-points = [0.5, 0.17, 0.5, 0.06]
+points = [0.64, 0.06, 0.64, 0.17]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.73, 0.5, 0.90]
+points = [0.64, 0.73, 0.64, 0.858]
 line_class = "working"
 
-# The reference draws the intake/condensate mark as a second connection circle. The
-# compressor is a one-port constant-pressure source in this model, so the mark is drawn by
-# the file and is not a port; the review says so.
-[[symbol]]
-kind = "circle"
-points = [0.5, 0.94, 0.047]
-line_class = "working"
-
-# The adjustable compressor: the diagonal arrow through the circle that says the delivery
-# can be set.
+# The adjustability arrow: on the diameter, at 45°, from outside one side of the circle to
+# outside the other, with the filled head at the upper end (RF040).
 [[symbol]]
 kind = "line"
-points = [0.24, 0.82, 0.76, 0.20]
+points = [0.341, 0.749, 0.913, 0.177]
 line_class = "working"
 
 [[symbol]]
-kind = "line"
-points = [0.76, 0.20, 0.66, 0.22]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.76, 0.20, 0.74, 0.30]
-line_class = "working"
-
+kind = "polygon"
+points = [0.973, 0.118, 0.933, 0.197, 0.893, 0.157]
+filled = true

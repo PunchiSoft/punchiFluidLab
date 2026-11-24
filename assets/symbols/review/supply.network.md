@@ -1,41 +1,70 @@
 # supply.network — conformance review
 
     status: pending-300dpi
-    date: 2026-11-07
+    date: 2026-11-24
     reviewer: automated pass, unreviewed by a second person
-    function: compressed-air source drawn as the connection to the network
+    function: compressed-air network, 4 bar: the air arrives from the plant
 
-## Provenance
+## The claim
 
-Geometry is hand-written in `assets/catalog/supply.network.toml`. No third-party asset, no trace, no
-scan: the shape is drawn from the requirement the sheet states, not copied from a picture.
+- **Function, in one sentence**: the connection to the workshop network, drawn when the
+  machine that makes the air is elsewhere in the plant.
+- **Family**: supply.
+- **Normative source**: ISO 1219-1:2006, 9.6.4.1, rule `RF059` (pneumatic source of energy),
+  read in the owner's copy and confirmed on the 2012 basis in JIS B 0125-1:2020; `RF060` is
+  the filled hydraulic source.
+- **Ports**: `1`, the supply line.
 
-## Automated checks — `punchi-fluid-catalog` symbol lint
+## Reference and assumptions
 
-| Rule | Result |
-|---|---|
-| Geometry inside the box, no degenerate primitive | pass |
-| Every line declares its class | pass |
-| Every port used and numbered | pass (port 1, the delivery) |
+- **Reference read**: the standard's rule `RF059` and the project's own drawing.
+- **Observed**: the rule draws the outline triangle with its point at the fluid supply line
+  and a side dimension of `4M`; the triangle's height is the dimension (4M = 10 mm with
+  M = 2,5 mm).
+- **Required by the owner**: the source symbol in the air line, before the service unit.
+- **Stated by the standard**: the outline triangle is a pneumatic source of energy; the
+  filled one is the hydraulic source.
+- **Assumption**: the port prints `1` because the source's line is the circuit's supply line;
+  the standard's figure prints no numeral. The triangle is rotated to the vertical line, so
+  its point is up: the standard's form turned with the line it feeds.
 
-## Visual check
+## Measures
 
-| Requirement | Result | Evidence |
+| Feature | Requirement | Drawing |
 |---|---|---|
-| The network connection is an **outline triangle**, no circle around it | pass | a circle would be the machine that makes the air, which this symbol is not |
-| The triangle is **equilateral**, so its proportions come from the triangle and not from a drawing that happens to look like one | pass | base 0.577 of the box, height 0.50: half the base is tan(30°) of the height |
-| The delivery leaves the base on a stem | pass | stem from the middle of the base to the port |
-| The apex of the triangle is at the connection, at the top | pass | the point meets the stem, and the hose arrives at its circle |
-| The connection circle marks the port | pass | drawn by the renderer at port 1 |
-| Legible at palette size | pass | `catalog-dark.png` |
+| Triangle | outline, equilateral, point at the line | apex (0,500; 0,300); base (0,211; 0,800)–(0,789; 0,800) |
+| Height | `4M` = 10 mm of the 20 mm box | 0,500 of the box |
+| Stem | the connection, clear of the drawing | (0,500; 0,300) → (0,500; 0,080) |
+| Port | the supply line | `1` at (0,500; 0,080) |
 
-| Legible at 300 dpi | pass | `supply.network-300.png`: automated pass; the second reader's signature is still owed |
+## Evidence
+
+- 300 dpi sheet: `supply.network-300.png`; light and dark captures fitted.
+- Symbol lint: passes.
+- Fixture: `assets/symbols/fixtures/supply.network.txt` (unchanged: the form was already the
+  rule's).
+
+## Checklist
+
+| Question | Answer |
+|---|---|
+| Is the body one equal square per position? | not a valve: the body is the triangle |
+| Is every closed port of every position marked? | not applicable |
+| Is every port the standard draws drawn? | one port, the supply line |
+| Do the numerals match the declared ports? | `1`, the supply line |
+| If it is a machine, is the drive bar on the standard's side? | not a machine: the drive is drawn elsewhere |
+| If it is adjustable, is the arrow on the diameter? | not adjustable |
+| Is every numeral clear of the frame, the body and the lines? | yes |
+| Is the symbol legible at palette size and at 300 dpi? | yes, both captures |
+
 ## What is still open
 
-- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
-- The source is a constant pressure: a real network sags under load, which is not modelled.
+- The second reader's signature.
+- Whether a source's single connection should print `1` (the supply line) or `2` (an outlet,
+  `RF053`) is a contract question, recorded here rather than decided alone.
+- The 2012 text is read through the Japanese adoption (MOD).
 
 ## Images
 
-- `supply.network-light.png`, `supply.network-dark.png`
 - `supply.network-300.png`
+- `supply.network-light.png`, `supply.network-dark.png`

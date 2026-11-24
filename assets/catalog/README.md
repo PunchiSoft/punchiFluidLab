@@ -141,8 +141,10 @@ none of it can disagree with the simulation.
 ### Ports
 
 One `[[port]]` table per connection point. `role` is what the simulation uses:
-`supply`, `working`, `exhaust` or `mechanical`. `position` is inside the symbol box,
-`0..=1`, and it is where the canvas attaches a pipe.
+`supply`, `working`, `exhaust` or `mechanical`. `exhaust` means a port open to the
+atmosphere — a vent, or a source's intake — and it is the one pneumatic role the check lets
+a symbol leave unconnected. `position` is inside the symbol box, `0..=1`, and it is where the
+canvas attaches a pipe.
 
 ```toml
 [[port]]

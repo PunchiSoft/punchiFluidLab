@@ -33,7 +33,7 @@ fn a_pipe_between_two_circuits_is_the_ninth_fault() {
     ));
     let valve = document.placements()[valve].id();
     assert!(document.connect(
-        punchi_fluid_doc::Endpoint::new(supply, "1"),
+        punchi_fluid_doc::Endpoint::new(supply, "2"),
         punchi_fluid_doc::Endpoint::new(valve, "1"),
         Some(1000)
     ));
@@ -79,7 +79,7 @@ mod termination_tests {
         ));
         let supply_id = document.placements()[supply].id();
         assert!(document.connect(
-            punchi_fluid_doc::Endpoint::new(supply_id, "1"),
+            punchi_fluid_doc::Endpoint::new(supply_id, "2"),
             punchi_fluid_doc::Endpoint::new(valve_id, "1"),
             Some(1000)
         ));
@@ -181,7 +181,7 @@ mod connection_tests {
         ));
         let contact_id = document.placements()[contact].id();
         assert!(document.connect(
-            punchi_fluid_doc::Endpoint::new(supply, "1"),
+            punchi_fluid_doc::Endpoint::new(supply, "2"),
             punchi_fluid_doc::Endpoint::new(contact_id, "1"),
             Some(1000)
         ));
@@ -231,7 +231,7 @@ mod connection_tests {
         ));
         let valve = document.placements()[valve].id();
         assert!(document.connect(
-            punchi_fluid_doc::Endpoint::new(supply, "1"),
+            punchi_fluid_doc::Endpoint::new(supply, "2"),
             punchi_fluid_doc::Endpoint::new(valve, "1"),
             Some(1000)
         ));
