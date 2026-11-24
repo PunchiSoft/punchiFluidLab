@@ -1,6 +1,6 @@
 ---
 name: rust-performance-and-memory
-description: Memory and frame-time budgets, allocation-free hot paths and bounded caches. Use when writing the solver step or draw loop, adding a cache, profiling, or when a change may move a budget.
+description: "Memory and frame-time budgets, allocation-free hot paths and bounded caches. Use when writing the solver step or draw loop, adding a cache, profiling, or when a change may move a budget."
 license: GPL-3.0-or-later
 ---
 

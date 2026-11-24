@@ -1,6 +1,6 @@
 ---
 name: rust-workspace-architecture
-description: Keeps the Punchi Fluid crates acyclic and the three extension points intact. Use when adding a crate, module or dependency edge, moving code between crates, exposing a public API, or deciding whether a change needs an ADR.
+description: "Keeps the Punchi Fluid crates acyclic and the three extension points intact. Use when adding a crate, module or dependency edge, moving code between crates, exposing a public API, or deciding whether a change needs an ADR."
 license: GPL-3.0-or-later
 ---
 

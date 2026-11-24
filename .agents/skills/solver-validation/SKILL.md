@@ -1,6 +1,6 @@
 ---
 name: solver-validation
-description: 'Validating the lumped-parameter pneumatic and hydraulic model: units, invariants, ISO 6358 and reference curves. Use when implementing or tuning solver behaviour, adding a component model, or writing a physics test.'
+description: "Validating the lumped-parameter pneumatic and hydraulic model: units, invariants, ISO 6358 and reference curves. Use when implementing or tuning solver behaviour, adding a component model, or writing a physics test."
 license: GPL-3.0-or-later
 ---
 

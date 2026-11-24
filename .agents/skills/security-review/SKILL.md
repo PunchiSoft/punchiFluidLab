@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Review one change against the threat model and the attack surface it touches, with a per-surface record and hostile-input tests. Use when a change reads or writes a file, resolves a path, exports, handles the clipboard, autosave or recovery, opens an external link, or touches dependencies, workflows or release artefacts.
+description: "Review one change against the threat model and the attack surface it touches, with a per-surface record and hostile-input tests. Use when a change reads or writes a file, exports, pastes, autosaves, opens a link, or touches dependencies, workflows or release artefacts."
 license: GPL-3.0-or-later
 ---
 

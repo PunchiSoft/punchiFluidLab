@@ -1,6 +1,6 @@
 ---
 name: step-report
-description: Close a work step with a short checklist for the owner — what is done and proven, what is still missing and who unblocks it, and the one next step. Use when a branch, commit, pull request or phase reaches a hand-off point, or when the owner asks for a status.
+description: "Close a work step with a short checklist for the owner — what is done and proven, what is still missing and who unblocks it, and the one next step. Use when a branch, commit, pull request or phase reaches a hand-off point, or when the owner asks for a status."
 license: GPL-3.0-or-later
 ---
 

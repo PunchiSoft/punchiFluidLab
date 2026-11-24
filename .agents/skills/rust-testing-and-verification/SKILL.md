@@ -1,6 +1,6 @@
 ---
 name: rust-testing-and-verification
-description: 'Test levels and proof for this workspace: unit, invariant, reference-curve, determinism, allocation and headless UI tests. Use when adding or changing behaviour, fixing a failing test, or deciding what evidence a claim needs.'
+description: "Test levels and proof for this workspace: unit, invariant, reference-curve, determinism, allocation and headless UI tests. Use when adding or changing behaviour, fixing a failing test, or deciding what evidence a claim needs."
 license: GPL-3.0-or-later
 ---
 
