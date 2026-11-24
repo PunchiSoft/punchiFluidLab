@@ -126,6 +126,8 @@ pub(crate) enum Command {
     ZoomReset,
     ViewBack,
     BlockVisible,
+    ZoomWindow,
+    Hand,
     Catalog,
     Properties,
     Autohide,
@@ -145,7 +147,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 53] = [
+    pub(crate) const ALL: [Self; 55] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -189,6 +191,8 @@ impl Command {
         Self::ZoomReset,
         Self::ViewBack,
         Self::BlockVisible,
+        Self::ZoomWindow,
+        Self::Hand,
         Self::Catalog,
         Self::Properties,
         Self::Autohide,
@@ -248,6 +252,8 @@ impl Command {
             Self::ZoomReset => "ribbon.item.zoom_reset",
             Self::ViewBack => "ribbon.item.view_back",
             Self::BlockVisible => "ribbon.item.block_visible",
+            Self::ZoomWindow => "ribbon.item.zoom_window",
+            Self::Hand => "ribbon.item.hand",
             Self::Catalog => "ribbon.item.catalog",
             Self::Properties => "ribbon.item.properties",
             Self::Autohide => "ribbon.item.autohide",

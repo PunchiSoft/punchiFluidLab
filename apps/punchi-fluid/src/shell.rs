@@ -498,10 +498,56 @@ impl Window {
     /// paper, so the margins may lie beyond the canvas and are clipped there.
     fn view_fit(&self) -> crate::view::Fit {
         let frame = self.page.content_rect();
+        let paper = self.page.rect();
         crate::view::Fit {
             min: egui::vec2(frame.min.x, frame.min.y),
             size: egui::vec2(frame.width(), frame.height()),
+            paper: egui::vec2(paper.width(), paper.height()),
         }
+    }
+
+    /// The pointer the sheet shows: a crosshair while the zoom window is armed, and the hand
+    /// while the hand mode is on.
+    fn sheet_cursor(&self, sheet: egui::Response) -> egui::Response {
+        if self.zoom_window_armed {
+            sheet.on_hover_cursor(egui::CursorIcon::Crosshair)
+        } else if self.hand_mode {
+            let cursor = if sheet.dragged() {
+                egui::CursorIcon::Grabbing
+            } else {
+                egui::CursorIcon::Grab
+            };
+            sheet.on_hover_cursor(cursor)
+        } else {
+            sheet
+        }
+    }
+
+    /// The rectangle the zoom window is dragging, over the sheet.
+    fn draw_zoom_window(
+        &self,
+        painter: &egui::Painter,
+        placement: &crate::view::Placement,
+        accent: egui::Color32,
+        soft: egui::Color32,
+    ) {
+        let Some(window) = &self.zoom_drag else {
+            return;
+        };
+        let to_screen = |at: Pt| {
+            egui::pos2(
+                placement.origin.x + at.x * placement.scale,
+                placement.origin.y + at.y * placement.scale,
+            )
+        };
+        let rect = egui::Rect::from_two_pos(to_screen(window.start), to_screen(window.current));
+        painter.rect_filled(rect, 0.0, soft);
+        painter.rect_stroke(
+            rect,
+            0.0,
+            egui::Stroke::new(1.0_f32, accent),
+            egui::StrokeKind::Inside,
+        );
     }
 
     /// Draws the page with the block or without it, as the view toggle asks.
@@ -510,6 +556,54 @@ impl Window {
             sheet::draw(drawing, &self.page, &self.block);
         } else {
             sheet::draw_without_block(drawing, &self.page);
+        }
+    }
+
+    /// The circuit's scene for this frame, with the live drag or armed move previewed on the
+    /// drawing and not written to the document.
+    fn sheet_scene(&self) -> crate::scene::Scene<'_> {
+        let mut scene = scene::build(
+            &self.document,
+            &self.catalog,
+            self.document.active_circuit(),
+            self.model.as_ref(),
+        );
+        let preview = self
+            .drag
+            .as_ref()
+            .map(|drag| (drag.delta, drag.starts.as_slice()))
+            .or_else(|| {
+                self.moving
+                    .as_ref()
+                    .map(|moving| (moving.delta(), moving.starts()))
+            });
+        if let Some((delta, starts)) = preview {
+            for placed in &mut scene.placed {
+                if starts.iter().any(|(index, _)| *index == placed.index) {
+                    placed.rect = Rect::from_min_size(
+                        Pt::new(placed.rect.min.x + delta.x, placed.rect.min.y + delta.y),
+                        placed.rect.max.x - placed.rect.min.x,
+                        placed.rect.max.y - placed.rect.min.y,
+                    );
+                }
+            }
+        }
+        scene
+    }
+
+    /// The gesture the sheet is taking this frame: the zoom window, or the editor.
+    fn handle_sheet_gestures(
+        &mut self,
+        response: &egui::Response,
+        placement: &crate::view::Placement,
+        fit: crate::view::Fit,
+        sheet_area: egui::Rect,
+        page_min: egui::Vec2,
+    ) {
+        if self.zoom_window_armed {
+            self.handle_zoom_window(response, placement, fit, sheet_area);
+        } else {
+            self.handle_edit(response, placement, page_min);
         }
     }
 
@@ -527,12 +621,13 @@ impl Window {
                     self.language.text("sheet.name"),
                 )
             });
+            let sheet = self.sheet_cursor(sheet);
             self.handle_view(ui, &sheet, sheet_area, fit);
             let placement = self.view.placement(sheet_area, fit);
             self.magnification = placement.scale;
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
-            self.handle_edit(&sheet, &placement, page_min);
+            self.handle_sheet_gestures(&sheet, &placement, fit, sheet_area, page_min);
             let origin = placement.origin
                 - egui::vec2(
                     page_rect.min.x * placement.scale,
@@ -540,34 +635,7 @@ impl Window {
                 );
             let mut drawing = EguiSurface::new(context, origin, placement.scale)
                 .with_screen_ink(ScreenInk::from_tokens(&self.theme.tokens));
-            let mut scene = scene::build(
-                &self.document,
-                &self.catalog,
-                self.document.active_circuit(),
-                self.model.as_ref(),
-            );
-            // The drag and the armed move are previewed on the drawing, not written to the
-            // document: the document only changes once, when the gesture drops.
-            let preview = self
-                .drag
-                .as_ref()
-                .map(|drag| (drag.delta, drag.starts.as_slice()))
-                .or_else(|| {
-                    self.moving
-                        .as_ref()
-                        .map(|moving| (moving.delta(), moving.starts()))
-                });
-            if let Some((delta, starts)) = preview {
-                for placed in &mut scene.placed {
-                    if starts.iter().any(|(index, _)| *index == placed.index) {
-                        placed.rect = Rect::from_min_size(
-                            Pt::new(placed.rect.min.x + delta.x, placed.rect.min.y + delta.y),
-                            placed.rect.max.x - placed.rect.min.x,
-                            placed.rect.max.y - placed.rect.min.y,
-                        );
-                    }
-                }
-            }
+            let scene = self.sheet_scene();
             let started = Instant::now();
             self.draw_page(&mut drawing);
             draw_placed(
@@ -617,7 +685,10 @@ impl Window {
             );
             painter.extend(drawing.shapes);
             self.highlight_selected_pipe(ui, origin, placement.scale);
-            self.show_sheet_menu(&sheet);
+            self.draw_zoom_window(&painter, &placement, tokens.accent, tokens.accent_soft);
+            if !self.zoom_window_armed {
+                self.show_sheet_menu(&sheet);
+            }
         });
     }
 }

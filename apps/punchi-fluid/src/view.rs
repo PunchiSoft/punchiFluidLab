@@ -11,6 +11,7 @@
 //! of the drawing, so at the fit they may lie beyond the canvas and are clipped there.
 
 use eframe::egui;
+use punchi_fluid_draw::Pt;
 
 /// Where the page sits on screen: the scale in pixels per millimetre and its top-left corner.
 #[derive(Debug, Clone, Copy)]
@@ -26,6 +27,9 @@ pub struct Fit {
     pub min: egui::Vec2,
     /// The frame's width and height in sheet millimetres.
     pub size: egui::Vec2,
+    /// The paper's width and height in sheet millimetres: the pan is bounded to the paper,
+    /// so the reader can bring the margins into view at any zoom.
+    pub paper: egui::Vec2,
 }
 
 /// The reader's view of the sheet.
@@ -60,6 +64,12 @@ impl View {
     #[must_use]
     pub fn zoom(&self) -> f32 {
         self.zoom
+    }
+
+    /// The pan, for the tests that drive the hand mode and the zoom window.
+    #[cfg(test)]
+    pub(crate) fn pan(&self) -> egui::Vec2 {
+        self.pan
     }
 
     /// The fit, with the pan dropped, and **not** recorded: the internals of `fit`.
@@ -125,6 +135,28 @@ impl View {
         if (target - 1.0).abs() < f32::EPSILON {
             self.pan = egui::Vec2::ZERO;
         }
+    }
+
+    /// The zoom window: magnifies `rect` (top-left and size, both in sheet millimetres) so it
+    /// fills the drawing area, centred, and leaves one step of history.
+    pub fn zoom_to_rect(
+        &mut self,
+        area: egui::Rect,
+        fit: Fit,
+        rect_min: egui::Vec2,
+        rect_size: egui::Vec2,
+    ) {
+        let baseline = fit_scale(area, fit.size);
+        if baseline <= 0.0 || rect_size.x <= 0.0 || rect_size.y <= 0.0 {
+            return;
+        }
+        let scale = (area.width() / rect_size.x).min(area.height() / rect_size.y);
+        let zoom = (scale / baseline).clamp(Self::MIN_ZOOM, Self::MAX_ZOOM);
+        self.previous = Some((self.zoom, self.pan));
+        self.zoom = zoom;
+        let scale = baseline * zoom;
+        let centre = rect_min + rect_size * 0.5;
+        self.pan = (fit.min + fit.size * 0.5 - centre) * scale;
     }
 
     pub fn pan_by(&mut self, delta: egui::Vec2) {
@@ -201,15 +233,16 @@ impl View {
         }
     }
 
-    /// The placement of the page for this frame; the pan is bounded to the frame's overhang
-    /// and dropped once the frame fits.
+    /// The placement of the page for this frame; the pan is bounded to the paper's overhang
+    /// and dropped once the paper fits.
     #[must_use]
     pub fn placement(&mut self, area: egui::Rect, fit: Fit) -> Placement {
         let scale = fit_scale(area, fit.size) * self.zoom;
         let frame_px = fit.size * scale;
+        let paper_px = fit.paper * scale;
         let overhang = egui::vec2(
-            ((frame_px.x - area.width()) * 0.5).max(0.0),
-            ((frame_px.y - area.height()) * 0.5).max(0.0),
+            ((paper_px.x - area.width()) * 0.5).max(0.0),
+            ((paper_px.y - area.height()) * 0.5).max(0.0),
         );
         self.pan = egui::vec2(
             self.pan.x.clamp(-overhang.x, overhang.x),
@@ -253,6 +286,78 @@ impl crate::Window {
     }
 }
 
+/// The smallest rectangle the zoom window accepts, in millimetres: a click or a twitch must not
+/// magnify the sheet.
+const ZOOM_WINDOW_MIN_MM: f32 = 4.0;
+
+/// The rectangle being dragged for the zoom window, in sheet millimetres.
+pub(crate) struct ZoomWindow {
+    pub(crate) start: Pt,
+    pub(crate) current: Pt,
+}
+
+impl ZoomWindow {
+    /// The rectangle's top-left and size, in sheet millimetres, whichever way it was dragged.
+    fn rect(&self) -> (egui::Vec2, egui::Vec2) {
+        let min = egui::vec2(
+            self.start.x.min(self.current.x),
+            self.start.y.min(self.current.y),
+        );
+        let size = egui::vec2(
+            (self.start.x - self.current.x).abs(),
+            (self.start.y - self.current.y).abs(),
+        );
+        (min, size)
+    }
+}
+
+impl crate::Window {
+    /// The zoom window's gesture: the left drag defines a rectangle over the sheet, and the
+    /// release magnifies it and centres it. A rectangle smaller than the minimum leaves the
+    /// window armed so the reader can try again.
+    pub(crate) fn handle_zoom_window(
+        &mut self,
+        response: &egui::Response,
+        placement: &Placement,
+        fit: Fit,
+        sheet_area: egui::Rect,
+    ) {
+        let to_mm = |screen: egui::Pos2| {
+            Pt::new(
+                (screen.x - placement.origin.x) / placement.scale,
+                (screen.y - placement.origin.y) / placement.scale,
+            )
+        };
+        if response.drag_started_by(egui::PointerButton::Primary) {
+            // The drag begins on the move frame; the rectangle starts where the press did.
+            let start = response.ctx.input(|input| input.pointer.press_origin());
+            let current = response.interact_pointer_pos();
+            if let (Some(start), Some(current)) = (start, current) {
+                self.zoom_drag = Some(ZoomWindow {
+                    start: to_mm(start),
+                    current: to_mm(current),
+                });
+            }
+        }
+        if response.dragged_by(egui::PointerButton::Primary) {
+            if let Some(position) = response.interact_pointer_pos() {
+                if let Some(window) = &mut self.zoom_drag {
+                    window.current = to_mm(position);
+                }
+            }
+        }
+        if response.drag_stopped_by(egui::PointerButton::Primary) {
+            if let Some(window) = self.zoom_drag.take() {
+                let (min, size) = window.rect();
+                if size.x >= ZOOM_WINDOW_MIN_MM && size.y >= ZOOM_WINDOW_MIN_MM {
+                    self.view.zoom_to_rect(sheet_area, fit, min, size);
+                    self.zoom_window_armed = false;
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use eframe::egui::{Rect, pos2, vec2};
@@ -268,6 +373,7 @@ mod tests {
         Fit {
             min: vec2(20.0, 10.0),
             size: vec2(267.0, 190.0),
+            paper: vec2(297.0, 210.0),
         }
     }
 
@@ -306,21 +412,46 @@ mod tests {
     }
 
     #[test]
-    fn the_pan_is_bounded_to_the_frame() {
+    fn the_pan_is_bounded_to_the_paper() {
         let mut view = View::default();
         view.zoom_in();
         view.zoom_in();
         view.pan_by(vec2(10_000.0, 10_000.0));
         let placement = view.placement(area(), fit());
         let frame_px = fit().size * placement.scale;
+        let paper_px = fit().paper * placement.scale;
         let top_left = area().center() - frame_px * 0.5 - fit().min * placement.scale;
-        let overhang = (frame_px - area().size()) * 0.5;
+        let overhang = (paper_px - area().size()) * 0.5;
         let expected = top_left + overhang;
         assert!(
             (placement.origin - expected).length() < 0.01,
             "{:?} != {expected:?}",
             placement.origin
         );
+    }
+
+    #[test]
+    fn the_zoom_window_frames_the_rectangle_and_centres_it() {
+        let mut view = View::default();
+        let rect_min = vec2(100.0, 80.0);
+        let rect_size = vec2(67.0, 50.0);
+        view.zoom_to_rect(area(), fit(), rect_min, rect_size);
+        let placement = view.placement(area(), fit());
+        let screen = Rect::from_min_size(
+            placement.origin + rect_min * placement.scale,
+            rect_size * placement.scale,
+        );
+        assert!(
+            (screen.center() - area().center()).length() < 1.0,
+            "{screen:?} is not centred in {:?}",
+            area()
+        );
+        assert!(
+            (screen.width() - area().width()).abs() < 1.0
+                || (screen.height() - area().height()).abs() < 1.0,
+            "the rectangle does not fill the area: {screen:?}"
+        );
+        assert!(view.can_go_back(), "the zoom window leaves a step back");
     }
 
     #[test]

@@ -350,6 +350,12 @@ pub(super) const VER: &[Group] = &[
                 "ribbon.item.block_visible",
                 Some(Command::BlockVisible),
             ),
+            Item::Small(
+                "view-fit",
+                "ribbon.item.zoom_window",
+                Some(Command::ZoomWindow),
+            ),
+            Item::Small("hand", "ribbon.item.hand", Some(Command::Hand)),
         ],
     },
     Group {
