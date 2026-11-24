@@ -274,8 +274,9 @@ fn a_carry_can_be_cancelled() {
 fn the_palette_lays_two_columns_of_tiles() {
     let (_harness, _returned, tiles) = tile_harness();
     let tiles = tiles.borrow();
+    assert!(!tiles.is_empty(), "the palette paints its tiles");
     let Some((_, first)) = tiles.first() else {
-        panic!("the palette painted no tiles");
+        return;
     };
     let neighbour = tiles.iter().find(|(_, rect)| {
         (rect.min.y - first.min.y).abs() < 1.0 && (rect.min.x - first.min.x).abs() > 1.0

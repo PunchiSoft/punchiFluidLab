@@ -136,6 +136,8 @@ impl ViewStrip {
                 egui::Frame::default()
                     .fill(tokens.panel)
                     .stroke(egui::Stroke::new(1.0_f32, tokens.line))
+                    .corner_radius(tokens.radius_control)
+                    .shadow(strip_shadow(tokens))
                     .inner_margin(egui::Margin::same(pad_round(pad)))
                     .show(ui, |ui| {
                         ui.set_width(side);
@@ -276,6 +278,8 @@ impl ViewStrip {
                 egui::Frame::default()
                     .fill(tokens.panel)
                     .stroke(egui::Stroke::new(1.0_f32, tokens.line))
+                    .corner_radius(tokens.radius_control)
+                    .shadow(strip_shadow(tokens))
                     .inner_margin(egui::Margin::same(pad_round(pad)))
                     .show(ui, |ui| {
                         ui.set_width(width);
@@ -339,6 +343,23 @@ impl ViewStrip {
         if folded {
             self.panel_open = false;
         }
+    }
+}
+
+/// The floating card's shadow, from the theme: the same offset and blur the drawer and the
+/// menus use, so the strip reads as one more surface and not as a painted border.
+fn strip_shadow(tokens: &Tokens) -> egui::epaint::Shadow {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the radius token is 3-8 points, far inside the shadow's 0-255 blur"
+    )]
+    let blur = tokens.radius_control.round() as u8;
+    egui::epaint::Shadow {
+        offset: [1, 2],
+        blur,
+        spread: 0,
+        color: tokens.shadow,
     }
 }
 
