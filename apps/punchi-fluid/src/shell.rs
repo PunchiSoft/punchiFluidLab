@@ -638,6 +638,15 @@ impl Window {
         match action {
             Some(crate::circuit_strip::Action::Home) => self.open_start(),
             Some(crate::circuit_strip::Action::Switch(id)) => self.switch_circuit(id),
+            Some(crate::circuit_strip::Action::Close(id)) => {
+                self.switch_circuit(id);
+                self.open_circuit_close();
+            }
+            Some(crate::circuit_strip::Action::Rename(id)) => {
+                self.switch_circuit(id);
+                self.open_circuit_rename();
+            }
+            Some(crate::circuit_strip::Action::Add) => self.new_circuit(),
             None => {}
         }
     }

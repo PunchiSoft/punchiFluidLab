@@ -30,6 +30,60 @@ fn the_strip_lists_one_tab_per_circuit_and_the_home_control() {
         harness.query_all_by_label("Home").count() >= 1,
         "the strip keeps the home control at its left"
     );
+    assert!(
+        harness.query_all_by_label("New circuit").count() >= 1,
+        "the plus after the last tab adds a circuit"
+    );
+}
+
+#[test]
+fn the_last_circuit_has_no_close_cross() {
+    let mut window = window_with();
+    let title = window
+        .document
+        .circuits()
+        .first()
+        .expect("the project starts with a circuit")
+        .title
+        .clone();
+    let harness = sheet_harness(&mut window, egui::vec2(1200.0, 800.0));
+    assert!(
+        harness
+            .query_all_by_label_contains(&format!("Close {title}"))
+            .count()
+            == 0,
+        "the only circuit cannot be closed from its tab"
+    );
+    assert!(
+        harness.query_all_by_label("New circuit").count() >= 1,
+        "a single circuit can still add another"
+    );
+}
+
+#[test]
+fn the_strip_add_and_close_open_the_window_paths() {
+    let mut window = window_with();
+    window.document.add_circuit("Second circuit");
+    let before = window.document.circuits().len();
+    window.new_circuit();
+    assert_eq!(
+        window.document.circuits().len(),
+        before + 1,
+        "the plus adds a circuit as one undo"
+    );
+    let active = window.document.active_circuit();
+    window.open_circuit_rename();
+    assert!(
+        window.circuit_dialog.is_some(),
+        "the rename gesture opens the window's rename dialog"
+    );
+    window.circuit_dialog = None;
+    assert_ne!(active, 0);
+    window.open_circuit_close();
+    assert!(
+        window.circuit_dialog.is_some(),
+        "the close cross opens the window's close dialog"
+    );
 }
 
 #[test]

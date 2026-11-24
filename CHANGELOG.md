@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La tira de circuitos: cerrar, añadir y renombrar — 2026-11-24
+
+- **×** en todas las pestañas menos la última (con su nombre accesible), **+** tras la última
+  pestaña (oculto con el proyecto lleno) y **`F2`/doble clic** para renombrar: el × y el
+  renombrar pasan por los diálogos de la ventana (un undo), el + añade un circuito como un
+  undo.
+- **Pruebas**: el + añade, el último circuito no tiene ×, y el ×/renombrar abren el camino de
+  la ventana; la suite pasa a **360**.
+- **D2 casi cerrado**: el editor **en línea** dentro de la pestaña (sin diálogo) queda como
+  siguiente corte; F4 sigue `partial` por eso.
+
 ### La tira de circuitos al pie de la hoja — 2026-11-24
 
 - **Tira**: un **tab por circuito** con su documento y nombre, la pestaña activa con relleno y

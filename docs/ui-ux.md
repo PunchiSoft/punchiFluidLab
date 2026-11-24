@@ -113,10 +113,11 @@ Depth comes from the palette, never from a new hue.
   transport's.
 - **A list of circuits is not a ribbon command.** The strip at the foot of the sheet owns the
   list — its order, switching, closing and renaming — and the ribbon offers only the commands
-  that act on the circuit in view. Today the strip shows one tab per circuit and the home
-  control, switches with a click, `Enter`/`Space` or `Ctrl+Tab`/`Ctrl+Shift+Tab` as a view
-  change, and the canvas reserves its band; the inline rename, the × and the + are the next
-  slice (annex D2). One button per circuit says the same thing twice, makes
+  that act on the circuit in view. Today the strip shows one tab per circuit, the home
+  control, the × on every tab but the last, the + after the last tab, and switches with a
+  click, `Enter`/`Space` or `Ctrl+Tab`/`Ctrl+Shift+Tab` as a view change; `F2` or a double
+  click opens the window's rename dialog. The canvas reserves its band. The inline editor in
+  the tab remains the next slice. One button per circuit says the same thing twice, makes
   the group's width grow with the project (the adaptive breakpoints cannot measure it) and
   leaves the closing and the renaming in one place and the switching in two.
 - **One file is a project; one sheet in it is a circuit.** A command, a dialog or a hint that
