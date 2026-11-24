@@ -436,6 +436,43 @@ fn the_simple_cylinder_description_shows_its_card() {
     assert!(!harness.state().mockup);
 }
 
+/// The card is a PNG compiled into the binary: `egui_extras` needs its `image` feature, or the
+/// window paints the loader's «?» placeholder and the picture never appears. The texture is
+/// the 800 × 450 PNG, so a frame that uploads it proves the loader decoded it.
+#[test]
+fn the_description_card_image_is_loaded() {
+    let mut window = window_with_single_acting_cylinder();
+    let mut harness = harness(&mut window);
+    egui_extras::install_image_loaders(&harness.ctx);
+    let sheet = harness.get_by_label("drawing sheet").rect();
+    right_click_at(&mut harness, sheet.center());
+    harness.get_by_label("Component description").click();
+    let mut loaded = false;
+    for _ in 0..120 {
+        harness.step();
+        loaded = harness
+            .output()
+            .textures_delta
+            .set
+            .iter()
+            .any(|(_, delta)| {
+                matches!(&delta.image, egui::ImageData::Color(_))
+                    && delta.image.size() == [800, 450]
+            });
+        if loaded {
+            break;
+        }
+        // The image loader decodes the PNG on its own thread: the harness step does not wait
+        // for it, so the loop has to give it wall-clock time or a fast machine runs the 120
+        // steps before the texture exists.
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
+    assert!(
+        loaded,
+        "the card image is decoded and uploaded; without the image loader the window shows a «?»"
+    );
+}
+
 #[test]
 fn the_card_follows_the_language() {
     let mut window = window_with_single_acting_cylinder();
