@@ -119,6 +119,7 @@ the default; dropping it is the exception.
 | F1 | The title block protects its own box | `covered` | the block's footprint, not a band: the strip beside it takes symbols and a collision is a fault |
 | F1 | Give a component a designation | `covered` | a name per placement, edited in the properties panel, drawn under the symbol and saved with the sheet; 40 characters, trimmed, no control characters |
 | F2 | The sheet is the network the solver runs | `covered` | built from the document; a 5/2 valve file drives a double-acting cylinder; junction and throttle are part of the graph |
+| F8 | Choose the language of the interface | `partial` | **Configuración ▸ Apariencia** offers English and Spanish; the sheet menu, the description card and the selector read the embedded catalogs; the rest of the window is still Spanish hardcoded |
 | F2 | A supply starts at 4 bar | `covered` | the three built-in definitions (`supply.compressor`, `supply.compressor_adjustable`, `supply.network`) declare **4 bar gauge**, the industry default chosen by the owner; a new placement, the four templates and the worked example read it, while an explicit per-placement pressure wins; an older sheet with no edit reads the catalog default, so a document that needs 6 bar carries the edit. No format change |
 | F2 | Pipes coloured by pressure while running | `covered` | each hose takes the pressure of its port; at atmosphere it keeps the neutral ink |
 | F2 | The air leaving an exhaust port is visible | `covered` | the solver reports the air each exhaust port releases, free or through a silencer, a plugged port reports zero, and the drawing places the jet at the port edge (or at the silencer's mouth) with its tests (#161/#162) |
@@ -174,6 +175,7 @@ Rows grow as the log grows. A capability the category expects and this table doe
 is a hole, and holes are found by reading the list of teaching topics, not by waiting for
 someone to miss a function.
 
+| F8 | The interface language is a setting | A student reads the program in the language they chose, and English is the source rather than a translation that appears only when the desktop is English. | **Configuración ▸ Apariencia** offers English and Spanish, stored in `settings.state` as view state and applied without restarting. `punchi-fluid-i18n` reads the embedded `i18n/en.toml` and `i18n/es.toml`; the sheet menu, the description card and the selector are on the catalog. English is the default and a missing Spanish key falls back to English | the rest of the window, the check, the exporter and the CLI: their Spanish sentences are the migration debt; the catalogue names and summaries and the Spanish translation of the remaining surfaces are later slices | `the_language_selector_switches_the_interface`, `the_menu_follows_the_language`, `the_language_round_trips_and_defaults_to_english`, `the_catalogs_have_the_same_keys`, `a_key_is_translated_and_falls_back_to_english` and the five crate tests |
 ## Where we stand
 
 | Area | State |

@@ -1,9 +1,9 @@
 # Translations
 
-**Status: target.** The mechanism is decided; nothing is loaded at runtime yet. The
-interface is still Spanish and its copy is hardcoded in the Rust window and in the crates
-that hand it sentences. The migration is surface by surface, and the English copy has not
-been written.
+**Status: target.** The mechanism is decided and its first slice is implemented:
+`punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
+and the sheet menu and the description card are translated. The rest of the window is still
+Spanish hardcoded; the migration is surface by surface.
 
 ## The decision
 
@@ -51,8 +51,10 @@ migration plan are the owner's working notes, outside the repository.
 
 ## Where the copy lives today
 
-- **The Rust window** (`apps/punchi-fluid`): ribbon labels, sidebar categories, status bar,
-  notices, dialog text and the new menu labels are Spanish string literals.
+- **The Rust window** (`apps/punchi-fluid`): the sheet menu, the description card and the
+  language selector read the catalog. The ribbon, the sidebar, the status bar, the notices
+  outside the pilot and the dialog text are still Spanish literals; the migration reaches
+  them surface by surface.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
   `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
   keys.
@@ -64,8 +66,11 @@ migration plan are the owner's working notes, outside the repository.
 
 ## What is not done
 
-- The `punchi-fluid-i18n` crate, the TOML catalogs and the `Language` setting do not exist.
-- No runtime loads a catalog and no language switch exists.
-- The manual classification of every string, test and contract is still pending; without it
-  the pilot does not start.
-- The English copy has not been written; the Spanish literals are the debt the audit records.
+- The rest of the window, the check, the exporter and the CLI still return or draw Spanish
+  sentences; only the menu and the description card are on the catalog today.
+- The manual classification of every string, test and contract is still pending for the
+  surfaces after the pilot; the pilot's key map is the first classified slice.
+- The catalog data (`name_es`, `summary`) and the Spanish translation of the rest of the
+  window are a later slice; the English copy of the remaining surfaces is not written.
+- No light/dark capture of the language selector or the translated menu is attached yet; the
+  headless tests cover the switch.

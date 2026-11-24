@@ -86,6 +86,7 @@ lo importante. El software libre es cómo una materia deja de tener precio de en
 | Crate | Qué hace ahora |
 |---|---|
 | `punchi-fluid-core` | Componentes, puertos, conexiones y unidades tipadas (bar, litro, kelvin) |
+| `punchi-fluid-i18n` | El idioma, los catálogos TOML inglés y español embebidos y la búsqueda por clave |
 | `punchi-fluid-catalog` | Definiciones de componente leídas de archivos TOML: esquema, validación y reglas de reemplazo |
 | `punchi-fluid-file` | Formato de hoja versionado (v3), escritura atómica y lista de documentos recientes |
 | `punchi-fluid-solver` | Integración de masa de gas, cilindro con muelle, amortiguamiento y rozamiento, flujo ISO 6358 |

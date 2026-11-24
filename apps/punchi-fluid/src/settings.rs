@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::layout::LayoutMode;
@@ -71,6 +72,8 @@ pub struct Settings {
     pub theme_day: ThemeId,
     /// The theme the system mode uses when the desktop is dark.
     pub theme_night: ThemeId,
+    /// The visible language; English is the source and the default.
+    pub language: Language,
 }
 
 impl Default for Settings {
@@ -88,6 +91,7 @@ impl Default for Settings {
             appearance: Appearance::Desktop,
             theme_day: ThemeId::Cad,
             theme_night: ThemeId::Slate,
+            language: Language::English,
         }
     }
 }
@@ -197,6 +201,11 @@ pub fn parse(text: &str) -> Option<Settings> {
                     settings.theme_night = id;
                 }
             }
+            "language" => {
+                if let Some(language) = Language::from_code(value) {
+                    settings.language = language;
+                }
+            }
             // Unknown keys are ignored on purpose: the format is additive.
             _ => {}
         }
@@ -215,7 +224,7 @@ pub fn format(settings: &Settings) -> Option<String> {
     );
     let _ = write!(
         text,
-        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\n",
+        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\nlanguage={}\n",
         number(settings.catalog.open),
         settings.catalog.width,
         number(settings.inspector.open),
@@ -224,6 +233,7 @@ pub fn format(settings: &Settings) -> Option<String> {
         settings.appearance.value(),
         settings.theme_day.id(),
         settings.theme_night.id(),
+        settings.language.code(),
     );
     Some(text)
 }
@@ -367,6 +377,7 @@ impl Window {
         self.autohide_on = remembered.autohide;
         self.appearance_day = remembered.theme_day;
         self.appearance_night = remembered.theme_night;
+        self.language = remembered.language;
         self.shell.restore_pending = store.found();
         self.settings = store;
         self
@@ -387,6 +398,7 @@ impl Window {
             appearance: self.theme.appearance,
             theme_day: self.appearance_day,
             theme_night: self.appearance_night,
+            language: self.language,
         }
     }
 

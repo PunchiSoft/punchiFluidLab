@@ -1071,14 +1071,15 @@ Rules:
 
 ### Language
 
-There is **no catalog runtime yet**. The window's strings are Spanish literals; the check
-returns `message_es` and the exporter carries Spanish labels. [ADR 0045](adr/0045-the-interface-speaks-english-through-embedded-toml-catalogs.md)
-supersedes the retired Qt plan of [ADR 0027](adr/0027-translation-catalogs-are-qts.md): the
-mechanism is `punchi-fluid-i18n` with embedded TOML catalogs, English as the source and the
-default, and Spanish selectable in Configuración. Keys live in the crates, the exporter
-receives its labels from the caller, the CLI keeps a fixed English contract, and no sentence
-is concatenated. The migration is surface by surface; until a surface is migrated its Spanish
-literal is debt ([i18n/README.md](../i18n/README.md)).
+**The language is a setting, and its first slice exists.** [ADR 0045](adr/0045-the-interface-speaks-english-through-embedded-toml-catalogs.md)
+supersedes the retired Qt plan of [ADR 0027](adr/0027-translation-catalogs-are-qts.md):
+`punchi-fluid-i18n` reads the embedded `i18n/en.toml` and `i18n/es.toml`, English is the
+source and the visible default, and **Configuración ▸ Apariencia** offers the language without
+a restart. The sheet menu, the description card and the language selector are on the catalog;
+the rest of the window, the check, the exporter and the CLI still carry Spanish sentences and
+are migrated surface by surface. Keys live in the catalogs, the exporter receives its labels
+from the caller, the CLI keeps a fixed English contract, and no sentence is concatenated. Until
+a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/README.md)).
 
 ## What this design refuses
 

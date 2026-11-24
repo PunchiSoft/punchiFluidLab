@@ -1,0 +1,37 @@
+# Punchi Fluid Lab — English source catalog (ADR 0045).
+# The keys are stable dotted paths; the values are one sentence or label each.
+[menu]
+move = "Move"
+rotate = "Rotate"
+mirror_horizontal = "Mirror horizontally"
+mirror_vertical = "Mirror vertically"
+configure = "Configure"
+properties = "Properties"
+describe = "Component description"
+delete = "Delete"
+select_one = "Select one component"
+
+[dialog]
+configuration = "Configuration"
+description = "Description"
+close = "Close"
+mockup = "Mockup · this dialog's content will come later."
+
+[notice]
+rotated = "rotated"
+mirrored = "mirrored"
+moved = "moved"
+move_cancelled = "move cancelled"
+moving = "moving · click to drop · Esc to cancel"
+deleted = "deleted {count}"
+pipe_deleted = "pipe deleted"
+
+[selection]
+one = "1 selected"
+many = "{count} selected"
+pipe = "pipe selected"
+
+[language]
+label = "Language"
+english = "English"
+spanish = "Spanish"

@@ -24,6 +24,7 @@ punchi-fluid-doc = { workspace = true }
 punchi-fluid-draw = { workspace = true }
 punchi-fluid-export = { workspace = true }
 punchi-fluid-file = { workspace = true }
+punchi-fluid-i18n = { workspace = true }
 punchi-fluid-session = { workspace = true }
 tiny-skia = { workspace = true }
 

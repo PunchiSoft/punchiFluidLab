@@ -9,6 +9,7 @@
 //! through the same theme adapter (ADR 0042); the card shows the measured result.
 
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::theme::{Appearance, ThemeId, Tokens};
@@ -65,6 +66,18 @@ impl Window {
         self.preferences.open = true;
     }
 
+    /// Applies the language and remembers it at once: it is view state, and a close before
+    /// the settle delay must not lose it.
+    pub(crate) fn apply_language(&mut self, context: &egui::Context, language: Language) {
+        if self.language == language {
+            return;
+        }
+        self.language = language;
+        let settings = self.panel_settings();
+        self.settings.remember(settings);
+        context.request_repaint();
+    }
+
     /// Applies an appearance and remembers it at once: the theme is view state, and a close
     /// before the settle delay must not lose it.
     pub(crate) fn apply_appearance(&mut self, context: &egui::Context, appearance: Appearance) {
@@ -102,6 +115,7 @@ impl Window {
             .collect();
         let day_preview = self.theme.preview(Appearance::Theme(day));
         let night_preview = self.theme.preview(Appearance::Theme(night));
+        let language = self.language;
         let data = PageData {
             page,
             tokens: &tokens,
@@ -112,10 +126,14 @@ impl Window {
             aimed,
             day_preview,
             night_preview,
+            language,
         };
         let chosen = preferences_window(context, &data, self.autohide_on);
         if let Some(candidate) = chosen.page {
             self.preferences.page = candidate;
+        }
+        if let Some(language) = chosen.language {
+            self.apply_language(context, language);
         }
         if let Some(slot) = chosen.slot {
             self.preferences.aimed = slot;
@@ -163,6 +181,7 @@ struct Chosen {
     appearance: Option<Appearance>,
     theme: Option<ThemeId>,
     slot: Option<Slot>,
+    language: Option<Language>,
     action: Option<Action>,
 }
 
@@ -177,6 +196,7 @@ struct PageData<'a> {
     aimed: Slot,
     day_preview: Tokens,
     night_preview: Tokens,
+    language: Language,
 }
 
 /// The window's frame: the blocker, the nav, the page and the footer.
@@ -250,8 +270,44 @@ impl PageData<'_> {
     }
 }
 
+/// The language row: the visible language, with each option named in its own language.
+fn language_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
+    let tokens = data.tokens;
+    ui.horizontal(|ui| {
+        ui.label(
+            egui::RichText::new(data.language.text("language.label"))
+                .size(tokens.text_body)
+                .color(tokens.ink),
+        );
+        let response = egui::ComboBox::from_id_salt("preferences.language")
+            .selected_text(data.language.text(data.language.label_key()))
+            .show_ui(ui, |ui| {
+                for language in Language::ALL {
+                    if ui
+                        .selectable_label(
+                            data.language == language,
+                            language.text(language.label_key()),
+                        )
+                        .clicked()
+                    {
+                        chosen.language = Some(language);
+                    }
+                }
+            });
+        response.response.widget_info(|| {
+            egui::WidgetInfo::labeled(
+                egui::WidgetType::ComboBox,
+                true,
+                data.language.text("language.label"),
+            )
+        });
+    });
+}
+
 /// The appearance page: the three modes, the two system slots and the theme cards.
 fn appearance_page(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
+    language_row(ui, data, chosen);
+    ui.add_space(data.tokens.unit * 0.5);
     ui.heading(
         egui::RichText::new("Apariencia")
             .size(data.tokens.text_label)
@@ -499,6 +555,31 @@ mod tests {
             "the card applies the theme live"
         );
         assert!(!window.preferences.open, "Cerrar closes the window");
+    }
+
+    #[test]
+    fn the_language_selector_switches_the_interface() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Language")
+                .click();
+            harness.run();
+            harness.get_by_label("Español").click();
+            harness.run();
+        }
+        assert_eq!(
+            window.language,
+            punchi_fluid_i18n::Language::Spanish,
+            "the selector switches the language"
+        );
+        assert_eq!(
+            window.panel_settings().language,
+            punchi_fluid_i18n::Language::Spanish,
+            "the language is view state"
+        );
     }
 
     #[test]

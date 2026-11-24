@@ -85,6 +85,7 @@ the point. Free software is how a subject stops being an entrance fee.
 | Crate | What it does now |
 |---|---|
 | `punchi-fluid-core` | Components, ports, connections and typed units (bar, litre, kelvin) |
+| `punchi-fluid-i18n` | The language, the embedded English and Spanish TOML catalogs and the key lookup |
 | `punchi-fluid-catalog` | Component definitions read from TOML files: schema, validation, override rules |
 | `punchi-fluid-file` | Versioned sheet format (v14), atomic write and the recent-document list |
 | `punchi-fluid-solver` | Gas mass integration, cylinder with spring, damping and friction, ISO 6358 flow |
