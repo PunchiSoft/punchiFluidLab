@@ -795,7 +795,10 @@ the ribbon button and a direct shortcut are not there yet, so the menu is its ke
 The commands used while reading the sheet — moving, zooming, fitting, hiding a guide and
 starting the model — are a **strip that floats over the right edge of the drawing area**,
 not a fourth column and not a floating window: it takes no width from the paper, it does
-not fight the right dock, and it leaves with the room it needs.
+not fight the right dock, and it leaves with the room it needs. The page is fitted and
+centred **left of the strip's channel**: the drawing area keeps a gutter on the right where
+the strip floats, so the strip never covers the paper, and the drawing clips against the
+canvas, never the window, so a zoom above the fit cannot paint over the ribbon or the docks.
 
 | Control | Behaviour |
 |---|---|

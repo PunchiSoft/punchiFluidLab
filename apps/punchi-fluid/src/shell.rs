@@ -26,6 +26,19 @@ use punchi_fluid_draw::symbol::Ink;
 use punchi_fluid_draw::{Pt, Rect, draw_placed};
 use punchi_fluid_export::sheet;
 
+/// The rectangles of the last sheet frame: the canvas the shell gave the sheet, the drawing
+/// area left of the view strip's gutter, the paper and the clip the drawing is painted into.
+/// Named here so the layout tests can prove the page never leaves the canvas and never enters
+/// the strip's gutter.
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct SheetProbe {
+    pub canvas: egui::Rect,
+    pub drawing: egui::Rect,
+    pub paper: egui::Rect,
+    pub clip: egui::Rect,
+}
+
 /// Which panel the compact drawer is showing. One at a time: the drawing stays visible
 /// beside it and the other rail keeps its control.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -486,6 +499,7 @@ impl Window {
         let page_mm = egui::vec2(width, height);
         egui::CentralPanel::default().show(context, |ui| {
             let area = ui.available_rect_before_wrap();
+            let sheet_area = crate::layout::drawing_area(area, self.theme.tokens.unit);
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {
                 egui::WidgetInfo::labeled(
@@ -494,8 +508,8 @@ impl Window {
                     self.language.text("sheet.name"),
                 )
             });
-            self.handle_view(ui, &sheet, area, page_mm);
-            let placement = self.view.placement(area, page_mm);
+            self.handle_view(ui, &sheet, sheet_area, page_mm);
+            let placement = self.view.placement(sheet_area, page_mm);
             self.magnification = placement.scale;
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
@@ -547,7 +561,8 @@ impl Window {
             );
             self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let tokens = &self.theme.tokens;
-            let painter = ui.painter().with_clip_rect(ui.max_rect());
+            let clip = ui.max_rect();
+            let painter = ui.painter().with_clip_rect(clip);
             // Three planes tell the sheet from the chrome: the canvas is the sunken
             // workspace, the paper is the raised card, and one shadow keeps the card off
             // the canvas. The paper itself is the drawing's first call, so the print
@@ -560,6 +575,15 @@ impl Window {
                     page_rect.height() * placement.scale,
                 ),
             );
+            #[cfg(test)]
+            {
+                self.sheet_probe = Some(SheetProbe {
+                    canvas: area,
+                    drawing: sheet_area,
+                    paper,
+                    clip,
+                });
+            }
             painter.rect_filled(paper.translate(egui::vec2(0.0, 3.0)), 0.0, tokens.shadow);
             painter.rect_stroke(
                 paper,

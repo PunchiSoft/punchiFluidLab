@@ -16,7 +16,7 @@ use punchi_fluid_i18n::Language;
 use crate::Window;
 use crate::layout::LayoutMode;
 use crate::ribbon::Command;
-use crate::shell::Drawer;
+use crate::shell::{Drawer, SheetProbe};
 use crate::theme::Theme;
 use crate::window_state::{self, Geometry};
 
@@ -87,6 +87,7 @@ const SHEET_INSET: f32 = 16.0;
 struct Probe {
     sheet_width: f32,
     drawer: Option<Drawer>,
+    sheet: Option<SheetProbe>,
 }
 
 /// A window the tests can draw: no path, no dialog, no safety copy.
@@ -116,6 +117,32 @@ fn shell_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
             Probe::default(),
         );
     // The window ships no font: the harness gets the desktop's, as the app does at start.
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the shell tests need one");
+    }
+    harness.run();
+    harness
+}
+
+/// The shell drawn headless with the real sheet, so the probe records the canvas, the drawing
+/// area, the paper and the clip of the last frame.
+fn sheet_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness<'_, Probe> {
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(size)
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(240)
+        .build_state(
+            move |context, probe: &mut Probe| {
+                window.update_layout_mode(context);
+                window.sync_commands(context);
+                window.show_ribbon(context);
+                window.show_status(context);
+                window.show_regions(context);
+                window.show_sheet(context);
+                probe.sheet = window.sheet_probe;
+            },
+            Probe::default(),
+        );
     if crate::theme::install_font(&harness.ctx, None).is_err() {
         eprintln!("no system font: the shell tests need one");
     }
@@ -597,4 +624,101 @@ fn the_first_frame_restores_the_remembered_geometry() {
         "a normal window does not ask to be maximized"
     );
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_page_stays_inside_the_canvas_at_every_mode_and_size() {
+    for size in [
+        egui::vec2(700.0, 900.0),
+        egui::vec2(900.0, 600.0),
+        egui::vec2(1200.0, 800.0),
+        egui::vec2(1920.0, 1080.0),
+    ] {
+        let mut window = window_with();
+        let harness = sheet_harness(&mut window, size);
+        let probe = harness.state().sheet.expect("a sheet frame");
+        let eps = 0.5;
+        assert!(
+            probe.paper.min.x >= probe.canvas.min.x - eps
+                && probe.paper.max.x <= probe.canvas.max.x + eps
+                && probe.paper.min.y >= probe.canvas.min.y - eps
+                && probe.paper.max.y <= probe.canvas.max.y + eps,
+            "{size:?}: paper {:?} leaves the canvas {:?}",
+            probe.paper,
+            probe.canvas
+        );
+        assert!(
+            probe.paper.max.x <= probe.drawing.max.x + eps,
+            "{size:?}: paper {:?} enters the strip's gutter",
+            probe.paper
+        );
+        assert!(
+            (probe.clip.min.x - probe.canvas.min.x).abs() <= eps
+                && (probe.clip.min.y - probe.canvas.min.y).abs() <= eps
+                && (probe.clip.max.x - probe.canvas.max.x).abs() <= eps
+                && (probe.clip.max.y - probe.canvas.max.y).abs() <= eps,
+            "{size:?}: the drawing clips against the canvas, not the window"
+        );
+    }
+}
+
+#[test]
+fn the_page_leaves_the_strip_a_gutter_on_the_canvas() {
+    let mut window = window_with();
+    let unit = window.theme.tokens.unit;
+    let gutter = crate::layout::view_strip_gutter(unit);
+    let harness = sheet_harness(&mut window, egui::vec2(900.0, 700.0));
+    let probe = harness.state().sheet.expect("a sheet frame");
+    assert!(
+        (probe.canvas.right() - probe.drawing.right() - gutter).abs() <= 0.5,
+        "the drawing area does not start the gutter where the strip will float"
+    );
+    assert!(
+        probe.canvas.right() - probe.paper.max.x >= gutter - 0.5,
+        "the paper enters the strip's gutter: {:?}",
+        probe.paper
+    );
+}
+
+#[test]
+fn the_frame_keeps_its_margins_inside_the_page() {
+    let mut window = window_with();
+    let (page_width, _) = window.page.size_mm();
+    let margins = window.page.margins;
+    let harness = sheet_harness(&mut window, egui::vec2(1200.0, 800.0));
+    let probe = harness.state().sheet.expect("a sheet frame");
+    let scale = probe.paper.width() / page_width;
+    let frame = egui::Rect::from_min_max(
+        probe.paper.min + egui::vec2(margins.left * scale, margins.top * scale),
+        probe.paper.max - egui::vec2(margins.right * scale, margins.bottom * scale),
+    );
+    assert!(
+        frame.min.x >= probe.paper.min.x
+            && frame.min.y >= probe.paper.min.y
+            && frame.max.x <= probe.paper.max.x
+            && frame.max.y <= probe.paper.max.y,
+        "the frame {frame:?} leaves the paper {:?}",
+        probe.paper
+    );
+}
+
+#[test]
+fn a_zoom_above_the_fit_clips_against_the_canvas_not_the_window() {
+    let mut window = window_with();
+    window.view.zoom_in();
+    window.view.zoom_in();
+    let harness = sheet_harness(&mut window, egui::vec2(900.0, 700.0));
+    let probe = harness.state().sheet.expect("a sheet frame");
+    assert!(
+        (probe.clip.min.x - probe.canvas.min.x).abs() <= 0.5
+            && (probe.clip.min.y - probe.canvas.min.y).abs() <= 0.5
+            && (probe.clip.max.x - probe.canvas.max.x).abs() <= 0.5
+            && (probe.clip.max.y - probe.canvas.max.y).abs() <= 0.5,
+        "the zoomed drawing must clip against the canvas, not the window"
+    );
+    assert!(
+        probe.paper.width() > probe.drawing.width() + 1.0
+            || probe.paper.height() > probe.drawing.height() + 1.0,
+        "the zoomed paper should be larger than the drawing area for the clip to matter"
+    );
 }

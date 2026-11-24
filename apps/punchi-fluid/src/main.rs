@@ -125,6 +125,10 @@ struct Window {
     view: view::View,
     magnification: f32,
     frame_ms: f64,
+    /// The last sheet frame's rectangles, for the layout tests: the canvas, the drawing area
+    /// after the view strip's gutter, the paper and the clip.
+    #[cfg(test)]
+    sheet_probe: Option<crate::shell::SheetProbe>,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
     /// The simulation's clock speed; the ribbon shows the active one.
