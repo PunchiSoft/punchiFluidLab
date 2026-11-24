@@ -37,6 +37,7 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
 
 fn page_with_parts() -> Page {
     let mut page = Page::a4(TitleBlock::new("A circuit", "2026-11-12"));
+    page.labels = punchi_fluid_export::Labels::spanish();
     page.parts = Some(PartsList::group(
         &Catalog::builtin(),
         [
@@ -54,6 +55,7 @@ fn page_with_parts() -> Page {
             class: punchi_fluid_draw::LineClass::Working,
             length_mm: 3_400,
         }],
+        &punchi_fluid_export::Labels::spanish(),
     ));
     page
 }
@@ -82,6 +84,37 @@ fn the_sheet_becomes_a_vector_document() {
         "the note says the length is the drawn route"
     );
     assert!(svg.trim_end().ends_with("</svg>"));
+}
+
+#[test]
+fn an_english_page_prints_english_labels() {
+    let mut page = page_with_parts();
+    page.labels = punchi_fluid_export::Labels::english();
+    page.parts = Some(PartsList::group(
+        &Catalog::builtin(),
+        [
+            ("cylinder.single_acting_20_100", Some("1A")),
+            ("supply.compressor", None),
+        ],
+        [(
+            "valve.3_2.spring_return",
+            Some("1V1"),
+            "3",
+            "silencer.pneumatic",
+        )],
+        [TubeRowInput {
+            od: Some(1000),
+            class: punchi_fluid_draw::LineClass::Working,
+            length_mm: 3_400,
+        }],
+        &punchi_fluid_export::Labels::english(),
+    ));
+    let block = page.title_block.clone().unwrap_or_default();
+    let svg = render_svg_with(&page, &block, draw_a_cylinder).expect("the page renders");
+    assert!(svg.contains("parts list"), "the English heading");
+    assert!(svg.contains("Title"), "the English title-block label");
+    assert!(svg.contains("Hose 10 mm"), "the English tube row");
+    assert!(svg.contains("3.4 m"), "the English decimal separator");
 }
 
 #[test]

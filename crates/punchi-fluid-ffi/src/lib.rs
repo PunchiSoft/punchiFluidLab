@@ -4934,7 +4934,13 @@ fn parts_list(
             length_mm,
         })
     });
-    punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes)
+    punchi_fluid_export::PartsList::group(
+        catalog,
+        placement_rows,
+        closures,
+        tubes,
+        &punchi_fluid_export::Labels::english(),
+    )
 }
 
 /// The title block for an export: the circuit's own fields, with the defaults the paper

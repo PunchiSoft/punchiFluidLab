@@ -196,6 +196,13 @@ pub const fn is_valid_tube(hundredths: u16) -> bool {
 /// measurement with the decimal comma the interface uses (`10,50 mm`).
 #[must_use]
 pub fn tube_label(hundredths: u16) -> String {
+    tube_label_with(hundredths, ',')
+}
+
+/// The catalog name of `hundredths`, or a measurement with `decimal_separator` when the
+/// series has no name for it. The interface and the printed page choose their separator.
+#[must_use]
+pub fn tube_label_with(hundredths: u16, decimal_separator: char) -> String {
     if let Some(size) = tube_size(hundredths) {
         return size.label.to_owned();
     }
@@ -204,7 +211,7 @@ pub fn tube_label(hundredths: u16) -> String {
     if fraction == 0 {
         format!("{whole} mm")
     } else {
-        format!("{whole},{fraction:02} mm")
+        format!("{whole}{decimal_separator}{fraction:02} mm")
     }
 }
 

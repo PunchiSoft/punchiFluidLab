@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### El exportador recibe sus etiquetas — 2026-11-24
+
+- **Exportación**: nuevo `Labels` en `punchi-fluid-export` con los rótulos del bloque de
+  título, la cabecera de la lista de piezas, las notas de recorte, los roles de puerto, las
+  clases de conducto y los separadores decimales. El exportador no traduce: imprime el juego
+  que recibe. La ventana pasa el idioma elegido; una página sale entera en un idioma.
+- **Números**: el diámetro y la longitud de la lista usan el separador del idioma; se añade
+  `tube_label_with` en `punchi-fluid-core`.
+- **Avisos de exportación**: la extensión no admitida y «el dibujo no tiene nada que exportar»
+  pasan al catálogo.
+- **Pruebas**: `an_english_page_prints_english_labels` (crate) y
+  `the_parts_list_reaches_the_drawing` en ambos idiomas; la crate de exportación pasa a 50
+  pruebas y la ventana sigue en **317**.
+- **Fase 4 en revisión**: chequeo, avisos, catálogo y exportador hechos; queda la fase 5.
+
 ### La tarjeta lee el resumen español — 2026-11-24
 
 - **Catálogo**: nuevo campo opcional `summary_es` en la definición, documentado en

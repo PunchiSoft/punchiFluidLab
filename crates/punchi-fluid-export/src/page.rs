@@ -11,6 +11,7 @@
 pub use punchi_fluid_core::{BlockPosition, Margins, Orientation, PaperSize};
 use punchi_fluid_draw::{Pt, Rect};
 
+use crate::labels::Labels;
 use crate::parts::PartsList;
 pub use punchi_fluid_core::title_block::TitleBlock;
 
@@ -27,6 +28,8 @@ pub struct Page {
     pub title_block: Option<TitleBlock>,
     /// Parts list, drawn in a column above the block. `None` prints no list.
     pub parts: Option<PartsList>,
+    /// Words the page prints; the caller chooses the language.
+    pub labels: Labels,
 }
 
 impl Page {
@@ -42,6 +45,7 @@ impl Page {
             margins: Margins::standard(),
             title_block: Some(title_block),
             parts: None,
+            labels: Labels::english(),
         }
     }
 
@@ -265,6 +269,7 @@ mod tests {
             ],
             [],
             [],
+            &crate::labels::Labels::spanish(),
         ));
         let with = page.drawing_rect();
         let parts = page.parts_rect();

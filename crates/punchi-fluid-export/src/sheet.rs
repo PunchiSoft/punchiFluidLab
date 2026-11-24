@@ -8,6 +8,7 @@
 
 use punchi_fluid_draw::{Anchor, Colour, Pt, Stroke, Surface};
 
+use crate::labels::Labels;
 use crate::page::{Page, TitleBlock};
 use crate::reference_zones::draw_reference_zones;
 use crate::title_block::draw_title_block;
@@ -119,7 +120,7 @@ fn draw_parts(surface: &mut dyn Surface, page: &Page) {
     surface.rect(rect, 0.0, None, Some(Stroke::new(RULE, Colour::BLACK)));
     surface.text(
         Pt::new(rect.min.x + 2.0, rect.min.y + 3.6),
-        "lista de piezas",
+        page.labels.parts_heading,
         LABEL,
         Colour::new(90, 90, 90),
         Anchor::Start,
@@ -166,15 +167,15 @@ fn draw_parts(surface: &mut dyn Surface, page: &Page) {
     if parts.omitted > 0 {
         surface.text(
             Pt::new(name_x, y),
-            &format!("… y {} piezas más", parts.omitted),
+            &Labels::with_count(page.labels.parts_omitted, parts.omitted),
             LABEL,
             Colour::new(90, 90, 90),
             Anchor::Start,
         );
         y += 4.4;
     }
-    draw_closure_rows(surface, parts, quantity_x, name_x, &mut y);
-    draw_tube_rows(surface, parts, quantity_x, name_x, &mut y);
+    draw_closure_rows(surface, parts, quantity_x, name_x, &mut y, &page.labels);
+    draw_tube_rows(surface, parts, quantity_x, name_x, &mut y, &page.labels);
 }
 
 /// Draws the fitted closures and their cut note, from the current vertical position.
@@ -184,6 +185,7 @@ fn draw_closure_rows(
     quantity_x: f32,
     name_x: f32,
     y: &mut f32,
+    labels: &crate::labels::Labels,
 ) {
     // A closure is a fitted accessory, not a free placement: its row names the closure, the
     // component that carries it and the port, in the same columns as the components.
@@ -207,7 +209,7 @@ fn draw_closure_rows(
     if parts.omitted_closures > 0 {
         surface.text(
             Pt::new(name_x, *y),
-            &format!("… y {} cierres más", parts.omitted_closures),
+            &crate::labels::Labels::with_count(labels.closures_omitted, parts.omitted_closures),
             LABEL,
             Colour::new(90, 90, 90),
             Anchor::Start,
@@ -223,6 +225,7 @@ fn draw_tube_rows(
     quantity_x: f32,
     name_x: f32,
     y: &mut f32,
+    labels: &crate::labels::Labels,
 ) {
     // The tubes close the list: one row per size and class, with the length of the route
     // the drawing shows. The note says what that length is, because a reader must not take
@@ -230,7 +233,7 @@ fn draw_tube_rows(
     for row in &parts.tubes {
         surface.text(
             Pt::new(quantity_x, *y),
-            &row.text(),
+            &row.text(labels),
             LABEL,
             Colour::BLACK,
             Anchor::Start,
@@ -240,7 +243,7 @@ fn draw_tube_rows(
     if !parts.tubes.is_empty() {
         surface.text(
             Pt::new(name_x, *y),
-            "longitud = recorrido dibujado, sin desvíos, racores ni merma",
+            labels.tube_note,
             LABEL * 0.8,
             MUTED,
             Anchor::Start,
@@ -250,7 +253,7 @@ fn draw_tube_rows(
     if parts.omitted_tubes > 0 {
         surface.text(
             Pt::new(name_x, *y),
-            &format!("… y {} tubos más", parts.omitted_tubes),
+            &crate::labels::Labels::with_count(labels.tubes_omitted, parts.omitted_tubes),
             LABEL,
             Colour::new(90, 90, 90),
             Anchor::Start,
@@ -278,7 +281,7 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert!(texts.contains(&"Título"));
+        assert!(texts.contains(&"Title"));
         assert!(
             !texts.iter().any(|text| text.contains("1 supply")),
             "the sheet no longer carries the port legend"
@@ -363,7 +366,9 @@ mod tests {
             ],
             [],
             [],
+            &crate::labels::Labels::spanish(),
         ));
+        page.labels = Labels::spanish();
         let block = page.title_block.clone().unwrap_or_default();
         let mut recording = Recording::default();
         draw(&mut recording, &page, &block);
@@ -406,19 +411,19 @@ mod tests {
             })
             .collect();
         for expected in [
-            "Empresa / propietario",
-            "Proyecto / instalación",
-            "Equipo / sistema",
-            "Título",
-            "Nº de plano",
-            "Revisión",
-            "Hoja",
-            "Fecha",
-            "Escala",
-            "Dibujado",
-            "Revisado",
-            "Aprobado",
-            "Normas aplicadas",
+            "Company / owner",
+            "Project / installation",
+            "Equipment / system",
+            "Title",
+            "Drawing no.",
+            "Revision",
+            "Sheet",
+            "Date",
+            "Scale",
+            "Drawn by",
+            "Checked by",
+            "Approved by",
+            "Standards applied",
             "Curso de Neumática",
             "Línea 2",
             "Prensa 4",
