@@ -105,6 +105,8 @@ struct Body {
     /// The tiles' rectangles of the last frame, for the tests that drive the pointer.
     #[cfg(test)]
     tiles: Vec<(String, egui::Rect)>,
+    /// The tile the pointer is carrying from the palette to the sheet, if any.
+    carry: Option<String>,
 }
 
 /// The sidebar: the shared panel chrome and the palette's own search state.
@@ -248,7 +250,7 @@ impl Sidebar {
         subtitle: &str,
         catalog: &Catalog,
         docked_width: f32,
-    ) -> Option<String> {
+    ) -> Option<CatalogAction> {
         let Sidebar {
             chrome,
             body,
@@ -261,6 +263,24 @@ impl Sidebar {
                 body.show(ui, tokens, catalog, *language)
             })
             .flatten()
+    }
+
+    /// Drops the carried tile: `Esc` and a lost gesture cancel the carry, never place it.
+    pub(crate) fn cancel_carry(&mut self) {
+        self.body.carry = None;
+    }
+
+    /// Starts a carry without the pointer, for the tests that check the state contract.
+    #[cfg(test)]
+    pub(crate) fn carry_for_test(&mut self, id: &str) {
+        self.body.carry = Some(id.to_owned());
+    }
+
+    /// Whether a tile is being carried from the palette: the auto-hide and the keyboard
+    /// handlers leave the gesture alone while this is true.
+    #[must_use]
+    pub(crate) fn carrying(&self) -> bool {
+        self.body.carry.is_some()
     }
 
     /// Draws only the rail, for the compact shell: the catalog is one click from its drawer.
@@ -277,7 +297,7 @@ impl Sidebar {
         tokens: &Tokens,
         subtitle: &str,
         catalog: &Catalog,
-    ) -> (Option<String>, bool) {
+    ) -> (Option<CatalogAction>, bool) {
         let Sidebar {
             chrome,
             body,
@@ -293,16 +313,22 @@ impl Sidebar {
 
 impl Body {
     /// The search, the category groups, the tiles and the footer.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the palette's body is one pass: the search, the groups, the tiles and the carry"
+    )]
     fn show(
         &mut self,
         ui: &mut egui::Ui,
         tokens: &Tokens,
         catalog: &Catalog,
         language: Language,
-    ) -> Option<String> {
+    ) -> Option<CatalogAction> {
         let mut chosen = None;
         let mut select = None;
         let mut open_menu = None;
+        let mut carry = None;
+        let mut drop = None;
         #[cfg(test)]
         self.tiles.clear();
         ui.add_space(6.0);
@@ -318,6 +344,11 @@ impl Body {
         ui.add_space(4.0);
         let footer_height = 18.0;
         egui::ScrollArea::vertical()
+            .scroll_source(egui::scroll_area::ScrollSource {
+                scroll_bar: true,
+                drag: false,
+                mouse_wheel: true,
+            })
             .max_height(ui.available_height() - footer_height)
             .show(ui, |ui| {
                 let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
@@ -358,10 +389,14 @@ impl Body {
                                     TileAction::None => {}
                                     TileAction::Select => select = Some(definition.id.clone()),
                                     TileAction::Add => {
-                                        chosen = Some(definition.id.clone());
+                                        chosen = Some(CatalogAction::Add(definition.id.clone()));
                                     }
                                     TileAction::Menu(position) => {
                                         open_menu = Some((definition.id.clone(), position));
+                                    }
+                                    TileAction::Carry => carry = Some(definition.id.clone()),
+                                    TileAction::Drop(screen) => {
+                                        drop = Some((definition.id.clone(), screen));
                                     }
                                 }
                             }
@@ -388,9 +423,43 @@ impl Body {
             self.menu = Some(menu);
         }
         if let Some(id) = self.tile_menu(ui, tokens, language) {
-            chosen = Some(id);
+            chosen = Some(CatalogAction::Add(id));
+        }
+        if let Some(action) = self.settle_carry(ui, tokens, catalog, carry, drop) {
+            chosen = Some(action);
         }
         chosen
+    }
+
+    /// Keeps the carry, turns a release into the placement and draws the ghost. `Escape`
+    /// drops the carry; the release that follows places nothing. The key is read, not
+    /// consumed: another widget may have taken the escape already.
+    fn settle_carry(
+        &mut self,
+        ui: &mut egui::Ui,
+        tokens: &Tokens,
+        catalog: &Catalog,
+        carry: Option<String>,
+        drop: Option<(String, egui::Pos2)>,
+    ) -> Option<CatalogAction> {
+        if let Some(id) = carry {
+            self.carry = Some(id);
+        }
+        let placed = match drop {
+            Some((id, screen)) if self.carry.take().as_deref() == Some(&id) => {
+                Some(CatalogAction::Place { id, screen })
+            }
+            _ => None,
+        };
+        if self.carry.is_some() && ui.input(|input| input.key_pressed(egui::Key::Escape)) {
+            self.carry = None;
+        }
+        if let Some(id) = self.carry.clone() {
+            if let Some(definition) = catalog.get(&id) {
+                draw_carry_ghost(ui, tokens, definition);
+            }
+        }
+        placed
     }
 
     /// The tile's menu: one entry, the same placement as the keyboard's. Returns the id the
@@ -434,17 +503,33 @@ impl Body {
     }
 }
 
-/// What a tile asks for: nothing, a selection, the centre placement or its own menu.
+/// What a tile asks for: nothing, a selection, the centre placement, its menu or the carry.
 enum TileAction {
     None,
     Select,
     Add,
     Menu(egui::Pos2),
+    Carry,
+    Drop(egui::Pos2),
+}
+
+/// What the palette asks the window to do: place at the centre, or at the carried drop.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum CatalogAction {
+    /// Add the entry at the centre of the sheet, the menu's and the keyboard's path.
+    Add(String),
+    /// Place the carried entry where the pointer released it, in screen points.
+    Place { id: String, screen: egui::Pos2 },
 }
 
 /// A painted control gets the keyboard focus and the accessibility layer's name.
-fn focusable(ui: &mut egui::Ui, rect: egui::Rect, id: egui::Id) -> egui::Response {
-    let response = ui.interact(rect, id, egui::Sense::click());
+fn focusable(
+    ui: &mut egui::Ui,
+    rect: egui::Rect,
+    id: egui::Id,
+    sense: egui::Sense,
+) -> egui::Response {
+    let response = ui.interact(rect, id, sense);
     let layer = ui.layer_id();
     ui.memory_mut(|memory| memory.interested_in_focus(id, layer));
     response
@@ -456,6 +541,33 @@ fn activated(ui: &egui::Ui, response: &egui::Response) -> bool {
         && ui.input(|input| {
             input.key_pressed(egui::Key::Enter) || input.key_pressed(egui::Key::Space)
         })
+}
+
+/// The carried symbol under the pointer, above every panel and the sheet: the reader sees
+/// what will land where the drop happens.
+fn draw_carry_ghost(ui: &egui::Ui, tokens: &Tokens, definition: &ComponentDefinition) {
+    let Some(pointer) = ui.input(|input| input.pointer.interact_pos()) else {
+        return;
+    };
+    let box_px = 56.0;
+    let (box_width, box_height) = box_of(definition);
+    let scale = box_px / box_width.max(box_height).max(0.05);
+    let origin = pointer - egui::vec2(box_width * scale * 0.5, box_height * scale * 0.5);
+    let mut drawing = EguiSurface::new(ui.ctx(), origin, scale);
+    draw_component_preview(
+        &mut drawing,
+        Rect::from_min_size(Pt::new(0.0, 0.0), box_width, box_height),
+        definition,
+        0,
+        0.0,
+        None,
+        &preview_ink(tokens),
+    );
+    let overlay = ui.ctx().layer_painter(egui::LayerId::new(
+        egui::Order::Tooltip,
+        egui::Id::new("catalog.carry"),
+    ));
+    overlay.extend(drawing.shapes);
 }
 
 /// One tile: its own symbol, the name on at most two lines and the id. A click chooses it;
@@ -484,7 +596,7 @@ fn tile(
         return (TileAction::None, rect);
     }
     let id = ui.make_persistent_id(("catalog.tile", &definition.id));
-    let response = focusable(ui, rect, id);
+    let response = focusable(ui, rect, id, egui::Sense::click_and_drag());
     if chosen {
         ui.painter().rect_filled(rect, 4.0, tokens.panel);
         ui.painter().rect_filled(
@@ -561,13 +673,24 @@ fn tile(
     let clicked = response.clicked();
     let secondary = response.secondary_clicked();
     let placed = activated(ui, &response);
+    let started = response.drag_started();
+    let stopped = response.drag_stopped();
+    let release = response
+        .interact_pointer_pos()
+        .or_else(|| ui.input(|input| input.pointer.interact_pos()))
+        .unwrap_or(rect.center());
     let focus = response.has_focus();
     let menu_key = focus && ui.input(|input| input.key_pressed(egui::Key::F10));
     response.on_hover_text(format!("{name}\n{}", definition.id));
-    if clicked {
+    if clicked || started {
+        // The keyboard follows the tile the reader picked or is carrying.
         ui.memory_mut(|memory| memory.request_focus(id));
     }
-    let action = if secondary || menu_key {
+    let action = if stopped {
+        TileAction::Drop(release)
+    } else if started {
+        TileAction::Carry
+    } else if secondary || menu_key {
         TileAction::Menu(rect.center())
     } else if placed {
         TileAction::Add
@@ -636,8 +759,8 @@ impl Window {
             &self.catalog,
             docked,
         );
-        if let Some(catalog_id) = chosen {
-            self.add_component(&catalog_id);
+        if let Some(action) = chosen {
+            self.apply_catalog(action);
         }
     }
 }

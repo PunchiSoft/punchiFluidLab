@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El arrastre del catálogo — 2026-11-24
+
+- **Arrastre**: la baldosa conserva el gesto aunque el puntero derive en diagonal (el área de
+  scroll ya no lo roba: se desplaza con la rueda y su barra), una **vista previa flotante**
+  sigue al puntero sobre paneles y hoja, y la suelta coloca **en el puntero, imantada al paso
+  de la cuadrícula** (5 mm por defecto). Soltar **fuera de la hoja** o pulsar **`Esc`** cancela;
+  el temporizador de auto-ocultar no cierra la paleta a mitad del gesto (el botón pulsado lo
+  bloquea). Un solo undo.
+- **Pruebas**: `the_carry_returns_the_drop_point`, `a_diagonal_gesture_still_places_the_component`,
+  `a_carry_can_be_cancelled` y `a_drop_snaps_to_the_grid_step_and_stays_inside_the_paper`; la
+  suite de la ventana pasa a **352**.
+- **Anexo A2 cerrado**: el registro deja la fila del arrastre en `covered` con pruebas Rust;
+  queda A3 (capturas y cierre) y la tolerancia fuera de la hoja como siguiente corte.
+
 ### El catálogo elige y su menú añade — 2026-11-24
 
 - **Baldosas**: un clic **elige** la baldosa (relleno de panel y barra de acento, no solo

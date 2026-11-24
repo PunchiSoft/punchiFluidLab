@@ -19,7 +19,7 @@ use crate::Window;
 use crate::inspector::Action;
 use crate::layout::LayoutMode;
 use crate::scene;
-use crate::sidebar::Sidebar;
+use crate::sidebar::{CatalogAction, Sidebar};
 use crate::surface::{EguiSurface, ScreenInk};
 use crate::window_state::{self, Geometry};
 use punchi_fluid_draw::symbol::Ink;
@@ -61,7 +61,7 @@ impl Drawer {
 
 /// What the drawer's body asked the window to do, after it closes.
 enum DrawerAction {
-    Add(String),
+    Catalog(CatalogAction),
     Edit(Action),
 }
 
@@ -373,6 +373,15 @@ impl Window {
     }
 
     /// Both regions below the ribbon, in the presentation the mode asks for.
+    /// The palette's commands meet the window here: the centre add, or the carried drop queued
+    /// for the sheet, which owns the placement and the page.
+    pub(crate) fn apply_catalog(&mut self, action: CatalogAction) {
+        match action {
+            CatalogAction::Add(catalog_id) => self.add_component(&catalog_id),
+            CatalogAction::Place { id, screen } => self.pending_drop = Some((id, screen)),
+        }
+    }
+
     fn show_regions(&mut self, context: &egui::Context) {
         if self.shell.mode == LayoutMode::Compact {
             let tokens = &self.theme.tokens;
@@ -454,7 +463,7 @@ impl Window {
                         let (chosen, hide) =
                             self.sidebar
                                 .show_drawer(ui, &tokens, &subtitle, &self.catalog);
-                        (chosen.map(DrawerAction::Add), hide)
+                        (chosen.map(DrawerAction::Catalog), hide)
                     }
                     Drawer::Inspector => {
                         self.inspector.language = self.language;
@@ -489,7 +498,7 @@ impl Window {
         } else if let Some(action) = action {
             self.shell.drawer = None;
             match action {
-                DrawerAction::Add(catalog_id) => self.add_component(&catalog_id),
+                DrawerAction::Catalog(action) => self.apply_catalog(action),
                 DrawerAction::Edit(action) => self.apply_inspector(action),
             }
         }
@@ -650,6 +659,9 @@ impl Window {
             self.handle_view(ui, &sheet, sheet_area, fit);
             let placement = self.view.placement(sheet_area, fit);
             self.magnification = placement.scale;
+            if let Some((id, screen)) = self.pending_drop.take() {
+                self.drop_catalog(&id, screen, &placement);
+            }
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
             self.handle_sheet_gestures(&sheet, &placement, fit, sheet_area, page_min);

@@ -68,7 +68,7 @@ use std::rc::Rc;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_catalog::default_catalog;
 
-use super::Sidebar;
+use super::{CatalogAction, Sidebar};
 use crate::theme::Theme;
 
 const ENTRY: &str = "valve.3_2.spring_return";
@@ -76,7 +76,7 @@ const ENTRY: &str = "valve.3_2.spring_return";
 /// The palette drawn headless, with the id `show` asked to add and the tiles' rectangles.
 type TileHarness = (
     egui_kittest::Harness<'static>,
-    Rc<RefCell<Option<String>>>,
+    Rc<RefCell<Option<CatalogAction>>>,
     Rc<RefCell<Vec<(String, egui::Rect)>>>,
 );
 
@@ -167,7 +167,10 @@ fn the_tile_menu_adds_the_entry_at_the_centre() {
     );
     harness.get_by_label("Add to sheet").click();
     harness.run();
-    assert_eq!(returned.borrow().as_deref(), Some(ENTRY));
+    assert_eq!(
+        returned.borrow().as_ref(),
+        Some(&CatalogAction::Add(ENTRY.to_owned()))
+    );
 }
 
 #[test]
@@ -181,8 +184,88 @@ fn the_keyboard_adds_the_chosen_tile() {
     harness.key_press(egui::Key::Enter);
     harness.run();
     assert_eq!(
-        returned.borrow().as_deref(),
-        Some(ENTRY),
+        returned.borrow().as_ref(),
+        Some(&CatalogAction::Add(ENTRY.to_owned())),
         "Enter places the focused tile at the centre"
+    );
+}
+
+/// Presses on a tile, moves to `to` in two steps and releases: the carry survives the path.
+fn drag(harness: &mut egui_kittest::Harness<'static>, from: egui::Pos2, to: egui::Pos2) {
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(from));
+    harness.input_mut().events.push(egui::Event::PointerButton {
+        pos: from,
+        button: egui::PointerButton::Primary,
+        pressed: true,
+        modifiers: egui::Modifiers::default(),
+    });
+    harness.run();
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(from + egui::vec2(20.0, 20.0)));
+    harness.run();
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(to));
+    harness.run();
+    harness.input_mut().events.push(egui::Event::PointerButton {
+        pos: to,
+        button: egui::PointerButton::Primary,
+        pressed: false,
+        modifiers: egui::Modifiers::default(),
+    });
+    harness.run();
+}
+
+#[test]
+fn the_carry_returns_the_drop_point() {
+    let (mut harness, returned, tiles) = tile_harness();
+    let target = egui::pos2(300.0, 320.0);
+    drag(&mut harness, tile_rect(&tiles).center(), target);
+    let action = returned.borrow().clone();
+    assert!(
+        matches!(action, Some(CatalogAction::Place { .. })),
+        "the carried tile must ask for a placement, got {action:?}"
+    );
+    let Some(CatalogAction::Place { id, screen }) = action else {
+        return;
+    };
+    assert_eq!(id, ENTRY);
+    assert!(
+        screen.distance(target) < 2.0,
+        "the drop follows the release: {screen:?}"
+    );
+}
+
+#[test]
+fn a_diagonal_gesture_still_places_the_component() {
+    let (mut harness, returned, tiles) = tile_harness();
+    // The pointer drifts up and right inside the palette before reaching the sheet: the
+    // scroll area must not take the gesture and cancel the carry.
+    let start = tile_rect(&tiles).center();
+    let target = egui::pos2(60.0, 380.0);
+    drag(&mut harness, start, target);
+    let action = returned.borrow().clone();
+    assert!(
+        matches!(action, Some(CatalogAction::Place { .. })),
+        "a diagonal path still places, got {action:?}"
+    );
+}
+
+#[test]
+fn a_carry_can_be_cancelled() {
+    let mut sidebar = Sidebar::new();
+    assert!(!sidebar.carrying());
+    sidebar.carry_for_test(ENTRY);
+    assert!(sidebar.carrying());
+    sidebar.cancel_carry();
+    assert!(
+        !sidebar.carrying(),
+        "Escape drops the carry and the release places nothing"
     );
 }
