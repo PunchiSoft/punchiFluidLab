@@ -194,6 +194,24 @@ active branch** instead of DORA's three, and the owner is the merge queue; a sec
 needs an explicit exception. Auto-merge exists only behind an ADR, while open-agents makes
 auto-commit and auto-PR a preference, never always-on.
 
+## Provenance and attribution
+
+This catalog is a personal compilation written for this project. It is not a copy of the
+sources it cites.
+
+- **Researched sources.** A skill that distils a public source names it and its creator in
+  its own "Read first" or in [Where the guidance comes from](#where-the-guidance-comes-from).
+  Only the reference is kept; no text, screenshot or asset from the source is vendored.
+- **Original work.** The rest is original: the procedures, the gotchas, the templates, the
+  evidence rules and the checklists were written here by the project owner (PunchiSoft).
+- **Reuse.** If you take a skill or a procedure outside this repository, keep the
+  GPL-3.0-or-later licence, name PunchiSoft as the author of the compilation and name the
+  cited source when the skill derives from one. Do not present the compilation as your own
+  or as the cited creator's work.
+- **No third-party assets.** No manual, symbol set, screenshot or file from another program
+  is stored under `.agents/skills/`; [AGENTS.md](../../AGENTS.md) and
+  [docs/symbology.md](../../docs/symbology.md) own that rule.
+
 ## Adding a skill
 
 Create `.agents/skills/<name>/SKILL.md` in English: `name` equal to the folder in
