@@ -426,7 +426,7 @@ mod tests {
             })
             .collect();
         let pipes = [
-            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (0, PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         Network::build(&parts, &pipes, &[], pipes.len()).expect("the built-in circuit starts")

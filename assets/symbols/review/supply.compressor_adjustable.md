@@ -1,44 +1,73 @@
 # supply.compressor_adjustable — conformance review
 
     status: pending-300dpi
-    date: 2026-11-07
+    date: 2026-11-24
     reviewer: automated pass, unreviewed by a second person
-    function: compressed-air source with an adjustable delivery
+    function: compressor, 4 bar, with an adjustable delivery
 
-## Provenance
+## The claim
 
-Geometry is hand-written in `assets/catalog/supply.compressor_adjustable.toml`. No third-party asset, no trace, no
-scan: the shape is drawn from the requirement the sheet states, not copied from a picture.
+- **Function, in one sentence**: the compressor of `supply.compressor` whose delivery can be
+  set.
+- **Family**: supply (a machine).
+- **Normative source**: ISO 1219-1:2006, 7.2.4, figure `X11400`, plus 9.4.3, rule `RF040`
+  (the adjustability arrow on the diameter), read in the owner's copy and confirmed on the
+  2012 basis in JIS B 0125-1:2020. Also `RF052`, `RF053` and `RF038`.
+- **Ports**: `1` intake, open to the atmosphere · `2` delivery, the pressure source.
 
-## Automated checks — `punchi-fluid-catalog` symbol lint
+## Reference and assumptions
 
-| Rule | Result |
-|---|---|
-| Geometry inside the box, no degenerate primitive | pass |
-| Every line declares its class | pass |
-| Every port used and numbered | pass (port 1, the delivery) |
+- **Reference read**: the owner's capture (classified, not stored) and the standard's
+  figures `X11400` and `X11300` (the variable-displacement pump, the standard's own example
+  of the adjustability arrow).
+- **Observed**: the capture draws the arrow across the circle, out of both sides, with a
+  filled head at the upper end.
+- **Required by the owner**: the same symbol as the compressor plus the adjustable delivery.
+- **Stated by the standard**: the arrow that indicates adjustability sits on the **diameter**
+  of the energy-conversion symbol and may be made longer (`RF040`); the head is filled.
+- **Assumption**: the arrow's reach (1,51 r at the tail, 1,68 r at the point) comes from the
+  capture; the standard fixes the line, not its length. The head is a filled polygon because
+  the standard's arrow is solid.
 
-## Visual check
+## Measures
 
-| Requirement | Result | Evidence |
+| Feature | Requirement | Drawing |
 |---|---|---|
-| The gas source is a circle with an **outline** triangle inside it | pass | a filled triangle is the hydraulic source, so the fill is a medium and not a style |
-| The triangle stands on its base line inside the circle | pass | equilateral, base 0.364 of the box, height 0.33 |
-| The delivery leaves the top through a stem ending in a connection circle | pass | stem above the circle, open circle at the port |
-| The triangle inside the circle points up, to its delivery | pass | apex up, the air leaves through the point |
-| The connection circle marks the port | pass | drawn by the renderer at ports 1 and 2 |
-| The diagonal arrow marks the adjustable delivery | pass | the arrow through the circle |
-| The bottom intake mark is drawn, as the reference does | pass | the stem and circle, declared as a mark, not a port |
-| Legible at palette size | pass | `catalog-dark.png` |
+| Body | the compressor's, unchanged | circle (0,640; 0,450), r 0,280; triangle apex (0,640; 0,170) |
+| Drive | the shaft bar at the left | rect (0,080; 0,405)–(0,360; 0,495) |
+| Ports | all of them drawn | `2` (0,640; 0,060); `1` (0,640; 0,858) |
+| Arrow | on the diameter, at 45°, out of both sides | (0,341; 0,749) → (0,913; 0,177) |
+| Head | filled, at the upper end, outside the circle | tip (0,973; 0,118) |
 
-| Legible at 300 dpi | pass | `supply.compressor_adjustable-300.png`: automated pass; the second reader's signature is still owed |
+## Evidence
+
+- 300 dpi sheet: `supply.compressor_adjustable-300.png`; light and dark captures fitted.
+- Symbol lint: passes.
+- Drawing test: `the_adjustable_arrow_crosses_the_centre_at_forty_five_degrees` (distance to
+  the centre, 45°, head beyond the circle and filled).
+- Model and sheet: the same two tests as the compressor, through the same intake and delivery
+  ports.
+
+## Checklist
+
+| Question | Answer |
+|---|---|
+| Is the body one equal square per position? | not a valve: the body is the circle |
+| Is every closed port of every position marked? | not applicable: the intake is open to the atmosphere |
+| Is every port the standard draws drawn? | yes: `1` and `2` |
+| Do the numerals match the declared ports? | yes: `2` delivery, `1` intake |
+| If it is a machine, is the drive bar on the standard's side? | yes, on the left |
+| If it is adjustable, is the arrow on the diameter? | yes, and the head is filled |
+| Is every numeral clear of the frame, the body and the lines? | the capture shows `2` beside the arrow's head, clear of it |
+| Is the symbol legible at palette size and at 300 dpi? | yes, both captures |
+
 ## What is still open
 
-- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
-- The compressor is modelled as a constant-pressure source: the real machine's delivery curve
-  is not modelled.
+- The second reader's signature.
+- The arrow's reach is the capture's, not the standard's; the standard allows any length.
+- The same intake and numeral questions as `supply.compressor`.
 
 ## Images
 
-- `supply.compressor_adjustable-light.png`, `supply.compressor_adjustable-dark.png`
 - `supply.compressor_adjustable-300.png`
+- `supply.compressor_adjustable-light.png`, `-dark.png`

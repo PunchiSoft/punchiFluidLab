@@ -82,7 +82,7 @@ const fn wire(
 }
 
 const WORKED_EXAMPLE_WIRES: [Wire; 6] = [
-    wire(0, "1", 1, "1", WORKING),
+    wire(0, "2", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
     wire(1, "2", 3, "1", WORKING),
     wire(2, "2", 4, "1a", WORKING),
@@ -90,18 +90,18 @@ const WORKED_EXAMPLE_WIRES: [Wire; 6] = [
     wire(4, "2", 5, "1", WORKING),
 ];
 const DOUBLE_ACTING_WIRES: [Wire; 3] = [
-    wire(0, "1", 1, "1", WORKING),
+    wire(0, "2", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
     wire(1, "4", 2, "2", WORKING),
 ];
 const AIR_PREPARATION_WIRES: [Wire; 4] = [
-    wire(0, "1", 1, "1", WORKING),
+    wire(0, "2", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
     wire(2, "2", 3, "1", WORKING),
     wire(3, "2", 4, "1", WORKING),
 ];
 const ELECTRICAL_CONTROL_WIRES: [Wire; 5] = [
-    wire(0, "1", 1, "1", WORKING),
+    wire(0, "2", 1, "1", WORKING),
     wire(1, "2", 2, "1", WORKING),
     wire(2, "2", 3, "1", WORKING),
     wire(4, "L", 5, "1", ELECTRICAL),

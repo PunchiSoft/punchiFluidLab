@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 14. The implementation is
+Status: current, format 15. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,14 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `14` | `1` to `14` | always `14` |
+| `format` | `15` | `1` to `15` | always `15` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (14)`; it is never guessed.
+  understands (15)`; it is never guessed.
+- **Version 15** moved the compressor's delivery from port `1` to port `2` and gave its
+  intake port `1`: a format-14 pipe the compressor had on port `1` was on the delivery and
+  moves with it, and no other port changes. A sheet that names a compressor and had no pipe
+  on it is untouched.
 - **Version 14** added the **closure of a port** (`port_closures`) to a placement: a map
   from a port id to the catalog id of a plug or a silencer. The field is optional and
   omitted when the placement has no closure, so a format-13 sheet reads with every port
@@ -81,7 +85,7 @@ too.
 
 ```json
 {
-  "format": 14,
+  "format": 15,
   "title": "Proyecto",
   "circuits": [
     { "id": 0, "title": "Potencia" },
@@ -227,7 +231,7 @@ from the two ports, moved by `offset_tenths`.
 
 ```json
 {
-  "format": 14,
+  "format": 15,
   "title": "Válvula 3/2 y control",
   "circuits": [
     { "id": 0, "title": "Potencia" },

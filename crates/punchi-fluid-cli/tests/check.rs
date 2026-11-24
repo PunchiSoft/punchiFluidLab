@@ -40,7 +40,7 @@ const CLEAN: &str = r#"{
     {"id": 3, "catalog": "cylinder.single_acting_20_100", "x": 144.0, "y": 33.8, "width": 74.4, "height": 33.8}
   ],
   "pipe": [
-    {"from": 1, "from_port": "1", "to": 2, "to_port": "1"},
+    {"from": 1, "from_port": "2", "to": 2, "to_port": "1"},
     {"from": 2, "from_port": "2", "to": 3, "to_port": "1"}
   ]
 }"#;

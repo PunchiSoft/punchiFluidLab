@@ -9,6 +9,11 @@
 #
 # It is drawn as an equilateral triangle standing on a short stem: the stem is the connection,
 # and its length is what keeps the triangle clear of whatever the symbol is wired to.
+#
+# ISO 1219-1 calls it the pneumatic source of energy (9.6.4.1, RF059): the outline triangle,
+# its point at the fluid supply line and its height 4M (M = 2.5 mm, so 10 mm on the 20 mm
+# box); the filled triangle is the hydraulic source (RF060). The source's line is the supply
+# line, so the project numbers the port 1.
 
 schema = 3
 id = "supply.network"
@@ -26,9 +31,9 @@ position = [0.5, 0.08]
 type = "supply"
 pressure_bar = 4.0
 
-# An equilateral triangle with its apex up, as the reference draws the air source: the
-# delivery leaves through the apex and the stem goes up to the connection. Half the base is
-# tan(30°) of the height, so the proportions are the triangle's.
+# An equilateral triangle with its apex up: the delivery leaves through the apex and the stem
+# goes up to the connection. Its height is 4M = 10 mm, so half the base is tan(30°) of it and
+# the proportions are the source's (RF059).
 [[symbol]]
 kind = "polygon"
 points = [0.5, 0.30, 0.7887, 0.80, 0.2113, 0.80]

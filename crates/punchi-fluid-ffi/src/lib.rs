@@ -2389,7 +2389,7 @@ impl PfSession {
         // The compressor feeds the service unit and the unit feeds the valve: an air line
         // without the unit is wet air at a pressure nobody set.
         self.connect_seeded(
-            (punchi_fluid_draw::schematic::SUPPLY_ID, "1"),
+            (punchi_fluid_draw::schematic::SUPPLY_ID, "2"),
             (punchi_fluid_draw::schematic::PREPARATION_ID, "1"),
         );
         self.connect_seeded(
@@ -9302,7 +9302,7 @@ mod scene_tests {
             part(&catalog, "cylinder.single_acting_20_100"),
         ];
         let pipes = [
-            (0, PortAddress::new(0, "1"), PortAddress::new(1, "1")),
+            (0, PortAddress::new(0, "2"), PortAddress::new(1, "1")),
             (1, PortAddress::new(1, "2"), PortAddress::new(2, "1")),
         ];
         let mut network = Network::build(&parts, &pipes, &[], pipes.len()).expect("it builds");

@@ -50,7 +50,7 @@ fn project() -> Sheet {
     sheet.pipe.push(StoredPipe {
         circuit: 1,
         from: 1,
-        from_port: String::from("1"),
+        from_port: String::from("2"),
         to: 2,
         to_port: String::from("1"),
         offset_tenths: 0,
@@ -204,7 +204,7 @@ fn a_version_five_project_reads_its_pipes_as_working_lines() {
          "y": 20.0, "width": 60.0, "height": 26.0, "source": null}
       ],
       "pipe": [
-        {"circuit": 0, "from": 1, "from_port": "1", "to": 2, "to_port": "1"}
+        {"circuit": 0, "from": 1, "from_port": "2", "to": 2, "to_port": "1"}
       ],
       "active": 0
     }"#;
