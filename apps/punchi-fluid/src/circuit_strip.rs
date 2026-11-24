@@ -23,8 +23,17 @@ const ICON_CIRCUIT: (&str, &[u8]) = (
     include_bytes!("../../../assets/icons/actions/x-office-document.svg"),
 );
 
+/// The inline rename in progress: which circuit and the text being edited.
+#[derive(Debug, Clone)]
+pub(crate) struct Edit {
+    pub id: u32,
+    pub title: String,
+    /// Asks the text field for the keyboard on its first frame.
+    pub focus: bool,
+}
+
 /// What the strip asks the window to do.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub(crate) enum Action {
     /// The home control: open Inicio.
     Home,
@@ -32,8 +41,8 @@ pub(crate) enum Action {
     Switch(u32),
     /// The tab's close cross: close that circuit through the window's dialog.
     Close(u32),
-    /// The tab's rename gesture (`F2` or a double click): rename the circuit in view.
-    Rename(u32),
+    /// The inline editor committed a title: one undo.
+    CommitRename { id: u32, title: String },
     /// The plus after the last tab: add a circuit.
     Add,
 }
@@ -46,6 +55,7 @@ pub(crate) fn show(
     tokens: &Tokens,
     language: Language,
     document: &Document,
+    edit: &mut Option<Edit>,
 ) -> Option<Action> {
     if rect.width() <= 0.0 || rect.height() <= 0.0 {
         return None;
@@ -80,6 +90,10 @@ pub(crate) fn show(
                                 ui.horizontal(|ui| {
                                     let many = document.circuits().len() > 1;
                                     for circuit in document.circuits() {
+                                        if edit.as_ref().is_some_and(|e| e.id == circuit.id) {
+                                            action = inline_editor(ui, tokens, edit);
+                                            continue;
+                                        }
                                         let active = circuit.id == document.active_circuit();
                                         let (response, close, rename, tab_rect) =
                                             tab(ui, tokens, language, &circuit.title, active, many);
@@ -102,7 +116,11 @@ pub(crate) fn show(
                                         if close {
                                             action = Some(Action::Close(circuit.id));
                                         } else if rename {
-                                            action = Some(Action::Rename(circuit.id));
+                                            *edit = Some(Edit {
+                                                id: circuit.id,
+                                                title: circuit.title.clone(),
+                                                focus: true,
+                                            });
                                         } else if response && !active {
                                             action = Some(Action::Switch(circuit.id));
                                         }
@@ -153,6 +171,37 @@ fn home(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> bool {
     let clicked = response.clicked() || activated(ui, &response);
     response.on_hover_text(label);
     clicked
+}
+
+/// The inline rename in the tab: a text field in the tab's place, `Enter` commits,
+/// `Escape` cancels and the window applies the one undo.
+fn inline_editor(ui: &mut egui::Ui, tokens: &Tokens, edit: &mut Option<Edit>) -> Option<Action> {
+    let state = edit.as_mut()?;
+    let width = tokens.unit * 14.0;
+    let height = (tokens.unit * 2.0).max(28.0) - 6.0;
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
+    let response = ui.put(
+        rect,
+        egui::TextEdit::singleline(&mut state.title)
+            .font(egui::FontId::proportional(tokens.text_body))
+            .desired_width(width - tokens.unit),
+    );
+    if state.focus {
+        response.request_focus();
+        state.focus = false;
+    }
+    if ui.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
+        *edit = None;
+        return None;
+    }
+    let enter = response.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
+    if enter {
+        let id = state.id;
+        let title = state.title.trim().to_owned();
+        *edit = None;
+        return Some(Action::CommitRename { id, title });
+    }
+    None
 }
 
 /// One circuit tab: the document, its name, the close cross and, when active, the accent rule
