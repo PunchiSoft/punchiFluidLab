@@ -9,8 +9,6 @@
 //! `shell`; this module owns the window's state and the document's commands. Colour, type and
 //! motion come from the desktop through `theme`.
 
-use std::path::PathBuf;
-
 use eframe::egui;
 use punchi_fluid_catalog::Kinematics;
 use punchi_fluid_doc::{Align, Document, Placement, Turn};
@@ -19,6 +17,7 @@ use punchi_fluid_draw::{CYLINDER_RATIO, Pt, SYMBOL_BOX_MM};
 use punchi_fluid_export::sheet;
 use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_session::recents::Recents;
+use std::path::PathBuf;
 
 use crate::ribbon::{Command, Speed};
 
@@ -57,12 +56,13 @@ mod start_commands;
 mod state_file;
 mod surface;
 mod theme;
+mod trace;
 mod view;
 mod view_strip;
 mod window_state;
 
 fn main() -> eframe::Result<()> {
-    let path = std::env::args().nth(1).map(PathBuf::from);
+    let (path, trace_frames) = trace::startup_args();
     let (document, startup_error, recents) = lifecycle::load_startup(path.as_deref());
     let safety = punchi_fluid_session::safety::SafetyCopy::load();
     // The screen is only known after the window exists: the first frame sizes and centres it
@@ -103,6 +103,7 @@ fn main() -> eframe::Result<()> {
             let mut window = Window::with_safety(theme, document, path, None, recents, safety)
                 .with_window_state(geometry)
                 .with_settings(settings);
+            trace::install(&mut window, trace_frames);
             if let Some(cause) = startup_error {
                 window.notice = Some(
                     window
@@ -137,6 +138,8 @@ struct Window {
     /// after the view strip's gutter, the paper and the clip.
     #[cfg(test)]
     sheet_probe: Option<crate::shell::SheetProbe>,
+    /// Optional bounded trace for the complete frame cost, enabled by `--trace-frames`.
+    frame_trace: Option<trace::FrameTrace<std::io::Stdout>>,
     theme: theme::Theme,
     ribbon: ribbon::Ribbon,
     /// The simulation's clock speed; the ribbon shows the active one.
@@ -337,16 +340,6 @@ impl Window {
         self.pause();
         self.model = None;
         self.model_revision = 0;
-    }
-
-    /// The live frame's work: rebuild the model when the document moved and advance the
-    /// clock when it is running.
-    fn tick(&mut self, context: &egui::Context) {
-        self.rebuild_if_stale();
-        if self.running {
-            let dt = f64::from(context.input(|input| input.stable_dt).min(0.1));
-            self.advance(dt * f64::from(self.speed.factor()));
-        }
     }
 
     /// The status bar's live line: nothing until a model is loaded.
@@ -745,7 +738,7 @@ impl Window {
 
 impl eframe::App for Window {
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
-        self.frame(context);
+        trace::update(self, context);
     }
 
     /// The last geometry the viewport reported is written even when the reader closes the
@@ -753,6 +746,7 @@ impl eframe::App for Window {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.flush_window_state();
         self.flush_panel_settings();
+        trace::finish(self);
     }
 }
 

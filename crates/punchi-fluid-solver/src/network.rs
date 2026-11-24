@@ -1226,22 +1226,25 @@ impl Network {
     }
 
     fn step_pistons(&mut self, dt: f64) {
-        let forces: Vec<f64> = self
-            .pistons
-            .iter()
-            .map(|piston| {
-                piston
-                    .chambers
-                    .iter()
-                    .map(|chamber| {
-                        chamber.sign
-                            * (self.node_pressure(chamber.node) - self.atmosphere_pa)
-                            * chamber.area
-                    })
-                    .sum()
-            })
-            .collect();
-        for (piston, pressure_force) in self.pistons.iter_mut().zip(forces) {
+        let nodes = &self.nodes;
+        let atmosphere_pa = self.atmosphere_pa;
+        let temperature_kelvin = self.temperature_kelvin;
+        for piston in &mut self.pistons {
+            let pressure_force: f64 = piston
+                .chambers
+                .iter()
+                .map(|chamber| {
+                    let node = &nodes[chamber.node];
+                    let pressure = node.reservoir.map_or_else(
+                        || {
+                            node.mass * AIR_SPECIFIC_GAS_CONSTANT * temperature_kelvin
+                                / node.volume.max(f64::MIN_POSITIVE)
+                        },
+                        |reservoir| reservoir.pressure_pa,
+                    );
+                    chamber.sign * (pressure - atmosphere_pa) * chamber.area
+                })
+                .sum();
             let cylinder = piston.cylinder;
             let spring_force = cylinder.spring_preload + cylinder.spring_rate * piston.position;
             let net = pressure_force - spring_force;

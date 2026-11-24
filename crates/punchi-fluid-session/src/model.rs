@@ -161,6 +161,21 @@ impl Model {
             .map(|extension| extension as f32)
     }
 
+    /// Signed flow through the document connection, in normal litres per minute.
+    ///
+    /// Positive flow follows the connection's `from` to `to` order. A connection the
+    /// network could not model has no reading; a modelled connection at rest reads zero.
+    #[must_use]
+    pub fn pipe_flow_l_min(&self, connection: usize) -> Option<f32> {
+        #[allow(clippy::cast_possible_truncation)]
+        self.network
+            .pipe_flows()
+            .get(connection)
+            .copied()
+            .flatten()
+            .map(|flow| flow as f32)
+    }
+
     /// Seat of the shuttle's ball for the placement, when it is a shuttle (ADR 0041).
     #[must_use]
     pub fn moving_seat(&self, index: usize) -> Option<BallSeat> {
@@ -360,6 +375,24 @@ mod tests {
         let telemetry = model.network().telemetry();
         assert!(telemetry.time > before);
         assert!(telemetry.pressure_pa >= 0.0, "pressure never goes negative");
+    }
+
+    #[test]
+    fn a_model_exposes_signed_flow_in_document_connection_order() {
+        let document = worked_document();
+        let mut model =
+            Model::build(&document, &Catalog::builtin()).expect("the worked circuit builds");
+        assert!(model.press_valve(1));
+        model.advance(0.01).expect("the model advances");
+
+        let supply_to_valve = model
+            .pipe_flow_l_min(0)
+            .expect("the first connection belongs to the pneumatic network");
+        assert!(
+            supply_to_valve > 0.0,
+            "positive flow follows the document's supply-to-valve connection"
+        );
+        assert_eq!(model.pipe_flow_l_min(usize::MAX), None);
     }
 
     #[test]

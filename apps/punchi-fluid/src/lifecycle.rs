@@ -265,6 +265,7 @@ impl Window {
             view: view::View::default(),
             magnification: 1.0,
             frame_ms: 0.0,
+            frame_trace: None,
             #[cfg(test)]
             sheet_probe: None,
             theme,

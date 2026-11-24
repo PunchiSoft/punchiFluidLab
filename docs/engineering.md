@@ -108,9 +108,12 @@ point.
 | Catalog reload | < 50 ms |
 | Export A4 at 300 dpi | < 1.5 s |
 
-Method: a `--trace-frames` flag writes per-frame timings to a CSV; numbers are taken
-from that file, never estimated. Optimise after measuring, and record before/after in
-the changelog. One optimisation per change, with the measurement in the pull request.
+Method: `./scripts-dev/run.sh --release -- --trace-frames` writes the complete frame's
+CPU duration as CSV on standard output. Redirect it to a file for analysis. Samples are
+buffered in fixed batches of 256 and the final partial batch is flushed when the window
+closes. Numbers are taken from that CSV, never estimated. Optimise after measuring, and
+record before/after in the changelog. One optimisation per change, with the measurement
+in the pull request.
 
 ## Security and privacy
 
