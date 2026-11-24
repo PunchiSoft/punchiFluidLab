@@ -21,6 +21,9 @@ cargo fmt --all --check
 # The documentation check is the only resolver of a skill-authored link: the fixture proves
 # the broken link, the missing catalog row, the wrong anchor and the path containment.
 ./scripts-dev/test-check-docs.sh
+# A malformed skill frontmatter disappears from the model catalog without failing a build;
+# the lint and its fixtures make that loud.
+./scripts-dev/test-check-skills.sh
 # `cargo` prevents cycles, not layering: the graph, the one home of `unsafe` and the file
 # budget are enforced here.
 ./scripts-dev/check-architecture.sh
@@ -82,7 +85,5 @@ cargo run --quiet --bin punchi-fluid-cli -- check "$faulty" --json --strict && {
     exit 1
 } || test $? -eq 3
 
-# The window is where the drawing and the gestures live, and nothing above touches it: the
-# sheet once answered no click at all with every Rust test green. The app is built and
-# driven headlessly here, and the step is skipped when Qt was never configured so a machine
-# without it still runs the gate.
+# The window is where the drawing and the gestures live: its suite runs in `test.sh` and in
+# CI's `window` job, so a green gate that only compiled the window is not evidence.
