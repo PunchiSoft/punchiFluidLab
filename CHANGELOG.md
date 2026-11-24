@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### La cabecera del panel no ensancha su columna — 2026-11-24
+
+- **Corrección**: el título y el conteo de la cabecera se **recortan con elipsis** dentro del
+  ancho que dejan el control de ocultar y el agarre. Antes crecían con su texto: con una
+  fuente más ancha que la de esta máquina, el catálogo acoplado se dibujaba **7 px por encima
+  de sus 220** y le robaba ese ancho a la hoja en el modo Media (lo cazó el CI; en local la
+  fuente lo tapaba). El texto completo sigue en el nombre accesible y en el tooltip.
+- **Prueba**: `a_wide_header_font_never_widens_a_docked_panel` fuerza una cabecera más ancha
+  que su columna y exige la hoja en su suelo; la suite de la ventana pasa a **363**.
+- **Documentos**: [ui-ux.md](docs/ui-ux.md) y la fila F0 de
+  [capabilities.md](docs/capabilities.md) dicen ya que la baldosa es el símbolo y el nombre,
+  con el `id` en el tooltip, y que la cabecera recorta en vez de ensanchar.
+
 ### El pliegue y el scroll del catálogo — 2026-11-24
 
 - **Scroll**: la barra vertical del catálogo deja de dibujarse **encima** de la segunda columna:
