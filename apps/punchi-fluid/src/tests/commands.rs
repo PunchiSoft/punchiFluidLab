@@ -274,7 +274,10 @@ fn the_speed_changes_the_clock() {
         (window.speed.factor() - 2.0).abs() < f32::EPSILON,
         "the clock runs twice as fast"
     );
-    assert_eq!(window.ribbon.active_speed, "2×", "the ribbon marks it");
+    assert_eq!(
+        window.ribbon.active_speed, "ribbon.item.speed_double",
+        "the ribbon marks it"
+    );
     window.dispatch(crate::ribbon::Command::Speed(crate::ribbon::Speed::Quarter));
     assert!((window.speed.factor() - 0.25).abs() < f32::EPSILON);
 }

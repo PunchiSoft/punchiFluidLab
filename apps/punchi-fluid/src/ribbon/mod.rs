@@ -9,6 +9,7 @@ use std::path::Path;
 
 use eframe::egui;
 use punchi_fluid_file::recent::Recent;
+use punchi_fluid_i18n::Language;
 
 use crate::theme::Tokens;
 
@@ -65,6 +66,8 @@ impl Palette {
 pub struct Ribbon {
     icons: HashMap<String, &'static [u8]>,
     active: usize,
+    /// The visible language the table's keys resolve with; the window sets it each frame.
+    pub(crate) language: Language,
     pub(crate) active_speed: &'static str,
     pub(crate) running: bool,
     pub last: String,
@@ -95,7 +98,8 @@ impl Ribbon {
         Self {
             icons: icons::map(),
             active: 0,
-            active_speed: "1×",
+            language: Language::English,
+            active_speed: "ribbon.item.speed_normal",
             running: false,
             last: String::from("—"),
             savable: false,
@@ -114,10 +118,10 @@ impl Ribbon {
     /// Opens one tab by name, for a screenshot or a script.
     #[allow(dead_code, reason = "the tests and the screenshot tooling open a tab")]
     pub fn activate(&mut self, name: &str) {
-        if let Some(index) = TABS
-            .iter()
-            .position(|tab| tab.name.eq_ignore_ascii_case(name))
-        {
+        if let Some(index) = TABS.iter().position(|tab| {
+            tab.name.eq_ignore_ascii_case(name)
+                || self.language.text(tab.name).eq_ignore_ascii_case(name)
+        }) {
             self.active = index;
         }
     }
@@ -129,10 +133,10 @@ impl Ribbon {
         match command {
             Command::Start => self.running = true,
             Command::Pause | Command::Stop => self.running = false,
-            Command::Speed(speed) => self.active_speed = speed.label(),
+            Command::Speed(speed) => self.active_speed = speed.label_key(),
             _ => {}
         }
-        self.last = command.label_es().to_string();
+        self.last = self.language.text(command.label_key()).to_string();
         self.pending = Some(command);
     }
 
@@ -160,7 +164,7 @@ impl Ribbon {
                     for (index, tab) in TABS.iter().enumerate() {
                         let selected = index == self.active;
                         let colour = if selected { palette.ink } else { palette.muted };
-                        let text = egui::RichText::new(tab.name)
+                        let text = egui::RichText::new(self.language.text(tab.name))
                             .size(palette.text_label)
                             .color(colour);
                         let response = ui.add(egui::Button::new(text).frame(false));
@@ -180,12 +184,12 @@ impl Ribbon {
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.label(
-                            egui::RichText::new("Licencia")
+                            egui::RichText::new(self.language.text("ribbon.license"))
                                 .size(palette.text_label)
                                 .color(palette.muted),
                         );
                         ui.label(
-                            egui::RichText::new("Acerca de")
+                            egui::RichText::new(self.language.text("ribbon.about"))
                                 .size(palette.text_label)
                                 .color(palette.muted),
                         );
@@ -207,7 +211,7 @@ impl Ribbon {
             .show(ui, |ui| {
                 ui.horizontal_top(|ui| {
                     let groups = TABS[self.active].groups;
-                    let expanded = fit_groups(ui, groups, palette);
+                    let expanded = fit_groups(ui, groups, palette, self.language);
                     for (index, group) in groups.iter().enumerate() {
                         if expanded[index] {
                             self.group(ui, group, palette, recents, &mut picked);
@@ -232,15 +236,16 @@ impl Ribbon {
         recents: &[Recent],
         picked: &mut Option<Command>,
     ) {
+        let name = self.language.text(group.name);
         ui.allocate_ui_with_layout(
             egui::vec2(
-                (text_width(ui, group.name, palette.text_label) + 44.0).max(96.0),
+                (text_width(ui, name, palette.text_label) + 44.0).max(96.0),
                 78.0,
             ),
             egui::Layout::top_down(egui::Align::Center),
             |ui| {
                 let response = ui.menu_button(
-                    egui::RichText::new(format!("{}   ", group.name))
+                    egui::RichText::new(format!("{name}   "))
                         .size(palette.text_label)
                         .color(palette.ink),
                     |ui| {
@@ -259,11 +264,13 @@ impl Ribbon {
                                         self.flyout(ui, entry.label, entry.command, picked);
                                     }
                                 }
-                                Item::Recents(..) => Self::recents_rows(ui, recents, picked),
+                                Item::Recents(..) => {
+                                    Self::recents_rows(ui, recents, picked, self.language);
+                                }
                             }
                         }
                         if group.launcher {
-                            self.flyout(ui, "Configurar página", Some(Command::PageSetup), picked);
+                            self.flyout(ui, "ribbon.page_setup", Some(Command::PageSetup), picked);
                         }
                     },
                 );
@@ -276,11 +283,12 @@ impl Ribbon {
     fn flyout(
         &self,
         ui: &mut egui::Ui,
-        label: &str,
+        label: &'static str,
         command: Option<Command>,
         picked: &mut Option<Command>,
     ) {
         let enabled = command.is_some_and(|command| self.enabled(command));
+        let label = self.language.text(label);
         if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
             if let Some(command) = command {
                 *picked = Some(command);
@@ -296,8 +304,9 @@ impl Ribbon {
         recents: &[Recent],
         picked: &mut Option<Command>,
     ) {
+        let name = self.language.text(group.name);
         ui.allocate_ui_with_layout(
-            egui::vec2(estimate(ui, group, palette).max(96.0), 78.0),
+            egui::vec2(estimate(ui, group, palette, self.language).max(96.0), 78.0),
             egui::Layout::top_down(egui::Align::Center),
             |ui| {
                 ui.horizontal_top(|ui| {
@@ -330,20 +339,20 @@ impl Ribbon {
                     }
                 });
                 ui.add_space(2.0);
-                let title_width = text_width(ui, group.name, palette.text_small);
+                let title_width = text_width(ui, name, palette.text_small);
                 let width = ui.available_width();
                 ui.horizontal(|ui| {
                     let launcher = if group.launcher { 30.0 } else { 0.0 };
                     ui.add_space(((width - title_width - launcher) * 0.5).max(0.0));
                     ui.label(
-                        egui::RichText::new(group.name)
+                        egui::RichText::new(name)
                             .size(palette.text_small)
                             .color(palette.muted),
                     );
                     if group.launcher
                         && ui
                             .add(egui::Button::new("…"))
-                            .on_hover_text("Configurar página")
+                            .on_hover_text(self.language.text("ribbon.page_setup"))
                             .clicked()
                     {
                         *picked = Some(Command::PageSetup);
@@ -357,18 +366,20 @@ impl Ribbon {
         &self,
         ui: &mut egui::Ui,
         id: &str,
-        label: &str,
+        label: &'static str,
         command: Option<Command>,
         palette: &Palette,
     ) -> bool {
         let enabled = command.is_some_and(|command| self.enabled(command));
+        let key = label;
+        let label = self.language.text(key);
         let ink = if enabled { palette.ink } else { palette.muted };
         let (rect, _) = ui.allocate_exact_size(egui::vec2(64.0, 58.0), egui::Sense::hover());
-        let widget = ui.make_persistent_id(("ribbon.large", id, label));
+        let widget = ui.make_persistent_id(("ribbon.large", id, key));
         let response = ui.interact(rect, widget, egui::Sense::click());
         let layer = ui.layer_id();
         ui.memory_mut(|memory| memory.interested_in_focus(widget, layer));
-        let selected = self.active_speed == label;
+        let selected = self.active_speed == key;
         if ui.is_rect_visible(rect) {
             if enabled && (response.hovered() || response.has_focus()) {
                 ui.painter().rect_filled(rect, 3.0, palette.hover);
@@ -427,11 +438,12 @@ impl Ribbon {
         &self,
         ui: &mut egui::Ui,
         id: &str,
-        label: &str,
+        label: &'static str,
         command: Option<Command>,
         palette: &Palette,
     ) -> bool {
         let enabled = command.is_some_and(|command| self.enabled(command));
+        let label = self.language.text(label);
         let ink = if enabled { palette.ink } else { palette.muted };
         let response = match self.icons.get(id) {
             Some(bytes) => {
@@ -458,11 +470,12 @@ impl Ribbon {
         &self,
         ui: &mut egui::Ui,
         id: &str,
-        label: &str,
+        label: &'static str,
         entries: &'static [MenuEntry],
         palette: &Palette,
         picked: &mut Option<Command>,
     ) {
+        let label = self.language.text(label);
         let text = egui::RichText::new(format!("{label}   "))
             .size(palette.text_body)
             .color(palette.ink);
@@ -477,7 +490,7 @@ impl Ribbon {
             for entry in entries {
                 let enabled = entry.command.is_some_and(|command| self.enabled(command));
                 if ui
-                    .add_enabled(enabled, egui::Button::new(entry.label))
+                    .add_enabled(enabled, egui::Button::new(self.language.text(entry.label)))
                     .clicked()
                 {
                     if let Some(command) = entry.command {
@@ -493,11 +506,12 @@ impl Ribbon {
         &self,
         ui: &mut egui::Ui,
         id: &str,
-        label: &str,
+        label: &'static str,
         entries: &'static [GalleryEntry],
         palette: &Palette,
         picked: &mut Option<Command>,
     ) {
+        let label = self.language.text(label);
         let text = egui::RichText::new(format!("{label}   "))
             .size(palette.text_body)
             .color(palette.ink);
@@ -514,7 +528,7 @@ impl Ribbon {
                 .spacing([6.0, 6.0])
                 .show(ui, |ui| {
                     for (index, entry) in entries.iter().enumerate() {
-                        self.card(ui, entry, palette, picked);
+                        self.card(ui, entry, palette, picked, self.language);
                         if index % 2 == 1 {
                             ui.end_row();
                         }
@@ -528,11 +542,12 @@ impl Ribbon {
         &self,
         ui: &mut egui::Ui,
         id: &str,
-        label: &str,
+        label: &'static str,
         recents: &[Recent],
         palette: &Palette,
         picked: &mut Option<Command>,
     ) {
+        let label = self.language.text(label);
         let text = egui::RichText::new(format!("{label}   "))
             .size(palette.text_body)
             .color(palette.ink);
@@ -544,22 +559,30 @@ impl Ribbon {
             None => egui::Button::new(text),
         };
         let (response, _) = egui::containers::menu::MenuButton::from_button(button).ui(ui, |ui| {
-            Self::recents_rows(ui, recents, picked);
+            Self::recents_rows(ui, recents, picked, self.language);
         });
         arrow(ui, response.rect, palette.ink);
     }
 
     /// The live documents, newest first; a file that is gone is named and disabled, never a
     /// command that would fail silently.
-    fn recents_rows(ui: &mut egui::Ui, recents: &[Recent], picked: &mut Option<Command>) {
+    fn recents_rows(
+        ui: &mut egui::Ui,
+        recents: &[Recent],
+        picked: &mut Option<Command>,
+        language: Language,
+    ) {
         if recents.is_empty() {
-            ui.add_enabled(false, egui::Button::new("Sin recientes"));
+            ui.add_enabled(
+                false,
+                egui::Button::new(language.text("ribbon.recents_empty")),
+            );
             return;
         }
         for (index, recent) in recents.iter().enumerate() {
             let missing = !Path::new(&recent.path).is_file();
             let label = if missing {
-                format!("{} (no está)", recent.name)
+                language.format("ribbon.recents_missing", &[("name", &recent.name)])
             } else {
                 recent.name.clone()
             };
@@ -575,8 +598,10 @@ impl Ribbon {
         entry: &GalleryEntry,
         palette: &Palette,
         picked: &mut Option<Command>,
+        language: Language,
     ) {
         let enabled = entry.command.is_some_and(|command| self.enabled(command));
+        let label = language.text(entry.label);
         let ink = if enabled { palette.ink } else { palette.muted };
         let (rect, response) =
             ui.allocate_exact_size(egui::vec2(132.0, 78.0), egui::Sense::click());
@@ -616,7 +641,7 @@ impl Ribbon {
                 }
                 Preview::Pipe(icon) => {
                     if let Some(bytes) = self.icons.get(icon) {
-                        Self::image(bytes, icon, entry.label, palette).paint_at(
+                        Self::image(bytes, icon, label, palette).paint_at(
                             ui,
                             egui::Rect::from_center_size(preview.center(), egui::vec2(28.0, 28.0)),
                         );
@@ -626,14 +651,13 @@ impl Ribbon {
             ui.painter().text(
                 egui::pos2(rect.center().x, rect.max.y - 14.0),
                 egui::Align2::CENTER_CENTER,
-                entry.label,
+                label,
                 egui::FontId::proportional(11.0),
                 ink,
             );
         }
-        response.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, entry.label)
-        });
+        response
+            .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label));
         if enabled && response.clicked() {
             if let Some(command) = entry.command {
                 *picked = Some(command);
@@ -665,15 +689,17 @@ impl Ribbon {
 
 /// Which groups keep their row at the current width: the last ones collapse until the
 /// row fits, each to its own title button (P-028), never to a global menu.
-fn fit_groups(ui: &egui::Ui, groups: &[Group], palette: &Palette) -> Vec<bool> {
+fn fit_groups(ui: &egui::Ui, groups: &[Group], palette: &Palette, language: Language) -> Vec<bool> {
     let available = ui.available_width();
     let expanded: Vec<f32> = groups
         .iter()
-        .map(|group| estimate(ui, group, palette))
+        .map(|group| estimate(ui, group, palette, language))
         .collect();
     let collapsed: Vec<f32> = groups
         .iter()
-        .map(|group| (text_width(ui, group.name, palette.text_label) + 44.0).max(96.0))
+        .map(|group| {
+            (text_width(ui, language.text(group.name), palette.text_label) + 44.0).max(96.0)
+        })
         .collect();
     let mut shown = vec![true; groups.len()];
     let total = |shown: &[bool]| {
@@ -700,7 +726,7 @@ fn hint(label: &str, command: Option<Command>) -> String {
     }
 }
 
-fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette) -> f32 {
+fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette, language: Language) -> f32 {
     let mut width = 0.0_f32;
     for item in group.items {
         width += match item {
@@ -709,7 +735,7 @@ fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette) -> f32 {
             | Item::Menu(_, label, _)
             | Item::Gallery(_, label, _)
             | Item::Recents(_, label) => {
-                16.0 + 6.0 + text_width(ui, label, palette.text_body) + 22.0 + 6.0
+                16.0 + 6.0 + text_width(ui, language.text(label), palette.text_body) + 22.0 + 6.0
             }
         };
     }

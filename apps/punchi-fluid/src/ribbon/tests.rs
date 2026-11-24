@@ -8,6 +8,7 @@
 use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_file::recent::Recent;
+use punchi_fluid_i18n::Language;
 
 use super::hint;
 use super::model::{Item, TABS};
@@ -134,6 +135,81 @@ fn every_command_is_on_the_ribbon() {
 }
 
 #[test]
+#[expect(
+    clippy::match_same_arms,
+    reason = "the menu and the gallery carry different entry types; the assertion is the same"
+)]
+fn every_ribbon_label_is_in_the_catalog() {
+    let english = Language::English;
+    for command in Command::ALL {
+        assert_ne!(
+            english.text(command.label_key()),
+            command.label_key(),
+            "{command:?}"
+        );
+    }
+    for key in [
+        "ribbon.about",
+        "ribbon.license",
+        "ribbon.page_setup",
+        "ribbon.recents_empty",
+        "ribbon.recents_missing",
+    ] {
+        assert_ne!(english.text(key), key, "{key}");
+    }
+    for tab in TABS {
+        assert_ne!(english.text(tab.name), tab.name, "{}", tab.name);
+        for group in tab.groups {
+            assert_ne!(english.text(group.name), group.name, "{}", group.name);
+            for item in group.items {
+                match item {
+                    Item::Large(_, label, _) | Item::Small(_, label, _) => {
+                        assert_ne!(english.text(label), *label, "{label}");
+                    }
+                    Item::Menu(_, label, entries) => {
+                        assert_ne!(english.text(label), *label, "{label}");
+                        for entry in *entries {
+                            assert_ne!(english.text(entry.label), entry.label, "{}", entry.label);
+                        }
+                    }
+                    Item::Gallery(_, label, entries) => {
+                        assert_ne!(english.text(label), *label, "{label}");
+                        for entry in *entries {
+                            assert_ne!(english.text(entry.label), entry.label, "{}", entry.label);
+                        }
+                    }
+                    Item::Recents(_, label) => {
+                        assert_ne!(english.text(label), *label, "{label}");
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn the_ribbon_follows_the_language() {
+    let mut ribbon = Ribbon::new();
+    ribbon.language = Language::Spanish;
+    let palette = palette();
+    let harness = harness(&mut ribbon, &palette, &[]);
+    assert!(harness.query_by_label("Archivo").is_some());
+    assert!(harness.query_by_label("File").is_none());
+}
+
+#[test]
+fn the_command_label_follows_the_language() {
+    let mut ribbon = Ribbon::new();
+    ribbon.selected = 1;
+    ribbon.language = Language::Spanish;
+    ribbon.run_command(Command::Rotate);
+    assert_eq!(ribbon.last, "Girar");
+    ribbon.language = Language::English;
+    ribbon.run_command(Command::Rotate);
+    assert_eq!(ribbon.last, "Rotate");
+}
+
+#[test]
 fn no_hint_without_a_handler() {
     fn check(label: &str, command: Option<Command>) {
         let text = hint(label, command);
@@ -189,8 +265,12 @@ fn a_command_is_not_its_label() {
             .map(|(command, ..)| *command)
             .expect("the control is in the table")
     };
-    let project = find("Archivo", "Proyecto", "Nuevo");
-    let circuit = find("Archivo", "Circuito", "Nuevo circuito");
+    let project = find("ribbon.tab.file", "ribbon.group.project", "ribbon.item.new");
+    let circuit = find(
+        "ribbon.tab.file",
+        "ribbon.group.circuit",
+        "ribbon.item.circuit_new",
+    );
     assert_eq!(project, Command::ProjectNew);
     assert_eq!(circuit, Command::CircuitNew);
     assert_ne!(project, circuit, "the two new commands are different");
@@ -199,10 +279,10 @@ fn a_command_is_not_its_label() {
 #[test]
 fn the_speed_marks_the_active_one() {
     let mut ribbon = Ribbon::new();
-    ribbon.activate("Simular");
+    ribbon.activate("ribbon.tab.simulate");
     click(&mut ribbon, "2×");
     assert_eq!(ribbon.take(), Some(Command::Speed(super::Speed::Double)));
-    assert_eq!(ribbon.active_speed, "2×");
+    assert_eq!(ribbon.active_speed, "ribbon.item.speed_double");
 }
 
 #[test]
@@ -249,7 +329,7 @@ fn the_block_reset_is_disabled_when_default() {
 fn a_disabled_command_does_not_dispatch() {
     let mut ribbon = Ribbon::new();
     ribbon.run_command(Command::Pause);
-    assert_eq!(ribbon.take(), None, "Pausa is disabled before Iniciar");
+    assert_eq!(ribbon.take(), None, "Pause is disabled before Start");
     ribbon.run_command(Command::Undo);
     assert_eq!(ribbon.take(), None, "nothing to undo");
 }
@@ -277,24 +357,24 @@ fn pressing_every_control_yields_its_command() {
 #[test]
 fn the_transport_follows_the_state() {
     let mut ribbon = Ribbon::new();
-    ribbon.activate("Simular");
-    click(&mut ribbon, "Pausa");
-    assert_eq!(ribbon.take(), None, "Pausa is disabled before Iniciar");
+    ribbon.activate("ribbon.tab.simulate");
+    click(&mut ribbon, "Pause");
+    assert_eq!(ribbon.take(), None, "Pause is disabled before Start");
     assert_eq!(ribbon.last, "—");
-    click(&mut ribbon, "Iniciar");
+    click(&mut ribbon, "Start");
     assert_eq!(ribbon.take(), Some(Command::Start));
-    assert_eq!(ribbon.last, "Iniciar");
-    click(&mut ribbon, "Detener");
+    assert_eq!(ribbon.last, "Start");
+    click(&mut ribbon, "Stop");
     assert_eq!(ribbon.take(), Some(Command::Stop));
-    assert_eq!(ribbon.last, "Detener");
+    assert_eq!(ribbon.last, "Stop");
 }
 
 /// Opens the margins gallery, or the collapsed group's flyout, which lists its cards.
 fn open_margins(harness: &mut egui_kittest::Harness<'_>) {
-    if harness.query_by_label("Márgenes   ").is_some() {
-        harness.get_by_label("Márgenes   ").click();
+    if harness.query_by_label("Margins   ").is_some() {
+        harness.get_by_label("Margins   ").click();
     } else {
-        harness.get_by_label("Configurar página   ").click();
+        harness.get_by_label("Page setup   ").click();
     }
     harness.run();
 }
@@ -306,7 +386,7 @@ fn the_margins_gallery_opens_its_cards() {
     let mut harness = harness(&mut ribbon, &palette, &[]);
     open_margins(&mut harness);
     assert!(
-        harness.query_by_label("Estrecho").is_some(),
+        harness.query_by_label("Narrow").is_some(),
         "the gallery shows its cards"
     );
 }
@@ -326,7 +406,7 @@ fn the_recent_menu_lists_the_real_documents() {
     {
         let palette = palette();
         let mut harness = harness(&mut ribbon, &palette, &recents);
-        harness.get_by_label("Recientes   ").click();
+        harness.get_by_label("Recent   ").click();
         harness.run();
         assert!(
             harness.query_by_label(&name).is_some(),
@@ -346,15 +426,15 @@ fn a_missing_recent_is_marked_and_refused() {
     {
         let palette = palette();
         let mut harness = harness(&mut ribbon, &palette, &recents);
-        harness.get_by_label("Recientes   ").click();
+        harness.get_by_label("Recent   ").click();
         harness.run();
         assert!(
             harness
-                .query_by_label("no-existe.pfluid (no está)")
+                .query_by_label("no-existe.pfluid (not found)")
                 .is_some(),
             "the missing file is named"
         );
-        harness.get_by_label("no-existe.pfluid (no está)").click();
+        harness.get_by_label("no-existe.pfluid (not found)").click();
         harness.run();
     }
     assert_eq!(ribbon.take(), None, "a missing file does not dispatch");
@@ -363,7 +443,7 @@ fn a_missing_recent_is_marked_and_refused() {
 #[test]
 fn the_page_launcher_dispatches_its_command() {
     let mut ribbon = Ribbon::new();
-    ribbon.activate("Archivo");
+    ribbon.activate("ribbon.tab.file");
     let palette = palette();
     {
         let mut harness = harness(&mut ribbon, &palette, &[]);
@@ -371,9 +451,9 @@ fn the_page_launcher_dispatches_its_command() {
             harness.get_by_label("…").click();
         } else {
             // The row collapsed the group: the launcher is a row of its flyout.
-            harness.get_by_label("Configurar página   ").click();
+            harness.get_by_label("Page setup   ").click();
             harness.run();
-            harness.get_by_label("Configurar página").click();
+            harness.get_by_label("Page setup").click();
         }
         harness.run();
     }
@@ -387,7 +467,7 @@ fn the_margins_gallery_dispatches_its_command() {
         let palette = palette();
         let mut harness = harness(&mut ribbon, &palette, &[]);
         open_margins(&mut harness);
-        harness.get_by_label("Estrecho").click();
+        harness.get_by_label("Narrow").click();
         harness.run();
     }
     assert_eq!(
@@ -399,19 +479,19 @@ fn the_margins_gallery_dispatches_its_command() {
 #[test]
 fn the_row_keeps_a_group_title_when_it_collapses() {
     let mut ribbon = Ribbon::new();
-    ribbon.activate("Editar");
+    ribbon.activate("ribbon.tab.edit");
     let palette = palette();
     let harness = harness(&mut ribbon, &palette, &[]);
     assert!(
-        harness.query_by_label("Copiar").is_some(),
+        harness.query_by_label("Copy").is_some(),
         "Componente stays open"
     );
     assert!(
-        harness.query_by_label("Alinear   ").is_some(),
+        harness.query_by_label("Align   ").is_some(),
         "Alinear collapses to its title button"
     );
     assert!(
-        harness.query_by_label("Izquierda").is_none(),
+        harness.query_by_label("Left").is_none(),
         "the collapsed group does not draw its commands in the row"
     );
 }

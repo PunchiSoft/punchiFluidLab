@@ -66,22 +66,22 @@ pub(super) enum Item {
 
 pub(super) const MARGINS: &[GalleryEntry] = &[
     GalleryEntry::command(
-        "Normal",
+        "ribbon.gallery.margin.normal",
         Preview::Margins(0.3),
         Command::PageMargin(MarginPreset::Normal),
     ),
     GalleryEntry::command(
-        "Estrecho",
+        "ribbon.gallery.margin.narrow",
         Preview::Margins(0.15),
         Command::PageMargin(MarginPreset::Narrow),
     ),
     GalleryEntry::command(
-        "Moderado",
+        "ribbon.gallery.margin.moderate",
         Preview::Margins(0.45),
         Command::PageMargin(MarginPreset::Moderate),
     ),
     GalleryEntry::command(
-        "Ancho",
+        "ribbon.gallery.margin.wide",
         Preview::Margins(0.6),
         Command::PageMargin(MarginPreset::Wide),
     ),
@@ -89,21 +89,25 @@ pub(super) const MARGINS: &[GalleryEntry] = &[
 
 pub(super) const CONDUCTO: &[GalleryEntry] = &[
     GalleryEntry::command(
-        "Trabajo",
+        "ribbon.gallery.pipe.working",
         Preview::Pipe("pipe-working"),
         Command::PipeClass(LineClass::Working),
     ),
     GalleryEntry::command(
-        "Pilotaje",
+        "ribbon.gallery.pipe.pilot",
         Preview::Pipe("pipe-pilot"),
         Command::PipeClass(LineClass::Pilot),
     ),
     GalleryEntry::command(
-        "Drenaje",
+        "ribbon.gallery.pipe.drain",
         Preview::Pipe("pipe-drain"),
         Command::PipeClass(LineClass::Drain),
     ),
-    GalleryEntry::command("Diámetro", Preview::Pipe("tube-diameter"), Command::Tube),
+    GalleryEntry::command(
+        "ribbon.item.diameter",
+        Preview::Pipe("tube-diameter"),
+        Command::Tube,
+    ),
 ];
 
 pub(super) struct Group {
@@ -119,185 +123,253 @@ pub(super) struct Tab {
 
 pub(super) const ARCHIVO: &[Group] = &[
     Group {
-        name: "Proyecto",
+        name: "ribbon.group.project",
         launcher: false,
         items: &[
-            Item::Large("document-new", "Nuevo", Some(Command::ProjectNew)),
-            Item::Large("document-open", "Abrir", Some(Command::ProjectOpen)),
-            Item::Large("document-save", "Guardar", Some(Command::ProjectSave)),
+            Item::Large("document-new", "ribbon.item.new", Some(Command::ProjectNew)),
+            Item::Large(
+                "document-open",
+                "ribbon.item.open",
+                Some(Command::ProjectOpen),
+            ),
+            Item::Large(
+                "document-save",
+                "ribbon.item.save",
+                Some(Command::ProjectSave),
+            ),
             Item::Small(
                 "document-save-as",
-                "Guardar como",
+                "ribbon.item.save_as",
                 Some(Command::ProjectSaveAs),
             ),
-            Item::Small("document-export", "Exportar", Some(Command::ProjectExport)),
-            Item::Small("document-export", "Opciones…", Some(Command::ExportOptions)),
+            Item::Small(
+                "document-export",
+                "ribbon.item.export",
+                Some(Command::ProjectExport),
+            ),
+            Item::Small(
+                "document-export",
+                "ribbon.item.options",
+                Some(Command::ExportOptions),
+            ),
         ],
     },
     Group {
-        name: "Circuito",
+        name: "ribbon.group.circuit",
         launcher: false,
         items: &[
-            Item::Small("list-add", "Nuevo circuito", Some(Command::CircuitNew)),
-            Item::Small("edit-rename", "Renombrar", Some(Command::CircuitRename)),
-            Item::Small("window-close", "Cerrar", Some(Command::CircuitClose)),
+            Item::Small(
+                "list-add",
+                "ribbon.item.circuit_new",
+                Some(Command::CircuitNew),
+            ),
+            Item::Small(
+                "edit-rename",
+                "ribbon.item.circuit_rename",
+                Some(Command::CircuitRename),
+            ),
+            Item::Small(
+                "window-close",
+                "ribbon.item.circuit_close",
+                Some(Command::CircuitClose),
+            ),
         ],
     },
     Group {
-        name: "Configurar página",
+        name: "ribbon.group.page",
         launcher: true,
         items: &[
-            Item::Gallery("document-properties", "Márgenes", MARGINS),
+            Item::Gallery("document-properties", "ribbon.item.margins", MARGINS),
             Item::Menu(
                 "document-properties",
-                "Orientación",
+                "ribbon.item.orientation",
                 &[
                     MenuEntry::command(
-                        "Vertical",
+                        "ribbon.menu.orientation.portrait",
                         Command::PageOrientation(punchi_fluid_doc::paper::Orientation::Portrait),
                     ),
                     MenuEntry::command(
-                        "Apaisado",
+                        "ribbon.menu.orientation.landscape",
                         Command::PageOrientation(punchi_fluid_doc::paper::Orientation::Landscape),
                     ),
                 ],
             ),
             Item::Menu(
                 "x-office-document",
-                "Tamaño",
+                "ribbon.item.paper",
                 &[
                     MenuEntry::command(
-                        "A4",
+                        "ribbon.menu.paper.a4",
                         Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A4),
                     ),
                     MenuEntry::command(
-                        "A3",
+                        "ribbon.menu.paper.a3",
                         Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A3),
                     ),
                     MenuEntry::command(
-                        "A2",
+                        "ribbon.menu.paper.a2",
                         Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A2),
                     ),
-                    MenuEntry::unavailable("Personalizado…"),
+                    MenuEntry::unavailable("ribbon.menu.paper.custom"),
                 ],
             ),
         ],
     },
     Group {
-        name: "Recientes",
+        name: "ribbon.group.recents",
         launcher: false,
         items: &[
-            Item::Recents("document-open-recent", "Recientes"),
-            Item::Small("go-home", "Inicio", Some(Command::Home)),
+            Item::Recents("document-open-recent", "ribbon.item.recents"),
+            Item::Small("go-home", "ribbon.item.home", Some(Command::Home)),
         ],
     },
 ];
 
 pub(super) const EDITAR: &[Group] = &[
     Group {
-        name: "Historial",
+        name: "ribbon.group.history",
         launcher: false,
         items: &[
-            Item::Small("edit-undo", "Deshacer", Some(Command::Undo)),
-            Item::Small("edit-redo", "Rehacer", Some(Command::Redo)),
+            Item::Small("edit-undo", "ribbon.item.undo", Some(Command::Undo)),
+            Item::Small("edit-redo", "ribbon.item.redo", Some(Command::Redo)),
         ],
     },
     Group {
-        name: "Componente",
+        name: "ribbon.group.component",
         launcher: false,
         items: &[
-            Item::Small("edit-copy", "Copiar", Some(Command::Copy)),
-            Item::Small("edit-paste", "Pegar", Some(Command::Paste)),
-            Item::Small("edit-duplicate", "Duplicar", Some(Command::Duplicate)),
-            Item::Small("edit-delete", "Borrar", Some(Command::Delete)),
-            Item::Small("edit-select-all", "Todo", Some(Command::SelectAll)),
+            Item::Small("edit-copy", "ribbon.item.copy", Some(Command::Copy)),
+            Item::Small("edit-paste", "ribbon.item.paste", Some(Command::Paste)),
+            Item::Small(
+                "edit-duplicate",
+                "ribbon.item.duplicate",
+                Some(Command::Duplicate),
+            ),
+            Item::Small("edit-delete", "ribbon.item.delete", Some(Command::Delete)),
+            Item::Small(
+                "edit-select-all",
+                "ribbon.item.select_all",
+                Some(Command::SelectAll),
+            ),
         ],
     },
     Group {
-        name: "Transformar",
+        name: "ribbon.group.transform",
         launcher: false,
         items: &[
-            Item::Small("object-rotate-right", "Girar", Some(Command::Rotate)),
-            Item::Small("object-flip-horizontal", "Reflejar", Some(Command::Mirror)),
+            Item::Small(
+                "object-rotate-right",
+                "ribbon.item.rotate",
+                Some(Command::Rotate),
+            ),
+            Item::Small(
+                "object-flip-horizontal",
+                "ribbon.item.mirror",
+                Some(Command::Mirror),
+            ),
         ],
     },
     Group {
-        name: "Alinear",
+        name: "ribbon.group.align",
         launcher: false,
         items: &[
             Item::Small(
                 "align-horizontal-left",
-                "Izquierda",
+                "ribbon.item.align_left",
                 Some(Command::AlignLeft),
             ),
             Item::Small(
                 "align-horizontal-right",
-                "Derecha",
+                "ribbon.item.align_right",
                 Some(Command::AlignRight),
             ),
-            Item::Small("align-vertical-top", "Arriba", Some(Command::AlignTop)),
-            Item::Small("align-vertical-bottom", "Abajo", Some(Command::AlignBottom)),
-            Item::Small("align-ports", "Puertos", None),
+            Item::Small(
+                "align-vertical-top",
+                "ribbon.item.align_top",
+                Some(Command::AlignTop),
+            ),
+            Item::Small(
+                "align-vertical-bottom",
+                "ribbon.item.align_bottom",
+                Some(Command::AlignBottom),
+            ),
+            Item::Small("align-ports", "ribbon.item.align_ports", None),
         ],
     },
     Group {
-        name: "Repartir",
+        name: "ribbon.group.distribute",
         launcher: false,
         items: &[
             Item::Small(
                 "distribute-horizontal-equal",
-                "Horizontal",
+                "ribbon.item.distribute_h",
                 Some(Command::Distribute(Axis::Horizontal)),
             ),
             Item::Small(
                 "distribute-vertical-equal",
-                "Vertical",
+                "ribbon.item.distribute_v",
                 Some(Command::Distribute(Axis::Vertical)),
             ),
         ],
     },
     Group {
-        name: "Revisión",
+        name: "ribbon.group.review",
         launcher: false,
-        items: &[Item::Small("check", "Comprobar", Some(Command::Check))],
+        items: &[Item::Small(
+            "check",
+            "ribbon.item.check",
+            Some(Command::Check),
+        )],
     },
     Group {
-        name: "Conducto",
+        name: "ribbon.group.pipe",
         launcher: false,
-        items: &[Item::Gallery("pipe-working", "Conducto", CONDUCTO)],
+        items: &[Item::Gallery("pipe-working", "ribbon.item.pipe", CONDUCTO)],
     },
 ];
 
 pub(super) const VER: &[Group] = &[
     Group {
-        name: "Vista",
+        name: "ribbon.group.view",
         launcher: false,
         items: &[
-            Item::Small("zoom-in", "Aumentar", Some(Command::ZoomIn)),
-            Item::Small("zoom-out", "Disminuir", Some(Command::ZoomOut)),
-            Item::Small("zoom-original", "Tamaño original", Some(Command::ZoomReset)),
+            Item::Small("zoom-in", "ribbon.item.zoom_in", Some(Command::ZoomIn)),
+            Item::Small("zoom-out", "ribbon.item.zoom_out", Some(Command::ZoomOut)),
+            Item::Small(
+                "zoom-original",
+                "ribbon.item.zoom_reset",
+                Some(Command::ZoomReset),
+            ),
         ],
     },
     Group {
-        name: "Paneles",
+        name: "ribbon.group.panels",
         launcher: false,
         items: &[
-            Item::Small("view-list-details", "Catálogo", Some(Command::Catalog)),
+            Item::Small(
+                "view-list-details",
+                "ribbon.item.catalog",
+                Some(Command::Catalog),
+            ),
             Item::Small(
                 "document-properties",
-                "Propiedades",
+                "ribbon.item.properties",
                 Some(Command::Properties),
             ),
-            Item::Small("go-bottom", "Ocultar al salir", Some(Command::Autohide)),
-            Item::Small("edit-reset", "Restablecer vista", Some(Command::ResetView)),
+            Item::Small("go-bottom", "ribbon.item.autohide", Some(Command::Autohide)),
+            Item::Small(
+                "edit-reset",
+                "ribbon.item.reset_view",
+                Some(Command::ResetView),
+            ),
         ],
     },
     Group {
-        name: "Tema",
+        name: "ribbon.group.theme",
         launcher: false,
         items: &[Item::Small(
             "preferences-desktop-theme",
-            "Tema",
+            "ribbon.item.theme",
             Some(Command::Theme),
         )],
     },
@@ -305,102 +377,142 @@ pub(super) const VER: &[Group] = &[
 
 pub(super) const CAJETIN: &[Group] = &[
     Group {
-        name: "Contenido",
+        name: "ribbon.group.content",
         launcher: false,
         items: &[Item::Menu(
             "x-office-document",
-            "Contenido",
+            "ribbon.item.block_content",
             &[
-                MenuEntry::command("Técnico", Command::BlockModel(ContentModel::Technical)),
-                MenuEntry::command("Escolar", Command::BlockModel(ContentModel::School)),
-                MenuEntry::command("Industrial", Command::BlockModel(ContentModel::Industrial)),
-                MenuEntry::command("Sin cajetín", Command::BlockPosition(BlockPosition::None)),
+                MenuEntry::command(
+                    "ribbon.menu.content.technical",
+                    Command::BlockModel(ContentModel::Technical),
+                ),
+                MenuEntry::command(
+                    "ribbon.menu.content.school",
+                    Command::BlockModel(ContentModel::School),
+                ),
+                MenuEntry::command(
+                    "ribbon.menu.content.industrial",
+                    Command::BlockModel(ContentModel::Industrial),
+                ),
+                MenuEntry::command(
+                    "ribbon.menu.content.none",
+                    Command::BlockPosition(BlockPosition::None),
+                ),
             ],
         )],
     },
     Group {
-        name: "Posición",
+        name: "ribbon.group.position",
         launcher: false,
         items: &[Item::Menu(
             "go-top",
-            "Posición",
+            "ribbon.item.block_position",
             &[
                 MenuEntry::command(
-                    "Superior derecha",
+                    "ribbon.menu.position.top_right",
                     Command::BlockPosition(BlockPosition::TopRight),
                 ),
                 MenuEntry::command(
-                    "Inferior derecha",
+                    "ribbon.menu.position.bottom_right",
                     Command::BlockPosition(BlockPosition::BottomRight),
                 ),
                 MenuEntry::command(
-                    "Inferior centrado",
+                    "ribbon.menu.position.bottom_full",
                     Command::BlockPosition(BlockPosition::BottomFull),
                 ),
             ],
         )],
     },
     Group {
-        name: "Datos",
+        name: "ribbon.group.data",
         launcher: false,
         items: &[
             Item::Small(
                 "x-office-address-book",
-                "Editar datos…",
+                "ribbon.item.block_edit",
                 Some(Command::BlockEdit),
             ),
-            Item::Small("edit-reset", "Restablecer", Some(Command::BlockReset)),
+            Item::Small("edit-reset", "ribbon.item.reset", Some(Command::BlockReset)),
         ],
     },
 ];
 
 pub(super) const SIMULAR: &[Group] = &[
     Group {
-        name: "Transporte",
+        name: "ribbon.group.transport",
         launcher: false,
         items: &[
-            Item::Large("media-playback-start", "Iniciar", Some(Command::Start)),
-            Item::Large("media-playback-pause", "Pausa", Some(Command::Pause)),
-            Item::Large("media-skip-forward", "Paso", Some(Command::Step)),
+            Item::Large(
+                "media-playback-start",
+                "ribbon.item.start",
+                Some(Command::Start),
+            ),
+            Item::Large(
+                "media-playback-pause",
+                "ribbon.item.pause",
+                Some(Command::Pause),
+            ),
+            Item::Large(
+                "media-skip-forward",
+                "ribbon.item.step",
+                Some(Command::Step),
+            ),
             Item::Large(
                 "media-seek-forward",
-                "Hasta cambio",
+                "ribbon.item.until_change",
                 Some(Command::UntilChange),
             ),
-            Item::Large("media-playback-stop", "Detener", Some(Command::Stop)),
-            Item::Large("view-refresh", "Restablecer", Some(Command::SimReset)),
+            Item::Large(
+                "media-playback-stop",
+                "ribbon.item.stop",
+                Some(Command::Stop),
+            ),
+            Item::Large("view-refresh", "ribbon.item.reset", Some(Command::SimReset)),
         ],
     },
     Group {
-        name: "Velocidad",
+        name: "ribbon.group.speed",
         launcher: false,
         items: &[
-            Item::Large("speed-0.25", "0,25×", Some(Command::Speed(Speed::Quarter))),
-            Item::Large("speed-1", "1×", Some(Command::Speed(Speed::Normal))),
-            Item::Large("speed-2", "2×", Some(Command::Speed(Speed::Double))),
+            Item::Large(
+                "speed-0.25",
+                "ribbon.item.speed_quarter",
+                Some(Command::Speed(Speed::Quarter)),
+            ),
+            Item::Large(
+                "speed-1",
+                "ribbon.item.speed_normal",
+                Some(Command::Speed(Speed::Normal)),
+            ),
+            Item::Large(
+                "speed-2",
+                "ribbon.item.speed_double",
+                Some(Command::Speed(Speed::Double)),
+            ),
         ],
     },
 ];
 
 pub(super) const TABS: &[Tab] = &[
     Tab {
-        name: "Archivo",
+        name: "ribbon.tab.file",
         groups: ARCHIVO,
     },
     Tab {
-        name: "Editar",
+        name: "ribbon.tab.edit",
         groups: EDITAR,
     },
     Tab {
-        name: "Ver",
+        name: "ribbon.tab.view",
         groups: VER,
     },
     Tab {
-        name: "Cajetín",
+        name: "ribbon.tab.block",
         groups: CAJETIN,
     },
     Tab {
-        name: "Simular",
+        name: "ribbon.tab.simulate",
         groups: SIMULAR,
     },
 ];

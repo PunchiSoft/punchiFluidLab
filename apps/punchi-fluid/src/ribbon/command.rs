@@ -69,13 +69,13 @@ impl Speed {
         }
     }
 
-    /// The label the ribbon shows and the status bar repeats.
+    /// The catalog key of the label the ribbon shows.
     #[must_use]
-    pub(crate) const fn label(self) -> &'static str {
+    pub(crate) const fn label_key(self) -> &'static str {
         match self {
-            Self::Quarter => "0,25×",
-            Self::Normal => "1×",
-            Self::Double => "2×",
+            Self::Quarter => "ribbon.item.speed_quarter",
+            Self::Normal => "ribbon.item.speed_normal",
+            Self::Double => "ribbon.item.speed_double",
         }
     }
 }
@@ -197,61 +197,61 @@ impl Command {
         Self::Stop,
     ];
 
-    /// The Spanish name the status bar shows and the hint uses; the visible label of the
+    /// The catalog key the status bar shows and the hint uses; the visible label of the
     /// control is the table's, and for the two "new" commands they differ on purpose.
     #[must_use]
-    pub(crate) fn label_es(self) -> &'static str {
+    pub(crate) fn label_key(self) -> &'static str {
         match self {
-            Self::ProjectNew => "Nuevo",
-            Self::ProjectOpen => "Abrir",
-            Self::ProjectSave => "Guardar",
-            Self::ProjectSaveAs => "Guardar como",
-            Self::ProjectExport => "Exportar",
-            Self::ExportOptions => "Opciones…",
-            Self::PageMargin(_) => "Márgenes",
-            Self::PageOrientation(_) => "Orientación",
-            Self::PagePaper(_) => "Tamaño",
-            Self::BlockModel(_) => "Contenido",
-            Self::BlockPosition(_) => "Posición",
-            Self::BlockReset | Self::SimReset => "Restablecer",
-            Self::BlockEdit => "Editar datos",
-            Self::Check => "Comprobar",
-            Self::CircuitRename => "Renombrar",
-            Self::CircuitClose => "Cerrar",
-            Self::PipeClass(_) => "Conducto",
-            Self::Tube => "Diámetro",
-            Self::Distribute(_) => "Repartir",
-            Self::SelectAll => "Todo",
-            Self::Speed(speed) => speed.label(),
-            Self::PageSetup => "Configurar página",
-            Self::Home => "Inicio",
-            Self::OpenRecent(_) => "Abrir reciente",
-            Self::CircuitNew => "Nuevo circuito",
-            Self::Undo => "Deshacer",
-            Self::Redo => "Rehacer",
-            Self::Copy => "Copiar",
-            Self::Paste => "Pegar",
-            Self::Duplicate => "Duplicar",
-            Self::Delete => "Borrar",
-            Self::Rotate => "Girar",
-            Self::Mirror => "Reflejar",
-            Self::AlignLeft => "Izquierda",
-            Self::AlignRight => "Derecha",
-            Self::AlignTop => "Arriba",
-            Self::AlignBottom => "Abajo",
-            Self::ZoomIn => "Aumentar",
-            Self::ZoomOut => "Disminuir",
-            Self::ZoomReset => "Tamaño original",
-            Self::Catalog => "Catálogo",
-            Self::Properties => "Propiedades",
-            Self::Autohide => "Ocultar al salir",
-            Self::ResetView => "Restablecer vista",
-            Self::Theme => "Tema",
-            Self::Start => "Iniciar",
-            Self::Pause => "Pausa",
-            Self::Step => "Paso",
-            Self::UntilChange => "Hasta cambio",
-            Self::Stop => "Detener",
+            Self::ProjectNew => "ribbon.item.new",
+            Self::ProjectOpen => "ribbon.item.open",
+            Self::ProjectSave => "ribbon.item.save",
+            Self::ProjectSaveAs => "ribbon.item.save_as",
+            Self::ProjectExport => "ribbon.item.export",
+            Self::ExportOptions => "ribbon.item.options",
+            Self::PageMargin(_) => "ribbon.item.margins",
+            Self::PageOrientation(_) => "ribbon.item.orientation",
+            Self::PagePaper(_) => "ribbon.item.paper",
+            Self::BlockModel(_) => "ribbon.item.block_content",
+            Self::BlockPosition(_) => "ribbon.item.block_position",
+            Self::BlockReset | Self::SimReset => "ribbon.item.reset",
+            Self::BlockEdit => "ribbon.item.block_edit",
+            Self::Check => "ribbon.item.check",
+            Self::CircuitRename => "ribbon.item.circuit_rename",
+            Self::CircuitClose => "ribbon.item.circuit_close",
+            Self::PipeClass(_) => "ribbon.item.pipe",
+            Self::Tube => "ribbon.item.diameter",
+            Self::Distribute(_) => "ribbon.item.distribute",
+            Self::SelectAll => "ribbon.item.select_all",
+            Self::Speed(speed) => speed.label_key(),
+            Self::PageSetup => "ribbon.page_setup",
+            Self::Home => "ribbon.item.home",
+            Self::OpenRecent(_) => "ribbon.item.open_recent",
+            Self::CircuitNew => "ribbon.item.circuit_new",
+            Self::Undo => "ribbon.item.undo",
+            Self::Redo => "ribbon.item.redo",
+            Self::Copy => "ribbon.item.copy",
+            Self::Paste => "ribbon.item.paste",
+            Self::Duplicate => "ribbon.item.duplicate",
+            Self::Delete => "ribbon.item.delete",
+            Self::Rotate => "ribbon.item.rotate",
+            Self::Mirror => "ribbon.item.mirror",
+            Self::AlignLeft => "ribbon.item.align_left",
+            Self::AlignRight => "ribbon.item.align_right",
+            Self::AlignTop => "ribbon.item.align_top",
+            Self::AlignBottom => "ribbon.item.align_bottom",
+            Self::ZoomIn => "ribbon.item.zoom_in",
+            Self::ZoomOut => "ribbon.item.zoom_out",
+            Self::ZoomReset => "ribbon.item.zoom_reset",
+            Self::Catalog => "ribbon.item.catalog",
+            Self::Properties => "ribbon.item.properties",
+            Self::Autohide => "ribbon.item.autohide",
+            Self::ResetView => "ribbon.item.reset_view",
+            Self::Theme => "ribbon.item.theme",
+            Self::Start => "ribbon.item.start",
+            Self::Pause => "ribbon.item.pause",
+            Self::Step => "ribbon.item.step",
+            Self::UntilChange => "ribbon.item.until_change",
+            Self::Stop => "ribbon.item.stop",
         }
     }
 }
