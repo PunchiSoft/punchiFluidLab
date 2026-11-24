@@ -776,7 +776,7 @@ impl Window {
         ui: &egui::Ui,
         response: &egui::Response,
         area: egui::Rect,
-        page_mm: egui::Vec2,
+        fit: view::Fit,
     ) {
         // The armed move pins the view: the pointer carries the symbol, so the sheet must not
         // slide under it with a wheel or an arrow.
@@ -788,7 +788,7 @@ impl Window {
         if self.menu.is_open() {
             return;
         }
-        self.view.handle_input(ui, response, area, page_mm);
+        self.view.handle_input(ui, response, area, fit);
     }
 }
 

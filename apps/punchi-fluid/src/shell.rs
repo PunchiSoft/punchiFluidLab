@@ -35,6 +35,7 @@ use punchi_fluid_export::sheet;
 pub(crate) struct SheetProbe {
     pub canvas: egui::Rect,
     pub drawing: egui::Rect,
+    pub frame: egui::Rect,
     pub paper: egui::Rect,
     pub clip: egui::Rect,
 }
@@ -493,10 +494,19 @@ impl Window {
         }
     }
 
+    /// The frame inside the page's margins, in sheet millimetres: the view fits this, not the
+    /// paper, so the margins may lie beyond the canvas and are clipped there.
+    fn view_fit(&self) -> crate::view::Fit {
+        let frame = self.page.content_rect();
+        crate::view::Fit {
+            min: egui::vec2(frame.min.x, frame.min.y),
+            size: egui::vec2(frame.width(), frame.height()),
+        }
+    }
+
     /// The sheet, its gestures and its drawing: the last region, the one that never gives way.
     pub(crate) fn show_sheet(&mut self, context: &egui::Context) {
-        let (width, height) = self.page.size_mm();
-        let page_mm = egui::vec2(width, height);
+        let fit = self.view_fit();
         egui::CentralPanel::default().show(context, |ui| {
             let area = ui.available_rect_before_wrap();
             let sheet_area = crate::layout::drawing_area(area, self.theme.tokens.unit);
@@ -508,8 +518,8 @@ impl Window {
                     self.language.text("sheet.name"),
                 )
             });
-            self.handle_view(ui, &sheet, sheet_area, page_mm);
-            let placement = self.view.placement(sheet_area, page_mm);
+            self.handle_view(ui, &sheet, sheet_area, fit);
+            let placement = self.view.placement(sheet_area, fit);
             self.magnification = placement.scale;
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
@@ -577,9 +587,14 @@ impl Window {
             );
             #[cfg(test)]
             {
+                let frame = egui::Rect::from_min_size(
+                    placement.origin + fit.min * placement.scale,
+                    fit.size * placement.scale,
+                );
                 self.sheet_probe = Some(SheetProbe {
                     canvas: area,
                     drawing: sheet_area,
+                    frame,
                     paper,
                     clip,
                 });

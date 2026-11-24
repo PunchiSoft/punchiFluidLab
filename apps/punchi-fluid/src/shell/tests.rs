@@ -627,7 +627,7 @@ fn the_first_frame_restores_the_remembered_geometry() {
 }
 
 #[test]
-fn the_page_stays_inside_the_canvas_at_every_mode_and_size() {
+fn the_frame_stays_inside_the_canvas_at_every_mode_and_size() {
     for size in [
         egui::vec2(700.0, 900.0),
         egui::vec2(900.0, 600.0),
@@ -639,18 +639,18 @@ fn the_page_stays_inside_the_canvas_at_every_mode_and_size() {
         let probe = harness.state().sheet.expect("a sheet frame");
         let eps = 0.5;
         assert!(
-            probe.paper.min.x >= probe.canvas.min.x - eps
-                && probe.paper.max.x <= probe.canvas.max.x + eps
-                && probe.paper.min.y >= probe.canvas.min.y - eps
-                && probe.paper.max.y <= probe.canvas.max.y + eps,
-            "{size:?}: paper {:?} leaves the canvas {:?}",
-            probe.paper,
+            probe.frame.min.x >= probe.canvas.min.x - eps
+                && probe.frame.max.x <= probe.canvas.max.x + eps
+                && probe.frame.min.y >= probe.canvas.min.y - eps
+                && probe.frame.max.y <= probe.canvas.max.y + eps,
+            "{size:?}: frame {:?} leaves the canvas {:?}",
+            probe.frame,
             probe.canvas
         );
         assert!(
-            probe.paper.max.x <= probe.drawing.max.x + eps,
-            "{size:?}: paper {:?} enters the strip's gutter",
-            probe.paper
+            probe.frame.max.x <= probe.drawing.max.x + eps,
+            "{size:?}: frame {:?} enters the strip's gutter",
+            probe.frame
         );
         assert!(
             (probe.clip.min.x - probe.canvas.min.x).abs() <= eps
@@ -663,7 +663,7 @@ fn the_page_stays_inside_the_canvas_at_every_mode_and_size() {
 }
 
 #[test]
-fn the_page_leaves_the_strip_a_gutter_on_the_canvas() {
+fn the_frame_leaves_the_strip_a_gutter_on_the_canvas() {
     let mut window = window_with();
     let unit = window.theme.tokens.unit;
     let gutter = crate::layout::view_strip_gutter(unit);
@@ -674,9 +674,9 @@ fn the_page_leaves_the_strip_a_gutter_on_the_canvas() {
         "the drawing area does not start the gutter where the strip will float"
     );
     assert!(
-        probe.canvas.right() - probe.paper.max.x >= gutter - 0.5,
-        "the paper enters the strip's gutter: {:?}",
-        probe.paper
+        probe.canvas.right() - probe.frame.max.x >= gutter - 0.5,
+        "the frame enters the strip's gutter: {:?}",
+        probe.frame
     );
 }
 
@@ -699,6 +699,12 @@ fn the_frame_keeps_its_margins_inside_the_page() {
             && frame.max.y <= probe.paper.max.y,
         "the frame {frame:?} leaves the paper {:?}",
         probe.paper
+    );
+    assert!(
+        (probe.frame.center() - frame.center()).length() <= 0.5,
+        "the probe's frame {:?} is not the page's {:?}",
+        probe.frame,
+        frame
     );
 }
 

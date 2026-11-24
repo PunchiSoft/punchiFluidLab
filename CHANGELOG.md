@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### El ajuste encuadra el marco — 2026-11-24
+
+- **Vista**: el ajuste (zoom 1) encuadra el **marco interior** de la hoja, no el papel; el
+  papel puede sobresalir del lienzo por los márgenes y el lienzo lo recorta. Lo hacen `Ctrl+0`
+  y el **doble clic del botón central** (el clic simple sigue desplazando).
+- **Pruebas**: `the_fit_frames_the_drawing_inside_the_margins`,
+  `the_zoom_about_the_pointer_keeps_its_sheet_point`,
+  `the_pan_is_bounded_to_the_frame`, `a_reset_returns_to_the_fit`,
+  `the_frame_stays_inside_the_canvas_at_every_mode_and_size`,
+  `the_frame_leaves_the_strip_a_gutter_on_the_canvas`,
+  `the_frame_keeps_its_margins_inside_the_page` y
+  `a_zoom_above_the_fit_clips_against_the_canvas_not_the_window`; la suite de la ventana sigue
+  en **325**.
+- **Fase 3 en curso**: quedan el historial de una entrada, la ventana de zoom, el modo Mover y
+  el cajetín de solo vista.
+
 ### La hoja deja el canal de la tira — 2026-11-24
 
 - **Lienzo**: el área de dibujo reserva a la derecha el canal de la tira de vista; la hoja se
