@@ -599,15 +599,33 @@ fn tile(
     }
     let id = ui.make_persistent_id(("catalog.tile", &definition.id));
     let response = focusable(ui, rect, id, egui::Sense::click_and_drag());
+    // Every tile is a card of its own in the reference: a subtle fill and a rule, inside
+    // the panel's own card.
+    ui.painter()
+        .rect_filled(rect, tokens.radius_small, tokens.surface_sunken);
+    ui.painter().rect_stroke(
+        rect,
+        tokens.radius_small,
+        egui::Stroke::new(1.0_f32, tokens.line),
+        egui::StrokeKind::Inside,
+    );
     if chosen {
-        ui.painter().rect_filled(rect, 4.0, tokens.panel);
+        ui.painter()
+            .rect_filled(rect, tokens.radius_small, tokens.panel);
+        ui.painter().rect_stroke(
+            rect,
+            tokens.radius_small,
+            egui::Stroke::new(1.0_f32, tokens.accent),
+            egui::StrokeKind::Inside,
+        );
         ui.painter().rect_filled(
             egui::Rect::from_min_size(rect.min, egui::vec2(2.0, rect.height())),
             0.0,
             tokens.accent,
         );
     } else if response.hovered() || response.has_focus() {
-        ui.painter().rect_filled(rect, 4.0, tokens.accent_soft);
+        ui.painter()
+            .rect_filled(rect, tokens.radius_small, tokens.accent_soft);
     }
     if response.has_focus() {
         ui.painter().rect_stroke(

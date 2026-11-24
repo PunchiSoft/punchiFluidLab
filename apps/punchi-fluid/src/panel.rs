@@ -240,11 +240,7 @@ impl Panel {
         let shown = panel
             .exact_width(width)
             .resizable(false)
-            .frame(
-                egui::Frame::default()
-                    .fill(tokens.panel)
-                    .inner_margin(egui::Margin::symmetric(self.margin, 0)),
-            )
+            .frame(egui::Frame::NONE)
             .show(context, |ui| {
                 if self.shade <= 0.001 && !self.open {
                     if self.rail(ui, tokens) {
@@ -252,17 +248,45 @@ impl Panel {
                     }
                     return;
                 }
-                let hide = self.header(ui, tokens, title, subtitle);
-                if hide {
-                    self.close();
-                }
-                if self.shade < 0.999 {
-                    return;
-                }
-                result = Some(body(ui));
+                // The docked panel is the reference's floating card: its own margin, rounded
+                // corners and the theme's shadow, over the window like the drawer.
+                let card = egui::Frame::default()
+                    .fill(tokens.panel)
+                    .stroke(egui::Stroke::new(1.0_f32, tokens.line))
+                    .corner_radius(tokens.radius_control)
+                    .shadow(Self::panel_shadow(tokens))
+                    .outer_margin(egui::Margin::same(self.margin))
+                    .inner_margin(egui::Margin::symmetric(self.margin, 0));
+                card.show(ui, |ui| {
+                    let hide = self.header(ui, tokens, title, subtitle);
+                    if hide {
+                        self.close();
+                    }
+                    if self.shade < 0.999 {
+                        return;
+                    }
+                    result = Some(body(ui));
+                });
             });
         self.observe(context, shown.response.rect);
         result
+    }
+
+    /// The floating card's shadow, from the theme: the same offset and blur the drawer and the
+    /// strip use, so the panel is one more surface and not a painted border.
+    fn panel_shadow(tokens: &Tokens) -> egui::epaint::Shadow {
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "the radius token is 3-8 points, far inside the shadow's 0-255 blur"
+        )]
+        let blur = tokens.radius_control.round() as u8;
+        egui::epaint::Shadow {
+            offset: [1, 2],
+            blur,
+            spread: 0,
+            color: tokens.shadow,
+        }
     }
 
     /// Draws only the rail, for the compact shell, and reports whether the reader asked for
