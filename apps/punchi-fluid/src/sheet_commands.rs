@@ -157,6 +157,9 @@ impl Window {
         if self.handle_menu_gestures(response, placement, page_min) {
             return;
         }
+        if self.handle_connection_gesture(response, &to_mm) {
+            return;
+        }
         // The reference presses a valve while the button is down: the momentary returns, the
         // maintained stays. A press on a valve is not a drag of the selection. Only the
         // primary button presses it; the right button belongs to the menu.

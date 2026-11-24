@@ -790,7 +790,10 @@ the ribbon button and a direct shortcut are not there yet, so the menu is its ke
   colour alone. Hover only changes the cursor and shows a tooltip (never moves anything: a
   hover that changes the document is a known UX trap).
 - Pipes are orthogonal; the route is stored as a list of waypoints so it survives a
-  move. Ports snap with a magnet radius derived from the grid step.
+  move. Ports snap with a magnet radius derived from the grid step. In Edición, a primary
+  drag from one port to another shows the route in the accent and creates the connection on
+  release; `Esc` or a release away from a port cancels it. A new pneumatic hose starts at
+  10 mm, and an electrical wire has no tube size.
 - **A hose straightens when its component is dragged near the other end.** Two ports on the
   same axis make a straight run only when their other coordinate matches, and the grid
   cannot reach every offset (the starting circuit has 8.02 mm). Within half a grid step plus 1 mm (3.5 mm on the default 5 mm grid) the dragged port

@@ -104,6 +104,11 @@ struct Probe {
     strip_folded: bool,
     strip_panel: bool,
     strip_compact: bool,
+    connection_tubes: Vec<Option<u16>>,
+    connection_dragging: bool,
+    centres: Vec<(f32, f32)>,
+    can_undo: bool,
+    notice: Option<String>,
 }
 
 /// A window the tests can draw: no path, no dialog, no safety copy.
@@ -164,6 +169,21 @@ fn sheet_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
                 probe.strip_folded = window.strip.folded;
                 probe.strip_panel = window.strip.panel_open;
                 probe.strip_compact = window.strip.compact_open;
+                probe.connection_tubes = window
+                    .document
+                    .connections()
+                    .iter()
+                    .map(punchi_fluid_doc::Connection::tube_od_hundredths)
+                    .collect();
+                probe.connection_dragging = window.connection_drag.is_some();
+                probe.centres = window
+                    .document
+                    .placements()
+                    .iter()
+                    .map(|placement| (placement.centre.x, placement.centre.y))
+                    .collect();
+                probe.can_undo = window.document.can_undo();
+                probe.notice.clone_from(&window.notice);
             },
             Probe::default(),
         );

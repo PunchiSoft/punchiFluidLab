@@ -45,15 +45,17 @@ undoes it.
 Every symbol has numbered ports: the small stubs at its edge. To make a pipe:
 
 1. Press on the port where the air leaves.
-2. Drag to the port where it enters.
-3. Release.
+2. Drag to the port where it enters; an orthogonal preview follows the pointer.
+3. Release to create the hose. A new pneumatic hose starts at 10 mm; release on empty sheet
+   or press `Esc` to cancel.
 
 Connect the supply's **1** to the valve's **1**, and the valve's **2** to the cylinder's
 **1**. The valve's **3** is its exhaust; leave it open. The pipe is drawn as an orthogonal
 run; a middle segment can be dragged later to re-route it without losing the connection.
 
-A connection is refused, never silently dropped, when it would join a port to itself, repeat
-an existing pipe, or name a component that is not on the sheet. The status bar says which.
+A connection is refused when it repeats an existing pipe, joins a closed port or has the same
+port at both ends. The status bar reports a refusal; releasing away from a port cancels the
+gesture without changing the circuit. Electrical terminals create wires without a tube size.
 
 ## 4. Name the cylinder (optional)
 

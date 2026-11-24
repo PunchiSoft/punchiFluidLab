@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Reconectar puertos con un arrastre — 2026-11-24
+
+- En Edición, arrastrar de un puerto a otro vuelve a crear la conexión: la vista previa es
+  ortogonal, el tubing neumático parte en 10 mm y los cables eléctricos no reciben diámetro.
+  `Esc` y soltar fuera de un puerto cancelan el gesto; una conexión rechazada lo anuncia.
+- La ventana agregó cinco pruebas headless: el tubing neumático se crea y se deshace en una sola
+  acción, el cable eléctrico conserva `None`, Esc y soltar en la hoja vacía cancelan, y un puerto
+  no se puede conectar consigo mismo. La suite tiene **369 pruebas**.
+- `docs/capabilities.md` vuelve a probar esta capacidad en Rust; la guía del primer circuito y
+  la especificación de interfaz describen el arrastre y su cancelación.
+
 ### El nombre de la categoría no ensancha el catálogo — 2026-11-24
 
 - **Causa real**: `CollapsingHeader` compone su etiqueta con `Extend`, así que el nombre largo
