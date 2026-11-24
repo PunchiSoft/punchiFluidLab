@@ -606,3 +606,83 @@ fn about_and_licence_open_and_escape_closes_them() {
         );
     }
 }
+
+/// The About popup's harness: the panel drawn headless, with the desktop font.
+fn about_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
+    window.open_about();
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(1024.0, 800.0))
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(120)
+        .build(move |context| window.show_panels(context));
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the About tests need one");
+    }
+    harness.run();
+    harness
+}
+
+#[test]
+fn the_about_popup_carries_the_message_the_links_and_the_licence() {
+    let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+    let harness = about_harness(&mut window);
+    for label in [
+        "Punchi Fluid Lab",
+        "Unreleased development version",
+        "Website",
+        "Help",
+        "Report a problem",
+        "© 2026 PunchiSoft · GPL-3.0-or-later",
+        "Read the license",
+    ] {
+        assert!(
+            harness.query_by_label_contains(label).is_some(),
+            "the About popup shows {label}"
+        );
+    }
+    assert!(
+        harness
+            .query_by_label_contains("Free and open, so that a student")
+            .is_some(),
+        "the popup carries the message the program wanted to offer"
+    );
+    assert!(
+        harness.query_all_by_label_contains("PunchiSoft").count() >= 1,
+        "the popup names the author"
+    );
+    assert!(
+        harness
+            .query_by_label_contains("Made for the community")
+            .is_some(),
+        "the popup closes with the community line"
+    );
+}
+
+#[test]
+fn the_licence_popup_shows_the_full_text_and_closes_with_escape() {
+    let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+    window.open_licence();
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(1024.0, 800.0))
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(120)
+        .build(move |context| window.show_panels(context));
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the About tests need one");
+    }
+    harness.run();
+    assert!(
+        harness
+            .query_by_label_contains("GNU General Public License, version 3")
+            .is_some(),
+        "the licence popup names the licence it carries"
+    );
+    harness.key_press(egui::Key::Escape);
+    harness.run();
+    assert!(
+        harness
+            .query_by_label_contains("GNU General Public License, version 3")
+            .is_none(),
+        "Escape closes the licence popup"
+    );
+}

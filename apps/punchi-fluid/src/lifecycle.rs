@@ -31,6 +31,11 @@ const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5);
 
 /// The repository's licence, compiled into the window: the «Licencia» panel has to show the
 /// terms where the source tree is not.
+/// The project's public home: the popup names it and opens it only on an explicit click.
+const REPOSITORY: &str = "https://github.com/PunchiSoft/punchiFluidLab";
+/// Where a reader reports a problem.
+const ISSUES: &str = "https://github.com/PunchiSoft/punchiFluidLab/issues";
+
 const LICENCE: &str = include_str!("../../../LICENSE");
 
 /// How the document stands against the files it came from.
@@ -428,11 +433,23 @@ impl Window {
         }
     }
 
-    /// «Acerca de»: the application, its version and what it is.
+    /// «Acerca de»: the application, its version, what it is and where to find it. The
+    /// popup swallows the clicks under it and closes with Cerrar, `Esc` or a click outside;
+    /// opening it never changes the document.
     fn show_about(&mut self, context: &egui::Context) {
         let tokens = self.theme.tokens.clone();
         let language = self.language;
         let mut close = false;
+        let mut read_licence = false;
+        // The reference popup does not dim the window; it does keep the clicks under it.
+        let screen = context.screen_rect();
+        let mut clicked_out = false;
+        egui::Area::new(egui::Id::new("lifecycle.about.blocker"))
+            .order(egui::Order::Middle)
+            .fixed_pos(screen.min)
+            .show(context, |ui| {
+                clicked_out = ui.allocate_rect(screen, egui::Sense::click()).clicked();
+            });
         egui::Window::new(language.text("about.title"))
             .id(egui::Id::new("lifecycle.about"))
             .order(egui::Order::Foreground)
@@ -440,7 +457,7 @@ impl Window {
             .collapsible(false)
             .resizable(false)
             .show(context, |ui| {
-                ui.set_width(tokens.unit * 18.0);
+                ui.set_width(tokens.unit * 20.0);
                 ui.label(
                     egui::RichText::new("Punchi Fluid Lab")
                         .size(tokens.text_display)
@@ -454,23 +471,72 @@ impl Window {
                     .size(tokens.text_body)
                     .color(tokens.ink_dim),
                 );
+                ui.label(
+                    egui::RichText::new(language.text("about.development"))
+                        .size(tokens.text_body)
+                        .color(tokens.accent),
+                );
                 ui.add_space(tokens.unit * 0.6);
                 ui.label(
                     egui::RichText::new(language.text("about.body"))
                         .size(tokens.text_body)
                         .color(tokens.ink),
                 );
-                ui.add_space(tokens.unit);
+                ui.add_space(tokens.unit * 0.6);
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(language.text("about.repository"))
+                            .size(tokens.text_small)
+                            .color(tokens.ink_muted),
+                    );
+                    ui.hyperlink_to(REPOSITORY, REPOSITORY);
+                });
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(language.text("about.help"))
+                            .size(tokens.text_small)
+                            .color(tokens.ink_muted),
+                    );
+                    ui.hyperlink_to(language.text("about.issues"), ISSUES);
+                });
+                ui.add_space(tokens.unit * 0.4);
+                ui.label(
+                    egui::RichText::new(language.text("about.copyright"))
+                        .size(tokens.text_small)
+                        .color(tokens.ink_muted),
+                );
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(language.text("about.author"))
+                            .size(tokens.text_small)
+                            .color(tokens.ink_muted),
+                    );
+                    if ui.button(language.text("about.read_licence")).clicked() {
+                        read_licence = true;
+                    }
+                });
+                ui.add_space(tokens.unit * 0.6);
+                ui.label(
+                    egui::RichText::new(language.text("about.closing"))
+                        .size(tokens.text_small)
+                        .color(tokens.ink_muted),
+                );
+                ui.add_space(tokens.unit * 0.6);
                 if ui.button(language.text("dialog.close")).clicked() {
                     close = true;
                 }
             });
-        if close {
+        if read_licence {
+            self.open_licence();
+            context.request_repaint();
+            return;
+        }
+        if close || clicked_out {
             self.lifecycle.panel = None;
         }
     }
 
-    /// «Licencia»: the full licence text in a scroll area, because it is longer than a panel.
+    /// «Licencia»: the GPL summary and the complete text, compiled into the binary.
     fn show_licence(&mut self, context: &egui::Context) {
         let tokens = self.theme.tokens.clone();
         let language = self.language;
