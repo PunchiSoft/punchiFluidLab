@@ -35,9 +35,83 @@ fn draw_a_cylinder(surface: &mut dyn punchi_fluid_draw::Surface, area: Rect) {
     draw_placed(surface, &placed, &[], &catalog, &print_ink(), &[]);
 }
 
+fn spanish() -> punchi_fluid_export::Labels {
+    punchi_fluid_export::Labels {
+        owner: "Empresa / propietario",
+        project: "Proyecto / instalación",
+        equipment: "Equipo / sistema",
+        title: "Título",
+        number: "Nº de plano",
+        revision: "Revisión",
+        date: "Fecha",
+        prepared: "Dibujado",
+        checked: "Revisado",
+        approved: "Aprobado",
+        scale: "Escala",
+        norms: "Normas aplicadas",
+        sheet: "Hoja",
+        parts_heading: "lista de piezas",
+        parts_omitted: "… y {count} piezas más",
+        closures_omitted: "… y {count} cierres más",
+        tubes_omitted: "… y {count} tubos más",
+        tube: "Tubo",
+        unspecified: "sin especificar",
+        class_working: "trabajo",
+        class_pilot: "pilotaje",
+        class_drain: "drenaje",
+        class_electrical: "eléctrico",
+        port_supply: "suministro",
+        port_working: "trabajo",
+        port_exhaust: "escape",
+        port_mechanical: "mecánico",
+        port_electrical: "eléctrico",
+        tube_note: "longitud = recorrido dibujado, sin desvíos, racores ni merma",
+        under_tenth: "< 0,1 m",
+        decimal_separator: ',',
+        language: punchi_fluid_export::labels::LabelLanguage::Spanish,
+    }
+}
+
+fn english() -> punchi_fluid_export::Labels {
+    punchi_fluid_export::Labels {
+        owner: "Company / owner",
+        project: "Project / installation",
+        equipment: "Equipment / system",
+        title: "Title",
+        number: "Drawing no.",
+        revision: "Revision",
+        date: "Date",
+        prepared: "Drawn by",
+        checked: "Checked by",
+        approved: "Approved by",
+        scale: "Scale",
+        norms: "Standards applied",
+        sheet: "Sheet",
+        parts_heading: "parts list",
+        parts_omitted: "… and {count} more parts",
+        closures_omitted: "… and {count} more closures",
+        tubes_omitted: "… and {count} more hoses",
+        tube: "Hose",
+        unspecified: "unspecified",
+        class_working: "working",
+        class_pilot: "pilot",
+        class_drain: "drain",
+        class_electrical: "electrical",
+        port_supply: "supply",
+        port_working: "working",
+        port_exhaust: "exhaust",
+        port_mechanical: "mechanical",
+        port_electrical: "electrical",
+        tube_note: "length = drawn route, no offsets, fittings or waste",
+        under_tenth: "< 0.1 m",
+        decimal_separator: '.',
+        language: punchi_fluid_export::labels::LabelLanguage::English,
+    }
+}
+
 fn page_with_parts() -> Page {
     let mut page = Page::a4(TitleBlock::new("A circuit", "2026-11-12"));
-    page.labels = punchi_fluid_export::Labels::spanish();
+    page.labels = spanish();
     page.parts = Some(PartsList::group(
         &Catalog::builtin(),
         [
@@ -55,7 +129,7 @@ fn page_with_parts() -> Page {
             class: punchi_fluid_draw::LineClass::Working,
             length_mm: 3_400,
         }],
-        &punchi_fluid_export::Labels::spanish(),
+        &spanish(),
     ));
     page
 }
@@ -89,7 +163,7 @@ fn the_sheet_becomes_a_vector_document() {
 #[test]
 fn an_english_page_prints_english_labels() {
     let mut page = page_with_parts();
-    page.labels = punchi_fluid_export::Labels::english();
+    page.labels = english();
     page.parts = Some(PartsList::group(
         &Catalog::builtin(),
         [
@@ -107,7 +181,7 @@ fn an_english_page_prints_english_labels() {
             class: punchi_fluid_draw::LineClass::Working,
             length_mm: 3_400,
         }],
-        &punchi_fluid_export::Labels::english(),
+        &english(),
     ));
     let block = page.title_block.clone().unwrap_or_default();
     let svg = render_svg_with(&page, &block, draw_a_cylinder).expect("the page renders");

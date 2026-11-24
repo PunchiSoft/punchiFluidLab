@@ -275,6 +275,8 @@ opened = "opened {name}"
 saved = "saved {name}"
 exported = "exported {name}"
 new_document = "new document"
+hint_document = "document.pfluid"
+hint_export = "drawing.pdf"
 forgotten = "removed from recents"
 
 [circuit]
@@ -436,8 +438,12 @@ electrical = "ELECTRICAL"
 example = "EXAMPLE"
 example_accessible = "{name}. {description} Worked example."
 
+[sheet]
+name = "drawing sheet"
+
 [status]
 untitled = "untitled"
+unsaved = "unsaved"
 line = "sheet {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms draw · last: {last} · {source}{notice}{simulation}"
 simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
 
@@ -475,3 +481,41 @@ short_circuit = "the live rail and its return are joined"
 under_title_block = "a component falls under the title block"
 bad_port_closure = "a closure does not match the port that carries it"
 at = "{message} at ({x}, {y}) mm"
+
+[export.field]
+owner = "Company / owner"
+project = "Project / installation"
+equipment = "Equipment / system"
+title = "Title"
+number = "Drawing no."
+revision = "Revision"
+date = "Date"
+prepared = "Drawn by"
+checked = "Checked by"
+approved = "Approved by"
+scale = "Scale"
+norms = "Standards applied"
+sheet = "Sheet"
+
+[export.list]
+heading = "parts list"
+omitted = "… and {count} more parts"
+closures_omitted = "… and {count} more closures"
+tubes_omitted = "… and {count} more hoses"
+tube = "Hose"
+unspecified = "unspecified"
+note = "length = drawn route, no offsets, fittings or waste"
+under_tenth = "< 0.1 m"
+
+[export.class]
+working = "working"
+pilot = "pilot"
+drain = "drain"
+electrical = "electrical"
+
+[export.port]
+supply = "supply"
+working = "working"
+exhaust = "exhaust"
+mechanical = "mechanical"
+electrical = "electrical"

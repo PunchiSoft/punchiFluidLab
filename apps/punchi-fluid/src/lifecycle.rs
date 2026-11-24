@@ -20,6 +20,7 @@ use std::time::{Duration, Instant};
 use eframe::egui;
 use punchi_fluid_doc::Document;
 use punchi_fluid_file::sheet::Sheet;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::safety::SafetyCopy;
 
@@ -31,10 +32,6 @@ const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5);
 /// The repository's licence, compiled into the window: the «Licencia» panel has to show the
 /// terms where the source tree is not.
 const LICENCE: &str = include_str!("../../../LICENSE");
-
-/// The title bar's name for a document that was never saved, or that was recovered into no
-/// path at all.
-const UNTITLED: &str = "sin guardar";
 
 /// How the document stands against the files it came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -171,11 +168,17 @@ impl Lifecycle {
 
     /// Sends the viewport its title while the document is being edited, and nothing when the
     /// title has not changed.
-    fn sync_title(&mut self, context: &egui::Context, document: &Document, path: Option<&Path>) {
+    fn sync_title(
+        &mut self,
+        context: &egui::Context,
+        document: &Document,
+        path: Option<&Path>,
+        language: Language,
+    ) {
         let name = path
             .and_then(Path::file_name)
             .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or(UNTITLED);
+            .unwrap_or(language.text("status.unsaved"));
         let base = format!("punchi-fluid — {name}");
         let title = if self.is_modified(document) {
             format!("• {base}")
@@ -318,7 +321,7 @@ impl Window {
     /// question and the panels, before the page or the sheet draws under them.
     pub(crate) fn lifecycle_frame(&mut self, context: &egui::Context) {
         self.lifecycle
-            .sync_title(context, &self.document, self.path.as_deref());
+            .sync_title(context, &self.document, self.path.as_deref(), self.language);
         self.lifecycle.autosave(context, &self.document);
         // The save «Guardar y cerrar» awaited finished, on the document's path or through the
         // dialog that asked for one: the window can go.

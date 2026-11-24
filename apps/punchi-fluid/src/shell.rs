@@ -488,7 +488,11 @@ impl Window {
             let area = ui.available_rect_before_wrap();
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
             sheet.widget_info(|| {
-                egui::WidgetInfo::labeled(egui::WidgetType::Image, true, "hoja de dibujo")
+                egui::WidgetInfo::labeled(
+                    egui::WidgetType::Image,
+                    true,
+                    self.language.text("sheet.name"),
+                )
             });
             self.handle_view(ui, &sheet, area, page_mm);
             let placement = self.view.placement(area, page_mm);

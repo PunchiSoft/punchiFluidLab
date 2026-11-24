@@ -4839,6 +4839,7 @@ impl PfSession {
                         circuit,
                     ))
                 },
+                labels: english_labels(),
                 ..punchi_fluid_export::Page::a4(block.clone())
             };
             if punchi_fluid_export::drawing_area(&page, &block).is_err() {
@@ -4939,7 +4940,7 @@ fn parts_list(
         placement_rows,
         closures,
         tubes,
-        &punchi_fluid_export::Labels::english(),
+        &english_labels(),
     )
 }
 
@@ -9143,6 +9144,44 @@ pub unsafe extern "C" fn pf_session_check(
     })
 }
 
+/// The retired ABI keeps a fixed English page, like the CLI: it has no catalog of its own.
+fn english_labels() -> punchi_fluid_export::Labels {
+    use punchi_fluid_export::labels::LabelLanguage;
+    punchi_fluid_export::Labels {
+        language: LabelLanguage::English,
+        owner: "Company / owner",
+        project: "Project / installation",
+        equipment: "Equipment / system",
+        title: "Title",
+        number: "Drawing no.",
+        revision: "Revision",
+        date: "Date",
+        prepared: "Drawn by",
+        checked: "Checked by",
+        approved: "Approved by",
+        scale: "Scale",
+        norms: "Standards applied",
+        sheet: "Sheet",
+        parts_heading: "parts list",
+        parts_omitted: "… and {count} more parts",
+        closures_omitted: "… and {count} more closures",
+        tubes_omitted: "… and {count} more hoses",
+        tube: "Hose",
+        unspecified: "unspecified",
+        class_working: "working",
+        class_pilot: "pilot",
+        class_drain: "drain",
+        class_electrical: "electrical",
+        port_supply: "supply",
+        port_working: "working",
+        port_exhaust: "exhaust",
+        port_mechanical: "mechanical",
+        port_electrical: "electrical",
+        tube_note: "length = drawn route, no offsets, fittings or waste",
+        under_tenth: "< 0.1 m",
+        decimal_separator: '.',
+    }
+}
 #[cfg(test)]
 mod layout_tests {
     use super::*;

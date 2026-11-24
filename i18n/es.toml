@@ -275,6 +275,8 @@ opened = "abierto {name}"
 saved = "guardado {name}"
 exported = "exportado {name}"
 new_document = "documento nuevo"
+hint_document = "documento.pfluid"
+hint_export = "circuito.pdf"
 forgotten = "quitado de recientes"
 
 [circuit]
@@ -436,8 +438,12 @@ electrical = "ELÉCTRICA"
 example = "EJEMPLO"
 example_accessible = "{name}. {description} Ejemplo resuelto."
 
+[sheet]
+name = "hoja de dibujo"
+
 [status]
 untitled = "sin título"
+unsaved = "sin guardar"
 line = "hoja {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms de dibujo · último: {last} · {source}{notice}{simulation}"
 simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
 
@@ -475,3 +481,41 @@ short_circuit = "el positivo del raíl y su retorno están unidos"
 under_title_block = "un componente cae bajo el cajetín"
 bad_port_closure = "un cierre no encaja con el puerto que lo lleva"
 at = "{message} en ({x}, {y}) mm"
+
+[export.field]
+owner = "Empresa / propietario"
+project = "Proyecto / instalación"
+equipment = "Equipo / sistema"
+title = "Título"
+number = "Nº de plano"
+revision = "Revisión"
+date = "Fecha"
+prepared = "Dibujado"
+checked = "Revisado"
+approved = "Aprobado"
+scale = "Escala"
+norms = "Normas aplicadas"
+sheet = "Hoja"
+
+[export.list]
+heading = "lista de piezas"
+omitted = "… y {count} piezas más"
+closures_omitted = "… y {count} cierres más"
+tubes_omitted = "… y {count} tubos más"
+tube = "Tubo"
+unspecified = "sin especificar"
+note = "longitud = recorrido dibujado, sin desvíos, racores ni merma"
+under_tenth = "< 0,1 m"
+
+[export.class]
+working = "trabajo"
+pilot = "pilotaje"
+drain = "drenaje"
+electrical = "eléctrico"
+
+[export.port]
+supply = "suministro"
+working = "trabajo"
+exhaust = "escape"
+mechanical = "mecánico"
+electrical = "eléctrico"
