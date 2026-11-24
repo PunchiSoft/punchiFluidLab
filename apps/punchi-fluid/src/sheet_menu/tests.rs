@@ -74,6 +74,18 @@ fn window_with_component() -> Window {
 }
 
 /// A supply, a 5/2 valve at the centre of the page and a cylinder, so the valve has a model.
+fn window_with_single_acting_cylinder() -> Window {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let centre = window.page.rect().center();
+    window.document.place(Placement::new(
+        "cylinder.single_acting_20_100",
+        centre,
+        44.0,
+        20.0,
+    ));
+    window
+}
+
 fn window_with_a_model() -> Window {
     let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
     let centre = window.page.rect().center();
@@ -366,6 +378,45 @@ fn the_configuration_entry_opens_a_blank_window_named_configuration() {
         harness.state().revision,
         revision,
         "the mockup does not touch the document"
+    );
+    harness.get_by_label("Cerrar").click();
+    harness.run();
+    assert!(!harness.state().mockup);
+}
+
+#[test]
+fn the_simple_cylinder_description_shows_its_card() {
+    let mut window = window_with_single_acting_cylinder();
+    let mut harness = harness(&mut window);
+    let revision = harness.state().revision;
+    let sheet = harness.get_by_label("hoja de dibujo").rect();
+    right_click_at(&mut harness, sheet.center());
+    harness.get_by_label("Descripción del componente").click();
+    harness.run();
+    assert!(harness.state().mockup, "the description window is open");
+    assert!(harness.query_by_label("Descripción").is_some());
+    assert!(
+        harness
+            .query_by_role_and_label(
+                egui::accesskit::Role::Label,
+                "Single-acting cylinder, 20/100",
+            )
+            .is_some(),
+        "the card names the definition"
+    );
+    assert!(
+        harness
+            .query_by_role_and_label(
+                egui::accesskit::Role::Label,
+                "20 mm bore, 100 mm stroke, return spring.",
+            )
+            .is_some(),
+        "the card carries the definition's summary"
+    );
+    assert_eq!(
+        harness.state().revision,
+        revision,
+        "the card does not touch the document"
     );
     harness.get_by_label("Cerrar").click();
     harness.run();

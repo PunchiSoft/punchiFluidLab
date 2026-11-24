@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### La tarjeta de descripción del componente — 2026-11-23
+
+- **La ventana Descripción deja de ser una maqueta vacía** para el cilindro de simple efecto:
+  muestra una tarjeta de referencia con la imagen normalizada a **800 × 450**, el nombre
+  inglés de la definición, su `summary` y su `id`, en modo solo lectura. Un componente sin
+  tarjeta conserva la nota de maqueta.
+- **Carpeta de tarjetas**: `assets/catalog/cards/` con una PNG por `catalog_id`, su README de
+  origen y licencia (GPL-3.0-or-later), y una tabla compilada en
+  `apps/punchi-fluid/src/cards.rs`. El texto no se duplica: sale del TOML del componente.
+- **Pruebas**: `the_simple_cylinder_description_shows_its_card`,
+  `every_card_is_normalized_to_800_by_450`, `every_card_names_a_builtin_definition`,
+  `the_card_folder_records_its_licence` y
+  `the_simple_cylinder_card_is_the_one_the_window_uses`; la suite de la ventana pasa a
+  **296**.
+- **Pendiente**: las tarjetas del resto del catálogo y la traducción al español (i18n). La
+  tarjeta es metadato de catálogo, no una descripción editable por colocación.
+
 ### El espejo vertical del menú — 2026-11-23
 
 - **Espejo vertical activo**: la entrada del menú deja de estar deshabilitada y voltea la
