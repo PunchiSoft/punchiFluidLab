@@ -403,3 +403,29 @@ pneumatic = "NEUMÁTICA"
 electrical = "ELÉCTRICA"
 example = "EJEMPLO"
 example_accessible = "{name}. {description} Ejemplo resuelto."
+
+[status]
+untitled = "sin título"
+line = "hoja {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms de dibujo · último: {last} · {source}{notice}{simulation}"
+simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
+
+[lifecycle]
+recovered = "recuperado"
+recover_failed = "no se pudo recuperar: {cause}"
+discarded = "copia descartada"
+
+[about]
+title = "Acerca de"
+version = "Versión {version}"
+body = "Simulador de circuitos neumáticos e hidráulicos para aprender."
+
+[licence]
+title = "Licencia"
+version = "GNU General Public License, versión 3"
+
+[unsaved]
+title = "Hay cambios sin guardar"
+body = "El documento tiene cambios que no están en ningún archivo. ¿Qué hago con ellos?"
+save_close = "Guardar y cerrar"
+close_without = "Cerrar sin guardar"
+cancel = "Cancelar"

@@ -2,10 +2,10 @@
 
 **Status: target.** The mechanism is decided and its first slice is implemented:
 `punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
-and the ribbon, the catalog, the inspector, Configuración, the check panel, the start page, the
-file, circuit, page-setup, title-block and export-options dialogs, the sheet menu and the
-description card are translated. The status bar and the lifecycle panels are still Spanish
-hardcoded; the migration is surface by surface.
+and the whole Rust window is translated: the ribbon, the catalog, the inspector, Configuración,
+the check panel, the start page, the status bar, the lifecycle panels and every dialog. The
+check's own finding sentences, the file and session error causes, the exporter and the CLI are
+the remaining phase-4 debt.
 
 ## The decision
 
@@ -53,11 +53,9 @@ migration plan are the owner's working notes, outside the repository.
 
 ## Where the copy lives today
 
-- **The Rust window** (`apps/punchi-fluid`): the ribbon, the catalog panel, the inspector,
-  Configuración, the check panel, the start page, the file, circuit, page-setup, title-block
-  and export-options dialogs, the sheet menu, the description card and the language selector
-  read the catalog. The status bar, the lifecycle panels and the rest of the window are still
-  Spanish literals; the migration reaches them surface by surface.
+- **The Rust window** (`apps/punchi-fluid`): every surface reads the catalog. The check's
+  finding sentences (`message_es`), the error causes from `punchi-fluid-file` and
+  `punchi-fluid-session`, the exporter and the CLI are phase-4 debt.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
   `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
   keys.
@@ -69,10 +67,8 @@ migration plan are the owner's working notes, outside the repository.
 
 ## What is not done
 
-- The rest of the window, the check's own finding sentences, the exporter and the CLI still
-  return or draw Spanish; the ribbon, the catalog, the inspector, Configuración, the check
-  panel, the file, circuit, page-setup, title-block and export-options dialogs, the menu and
-  the description card are on the catalog today.
+- The check's own finding sentences, the file and session error causes, the exporter and the
+  CLI still return Spanish; the whole Rust window is on the catalog today.
 - The manual classification of every string, test and contract is still pending for the
   surfaces after the pilot; the pilot's key map is the first classified slice.
 - The catalog data (`name_es`, `summary`) and the Spanish translation of the rest of the

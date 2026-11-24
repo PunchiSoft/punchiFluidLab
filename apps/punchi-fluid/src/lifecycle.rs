@@ -335,9 +335,14 @@ impl Window {
                 let revision = document.revision();
                 self.replace_document(document, None);
                 self.lifecycle.mark_recovered(revision);
-                self.notice = Some(String::from("recuperado"));
+                self.notice = Some(self.language.text("lifecycle.recovered").to_owned());
             }
-            Err(cause) => self.notice = Some(format!("no se pudo recuperar: {cause}")),
+            Err(cause) => {
+                self.notice = Some(
+                    self.language
+                        .format("lifecycle.recover_failed", &[("cause", &cause)]),
+                );
+            }
         }
     }
 
@@ -345,7 +350,7 @@ impl Window {
     pub(crate) fn discard_recovery(&mut self) {
         self.lifecycle.discard_copy();
         self.lifecycle.offer = false;
-        self.notice = Some(String::from("copia descartada"));
+        self.notice = Some(self.language.text("lifecycle.discarded").to_owned());
     }
 
     /// A save the reader cancelled: a «Guardar y cerrar» waiting for it stops waiting.
@@ -385,8 +390,9 @@ impl Window {
     /// «Acerca de»: the application, its version and what it is.
     fn show_about(&mut self, context: &egui::Context) {
         let tokens = self.theme.tokens.clone();
+        let language = self.language;
         let mut close = false;
-        egui::Window::new("Acerca de")
+        egui::Window::new(language.text("about.title"))
             .id(egui::Id::new("lifecycle.about"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -401,20 +407,20 @@ impl Window {
                         .color(tokens.ink),
                 );
                 ui.label(
-                    egui::RichText::new(format!("Versión {}", env!("CARGO_PKG_VERSION")))
-                        .size(tokens.text_body)
-                        .color(tokens.ink_dim),
+                    egui::RichText::new(
+                        language.format("about.version", &[("version", env!("CARGO_PKG_VERSION"))]),
+                    )
+                    .size(tokens.text_body)
+                    .color(tokens.ink_dim),
                 );
                 ui.add_space(tokens.unit * 0.6);
                 ui.label(
-                    egui::RichText::new(
-                        "Simulador de circuitos neumáticos e hidráulicos para aprender.",
-                    )
-                    .size(tokens.text_body)
-                    .color(tokens.ink),
+                    egui::RichText::new(language.text("about.body"))
+                        .size(tokens.text_body)
+                        .color(tokens.ink),
                 );
                 ui.add_space(tokens.unit);
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     close = true;
                 }
             });
@@ -426,8 +432,9 @@ impl Window {
     /// «Licencia»: the full licence text in a scroll area, because it is longer than a panel.
     fn show_licence(&mut self, context: &egui::Context) {
         let tokens = self.theme.tokens.clone();
+        let language = self.language;
         let mut close = false;
-        egui::Window::new("Licencia")
+        egui::Window::new(language.text("licence.title"))
             .id(egui::Id::new("lifecycle.licence"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -437,7 +444,7 @@ impl Window {
             .show(context, |ui| {
                 ui.set_width(tokens.unit * 22.0);
                 ui.label(
-                    egui::RichText::new("GNU General Public License, versión 3")
+                    egui::RichText::new(language.text("licence.version"))
                         .size(tokens.text_body)
                         .strong()
                         .color(tokens.ink),
@@ -453,7 +460,7 @@ impl Window {
                         );
                     });
                 ui.add_space(tokens.unit * 0.4);
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     close = true;
                 }
             });
@@ -466,6 +473,7 @@ impl Window {
     /// layer under it keeps the pointer out of the sheet while the question is on screen.
     fn show_close_ask(&mut self, context: &egui::Context) {
         let tokens = self.theme.tokens.clone();
+        let language = self.language;
         // The page under the question is blocked, so a click cannot edit behind it.
         let screen = context.screen_rect();
         egui::Area::new(egui::Id::new("lifecycle.blocker"))
@@ -477,7 +485,7 @@ impl Window {
         let mut answer = None;
         // A fixed size keeps the question under the same pointer while the reader answers it:
         // an auto-sized window narrows while its long line wraps, and the buttons move with it.
-        egui::Window::new("Hay cambios sin guardar")
+        egui::Window::new(language.text("unsaved.title"))
             .id(egui::Id::new("lifecycle.close"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -486,21 +494,19 @@ impl Window {
             .show(context, |ui| {
                 ui.set_width(tokens.unit * 24.0);
                 ui.label(
-                    egui::RichText::new(
-                        "El documento tiene cambios que no están en ningún archivo. ¿Qué hago con ellos?",
-                    )
-                    .size(tokens.text_body)
-                    .color(tokens.ink),
+                    egui::RichText::new(language.text("unsaved.body"))
+                        .size(tokens.text_body)
+                        .color(tokens.ink),
                 );
                 ui.add_space(tokens.unit * 0.6);
                 ui.horizontal(|ui| {
-                    if ui.button("Guardar y cerrar").clicked() {
+                    if ui.button(language.text("unsaved.save_close")).clicked() {
                         answer = Some(CloseAnswer::Save);
                     }
-                    if ui.button("Cerrar sin guardar").clicked() {
+                    if ui.button(language.text("unsaved.close_without")).clicked() {
                         answer = Some(CloseAnswer::Discard);
                     }
-                    if ui.button("Cancelar").clicked() {
+                    if ui.button(language.text("unsaved.cancel")).clicked() {
                         answer = Some(CloseAnswer::Cancel);
                     }
                 });

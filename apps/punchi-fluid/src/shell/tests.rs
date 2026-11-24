@@ -11,6 +11,7 @@ use std::rc::Rc;
 use eframe::egui;
 use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::Document;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::layout::LayoutMode;
@@ -177,6 +178,33 @@ fn click_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2
             pressed,
             modifiers: egui::Modifiers::default(),
         });
+    }
+}
+
+#[test]
+fn the_status_bar_follows_the_language() {
+    fn status_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
+        let mut harness = egui_kittest::Harness::new(move |context| window.show_status(context));
+        harness.set_size(egui::vec2(1366.0, 768.0));
+        if crate::theme::install_font(&harness.ctx, None).is_err() {
+            eprintln!("no system font: the status test needs one");
+        }
+        harness.run();
+        harness
+    }
+    let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+    {
+        let harness = status_harness(&mut window);
+        assert!(harness.query_all_by_label_contains("ms draw").count() >= 1);
+        assert!(harness.query_all_by_label_contains("last:").count() >= 1);
+        assert!(harness.query_all_by_label_contains("untitled").count() >= 1);
+    }
+    window.language = Language::Spanish;
+    {
+        let harness = status_harness(&mut window);
+        assert!(harness.query_all_by_label_contains("ms de dibujo").count() >= 1);
+        assert!(harness.query_all_by_label_contains("último:").count() >= 1);
+        assert!(harness.query_all_by_label_contains("sin título").count() >= 1);
     }
 }
 

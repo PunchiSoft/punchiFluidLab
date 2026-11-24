@@ -1075,11 +1075,11 @@ Rules:
 supersedes the retired Qt plan of [ADR 0027](adr/0027-translation-catalogs-are-qts.md):
 `punchi-fluid-i18n` reads the embedded `i18n/en.toml` and `i18n/es.toml`, English is the
 source and the visible default, and **Configuración ▸ Apariencia** offers the language without
-a restart. The ribbon, the catalog, the inspector, Configuración, the check panel, the start page, the
-file, circuit, page-setup, title-block and export-options dialogs, the sheet menu, the
-description card and the language selector are on the catalog; the status bar, the lifecycle
-panels, the check's own messages, the exporter and the CLI still carry Spanish sentences and
-are migrated surface by surface. Keys live in the catalogs, the exporter receives its labels
+a restart. The whole Rust window is on the catalog: the ribbon, the catalog, the inspector, Configuración,
+the check panel, the start page, the status bar, the lifecycle panels, the file, circuit,
+page-setup, title-block and export-options dialogs, the sheet menu, the description card and
+the language selector. The check's own finding sentences, the exporter and the CLI still carry
+Spanish sentences and are migrated surface by surface. Keys live in the catalogs, the exporter receives its labels
 from the caller, the CLI keeps a fixed English contract, and no sentence is concatenated. Until
 a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/README.md)).
 

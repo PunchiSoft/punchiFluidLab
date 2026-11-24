@@ -291,15 +291,23 @@ impl Window {
     }
 
     /// The status bar's live line: nothing until a model is loaded.
-    fn simulation_line(&self) -> String {
+    fn simulation_line(&self, language: punchi_fluid_i18n::Language) -> String {
         match self.model.as_ref().map(|model| model.network().telemetry()) {
-            Some(telemetry) => format!(
-                " · t {:.2} s · {:.2} bar · {:.1} mm · {:.1} mm/s",
-                telemetry.time,
-                telemetry.pressure_pa / 1.0e5,
-                telemetry.position * 1000.0,
-                telemetry.velocity * 1000.0,
-            ),
+            Some(telemetry) => {
+                let time = language.decimal(telemetry.time, 2);
+                let pressure = language.decimal(telemetry.pressure_pa / 1.0e5, 2);
+                let position = language.decimal(telemetry.position * 1000.0, 1);
+                let velocity = language.decimal(telemetry.velocity * 1000.0, 1);
+                language.format(
+                    "status.simulation",
+                    &[
+                        ("time", &time),
+                        ("pressure", &pressure),
+                        ("position", &position),
+                        ("velocity", &velocity),
+                    ],
+                )
+            }
             None => String::new(),
         }
     }

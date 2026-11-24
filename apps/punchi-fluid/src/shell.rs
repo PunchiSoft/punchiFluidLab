@@ -320,26 +320,40 @@ impl Window {
         let last = self.ribbon.last.clone();
         let zoom = self.view.zoom();
         let magnification = self.magnification;
+        let language = self.language;
         let source = self
             .path
             .as_deref()
             .and_then(Path::file_name)
             .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or("sin título");
+            .unwrap_or(language.text("status.untitled"));
         let notice = self
             .notice
             .as_deref()
             .map(|notice| format!(" · {notice}"))
             .unwrap_or_default();
-        let simulation = self.simulation_line();
+        let simulation = self.simulation_line(language);
+        let width = format!("{width:.0}");
+        let height = format!("{height:.0}");
+        let zoom = format!("{:.0}", zoom * 100.0);
+        let magnification = language.decimal(f64::from(magnification), 2);
+        let frame = language.decimal(self.frame_ms, 2);
+        let line = language.format(
+            "status.line",
+            &[
+                ("width", &width),
+                ("height", &height),
+                ("zoom", &zoom),
+                ("magnification", &magnification),
+                ("frame", &frame),
+                ("last", &last),
+                ("source", source),
+                ("notice", &notice),
+                ("simulation", &simulation),
+            ],
+        );
         egui::TopBottomPanel::bottom("status").show(context, |ui| {
-            ui.label(
-                egui::RichText::new(format!(
-                    "hoja {width:.0}×{height:.0} mm · {:.0} % · {magnification:.2} px/mm · {:.2} ms de dibujo · último: {last} · {source}{notice}{simulation}",
-                    zoom * 100.0, self.frame_ms
-                ))
-                .color(ink),
-            );
+            ui.label(egui::RichText::new(line).color(ink));
         });
     }
 

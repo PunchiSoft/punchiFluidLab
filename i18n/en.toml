@@ -403,3 +403,29 @@ pneumatic = "PNEUMATIC"
 electrical = "ELECTRICAL"
 example = "EXAMPLE"
 example_accessible = "{name}. {description} Worked example."
+
+[status]
+untitled = "untitled"
+line = "sheet {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms draw · last: {last} · {source}{notice}{simulation}"
+simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
+
+[lifecycle]
+recovered = "recovered"
+recover_failed = "Could not recover: {cause}"
+discarded = "recovery copy discarded"
+
+[about]
+title = "About"
+version = "Version {version}"
+body = "A simulator of pneumatic and hydraulic circuits for learning."
+
+[licence]
+title = "License"
+version = "GNU General Public License, version 3"
+
+[unsaved]
+title = "There are unsaved changes"
+body = "The document has changes that are not in any file. What should I do with them?"
+save_close = "Save and close"
+close_without = "Close without saving"
+cancel = "Cancel"
