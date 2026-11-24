@@ -188,6 +188,8 @@ struct Window {
     strip: view_strip::ViewStrip,
     /// The view grid: visible or hidden, and its step in millimetres.
     grid: grid::GridView,
+    /// A palette drop waiting for the sheet's placement: the id and the screen release point.
+    pending_drop: Option<(String, egui::Pos2)>,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.
@@ -235,15 +237,40 @@ impl Window {
             );
             return;
         };
-        let (width, height) = if definition.kinematics == Kinematics::LinearActuator {
-            (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)
-        } else {
-            (SYMBOL_BOX_MM, SYMBOL_BOX_MM)
-        };
+        let (width, height) = component_size(definition);
         let centre = self.page.rect().center();
         let index = self
             .document
             .place(Placement::new(catalog_id, centre, width, height));
+        self.selected = vec![index];
+        let name = match self.language {
+            punchi_fluid_i18n::Language::Spanish => {
+                definition.name_es.as_deref().unwrap_or(&definition.name)
+            }
+            punchi_fluid_i18n::Language::English => &definition.name,
+        };
+        self.notice = Some(self.language.format("notice.added", &[("name", name)]));
+    }
+
+    /// Drops the carried palette entry where the pointer released it, snapped to the grid's
+    /// step and kept inside the paper; a release outside the sheet places nothing.
+    fn drop_catalog(
+        &mut self,
+        catalog_id: &str,
+        screen: egui::Pos2,
+        placement: &crate::view::Placement,
+    ) {
+        let Some(definition) = self.catalog.get(catalog_id) else {
+            return;
+        };
+        let Some(position) = drop_position(screen, placement, self.page.rect(), self.grid.step_mm)
+        else {
+            return;
+        };
+        let (width, height) = component_size(definition);
+        let index = self
+            .document
+            .place(Placement::new(catalog_id, position, width, height));
         self.selected = vec![index];
         let name = match self.language {
             punchi_fluid_i18n::Language::Spanish => {
@@ -650,6 +677,14 @@ impl Window {
         if self.menu.is_open() || self.mockups.is_open() {
             return;
         }
+        // A carried tile owns `Esc`: it drops the carry and the release places nothing.
+        if self.sidebar.carrying()
+            && context
+                .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+        {
+            self.sidebar.cancel_carry();
+            return;
+        }
         // The view gestures own `Esc` while they are armed: the zoom window and the hand.
         if (self.zoom_window_armed || self.zoom_drag.is_some())
             && context
@@ -720,3 +755,36 @@ mod tests;
 
 #[cfg(test)]
 mod tests_acceptance;
+
+/// Where a palette drop lands: the screen point in sheet millimetres, snapped to the grid's
+/// step and kept inside the paper. A release outside the sheet places nothing.
+fn drop_position(
+    screen: egui::Pos2,
+    placement: &crate::view::Placement,
+    page: punchi_fluid_draw::Rect,
+    step_mm: u16,
+) -> Option<Pt> {
+    let sheet = Pt::new(
+        (screen.x - placement.origin.x) / placement.scale + page.min.x,
+        (screen.y - placement.origin.y) / placement.scale + page.min.y,
+    );
+    if !page.contains(sheet) {
+        return None;
+    }
+    let step = f32::from(step_mm).max(1.0);
+    let position = Pt::new(
+        (sheet.x / step).round() * step,
+        (sheet.y / step).round() * step,
+    );
+    page.contains(position).then_some(position)
+}
+
+/// The box a placed definition occupies on the sheet, in millimetres: a cylinder keeps the
+/// symbol's width ratio.
+fn component_size(definition: &punchi_fluid_catalog::ComponentDefinition) -> (f32, f32) {
+    if definition.kinematics == Kinematics::LinearActuator {
+        (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)
+    } else {
+        (SYMBOL_BOX_MM, SYMBOL_BOX_MM)
+    }
+}

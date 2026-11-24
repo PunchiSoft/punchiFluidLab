@@ -404,3 +404,32 @@ fn the_grid_is_a_view_setting() {
         "the grid is view state, not an edit"
     );
 }
+
+#[test]
+fn a_drop_snaps_to_the_grid_step_and_stays_inside_the_paper() {
+    use eframe::egui;
+    use punchi_fluid_export::page::{Page, TitleBlock};
+    let page = Page::a4(TitleBlock::new("A circuit", "2026-11-24"));
+    let placement = crate::view::Placement {
+        scale: 2.0,
+        origin: egui::pos2(10.0, 10.0),
+    };
+    // 37, 63 mm on the sheet, at scale 2, from the placement's origin.
+    let screen = egui::pos2(10.0 + 37.0 * 2.0, 10.0 + 63.0 * 2.0);
+    assert_eq!(
+        crate::drop_position(screen, &placement, page.rect(), 5),
+        Some(punchi_fluid_draw::Pt::new(35.0, 65.0)),
+        "the drop snaps to the nearest 5 mm intersection"
+    );
+    assert_eq!(
+        crate::drop_position(screen, &placement, page.rect(), 20),
+        Some(punchi_fluid_draw::Pt::new(40.0, 60.0)),
+        "the grid's step, not a fixed one, decides the snap"
+    );
+    let outside = egui::pos2(10.0 + 400.0 * 2.0, 10.0 + 400.0 * 2.0);
+    assert_eq!(
+        crate::drop_position(outside, &placement, page.rect(), 5),
+        None,
+        "a release outside the paper places nothing"
+    );
+}
