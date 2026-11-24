@@ -54,6 +54,7 @@ There is no serialisation between two runtimes and no command buffer to keep in 
 | Crate | Owns | Never contains | Depends on |
 |---|---|---|---|
 | `punchi-fluid-core` | components, ports, connections, typed units, paper and the sheet frame, the legacy v1 model | numerics, files, widgets | — |
+| `punchi-fluid-i18n` | the language, the embedded TOML catalogs and the key lookup | physics, widgets, files, UI | — |
 | `punchi-fluid-catalog` | the definition schema, validation, loading, lint, compiled reviews | physics, widgets | `core` |
 | `punchi-fluid-file` | the versioned sheet format, atomic write, migrations, recent list | physics, drawing | `core` |
 | `punchi-fluid-solver` | ISO 6358 orifice flow, the network of volumes, the cylinder model | editing, drawing, files | `core`, `catalog` |
@@ -63,7 +64,7 @@ There is no serialisation between two runtimes and no command buffer to keep in 
 | `punchi-fluid-export` | page geometry, frame, title block, PNG, PDF and SVG writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model, recents, safety copy and templates | physics, widgets | `core`, `catalog`, `doc`, `draw`, `file`, `solver` |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `catalog`, `check`, `doc`, `draw`, `file`, `solver` |
-| `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `catalog`, `doc`, `draw`, `export`, `file`, `session` |
+| `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `catalog`, `doc`, `draw`, `export`, `file`, `i18n`, `session` |
 
 The retired `punchi-fluid-ffi` crate is still in the workspace and still has its C header,
 but no product code depends on it. It exists only for its own tests and an untracked spike;

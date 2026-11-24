@@ -255,6 +255,7 @@ impl Window {
             appearance_day: crate::theme::ThemeId::Cad,
             appearance_night: crate::theme::ThemeId::Slate,
             preferences: crate::preferences::Preferences::new(),
+            language: punchi_fluid_i18n::Language::English,
             shell: crate::shell::Shell::new(),
             settings: crate::settings::Store::at(None),
             auto_hide: crate::auto_hide::AutoHide::new(),

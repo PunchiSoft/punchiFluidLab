@@ -13,6 +13,7 @@
 
 use eframe::egui;
 use punchi_fluid_draw::Pt;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::layout::LayoutMode;
@@ -39,56 +40,56 @@ type Entry = (MenuAction, &'static str, &'static str, &'static str, bool);
 const ENTRIES: &[Entry] = &[
     (
         MenuAction::Move,
-        "Mover",
+        "menu.move",
         "hand",
         "bytes://actions/hand.svg",
         false,
     ),
     (
         MenuAction::Rotate,
-        "Girar",
+        "menu.rotate",
         "object-rotate-right",
         "bytes://actions/object-rotate-right.svg",
         false,
     ),
     (
         MenuAction::MirrorHorizontal,
-        "Espejo horizontal",
+        "menu.mirror_horizontal",
         "object-flip-horizontal",
         "bytes://actions/object-flip-horizontal.svg",
         false,
     ),
     (
         MenuAction::MirrorVertical,
-        "Espejo vertical",
+        "menu.mirror_vertical",
         "object-flip-vertical",
         "bytes://actions/object-flip-vertical.svg",
         false,
     ),
     (
         MenuAction::Configure,
-        "Configurar",
+        "menu.configure",
         "configure",
         "bytes://actions/configure.svg",
         false,
     ),
     (
         MenuAction::Properties,
-        "Propiedades",
+        "menu.properties",
         "document-properties",
         "bytes://actions/document-properties.svg",
         false,
     ),
     (
         MenuAction::Describe,
-        "Descripción del componente",
+        "menu.describe",
         "describe",
         "bytes://actions/describe.svg",
         false,
     ),
     (
         MenuAction::Delete,
-        "Eliminar",
+        "menu.delete",
         "edit-delete",
         "bytes://actions/edit-delete.svg",
         true,
@@ -163,8 +164,8 @@ impl Mockup {
     /// The title bar, exactly the word the owner asked for.
     fn title(self) -> &'static str {
         match self {
-            Self::Configure => "Configuración",
-            Self::Describe => "Descripción",
+            Self::Configure => "dialog.configuration",
+            Self::Describe => "dialog.description",
         }
     }
 
@@ -343,6 +344,7 @@ impl Window {
         let row = tokens.unit * 1.7;
         let just_opened = self.menu.take_just_opened();
         let position = self.menu.position;
+        let language = self.language;
         let mut open = self.menu.open;
         let mut action = None;
         egui::Popup::context_menu(sheet)
@@ -354,7 +356,8 @@ impl Window {
                     if entry.4 {
                         ui.separator();
                     }
-                    let response = menu_row(ui, entry, enabled[index], &tokens, width, row);
+                    let response =
+                        menu_row(ui, entry, enabled[index], &tokens, width, row, language);
                     if index == 0 && just_opened {
                         response.request_focus();
                     }
@@ -470,7 +473,8 @@ impl Window {
                 ui.allocate_rect(screen, egui::Sense::click_and_drag());
             });
         let mut close = false;
-        egui::Window::new(kind.title())
+        let title = self.language.text(kind.title());
+        egui::Window::new(title)
             .id(egui::Id::new(kind.id()))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -489,17 +493,15 @@ impl Window {
                     );
                     ui.add_space(tokens.unit * 0.5);
                     ui.label(
-                        egui::RichText::new(
-                            "Maqueta · el contenido de este diálogo llegará más adelante.",
-                        )
-                        .size(tokens.text_body)
-                        .color(tokens.ink_muted),
+                        egui::RichText::new(self.language.text("dialog.mockup"))
+                            .size(tokens.text_body)
+                            .color(tokens.ink_muted),
                     );
                 }
                 ui.add_space(tokens.unit);
                 ui.separator();
                 ui.horizontal(|ui| {
-                    if ui.button("Cerrar").clicked() {
+                    if ui.button(self.language.text("dialog.close")).clicked() {
                         close = true;
                     }
                 });
@@ -552,10 +554,13 @@ fn menu_row(
     tokens: &crate::theme::Tokens,
     width: f32,
     height: f32,
+    language: Language,
 ) -> egui::Response {
+    let label = language.text(entry.1);
+    let reason = disabled_reason(entry.0).map(|key| language.text(key));
     let (rect, response) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
     let mut response = response;
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, entry.1));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label));
     let hovered = enabled && response.hovered();
     let focused = enabled && response.has_focus();
     let fill = if !enabled {
@@ -586,19 +591,19 @@ fn menu_row(
     if let Some(bytes) = crate::ribbon::icon_bytes(entry.2) {
         egui::Image::from_bytes(entry.3, bytes)
             .tint(ink)
-            .alt_text(entry.1)
+            .alt_text(label)
             .fit_to_exact_size(egui::vec2(icon, icon))
             .paint_at(ui, icon_rect);
     }
     ui.painter().text(
         egui::pos2(icon_rect.right() + tokens.unit * 0.5, rect.center().y),
         egui::Align2::LEFT_CENTER,
-        entry.1,
+        label,
         egui::FontId::proportional(tokens.text_body),
         ink,
     );
     if !enabled {
-        if let Some(reason) = disabled_reason(entry.0) {
+        if let Some(reason) = reason {
             response = response.on_hover_text(reason);
         }
     }
@@ -609,7 +614,7 @@ fn menu_row(
 /// leaving the reader guessing.
 fn disabled_reason(action: MenuAction) -> Option<&'static str> {
     match action {
-        MenuAction::Configure | MenuAction::Describe => Some("selecciona un solo componente"),
+        MenuAction::Configure | MenuAction::Describe => Some("menu.select_one"),
         _ => None,
     }
 }

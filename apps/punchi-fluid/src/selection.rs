@@ -136,19 +136,22 @@ impl Window {
         if !self.document.disconnect(index) {
             return false;
         }
-        self.notice = Some(String::from("conducto borrado"));
+        self.notice = Some(self.language.text("notice.pipe_deleted").to_owned());
         true
     }
 
     /// The status line's note for what the sheet has selected.
     pub(crate) fn sync_selection_notice(&mut self) {
         self.notice = if self.selected_pipe.is_some() && self.selected.is_empty() {
-            Some(String::from("conducto seleccionado"))
+            Some(self.language.text("selection.pipe").to_owned())
         } else {
             match self.selected.len() {
                 0 => None,
-                1 => Some(String::from("1 seleccionada")),
-                count => Some(format!("{count} seleccionadas")),
+                1 => Some(self.language.text("selection.one").to_owned()),
+                count => {
+                    let count = count.to_string();
+                    Some(self.language.format("selection.many", &[("count", &count)]))
+                }
             }
         };
     }
@@ -252,7 +255,7 @@ mod tests {
         window.select_pipe_at(route[route.len() / 2]);
         assert_eq!(window.selected_pipe, Some(index));
         assert!(window.selected.is_empty(), "a hose wins the selection");
-        assert_eq!(window.notice.as_deref(), Some("conducto seleccionado"));
+        assert_eq!(window.notice.as_deref(), Some("pipe selected"));
     }
 
     #[test]

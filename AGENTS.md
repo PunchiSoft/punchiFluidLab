@@ -71,6 +71,7 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | Crate | Owns | Never contains |
 |---|---|---|
 | `crates/punchi-fluid-core` | components, ports, connections, units, paper and the sheet frame | numerics, files, widgets |
+| `crates/punchi-fluid-i18n` | the language, the embedded TOML catalogs and the key lookup | physics, widgets, files, UI |
 | `crates/punchi-fluid-catalog` | component definition files: schema, validation, loading | physics, widgets |
 | `crates/punchi-fluid-solver` | lumped-parameter model, orifice flow, integration | editing, UI |
 | `crates/punchi-fluid-file` | versioned documents: the sheet format and its migrations | physics |
@@ -83,8 +84,8 @@ decision and its consequences; changing it needs a new ADR, not a silent edit.
 | `crates/punchi-fluid-cli` | headless check, validate and simulate | UI |
 | `apps/punchi-fluid` | the Rust window: ribbon, sidebar, sheet, status bar, start view and theme adapter, with egui (ADR 0035, ADR 0036) | physics, the document |
 
-Dependency direction: `core` is the base; `catalog` and `file` depend on it and on no
-other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
+Dependency direction: `core` is the base; `i18n` depends on no crate of ours and is the
+translation base; `catalog` and `file` depend on `core` and on no other crate of ours; `solver` depends on `core` and `catalog`; `draw` on `catalog`,
 `core` and `solver`; `doc` on `core` and `draw` (the sheet is a domain value the document
 stores); `check` on `catalog`, `doc` and `draw` (it reads
 port geometry from `draw`, because that is where a millimetre lives); `export` on
@@ -93,8 +94,8 @@ page reads them from `core`); `session` on `core`, `catalog`, `check`, `doc`, `d
 `ffi` retires with the Qt window and has no product consumer; `cli` on `core`, `catalog`,
 `check`, `doc`, `draw`, `file` and `solver`, because it runs the same check and the same
 model without a window. Nothing in Rust depends on a window. The Rust window in
-`apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`, `catalog` and
-`file` — the solver reaches it through the session's model — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
+`apps/punchi-fluid` depends on `core`, `doc`, `draw`, `export`, `session`, `catalog`, `file`
+and `i18n` — the solver reaches it through the session's model — with no ABI ([ADR 0035](docs/adr/0035-the-window-is-rust.md),
 [ADR 0036](docs/adr/0036-the-toolkit-is-egui.md)). A new dependency direction needs an ADR;
 the `Surface` layer that made `draw` and `export` possible is
 [ADR 0003](docs/adr/0003-one-drawing-two-devices.md). `scripts-dev/check-docs.sh` fails if

@@ -13,6 +13,7 @@ members = [
     "crates/punchi-fluid-cli",
     "apps/punchi-fluid",
     "crates/punchi-fluid-session",
+    "crates/punchi-fluid-i18n",
 ]
 
 [workspace.package]
@@ -35,6 +36,7 @@ punchi-fluid-check = { path = "crates/punchi-fluid-check" }
 punchi-fluid-export = { path = "crates/punchi-fluid-export" }
 punchi-fluid-ffi = { path = "crates/punchi-fluid-ffi" }
 punchi-fluid-session = { path = "crates/punchi-fluid-session" }
+punchi-fluid-i18n = { path = "crates/punchi-fluid-i18n" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

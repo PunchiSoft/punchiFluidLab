@@ -131,6 +131,7 @@ fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Set
         appearance: crate::theme::Appearance::Desktop,
         theme_day: crate::theme::ThemeId::Cad,
         theme_night: crate::theme::ThemeId::Slate,
+        language: punchi_fluid_i18n::Language::English,
     }
 }
 
@@ -177,6 +178,33 @@ fn the_settings_file_round_trips() {
     assert!(
         !crate::state_file::temporary_path(&file).exists(),
         "the write leaves no temporary file behind"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_language_round_trips_and_defaults_to_english() {
+    assert_eq!(
+        Settings::default().language,
+        punchi_fluid_i18n::Language::English
+    );
+    let mut saved = settings((true, 300.0), (true, 420.0), false);
+    saved.language = punchi_fluid_i18n::Language::Spanish;
+    let dir = scratch();
+    let file = dir.join(FILE_NAME);
+    assert!(write(&file, &saved));
+    assert_eq!(read(&file), Some(saved));
+    assert_eq!(
+        parse("version=1\nlanguage=es\n")
+            .expect("the version and language")
+            .language,
+        punchi_fluid_i18n::Language::Spanish
+    );
+    assert_eq!(
+        parse("version=1\nlanguage=fr\n")
+            .expect("the version")
+            .language,
+        punchi_fluid_i18n::Language::English
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

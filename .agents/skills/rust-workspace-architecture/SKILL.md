@@ -42,6 +42,7 @@ short form:
 | `punchi-fluid-core` | components, ports, connections, typed units | numerics, files, widgets |
 | `punchi-fluid-catalog` | definition schema, validation, loading | physics, widgets |
 | `punchi-fluid-solver` | lumped model, orifice flow, integration | editing, UI, file I/O |
+| `punchi-fluid-i18n` | the language and the embedded TOML catalogs | physics, widgets, files |
 | `punchi-fluid-file` | versioned document format, migrations | physics |
 | `punchi-fluid-doc` | the edited document: placements, commands, undo | physics, drawing |
 | `punchi-fluid-check` | design faults found before the run | physics, UI |

@@ -202,6 +202,8 @@ struct Window {
     appearance_night: theme::ThemeId,
     /// The Configuración window: whether it is open and which page it shows.
     preferences: preferences::Preferences,
+    /// The visible language; the settings file restores it.
+    language: punchi_fluid_i18n::Language,
 }
 
 /// A primary-button drag of the selection.
@@ -425,7 +427,7 @@ impl Window {
             .map(|(index, start)| (*index, Pt::new(start.x + delta.x, start.y + delta.y)))
             .collect();
         if self.document.move_many(&moves) {
-            self.notice = Some(String::from("movido"));
+            self.notice = Some(self.language.text("notice.moved").to_owned());
         }
     }
 
@@ -441,7 +443,8 @@ impl Window {
         let removed = self.document.remove_many(&self.selected);
         self.selected.clear();
         if !removed.is_empty() {
-            self.notice = Some(format!("borradas {}", removed.len()));
+            let count = removed.len().to_string();
+            self.notice = Some(self.language.format("notice.deleted", &[("count", &count)]));
         }
     }
 
@@ -451,7 +454,7 @@ impl Window {
             return;
         }
         if self.document.turn_many(&self.selected, Turn::Clockwise) {
-            self.notice = Some(String::from("girado"));
+            self.notice = Some(self.language.text("notice.rotated").to_owned());
         }
     }
 
@@ -461,7 +464,7 @@ impl Window {
             return;
         }
         if self.document.turn_many(&self.selected, Turn::Reflect) {
-            self.notice = Some(String::from("reflejado"));
+            self.notice = Some(self.language.text("notice.mirrored").to_owned());
         }
     }
 
@@ -474,7 +477,7 @@ impl Window {
             .document
             .turn_many(&self.selected, Turn::ReflectVertical)
         {
-            self.notice = Some(String::from("reflejado"));
+            self.notice = Some(self.language.text("notice.mirrored").to_owned());
         }
     }
 

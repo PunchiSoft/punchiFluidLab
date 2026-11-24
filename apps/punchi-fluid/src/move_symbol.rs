@@ -71,9 +71,7 @@ impl Window {
             nudge: egui::Vec2::ZERO,
             revision,
         });
-        self.notice = Some(String::from(
-            "moviendo · clic para soltar · Esc para cancelar",
-        ));
+        self.notice = Some(self.language.text("notice.moving").to_owned());
     }
 
     /// The pointer's frame while the gesture is armed: follow it, take the arrow nudge, drop
@@ -165,7 +163,7 @@ impl Window {
         };
         let delta = moving.delta();
         if delta.length() < 0.5 {
-            self.notice = Some(String::from("movimiento cancelado"));
+            self.notice = Some(self.language.text("notice.move_cancelled").to_owned());
             return;
         }
         let moves: Vec<(usize, Pt)> = moving
@@ -174,14 +172,14 @@ impl Window {
             .map(|(index, start)| (*index, Pt::new(start.x + delta.x, start.y + delta.y)))
             .collect();
         if self.document.move_many(&moves) {
-            self.notice = Some(String::from("movido"));
+            self.notice = Some(self.language.text("notice.moved").to_owned());
         }
     }
 
     /// `Esc` or the right button: the selection stays where it was and the history untouched.
     pub(crate) fn cancel_move(&mut self) {
         if self.moving.take().is_some() {
-            self.notice = Some(String::from("movimiento cancelado"));
+            self.notice = Some(self.language.text("notice.move_cancelled").to_owned());
         }
     }
 }

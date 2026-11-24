@@ -8,6 +8,8 @@ use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Endpoint, Placement};
 use punchi_fluid_draw::{Orientation, Pt};
 
+use punchi_fluid_i18n::Language;
+
 use crate::{Window, theme};
 
 use super::MenuAction;
@@ -195,8 +197,8 @@ fn right_click_selects_the_symbol_and_opens_its_menu() {
         revision,
         "opening the menu is not a document change"
     );
-    assert!(harness.query_by_label("Configurar").is_some());
-    assert!(harness.query_by_label("Espejo vertical").is_some());
+    assert!(harness.query_by_label("Configure").is_some());
+    assert!(harness.query_by_label("Mirror vertically").is_some());
 }
 
 #[test]
@@ -276,7 +278,7 @@ fn shift_f10_opens_the_menu_of_the_selection() {
     harness.key_press_modifiers(egui::Modifiers::SHIFT, egui::Key::F10);
     harness.run();
     assert!(harness.state().menu, "Shift+F10 opens the menu");
-    assert!(harness.query_by_label("Girar").is_some());
+    assert!(harness.query_by_label("Rotate").is_some());
 }
 
 #[test]
@@ -297,6 +299,17 @@ fn the_first_menu_entry_takes_the_keyboard() {
 }
 
 #[test]
+fn the_menu_follows_the_language() {
+    let mut window = window_with_component();
+    window.language = Language::Spanish;
+    let mut harness = harness(&mut window);
+    let sheet = harness.get_by_label("hoja de dibujo").rect();
+    right_click_at(&mut harness, sheet.center());
+    assert!(harness.query_by_label("Girar").is_some());
+    assert!(harness.query_by_label("Rotate").is_none());
+}
+
+#[test]
 fn shift_f10_without_a_selection_opens_nothing() {
     let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
     let mut harness = harness(&mut window);
@@ -311,7 +324,7 @@ fn the_menu_rotates_the_selection_and_closes() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Girar").click();
+    harness.get_by_label("Rotate").click();
     harness.run();
     assert!(!harness.state().menu, "choosing a command closes the menu");
     assert_ne!(
@@ -327,7 +340,7 @@ fn the_menu_mirrors_the_selection_horizontally() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Espejo horizontal").click();
+    harness.get_by_label("Mirror horizontally").click();
     harness.run();
     assert!(
         harness
@@ -344,7 +357,7 @@ fn the_menu_removes_the_selection_as_one_undo() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Eliminar").click();
+    harness.get_by_label("Delete").click();
     harness.run();
     assert_eq!(harness.state().count, 0);
     assert!(harness.state().can_undo, "the removal is one undo");
@@ -357,7 +370,7 @@ fn the_menu_opens_the_properties_even_when_the_dock_was_open() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Propiedades").click();
+    harness.get_by_label("Properties").click();
     harness.run();
     assert!(harness.state().inspector, "Propiedades opens the dock");
 }
@@ -369,17 +382,17 @@ fn the_configuration_entry_opens_a_blank_window_named_configuration() {
     let revision = harness.state().revision;
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Configurar").click();
+    harness.get_by_label("Configure").click();
     harness.run();
     assert!(harness.state().mockup, "the mockup is open");
-    assert!(harness.query_by_label("Configuración").is_some());
-    assert!(harness.query_by_label_contains("Maqueta").is_some());
+    assert!(harness.query_by_label("Configuration").is_some());
+    assert!(harness.query_by_label_contains("Mockup").is_some());
     assert_eq!(
         harness.state().revision,
         revision,
         "the mockup does not touch the document"
     );
-    harness.get_by_label("Cerrar").click();
+    harness.get_by_label("Close").click();
     harness.run();
     assert!(!harness.state().mockup);
 }
@@ -391,10 +404,10 @@ fn the_simple_cylinder_description_shows_its_card() {
     let revision = harness.state().revision;
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Descripción del componente").click();
+    harness.get_by_label("Component description").click();
     harness.run();
     assert!(harness.state().mockup, "the description window is open");
-    assert!(harness.query_by_label("Descripción").is_some());
+    assert!(harness.query_by_label("Description").is_some());
     assert!(
         harness
             .query_by_role_and_label(
@@ -418,7 +431,7 @@ fn the_simple_cylinder_description_shows_its_card() {
         revision,
         "the card does not touch the document"
     );
-    harness.get_by_label("Cerrar").click();
+    harness.get_by_label("Close").click();
     harness.run();
     assert!(!harness.state().mockup);
 }
@@ -429,11 +442,11 @@ fn the_description_entry_opens_a_blank_window_named_descripcion() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Descripción del componente").click();
+    harness.get_by_label("Component description").click();
     harness.run();
     assert!(harness.state().mockup, "the mockup is open");
-    assert!(harness.query_by_label("Descripción").is_some());
-    assert!(harness.query_by_label_contains("Maqueta").is_some());
+    assert!(harness.query_by_label("Description").is_some());
+    assert!(harness.query_by_label_contains("Mockup").is_some());
     harness.key_press(egui::Key::Escape);
     harness.run();
     assert!(!harness.state().mockup);
@@ -445,7 +458,7 @@ fn moving_follows_the_pointer_and_drops_with_one_click() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Mover").click();
+    harness.get_by_label("Move").click();
     harness.run();
     assert!(harness.state().moving, "the move is armed");
     let revision = harness.state().revision;
@@ -478,7 +491,7 @@ fn escape_cancels_the_armed_move_without_a_document_change() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Mover").click();
+    harness.get_by_label("Move").click();
     harness.run();
     let revision = harness.state().revision;
     let before = harness.state().centre.expect("the component has a centre");
@@ -499,7 +512,7 @@ fn the_arrow_keys_nudge_the_armed_selection_one_millimetre() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Mover").click();
+    harness.get_by_label("Move").click();
     harness.run();
     let before = harness.state().centre.expect("the component has a centre");
     harness.key_press(egui::Key::ArrowRight);
@@ -565,7 +578,7 @@ fn the_mockup_subject_is_the_selected_component_name() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Configurar").click();
+    harness.get_by_label("Configure").click();
     harness.run();
     assert!(
         harness.query_by_label_contains("Válvula").is_some(),
@@ -579,7 +592,7 @@ fn the_menu_mirrors_the_selection_vertically() {
     let mut harness = harness(&mut window);
     let sheet = harness.get_by_label("hoja de dibujo").rect();
     right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Espejo vertical").click();
+    harness.get_by_label("Mirror vertically").click();
     harness.run();
     assert!(!harness.state().menu, "choosing the entry closes the menu");
     assert_eq!(

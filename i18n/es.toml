@@ -1,0 +1,37 @@
+# Punchi Fluid Lab — catálogo español (ADR 0045).
+# La fuente y el idioma por defecto es el inglés; este archivo es su traducción.
+[menu]
+move = "Mover"
+rotate = "Girar"
+mirror_horizontal = "Espejo horizontal"
+mirror_vertical = "Espejo vertical"
+configure = "Configurar"
+properties = "Propiedades"
+describe = "Descripción del componente"
+delete = "Eliminar"
+select_one = "Selecciona un solo componente"
+
+[dialog]
+configuration = "Configuración"
+description = "Descripción"
+close = "Cerrar"
+mockup = "Maqueta · el contenido de este diálogo llegará más adelante."
+
+[notice]
+rotated = "girado"
+mirrored = "reflejado"
+moved = "movido"
+move_cancelled = "movimiento cancelado"
+moving = "moviendo · clic para soltar · Esc para cancelar"
+deleted = "borradas {count}"
+pipe_deleted = "conducto borrado"
+
+[selection]
+one = "1 seleccionada"
+many = "{count} seleccionadas"
+pipe = "conducto seleccionado"
+
+[language]
+label = "Idioma"
+english = "Inglés"
+spanish = "Español"

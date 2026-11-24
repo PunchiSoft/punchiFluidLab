@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La interfaz elige idioma — 2026-11-24
+
+- **La crate `punchi-fluid-i18n`**: catálogos TOML embebidos `i18n/en.toml` (fuente y por
+  defecto) e `i18n/es.toml`, claves estables, parámetros con nombre y caída a inglés cuando
+  falta una clave. El catálogo se parsea una vez; no se lee del disco ni de la red.
+- **El selector**: **Configuración ▸ Apariencia** cambia el idioma sin reiniciar, lo guarda en
+  `settings.state` y lo restaura al abrir. El inglés es el valor por defecto.
+- **El piloto**: el menú contextual, la tarjeta de descripción y los avisos del menú y de la
+  selección leen el catálogo. El resto de la ventana, el chequeo, el exportador y el CLI siguen
+  en español hardcodeado y son la deuda de las siguientes superficies.
+- **Pruebas**: cinco de la crate, `the_language_selector_switches_the_interface`,
+  `the_menu_follows_the_language` y `the_language_round_trips_and_defaults_to_english`; la
+  suite de la ventana pasa a **299**.
+- **Pendiente**: migrar la ventana completa, las crates, el catálogo y los contratos; la
+  captura claro/oscuro del selector y del menú traducido es una pasada manual.
+
 ### La interfaz tendrá catálogos TOML — 2026-11-24
 
 - **Decisión (ADR 0045)**: el inglés es la fuente y el idioma visible por defecto; el español

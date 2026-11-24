@@ -2430,6 +2430,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "punchi-fluid-i18n"
+version = "0.1.0"
+dependencies = [
+ "toml",
+]
+
+[[package]]
 name = "punchi-fluid-session"
 version = "0.1.0"
 dependencies = [
@@ -2464,6 +2471,7 @@ dependencies = [
  "punchi-fluid-draw",
  "punchi-fluid-export",
  "punchi-fluid-file",
+ "punchi-fluid-i18n",
  "punchi-fluid-session",
  "tiny-skia 0.12.0",
 ]
