@@ -389,3 +389,18 @@ fn entering_the_simulation_leaves_the_hand_mode() {
     window.dispatch(crate::ribbon::Command::Start);
     assert!(!window.hand_mode, "a click actuates while the model runs");
 }
+
+#[test]
+fn the_grid_is_a_view_setting() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let revision = window.document.revision();
+    window.dispatch(crate::ribbon::Command::Grid);
+    assert!(window.grid.visible, "the grid shows");
+    window.dispatch(crate::ribbon::Command::Grid);
+    assert!(!window.grid.visible, "the grid hides");
+    assert_eq!(
+        window.document.revision(),
+        revision,
+        "the grid is view state, not an edit"
+    );
+}

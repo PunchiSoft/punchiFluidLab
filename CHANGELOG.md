@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La cuadrícula de vista — 2026-11-24
+
+- **Cuadrícula**: guía de vista sobre el papel y bajo el cajetín y el dibujo; no se imprime ni
+  entra en el documento. Pasos **5, 10, 20 y 25 mm**, defecto 5, con las líneas mayores cada
+  50 mm (el campo de referencia), recortada al marco y fuera del cajetín.
+- **Controles**: interruptor en **Ver ▸ Cuadrícula** y control completo en **Configurar
+  página** (interruptor y paso); el estado y el paso se recuerdan en `settings.state`
+  (`grid`, `grid_step`).
+- **Pruebas**: `the_ruling_reaches_the_frame_and_marks_the_reference_field`,
+  `the_step_changes_the_ruling`, `the_hidden_grid_draws_nothing`,
+  `the_grid_and_its_step_round_trip` y `the_grid_is_a_view_setting`; la suite de la ventana
+  pasa a **345**.
+- **Fase 5 y plan principal cerrados**: la fila F0 «navigated from where it is drawn» queda
+  `covered` con pruebas Rust.
+
 ### La tira de vista flotante — 2026-11-24
 
 - **Tira**: flota sobre el borde derecho del lienzo, en el canal que el área de dibujo reserva;

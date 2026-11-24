@@ -356,6 +356,7 @@ pub(super) const VER: &[Group] = &[
                 Some(Command::ZoomWindow),
             ),
             Item::Small("hand", "ribbon.item.hand", Some(Command::Hand)),
+            Item::Small("view-fit", "ribbon.item.grid", Some(Command::Grid)),
         ],
     },
     Group {

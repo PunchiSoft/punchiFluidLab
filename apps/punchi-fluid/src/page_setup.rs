@@ -101,7 +101,13 @@ impl Window {
         }
         let tokens = self.theme.tokens.clone();
         let language = self.language;
-        let action = page_setup_window(context, &tokens, &mut self.page_setup, language);
+        let action = page_setup_window(
+            context,
+            &tokens,
+            &mut self.page_setup,
+            language,
+            &mut self.grid,
+        );
         match action {
             Some(Action::Apply) => self.apply_page_setup(),
             Some(Action::Close) => self.page_setup.open = false,
@@ -121,6 +127,7 @@ fn page_setup_window(
     tokens: &Tokens,
     draft: &mut PageSetup,
     language: Language,
+    grid: &mut crate::grid::GridView,
 ) -> Option<Action> {
     let mut action = None;
     let screen = context.screen_rect();
@@ -140,6 +147,7 @@ fn page_setup_window(
         .show(context, |ui| {
             sheet_controls(ui, tokens, draft, language);
             margin_controls(ui, tokens, draft, language);
+            grid_controls(ui, tokens, grid, language);
             if draft.sheet().is_none() {
                 ui.label(
                     egui::RichText::new(language.text("page.no_room"))
@@ -166,6 +174,42 @@ fn page_setup_window(
     action
 }
 
+/// The view grid: its toggle and its step, at the right of the page controls. Both are view
+/// settings: the document, the print and the undo history stay untouched.
+fn grid_controls(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    grid: &mut crate::grid::GridView,
+    language: Language,
+) {
+    ui.separator();
+    ui.checkbox(&mut grid.visible, language.text("page.grid"));
+    ui.horizontal(|ui| {
+        ui.label(
+            egui::RichText::new(language.text("page.grid_step"))
+                .size(tokens.text_small)
+                .color(tokens.ink_muted),
+        );
+        egui::ComboBox::from_id_salt("page.grid.step")
+            .selected_text(step_label(grid.step_mm, language))
+            .show_ui(ui, |ui| {
+                for step in crate::grid::STEPS {
+                    if ui
+                        .selectable_label(grid.step_mm == step, step_label(step, language))
+                        .clicked()
+                    {
+                        grid.set_step(step);
+                    }
+                }
+            });
+    });
+}
+
+/// One grid step, with the unit the reader chose.
+fn step_label(step: u16, language: Language) -> String {
+    let millimetres = step.to_string();
+    language.format("page.grid_step_mm", &[("mm", &millimetres)])
+}
 /// Paper and orientation: the named sizes, the custom millimetres and the turn.
 fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, language: Language) {
     ui.label(

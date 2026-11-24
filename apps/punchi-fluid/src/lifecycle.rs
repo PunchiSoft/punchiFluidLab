@@ -287,6 +287,7 @@ impl Window {
             zoom_window_armed: false,
             zoom_drag: None,
             strip: crate::view_strip::ViewStrip::default(),
+            grid: crate::grid::GridView::default(),
             pressed_valve: None,
             start_open: true,
             recents: Recents::default(),

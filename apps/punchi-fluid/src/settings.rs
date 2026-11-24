@@ -60,6 +60,10 @@ impl PanelState {
 /// are the `Restablecer vista` values: both panels open at their preferred widths and
 /// auto-hide off.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the settings file holds independent view flags, not a state machine"
+)]
 pub struct Settings {
     pub catalog: PanelState,
     pub inspector: PanelState,
@@ -78,6 +82,10 @@ pub struct Settings {
     pub strip_folded: bool,
     /// Whether the sheet draws its title block on screen; the print keeps it either way.
     pub block_visible: bool,
+    /// Whether the view grid shows over the paper.
+    pub grid: bool,
+    /// The grid's step in millimetres: 5, 10, 20 or 25.
+    pub grid_step: u16,
 }
 
 impl Default for Settings {
@@ -98,6 +106,8 @@ impl Default for Settings {
             language: Language::English,
             strip_folded: false,
             block_visible: true,
+            grid: false,
+            grid_step: crate::grid::DEFAULT_STEP_MM,
         }
     }
 }
@@ -217,6 +227,20 @@ pub fn parse(text: &str) -> Option<Settings> {
                     settings.block_visible = visible;
                 }
             }
+            "grid" => {
+                if let Some(visible) = flag(value) {
+                    settings.grid = visible;
+                }
+            }
+            "grid_step" => {
+                if let Ok(step) = value.parse::<u16>() {
+                    settings.grid_step = if crate::grid::STEPS.contains(&step) {
+                        step
+                    } else {
+                        crate::grid::DEFAULT_STEP_MM
+                    };
+                }
+            }
             "language" => {
                 if let Some(language) = Language::from_code(value) {
                     settings.language = language;
@@ -240,7 +264,7 @@ pub fn format(settings: &Settings) -> Option<String> {
     );
     let _ = write!(
         text,
-        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\nlanguage={}\nstrip_folded={}\nblock_visible={}\n",
+        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\nlanguage={}\nstrip_folded={}\nblock_visible={}\ngrid={}\ngrid_step={}\n",
         number(settings.catalog.open),
         settings.catalog.width,
         number(settings.inspector.open),
@@ -252,6 +276,8 @@ pub fn format(settings: &Settings) -> Option<String> {
         settings.language.code(),
         number(settings.strip_folded),
         number(settings.block_visible),
+        number(settings.grid),
+        settings.grid_step,
     );
     Some(text)
 }
@@ -419,6 +445,8 @@ impl Window {
             language: self.language,
             strip_folded: self.strip.folded,
             block_visible: self.show_block,
+            grid: self.grid.visible,
+            grid_step: self.grid.step_mm,
         }
     }
 

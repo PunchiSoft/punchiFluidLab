@@ -128,6 +128,7 @@ pub(crate) enum Command {
     BlockVisible,
     ZoomWindow,
     Hand,
+    Grid,
     Catalog,
     Properties,
     Autohide,
@@ -147,7 +148,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 55] = [
+    pub(crate) const ALL: [Self; 56] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -193,6 +194,7 @@ impl Command {
         Self::BlockVisible,
         Self::ZoomWindow,
         Self::Hand,
+        Self::Grid,
         Self::Catalog,
         Self::Properties,
         Self::Autohide,
@@ -254,6 +256,7 @@ impl Command {
             Self::BlockVisible => "ribbon.item.block_visible",
             Self::ZoomWindow => "ribbon.item.zoom_window",
             Self::Hand => "ribbon.item.hand",
+            Self::Grid => "ribbon.item.grid",
             Self::Catalog => "ribbon.item.catalog",
             Self::Properties => "ribbon.item.properties",
             Self::Autohide => "ribbon.item.autohide",
