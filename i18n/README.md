@@ -2,10 +2,10 @@
 
 **Status: target.** The mechanism is decided and its first slice is implemented:
 `punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
-and the ribbon, the catalog, the inspector, Configuración, the check panel, the file, circuit,
-page-setup, title-block and export-options dialogs, the sheet menu and the description card
-are translated. The rest of the window is still Spanish hardcoded; the migration is surface by
-surface.
+and the ribbon, the catalog, the inspector, Configuración, the check panel, the start page, the
+file, circuit, page-setup, title-block and export-options dialogs, the sheet menu and the
+description card are translated. The status bar and the lifecycle panels are still Spanish
+hardcoded; the migration is surface by surface.
 
 ## The decision
 
@@ -54,10 +54,10 @@ migration plan are the owner's working notes, outside the repository.
 ## Where the copy lives today
 
 - **The Rust window** (`apps/punchi-fluid`): the ribbon, the catalog panel, the inspector,
-  Configuración, the check panel, the file, circuit, page-setup, title-block and export-options
-  dialogs, the sheet menu, the description card and the language selector read the catalog. The
-  start page, the status bar and the rest of the window are still Spanish literals; the
-  migration reaches them surface by surface.
+  Configuración, the check panel, the start page, the file, circuit, page-setup, title-block
+  and export-options dialogs, the sheet menu, the description card and the language selector
+  read the catalog. The status bar, the lifecycle panels and the rest of the window are still
+  Spanish literals; the migration reaches them surface by surface.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
   `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
   keys.

@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Inicio elige idioma — 2026-11-24
+
+- **Inicio completo**: el título y el subtítulo, las secciones Empezar/Plantillas/Recientes con
+  sus explicaciones, el raíl (volver a la hoja, Inicio, nuevo proyecto, abrir, Configuración,
+  Acerca de, Licencia) y sus grupos.
+- **Tarjetas**: las dos formas de empezar, las cuatro plantillas con nombre y descripción, las
+  categorías neumática/eléctrica, la insignia de ejemplo y la etiqueta accesible.
+- **Recientes y recuperación**: el aviso de trabajo sin guardar, recuperar/descartar, la lista
+  vacía, el estado «no encontrado» y quitar una fila.
+- **Pruebas**: `the_start_page_follows_the_language`; la suite de la ventana pasa a **313**.
+- **Pendiente**: la barra de estado y los paneles de ciclo de vida; después las crates, el
+  catálogo, el exportador y el CLI.
+
 ### Configuración y comprobaciones eligen idioma — 2026-11-24
 
 - **Configuración**: título, las dos páginas, las ranuras día/noche, los modos de apariencia,

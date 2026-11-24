@@ -22,6 +22,7 @@ use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::Rect as SheetRect;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates;
 
@@ -115,6 +116,7 @@ impl Window {
             return;
         }
         let tokens = &self.theme.tokens;
+        let language = self.language;
         let show_recovery = self.has_recovery();
         let document_name = self
             .path
@@ -127,7 +129,7 @@ impl Window {
             .resizable(false)
             .frame(egui::Frame::default().fill(tokens.background))
             .show(context, |ui| {
-                action = nav::nav(ui, tokens);
+                action = nav::nav(ui, tokens, language);
             });
         egui::CentralPanel::default()
             .frame(
@@ -144,6 +146,7 @@ impl Window {
                         &self.recents,
                         show_recovery,
                         document_name,
+                        language,
                     );
                 }
             });
@@ -206,6 +209,7 @@ fn page(
     recents: &Recents,
     show_recovery: bool,
     document_name: Option<&str>,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     egui::ScrollArea::vertical()
@@ -213,40 +217,38 @@ fn page(
         .show(ui, |ui| {
             ui.add_space(tokens.unit * 0.5);
             ui.label(
-                egui::RichText::new("Inicio")
+                egui::RichText::new(language.text("start.title"))
                     .size(tokens.text_display)
                     .strong()
                     .color(tokens.ink),
             );
             ui.label(
-                egui::RichText::new(
-                    "Crea un proyecto nuevo o continúa trabajando en uno existente",
-                )
-                .size(tokens.text_body)
-                .color(tokens.ink_dim),
+                egui::RichText::new(language.text("start.subtitle"))
+                    .size(tokens.text_body)
+                    .color(tokens.ink_dim),
             );
             ui.add_space(tokens.unit * 1.2);
 
             if show_recovery
-                && let Some(recovery) = cards::recovery_banner(ui, tokens, document_name)
+                && let Some(recovery) = cards::recovery_banner(ui, tokens, document_name, language)
             {
                 action = Some(recovery);
             }
             ui.add_space(tokens.unit * 1.2);
 
-            section(ui, tokens, "Empezar", None);
+            section(ui, tokens, language.text("start.section_begin"), None);
             if action.is_none() {
-                action = cards::begin_row(ui, tokens);
+                action = cards::begin_row(ui, tokens, language);
             }
             ui.add_space(tokens.unit * 1.2);
 
             section(
                 ui,
                 tokens,
-                "Plantillas",
-                Some("Elige un punto de partida; podrás editarlo desde la hoja."),
+                language.text("start.section_templates"),
+                Some(language.text("start.templates_detail")),
             );
-            if let Some(index) = cards::template_grid(ui, tokens, catalog) {
+            if let Some(index) = cards::template_grid(ui, tokens, catalog, language) {
                 action = Some(Action::Template(index));
             }
             ui.add_space(tokens.unit * 1.2);
@@ -254,10 +256,10 @@ fn page(
             section(
                 ui,
                 tokens,
-                "Recientes",
-                Some("Los proyectos que abras o guardes aparecerán aquí."),
+                language.text("start.section_recents"),
+                Some(language.text("start.recents_detail")),
             );
-            if let Some(recent) = cards::recent_rows(ui, tokens, recents) {
+            if let Some(recent) = cards::recent_rows(ui, tokens, recents, language) {
                 action = Some(recent);
             }
             ui.add_space(tokens.unit);

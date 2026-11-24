@@ -14,6 +14,7 @@ use punchi_fluid_doc::{Document, Placement};
 use punchi_fluid_draw::Pt;
 use punchi_fluid_draw::draw_placed_preview;
 use punchi_fluid_draw::surface::Recording;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates::{self, Template};
 
@@ -74,15 +75,27 @@ fn recent_label(name: &str, folder: &std::path::Path) -> String {
 fn each_template_has_a_name_a_description_a_category_and_the_first_has_the_example_badge() {
     for index in 0..templates::COUNT {
         let template = Template::from_index(index).expect("a template");
-        let (name, description) = labels(template);
+        let (name, description) = labels(Language::English, template);
         assert!(!name.is_empty() && !description.is_empty());
-        assert!(!category(template).is_empty());
-        assert!(!accessible_label(template).is_empty());
+        assert!(!category(Language::English, template).is_empty());
+        assert!(!accessible_label(Language::English, template).is_empty());
     }
-    assert_eq!(category(Template::WorkedExample), "NEUMÁTICA");
-    assert_eq!(category(Template::ElectricalControl), "ELÉCTRICA");
-    assert_eq!(example_badge(Template::WorkedExample), Some("EJEMPLO"));
-    assert_eq!(example_badge(Template::DoubleActing), None);
+    assert_eq!(
+        category(Language::English, Template::WorkedExample),
+        "PNEUMATIC"
+    );
+    assert_eq!(
+        category(Language::English, Template::ElectricalControl),
+        "ELECTRICAL"
+    );
+    assert_eq!(
+        example_badge(Language::English, Template::WorkedExample),
+        Some("EXAMPLE")
+    );
+    assert_eq!(
+        example_badge(Language::English, Template::DoubleActing),
+        None
+    );
 }
 
 #[test]
@@ -124,10 +137,10 @@ fn the_four_cards_share_one_row_inside_the_window_floor() {
     let mut window = window();
     let harness = harness(&mut window);
     let cards: Vec<egui::Rect> = [
-        "Circuito OR",
-        "Cilindro de doble efecto",
-        "Preparación de aire",
-        "Control eléctrico",
+        "OR circuit",
+        "Double-acting cylinder",
+        "Air preparation",
+        "Electrical control",
     ]
     .iter()
     .map(|name| harness.get_by_label_contains(name).rect())
@@ -153,9 +166,7 @@ fn the_four_cards_share_one_row_inside_the_window_floor() {
             "the cards keep their order"
         );
     }
-    let placeholder = harness
-        .get_by_label("Todavía no hay documentos recientes")
-        .rect();
+    let placeholder = harness.get_by_label("No recent documents yet").rect();
     assert!(
         placeholder.bottom() <= 768.0,
         "the empty Recientes is on the first screen: {placeholder:?}"
@@ -163,43 +174,68 @@ fn the_four_cards_share_one_row_inside_the_window_floor() {
 }
 
 #[test]
-fn the_page_draws_the_rail_the_two_ways_in_the_templates_and_the_placeholder() {
+fn the_start_page_follows_the_language() {
     let mut window = window();
+    window.language = Language::Spanish;
     let harness = harness(&mut window);
-    for label in ["Volver a la hoja", "Acerca de", "Licencia"] {
+    for label in [
+        "Inicio",
+        "Empezar",
+        "Plantillas",
+        "Recientes",
+        "Nuevo proyecto",
+        "Cilindro de doble efecto",
+    ] {
         assert!(
-            harness.query_by_label(label).is_some(),
-            "{label} is in the rail"
-        );
-    }
-    for label in ["Nuevo proyecto", "Abrir…"] {
-        assert!(
-            harness.query_by_label(label).is_some(),
-            "{label} is in the rail"
+            harness.query_all_by_label_contains(label).count() >= 1,
+            "{label} is translated"
         );
     }
     assert_eq!(
-        harness.query_all_by_label("Inicio").count(),
-        2,
-        "the rail marks Inicio and the page names it"
+        category(Language::Spanish, Template::WorkedExample),
+        "NEUMÁTICA"
     );
-    for label in ["Empezar", "Plantillas", "Recientes"] {
+    assert_eq!(
+        example_badge(Language::Spanish, Template::WorkedExample),
+        Some("EJEMPLO")
+    );
+}
+
+#[test]
+fn the_page_draws_the_rail_the_two_ways_in_the_templates_and_the_placeholder() {
+    let mut window = window();
+    let harness = harness(&mut window);
+    for label in ["Back to the sheet", "About", "License"] {
         assert!(
-            harness.query_by_label(label).is_some(),
+            harness.query_all_by_label(label).count() >= 1,
+            "{label} is in the rail"
+        );
+    }
+    for label in ["New project", "Open…"] {
+        assert!(
+            harness.query_all_by_label(label).count() >= 1,
+            "{label} is in the rail"
+        );
+    }
+    assert!(
+        harness.query_all_by_label("Start").count() >= 2,
+        "the rail marks Start and the page names it"
+    );
+    for label in ["Start", "Templates", "Recent"] {
+        assert!(
+            harness.query_all_by_label(label).count() >= 1,
             "{label} is a section"
         );
     }
     assert!(
-        harness
-            .query_by_label("Todavía no hay documentos recientes")
-            .is_some(),
+        harness.query_by_label("No recent documents yet").is_some(),
         "the empty Recientes says so instead of a blank table"
     );
     for name in [
-        "Circuito OR",
-        "Cilindro de doble efecto",
-        "Preparación de aire",
-        "Control eléctrico",
+        "OR circuit",
+        "Double-acting cylinder",
+        "Air preparation",
+        "Electrical control",
     ] {
         assert!(
             harness.query_by_label_contains(name).is_some(),
@@ -214,7 +250,7 @@ fn choosing_a_template_loads_it_and_closes_the_page() {
     {
         let mut harness = harness(&mut window);
         harness
-            .get_by_label_contains("Cilindro de doble efecto")
+            .get_by_label_contains("Double-acting cylinder")
             .click();
         harness.run();
     }
@@ -231,7 +267,7 @@ fn the_keyboard_reaches_the_rail_and_volver_a_la_hoja_closes_the_page() {
     let mut window = window();
     {
         let mut harness = harness(&mut window);
-        harness.get_by_label("Volver a la hoja").focus();
+        harness.get_by_label("Back to the sheet").focus();
         harness.run();
         harness.key_press(egui::Key::Enter);
         harness.run();
@@ -248,7 +284,7 @@ fn the_inicio_commands_create_a_project_and_open_the_file_dialog() {
     let mut window = window();
     {
         let mut harness = harness(&mut window);
-        harness.get_by_label("Nuevo proyecto").click();
+        harness.get_by_label("New project").click();
         harness.run();
     }
     assert!(
@@ -279,7 +315,7 @@ fn the_inicio_commands_create_a_project_and_open_the_file_dialog() {
     );
     {
         let mut harness = harness(&mut window);
-        harness.get_by_label("Abrir…").click();
+        harness.get_by_label("Open…").click();
         harness.run();
     }
     assert!(window.start_open, "the page stays behind the dialog");
@@ -292,9 +328,9 @@ fn the_learning_rows_keep_the_page_open_behind_their_panel() {
     let mut window = window();
     {
         let mut harness = harness(&mut window);
-        harness.get_by_label("Acerca de").click();
+        harness.get_by_label("About").click();
         harness.run();
-        harness.get_by_label("Licencia").click();
+        harness.get_by_label("License").click();
         harness.run();
     }
     assert!(
@@ -341,7 +377,7 @@ fn a_missing_recent_row_is_muted_and_refuses_to_open() {
     let mut window = Window::with_recents(Theme::fallback(), Document::new(), None, None, recents);
     {
         let mut harness = harness(&mut window);
-        let row = format!("borrado.pfluid. {} · no encontrado", dir.display());
+        let row = format!("borrado.pfluid. {} · not found", dir.display());
         assert!(
             harness.query_by_label(&row).is_some(),
             "a row whose file is gone says so"
@@ -386,7 +422,7 @@ fn quitar_forgets_only_the_row_it_names() {
     let mut window = Window::with_recents(Theme::fallback(), Document::new(), None, None, recents);
     {
         let mut harness = harness(&mut window);
-        harness.get_by_label("Quitar uno.pfluid").click();
+        harness.get_by_label_contains("Remove uno.pfluid").click();
         harness.run();
     }
     assert!(window.start_open, "forgetting a row keeps the page");
