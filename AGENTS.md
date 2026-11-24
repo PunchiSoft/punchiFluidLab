@@ -48,8 +48,10 @@ English is the source language for code, identifiers, comments, logs, tests, scr
 commit subjects and bodies, pull-request titles and bodies, documentation, skills and the
 README. The exceptions are:
 
-- **user-facing interface strings**, which are Spanish today and move to translation
-  catalogs in F8;
+- **user-facing interface strings**, which are keys in the translation catalogs under
+  `i18n/`: English is the source and the default, Spanish a selectable translation
+  ([ADR 0045](docs/adr/0045-the-interface-speaks-english-through-embedded-toml-catalogs.md)).
+  The Spanish literals that remain are migration debt, not a second source;
 - **`CHANGELOG.md`**, in Spanish by project decision;
 - **`README.es.md`**, the Spanish copy of the README.
 
