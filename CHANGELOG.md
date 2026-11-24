@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El inspector elige idioma — 2026-11-24
+
+- **El dock de propiedades**: título, designación, clase de línea, diámetro exterior, puertos,
+  roles, estados vacíos, recuentos, selección múltiple y el aviso de edición leen el catálogo.
+  El nombre del componente sigue el idioma: `name` en inglés, `name_es` en español.
+- **Números**: el diámetro usa el punto decimal en inglés y la coma en español; la unidad `mm`
+  no se traduce. El cromo del panel (ancho, mostrar, ocultar) pasa por `Language`.
+- **Pruebas**: `the_inspector_follows_the_language` y
+  `the_tube_label_uses_the_language_decimal_separator`; la suite de la ventana pasa a **305**.
+- **Pendiente**: diálogos, Inicio, estado, chequeo, exportador y CLI; el inspector es la
+  tercera superficie de la ventana.
+
 ### El catálogo elige idioma — 2026-11-24
 
 - **La barra lateral**: título, búsqueda, categorías, subtítulo, pie y los nombres de las

@@ -2,8 +2,9 @@
 
 **Status: target.** The mechanism is decided and its first slice is implemented:
 `punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
-and the ribbon, the catalog, the sheet menu and the description card are translated. The
-rest of the window is still Spanish hardcoded; the migration is surface by surface.
+and the ribbon, the catalog, the inspector, the sheet menu and the description card are
+translated. The rest of the window is still Spanish hardcoded; the migration is surface by
+surface.
 
 ## The decision
 
@@ -51,8 +52,8 @@ migration plan are the owner's working notes, outside the repository.
 
 ## Where the copy lives today
 
-- **The Rust window** (`apps/punchi-fluid`): the ribbon, the catalog panel, the sheet menu,
-  the description card and the language selector read the catalog. The inspector, the dialogs,
+- **The Rust window** (`apps/punchi-fluid`): the ribbon, the catalog panel, the inspector, the
+  sheet menu, the description card and the language selector read the catalog. The dialogs,
   the status bar, the notices outside the pilot and the rest of the window are still Spanish
   literals; the migration reaches them surface by surface.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
@@ -67,8 +68,8 @@ migration plan are the owner's working notes, outside the repository.
 ## What is not done
 
 - The rest of the window, the check, the exporter and the CLI still return or draw Spanish
-  sentences; the ribbon, the catalog, the menu and the description card are on the catalog
-  today.
+  sentences; the ribbon, the catalog, the inspector, the menu and the description card are on
+  the catalog today.
 - The manual classification of every string, test and contract is still pending for the
   surfaces after the pilot; the pilot's key map is the first classified slice.
 - The catalog data (`name_es`, `summary`) and the Spanish translation of the rest of the

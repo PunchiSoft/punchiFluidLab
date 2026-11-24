@@ -192,9 +192,7 @@ fn the_wide_mode_docks_both_panels_at_their_preferred_widths() {
             "the catalog is docked"
         );
         assert!(
-            harness
-                .query_by_label("Ocultar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Hide properties panel").is_some(),
             "the dock is docked"
         );
     }
@@ -232,9 +230,7 @@ fn the_compact_mode_folds_both_panels_to_their_rails_and_leaves_the_sheet_its_ro
             "the closed catalog leaves its rail control"
         );
         assert!(
-            harness
-                .query_by_label("Mostrar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Show properties panel").is_some(),
             "the closed dock leaves its rail control"
         );
         assert!(
@@ -293,7 +289,7 @@ fn escape_closes_the_drawer() {
         harness.run();
         assert_eq!(harness.state().drawer, None, "Esc dismisses the drawer");
         assert!(
-            harness.query_by_label("Propiedades").is_none(),
+            harness.query_by_label("Properties").is_none(),
             "the dock's content is gone with the drawer"
         );
     }

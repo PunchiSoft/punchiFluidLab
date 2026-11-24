@@ -10,6 +10,7 @@ use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Endpoint, Placement};
 use punchi_fluid_draw::LineClass;
 use punchi_fluid_draw::Pt;
+use punchi_fluid_i18n::Language;
 
 use super::{Action, DEFAULT_WIDTH};
 use crate::Window;
@@ -231,17 +232,117 @@ fn the_designation_field_commits_one_undo_and_an_empty_name_clears_it() {
 }
 
 #[test]
+fn the_inspector_follows_the_language() {
+    let mut window = window_with(Document::new());
+    {
+        let harness = dock_harness(&mut window);
+        assert!(harness.query_by_label("Properties").is_some());
+        assert!(harness.query_by_label("No selection").is_some());
+        assert!(
+            harness
+                .query_by_label_contains("Select a component")
+                .is_some()
+        );
+        assert!(harness.query_by_label("Hide properties panel").is_some());
+    }
+    window.language = Language::Spanish;
+    {
+        let harness = dock_harness(&mut window);
+        assert!(harness.query_by_label("Propiedades").is_some());
+        assert!(harness.query_by_label("Sin selección").is_some());
+        assert!(
+            harness
+                .query_by_label_contains("Selecciona un componente")
+                .is_some()
+        );
+        assert!(
+            harness
+                .query_by_label("Ocultar el panel de propiedades")
+                .is_some()
+        );
+    }
+
+    let mut window = window_with(valve_document());
+    window.selected = vec![0];
+    {
+        let harness = dock_harness(&mut window);
+        assert!(
+            harness
+                .query_all_by_label_contains("3/2 valve, spring return")
+                .count()
+                >= 1
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Label, "Designation")
+                .is_some()
+        );
+        assert!(harness.query_by_label("Ports").is_some());
+        assert!(harness.query_by_label("supply").is_some());
+    }
+    window.language = Language::Spanish;
+    {
+        let harness = dock_harness(&mut window);
+        assert!(
+            harness
+                .query_all_by_label_contains("Válvula 3/2, retorno por muelle")
+                .count()
+                >= 1
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Label, "Designación")
+                .is_some()
+        );
+        assert!(harness.query_by_label("Puertos").is_some());
+        assert!(harness.query_by_label("suministro").is_some());
+    }
+
+    let mut window = window_with_a_pipe();
+    window.selected_pipe = Some(0);
+    {
+        let harness = dock_harness(&mut window);
+        assert!(harness.query_all_by_label("Hose").count() >= 1);
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Line class")
+                .is_some()
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Outside diameter")
+                .is_some()
+        );
+    }
+    window.language = Language::Spanish;
+    {
+        let harness = dock_harness(&mut window);
+        assert!(harness.query_all_by_label("Conducto").count() >= 1);
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Clase de línea")
+                .is_some()
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Diámetro exterior")
+                .is_some()
+        );
+    }
+}
+
+#[test]
 fn the_panel_names_the_selected_component_and_hints_when_there_is_none() {
     let mut window = window_with(valve_document());
     {
         let harness = dock_harness(&mut window);
         assert!(
-            harness.query_by_label("Sin selección").is_some(),
+            harness.query_by_label("No selection").is_some(),
             "the empty panel says there is no selection"
         );
         assert!(
             harness
-                .query_by_label_contains("Selecciona un componente")
+                .query_by_label_contains("Select a component")
                 .is_some(),
             "the empty panel explains the next step"
         );
@@ -250,7 +351,7 @@ fn the_panel_names_the_selected_component_and_hints_when_there_is_none() {
             "the active circuit is named"
         );
         assert!(
-            harness.query_by_label_contains("1 componentes").is_some(),
+            harness.query_by_label_contains("1 components").is_some(),
             "the circuit counts its components"
         );
         assert!(
@@ -266,12 +367,12 @@ fn the_panel_names_the_selected_component_and_hints_when_there_is_none() {
             "the catalog id is read-only text"
         );
         assert!(
-            harness.query_all_by_label_contains("Válvula 3/2").count() >= 1,
+            harness.query_all_by_label_contains("3/2 valve").count() >= 1,
             "the component's name heads the panel"
         );
         assert!(
             harness
-                .query_by_role_and_label(egui::accesskit::Role::Label, "Designación")
+                .query_by_role_and_label(egui::accesskit::Role::Label, "Designation")
                 .is_some(),
             "the designation field is labelled"
         );
@@ -282,11 +383,11 @@ fn the_panel_names_the_selected_component_and_hints_when_there_is_none() {
             "the designation field is offered"
         );
         assert!(
-            harness.query_by_label("Puertos").is_some(),
+            harness.query_by_label("Ports").is_some(),
             "the ports block is offered"
         );
         assert!(
-            harness.query_by_label("suministro").is_some(),
+            harness.query_by_label("supply").is_some(),
             "the port role is named"
         );
     }
@@ -299,28 +400,20 @@ fn the_rail_brings_the_dock_back_at_the_width_it_had() {
     let width = window.inspector.width();
     {
         let mut harness = dock_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel de propiedades")
-            .click();
+        harness.get_by_label("Hide properties panel").click();
         harness.run();
         assert!(
-            harness
-                .query_by_label("Mostrar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Show properties panel").is_some(),
             "the closed dock leaves the rail control"
         );
         assert!(
-            harness.query_by_label("Propiedades").is_none(),
+            harness.query_by_label("Properties").is_none(),
             "the header is gone with the panel"
         );
-        harness
-            .get_by_label("Mostrar el panel de propiedades")
-            .click();
+        harness.get_by_label("Show properties panel").click();
         harness.run();
         assert!(
-            harness
-                .query_by_label("Ocultar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Hide properties panel").is_some(),
             "the header is back"
         );
     }
@@ -338,9 +431,7 @@ fn the_fold_uses_the_theme_motion_and_reduced_motion_is_instant() {
     window.theme.tokens.motion_ms = 0;
     {
         let mut harness = dock_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel de propiedades")
-            .click();
+        harness.get_by_label("Hide properties panel").click();
         // One frame applies the click, the next one draws the fold.
         harness.step();
         harness.step();
@@ -355,9 +446,7 @@ fn the_fold_uses_the_theme_motion_and_reduced_motion_is_instant() {
     let mut window = window_with(Document::new());
     {
         let mut harness = dock_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel de propiedades")
-            .click();
+        harness.get_by_label("Hide properties panel").click();
         harness.step();
         harness.step();
     }
@@ -401,7 +490,7 @@ fn the_action_of_the_panel_is_applied_through_the_document() {
     assert_eq!(window.document.designation_of(0), Some("1A1"));
     assert_eq!(
         window.notice.as_deref(),
-        Some("propiedades actualizadas"),
+        Some("properties updated"),
         "the status bar says the edit happened"
     );
 }
@@ -470,13 +559,13 @@ fn the_pipe_panel_offers_its_class_and_its_tube() {
     let harness = dock_harness(&mut window);
     assert!(
         harness
-            .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Clase de línea")
+            .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Line class")
             .is_some(),
         "the class is offered"
     );
     assert!(
         harness
-            .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Diámetro exterior")
+            .query_by_role_and_label(egui::accesskit::Role::ComboBox, "Outside diameter")
             .is_some(),
         "the tube is offered"
     );
@@ -489,10 +578,10 @@ fn the_pipe_panel_edits_the_class_from_its_menu() {
     {
         let mut harness = dock_harness(&mut window);
         harness
-            .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Clase de línea")
+            .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Line class")
             .click();
         harness.run();
-        harness.get_by_label("Pilotaje").click();
+        harness.get_by_label("Pilot").click();
         harness.run();
     }
     assert_eq!(window.document.connections()[0].class(), LineClass::Pilot);
@@ -519,9 +608,7 @@ fn the_sheet_area_follows_the_dock() {
     }
     harness.run();
     let open = *harness.state();
-    harness
-        .get_by_label("Ocultar el panel de propiedades")
-        .click();
+    harness.get_by_label("Hide properties panel").click();
     harness.run();
     let closed = *harness.state();
     assert!(
@@ -535,28 +622,20 @@ fn the_panel_controls_answer_the_keyboard() {
     let mut window = window_with(Document::new());
     {
         let mut harness = dock_harness(&mut window);
-        harness
-            .get_by_label("Ocultar el panel de propiedades")
-            .focus();
+        harness.get_by_label("Hide properties panel").focus();
         harness.run();
         harness.key_press(egui::Key::Enter);
         harness.run();
         assert!(
-            harness
-                .query_by_label("Mostrar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Show properties panel").is_some(),
             "Enter on the hide control folds the dock"
         );
-        harness
-            .get_by_label("Mostrar el panel de propiedades")
-            .focus();
+        harness.get_by_label("Show properties panel").focus();
         harness.run();
         harness.key_press(egui::Key::Enter);
         harness.run();
         assert!(
-            harness
-                .query_by_label("Ocultar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Hide properties panel").is_some(),
             "Enter on the rail brings the dock back"
         );
     }

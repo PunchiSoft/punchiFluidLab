@@ -347,6 +347,8 @@ impl Window {
     fn show_regions(&mut self, context: &egui::Context) {
         if self.shell.mode == LayoutMode::Compact {
             let tokens = &self.theme.tokens;
+            self.sidebar.language = self.language;
+            self.inspector.language = self.language;
             let catalog = self.sidebar.show_rail(context, tokens);
             let inspector = self.inspector.show_rail(context, tokens);
             if catalog {
@@ -426,6 +428,7 @@ impl Window {
                         (chosen.map(DrawerAction::Add), hide)
                     }
                     Drawer::Inspector => {
+                        self.inspector.language = self.language;
                         let (action, hide) = self.inspector.show_drawer(
                             ui,
                             &tokens,
