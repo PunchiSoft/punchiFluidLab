@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 
 use eframe::egui;
 use punchi_fluid_doc::Document;
-use punchi_fluid_export::{Page, TitleBlock};
+use punchi_fluid_export::{Labels, Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
@@ -578,6 +578,7 @@ pub(crate) fn page_and_block(document: &Document) -> (Page, TitleBlock) {
         margins: sheet.margins,
         title_block: Some(block.clone()),
         parts: None,
+        labels: Labels::english(),
     };
     (page, block)
 }

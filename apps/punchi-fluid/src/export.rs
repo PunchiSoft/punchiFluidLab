@@ -20,6 +20,7 @@ use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{Pipe, Placed, route_length_mm};
 
 use crate::Window;
+use punchi_fluid_export::Labels;
 use punchi_fluid_i18n::Language;
 
 impl Window {
@@ -48,9 +49,9 @@ impl Window {
             .map(str::to_ascii_lowercase)
             .ok_or_else(|| String::from(self.language.text("notice.export_hint")))?;
         if !crate::files::is_export_extension(&extension) {
-            return Err(format!(
-                "«{extension}» no se puede exportar: elige pdf, png o svg."
-            ));
+            return Err(self
+                .language
+                .format("notice.export_extension", &[("extension", &extension)]));
         }
         let scene = crate::scene::build(
             &self.document,
@@ -61,10 +62,11 @@ impl Window {
         let Some(bounds) =
             punchi_fluid_draw::bounds_placed(&scene.placed, &scene.pipes, &self.catalog)
         else {
-            return Err(String::from("El dibujo no tiene nada que exportar."));
+            return Err(String::from(self.language.text("notice.nothing_to_export")));
         };
         // The page the window draws, with the block this export prints and the parts list
         // when the reader asked for one.
+        let labels = export_labels(self.language);
         let parts = self
             .export_options
             .parts
@@ -75,12 +77,14 @@ impl Window {
                     &scene.placed,
                     &scene.pipes,
                     self.document.active_circuit(),
+                    &labels,
                 )
             })
             .filter(|parts| !parts.is_empty());
         let page = punchi_fluid_export::Page {
             title_block: Some(self.block.clone()),
             parts,
+            labels,
             ..self.page.clone()
         };
         let block = &self.block;
@@ -141,6 +145,7 @@ fn parts_list(
     placements: &[Placed<'_>],
     pipes: &[Pipe<'_>],
     circuit: u32,
+    labels: &Labels,
 ) -> punchi_fluid_export::PartsList {
     let placement_rows = document
         .placements()
@@ -174,7 +179,15 @@ fn parts_list(
             length_mm,
         })
     });
-    punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes)
+    punchi_fluid_export::PartsList::group(catalog, placement_rows, closures, tubes, labels)
+}
+
+/// The words the printed page carries in the reader's language.
+fn export_labels(language: Language) -> Labels {
+    match language {
+        Language::English => Labels::english(),
+        Language::Spanish => Labels::spanish(),
+    }
 }
 
 /// Writes `bytes` to `path` through a sibling `.part` file, so a crash leaves no half file:
@@ -226,7 +239,14 @@ mod tests {
         let catalog = default_catalog();
         let circuit = document.active_circuit();
         let scene = crate::scene::build(&document, &catalog, circuit, None);
-        let parts = parts_list(&document, &catalog, &scene.placed, &scene.pipes, circuit);
+        let parts = parts_list(
+            &document,
+            &catalog,
+            &scene.placed,
+            &scene.pipes,
+            circuit,
+            &punchi_fluid_export::Labels::english(),
+        );
         assert_eq!(parts.rows.len(), 1, "one definition on the sheet");
         assert_eq!(parts.rows[0].quantity, 1);
         assert!(parts.tubes.is_empty(), "no pipes on the sheet");

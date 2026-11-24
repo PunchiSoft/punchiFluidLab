@@ -55,6 +55,8 @@ pdf_failed = "Could not write the PDF: {cause}"
 png_failed = "Could not write the PNG: {cause}"
 svg_failed = "Could not write the SVG: {cause}"
 write_failed = "Could not write {path}: {cause}"
+export_extension = "“{extension}” cannot be exported: choose pdf, png or svg."
+nothing_to_export = "The drawing has nothing to export."
 replace_failed = "Could not replace {path}: {cause}"
 
 [selection]

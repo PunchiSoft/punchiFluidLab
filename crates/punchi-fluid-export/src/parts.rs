@@ -17,8 +17,10 @@
 //! a geometric measurement: no bend allowance, fittings or waste.
 
 use punchi_fluid_catalog::{Catalog, PortRole};
-use punchi_fluid_core::tube::tube_label;
+use punchi_fluid_core::tube::tube_label_with;
 use punchi_fluid_draw::surface::LineClass;
+
+use crate::labels::{LabelLanguage, Labels};
 
 /// Most rows a printed list holds before it stops being a list and becomes a column.
 ///
@@ -64,37 +66,50 @@ pub struct TubeRow {
 }
 
 impl TubeRow {
-    /// The line the sheet prints: size, class and length, with the decimal comma.
+    /// The line the sheet prints: size, class and length, with the page's language.
     #[must_use]
-    pub fn text(&self) -> String {
-        let size = self
-            .od
-            .map_or_else(|| "sin especificar".to_owned(), tube_label);
+    pub fn text(&self, labels: &Labels) -> String {
+        let size = self.od.map_or_else(
+            || labels.unspecified.to_owned(),
+            |od| tube_label_with(od, labels.decimal_separator),
+        );
         format!(
-            "Tubo {size} · {} · {}",
-            class_label(self.class),
-            length_label(self.length_mm)
+            "{} {size} · {} · {}",
+            labels.tube,
+            class_label(labels, self.class),
+            length_label(self.length_mm, labels)
         )
     }
 }
 
-/// Spanish name of a line class, as the printed list reads it.
-fn class_label(class: LineClass) -> &'static str {
+/// Name of a line class in the page's language.
+fn class_label(labels: &Labels, class: LineClass) -> &'static str {
     match class {
-        LineClass::Working => "trabajo",
-        LineClass::Pilot => "pilotaje",
-        LineClass::Drain => "drenaje",
-        LineClass::Electrical => "eléctrico",
+        LineClass::Working => labels.class_working,
+        LineClass::Pilot => labels.class_pilot,
+        LineClass::Drain => labels.class_drain,
+        LineClass::Electrical => labels.class_electrical,
     }
 }
 
-/// The port display label a closure row prints: the role in Spanish and the port id.
+/// The name a part row prints, in the page's language.
+fn display_name<'a>(
+    definition: &'a punchi_fluid_catalog::ComponentDefinition,
+    labels: &Labels,
+) -> &'a str {
+    match labels.language {
+        LabelLanguage::English => &definition.name,
+        LabelLanguage::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
+    }
+}
+
+/// The port display label a closure row prints: the role and the port id.
 ///
 /// The document stores the bare port id; the label belongs to the catalog's definition and
 /// is resolved here, so the row reads `escape 3` without the drawing having to know it. A
 /// parent or port the catalog does not resolve keeps the bare id, which is still a truthful
 /// row for a file the machine cannot fully read.
-fn port_label(catalog: &Catalog, parent_catalog: &str, port: &str) -> String {
+fn port_label(catalog: &Catalog, parent_catalog: &str, port: &str, labels: &Labels) -> String {
     let role = catalog
         .get(parent_catalog)
         .and_then(|definition| {
@@ -104,14 +119,15 @@ fn port_label(catalog: &Catalog, parent_catalog: &str, port: &str) -> String {
                 .find(|candidate| candidate.id == port)
         })
         .map(|candidate| candidate.role);
-    match role {
-        Some(PortRole::Supply) => format!("suministro {port}"),
-        Some(PortRole::Working) => format!("trabajo {port}"),
-        Some(PortRole::Exhaust) => format!("escape {port}"),
-        Some(PortRole::Mechanical) => format!("mecánico {port}"),
-        Some(PortRole::Electrical) => format!("eléctrico {port}"),
-        None => port.to_owned(),
-    }
+    let role = match role {
+        Some(PortRole::Supply) => labels.port_supply,
+        Some(PortRole::Working) => labels.port_working,
+        Some(PortRole::Exhaust) => labels.port_exhaust,
+        Some(PortRole::Mechanical) => labels.port_mechanical,
+        Some(PortRole::Electrical) => labels.port_electrical,
+        None => return port.to_owned(),
+    };
+    format!("{role} {port}")
 }
 
 /// `true` when the class sorts before the other in the list: working first.
@@ -125,14 +141,14 @@ fn class_rank(class: LineClass) -> u8 {
 }
 
 /// A drawn length as metres with one decimal, or `< 0,1 m` below a decimetre.
-fn length_label(length_mm: u32) -> String {
+fn length_label(length_mm: u32, labels: &Labels) -> String {
     if length_mm < 100 {
-        return String::from("< 0,1 m");
+        return labels.under_tenth.to_owned();
     }
     let tenths = (u64::from(length_mm) + 50) / 100;
     let whole = tenths / 10;
     let fraction = tenths % 10;
-    format!("{whole},{fraction} m")
+    format!("{whole}{}{fraction} m", labels.decimal_separator)
 }
 
 /// The line a closure prints: the closure, the component that carries it and the port.
@@ -194,6 +210,7 @@ impl PartsList {
         placements: impl IntoIterator<Item = (&'a str, Option<&'a str>)>,
         closures: impl IntoIterator<Item = (&'a str, Option<&'a str>, &'a str, &'a str)>,
         tubes: impl IntoIterator<Item = TubeRowInput>,
+        labels: &Labels,
     ) -> Self {
         let mut groups: Vec<(String, Vec<Option<&'a str>>)> = Vec::new();
         for (id, designation) in placements {
@@ -208,7 +225,7 @@ impl PartsList {
             .map(|(id, designations)| {
                 let name = catalog.get(&id).map_or_else(
                     || id.clone(),
-                    |definition| definition.display_name().to_owned(),
+                    |definition| display_name(definition, labels).to_owned(),
                 );
                 let named: Vec<&str> = designations.iter().flatten().copied().collect();
                 PartRow {
@@ -226,7 +243,7 @@ impl PartsList {
                 .then_with(|| left.name.cmp(&right.name))
         });
 
-        let mut closure_rows = group_closures(catalog, closures);
+        let mut closure_rows = group_closures(catalog, closures, labels);
 
         let mut tube_rows: Vec<TubeRow> = Vec::new();
         for input in tubes {
@@ -284,6 +301,7 @@ impl PartsList {
 fn group_closures<'a>(
     catalog: &Catalog,
     closures: impl IntoIterator<Item = (&'a str, Option<&'a str>, &'a str, &'a str)>,
+    labels: &Labels,
 ) -> Vec<ClosureRow> {
     let mut closure_groups: Vec<((String, String, String), usize)> = Vec::new();
     for (parent_catalog, parent_designation, port, closure_catalog) in closures {
@@ -291,7 +309,7 @@ fn group_closures<'a>(
             .filter(|designation| !designation.is_empty())
             .unwrap_or(parent_catalog)
             .to_owned();
-        let port = port_label(catalog, parent_catalog, port);
+        let port = port_label(catalog, parent_catalog, port, labels);
         let key = (closure_catalog.to_owned(), parent, port);
         if let Some((_, quantity)) = closure_groups
             .iter_mut()
@@ -306,9 +324,9 @@ fn group_closures<'a>(
         .into_iter()
         .map(|((closure, parent, port), quantity)| ClosureRow {
             quantity,
-            closure: catalog
-                .get(&closure)
-                .map_or(closure, |definition| definition.display_name().to_owned()),
+            closure: catalog.get(&closure).map_or(closure, |definition| {
+                display_name(definition, labels).to_owned()
+            }),
             parent,
             port,
         })
@@ -342,6 +360,7 @@ mod tests {
             ],
             [],
             [],
+            &Labels::spanish(),
         );
         assert_eq!(list.rows.len(), 2);
         let cylinders = list
@@ -382,15 +401,25 @@ mod tests {
                     length_mm: 50,
                 },
             ],
+            &Labels::spanish(),
         );
         assert_eq!(list.tubes.len(), 3);
         assert_eq!(list.tubes[0].od, Some(400));
-        assert_eq!(list.tubes[0].text(), "Tubo 4 mm · trabajo · 0,3 m");
+        assert_eq!(
+            list.tubes[0].text(&Labels::spanish()),
+            "Tubo 4 mm · trabajo · 0,3 m"
+        );
         assert_eq!(list.tubes[1].od, Some(1000));
         assert_eq!(list.tubes[1].length_mm, 3_400);
-        assert_eq!(list.tubes[1].text(), "Tubo 10 mm · trabajo · 3,4 m");
+        assert_eq!(
+            list.tubes[1].text(&Labels::spanish()),
+            "Tubo 10 mm · trabajo · 3,4 m"
+        );
         assert_eq!(list.tubes[2].class, LineClass::Pilot);
-        assert_eq!(list.tubes[2].text(), "Tubo 10 mm · pilotaje · < 0,1 m");
+        assert_eq!(
+            list.tubes[2].text(&Labels::spanish()),
+            "Tubo 10 mm · pilotaje · < 0,1 m"
+        );
     }
 
     #[test]
@@ -404,9 +433,10 @@ mod tests {
                 class: LineClass::Drain,
                 length_mm: 4_000,
             }],
+            &Labels::spanish(),
         );
         assert_eq!(
-            list.tubes[0].text(),
+            list.tubes[0].text(&Labels::spanish()),
             "Tubo sin especificar · drenaje · 4,0 m"
         );
     }
@@ -432,6 +462,7 @@ mod tests {
                 ),
             ],
             [],
+            &Labels::spanish(),
         );
         assert_eq!(list.closures.len(), 1, "one port, one grouped row");
         assert_eq!(list.closures[0].quantity, 2);
@@ -444,6 +475,7 @@ mod tests {
             [],
             [("valve.3_2.spring_return", None, "3", "plug.blind")],
             [],
+            &Labels::spanish(),
         );
         assert_eq!(
             only.closures[0].text(),
@@ -475,6 +507,7 @@ mod tests {
                 class: LineClass::Working,
                 length_mm: 100,
             }),
+            &Labels::spanish(),
         );
         assert_eq!(list.rows.len(), 1);
         // The component row leaves room for `MAX_ROWS - 1` closures; the rest are cut and
@@ -500,6 +533,7 @@ mod tests {
                 class: LineClass::Working,
                 length_mm: 100,
             }),
+            &Labels::spanish(),
         );
         assert_eq!(list.rows.len(), 1);
         assert_eq!(list.tubes.len(), MAX_ROWS - 1);

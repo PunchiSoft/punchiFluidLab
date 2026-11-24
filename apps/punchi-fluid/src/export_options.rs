@@ -303,7 +303,7 @@ mod tests {
         window.export_to(&with_parts).expect("the SVG writes");
         let text = std::fs::read_to_string(&with_parts).expect("the file");
         assert!(
-            text.to_lowercase().contains("lista de piezas"),
+            text.to_lowercase().contains("parts list"),
             "the drawing carries the parts list"
         );
         let without = directory.join(format!("punchi-no-parts-{}.svg", std::process::id()));
@@ -311,11 +311,21 @@ mod tests {
         window.export_to(&without).expect("the SVG writes");
         let text = std::fs::read_to_string(&without).expect("the file");
         assert!(
-            !text.to_lowercase().contains("lista de piezas"),
+            !text.to_lowercase().contains("parts list"),
             "no parts list when it is off"
+        );
+        window.export_options.parts = true;
+        window.language = punchi_fluid_i18n::Language::Spanish;
+        let spanish = directory.join(format!("punchi-parts-es-{}.svg", std::process::id()));
+        window.export_to(&spanish).expect("the SVG writes");
+        let text = std::fs::read_to_string(&spanish).expect("the file");
+        assert!(
+            text.to_lowercase().contains("lista de piezas"),
+            "the Spanish drawing carries its parts list"
         );
         std::fs::remove_file(with_parts).ok();
         std::fs::remove_file(without).ok();
+        std::fs::remove_file(spanish).ok();
     }
 
     /// Width of a PNG from its IHDR chunk.

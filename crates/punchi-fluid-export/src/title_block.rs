@@ -11,6 +11,7 @@ use punchi_fluid_core::TitleField;
 use punchi_fluid_draw::{Anchor, Colour, Pt, Stroke, Surface};
 
 use crate::block_layout::{self, BlockField};
+use crate::labels::Labels;
 use crate::page::{Page, TitleBlock};
 use crate::sheet::{FRAME, HEADING, LABEL, MUTED, RULE, VALUE};
 
@@ -54,6 +55,7 @@ pub(crate) fn draw_title_block(surface: &mut dyn Surface, page: &Page, block: &T
                 height,
                 cell.field,
                 value(block, cell.field),
+                &page.labels,
             );
             x += width;
         }
@@ -61,22 +63,22 @@ pub(crate) fn draw_title_block(surface: &mut dyn Surface, page: &Page, block: &T
     }
 }
 
-/// The Spanish label of one cell, shared with the canvas by the field index.
-fn label(field: BlockField) -> &'static str {
+/// The label of one cell, in the page's language.
+fn label(field: BlockField, labels: &Labels) -> &'static str {
     match field {
-        BlockField::Stored(TitleField::Owner) => "Empresa / propietario",
-        BlockField::Stored(TitleField::Project) => "Proyecto / instalación",
-        BlockField::Stored(TitleField::Equipment) => "Equipo / sistema",
-        BlockField::Stored(TitleField::Title) => "Título",
-        BlockField::Stored(TitleField::Number) => "Nº de plano",
-        BlockField::Stored(TitleField::Revision) => "Revisión",
-        BlockField::Stored(TitleField::Date) => "Fecha",
-        BlockField::Stored(TitleField::Prepared) => "Dibujado",
-        BlockField::Stored(TitleField::Checked) => "Revisado",
-        BlockField::Stored(TitleField::Approved) => "Aprobado",
-        BlockField::Stored(TitleField::Scale) => "Escala",
-        BlockField::Stored(TitleField::Norms) => "Normas aplicadas",
-        BlockField::Sheet => "Hoja",
+        BlockField::Stored(TitleField::Owner) => labels.owner,
+        BlockField::Stored(TitleField::Project) => labels.project,
+        BlockField::Stored(TitleField::Equipment) => labels.equipment,
+        BlockField::Stored(TitleField::Title) => labels.title,
+        BlockField::Stored(TitleField::Number) => labels.number,
+        BlockField::Stored(TitleField::Revision) => labels.revision,
+        BlockField::Stored(TitleField::Date) => labels.date,
+        BlockField::Stored(TitleField::Prepared) => labels.prepared,
+        BlockField::Stored(TitleField::Checked) => labels.checked,
+        BlockField::Stored(TitleField::Approved) => labels.approved,
+        BlockField::Stored(TitleField::Scale) => labels.scale,
+        BlockField::Stored(TitleField::Norms) => labels.norms,
+        BlockField::Sheet => labels.sheet,
     }
 }
 
@@ -90,6 +92,10 @@ fn value(block: &TitleBlock, field: BlockField) -> &str {
 
 /// One cell: a small label over the value, both clipped to the cell so a long document
 /// number cannot run into its neighbour.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the cell is placed by its rectangle and prints its field, value and labels"
+)]
 fn draw_field(
     surface: &mut dyn Surface,
     left: f32,
@@ -98,6 +104,7 @@ fn draw_field(
     height: f32,
     field: BlockField,
     value: &str,
+    labels: &Labels,
 ) {
     let pad = 1.6;
     let top_pad = 0.6;
@@ -108,7 +115,7 @@ fn draw_field(
     let label_baseline = top + top_pad + LABEL;
     surface.text(
         Pt::new(left + pad, label_baseline),
-        label(field),
+        label(field, labels),
         LABEL,
         MUTED,
         Anchor::Start,

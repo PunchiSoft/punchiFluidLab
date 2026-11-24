@@ -224,7 +224,7 @@ fn export_svg(session: *mut PfSession, name: &str) -> Option<String> {
 
 /// The one tube row of `size` in an SVG page, if the parts list printed it.
 fn tube_row(svg: &str, size: &str) -> Option<String> {
-    let marker = format!("Tubo {size} · ");
+    let marker = format!("Hose {size} · ");
     let start = svg.find(&marker)?;
     let tail = &svg[start..];
     let end = tail.find('<').unwrap_or(tail.len());
@@ -675,6 +675,7 @@ fn the_seeded_example_stays_clear_of_the_title_block_on_a4() {
         },
         title_block: Some(punchi_fluid_export::TitleBlock::default()),
         parts: None,
+        labels: punchi_fluid_export::Labels::english(),
     };
     let block = page.title_rect();
     assert!(!block.is_empty(), "A4 has a title block");
@@ -3536,7 +3537,7 @@ fn an_export_carries_the_caller_date_and_fits_a_large_circuit() {
     );
     assert!(pdf_shows(&pdf, "Circuito 1"), "the circuit names the page");
     assert!(
-        pdf_shows(&pdf, "lista de piezas"),
+        pdf_shows(&pdf, "parts list"),
         "the sheet carries its parts list"
     );
 
@@ -4601,13 +4602,13 @@ fn an_electrical_connection_has_no_tube_and_no_tube_row() {
     let exported = export_svg(session, "control.svg");
     assert!(exported.is_some(), "the SVG page is written");
     let svg = exported.unwrap_or_default();
-    assert!(svg.contains("lista de piezas"), "the list is printed");
+    assert!(svg.contains("parts list"), "the list is printed");
     assert!(
-        !svg.contains("Tubo"),
+        !svg.contains("Hose"),
         "an electrical wire is not tubing and must not print a tube row"
     );
     assert!(
-        !svg.contains("sin especificar"),
+        !svg.contains("unspecified"),
         "the wire must not become an unspecified tube either"
     );
 
@@ -4643,16 +4644,16 @@ fn the_parts_list_has_a_tube_row_with_the_drawn_length() {
     let svg = exported.unwrap_or_default();
     let row = tube_row(&svg, "10 mm").expect("the 10 mm pipe has a row");
     assert!(
-        row.contains("trabajo"),
+        row.contains("working"),
         "the row names the line class: {row}"
     );
     assert!(row.ends_with(" m"), "the row carries a length: {row}");
     assert!(
-        !row.contains("< 0,1 m"),
+        !row.contains("< 0.1 m"),
         "a route across the sheet is longer than a decimetre: {row}"
     );
     assert!(
-        svg.contains("recorrido dibujado"),
+        svg.contains("drawn route"),
         "the page says the length is the drawn route"
     );
 
@@ -4753,7 +4754,12 @@ fn an_export_can_be_a_vector_drawing() {
         svg.contains("viewBox=\"0 0 210.0 297.0\""),
         "A4 in millimetres"
     );
-    for text in ["2026-11-12", "Circuito 1", "lista de piezas", "Cilindro"] {
+    for text in [
+        "2026-11-12",
+        "Circuito 1",
+        "parts list",
+        "Single-acting cylinder",
+    ] {
         assert!(svg.contains(text), "the sheet is missing {text}");
     }
     // SAFETY: the session is still alive.
@@ -4793,7 +4799,7 @@ fn a_custom_print_paper_reaches_the_page() {
         svg.contains("viewBox=\"0 0 100.0 80.0\""),
         "the custom paper reached the page"
     );
-    assert!(!svg.contains("lista de piezas"), "the list can be left off");
+    assert!(!svg.contains("parts list"), "the list can be left off");
 
     // A page whose margins leave no room is refused before anything is written.
     let impossible = PfExportOptions {

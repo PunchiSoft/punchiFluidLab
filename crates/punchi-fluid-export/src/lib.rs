@@ -9,6 +9,7 @@
 //! the only things this crate adds.
 
 pub mod block_layout;
+pub mod labels;
 pub mod page;
 pub mod parts;
 pub mod pdf;
@@ -25,6 +26,7 @@ use punchi_fluid_draw::{Ink, Pt, Rect, Surface};
 use punchi_fluid_solver::network::Network;
 use thiserror::Error;
 
+pub use labels::Labels;
 pub use page::{Page, TitleBlock};
 pub use parts::{PartRow, PartsList};
 pub use pdf::{PdfSurface, assemble};
