@@ -12,6 +12,7 @@ use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Placement};
 use punchi_fluid_draw::Pt;
 use punchi_fluid_file::sheet::Sheet;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 
 use super::{Dialog, Mode, Outcome};
@@ -69,7 +70,7 @@ fn the_save_dialog_refuses_an_empty_name_and_appends_the_extension() {
         dialog
             .error
             .as_deref()
-            .is_some_and(|error| error.to_lowercase().contains("nombre")),
+            .is_some_and(|error| error.to_lowercase().contains("name")),
         "the dialog says a name is needed: {:?}",
         dialog.error
     );
@@ -97,7 +98,7 @@ fn the_save_dialog_refuses_an_empty_name_and_appends_the_extension() {
         dialog
             .error
             .as_deref()
-            .is_some_and(|error| error.contains("carpeta")),
+            .is_some_and(|error| error.contains("folder")),
         "the dialog explains the refusal: {:?}",
         dialog.error
     );
@@ -107,7 +108,7 @@ fn the_save_dialog_refuses_an_empty_name_and_appends_the_extension() {
     assert!(
         open.error
             .as_deref()
-            .is_some_and(|error| error.contains("documento")),
+            .is_some_and(|error| error.contains("document")),
         "the open dialog asks for a document: {:?}",
         open.error
     );
@@ -159,7 +160,7 @@ fn a_save_asks_once_before_replacing_an_existing_document() {
         dialog
             .error
             .as_deref()
-            .is_some_and(|error| error.contains("reemplaz")),
+            .is_some_and(|error| error.contains("replace")),
         "the dialog says the next click replaces it: {:?}",
         dialog.error
     );
@@ -223,7 +224,7 @@ fn an_open_failure_keeps_the_dialog_open_with_the_reason() {
             .dialog
             .as_ref()
             .and_then(|dialog| dialog.error.as_deref())
-            .is_some_and(|error| error.contains("no se pudo abrir")),
+            .is_some_and(|error| error.contains("Could not open")),
         "the dialog shows the error instead of crashing"
     );
     assert!(
@@ -233,6 +234,55 @@ fn an_open_failure_keeps_the_dialog_open_with_the_reason() {
             .is_some_and(|path| path.ends_with("base.pfluid")),
         "the document did not change"
     );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_file_dialog_follows_the_language() {
+    let dir = scratch("language");
+    let mut window = window_with(Some(dir.join("base.pfluid")), Recents::at(None));
+    window.open_dialog(Mode::SaveAs);
+    {
+        let harness = harness(&mut window);
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Button, "Save")
+                .is_some(),
+            "the English confirmation is offered"
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Button, "Cancel")
+                .is_some(),
+            "the English cancel is offered"
+        );
+        assert!(
+            harness.query_by_label_contains("Folder:").is_some(),
+            "the English folder line is offered"
+        );
+    }
+    window.dialog = None;
+    window.language = Language::Spanish;
+    window.open_dialog(Mode::SaveAs);
+    {
+        let harness = harness(&mut window);
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Button, "Guardar")
+                .is_some(),
+            "the Spanish confirmation is offered"
+        );
+        assert!(
+            harness
+                .query_by_role_and_label(egui::accesskit::Role::Button, "Cancelar")
+                .is_some(),
+            "the Spanish cancel is offered"
+        );
+        assert!(
+            harness.query_by_label_contains("Carpeta:").is_some(),
+            "the Spanish folder line is offered"
+        );
+    }
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -262,7 +312,7 @@ fn the_open_dialog_lists_its_folder_and_opens_the_chosen_document() {
         harness.get_by_label_contains("circuito.pfluid").click();
         harness.run();
         harness
-            .get_by_role_and_label(egui::accesskit::Role::Button, "Abrir")
+            .get_by_role_and_label(egui::accesskit::Role::Button, "Open")
             .click();
         harness.run();
     }
@@ -357,7 +407,7 @@ fn enter_on_the_save_button_asks_before_replacing_and_a_second_enter_replaces() 
         harness.run();
         // `Enter` on the focused button is the button's answer: one press, one question.
         harness
-            .get_by_role_and_label(egui::accesskit::Role::Button, "Guardar")
+            .get_by_role_and_label(egui::accesskit::Role::Button, "Save")
             .focus();
         harness.run();
         harness.key_press(egui::Key::Enter);
@@ -372,7 +422,7 @@ fn enter_on_the_save_button_asks_before_replacing_and_a_second_enter_replaces() 
             .dialog
             .as_ref()
             .and_then(|dialog| dialog.error.as_deref())
-            .is_some_and(|error| error.contains("reemplaz")),
+            .is_some_and(|error| error.contains("replace")),
         "the dialog says the next Enter replaces it"
     );
     {
@@ -426,7 +476,7 @@ fn the_export_dialog_names_a_format_and_lists_the_files_it_can_replace() {
         dialog
             .error
             .as_deref()
-            .is_some_and(|error| error.contains("nombre")),
+            .is_some_and(|error| error.contains("name")),
         "the dialog asks for a name: {:?}",
         dialog.error
     );
@@ -473,7 +523,7 @@ fn the_export_dialog_names_a_format_and_lists_the_files_it_can_replace() {
         dialog
             .error
             .as_deref()
-            .is_some_and(|error| error.contains("reemplaz")),
+            .is_some_and(|error| error.contains("replace")),
         "the dialog says the next click replaces it: {:?}",
         dialog.error
     );
@@ -550,7 +600,7 @@ fn an_export_from_the_dialog_prints_without_saving_the_document() {
     );
     assert_eq!(
         window.notice.as_deref(),
-        Some("exportado circuito.pdf"),
+        Some("exported circuito.pdf"),
         "the status bar names the export"
     );
     assert!(window.is_modified(), "an export is not a save");

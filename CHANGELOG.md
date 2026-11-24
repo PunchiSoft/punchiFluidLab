@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Los diálogos eligen idioma — 2026-11-24
+
+- **Abrir, Guardar como y Exportar**: título, botones, carpeta, campo de nombre, carpeta
+  superior y todos los avisos de error (nombre vacío, demasiado largo, con carpeta, formato de
+  exportación, reemplazo, carpeta ilegible, apertura y guardado fallidos) leen el catálogo.
+- **Renombrar y cerrar circuito**: título, pregunta, explicación y botones.
+- **Avisos de archivo**: abierto, guardado, exportado, documento nuevo, quitado de recientes y
+  los avisos del circuito abren en el idioma elegido.
+- **Pruebas**: `the_file_dialog_follows_the_language` y
+  `the_circuit_dialog_follows_the_language`; la suite de la ventana pasa a **307**.
+- **Pendiente**: página, cajetín, opciones de exportación, configuración, Inicio, estado,
+  chequeo, exportador y CLI.
+
 ### El inspector elige idioma — 2026-11-24
 
 - **El dock de propiedades**: título, designación, clase de línea, diámetro exterior, puertos,

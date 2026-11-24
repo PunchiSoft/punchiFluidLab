@@ -261,7 +261,7 @@ fn the_window_saves_the_document_it_was_given() {
         window
             .notice
             .as_deref()
-            .is_some_and(|notice| notice.starts_with("guardado")),
+            .is_some_and(|notice| notice.starts_with("saved")),
         "the status bar says the save happened"
     );
     assert_eq!(
@@ -294,7 +294,7 @@ fn nuevo_clears_the_path_and_starts_an_empty_document() {
         "the new document is empty"
     );
     assert!(!window.start_open, "Nuevo leaves the sheet in view");
-    assert_eq!(window.notice.as_deref(), Some("documento nuevo"));
+    assert_eq!(window.notice.as_deref(), Some("new document"));
 }
 
 #[test]
@@ -323,7 +323,7 @@ fn ctrl_n_starts_a_new_document_and_ctrl_o_opens_the_file_dialog() {
         window.path.is_none(),
         "Ctrl+N starts a new document with no path"
     );
-    assert_eq!(window.notice.as_deref(), Some("documento nuevo"));
+    assert_eq!(window.notice.as_deref(), Some("new document"));
     let _ = context.run(shortcut(egui::Key::O), |context| {
         window.sync_commands(context);
     });

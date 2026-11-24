@@ -264,7 +264,7 @@ fn the_inicio_commands_create_a_project_and_open_the_file_dialog() {
         window
             .notice
             .as_deref()
-            .is_some_and(|notice| notice.contains("nuevo")),
+            .is_some_and(|notice| notice.contains("new document")),
         "the status bar noticed the new document: {:?}",
         window.notice
     );

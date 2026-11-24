@@ -24,6 +24,7 @@ use eframe::egui;
 use punchi_fluid_doc::Document;
 use punchi_fluid_export::{Page, TitleBlock};
 use punchi_fluid_file::sheet::Sheet;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 
 use crate::Window;
@@ -71,21 +72,21 @@ enum Write {
 }
 
 impl Mode {
-    /// The dialog's title, in the reader's language.
+    /// The dialog's title, as a catalog key in the reader's language.
     fn title(self) -> &'static str {
         match self {
-            Self::Open => "Abrir",
-            Self::SaveAs => "Guardar como",
-            Self::Export => "Exportar",
+            Self::Open => "file.open",
+            Self::SaveAs => "file.save_as",
+            Self::Export => "file.export",
         }
     }
 
     /// The main button's label: the same verb as the title.
     fn confirm_label(self) -> &'static str {
         match self {
-            Self::Open => "Abrir",
-            Self::SaveAs => "Guardar",
-            Self::Export => "Exportar",
+            Self::Open => "file.open",
+            Self::SaveAs => "file.save",
+            Self::Export => "file.export",
         }
     }
 
@@ -142,6 +143,8 @@ pub(crate) struct Dialog {
     focus_name: bool,
     /// Extension an export defaults to when the reader types none.
     export_extension: &'static str,
+    /// The visible language of the dialog's own text; the window sets it when it opens.
+    language: Language,
 }
 
 impl Dialog {
@@ -157,9 +160,15 @@ impl Dialog {
             confirm_overwrite: false,
             focus_name: matches!(mode, Mode::SaveAs | Mode::Export),
             export_extension: "pdf",
+            language: Language::English,
         };
         dialog.read_directory();
         dialog
+    }
+
+    /// Sets the language the dialog's own text resolves with.
+    pub(crate) fn set_language(&mut self, language: Language) {
+        self.language = language;
     }
 
     /// Opens the export dialog with the extension the export options chose.
@@ -199,16 +208,17 @@ impl Dialog {
         let read = match std::fs::read_dir(&self.directory) {
             Ok(read) => read,
             Err(cause) => {
-                self.listing_error = Some(format!("no se pudo leer la carpeta: {cause}"));
+                self.listing_error = Some(
+                    self.language
+                        .format("file.listing_failed", &[("cause", &cause.to_string())]),
+                );
                 self.entries = entries;
                 return;
             }
         };
         for item in read {
             if entries.len() >= MAX_ENTRIES {
-                self.listing_error = Some(String::from(
-                    "la carpeta tiene más entradas de las que esta ventana lista",
-                ));
+                self.listing_error = Some(String::from(self.language.text("file.listing_full")));
                 break;
             }
             let Ok(item) = item else {
@@ -245,8 +255,8 @@ impl Dialog {
         let name = self.name.trim().to_owned();
         if name.is_empty() {
             self.error = Some(String::from(match self.mode {
-                Mode::Open => "Elige un documento de la lista.",
-                Mode::SaveAs | Mode::Export => "Escribe un nombre de archivo.",
+                Mode::Open => self.language.text("file.hint_open"),
+                Mode::SaveAs | Mode::Export => self.language.text("file.hint_write"),
             }));
             return None;
         }
@@ -256,33 +266,34 @@ impl Dialog {
             return Some(Outcome::Open(self.directory.join(name)));
         };
         if name.len() > MAX_NAME {
-            self.error = Some(String::from("El nombre es demasiado largo."));
+            self.error = Some(String::from(self.language.text("file.name_too_long")));
             return None;
         }
         if name.contains(['/', '\\']) {
-            self.error = Some(String::from("El nombre no puede llevar una carpeta."));
+            self.error = Some(String::from(self.language.text("file.name_has_folder")));
             return None;
         }
         let file_name = match write {
             Write::Document => document_name(name),
-            Write::Export => match export_name(name, self.export_extension) {
-                Ok(file_name) => file_name,
-                Err(message) => {
-                    self.error = Some(message);
+            Write::Export => {
+                let Ok(file_name) = export_name(name, self.export_extension) else {
+                    self.error = Some(String::from(self.language.text("file.export_format")));
                     return None;
-                }
-            },
+                };
+                file_name
+            }
         };
         let target = self.directory.join(&file_name);
         if target.exists() && !self.confirm_overwrite {
             self.confirm_overwrite = true;
             let verb = match write {
-                Write::Document => "Guardar",
-                Write::Export => "Exportar",
+                Write::Document => self.language.text("file.save"),
+                Write::Export => self.language.text("file.export"),
             };
-            self.error = Some(format!(
-                "«{file_name}» ya existe: pulsa {verb} otra vez para reemplazarlo."
-            ));
+            self.error = Some(
+                self.language
+                    .format("file.overwrite", &[("name", &file_name), ("verb", verb)]),
+            );
             return None;
         }
         self.confirm_overwrite = false;
@@ -309,7 +320,7 @@ impl Dialog {
         // while the reader clicks it, and a fixed size keeps every frame the same layout.
         let size = egui::vec2(tokens.unit * 30.0, tokens.unit * 26.0);
         let position = context.screen_rect().center() - size * 0.5;
-        egui::Window::new(self.mode.title())
+        egui::Window::new(self.language.text(self.mode.title()))
             .id(egui::Id::new("files.dialog"))
             .order(egui::Order::Foreground)
             .fixed_pos(position)
@@ -338,9 +349,12 @@ impl Dialog {
     ) -> bool {
         let mut button_acted = false;
         ui.label(
-            egui::RichText::new(format!("Carpeta: {}", self.directory.display()))
-                .size(tokens.text_body)
-                .color(tokens.ink_dim),
+            egui::RichText::new(self.language.format(
+                "file.folder",
+                &[("path", &self.directory.display().to_string())],
+            ))
+            .size(tokens.text_body)
+            .color(tokens.ink_dim),
         );
         if let Some(error) = self.listing_error.as_deref() {
             ui.label(
@@ -367,7 +381,7 @@ impl Dialog {
                         egui::WidgetInfo::labeled(
                             egui::WidgetType::Button,
                             true,
-                            "Carpeta superior",
+                            self.language.text("file.parent_folder"),
                         )
                     });
                     if row.clicked() {
@@ -414,11 +428,14 @@ impl Dialog {
             );
         }
         ui.horizontal(|ui| {
-            if ui.button(self.mode.confirm_label()).clicked() {
+            if ui
+                .button(self.language.text(self.mode.confirm_label()))
+                .clicked()
+            {
                 *outcome = self.confirm();
                 button_acted = true;
             }
-            if ui.button("Cancelar").clicked() {
+            if ui.button(self.language.text("file.cancel")).clicked() {
                 *outcome = Some(Outcome::Cancelled);
                 button_acted = true;
             }
@@ -435,7 +452,7 @@ impl Dialog {
         };
         ui.horizontal(|ui| {
             let label = ui.label(
-                egui::RichText::new("Nombre")
+                egui::RichText::new(self.language.text("file.name"))
                     .size(tokens.text_body)
                     .color(tokens.ink_dim),
             );
@@ -507,13 +524,11 @@ fn document_name(name: String) -> String {
 /// The name an export writes: `.pdf` when the reader typed no extension, else the typed
 /// name, whose extension is kept as typed. A name that asks for another format is refused
 /// with the reason, because a reader who typed `.docx` wanted a file this build cannot draw.
-fn export_name(name: String, extension: &str) -> Result<String, String> {
+fn export_name(name: String, extension: &str) -> Result<String, ()> {
     match Path::new(&name).extension().and_then(OsStr::to_str) {
         None => Ok(format!("{name}.{extension}")),
         Some(extension) if is_export_extension(extension) => Ok(name),
-        Some(_) => Err(String::from(
-            "Un archivo de exportación tiene que ser pdf, png o svg.",
-        )),
+        Some(_) => Err(()),
     }
 }
 
@@ -592,9 +607,11 @@ impl Window {
 
     /// Draws the dialog while it is open and runs what it asked for.
     pub(crate) fn show_files(&mut self, context: &egui::Context) {
+        let language = self.language;
         let Some(dialog) = self.dialog.as_mut() else {
             return;
         };
+        dialog.set_language(language);
         let outcome = dialog.show(context, &self.theme.tokens);
         let Some(outcome) = outcome else {
             return;
@@ -616,7 +633,10 @@ impl Window {
                 Ok(()) => self.dialog = None,
                 Err(cause) => {
                     if let Some(dialog) = self.dialog.as_mut() {
-                        dialog.fail(format!("no se pudo abrir: {cause}"));
+                        dialog.fail(
+                            self.language
+                                .format("file.open_failed", &[("cause", &cause)]),
+                        );
                     }
                 }
             },
@@ -629,14 +649,20 @@ impl Window {
                 }
                 Err(cause) => {
                     if let Some(dialog) = self.dialog.as_mut() {
-                        dialog.fail(format!("no se pudo guardar: {cause}"));
+                        dialog.fail(
+                            self.language
+                                .format("file.save_failed", &[("cause", &cause)]),
+                        );
                     }
                 }
             },
             Outcome::Export(path) => match self.export_to(&path) {
                 Ok(()) => {
                     self.dialog = None;
-                    self.notice = Some(format!("exportado {}", display_name(&path)));
+                    self.notice = Some(
+                        self.language
+                            .format("file.exported", &[("name", &display_name(&path))]),
+                    );
                 }
                 Err(cause) => {
                     if let Some(dialog) = self.dialog.as_mut() {
@@ -659,7 +685,10 @@ impl Window {
         let document = punchi_fluid_session::load(&sheet)?;
         self.replace_document(document, Some(path.to_path_buf()));
         self.recents.remember(path);
-        self.notice = Some(format!("abierto {}", display_name(path)));
+        self.notice = Some(
+            self.language
+                .format("file.opened", &[("name", &display_name(path))]),
+        );
         self.mark_saved();
         Ok(())
     }
@@ -667,14 +696,14 @@ impl Window {
     /// Drops one document from the start page's list. The file is not touched.
     pub(crate) fn forget_recent(&mut self, path: &str) {
         if self.recents.forget(path) {
-            self.notice = Some(String::from("quitado de recientes"));
+            self.notice = Some(self.language.text("file.forgotten").to_owned());
         }
     }
 
     /// `Nuevo`: an empty document with no path, on the sheet instead of Inicio.
     pub(crate) fn new_document(&mut self) {
         self.replace_document(Document::new(), None);
-        self.notice = Some(String::from("documento nuevo"));
+        self.notice = Some(self.language.text("file.new_document").to_owned());
         self.mark_saved();
     }
 
@@ -685,7 +714,10 @@ impl Window {
             return;
         };
         if let Err(cause) = self.save_to(&path) {
-            self.notice = Some(format!("no se pudo guardar: {cause}"));
+            self.notice = Some(
+                self.language
+                    .format("file.save_failed", &[("cause", &cause)]),
+            );
         }
     }
 
@@ -700,7 +732,10 @@ impl Window {
     pub(crate) fn save_to(&mut self, path: &Path) -> Result<(), String> {
         punchi_fluid_session::save(&self.document, path)?;
         self.recents.remember(path);
-        self.notice = Some(format!("guardado {}", display_name(path)));
+        self.notice = Some(
+            self.language
+                .format("file.saved", &[("name", &display_name(path))]),
+        );
         self.mark_saved();
         Ok(())
     }

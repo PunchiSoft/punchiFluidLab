@@ -9,6 +9,7 @@
 use crate::Window;
 use crate::theme::Tokens;
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 /// The dialog waiting for an answer, if any.
 pub(crate) enum CircuitDialog {
@@ -45,7 +46,7 @@ impl Window {
             return;
         };
         if self.document.circuits().len() <= 1 {
-            self.notice = Some(String::from("el último circuito no se puede cerrar"));
+            self.notice = Some(self.language.text("circuit.last_circuit").to_owned());
             return;
         }
         self.circuit_dialog = Some(CircuitDialog::Close { title });
@@ -64,16 +65,16 @@ impl Window {
             CircuitDialog::Rename { title } => {
                 let title = title.trim();
                 if title.is_empty() {
-                    self.notice = Some(String::from("el nombre no puede estar vacío"));
+                    self.notice = Some(self.language.text("circuit.empty_name").to_owned());
                     return;
                 }
                 if self.document.rename_circuit(id, title) {
-                    self.notice = Some(String::from("circuito renombrado"));
+                    self.notice = Some(self.language.text("circuit.renamed").to_owned());
                 }
             }
             CircuitDialog::Close { .. } => {
                 if !self.document.remove_circuit(id) {
-                    self.notice = Some(String::from("el último circuito no se puede cerrar"));
+                    self.notice = Some(self.language.text("circuit.last_circuit").to_owned());
                     return;
                 }
                 let (page, block) = crate::files::page_and_block(&self.document);
@@ -83,7 +84,7 @@ impl Window {
                 self.selected_pipe = None;
                 self.model = None;
                 self.model_revision = 0;
-                self.notice = Some(String::from("circuito cerrado"));
+                self.notice = Some(self.language.text("circuit.closed").to_owned());
             }
         }
     }
@@ -98,7 +99,8 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        let apply = circuit_dialog_window(context, &tokens, dialog);
+        let language = self.language;
+        let apply = circuit_dialog_window(context, &tokens, dialog, language);
         if let Some(apply) = apply {
             self.answer_circuit_dialog(apply);
         }
@@ -110,6 +112,7 @@ fn circuit_dialog_window(
     context: &egui::Context,
     tokens: &Tokens,
     dialog: &mut CircuitDialog,
+    language: Language,
 ) -> Option<bool> {
     let mut answer = None;
     let screen = context.screen_rect();
@@ -120,9 +123,10 @@ fn circuit_dialog_window(
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
     let (title, apply_label) = match dialog {
-        CircuitDialog::Rename { .. } => ("Renombrar circuito", "Renombrar"),
-        CircuitDialog::Close { .. } => ("Cerrar circuito", "Cerrar circuito"),
+        CircuitDialog::Rename { .. } => ("circuit.rename_title", "circuit.rename"),
+        CircuitDialog::Close { .. } => ("circuit.close_title", "circuit.close"),
     };
+    let (title, apply_label) = (language.text(title), language.text(apply_label));
     egui::Window::new(title)
         .id(egui::Id::new("window.circuit-dialog"))
         .order(egui::Order::Foreground)
@@ -134,7 +138,7 @@ fn circuit_dialog_window(
             match dialog {
                 CircuitDialog::Rename { title } => {
                     ui.label(
-                        egui::RichText::new("Nombre del circuito")
+                        egui::RichText::new(language.text("circuit.name"))
                             .size(tokens.text_label)
                             .color(tokens.ink),
                     );
@@ -142,16 +146,16 @@ fn circuit_dialog_window(
                 }
                 CircuitDialog::Close { title } => {
                     ui.label(
-                        egui::RichText::new(format!("¿Cerrar «{title}»?"))
-                            .size(tokens.text_label)
-                            .color(tokens.ink),
+                        egui::RichText::new(
+                            language.format("circuit.close_question", &[("title", title)]),
+                        )
+                        .size(tokens.text_label)
+                        .color(tokens.ink),
                     );
                     ui.label(
-                        egui::RichText::new(
-                            "Sus componentes y conductos se recuperan con Deshacer.",
-                        )
-                        .size(tokens.text_body)
-                        .color(tokens.ink_muted),
+                        egui::RichText::new(language.text("circuit.close_body"))
+                            .size(tokens.text_body)
+                            .color(tokens.ink_muted),
                     );
                 }
             }
@@ -160,7 +164,7 @@ fn circuit_dialog_window(
                 if ui.button(apply_label).clicked() {
                     answer = Some(true);
                 }
-                if ui.button("Cancelar").clicked() {
+                if ui.button(language.text("circuit.cancel")).clicked() {
                     answer = Some(false);
                 }
             });
@@ -171,6 +175,7 @@ fn circuit_dialog_window(
 #[cfg(test)]
 mod tests {
     use eframe::egui;
+    use egui_kittest::kittest::Queryable;
     use punchi_fluid_doc::Document;
 
     use crate::Window;
@@ -242,6 +247,49 @@ mod tests {
     }
 
     #[test]
+    fn the_circuit_dialog_follows_the_language() {
+        let mut window = window_with_two_circuits();
+        window.open_circuit_rename();
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Rename")
+                    .is_some(),
+                "the English confirmation is offered"
+            );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancel")
+                    .is_some(),
+                "the English cancel is offered"
+            );
+        }
+        window.circuit_dialog = None;
+        window.language = punchi_fluid_i18n::Language::Spanish;
+        window.open_circuit_close();
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cerrar circuito")
+                    .is_some(),
+                "the Spanish confirmation is offered"
+            );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancelar")
+                    .is_some(),
+                "the Spanish cancel is offered"
+            );
+            assert!(
+                harness.query_all_by_label_contains("¿Cerrar").count() >= 1,
+                "the Spanish question is offered"
+            );
+        }
+    }
+
+    #[test]
     fn the_last_circuit_cannot_be_closed() {
         let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
         window.open_circuit_close();
@@ -250,7 +298,7 @@ mod tests {
             window
                 .notice
                 .as_deref()
-                .is_some_and(|notice| notice.contains("último"))
+                .is_some_and(|notice| notice.contains("last circuit"))
         );
         window.answer_circuit_dialog(true);
         assert_eq!(window.document.circuits().len(), 1);
