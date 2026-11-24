@@ -64,11 +64,7 @@ impl Window {
         {
             let press = response.ctx.input(|input| input.pointer.press_origin());
             if let Some((from, start)) = press.and_then(|screen| self.port_at(to_mm(screen))) {
-                if let Some(previous) = self.pressed_valve.take() {
-                    if let Some(model) = self.model.as_mut() {
-                        let _ = model.release_valve(previous);
-                    }
-                }
+                self.release_pressed_valve();
                 self.connection_drag = Some(ConnectionDrag {
                     from,
                     start,

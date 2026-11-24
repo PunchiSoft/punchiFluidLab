@@ -7,6 +7,22 @@
 use crate::Window;
 
 impl Window {
+    /// Leaves simulation input inactive and releases a valve held by the pointer.
+    pub(crate) fn pause(&mut self) {
+        self.running = false;
+        self.release_pressed_valve();
+    }
+
+    /// Releases the current momentary valve, if the pointer was holding one.
+    pub(crate) fn release_pressed_valve(&mut self) {
+        let Some(index) = self.pressed_valve.take() else {
+            return;
+        };
+        if let Some(model) = self.model.as_mut() {
+            let _ = model.release_valve(index);
+        }
+    }
+
     /// Position of the model's cylinder, in metres, or `None` when no model is loaded. The
     /// acceptance test reads the piston through this accessor instead of the solver's own
     /// types, so the window stays the only thing it has to know.
@@ -19,7 +35,7 @@ impl Window {
     /// Runs until the piston reaches an end or the valve position changes, with a cap:
     /// a circuit that never changes stops after sixty simulated seconds.
     pub(crate) fn until_change(&mut self) {
-        self.running = false;
+        self.pause();
         let Some(model) = self.model.as_mut() else {
             return;
         };

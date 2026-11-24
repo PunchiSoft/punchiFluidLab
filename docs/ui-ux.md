@@ -701,13 +701,13 @@ schematic simulator lives by, and the one the reference tool uses:
 
 | Mode | A click on the valve | The model |
 |---|---|---|
-| **Editar** | opens the properties of the component | frozen; the transport is unavailable and says why |
-| **Simular** | actuates the valve, and holds it while the button is down | runs when the transport runs |
+| **Editing (stopped or paused)** | selects and edits the component; a valve never actuates | frozen; a valve held when Play pauses is released |
+| **Play running** | a primary-button hold actuates the valve; release returns a spring valve | advances |
 
-- A spring-return valve is **held**: press actuates it, release lets the spring return the
-  spool. A valve without a spring **latches** on press. The front end asks the model which
-  it is instead of guessing, because guessing makes a lever valve stay actuated after a
-  click.
+- A valve accepts actuation input only while Play is running. A spring-return valve is
+  **held**: press actuates it, release or pause lets the spring return the spool. A valve
+  without a spring **latches** on press. The front end asks the model which it is instead
+  of guessing, because guessing makes a lever valve stay actuated after a click.
 - The pointer changes over a valve and a dashed ring marks the hit area, in the accent
   colour. Every valve in the circuit answers, not only the first one: the click names the
   placement, and the model actuates that valve. An affordance nobody can see is not an
@@ -780,10 +780,11 @@ the ribbon button and a direct shortcut are not there yet, so the menu is its ke
   centred. The status bar prints the magnification and the paper's name and size. None of
   it is a document change, so none of it enters the undo history.
 - Two modes, visibly different:
-  - **Edición** (default): select, move, connect, delete. Grid snapping on.
-  - **Simulación**: the model runs; clicking a valve actuates it, dragging a
-    throttle changes it. Components cannot be moved or deleted, so a stray click
-    during a demonstration never destroys work. `Esc` returns to edit mode.
+  - **Edición** (default, including a stopped or paused model): select, move, connect,
+    delete. Grid snapping on. A valve click only selects it, and a drag moves it.
+  - **Simulación**: the model runs; pressing a valve actuates it while held. Pausing
+    releases a held spring valve. Components cannot be moved or deleted during a run.
+    `Esc` stops the simulation and returns to editing.
 - **Selection is the symbol's own lines in the accent colour, not a box around it**: the
   reference marks the component, and an extra rectangle is a second drawing that says
   nothing the symbol does not. The inspector names what is selected, so the state is never
@@ -1021,7 +1022,7 @@ in the adapter.
 ### Animation on the sheet
 
 Being in simulation mode *is* the animation; a stopped sheet is still, and a paused sheet
-keeps the frame it was on. The reference's signature is the circuit in motion, and the sheet
+keeps its model state after any held spring valve is released. The reference's signature is the circuit in motion, and the sheet
 replicates it from the model, never from a timer that guesses. The chrome's transitions are
 the [Motion](#motion) contract; this section is only the sheet's.
 

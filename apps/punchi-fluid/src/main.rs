@@ -317,12 +317,14 @@ impl Window {
 
     /// Advances the model by `dt` seconds, stopping with the reason when the step fails.
     fn advance(&mut self, dt: f64) {
-        let Some(model) = self.model.as_mut() else {
-            self.running = false;
+        let result = if let Some(model) = self.model.as_mut() {
+            model.advance(dt).err()
+        } else {
+            self.pause();
             return;
         };
-        if let Err(cause) = model.advance(dt) {
-            self.running = false;
+        if let Some(cause) = result {
+            self.pause();
             self.notice = Some(
                 self.language
                     .format("notice.sim_stopped", &[("cause", &cause)]),
@@ -332,7 +334,7 @@ impl Window {
 
     /// Stops the clock and throws the model away, so the next start builds it at `t = 0`.
     fn stop(&mut self) {
-        self.running = false;
+        self.pause();
         self.model = None;
         self.model_revision = 0;
     }
@@ -639,9 +641,9 @@ impl Window {
             }
             Command::Theme => self.open_preferences(),
             Command::Start => self.start(),
-            Command::Pause => self.running = false,
+            Command::Pause => self.pause(),
             Command::Step => {
-                self.running = false;
+                self.pause();
                 self.advance(0.01);
             }
             Command::UntilChange => self.until_change(),

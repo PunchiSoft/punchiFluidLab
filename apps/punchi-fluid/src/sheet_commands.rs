@@ -160,10 +160,10 @@ impl Window {
         if self.handle_connection_gesture(response, &to_mm) {
             return;
         }
-        // The reference presses a valve while the button is down: the momentary returns, the
-        // maintained stays. A press on a valve is not a drag of the selection. Only the
-        // primary button presses it; the right button belongs to the menu.
-        if response.is_pointer_button_down_on()
+        // Play turns a primary press into valve input; a stopped or paused press stays an
+        // editing gesture, so it can select or drag the valve without changing the model.
+        if self.running
+            && response.is_pointer_button_down_on()
             && response
                 .ctx
                 .input(|input| input.pointer.button_down(egui::PointerButton::Primary))
