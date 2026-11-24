@@ -36,7 +36,7 @@ impl Window {
     pub(crate) fn apply_block_editor(&mut self) {
         let id = self.document.active_circuit();
         if !self.document.set_block(id, self.block_editor.block.clone()) {
-            self.notice = Some(String::from("el cajetín no admite ese cambio"));
+            self.notice = Some(self.language.text("notice.block_refused").to_owned());
             return;
         }
         self.refresh_page();

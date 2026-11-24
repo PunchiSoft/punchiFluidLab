@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 
 use eframe::egui;
 use punchi_fluid_doc::Document;
+use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::safety::SafetyCopy;
 
@@ -205,6 +206,34 @@ impl Lifecycle {
         }
         context.request_repaint_after(AUTOSAVE_INTERVAL);
     }
+}
+
+/// Reads the document named on the command line, if any, and the recent list.
+///
+/// A failed read leaves an empty document and returns the cause, so the window can report it
+/// once it knows the language the reader chose.
+pub(crate) fn load_startup(path: Option<&Path>) -> (Document, Option<String>, Recents) {
+    let mut recents = Recents::load();
+    let mut startup_error = None;
+    let document = match path {
+        Some(path) => match Sheet::read(path)
+            .map_err(|cause| cause.to_string())
+            .and_then(|sheet| punchi_fluid_session::load(&sheet))
+        {
+            Ok(document) => {
+                // A document named on the command line is a document the page offers to
+                // reopen, exactly as if it had been opened from the dialog.
+                recents.remember(path);
+                document
+            }
+            Err(cause) => {
+                startup_error = Some(cause);
+                Document::new()
+            }
+        },
+        None => Document::new(),
+    };
+    (document, startup_error, recents)
 }
 
 impl Window {

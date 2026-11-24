@@ -1076,10 +1076,11 @@ supersedes the retired Qt plan of [ADR 0027](adr/0027-translation-catalogs-are-q
 `punchi-fluid-i18n` reads the embedded `i18n/en.toml` and `i18n/es.toml`, English is the
 source and the visible default, and **Configuración ▸ Apariencia** offers the language without
 a restart. The whole Rust window is on the catalog: the ribbon, the catalog, the inspector, Configuración,
-the check panel and its finding sentences, the start page, the status bar, the lifecycle
-panels, the file, circuit, page-setup, title-block and export-options dialogs, the sheet menu,
-the description card and the language selector. The error causes from the crates, the exporter
-and the catalog summary are the remaining translation debt; the CLI is a fixed English
+the check panel and its finding sentences, the start page, the status bar and its notices, the
+lifecycle panels, the file, circuit, page-setup, title-block and export-options dialogs, the
+sheet menu, the description card and the language selector. The technical error causes from
+the crates stay in English inside the translated frame (a diagnostic, not UI copy); the
+exporter labels and the catalog summary are the remaining debt, and the CLI is a fixed English
 contract. Keys live in the catalogs, the exporter receives its labels
 from the caller, the CLI keeps a fixed English contract, and no sentence is concatenated. Until
 a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/README.md)).

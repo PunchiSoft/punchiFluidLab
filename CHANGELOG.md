@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### Todos los avisos de la ventana eligen idioma — 2026-11-24
+
+- **Avisos**: simulación detenida, válvula cambiada, pistón en un tope, sin cambio en 60 s,
+  documento abierto/fallido, componente añadido o fuera del catálogo, modelo no construido,
+  duplicar/copiar/pegar/deshacer/rehacer/alinear, repartir, nuevo circuito y su límite,
+  conducto actualizado o seleccionado, simulación restablecida, cajetín actualizado,
+  restablecido o rechazado, hoja actualizada o rechazada, y los errores de exportación.
+- **Arranque**: el error de un documento pasado por línea de comandos se compone con el idioma
+  ya cargado, no antes.
+- **Pruebas**: `the_notices_follow_the_language`; la suite de la ventana pasa a **316**.
+- **Decisión declarada**: las causas técnicas de `file`/`session` siguen en inglés dentro del
+  marco traducido; son diagnóstico, no texto de interfaz.
+- **Pendiente de fase 4**: etiquetas del exportador y `summary_es` del catálogo.
+
 ### El chequeo entrega claves y el CLI habla inglés — 2026-11-24
 
 - **`punchi-fluid-check`**: `FindingKind` conserva su nombre estable (`as_str`) y la crate deja

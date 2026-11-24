@@ -20,6 +20,7 @@ use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{Pipe, Placed, route_length_mm};
 
 use crate::Window;
+use punchi_fluid_i18n::Language;
 
 impl Window {
     /// `Exportar`: opens the dialog in export mode, starting where the document or the
@@ -45,9 +46,7 @@ impl Window {
             .extension()
             .and_then(std::ffi::OsStr::to_str)
             .map(str::to_ascii_lowercase)
-            .ok_or_else(|| {
-                String::from("Para exportar, escribe un nombre con extensión pdf, png o svg.")
-            })?;
+            .ok_or_else(|| String::from(self.language.text("notice.export_hint")))?;
         if !crate::files::is_export_extension(&extension) {
             return Err(format!(
                 "«{extension}» no se puede exportar: elige pdf, png o svg."
@@ -99,9 +98,12 @@ impl Window {
         };
         match extension.as_str() {
             "pdf" => {
-                let bytes = punchi_fluid_export::render_pdf_with(&page, block, draw)
-                    .map_err(|cause| format!("no se pudo escribir el PDF: {cause}"))?;
-                write_atomically(path, "pdf", &bytes)
+                let bytes =
+                    punchi_fluid_export::render_pdf_with(&page, block, draw).map_err(|cause| {
+                        self.language
+                            .format("notice.pdf_failed", &[("cause", &cause.to_string())])
+                    })?;
+                write_atomically(path, "pdf", &bytes, self.language)
             }
             "png" => {
                 let bytes = punchi_fluid_export::render_png_with(
@@ -110,13 +112,19 @@ impl Window {
                     f32::from(self.export_options.dpi),
                     draw,
                 )
-                .map_err(|cause| format!("no se pudo escribir el PNG: {cause}"))?;
-                write_atomically(path, "png", &bytes)
+                .map_err(|cause| {
+                    self.language
+                        .format("notice.png_failed", &[("cause", &cause.to_string())])
+                })?;
+                write_atomically(path, "png", &bytes, self.language)
             }
             "svg" => {
-                let text = punchi_fluid_export::render_svg_with(&page, block, draw)
-                    .map_err(|cause| format!("no se pudo escribir el SVG: {cause}"))?;
-                write_atomically(path, "svg", text.as_bytes())
+                let text =
+                    punchi_fluid_export::render_svg_with(&page, block, draw).map_err(|cause| {
+                        self.language
+                            .format("notice.svg_failed", &[("cause", &cause.to_string())])
+                    })?;
+                write_atomically(path, "svg", text.as_bytes(), self.language)
             }
             _ => Err(format!(
                 "«{extension}» no se puede exportar: elige pdf, png o svg."
@@ -171,12 +179,31 @@ fn parts_list(
 
 /// Writes `bytes` to `path` through a sibling `.part` file, so a crash leaves no half file:
 /// the same rule `punchi_fluid_export::write_pdf` follows.
-fn write_atomically(path: &Path, extension: &str, bytes: &[u8]) -> Result<(), String> {
+fn write_atomically(
+    path: &Path,
+    extension: &str,
+    bytes: &[u8],
+    language: Language,
+) -> Result<(), String> {
     let temporary = path.with_extension(format!("{extension}.part"));
-    std::fs::write(&temporary, bytes)
-        .map_err(|cause| format!("no se pudo escribir {}: {cause}", temporary.display()))?;
-    std::fs::rename(&temporary, path)
-        .map_err(|cause| format!("no se pudo reemplazar {}: {cause}", path.display()))
+    std::fs::write(&temporary, bytes).map_err(|cause| {
+        language.format(
+            "notice.write_failed",
+            &[
+                ("path", &temporary.display().to_string()),
+                ("cause", &cause.to_string()),
+            ],
+        )
+    })?;
+    std::fs::rename(&temporary, path).map_err(|cause| {
+        language.format(
+            "notice.replace_failed",
+            &[
+                ("path", &path.display().to_string()),
+                ("cause", &cause.to_string()),
+            ],
+        )
+    })
 }
 
 #[cfg(test)]

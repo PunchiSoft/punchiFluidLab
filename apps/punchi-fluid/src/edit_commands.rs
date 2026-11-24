@@ -15,11 +15,11 @@ impl Window {
     /// **Conducto ▸ clase**: the selected pipe takes the line class, as one undo.
     pub(crate) fn set_pipe_class(&mut self, class: LineClass) {
         let Some(index) = self.selected_pipe else {
-            self.notice = Some(String::from("selecciona un conducto"));
+            self.notice = Some(self.language.text("notice.select_hose").to_owned());
             return;
         };
         if self.document.set_pipe_class(index, class) {
-            self.notice = Some(String::from("conducto actualizado"));
+            self.notice = Some(self.language.text("notice.hose_updated").to_owned());
         }
     }
 
@@ -27,7 +27,7 @@ impl Window {
     /// is not duplicated in the ribbon.
     pub(crate) fn open_pipe_control(&mut self) {
         if self.selected_pipe.is_none() {
-            self.notice = Some(String::from("selecciona un conducto para el diámetro"));
+            self.notice = Some(self.language.text("notice.select_hose_diameter").to_owned());
         }
         if self.layout_mode() == LayoutMode::Compact {
             self.toggle_drawer(Drawer::Inspector);
@@ -39,13 +39,13 @@ impl Window {
     /// **Repartir**: even spacing along the axis, one undo.
     pub(crate) fn distribute(&mut self, axis: Axis) {
         if self.document.space_evenly(&self.selected, axis) {
-            self.notice = Some(String::from("selección repartida"));
+            self.notice = Some(self.language.text("notice.distributed").to_owned());
         }
     }
 
     /// **Restablecer simulación**: the model is thrown away, so the next start is at `t = 0`.
     pub(crate) fn reset_simulation(&mut self) {
         self.stop();
-        self.notice = Some(String::from("simulación restablecida"));
+        self.notice = Some(self.language.text("notice.sim_reset").to_owned());
     }
 }

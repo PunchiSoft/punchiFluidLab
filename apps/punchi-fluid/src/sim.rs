@@ -34,21 +34,24 @@ impl Window {
         let near = |position: f64| position <= 1.0e-4;
         for _ in 0..6000 {
             if let Err(cause) = model.advance(0.01) {
-                self.notice = Some(format!("la simulación se detuvo: {cause}"));
+                self.notice = Some(
+                    self.language
+                        .format("notice.sim_stopped", &[("cause", &cause)]),
+                );
                 return;
             }
             let now = model.network().telemetry();
             if now.valve_position != start.valve_position {
-                self.notice = Some(String::from("la válvula ha cambiado"));
+                self.notice = Some(self.language.text("notice.valve_changed").to_owned());
                 return;
             }
             let reached = (far(now.position) && !far(start.position))
                 || (near(now.position) && !near(start.position));
             if reached {
-                self.notice = Some(String::from("el pistón ha llegado a un tope"));
+                self.notice = Some(self.language.text("notice.piston_end").to_owned());
                 return;
             }
         }
-        self.notice = Some(String::from("sin cambio en 60 s"));
+        self.notice = Some(self.language.text("notice.no_change").to_owned());
     }
 }

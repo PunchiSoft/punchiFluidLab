@@ -20,7 +20,10 @@ impl Window {
         };
         let path = std::path::PathBuf::from(&recent.path);
         if let Err(cause) = self.open_path(&path) {
-            self.notice = Some(format!("no se pudo abrir el documento: {cause}"));
+            self.notice = Some(
+                self.language
+                    .format("notice.open_failed", &[("cause", &cause)]),
+            );
         }
     }
 }
