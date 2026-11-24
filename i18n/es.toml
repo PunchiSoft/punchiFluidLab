@@ -12,6 +12,7 @@ delete = "Eliminar"
 select_one = "Selecciona un solo componente"
 
 [dialog]
+apply = "Aplicar"
 configuration = "Configuración"
 description = "Descripción"
 close = "Cerrar"
@@ -257,3 +258,60 @@ name = "Nombre del circuito"
 close_question = "¿Cerrar «{title}»?"
 close_body = "Sus componentes y conductos se recuperan con Deshacer."
 cancel = "Cancelar"
+
+
+[page]
+title = "Configurar página"
+paper = "Papel"
+custom = "Personalizado"
+orientation = "Orientación"
+portrait = "Vertical"
+landscape = "Apaisado"
+margins = "Márgenes"
+top = "Superior"
+right = "Derecha"
+bottom = "Inferior"
+left = "Izquierda"
+no_room = "los márgenes no dejan espacio al dibujo"
+refused = "la hoja no admite ese cambio"
+updated = "hoja actualizada"
+
+[block]
+title = "Editar datos del cajetín"
+model = "Modelo"
+position = "Posición"
+show = "Mostrar"
+updated = "cajetín actualizado"
+
+[block.field]
+owner = "Propietario"
+project = "Proyecto"
+equipment = "Equipo"
+title = "Título"
+number = "Número"
+revision = "Revisión"
+date = "Fecha"
+prepared = "Preparado por"
+checked = "Revisado por"
+approved = "Aprobado por"
+scale = "Escala"
+norms = "Normas"
+
+[block.content]
+school = "Escolar"
+technical = "Técnico"
+industrial = "Industrial"
+
+[block.placement]
+top_right = "Superior derecha"
+bottom_right = "Inferior derecha"
+bottom_full = "Inferior centrado"
+none = "Sin cajetín"
+
+[export]
+title = "Opciones de exportación"
+format = "Formato"
+resolution = "Resolución (PNG)"
+dpi = "{dpi} ppp"
+parts = "Incluir lista de piezas"
+applied = "opciones de exportación aplicadas"
