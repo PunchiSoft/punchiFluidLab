@@ -74,6 +74,10 @@ pub struct Settings {
     pub theme_night: ThemeId,
     /// The visible language; English is the source and the default.
     pub language: Language,
+    /// Whether the floating view strip is folded to one button in the wide and medium modes.
+    pub strip_folded: bool,
+    /// Whether the sheet draws its title block on screen; the print keeps it either way.
+    pub block_visible: bool,
 }
 
 impl Default for Settings {
@@ -92,6 +96,8 @@ impl Default for Settings {
             theme_day: ThemeId::Cad,
             theme_night: ThemeId::Slate,
             language: Language::English,
+            strip_folded: false,
+            block_visible: true,
         }
     }
 }
@@ -201,6 +207,16 @@ pub fn parse(text: &str) -> Option<Settings> {
                     settings.theme_night = id;
                 }
             }
+            "strip_folded" => {
+                if let Some(folded) = flag(value) {
+                    settings.strip_folded = folded;
+                }
+            }
+            "block_visible" => {
+                if let Some(visible) = flag(value) {
+                    settings.block_visible = visible;
+                }
+            }
             "language" => {
                 if let Some(language) = Language::from_code(value) {
                     settings.language = language;
@@ -224,7 +240,7 @@ pub fn format(settings: &Settings) -> Option<String> {
     );
     let _ = write!(
         text,
-        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\nlanguage={}\n",
+        "catalog.open={}\ncatalog.width={:.3}\ninspector.open={}\ninspector.width={:.3}\nautohide={}\nappearance={}\ntheme_day={}\ntheme_night={}\nlanguage={}\nstrip_folded={}\nblock_visible={}\n",
         number(settings.catalog.open),
         settings.catalog.width,
         number(settings.inspector.open),
@@ -234,6 +250,8 @@ pub fn format(settings: &Settings) -> Option<String> {
         settings.theme_day.id(),
         settings.theme_night.id(),
         settings.language.code(),
+        number(settings.strip_folded),
+        number(settings.block_visible),
     );
     Some(text)
 }
@@ -399,6 +417,8 @@ impl Window {
             theme_day: self.appearance_day,
             theme_night: self.appearance_night,
             language: self.language,
+            strip_folded: self.strip.folded,
+            block_visible: self.show_block,
         }
     }
 

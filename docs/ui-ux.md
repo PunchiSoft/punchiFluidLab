@@ -825,16 +825,15 @@ canvas, never the window, so a zoom above the fit cannot paint over the ribbon o
   instant.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
   budget to say what the zoom readout and **Ajustar a la hoja** already say.
-- **Target, not migrated.** The strip, its panel and the fold are specified here and
-  **target**. Today the Rust window fits the **frame inside the margins** (the fit on `Ctrl+0`
-  and on the middle button's double click), has the ribbon's **Aumentar**, **Disminuir**,
-  **Tamaño original**, **Vista anterior** (one step), **Zoom a una zona**, **Mover** and the
-  view-only **Cajetín** toggle, the wheel and `Ctrl` + wheel zooming around the pointer, the
-  wheel and the middle button panning and the arrows panning; the pan is bounded to the
-  paper, so the margins can be brought into view, and the paper's margins may lie beyond the
-  canvas and are clipped there. The block's **Sin cajetín** preset is a document change,
-  separate from the view toggle. The `--selftest` steps and captures that named the strip
-  belonged to the Qt window and are retired evidence.
+- **Today** the strip exists: it floats over the right edge of the drawing, inside the channel
+  the drawing area reserves for it, so the page is fitted left of the strip and the strip takes
+  no width from the paper. It carries **Mover**, **Ajustar al marco**, **Zoom** with its panel
+  (Disminuir, Aumentar, Zoom a una zona, Vista anterior), the view-only **Cajetín**, the single
+  **Iniciar/Pausa** and the **fold**, sized from `unit` and named for the accessibility layer;
+  it is remembered as view state and the compact mode starts folded. The window also fits the
+  frame on `Ctrl+0` and on the middle button's double click, keeps one step of view history,
+  has the zoom window and the hand mode in the ribbon, and bounds the pan to the paper (the
+  margins may lie beyond the canvas and are clipped there). The grid toggle is still target.
 
 ### 4. Status bar
 

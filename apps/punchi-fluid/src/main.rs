@@ -55,6 +55,7 @@ mod state_file;
 mod surface;
 mod theme;
 mod view;
+mod view_strip;
 mod window_state;
 
 fn main() -> eframe::Result<()> {
@@ -182,6 +183,8 @@ struct Window {
     zoom_window_armed: bool,
     /// The rectangle being dragged for the zoom window, in sheet millimetres.
     zoom_drag: Option<crate::view::ZoomWindow>,
+    /// The floating view strip over the right edge of the drawing area and its fold state.
+    strip: view_strip::ViewStrip,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.

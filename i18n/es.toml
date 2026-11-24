@@ -523,3 +523,13 @@ working = "trabajo"
 exhaust = "escape"
 mechanical = "mecánico"
 electrical = "eléctrico"
+
+[strip]
+pan = "Mover"
+pan_on = "Dejar de mover"
+fit = "Ajustar al marco"
+zoom = "Zoom"
+block_show = "Mostrar el cajetín"
+block_hide = "Ocultar el cajetín"
+fold = "Ocultar la tira de vista"
+unfold = "Mostrar la tira de vista"

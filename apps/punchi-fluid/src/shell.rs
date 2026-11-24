@@ -38,6 +38,7 @@ pub(crate) struct SheetProbe {
     pub frame: egui::Rect,
     pub paper: egui::Rect,
     pub clip: egui::Rect,
+    pub strip: Option<egui::Rect>,
 }
 
 /// Which panel the compact drawer is showing. One at a time: the drawing stays visible
@@ -591,6 +592,29 @@ impl Window {
         scene
     }
 
+    /// The floating view strip over the right edge of the canvas; its commands go through the
+    /// same dispatch as the ribbon's and the keyboard's.
+    fn show_view_strip(&mut self, ui: &egui::Ui, canvas: egui::Rect) {
+        let state = crate::view_strip::StripContext {
+            tokens: &self.theme.tokens,
+            language: self.language,
+            canvas,
+            compact: self.shell.mode == crate::layout::LayoutMode::Compact,
+            hand: self.hand_mode,
+            block_visible: self.show_block,
+            running: self.running,
+            can_start: self.model.is_some(),
+            can_go_back: self.view.can_go_back(),
+        };
+        if let Some(command) = self.strip.show(ui.ctx(), &state) {
+            self.dispatch(command);
+        }
+        #[cfg(test)]
+        if let Some(probe) = &mut self.sheet_probe {
+            probe.strip = self.strip.rect;
+        }
+    }
+
     /// The gesture the sheet is taking this frame: the zoom window, or the editor.
     fn handle_sheet_gestures(
         &mut self,
@@ -674,6 +698,7 @@ impl Window {
                     frame,
                     paper,
                     clip,
+                    strip: self.strip.rect,
                 });
             }
             painter.rect_filled(paper.translate(egui::vec2(0.0, 3.0)), 0.0, tokens.shadow);
@@ -689,6 +714,7 @@ impl Window {
             if !self.zoom_window_armed {
                 self.show_sheet_menu(&sheet);
             }
+            self.show_view_strip(ui, area);
         });
     }
 }

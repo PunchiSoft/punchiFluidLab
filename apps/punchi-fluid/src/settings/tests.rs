@@ -132,6 +132,8 @@ fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Set
         theme_day: crate::theme::ThemeId::Cad,
         theme_night: crate::theme::ThemeId::Slate,
         language: punchi_fluid_i18n::Language::English,
+        strip_folded: false,
+        block_visible: true,
     }
 }
 
@@ -546,4 +548,17 @@ fn remembering_the_panels_is_not_a_document_change() {
     assert_eq!(window.document.can_undo(), undo, "no history entry appears");
     assert_eq!(window.document.can_redo(), redo);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_strip_fold_and_the_block_visibility_round_trip() {
+    let mut expected = settings((true, 240.0), (true, 360.0), false);
+    expected.strip_folded = true;
+    expected.block_visible = false;
+    let text = crate::settings::format(&expected).expect("the settings format");
+    assert_eq!(crate::settings::parse(&text), Some(expected));
+    // A file written before the keys existed reads their defaults, never a broken value.
+    let older = crate::settings::parse("version=1\n").expect("an older file");
+    assert!(!older.strip_folded);
+    assert!(older.block_visible);
 }
