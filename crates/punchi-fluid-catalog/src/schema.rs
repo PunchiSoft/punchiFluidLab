@@ -638,6 +638,9 @@ pub struct ComponentDefinition {
     /// One-line description.
     #[serde(default)]
     pub summary: Option<String>,
+    /// Spanish one-line description, when the automatic translation is not good enough.
+    #[serde(default)]
+    pub summary_es: Option<String>,
     /// Hides this definition, including a built-in one with the same id.
     #[serde(default)]
     pub disabled: bool,

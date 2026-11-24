@@ -12,6 +12,7 @@ delete = "Delete"
 select_one = "Select one component"
 
 [dialog]
+component = "Component"
 apply = "Apply"
 configuration = "Configuration"
 description = "Description"

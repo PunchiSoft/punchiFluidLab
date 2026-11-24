@@ -413,6 +413,7 @@ fn an_ordinary_port_keeps_its_edge() {
         name_es: None,
         category: Category::Accessory,
         summary: None,
+        summary_es: None,
         disabled: false,
         port: vec![Port {
             id: "1".to_owned(),

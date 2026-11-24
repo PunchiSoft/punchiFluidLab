@@ -15,6 +15,7 @@ name = "Single-acting cylinder, 20/100"
 name_es = "Cilindro de simple efecto, 20/100"
 category = "actuator"
 summary = "20 mm bore, 100 mm stroke, return spring."
+summary_es = "Diámetro 20 mm, carrera 100 mm, muelle de retorno."
 kinematics = "linear_actuator"
 
 [spring]

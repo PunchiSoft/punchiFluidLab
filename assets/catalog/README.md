@@ -44,7 +44,8 @@ the ISO 1219 symbol from the TOML file, and the card never replaces it.
 
 - One PNG per catalog id in [`cards/`](cards/), named `<catalog_id>.png`, normalized to
   **800 × 450 px**, 16:9, white background.
-- The text on the card is the definition's own `name` and `summary`; do not write a second
+- The text on the card is the definition's own `name` and `summary`, or `name_es` and
+  `summary_es` when the reader chose Spanish; do not write a second
   description in the image folder.
 - The origin and the licence of every image are recorded in [`cards/README.md`](cards/README.md).
   A file without a row is not merged. No capture of another application, manual or website
@@ -76,6 +77,7 @@ name = "3/2 valve, spring return"   # required, shown in the interface
 name_es = "Válvula 3/2, retorno por muelle"   # optional Spanish name
 category = "valve"                  # supply | valve | actuator | throttle | accessory | sensor
 summary = "One line for the palette"          # optional
+summary_es = "Una línea en español"           # optional; the Spanish card reads it
 disabled = false                    # optional, hides this id from the catalog
 kinematics = "linear_actuator"      # optional: none (default) | linear_actuator
 body = [0.06, 0.28, 0.88, 0.44]     # valves: x, y, width, height of the body
