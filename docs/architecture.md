@@ -29,7 +29,8 @@ for removal. Nothing in the product speaks C.
                                              ▼
                                          Catalog
                                              │
-  user ──▶ apps/punchi-fluid (egui) ──▶ session ──┬──▶ Document ──▶ check
+  user ──▶ apps/punchi-fluid (egui) ──┬──▶ core
+                                      └──▶ session ──┬──▶ Document ──▶ check
                                                  │        │
                                                  │        ▼
                                                  │   solver::Network ──▶ telemetry
@@ -64,7 +65,7 @@ There is no serialisation between two runtimes and no command buffer to keep in 
 | `punchi-fluid-export` | page geometry, frame, title block, PNG, PDF and SVG writers | physics, widgets | `core`, `catalog`, `draw`, `solver` |
 | `punchi-fluid-session` | the document's life between the file and the window: the sheet↔document conversion, the live model, recents, safety copy and templates | physics, widgets | `core`, `catalog`, `doc`, `draw`, `file`, `solver` |
 | `punchi-fluid-cli` | `check`, `validate` and `simulate` without a window | UI | `catalog`, `check`, `doc`, `draw`, `file`, `solver` |
-| `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `catalog`, `doc`, `draw`, `export`, `file`, `i18n`, `session` |
+| `punchi-fluid-window` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme | physics, the document | `core`, `catalog`, `doc`, `draw`, `export`, `file`, `i18n`, `session` |
 
 The retired `punchi-fluid-ffi` crate is still in the workspace and still has its C header,
 but no product code depends on it. It exists only for its own tests and an untracked spike;

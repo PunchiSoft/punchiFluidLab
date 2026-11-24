@@ -766,6 +766,9 @@ impl Window {
                 egui::StrokeKind::Inside,
             );
             painter.extend(drawing.shapes);
+            if let Some(drag) = self.connection_drag.as_ref() {
+                crate::connection::draw_preview(&painter, drag, &placement, page_min, tokens);
+            }
             self.highlight_selected_pipe(ui, origin, placement.scale);
             self.draw_zoom_window(&painter, &placement, tokens.accent, tokens.accent_soft);
             if !self.zoom_window_armed {

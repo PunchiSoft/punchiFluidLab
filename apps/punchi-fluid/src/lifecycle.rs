@@ -280,6 +280,7 @@ impl Window {
             selected: Vec::new(),
             selected_pipe: None,
             drag: None,
+            connection_drag: None,
             moving: None,
             menu: crate::sheet_menu::SheetMenu::new(),
             mockups: crate::sheet_menu::Mockups::new(),

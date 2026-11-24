@@ -29,6 +29,7 @@ mod cards;
 mod check_panel;
 mod circuit_dialogs;
 mod circuit_strip;
+mod connection;
 mod edit_commands;
 mod export;
 mod export_options;
@@ -162,6 +163,8 @@ struct Window {
     /// The drag in progress: the pointer's press, the selection's start centres and the
     /// millimetres it has moved. The drawing applies the offset live; the release commits it.
     drag: Option<Drag>,
+    /// The active port-to-port gesture, if the sheet is drawing a connection preview.
+    connection_drag: Option<connection::ConnectionDrag>,
     /// The armed move: the pointer carries the selection and a click drops it. View state,
     /// not a document edit until the drop.
     moving: Option<move_symbol::Moving>,
