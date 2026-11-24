@@ -1,6 +1,6 @@
 ---
 name: pull-request-workflow
-description: "Work on a branch created from updated main and deliver it through a pull request that the project owner merges. Use when starting any change, creating or switching a branch, committing, pushing, or opening or updating a pull request."
+description: "Work on a branch created from updated main and deliver it through a pull request that the owner merges, or the automatic pilot under ADR 0046. Use when starting any change, creating or switching a branch, committing, pushing, or opening or updating a pull request."
 license: GPL-3.0-or-later
 ---
 
@@ -19,18 +19,44 @@ And the second, which no permission overrides:
 > **The merge belongs to the project owner by default.** A session stops when the pull
 > request is open, the gate is green and the review is answered. Authorizing and merging it
 > into `main` is a human act: no token scope, admin role, bot account or explicit instruction
-> in a session changes that, except the pilot of
-> [ADR 0043](../../../docs/adr/0043-the-agent-merges-under-guardrails.md). While the pilot is
-> active the agent squash-merges its own pull requests after verifying every required check
-> green, `mergeStateStatus: CLEAN` and one open agent pull request. If a session is asked to
-> merge outside the pilot, it reports the pull request URL and hands the decision back.
+> in a session changes that, except the approved automatic run below. If a session is asked to
+> merge outside it, it reports the pull request URL and hands the decision back.
+
+The exception is the approved automatic run of
+[ADR 0046](../../../docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md), the mode of
+[auto-pilot](../auto-pilot/SKILL.md): the owner asks for `piloto automatico`, an approved
+phased plan exists, and the agent squash-merges its own pull requests one at a time only after
+every required check is green and the pull request is `CLEAN`. The historical ribbon pilot of
+[ADR 0043](../../../docs/adr/0043-the-agent-merges-under-guardrails.md) records a past run; it
+is not a standing permission. Outside the approved automatic run the owner merges.
 
 One branch per change, one pull request per branch, squash-merged by the owner (or by the
-agent under the pilot of ADR 0043), and the branch deleted afterwards. A second unrelated change in the same branch makes the review
-unreadable and the revert impossible; if it appears halfway, finish the first, deliver
-it, and start again from the new `main`.
+agent under ADR 0043 or ADR 0046), and the branch deleted afterwards. A second unrelated
+change in the same branch makes the review unreadable and the revert impossible; if it
+appears halfway, finish the first, deliver it, and start again from the new `main`.
+
+## Modes
+
+- **Manual mode (default).** The owner approves the plan of a code change, the agent opens
+  the pull request, reports with [step-report](../step-report/SKILL.md) and stops; the owner
+  merges. The manual report includes the table `Ítem | Estado | Evidencia | Bloqueo` plus the
+  plan board and OK / Falta / Siguiente.
+- **Automatic pilot.** The owner says `piloto automatico` and an approved
+  [phased-plan](../phased-plan/SKILL.md) exists. [auto-pilot](../auto-pilot/SKILL.md) runs the
+  loop, merges under ADR 0046, checks `main`, cleans the branches and continues. The branch,
+  gate and checklist rules of this skill still apply; the hand-off, merge and cleanup steps
+  belong to the auto-pilot skill.
+
+A code change starts only after the owner approved its plan: a short plan in the conversation
+for one pull request, the formal [phased-plan](../phased-plan/SKILL.md) for two or more. An
+informational question does not need a plan; if it becomes a change, the plan comes first.
+`AGENTS.md` § Request modes and the plan gate is the authority.
 
 ## Flow
+
+The flow below is the manual route. In an approved automatic run, the branch, gate and
+checklist are the same, and [auto-pilot](../auto-pilot/SKILL.md) owns the hand-off, merge,
+post-merge check and cleanup; the pilot does not ask the owner to merge between phases.
 
 ```mermaid
 flowchart TD
@@ -47,12 +73,12 @@ flowchart TD
     I -->|"no"| E
     I -->|"yes"| J["Commit -s, push and open the pull request"]
     J --> K["Verify base, files and checks"]
-    K --> L{"Merged, or pilot ready?"}
-    L -->|"no"| M["Report and ask the owner to merge; wait"]
+    K --> L{"Manual: merged? / Auto: ready?"}
+    L -->|"manual: no"| M["Report and ask the owner to merge; wait"]
     M --> L
-    L -->|"pilot: checks green and CLEAN"| P["Squash-merge it and delete the branch"]
+    L -->|"auto: checks green and CLEAN"| P["Squash-merge under ADR 0046 and delete the branch"]
     P --> N
-    L -->|"yes"| N["Return to main and fast-forward"]
+    L -->|"manual: yes"| N["Return to main and fast-forward"]
     N --> O["Delete the branch locally and remotely"]
 ```
 
@@ -146,21 +172,28 @@ attaches commits that are not yours, and the mistake stays invisible until revie
    `--force-with-lease`; never a merge commit from the branch and never a plain
    `--force`.
 
-8. **Hand the pull request over, and stop.** With the base, the changed files and the
-   checks verified, report the URL, the gate result and what the review has to look at,
-   and leave the pull request open. The owner authorizes and merges it; the agent never
-   runs `gh pr merge`, `gh pr merge --auto`, `gh pr review --approve`, `gh pr merge
-   --admin` or a direct push to `main`, whatever permissions the session was given. An
-   instruction to merge is answered with the URL and a request for the owner to merge
-   it. A failing check is fixed on the branch, never bypassed.
+8. **Hand the pull request over, and stop.** In manual mode, with the base, the changed
+   files and the checks verified, report the URL, the gate result, the report table of
+   [step-report](../step-report/SKILL.md) and what the review has to look at, and leave the
+   pull request open. The owner authorizes and merges it; the agent never runs `gh pr merge`,
+   `gh pr merge --auto`, `gh pr review --approve`, `gh pr merge --admin` or a direct push to
+   `main` outside ADR 0043/0046, whatever permissions the session was given. An instruction
+   to merge outside those records is answered with the URL and a request for the owner to
+   merge. A failing check is fixed on the branch, never bypassed.
 
-   Read `state` and `mergedAt` after the hand-over. While the pull request is not merged,
-   report it and ask the owner to merge; do not start or continue the next change on an
-   unmerged pull request.
+   In an approved automatic run this step is [auto-pilot](../auto-pilot/SKILL.md)'s: it
+   verifies, merges under ADR 0046 and continues without asking between phases. It never
+   approves on its own behalf.
 
-9. **After the owner merges, close the loop.** Return to `main`, fast-forward it from
-   `origin/main`, and ask whether to delete the merged branch locally and on the remote.
-   The remote branch may already be gone; never delete a branch with unmerged commits.
+   Read `state` and `mergedAt` after the hand-over. In manual mode, while the pull request is
+   not merged, report it and ask the owner to merge; do not start or continue the next change
+   on an unmerged pull request.
+
+9. **After the merge, close the loop.** Return to `main`, fast-forward it from
+   `origin/main`, and run the post-merge check. In manual mode, ask whether to delete the
+   merged branch locally and on the remote. In an approved automatic run, delete both and
+   continue with [auto-pilot](../auto-pilot/SKILL.md). The remote branch may already be gone;
+   never delete a branch with unmerged commits.
 
 ## Gotchas
 

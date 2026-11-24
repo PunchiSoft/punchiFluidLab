@@ -17,11 +17,15 @@ Nothing is committed on `main`: the change travels on a branch created from upda
 hand-over are [pull-request-workflow](../pull-request-workflow/SKILL.md); this skill is
 what the commit and the pull request must say once they exist.
 
-**The merge is the project owner's, not the agent's.** The agent opens the pull request,
-answers the review and leaves it open; it never merges into `main`, never approves its
-own pull request, never enables auto-merge and never uses an admin override — whatever
-token scope or role the session holds. A request to merge is answered with the pull
-request URL so the owner can do it.
+**The merge is the project owner's by default.** The exception is the approved automatic
+run of [ADR 0046](../../../docs/adr/0046-the-auto-pilot-runs-a-planned-batch.md), which
+follows [auto-pilot](../auto-pilot/SKILL.md); the historical ribbon pilot of
+[ADR 0043](../../../docs/adr/0043-the-agent-merges-under-guardrails.md) is not a standing
+permission. In manual mode the agent opens the pull request,
+answers the review and leaves it open; it never merges into `main`, never approves its own
+pull request, never enables auto-merge and never uses an admin override — whatever token
+scope or role the session holds. A request to merge outside the automatic run is answered
+with the pull request URL so the owner can do it.
 
 ## Commits
 
@@ -126,7 +130,7 @@ incident:
 ```bash
 ./scripts-dev/check.sh
 gh pr checks
-gh pr view --json title,body,state,reviewDecision   # state: OPEN, the owner merges
+gh pr view --json title,body,state,reviewDecision   # manual: OPEN, the owner merges; auto: MERGED under ADR 0046
 gh release view vX.Y.Z
 ```
 

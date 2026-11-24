@@ -57,6 +57,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0043](0043-the-agent-merges-under-guardrails.md) | The agent merges its own pull requests under guardrails | accepted | 2026-11-23 |
 | [0044](0044-the-check-reaches-the-window-through-the-session.md) | The design check reaches the window through the session | accepted | 2026-11-23 |
 | [0045](0045-the-interface-speaks-english-through-embedded-toml-catalogs.md) | The interface speaks English through embedded TOML catalogs | accepted | 2026-11-24 |
+| [0046](0046-the-auto-pilot-runs-a-planned-batch.md) | The automatic pilot runs an approved plan under guardrails | accepted | 2026-11-24 |
 
 ## When a decision needs an ADR
 
