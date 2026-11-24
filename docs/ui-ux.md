@@ -825,12 +825,14 @@ canvas, never the window, so a zoom above the fit cannot paint over the ribbon o
   instant.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
   budget to say what the zoom readout and **Ajustar a la hoja** already say.
-- **Today** the strip exists: it floats over the right edge of the drawing with **Ajustar a
-  la hoja**, a **zoom panel** (−, +, vista anterior), **Mostrar cajetín**, the single
-  **Iniciar/Pausa**, **Mover** (a visible hand mode) and the fold control, and it is
-  remembered as view state. The middle button pans and its **double click fits the sheet**,
-  one step of view history is kept, the **zoom window** is one drag from the panel, and
-  `Ctrl+0` returns to 1:1. All of stage 6c is built.
+- **Target, not migrated.** The strip, its panel, the fold, the middle double-click fit to
+  the frame, the one-step view history, the zoom window, the hand mode and the view-only
+  **Mostrar cajetín** toggle are specified here and **target**. Today the Rust window has the
+  ribbon's **Aumentar**, **Disminuir** and **Tamaño original** (a reset to the fit), the wheel
+  and `Ctrl` + wheel zooming around the pointer, the wheel and the middle button panning, the
+  arrows panning and `Ctrl+0` returning to the fit; the block's **Sin cajetín** preset is a
+  document change, not the view-only toggle. The `--selftest` steps and captures that named
+  the strip belonged to the Qt window and are retired evidence.
 
 ### 4. Status bar
 
