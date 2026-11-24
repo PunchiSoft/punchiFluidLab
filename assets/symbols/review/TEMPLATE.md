@@ -10,10 +10,21 @@ without the clause, the measures and the sign-off is not a review; it is an opin
 
 - **Function, in one sentence** (what a reader must be able to say):
 - **Family**: valve / actuator / conditioning / instrument / other
-- **Ports**: `1` supply · `2`, `4` working · `3`, `5` exhaust · `12`, `14` pilot — as this
-  component declares them
-- **Normative source**: standard, edition and clause. If the clause cannot be cited, stop
-  here and mark the record `blocked: clause`.
+- **Normative source**: standard, **edition read**, clause and the **registration number**
+  (`X…` for the figure, `RF…` for a rule). If the clause cannot be cited, stop here and mark
+  the record `blocked: clause`.
+- **Ports**: `1` inlet · `2`, `4` outlets · `3`, `5` exhausts · `12`, `14` pilots — as this
+  component declares them, and all of them drawn.
+
+## Reference and assumptions
+
+- **Reference read** (a normative figure, an owner drawing, a capture of a reference
+  application): a capture is classified — it identifies the component and its arrangement,
+  it is not traced, and it is not stored in the repository.
+- **Observed**:
+- **Required by the owner**:
+- **Stated by the standard**:
+- **Assumption** (what the review could not settle):
 
 ## Measures
 
@@ -27,6 +38,8 @@ Numbers, not adjectives. The drawing is checked against this table.
 | Spring | side and form | |
 | Actuator | side and form | |
 | Blocking marks | which ports, which position | |
+| Drive | the shaft bar's side and form, for a machine | |
+| Adjustability | arrow on the diameter, or through the element | |
 | Numerals | which sides carry them | |
 | Clearance | every numeral clear of the envelope/frame, the body and the primitive lines | |
 
@@ -49,7 +62,10 @@ One line per normative feature, answered, with the number that supports it.
 |---|---|
 | Is the body one equal square per position? | |
 | Is every closed port of every position marked? | |
-| Do the numerals match the declared ports? | |
+| Is every port the standard draws drawn? | |
+| Do the numerals match the declared ports (1 inlet, 2/4 outlets, 3/5 exhausts)? | |
+| If it is a machine, is the drive bar on the standard's side? | |
+| If it is adjustable, is the arrow on the diameter or through the element, and filled? | |
 | Is every numeral clear of the envelope/frame, the body and the primitive lines? | |
 | Does the arrow point at the far end of the connection? | |
 | Are spring and actuator on the declared sides? | |

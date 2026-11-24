@@ -10,6 +10,7 @@ This folder holds what a conformance review needs:
 |---|---|
 | `review/<id>.md` | The signed-off review of one symbol: which function it draws, the Part 1 reference it was checked against, the reviewer, the date |
 | `review/<id>-light.png`, `-dark.png` | The symbol at palette size and at 300 dpi, in both themes |
+| `conformance.md` | The work list: one row per core symbol, the figure it must match, its ports and the state of its review |
 | `notes/` | Our own engineering notes on ambiguous cases |
 
 Rules:
