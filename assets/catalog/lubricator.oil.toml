@@ -3,10 +3,11 @@
 #
 # Oil lubricator: adds an oil mist to the air so the moving parts are lubricated.
 #
-# The diamond with the flow crossing it from vertex to vertex: the same square turned 45° as
-# the filter, because the element sits in the stream the same way. What tells the two apart is
-# the **dashed element** of the filter — the lubricator has none, because nothing is filtered
-# here; oil is added.
+# X12240 is the same square turned 45° as the filter, with the flow crossing it from vertex
+# to vertex. What tells the two apart is inside the diamond: the lubricator carries a
+# **plain line from the top vertex toward the centre** and no element at all, because
+# nothing is filtered here; oil is added. The line has no arrowhead: the standard marks the
+# oil by the line, and a head would make it read as a flow direction.
 
 schema = 3
 id = "lubricator.oil"
@@ -34,6 +35,12 @@ kind = "polygon"
 points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
 filled = false
 
+# The oil mark: the line from the top vertex toward the centre, no head.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.28, 0.5, 0.4]
+line_class = "working"
+
 [[symbol]]
 kind = "line"
 points = [0.06, 0.5, 0.28, 0.5]
@@ -42,21 +49,4 @@ line_class = "working"
 [[symbol]]
 kind = "line"
 points = [0.72, 0.5, 0.94, 0.5]
-line_class = "working"
-
-# The oil mark: a short arrow from the centre to the upper vertex, as the reference
-# draws a lubricator.
-[[symbol]]
-kind = "line"
-points = [0.5, 0.5, 0.5, 0.30]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.46, 0.36, 0.5, 0.30]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.5, 0.30, 0.54, 0.36]
 line_class = "working"

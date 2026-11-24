@@ -1,38 +1,72 @@
 # lubricator.oil — conformance review
 
     status: pending-300dpi
-    date: 2026-11-07
+    date: 2026-11-24
     reviewer: automated pass, unreviewed by a second person
     function: oil lubricator
 
-## Provenance
+## The claim
 
-Geometry is hand-written in `assets/catalog/lubricator.oil.toml`. No third-party asset, no trace, no
-scan: the shape is drawn from the requirement the sheet states, not copied from a picture.
+- **Function, in one sentence**: oil is added to the air stream so the moving parts
+  downstream are lubricated.
+- **Family**: conditioning (a two-port part).
+- **Normative source**: ISO 1219-1:2006, 7.4.4.25, figure `X12240`, read in the owner's copy;
+  confirmed on the 2012 basis in JIS B 0125-1:2020, 7.4.4.25, same registration number. Rules:
+  `RF052` and `RF053`.
+- **Ports**: `1` inlet at the left vertex · `2` outlet at the right vertex.
 
-## Automated checks — `punchi-fluid-catalog` symbol lint
+## Reference and assumptions
 
-| Rule | Result |
-|---|---|
-| Geometry inside the box, no degenerate primitive | pass |
-| Every line declares its class | pass |
-| Every port used and numbered | pass (ports 1 and 2) |
+- **Reference read**: the standard's figure only. The owner's capture of a reference
+  application had been used before this phase; it is not a shape authority and its arrow was
+  removed.
+- **Stated by the standard**: `X12240` is the same square turned 45° as the filter, with the
+  flow crossing it from vertex to vertex and a **plain line from the top vertex toward the
+  centre**. There is no dashed element, because nothing is filtered here.
+- **Assumption**: the line carries **no arrowhead**. The standard prints a plain line; the
+  head that an earlier record copied from the reference would make the mark read as a flow
+  direction, and a flow arrow inside a diamond is a different statement.
+- **Assumption**: the line stops before the centre, at 0,4 of the box, the length the figure
+  prints (a little over half the top-to-centre distance).
 
-## Visual check
+## Measures
 
-| Requirement | Result | Evidence |
+| Feature | Requirement | Drawing |
 |---|---|---|
-| The lubricator is a square turned 45° with the flow crossing it from vertex to vertex | pass | half-diagonal 0.22 on both axes |
-| It carries **no dashed element**, which is what tells it from the filter | pass | the filter and the lubricator are the same diamond otherwise |
-| The oil mark is the short arrow to the upper vertex | pass | the file draws it, as the reference does |
-| Connection points are the small open circles of the reference set | pass | drawn by the renderer at both ports, once |
-| Legible at palette size | pass | `catalog-dark.png` |
+| Diamond | a square turned 45°, four equal sides | vertices (10; 5,6), (14,4; 10), (10; 14,4), (5,6; 10) |
+| Oil mark | plain line from the top vertex toward the centre, no head | (10; 5,6)–(10; 8), 2,4 mm |
+| Element | none: no dashed line | the diamond is empty below the oil mark |
+| Flow | vertex to vertex, not through the inside | stubs to the left and right vertices |
+| Ports | all of them drawn | `1` at (1,2; 10), `2` at (18,8; 10) |
+| Numerals | from the port table, clear of the drawing | `1` above the left stub, `2` below the right stub |
 
-| Legible at 300 dpi | pass | `lubricator.oil-300.png`: automated pass; the second reader's signature is still owed |
+## Evidence
+
+- 300 dpi sheet, print ink: `lubricator.oil-300.png`.
+- Light and dark captures: `lubricator.oil-light.png`, `lubricator.oil-dark.png`.
+- Symbol lint: passes for the built-in.
+- Geometry fixture regenerated and read: `assets/symbols/fixtures/lubricator.oil.txt` (the
+  arrowhead and its two strokes are gone; the mark is one line).
+
+## Checklist
+
+| Question | Answer |
+|---|---|
+| Is every port the standard draws drawn? | yes: `1` and `2` |
+| Do the numerals match the declared ports? | yes: `1` inlet, `2` outlet |
+| Is the mark a line, with no arrowhead? | yes |
+| Is there a dashed element, as on a filter? | no: the lubricator has none |
+| Is the symbol legible at palette size and at 300 dpi? | yes, both captures |
+
 ## What is still open
 
-- The 300 dpi sheet is in this folder; only a second reader's signature is owed.
-- The oil mist is drawn and not modelled: the air that leaves it carries no oil in the solver.
+- The second reader's signature.
+- The 2012 text is read through the Japanese adoption, not the ISO text itself.
+- The model adds no oil: the file is a two-port restriction, and the review does not claim
+  lubrication.
+- The earlier record described a "short arrow ... as the reference draws a lubricator"; the
+  standard does not print the head, and the reference is not a shape authority
+  ([ADR 0040](../../docs/adr/0040-the-owner-reference-authorizes-the-reconstruction.md)).
 
 ## Images
 

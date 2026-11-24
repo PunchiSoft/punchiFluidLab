@@ -8,25 +8,22 @@
 # the compressor and the first valve, never after it: what comes out of the unit is the
 # line pressure the rest of the circuit is designed around.
 #
-# The symbol box is **square** and the drawing is laid out in it as a horizontal band, so the
-# normalised coordinates map to the same number of millimetres on both axes. Every closed
-# shape here is a square turned 45° or an upright square, so the proportions are the shape's
-# and not an accident of the box.
+# X12160 draws the three functions in the order the air meets them, inside a frame that says
+# they are one unit:
 #
-# The parts, in the order the air meets them:
+# - the **filter** with manual drain: the diamond with the element, the bowl chord and the
+#   drain stem leaving the bottom vertex;
+# - the **pressure-relieving regulator**: an upright square with the flow through it and the
+#   two facing arrows inside, the spring above with the diagonal arrow that says the setting
+#   is adjustable, the vent triangle on its left and the dashed sensing line from the outlet
+#   back to its underside;
+# - the **gauge**, a circle on a stem that taps the line after the regulator, with an arrow
+#   from its centre for the needle;
+# - the **lubricator**: the diamond with the plain line from its top vertex.
 #
-# - The **filter**, the diamond the flow crosses from vertex to vertex, with its element as
-#   the dashed line on the vertical diagonal.
-# - The **regulator**, a square because it is a valve, with the two facing arrows inside and
-#   its setting spring on top. The spring carries the **diagonal arrow** that says the setting
-#   is adjustable, which is what tells a regulator from a fixed restrictor.
-# - Its **dial**, a gauge: a circle with the needle across it, on a stem that taps the line
-#   after the regulator. The gauge belongs to the regulator — it is what shows the setting —
-#   and it taps the line rather than sitting inside the body.
-#
-# The functions share one body, so they are grouped by a **dashed frame**: a dashed boundary
-# is the standard's way of saying "these parts are one unit", and it is not a device of its
-# own. Every connection point is the small open circle the reference set uses.
+# The ports sit on the frame's left and right edges: the 20 mm box leaves the 1.2 mm margin
+# the numerals need only inside the frame, so the frame is also the symbol's envelope and the
+# hose arrives at the unit's edge.
 
 schema = 3
 id = "preparation.service_unit"
@@ -35,9 +32,9 @@ name_es = "Unidad de mantenimiento (FRL)"
 category = "accessory"
 summary = "Filters, regulates and lubricates the air before it enters the circuit."
 
-# The functional outer boundary: the two opposite corners of the dashed frame below. The
-# ports sit on its left and right edges, so the renderer reads the frame as the edge a
-# numeral must stay clear of.
+# The functional outer boundary: the two opposite corners of the frame below. The ports sit
+# on its left and right edges, so the renderer reads the frame as the edge a numeral must
+# stay clear of.
 envelope = [0.06, 0.12, 0.94, 0.88]
 
 [[port]]
@@ -56,98 +53,143 @@ position = [0.94, 0.5]
 type = "throttle"
 conductance = 5.0e-9
 
-# The working line, in the pieces between the parts it joins: it stops at the filter's left
-# vertex and resumes at its right one, and it does not cross the regulator's square, because
-# what is drawn inside those shapes is their own symbol and not the line.
+# The working line, in the pieces between the parts it joins. It runs through the regulator's
+# square because that is the flow the two facing arrows mark; it stops at the filter's and the
+# lubricator's vertices, because inside a diamond the element or the oil mark is the symbol.
 [[symbol]]
 kind = "line"
-points = [0.06, 0.5, 0.12, 0.5]
+points = [0.06, 0.5, 0.10, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.40, 0.5, 0.44, 0.5]
+points = [0.34, 0.5, 0.37, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.68, 0.5, 0.94, 0.5]
+points = [0.37, 0.5, 0.55, 0.5]
 line_class = "working"
 
-# The dashed frame: the functions are one body.
+[[symbol]]
+kind = "line"
+points = [0.55, 0.5, 0.68, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.86, 0.5, 0.94, 0.5]
+line_class = "working"
+
+# The frame: the functions are one body.
 [[symbol]]
 kind = "polyline"
 points = [0.06, 0.12, 0.94, 0.12, 0.94, 0.88, 0.06, 0.88, 0.06, 0.12]
 line_class = "drain"
 
-# The two connection points.
-[[symbol]]
-kind = "circle"
-points = [0.06, 0.5, 0.045]
-
-[[symbol]]
-kind = "circle"
-points = [0.94, 0.5, 0.045]
-
-# The filter: a square turned 45°, its element dashed on the vertical diagonal.
+# The filter: a square turned 45°, its element dashed down to the bowl chord.
 [[symbol]]
 kind = "polygon"
-points = [0.26, 0.36, 0.40, 0.50, 0.26, 0.64, 0.12, 0.50]
+points = [0.22, 0.38, 0.34, 0.5, 0.22, 0.62, 0.10, 0.5]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.26, 0.36, 0.26, 0.64]
+points = [0.22, 0.38, 0.22, 0.5775]
 line_class = "drain"
-
-# The regulator: an upright square, with the two facing arrows inside it.
-[[symbol]]
-kind = "rect"
-points = [0.44, 0.38, 0.24, 0.24]
 
 [[symbol]]
 kind = "line"
-points = [0.50, 0.50, 0.62, 0.50]
+points = [0.1875, 0.5775, 0.2625, 0.5775]
 line_class = "working"
 
+# Its drain stem, crossing the frame on its way out.
+[[symbol]]
+kind = "line"
+points = [0.22, 0.62, 0.22, 0.95]
+line_class = "working"
+
+# The regulator: an upright square, flow through it, and the two facing arrows.
+[[symbol]]
+kind = "rect"
+points = [0.37, 0.40, 0.18, 0.18]
+
 [[symbol]]
 kind = "polygon"
-points = [0.47, 0.50, 0.52, 0.472, 0.52, 0.528]
+points = [0.385, 0.5, 0.425, 0.482, 0.425, 0.518]
 filled = true
 
 [[symbol]]
 kind = "polygon"
-points = [0.65, 0.50, 0.60, 0.472, 0.60, 0.528]
+points = [0.535, 0.5, 0.495, 0.482, 0.495, 0.518]
 filled = true
+
+# Its vent: an open triangle on the left, the relieving regulator's way to the atmosphere.
+[[symbol]]
+kind = "polygon"
+points = [0.37, 0.43, 0.37, 0.47, 0.335, 0.45]
+filled = false
 
 # Its setting spring, on top of the square.
 [[symbol]]
 kind = "polyline"
-points = [0.56, 0.38, 0.53, 0.35, 0.59, 0.32, 0.53, 0.29, 0.59, 0.26, 0.53, 0.23, 0.56, 0.21]
+points = [0.48, 0.40, 0.42, 0.376, 0.54, 0.352, 0.42, 0.328, 0.54, 0.304, 0.42, 0.28, 0.48, 0.26]
 line_class = "working"
 
-# The diagonal arrow of an adjustable setting.
+# The diagonal arrow of an adjustable setting, through the spring.
 [[symbol]]
 kind = "line"
-points = [0.47, 0.35, 0.68, 0.18]
+points = [0.40, 0.38, 0.5735, 0.2629]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.700, 0.163, 0.648, 0.175, 0.675, 0.210]
+points = [0.60, 0.245, 0.5813, 0.2745, 0.5657, 0.2513]
 filled = true
 
-# Its dial: a gauge on a stem from the line, after the regulator.
+# Its sensing line: the outlet fed back to the underside of the regulator, dashed.
 [[symbol]]
 kind = "line"
-points = [0.80, 0.50, 0.80, 0.36]
+points = [0.42, 0.58, 0.42, 0.64]
+line_class = "working"
+
+[[symbol]]
+kind = "polyline"
+points = [0.42, 0.64, 0.585, 0.64, 0.585, 0.5]
+line_class = "pilot"
+
+# Its dial: a gauge on a stem that taps the line, with the needle as an arrow from the centre.
+[[symbol]]
+kind = "line"
+points = [0.62, 0.5, 0.62, 0.37]
 line_class = "working"
 
 [[symbol]]
 kind = "circle"
-points = [0.80, 0.27, 0.09]
+points = [0.62, 0.315, 0.055]
 
 [[symbol]]
 kind = "line"
-points = [0.736, 0.334, 0.864, 0.206]
+points = [0.62, 0.315, 0.5986, 0.2936]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.585, 0.28, 0.6064, 0.2858, 0.5908, 0.3014]
+filled = true
+
+[[symbol]]
+kind = "circle"
+points = [0.62, 0.5, 0.009]
+filled = true
+
+# The lubricator: the diamond with the plain line from its top vertex, no dashed element.
+[[symbol]]
+kind = "polygon"
+points = [0.77, 0.41, 0.86, 0.5, 0.77, 0.59, 0.68, 0.5]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.77, 0.41, 0.77, 0.442]
 line_class = "working"

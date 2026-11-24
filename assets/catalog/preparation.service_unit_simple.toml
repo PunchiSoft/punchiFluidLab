@@ -3,13 +3,15 @@
 #
 # Service unit, simplified: the compact form a schematic uses when the unit is not the point.
 #
-# One rounded body with the dashed line that marks the element, the dial of the regulator
-# inside it, and the drain arrow leaving the bottom. The full form
-# (`preparation.service_unit`) is for the sheet that explains the unit; this one is for the
-# circuit that uses it, and the two are the same device drawn at two levels of detail.
+# X12160 gives both representations: the detailed one above, with the three functions drawn
+# side by side, and the simplified one below, a single body. The simplified body keeps only
+# the marks that say what the unit does: the dashed line at the left is the filter element,
+# the circle with the arrow is the regulator's gauge, and the short line on the top edge at
+# the right is the mark the standard carries for the lubricator. It has no drain: the drain
+# belongs to the filter, and this form does not draw the filter as a separate part.
 #
-# The dashed line and the dial are not decoration: they are the only two marks that say this
-# body filters and regulates, so a plain rectangle is not this symbol.
+# The two are the same device at two levels of detail; this one is for the circuit that uses
+# the unit, and a plain rectangle is not this symbol.
 
 schema = 3
 id = "preparation.service_unit_simple"
@@ -36,20 +38,31 @@ conductance = 5.0e-9
 kind = "rect"
 points = [0.14, 0.34, 0.72, 0.32]
 
-# The element.
+# The filter element.
 [[symbol]]
 kind = "line"
 points = [0.28, 0.34, 0.28, 0.66]
 line_class = "drain"
 
-# The regulator's dial, inside the body.
+# The regulator's gauge, inside the body, with the needle as an arrow from its centre.
 [[symbol]]
 kind = "circle"
 points = [0.60, 0.50, 0.115]
 
 [[symbol]]
 kind = "line"
-points = [0.545, 0.555, 0.660, 0.445]
+points = [0.60, 0.50, 0.5553, 0.4553]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.5269, 0.4269, 0.5694, 0.4412, 0.5412, 0.4694]
+filled = true
+
+# The lubricator's mark on the top edge, at the right.
+[[symbol]]
+kind = "line"
+points = [0.80, 0.34, 0.80, 0.42]
 line_class = "working"
 
 [[symbol]]
@@ -61,22 +74,3 @@ line_class = "working"
 kind = "line"
 points = [0.86, 0.5, 0.94, 0.5]
 line_class = "working"
-
-[[symbol]]
-kind = "circle"
-points = [0.06, 0.5, 0.045]
-
-[[symbol]]
-kind = "circle"
-points = [0.94, 0.5, 0.045]
-
-# The drain, as an arrow: it is the one part of the unit that goes somewhere else.
-[[symbol]]
-kind = "line"
-points = [0.32, 0.66, 0.32, 0.80]
-line_class = "working"
-
-[[symbol]]
-kind = "polygon"
-points = [0.32, 0.86, 0.285, 0.79, 0.355, 0.79]
-filled = true
