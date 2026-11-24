@@ -18,6 +18,10 @@ use crate::theme::Tokens;
 /// a target.
 pub const MIN_RAIL: f32 = 24.0;
 
+/// The horizontal room the width grip takes on the panel's inner edge, in points. The header
+/// reserves it so the title can never push the grip out of the column.
+const GRIP_WIDTH: f32 = 9.0;
+
 /// Which edge the panel is docked to: it decides the side the panel folds towards and the
 /// pointer direction that widens it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -240,7 +244,10 @@ impl Panel {
         let shown = panel
             .exact_width(width)
             .resizable(false)
-            .frame(egui::Frame::NONE)
+            // The column behind the card is the workspace's own colour, never the unthemed
+            // window background: the card floats on the canvas grey and the collapsed rail
+            // keeps that same ground in every theme.
+            .frame(egui::Frame::default().fill(tokens.surface_sunken))
             .show(context, |ui| {
                 if self.shade <= 0.001 && !self.open {
                     if self.rail(ui, tokens) {
@@ -250,11 +257,18 @@ impl Panel {
                 }
                 // The docked panel is the reference's floating card: its own margin, rounded
                 // corners and the theme's shadow, over the window like the drawer.
+                // No shadow while the panel folds: a changing card casts a dark band over
+                // the sheet for the whole animation. The shadow returns when it settles.
+                let shadow = if self.shade >= 0.999 {
+                    Self::panel_shadow(tokens)
+                } else {
+                    egui::epaint::Shadow::NONE
+                };
                 let card = egui::Frame::default()
                     .fill(tokens.panel)
                     .stroke(egui::Stroke::new(1.0_f32, tokens.line))
                     .corner_radius(tokens.radius_control)
-                    .shadow(Self::panel_shadow(tokens))
+                    .shadow(shadow)
                     .outer_margin(egui::Margin::same(self.margin))
                     .inner_margin(egui::Margin::symmetric(self.margin, 0));
                 card.show(ui, |ui| {
@@ -386,20 +400,44 @@ impl Panel {
             if self.edge == Edge::Right {
                 self.grip(ui, tokens);
             }
-            ui.label(
-                egui::RichText::new(title)
-                    .size(tokens.text_label)
-                    .strong()
-                    .color(tokens.ink),
+            // The controls keep their room and the title and the count elide inside what is
+            // left. The header may never widen its column: on a font wider than this
+            // machine's, the unchanging labels used to push the docked panel past its
+            // declared minimum and take that room from the sheet (the medium mode fixes the
+            // catalog at 220). The full text stays in the accessible name and the tooltip.
+            let row_height =
+                ui.fonts(|fonts| fonts.row_height(&egui::FontId::proportional(tokens.text_label)));
+            let spacing = ui.spacing().item_spacing.x;
+            let controls = GRIP_WIDTH + tokens.unit;
+            let text_width = (ui.available_width() - controls - spacing * 2.0).max(0.0);
+            ui.allocate_ui_with_layout(
+                egui::vec2(text_width, row_height),
+                egui::Layout::left_to_right(egui::Align::Center),
+                |ui| {
+                    ui.add(
+                        egui::Label::new(
+                            egui::RichText::new(title)
+                                .size(tokens.text_label)
+                                .strong()
+                                .color(tokens.ink),
+                        )
+                        .truncate(),
+                    );
+                    if let Some(subtitle) = subtitle {
+                        if ui.available_width() > tokens.unit {
+                            ui.add_space(tokens.unit * 0.35);
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(subtitle)
+                                        .size(tokens.text_small)
+                                        .color(tokens.ink_muted),
+                                )
+                                .truncate(),
+                            );
+                        }
+                    }
+                },
             );
-            if let Some(subtitle) = subtitle {
-                ui.add_space(tokens.unit * 0.35);
-                ui.label(
-                    egui::RichText::new(subtitle)
-                        .size(tokens.text_small)
-                        .color(tokens.ink_muted),
-                );
-            }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 hide = self.hide_control(ui, tokens);
                 if self.edge == Edge::Left {
@@ -442,7 +480,7 @@ impl Panel {
     /// The grip on the panel's inner edge: a horizontal drag changes the remembered width.
     fn grip(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
         let (rect, _) = ui.allocate_exact_size(
-            egui::vec2(9.0, (tokens.unit * 1.4).max(24.0)),
+            egui::vec2(GRIP_WIDTH, (tokens.unit * 1.4).max(24.0)),
             egui::Sense::hover(),
         );
         let grip = focusable(ui, rect, ui.make_persistent_id((self.id, "grip")));

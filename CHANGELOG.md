@@ -6,6 +6,47 @@ publicación.
 
 ## Unreleased
 
+### El nombre de la categoría no ensancha el catálogo — 2026-11-24
+
+- **Causa real**: `CollapsingHeader` compone su etiqueta con `Extend`, así que el nombre largo
+  de una categoría —«Sensores e instrumentos» en la fuente del runner— medía **185 pt** en una
+  columna de 178 y el catálogo acoplado crecía **7 pt por encima de sus 220**, robándole ese
+  ancho a la hoja en el modo Media. El CI lo cazó; en esta máquina la fuente lo tapaba.
+- **Corrección**: el nombre es un botón sin marco que **se recorta con elipsis** dentro de la
+  columna, conserva su texto completo en el nombre accesible y sigue plegando el grupo al
+  pulsarlo. La cabecera del panel recorta igual el título y el conteo, por la misma razón.
+- **Pruebas**: `a_wide_header_font_never_widens_a_docked_panel` fuerza tipografía ancha en la
+  cabecera del panel y en un nombre de categoría y exige la hoja en su suelo;
+  `the_category_name_collapses_and_opens_its_group` cubre el clic en el nombre. La suite de la
+  ventana pasa a **364**.
+- **Documentos**: [ui-ux.md](docs/ui-ux.md) y la fila F0 de
+  [capabilities.md](docs/capabilities.md) dicen ya que la baldosa es el símbolo y el nombre,
+  con el `id` en el tooltip, y que los nombres recortan en vez de ensanchar.
+
+### El pliegue y el scroll del catálogo — 2026-11-24
+
+- **Scroll**: la barra vertical del catálogo deja de dibujarse **encima** de la segunda columna:
+  el ancho de la baldosa reserva el carril de la barra, así que las dos columnas quedan limpias.
+- **Pliegue**: la tarjeta no proyecta sombra mientras se oculta; la franja oscura sobre la hoja
+  desaparece y la sombra vuelve al asentarse.
+- **Pruebas**: la suite de la ventana sigue en **362**.
+
+### La tarjeta del catálogo: márgenes, baldosas y el pliegue — 2026-11-24
+
+- **Márgenes**: la tarjeta del catálogo usa el margen generoso de la referencia (10 puntos) y las
+  baldosas son **más altas y con padding** (banda de símbolo de 44 pt), no las minúsculas
+  anteriores.
+- **El pliegue**: durante la animación de ocultar no se proyecta la **sombra** de la tarjeta; era
+  una franja oscura sobre la hoja mientras el ancho cambiaba. La sombra vuelve al asentarse.
+- **Pruebas**: la suite de la ventana sigue en **362**.
+
+### Las baldosas muestran solo el símbolo y el nombre — 2026-11-24
+
+- La baldosa del catálogo deja de dibujar el `id`: muestra **solo el símbolo y el nombre**, como
+  la referencia. El identificador sigue en el catálogo y en la búsqueda, pero no ocupa una línea
+  de la baldosa ni de su nombre accesible.
+- **Pruebas**: las de la paleta siguen en verde; la suite de la ventana pasa a **362**.
+
 ### El catálogo vuelve a la tarjeta de la referencia — 2026-11-24
 
 - El catálogo acoplado se dibuja como la **tarjeta flotante** de la referencia: margen propio,

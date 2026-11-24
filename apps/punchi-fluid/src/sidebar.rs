@@ -131,7 +131,7 @@ impl Sidebar {
                 show_label: "panel.catalog.show",
                 hide_label: "panel.catalog.hide",
                 shortcut: "Ctrl+B",
-                margin: 6,
+                margin: 10,
             }),
             body: Body::default(),
             language: Language::English,
@@ -362,14 +362,35 @@ impl Body {
                     if matching.is_empty() {
                         continue;
                     }
-                    egui::CollapsingHeader::new(
-                        egui::RichText::new(format!("{label}  {}", matching.len()))
-                            .size(tokens.text_body)
-                            .color(tokens.ink),
-                    )
-                    .id_salt(category.as_str())
-                    .default_open(true)
-                    .show(ui, |ui| {
+                    // `CollapsingHeader` lays its label out with `Extend`, so a long category
+                    // name — the sensor group on a wider font — widened the whole palette.
+                    // The name is a frameless button here: it elides inside the column, still
+                    // collapses the group with a click and keeps its full text for the
+                    // accessibility layer.
+                    let id = ui.make_persistent_id(category.as_str());
+                    let mut collapse = false;
+                    let mut header =
+                        egui::collapsing_header::CollapsingState::load_with_default_open(
+                            ui.ctx(),
+                            id,
+                            true,
+                        )
+                        .show_header(ui, |ui| {
+                            let name = ui.add(
+                                egui::Button::new(
+                                    egui::RichText::new(format!("{label}  {}", matching.len()))
+                                        .size(tokens.text_body)
+                                        .color(tokens.ink),
+                                )
+                                .frame(false)
+                                .truncate(),
+                            );
+                            collapse = name.clicked();
+                        });
+                    if collapse {
+                        header.toggle();
+                    }
+                    let _ = header.body(|ui| {
                         // The width comes from the group's body: the collapsing header indents
                         // it, and a width measured outside made the tiles wrap to one column.
                         let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
@@ -587,12 +608,11 @@ fn tile(
     chosen: bool,
 ) -> (TileAction, egui::Rect) {
     let name_font = egui::FontId::proportional(tokens.text_body);
-    let id_font = egui::FontId::proportional(tokens.text_small);
-    // Two lines of name and one of id, measured rather than guessed: a 42-character name
-    // used to draw four lines over the next row.
+    // Two lines of name, measured rather than guessed, over the symbol; the tile shows only
+    // the symbol and the name, with the reference's roomy padding.
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
-    let id_row = ui.fonts(|fonts| fonts.row_height(&id_font));
-    let height = 32.0 + name_row * 2.0 + 4.0 + id_row + 2.0;
+    let pad = tokens.unit * 0.4;
+    let height = pad * 2.0 + 44.0 + name_row * 2.0 + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -635,7 +655,10 @@ fn tile(
             egui::StrokeKind::Inside,
         );
     }
-    let symbol = egui::Rect::from_min_size(rect.min, egui::vec2(width, 32.0));
+    let symbol = egui::Rect::from_min_size(
+        rect.min + egui::vec2(pad, pad),
+        egui::vec2(width - pad * 2.0, 44.0),
+    );
     let (box_width, box_height) = box_of(definition);
     let scale = (symbol.width().min(symbol.height()) * 0.8 / box_width.max(box_height)).max(0.05);
     let origin = symbol.center() - egui::vec2(box_width * scale * 0.5, box_height * scale * 0.5);
@@ -663,32 +686,13 @@ fn tile(
     ui.painter().galley(
         egui::pos2(
             rect.center().x - name_galley.size().x * 0.5,
-            symbol.max.y + 1.0,
+            symbol.max.y + 2.0,
         ),
         name_galley,
         tokens.ink,
     );
-    let id_galley = ui.painter().layout(
-        definition.id.clone(),
-        id_font,
-        tokens.ink_muted,
-        width - 4.0,
-    );
-    ui.painter().galley(
-        egui::pos2(
-            rect.center().x - id_galley.size().x * 0.5,
-            rect.max.y - id_galley.size().y - 1.0,
-        ),
-        id_galley,
-        tokens.ink_muted,
-    );
     response.widget_info(|| {
-        egui::WidgetInfo::selected(
-            egui::WidgetType::Button,
-            ui.is_enabled(),
-            chosen,
-            format!("{name}, {}", definition.id),
-        )
+        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), chosen, name)
     });
     let clicked = response.clicked();
     let secondary = response.secondary_clicked();
@@ -701,7 +705,7 @@ fn tile(
         .unwrap_or(rect.center());
     let focus = response.has_focus();
     let menu_key = focus && ui.input(|input| input.key_pressed(egui::Key::F10));
-    response.on_hover_text(format!("{name}\n{}", definition.id));
+    response.on_hover_text(name);
     if clicked || started {
         // The keyboard follows the tile the reader picked or is carrying.
         ui.memory_mut(|memory| memory.request_focus(id));
