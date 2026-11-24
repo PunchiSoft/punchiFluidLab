@@ -6,8 +6,29 @@
 
 use super::{
     CATALOG_MIN_WIDTH, CATALOG_PREFERRED_WIDTH, DOCK_MIN_WIDTH, DOCK_PREFERRED_WIDTH, LayoutMode,
-    RAIL_WIDTH, SHEET_MIN_WIDTH,
+    RAIL_WIDTH, SHEET_MIN_WIDTH, drawing_area, view_strip_gutter,
 };
+use eframe::egui::{Rect, pos2, vec2};
+
+#[test]
+fn the_drawing_area_leaves_the_strip_gutter_on_the_right() {
+    let canvas = Rect::from_min_size(pos2(10.0, 20.0), vec2(800.0, 600.0));
+    let drawing = drawing_area(canvas, 16.0);
+    assert!(
+        (drawing.min.x - canvas.min.x).abs() < f32::EPSILON
+            && (drawing.min.y - canvas.min.y).abs() < f32::EPSILON
+    );
+    assert!((drawing.max.y - canvas.max.y).abs() < f32::EPSILON);
+    assert!((view_strip_gutter(16.0) - 56.0).abs() < f32::EPSILON);
+    assert!((canvas.right() - drawing.right() - view_strip_gutter(16.0)).abs() < f32::EPSILON);
+}
+
+#[test]
+fn a_canvas_narrower_than_the_gutter_keeps_a_zero_width_drawing_area() {
+    let canvas = Rect::from_min_size(pos2(0.0, 0.0), vec2(20.0, 600.0));
+    let drawing = drawing_area(canvas, 16.0);
+    assert!((drawing.right() - canvas.left()).abs() < f32::EPSILON);
+}
 
 #[test]
 fn the_thresholds_are_the_declared_measurements() {

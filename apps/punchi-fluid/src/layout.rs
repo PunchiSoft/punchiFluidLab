@@ -10,6 +10,8 @@
 //! the pixels without changing the answer. The widths are interface constants, named here once and read
 //! by both panels; the panel's own maximum is a drag bound, not a layout measurement.
 
+use eframe::egui;
+
 /// The sheet's floor: the drawing is the region that never gives way.
 pub const SHEET_MIN_WIDTH: f32 = 480.0;
 
@@ -139,6 +141,26 @@ impl LayoutMode {
         let widths = self.widths(available, remembered_catalog, remembered_dock);
         available - widths.catalog - widths.dock
     }
+}
+
+/// The room the floating view strip takes at the right edge of the drawing area: the strip's
+/// width (the reference's `2·unit + 8`, written as `2.5·unit` so it follows the unit) plus the
+/// margin that keeps the paper clear of it.
+pub const VIEW_STRIP_GUTTER_UNITS: f32 = 3.5;
+
+/// The gutter in points for a given spacing unit.
+#[must_use]
+pub fn view_strip_gutter(unit: f32) -> f32 {
+    unit.max(0.0) * VIEW_STRIP_GUTTER_UNITS
+}
+
+/// The drawing area: the canvas minus the view strip's gutter on the right. The paper is
+/// fitted and centred in this rectangle; the gutter stays part of the canvas, where the strip
+/// floats, so the strip never covers the sheet and the page never enters it.
+#[must_use]
+pub fn drawing_area(canvas: egui::Rect, unit: f32) -> egui::Rect {
+    let right = (canvas.right() - view_strip_gutter(unit)).max(canvas.left());
+    egui::Rect::from_min_max(canvas.min, egui::pos2(right, canvas.max.y))
 }
 
 /// A value kept between two bounds even when the room is smaller than the floor: the floor

@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La hoja deja el canal de la tira — 2026-11-24
+
+- **Lienzo**: el área de dibujo reserva a la derecha el canal de la tira de vista; la hoja se
+  ajusta y se centra a la izquierda del canal, así la tira flotará sobre el lienzo y no sobre
+  el papel cuando llegue.
+- **Recorte**: el dibujo se recorta contra el lienzo, no contra la ventana; un zoom mayor que
+  el ajuste no pinta sobre la cinta ni los paneles.
+- **Pruebas**: `the_drawing_area_leaves_the_strip_gutter_on_the_right`,
+  `the_page_fits_left_of_the_strip_gutter`,
+  `the_page_stays_inside_the_canvas_at_every_mode_and_size`,
+  `the_page_leaves_the_strip_a_gutter_on_the_canvas`,
+  `the_frame_keeps_its_margins_inside_the_page` y
+  `a_zoom_above_the_fit_clips_against_the_canvas_not_the_window`; la suite de la ventana pasa
+  a **325**.
+
 ### La tarjeta de Descripción muestra su imagen — 2026-11-24
 
 - **Tarjeta**: la ventana **Descripción** vuelve a mostrar la imagen del componente; faltaba el

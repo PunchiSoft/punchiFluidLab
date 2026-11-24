@@ -260,6 +260,8 @@ impl Window {
             view: view::View::default(),
             magnification: 1.0,
             frame_ms: 0.0,
+            #[cfg(test)]
+            sheet_probe: None,
             theme,
             ribbon: ribbon::Ribbon::new(),
             speed: ribbon::Speed::Normal,

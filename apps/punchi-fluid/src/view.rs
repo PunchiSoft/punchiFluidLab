@@ -215,6 +215,36 @@ mod tests {
     }
 
     #[test]
+    fn the_page_fits_left_of_the_strip_gutter() {
+        let mut view = View::default();
+        let canvas = area();
+        let drawing = crate::layout::drawing_area(canvas, 16.0);
+        let placement = view.placement(drawing, page());
+        let paper = Rect::from_min_size(placement.origin, page() * placement.scale);
+        let eps = 0.01;
+        assert!(
+            paper.min.x >= drawing.min.x - eps,
+            "{paper:?} outside {drawing:?}"
+        );
+        assert!(
+            paper.min.y >= drawing.min.y - eps,
+            "{paper:?} outside {drawing:?}"
+        );
+        assert!(
+            paper.max.x <= drawing.max.x + eps,
+            "{paper:?} outside {drawing:?}"
+        );
+        assert!(
+            paper.max.y <= drawing.max.y + eps,
+            "{paper:?} outside {drawing:?}"
+        );
+        assert!(
+            paper.max.x <= canvas.max.x - crate::layout::view_strip_gutter(16.0) + eps,
+            "the paper enters the view strip's gutter"
+        );
+    }
+
+    #[test]
     fn the_zoom_about_the_pointer_keeps_its_sheet_point() {
         let mut view = View::default();
         let pointer = pos2(300.0, 250.0);
