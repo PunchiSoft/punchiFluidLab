@@ -387,7 +387,28 @@ fn an_appearance_reads_its_value_and_an_unknown_one_is_the_desktop() {
     assert_eq!(Appearance::from_value("future"), Appearance::Desktop);
     assert_eq!(Appearance::from_value("system"), Appearance::System);
     assert_eq!(Appearance::Theme(ThemeId::Slate).value(), "slate");
-    assert_eq!(Appearance::Desktop.mode_label_es(), "Escritorio");
-    assert_eq!(Appearance::System.mode_label_es(), "Sistema");
-    assert_eq!(Appearance::Theme(ThemeId::Cad).mode_label_es(), "Un tema");
+    let english = punchi_fluid_i18n::Language::English;
+    let spanish = punchi_fluid_i18n::Language::Spanish;
+    assert_eq!(
+        english.text(Appearance::Desktop.mode_label_key()),
+        "Desktop"
+    );
+    assert_eq!(
+        spanish.text(Appearance::Desktop.mode_label_key()),
+        "Escritorio"
+    );
+    assert_eq!(english.text(Appearance::System.mode_label_key()), "System");
+    assert_eq!(spanish.text(Appearance::System.mode_label_key()), "Sistema");
+    assert_eq!(
+        english.text(Appearance::Theme(ThemeId::Cad).mode_label_key()),
+        "A theme"
+    );
+    assert_eq!(
+        spanish.text(Appearance::Theme(ThemeId::Cad).mode_label_key()),
+        "Un tema"
+    );
+    for id in ThemeId::ALL {
+        assert_ne!(english.text(id.label_key()), id.label_key(), "{id:?}");
+        assert_ne!(spanish.text(id.label_key()), id.label_key(), "{id:?}");
+    }
 }
