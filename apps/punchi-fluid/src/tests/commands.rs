@@ -366,3 +366,18 @@ fn a_missing_recent_is_marked_and_refused() {
         window.notice
     );
 }
+
+#[test]
+fn hiding_the_block_changes_nothing_in_the_document() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let revision = window.document.revision();
+    window.dispatch(crate::ribbon::Command::BlockVisible);
+    assert!(!window.show_block, "the view toggle hides the block");
+    window.dispatch(crate::ribbon::Command::BlockVisible);
+    assert!(window.show_block, "the view toggle shows it again");
+    assert_eq!(
+        window.document.revision(),
+        revision,
+        "the block's visibility is view state, not an edit"
+    );
+}

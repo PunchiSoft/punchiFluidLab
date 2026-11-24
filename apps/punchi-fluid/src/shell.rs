@@ -504,6 +504,15 @@ impl Window {
         }
     }
 
+    /// Draws the page with the block or without it, as the view toggle asks.
+    fn draw_page(&self, drawing: &mut EguiSurface) {
+        if self.show_block {
+            sheet::draw(drawing, &self.page, &self.block);
+        } else {
+            sheet::draw_without_block(drawing, &self.page);
+        }
+    }
+
     /// The sheet, its gestures and its drawing: the last region, the one that never gives way.
     pub(crate) fn show_sheet(&mut self, context: &egui::Context) {
         let fit = self.view_fit();
@@ -560,7 +569,7 @@ impl Window {
                 }
             }
             let started = Instant::now();
-            sheet::draw(&mut drawing, &self.page, &self.block);
+            self.draw_page(&mut drawing);
             draw_placed(
                 &mut drawing,
                 &scene.placed,

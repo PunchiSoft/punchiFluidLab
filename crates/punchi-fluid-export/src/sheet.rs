@@ -27,6 +27,17 @@ pub(crate) const HEADING: f32 = 5.0;
 pub(crate) const MUTED: Colour = Colour::new(90, 90, 90);
 /// Draws the frame, the reference zones, the centring marks and the title block.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
+    draw_sheet(surface, page, Some(block));
+}
+
+/// The sheet without its title block: the window's view toggle hides the block, never the
+/// frame, the reference zones, the centring marks or the parts list. The print surface keeps
+/// the block, because a sheet without it is not identifiable.
+pub fn draw_without_block(surface: &mut dyn Surface, page: &Page) {
+    draw_sheet(surface, page, None);
+}
+
+fn draw_sheet(surface: &mut dyn Surface, page: &Page, block: Option<&TitleBlock>) {
     // The paper belongs to the drawing, not to the window: the print surface paints it
     // white, and the window's surface maps that white to the theme's `paper` token. It is
     // the first call so the frame, the block and the circuit sit on top of it.
@@ -35,19 +46,19 @@ pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
     surface.rect(content, 0.0, None, Some(Stroke::new(FRAME, Colour::BLACK)));
     draw_reference_zones(surface, page);
     draw_centring_marks(surface, page);
-    draw_title_block(surface, page, block);
-
-    if let Some(note) = &block.note {
-        // Inside the frame, never in the margin: the margin band belongs to the paper.
-        surface.text(
-            Pt::new(content.min.x + 2.0, content.min.y + 2.5),
-            note,
-            LABEL,
-            Colour::new(170, 40, 40),
-            Anchor::Start,
-        );
+    if let Some(block) = block {
+        draw_title_block(surface, page, block);
+        if let Some(note) = &block.note {
+            // Inside the frame, never in the margin: the margin band belongs to the paper.
+            surface.text(
+                Pt::new(content.min.x + 2.0, content.min.y + 2.5),
+                note,
+                LABEL,
+                Colour::new(170, 40, 40),
+                Anchor::Start,
+            );
+        }
     }
-
     draw_parts(surface, page);
 }
 
@@ -467,5 +478,40 @@ mod tests {
             matches!(call, punchi_fluid_draw::Call::Text { text, .. } if text.contains("not yet verified"))
         });
         assert!(found, "the note must be drawn on the sheet");
+    }
+
+    #[test]
+    fn the_block_can_be_hidden_without_losing_the_frame() {
+        let block = TitleBlock::new("A circuit", "2026-11-06");
+        let mut page = Page::a4(block.clone());
+        page.labels = crate::test_labels::english();
+        let mut full = Recording::default();
+        draw(&mut full, &page, &block);
+        let mut hidden = Recording::default();
+        draw_without_block(&mut hidden, &page);
+        assert!(
+            hidden.len() < full.len(),
+            "the hidden sheet still draws the block"
+        );
+        let texts: Vec<&str> = hidden
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                punchi_fluid_draw::Call::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            !texts.contains(&"Title"),
+            "the hidden sheet still names the block's fields"
+        );
+        // The frame, the zones and the centring marks stay: only the block goes away.
+        assert!(
+            hidden.calls().iter().any(|call| matches!(
+                call,
+                punchi_fluid_draw::Call::Line { .. } | punchi_fluid_draw::Call::Rect { .. }
+            )),
+            "the frame and the marks stay on the hidden sheet"
+        );
     }
 }

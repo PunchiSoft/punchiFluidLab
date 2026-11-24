@@ -113,6 +113,10 @@ fn main() -> eframe::Result<()> {
 
 /// What the window owns today: the document it was given, the sheet it draws, the reader's
 /// view, the ribbon, the desktop's theme and the last frame's numbers.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the window carries independent view flags, not a state machine"
+)]
 struct Window {
     document: Document,
     /// The document's saved revision, safety copy, recovery, title and open panel.
@@ -170,6 +174,8 @@ struct Window {
     model_revision: u64,
     /// Whether the model's clock is being advanced.
     running: bool,
+    /// Whether the sheet draws the title block on screen: view state, never a document field.
+    show_block: bool,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.
@@ -570,7 +576,9 @@ impl Window {
             Command::AlignBottom => self.align_selected(Align::Bottom),
             Command::ZoomIn => self.view.zoom_in(),
             Command::ZoomOut => self.view.zoom_out(),
-            Command::ZoomReset => self.view.reset(),
+            Command::ZoomReset => self.view.fit(),
+            Command::ViewBack => self.view.back(),
+            Command::BlockVisible => self.show_block = !self.show_block,
             Command::Catalog | Command::Properties | Command::Autohide | Command::ResetView => {
                 self.view_command(command);
             }
@@ -646,6 +654,7 @@ impl Window {
         self.ribbon.selected = self.selected.len() + usize::from(self.selected_pipe.is_some());
         self.ribbon.can_undo = self.document.can_undo();
         self.ribbon.can_redo = self.document.can_redo();
+        self.ribbon.can_go_back = self.view.can_go_back();
         self.ribbon.can_reset_block = self.block_is_customized();
         self.ribbon.can_close_circuit = self.document.circuits().len() > 1;
         self.ribbon.has_pipe = self.selected_pipe.is_some();
@@ -767,28 +776,6 @@ impl Window {
                 None => self.drag = None,
             }
         }
-    }
-
-    /// The sheet's gestures: Ctrl+wheel zooms about the pointer, the wheel and the middle
-    /// button pan, the arrows pan from the keyboard and Ctrl+0 returns to the fit.
-    fn handle_view(
-        &mut self,
-        ui: &egui::Ui,
-        response: &egui::Response,
-        area: egui::Rect,
-        fit: view::Fit,
-    ) {
-        // The armed move pins the view: the pointer carries the symbol, so the sheet must not
-        // slide under it with a wheel or an arrow.
-        if self.moving.is_some() {
-            return;
-        }
-        // The arrow keys belong to the open menu while it is up; panning the sheet under it
-        // would both move the anchor and steal the key.
-        if self.menu.is_open() {
-            return;
-        }
-        self.view.handle_input(ui, response, area, fit);
     }
 }
 

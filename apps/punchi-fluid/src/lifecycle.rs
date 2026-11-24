@@ -282,6 +282,7 @@ impl Window {
             model: None,
             model_revision: 0,
             running: false,
+            show_block: true,
             pressed_valve: None,
             start_open: true,
             recents: Recents::default(),

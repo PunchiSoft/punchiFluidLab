@@ -33,6 +33,8 @@ pub struct Fit {
 pub struct View {
     zoom: f32,
     pan: egui::Vec2,
+    /// The view before the last discrete change: one step back, never a stack.
+    previous: Option<(f32, egui::Vec2)>,
 }
 
 impl Default for View {
@@ -40,6 +42,7 @@ impl Default for View {
         Self {
             zoom: 1.0,
             pan: egui::Vec2::ZERO,
+            previous: None,
         }
     }
 }
@@ -59,10 +62,32 @@ impl View {
         self.zoom
     }
 
-    /// The fit, with the pan dropped.
+    /// The fit, with the pan dropped, and **not** recorded: the internals of `fit`.
     pub fn reset(&mut self) {
         self.zoom = 1.0;
         self.pan = egui::Vec2::ZERO;
+    }
+
+    /// The fit, keeping one step of history so **Vista anterior** can return.
+    pub(crate) fn fit(&mut self) {
+        if (self.zoom - 1.0).abs() > f32::EPSILON || self.pan.length() > f32::EPSILON {
+            self.previous = Some((self.zoom, self.pan));
+        }
+        self.reset();
+    }
+
+    /// Whether **Vista anterior** has a view to return to.
+    #[must_use]
+    pub fn can_go_back(&self) -> bool {
+        self.previous.is_some()
+    }
+
+    /// Returns to the view before the last fit, zoom or zoom window, once.
+    pub(crate) fn back(&mut self) {
+        if let Some((zoom, pan)) = self.previous.take() {
+            self.zoom = zoom.clamp(Self::MIN_ZOOM, Self::MAX_ZOOM);
+            self.pan = pan;
+        }
     }
 
     pub fn zoom_in(&mut self) {
@@ -78,6 +103,7 @@ impl View {
         if (zoom - self.zoom).abs() < f32::EPSILON {
             return;
         }
+        self.previous = Some((self.zoom, self.pan));
         self.zoom = zoom;
         if (zoom - 1.0).abs() < f32::EPSILON {
             self.pan = egui::Vec2::ZERO;
@@ -154,7 +180,7 @@ impl View {
             )
         });
         if reset {
-            self.reset();
+            self.fit();
         }
         let mut x = 0.0;
         let mut y = 0.0;
@@ -201,6 +227,30 @@ fn fit_scale(area: egui::Rect, frame_mm: egui::Vec2) -> f32 {
         return 0.0;
     }
     (area.width() / frame_mm.x).min(area.height() / frame_mm.y)
+}
+
+impl crate::Window {
+    /// The sheet's gestures: Ctrl+wheel zooms about the pointer, the wheel and the middle
+    /// button pan, the arrows pan from the keyboard and Ctrl+0 returns to the fit.
+    pub(crate) fn handle_view(
+        &mut self,
+        ui: &egui::Ui,
+        response: &egui::Response,
+        area: egui::Rect,
+        fit: Fit,
+    ) {
+        // The armed move pins the view: the pointer carries the symbol, so the sheet must not
+        // slide under it with a wheel or an arrow.
+        if self.moving.is_some() {
+            return;
+        }
+        // The arrow keys belong to the open menu while it is up; panning the sheet under it
+        // would both move the anchor and steal the key.
+        if self.menu.is_open() {
+            return;
+        }
+        self.view.handle_input(ui, response, area, fit);
+    }
 }
 
 #[cfg(test)]
@@ -298,6 +348,36 @@ mod tests {
         }
         assert!((view.zoom() - View::MIN_ZOOM).abs() < f32::EPSILON);
         view.reset();
+        assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn one_step_of_view_history_goes_back() {
+        let mut view = View::default();
+        assert!(!view.can_go_back());
+        view.zoom_in();
+        assert!(view.can_go_back());
+        view.back();
+        assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
+        assert!(!view.can_go_back());
+    }
+
+    #[test]
+    fn the_fit_records_the_view_it_leaves() {
+        let mut view = View::default();
+        view.zoom_in();
+        view.pan_by(vec2(100.0, 40.0));
+        view.fit();
+        assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
+        view.back();
+        assert!((view.zoom() - View::STEP).abs() < 1e-5);
+        assert!(view.pan.length() > 0.0, "the pan came back with the view");
+    }
+
+    #[test]
+    fn back_without_history_does_nothing() {
+        let mut view = View::default();
+        view.back();
         assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
     }
 
