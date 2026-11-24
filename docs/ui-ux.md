@@ -1072,11 +1072,13 @@ Rules:
 ### Language
 
 There is **no catalog runtime yet**. The window's strings are Spanish literals; the check
-returns `message_es` and the exporter carries Spanish labels. The Qt catalog plan in
-[ADR 0027](adr/0027-translation-catalogs-are-qts.md) retired with the Qt window and a new
-mechanism for the Rust window is pending ([i18n/README.md](../i18n/README.md)). The target
-is English first, Spanish as a translation, with keys in the crates and no concatenated
-sentences.
+returns `message_es` and the exporter carries Spanish labels. [ADR 0045](adr/0045-the-interface-speaks-english-through-embedded-toml-catalogs.md)
+supersedes the retired Qt plan of [ADR 0027](adr/0027-translation-catalogs-are-qts.md): the
+mechanism is `punchi-fluid-i18n` with embedded TOML catalogs, English as the source and the
+default, and Spanish selectable in Configuración. Keys live in the crates, the exporter
+receives its labels from the caller, the CLI keeps a fixed English contract, and no sentence
+is concatenated. The migration is surface by surface; until a surface is migrated its Spanish
+literal is debt ([i18n/README.md](../i18n/README.md)).
 
 ## What this design refuses
 

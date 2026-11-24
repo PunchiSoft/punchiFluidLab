@@ -38,7 +38,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0024](0024-a-pressure-switch-reads-its-own-port.md) | A pressure switch reads its own port | accepted | 2026-11-13 |
 | [0025](0025-a-latching-relay-holds-its-last-pulse.md) | A latching relay holds its last pulse | accepted | 2026-11-13 |
 | [0026](0026-the-sheet-is-the-paper.md) | The sheet is the paper the drawing is printed on | accepted | 2026-11-13 |
-| [0027](0027-translation-catalogs-are-qts.md) | The translation catalogs are Qt's, and the core speaks keys | accepted | 2026-11-14 |
+| [0027](0027-translation-catalogs-are-qts.md) | The translation catalogs are Qt's, and the core speaks keys | superseded by [0045](0045-the-interface-speaks-english-through-embedded-toml-catalogs.md) | 2026-11-14 |
 | [0028](0028-the-ribbon-draws-its-own-icons.md) | The ribbon draws its own action icons | accepted; amends the icon rule of [0005](0005-qt-quick-over-a-c-abi.md) | 2026-11-14 |
 | [0029](0029-a-two-pressure-valve-decides-by-pressure.md) | A two-pressure valve decides by pressure, not by position | accepted | 2026-11-18 |
 | [0030](0030-the-block-protects-its-own-box.md) | The title block protects its own box, not a band | accepted | 2026-11-18 |
@@ -56,6 +56,7 @@ outdated or the code has a bug, and one of them is fixed in the same change.
 | [0042](0042-the-appearance-is-a-setting.md) | The appearance is a setting, and the desktop is its default | proposed | 2026-11-23 |
 | [0043](0043-the-agent-merges-under-guardrails.md) | The agent merges its own pull requests under guardrails | accepted | 2026-11-23 |
 | [0044](0044-the-check-reaches-the-window-through-the-session.md) | The design check reaches the window through the session | accepted | 2026-11-23 |
+| [0045](0045-the-interface-speaks-english-through-embedded-toml-catalogs.md) | The interface speaks English through embedded TOML catalogs | accepted | 2026-11-24 |
 
 ## When a decision needs an ADR
 

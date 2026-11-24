@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### La interfaz tendrá catálogos TOML — 2026-11-24
+
+- **Decisión (ADR 0045)**: el inglés es la fuente y el idioma visible por defecto; el español
+  se elige en Configuración. La traducción vive en una crate `punchi-fluid-i18n` con catálogos
+  TOML embebidos, claves estables y sin lectura de disco en runtime. Sustituye el mecanismo
+  Qt del ADR 0027, retirado con la ventana Qt.
+- **Contratos**: el chequeo devuelve claves, el exportador recibe sus etiquetas del llamante y
+  el CLI conserva su contrato JSON y sus códigos en inglés. El catálogo mantiene por ahora
+  `name`/`name_es`/`summary` como datos de la definición.
+- **Pendiente**: la crate, los catálogos, el selector y la migración por superficies; primero
+  el menú y la tarjeta. La auditoría manual de cadenas, tests y contratos es previa al código.
+
 ### La tarjeta de descripción del componente — 2026-11-23
 
 - **La ventana Descripción deja de ser una maqueta vacía** para el cilindro de simple efecto:

@@ -1,6 +1,6 @@
 # 0027 — The translation catalogs are Qt's, and the core speaks keys
 
-- **Status:** accepted
+- **Status:** superseded by [0045](0045-the-interface-speaks-english-through-embedded-toml-catalogs.md)
 - **Date:** 2026-11-14
 - **Deciders:** project owner, implementation session
 - **Context crates:** `punchi-fluid-check`, `punchi-fluid-export`, `punchi-fluid-ffi`, `punchi-fluid-qt`
