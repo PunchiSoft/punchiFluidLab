@@ -131,7 +131,7 @@ impl Sidebar {
                 show_label: "panel.catalog.show",
                 hide_label: "panel.catalog.hide",
                 shortcut: "Ctrl+B",
-                margin: 6,
+                margin: 10,
             }),
             body: Body::default(),
             language: Language::English,
@@ -588,9 +588,10 @@ fn tile(
 ) -> (TileAction, egui::Rect) {
     let name_font = egui::FontId::proportional(tokens.text_body);
     // Two lines of name, measured rather than guessed, over the symbol; the tile shows only
-    // the symbol and the name, as the reference does.
+    // the symbol and the name, with the reference's roomy padding.
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
-    let height = 32.0 + name_row * 2.0 + 2.0;
+    let pad = tokens.unit * 0.4;
+    let height = pad * 2.0 + 44.0 + name_row * 2.0 + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -633,7 +634,10 @@ fn tile(
             egui::StrokeKind::Inside,
         );
     }
-    let symbol = egui::Rect::from_min_size(rect.min, egui::vec2(width, 32.0));
+    let symbol = egui::Rect::from_min_size(
+        rect.min + egui::vec2(pad, pad),
+        egui::vec2(width - pad * 2.0, 44.0),
+    );
     let (box_width, box_height) = box_of(definition);
     let scale = (symbol.width().min(symbol.height()) * 0.8 / box_width.max(box_height)).max(0.05);
     let origin = symbol.center() - egui::vec2(box_width * scale * 0.5, box_height * scale * 0.5);
@@ -661,7 +665,7 @@ fn tile(
     ui.painter().galley(
         egui::pos2(
             rect.center().x - name_galley.size().x * 0.5,
-            symbol.max.y + 1.0,
+            symbol.max.y + 2.0,
         ),
         name_galley,
         tokens.ink,

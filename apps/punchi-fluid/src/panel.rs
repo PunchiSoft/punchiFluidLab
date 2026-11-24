@@ -253,11 +253,18 @@ impl Panel {
                 }
                 // The docked panel is the reference's floating card: its own margin, rounded
                 // corners and the theme's shadow, over the window like the drawer.
+                // No shadow while the panel folds: a changing card casts a dark band over
+                // the sheet for the whole animation. The shadow returns when it settles.
+                let shadow = if self.shade >= 0.999 {
+                    Self::panel_shadow(tokens)
+                } else {
+                    egui::epaint::Shadow::NONE
+                };
                 let card = egui::Frame::default()
                     .fill(tokens.panel)
                     .stroke(egui::Stroke::new(1.0_f32, tokens.line))
                     .corner_radius(tokens.radius_control)
-                    .shadow(Self::panel_shadow(tokens))
+                    .shadow(shadow)
                     .outer_margin(egui::Margin::same(self.margin))
                     .inner_margin(egui::Margin::symmetric(self.margin, 0));
                 card.show(ui, |ui| {

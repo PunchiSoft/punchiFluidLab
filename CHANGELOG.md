@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### El pliegue y el scroll del catálogo — 2026-11-24
+
+- **Scroll**: la barra vertical del catálogo deja de dibujarse **encima** de la segunda columna:
+  el ancho de la baldosa reserva el carril de la barra, así que las dos columnas quedan limpias.
+- **Pliegue**: la tarjeta no proyecta sombra mientras se oculta; la franja oscura sobre la hoja
+  desaparece y la sombra vuelve al asentarse.
+- **Pruebas**: la suite de la ventana sigue en **362**.
+
+### La tarjeta del catálogo: márgenes, baldosas y el pliegue — 2026-11-24
+
+- **Márgenes**: la tarjeta del catálogo usa el margen generoso de la referencia (10 puntos) y las
+  baldosas son **más altas y con padding** (banda de símbolo de 44 pt), no las minúsculas
+  anteriores.
+- **El pliegue**: durante la animación de ocultar no se proyecta la **sombra** de la tarjeta; era
+  una franja oscura sobre la hoja mientras el ancho cambiaba. La sombra vuelve al asentarse.
+- **Pruebas**: la suite de la ventana sigue en **362**.
+
 ### Las baldosas muestran solo el símbolo y el nombre — 2026-11-24
 
 - La baldosa del catálogo deja de dibujar el `id`: muestra **solo el símbolo y el nombre**, como
