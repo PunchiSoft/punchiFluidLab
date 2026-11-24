@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### La cinta también lee el catálogo — 2026-11-24
+
+- **La cinta completa**: pestañas, grupos, botones, galerías, menús, recientes, pistas y el
+  estado leen claves de `i18n/en.toml` e `i18n/es.toml`. Las etiquetas de la tabla son claves;
+  `Command::label_key()` sustituye al antiguo `label_es()` y el estado guarda la etiqueta
+  traducida. El inglés sigue siendo el valor por defecto y el español se elige en Configuración.
+- **Pruebas**: `the_ribbon_follows_the_language`, `the_command_label_follows_the_language` y
+  `every_ribbon_label_is_in_the_catalog`; la suite de la ventana pasa a **302**.
+- **Pendiente**: el catálogo/barra lateral, los paneles, los diálogos, Inicio, el chequeo, el
+  exportador y el CLI; la cinta es la primera superficie de la ventana después del piloto.
+
 ### La interfaz elige idioma — 2026-11-24
 
 - **La crate `punchi-fluid-i18n`**: catálogos TOML embebidos `i18n/en.toml` (fuente y por

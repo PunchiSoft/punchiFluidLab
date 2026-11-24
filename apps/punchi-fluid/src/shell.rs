@@ -303,6 +303,7 @@ impl Window {
 
     /// The ribbon, its commands and the tab strip.
     fn show_ribbon(&mut self, context: &egui::Context) {
+        self.ribbon.language = self.language;
         let palette = crate::ribbon::Palette::from_theme(&self.theme.tokens);
         egui::TopBottomPanel::top("ribbon").show(context, |ui| {
             self.ribbon.show(ui, &palette, self.recents.entries());

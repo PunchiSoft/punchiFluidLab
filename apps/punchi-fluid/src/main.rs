@@ -504,7 +504,7 @@ impl Window {
     /// Runs a ribbon command. The match is exhaustive, so a command without a handler does
     /// not compile; the table and this function are the two halves of the same contract.
     fn dispatch(&mut self, command: Command) {
-        self.ribbon.last = command.label_es().to_string();
+        self.ribbon.last = self.language.text(command.label_key()).to_string();
         match command {
             Command::ProjectNew => self.new_document(),
             Command::ProjectOpen => self.open_dialog(files::Mode::Open),
@@ -526,7 +526,7 @@ impl Window {
             Command::SimReset => self.reset_simulation(),
             Command::Speed(speed) => {
                 self.speed = speed;
-                self.ribbon.active_speed = speed.label();
+                self.ribbon.active_speed = speed.label_key();
             }
             Command::PageSetup => self.open_page_setup(),
             Command::BlockEdit => self.open_block_editor(),
