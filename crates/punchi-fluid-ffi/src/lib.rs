@@ -9114,7 +9114,14 @@ pub unsafe extern "C" fn pf_session_check(
         let findings = session.findings();
         let text = findings
             .iter()
-            .map(punchi_fluid_check::Finding::describe)
+            .map(|finding| {
+                format!(
+                    "{} at ({:.0}, {:.0}) mm",
+                    finding.kind.as_str(),
+                    finding.at.x,
+                    finding.at.y
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n");
         let bytes = text.as_bytes();

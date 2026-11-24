@@ -11,7 +11,7 @@
 use std::process::ExitCode;
 
 use punchi_fluid_catalog::Catalog;
-use punchi_fluid_check::Finding;
+use punchi_fluid_check::{Finding, FindingKind};
 use punchi_fluid_doc::{Circuit, Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{Pt, Rect};
 use punchi_fluid_file::sheet::Sheet;
@@ -134,12 +134,18 @@ fn check(arguments: &[String]) -> ExitCode {
     if json {
         println!("{}", as_json(path, &findings));
     } else if findings.is_empty() {
-        println!("ok: sin faltas");
+        println!("ok: no faults");
     } else {
         for finding in &findings {
-            println!("{} [{}]", finding.describe(), finding.kind.as_str());
+            println!(
+                "{} at ({:.0}, {:.0}) mm [{}]",
+                finding_message(finding.kind),
+                finding.at.x,
+                finding.at.y,
+                finding.kind.as_str()
+            );
         }
-        println!("{} falta(s)", findings.len());
+        println!("{} fault(s)", findings.len());
     }
 
     if findings.is_empty() || !strict {
@@ -234,6 +240,24 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
     Ok(document)
 }
 
+/// The English sentence of a finding: the CLI is a fixed English contract (ADR 0045), so it
+/// carries its own table instead of reaching into the window's catalog.
+fn finding_message(kind: FindingKind) -> &'static str {
+    match kind {
+        FindingKind::OutsideSheet => "a component falls outside the sheet",
+        FindingKind::OverlappingComponents => "two components overlap",
+        FindingKind::PipeThroughComponent => "a hose crosses a component",
+        FindingKind::OverlappingPipes => "two hoses overlap",
+        FindingKind::OpenConnection => "a pneumatic connection is left open",
+        FindingKind::DuplicateDesignation => "two cylinders carry the same designation",
+        FindingKind::PipeAcrossCircuits => "a hose joins two circuits",
+        FindingKind::MismatchedConnection => "a connection joins two terminals that do not match",
+        FindingKind::ShortCircuit => "the live rail and its return are joined",
+        FindingKind::UnderTitleBlock => "a component falls under the title block",
+        FindingKind::BadPortClosure => "a closure does not match the port that carries it",
+    }
+}
+
 /// The findings as the versioned JSON object of [ADR 0011].
 fn as_json(path: &str, findings: &[Finding]) -> String {
     let items: Vec<String> = findings
@@ -242,7 +266,7 @@ fn as_json(path: &str, findings: &[Finding]) -> String {
             format!(
                 "{{\"kind\":{},\"message\":{},\"x\":{:.3},\"y\":{:.3},\"component\":{},\"pipe\":{}}}",
                 quote(finding.kind.as_str()),
-                quote(finding.kind.message_es()),
+                quote(finding_message(finding.kind)),
                 finding.at.x,
                 finding.at.y,
                 finding

@@ -72,7 +72,7 @@ fn a_fault_is_listed_and_only_fails_the_job_when_it_is_asked_to() {
     let lenient = run(&["check", &path]);
     assert!(lenient.status.success(), "{lenient:?}");
     let text = String::from_utf8_lossy(&lenient.stdout);
-    assert!(text.contains("hoja"), "{text}");
+    assert!(text.contains("outside the sheet"), "{text}");
     // With `--strict` the same file fails the job.
     let strict = run(&["check", &path, "--strict"]);
     assert_eq!(strict.status.code(), Some(3), "{strict:?}");
@@ -90,6 +90,10 @@ fn the_json_carries_its_version_and_one_object_per_fault() {
     assert!(text.contains("\"count\":2"), "{text}");
     assert!(text.contains("\"kind\":\"outside_sheet\""), "{text}");
     assert!(text.contains("\"component\":0"), "{text}");
+    assert!(
+        text.contains("a component falls outside the sheet"),
+        "the JSON message is English: {text}"
+    );
     // Nothing else on stdout: a caller may parse the whole line.
     assert_eq!(text.lines().count(), 1, "{text}");
 }

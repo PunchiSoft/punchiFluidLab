@@ -10,7 +10,7 @@
 use eframe::egui;
 use punchi_fluid_draw::surface::{Pt, Rect};
 use punchi_fluid_i18n::Language;
-use punchi_fluid_session::check::{Finding, check_circuit};
+use punchi_fluid_session::check::{Finding, FindingKind, check_circuit};
 
 use crate::Window;
 use crate::theme::Tokens;
@@ -21,6 +21,34 @@ pub(crate) struct CheckPanel {
     pub(crate) open: bool,
     findings: Vec<Finding>,
     focused: Option<usize>,
+}
+
+/// The catalog key of a finding kind.
+fn finding_key(kind: FindingKind) -> &'static str {
+    match kind {
+        FindingKind::OutsideSheet => "check.finding.outside_sheet",
+        FindingKind::OverlappingComponents => "check.finding.overlapping_components",
+        FindingKind::PipeThroughComponent => "check.finding.pipe_through_component",
+        FindingKind::OverlappingPipes => "check.finding.overlapping_pipes",
+        FindingKind::OpenConnection => "check.finding.open_connection",
+        FindingKind::DuplicateDesignation => "check.finding.duplicate_designation",
+        FindingKind::PipeAcrossCircuits => "check.finding.pipe_across_circuits",
+        FindingKind::MismatchedConnection => "check.finding.mismatched_connection",
+        FindingKind::ShortCircuit => "check.finding.short_circuit",
+        FindingKind::UnderTitleBlock => "check.finding.under_title_block",
+        FindingKind::BadPortClosure => "check.finding.bad_port_closure",
+    }
+}
+
+/// One finding as the sentence the panel shows: its kind and where it happens.
+fn finding_label(language: Language, finding: &Finding) -> String {
+    let message = language.text(finding_key(finding.kind));
+    let x = format!("{:.0}", finding.at.x);
+    let y = format!("{:.0}", finding.at.y);
+    language.format(
+        "check.finding.at",
+        &[("message", message), ("x", &x), ("y", &y)],
+    )
 }
 
 /// The drawing space of `document`: its paper minus the margins, in millimetres, the frame
@@ -123,7 +151,10 @@ fn check_panel_window(
                     .show(ui, |ui| {
                         for (index, finding) in panel.findings.iter().enumerate() {
                             if ui
-                                .selectable_label(panel.focused == Some(index), finding.describe())
+                                .selectable_label(
+                                    panel.focused == Some(index),
+                                    finding_label(language, finding),
+                                )
                                 .clicked()
                             {
                                 action = Some(Action::Select(index));
@@ -196,6 +227,30 @@ mod tests {
             assert!(harness.query_all_by_label_contains("sin faltas").count() >= 1);
             harness.get_by_label("Cerrar").click();
             harness.run();
+        }
+
+        let mut window = window_with_a_valve();
+        window.open_check();
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_all_by_label_contains("pneumatic connection is left open")
+                    .count()
+                    >= 1,
+                "the finding sentence is English"
+            );
+        }
+        window.language = Language::Spanish;
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_all_by_label_contains("conexión neumática queda abierta")
+                    .count()
+                    >= 1,
+                "the finding sentence is Spanish"
+            );
         }
     }
 

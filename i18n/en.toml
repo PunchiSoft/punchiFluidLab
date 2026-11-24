@@ -429,3 +429,17 @@ body = "The document has changes that are not in any file. What should I do with
 save_close = "Save and close"
 close_without = "Close without saving"
 cancel = "Cancel"
+
+[check.finding]
+outside_sheet = "a component falls outside the sheet"
+overlapping_components = "two components overlap"
+pipe_through_component = "a hose crosses a component"
+overlapping_pipes = "two hoses overlap"
+open_connection = "a pneumatic connection is left open"
+duplicate_designation = "two cylinders carry the same designation"
+pipe_across_circuits = "a hose joins two circuits"
+mismatched_connection = "a connection joins two terminals that do not match"
+short_circuit = "the live rail and its return are joined"
+under_title_block = "a component falls under the title block"
+bad_port_closure = "a closure does not match the port that carries it"
+at = "{message} at ({x}, {y}) mm"

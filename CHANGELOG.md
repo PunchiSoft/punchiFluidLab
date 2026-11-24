@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### El chequeo entrega claves y el CLI habla inglés — 2026-11-24
+
+- **`punchi-fluid-check`**: `FindingKind` conserva su nombre estable (`as_str`) y la crate deja
+  de entregar frases; desaparecen `message_es` y `describe`. La ventana mapea cada `kind` a
+  `check.finding.*` y compone la línea con la posición; el CLI compone su inglés fijo.
+- **CLI**: `check` imprime `ok: no faults`, una línea inglesa por falta y `N fault(s)`; el
+  campo `message` del JSON pasa a inglés. La ayuda y los errores propios ya lo estaban.
+- **Pruebas**: la prueba del panel cubre también una hoja con faltas en ambos idiomas y el
+  test del JSON comprueba el mensaje inglés; la suite de la ventana sigue en **315**.
+- **Pendiente de fase 4**: causas de error de file/sesión, `summary_es` del catálogo, etiquetas
+  del exportador y el resto del CLI.
+
 ### Barra de estado y ciclo de vida eligen idioma — 2026-11-24
 
 - **Barra de estado**: la línea completa (tamaño de hoja, zoom, escala, tiempo de dibujo,
