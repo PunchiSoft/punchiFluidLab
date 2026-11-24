@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Animación de la simulación — 2026-11-24
+
+- La ventana repinta mientras Play está activo y deja de despertar al pausar. El dibujo Rust
+  muestra el flujo firmado de cada tubo con la fase del tiempo simulado; el cilindro conserva
+  la posición calculada por el modelo.
+- El solver calcula la fuerza de los pistones sin crear un vector en cada subpaso. Se agrega
+  `--trace-frames`, que emite CSV de duración completa por frame en lotes de tamaño fijo.
+- Las pruebas cubren el circuito de ejemplo con cilindro de simple efecto, el flujo en orden
+  de conexión, el movimiento reducido y el repintado solo durante la simulación.
+- La traza Release del recorrido manual del ejemplo (6 componentes, 2162 frames) registró
+  p50 1.495 ms, p95 2.068 ms y máximo 3.607 ms; incluye Inicio y frames sin Play, así que no
+  representa el caso de 200 componentes ni permite comparar contra el binario anterior.
+
 ### Accionar válvulas solo con Play activo — 2026-11-24
 
 - En edición detenida o pausada, un clic en la válvula ya no cambia el modelo y se puede

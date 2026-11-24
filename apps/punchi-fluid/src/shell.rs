@@ -573,11 +573,12 @@ impl Window {
     /// The circuit's scene for this frame, with the live drag or armed move previewed on the
     /// drawing and not written to the document.
     fn sheet_scene(&self) -> crate::scene::Scene<'_> {
-        let mut scene = scene::build(
+        let mut scene = scene::build_for_frame(
             &self.document,
             &self.catalog,
             self.document.active_circuit(),
             self.model.as_ref(),
+            self.theme.tokens.motion_ms > 0,
         );
         let preview = self
             .drag

@@ -6,6 +6,8 @@
 use eframe::egui;
 use punchi_fluid_doc::{Align, Document, Endpoint, Placement};
 use punchi_fluid_draw::surface::{Call, Colour, Recording};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use super::{Drag, Pt, Window, sheet, theme};
 
@@ -461,6 +463,79 @@ fn the_transport_runs_the_model_the_session_builds() {
     window.stop();
     assert!(!window.running);
     assert!(window.model.is_none());
+}
+
+#[test]
+fn a_running_simulation_requests_frames_until_it_is_paused() {
+    let mut document = Document::new();
+    let supply = document.place(Placement::new(
+        "supply.compressor",
+        Pt::new(60.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let valve = document.place(Placement::new(
+        "valve.5_2.spring_return",
+        Pt::new(120.0, 100.0),
+        20.0,
+        20.0,
+    ));
+    let cylinder = document.place(Placement::new(
+        "cylinder.double_acting_32_200",
+        Pt::new(200.0, 100.0),
+        44.0,
+        20.0,
+    ));
+    let supply_id = document.placements()[supply].id();
+    let valve_id = document.placements()[valve].id();
+    let cylinder_id = document.placements()[cylinder].id();
+    document.connect(
+        Endpoint::new(supply_id, "1"),
+        Endpoint::new(valve_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "2"),
+        Endpoint::new(cylinder_id, "1"),
+        None,
+    );
+    document.connect(
+        Endpoint::new(valve_id, "4"),
+        Endpoint::new(cylinder_id, "2"),
+        None,
+    );
+    let mut window = Window::new(theme::Theme::fallback(), document, None, None);
+    let context = egui::Context::default();
+    let requested_delay = Arc::new(Mutex::new(None));
+    let delay_for_callback = Arc::clone(&requested_delay);
+    context.set_request_repaint_callback(move |request| {
+        *delay_for_callback
+            .lock()
+            .expect("the test callback mutex is not poisoned") = Some(request.delay);
+    });
+
+    window.start();
+    window.tick(&context);
+    let delay = *requested_delay
+        .lock()
+        .expect("the test callback mutex is not poisoned");
+    assert!(
+        delay.is_some_and(|delay| delay <= Duration::from_millis(16)),
+        "a running simulation schedules a repaint within 16 ms: {delay:?}"
+    );
+
+    window.pause();
+    *requested_delay
+        .lock()
+        .expect("the test callback mutex is not poisoned") = None;
+    window.tick(&context);
+    assert_eq!(
+        *requested_delay
+            .lock()
+            .expect("the test callback mutex is not poisoned"),
+        None,
+        "a paused simulation does not keep waking the window"
+    );
 }
 
 #[test]

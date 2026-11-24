@@ -4,9 +4,25 @@
 //! The run until a state change: the one command that needs the clock and the model
 //! together and nothing from the layout.
 
+use std::time::Duration;
+
+use eframe::egui;
+
 use crate::Window;
 
 impl Window {
+    /// Rebuilds stale model state and advances the running clock at the sheet's frame pace.
+    pub(crate) fn tick(&mut self, context: &egui::Context) {
+        self.rebuild_if_stale();
+        if self.running {
+            let dt = f64::from(context.input(|input| input.stable_dt).min(0.1));
+            self.advance(dt * f64::from(self.speed.factor()));
+            if self.running {
+                context.request_repaint_after(Duration::from_millis(16));
+            }
+        }
+    }
+
     /// Leaves simulation input inactive and releases a valve held by the pointer.
     pub(crate) fn pause(&mut self) {
         self.running = false;
