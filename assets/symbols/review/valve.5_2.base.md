@@ -3,9 +3,9 @@
 
 # Review record: `valve.5_2.base`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: 5/2 directional control valve in its base form — two positions, five ports, no return and no actuation
 
 ## The claim
@@ -82,12 +82,12 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 | Does the arrow point at the far end of the connection? | yes: the supply path at its working port, the exhaust path at its exhaust |
 | Are spring and actuator on the declared sides? | there is no spring and no actuator in the base form |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the port sides were inverted; they now follow
   `X10400` (`4`/`2` above, `5`/`1`/`3` below), the offsets are the figure's, and the two
@@ -96,8 +96,6 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - The base is a composition and has no single registered X-number; that is the catalog's
   existing organisation, not a change made here.
 - ISO 11727 is the reference for the `4`/`2` and `5`/`3` assignment; it was not read in

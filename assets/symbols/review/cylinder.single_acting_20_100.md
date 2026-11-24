@@ -3,9 +3,9 @@
 
 # Review record: `cylinder.single_acting_20_100`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: single-acting cylinder with a return spring, 20 mm bore, 100 mm stroke
 
 ## The claim
@@ -111,12 +111,12 @@ each axis. The figure's barrel is 2.23 : 1; the drawing's is 2.2 : 1.
 | Does the arrow point at the far end of the connection? | not applicable: no flow path |
 | Are spring and actuator on the declared sides? | yes: the spring is at the rod side (`[spring] side = "right"`) and there is no actuator |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the working port moved from x 7.04 mm to
   4.44 mm, into the end cap, and the cap's inner face from 4 % to 11 % of the barrel's
@@ -128,8 +128,6 @@ each axis. The figure's barrel is 2.23 : 1; the drawing's is 2.2 : 1.
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - **`RF052`**: `X11440` prints a connection in the spring chamber at the rod end and this
   catalog declares the working port only. The model gives a single-acting cylinder one
   working chamber, so a second `working` port would be read as a retract chamber, and the

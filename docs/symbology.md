@@ -514,8 +514,9 @@ drawn by hand, and checked with the lint and the manual list.
 ## Current state, honestly
 
 The structural half of the contract is **implemented** and the visual half is **reviewed at
-palette and canvas size**. Every built-in has its 300 dpi capture; the **second reader's
-signature** is what is still owed.
+palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
+were signed by the second reader on 2026-11-24, and the symbols outside the core still wait
+for that signature.
 
 | Requirement | State | Evidence |
 |---|---|---|
@@ -532,18 +533,28 @@ signature** is what is still owed.
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **not drawn** | M2 |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **open** | the capture exists for every built-in; the second reader has not signed |
-| Second reader's signature | **open** | the reviews are an automated pass |
+| Legible at 300 dpi | **done for the core; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the rest are captured and unsigned |
+| Second reader's signature | **the core is signed; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24 |
 
-Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/)
-with `status: pending-300dpi`. The reviews are compiled into the binary
+Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/).
+The core's files read `status: complete`, signed by the second reader; the files outside the
+core keep `status: pending-300dpi`. The reviews are compiled into the binary
 (`punchi-fluid-catalog::reviews`), and the PDF export asks them whether it may drop the
 note “symbols not yet verified against ISO 1219-1” from its title block: it may not while
-any review is not `complete`. A test asserts the compiled reviews cover every built-in,
-and another asserts the exported file carries the note while they are open.
+any review is not `complete`, which is why the note stays while a non-core review is open.
+A test asserts the compiled reviews cover every built-in, another asserts the exported file
+carries the note while any review is open, and the catalog's review logic has a case for the
+one condition that drops it — every review `complete`.
 
-The PDF is vector, so the drawing is exact at any print resolution; what is still
-missing is a reviewed 300 dpi raster per symbol as evidence.
+The three captures of every built-in are regenerated with
+`cargo run -p punchi-fluid-export --bin symbol-sheet -- --all assets/symbols/review`, which
+writes `<id>-300.png`, `<id>-light.png` and `<id>-dark.png` from the same drawing and the
+same options the per-symbol command documents; the per-symbol form stays for one review at a
+time.
+
+The PDF is vector, so the drawing is exact at any print resolution. The 300 dpi raster that
+serves as evidence exists for every built-in; for the core it is reviewed and signed, for
+the rest it is captured but not yet signed.
 
 One symbol is weaker than the others and says so in its own review: the fixed
 restrictor's throat was drawn without a copy of the standard at hand. A

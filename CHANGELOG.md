@@ -6,6 +6,30 @@ publicación.
 
 ## Unreleased
 
+### La evidencia a 300 dpi — 2026-11-24
+
+- `symbol-sheet --all <dir>` escribe de una vez las tres capturas de cada símbolo
+  incorporado: `<id>-300.png` (tinta de impresión, página de 60 mm), `<id>-light.png` y
+  `<id>-dark.png` (ajustadas al dibujo), con los mismos nombres y opciones que documenta el
+  comando por símbolo. El comando por id sigue disponible para una revisión a la vez y no
+  cambia.
+- Se regeneraron las 120 capturas de los 40 símbolos incorporados: las 57 del núcleo
+  salieron idénticas a las de las fases 2–6 (el dibujante no cambió desde entonces) y 61 de
+  las 63 de los símbolos fuera del núcleo cambiaron, porque su captura era anterior a esos
+  cambios del dibujante.
+- Las 19 revisiones del núcleo pasan a `complete`, firmadas por **Cristian Muñoz (el dueño)**
+  como segundo lector el 2026-11-24, con la fecha del registro intacta y sin tocar ninguna
+  medida ni afirmación técnica. Las revisiones fuera del núcleo siguen `pending-300dpi`, así
+  que la exportación conserva la nota «symbols not yet verified against ISO 1219-1» mientras
+  alguna esté abierta.
+- La matriz de conformidad marca `done` las filas del núcleo y registra el nombre y la fecha
+  del segundo lector; `docs/symbology.md` cuenta el estado real (núcleo firmado, resto
+  pendiente) y documenta el comando por lotes. La lógica de
+  `punchi-fluid-catalog::reviews` gana una prueba para la única condición que retira la nota:
+  que todas las revisiones estén completas.
+- Las variantes de cilindro no se tocan: su requisito está registrado y espera su propio
+  plan.
+
 ### Las válvulas OR/AND y las terminaciones — 2026-11-24
 
 - La válvula selectora sigue `X10740` (ISO 1219-1:2006, 6.1.5.5 y 7.1.5.5; confirmada en

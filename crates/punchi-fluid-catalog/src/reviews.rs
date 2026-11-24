@@ -189,14 +189,22 @@ pub fn status(text: &str) -> Option<&str> {
         .map(str::trim)
 }
 
+/// `true` when every review text carries the `complete` status.
+///
+/// The export drops the "not verified" note on exactly this condition, so the predicate is
+/// kept apart from the compiled list and can be tested with a list of its own.
+fn every_review_complete<'a>(texts: impl IntoIterator<Item = &'a str>) -> bool {
+    texts
+        .into_iter()
+        .all(|text| status(text) == Some("complete"))
+}
+
 /// `true` when every built-in symbol carries a complete review.
 ///
 /// Only then may a document stop calling its own symbols unverified.
 #[must_use]
 pub fn all_complete() -> bool {
-    REVIEWS
-        .iter()
-        .all(|(_, text)| status(text) == Some("complete"))
+    every_review_complete(REVIEWS.iter().map(|(_, text)| *text))
 }
 
 /// Every symptom of a review that is still open, for the export note.
@@ -239,5 +247,24 @@ mod tests {
         } else {
             assert!(!pending().is_empty());
         }
+    }
+
+    #[test]
+    fn all_complete_is_true_only_when_every_review_is_complete() {
+        // A list with no review at all is vacuously complete; the coverage test above keeps
+        // the compiled list non-empty, so this branch cannot drop the note on its own.
+        assert!(every_review_complete(std::iter::empty::<&str>()));
+        assert!(every_review_complete([
+            "    status: complete\n",
+            "status: complete\n",
+        ]));
+        assert!(!every_review_complete([
+            "    status: complete\n",
+            "    status: pending-300dpi\n",
+        ]));
+        assert!(!every_review_complete([
+            "    status: complete\n",
+            "no status at all\n",
+        ]));
     }
 }

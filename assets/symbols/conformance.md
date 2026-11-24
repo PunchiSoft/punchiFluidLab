@@ -18,42 +18,47 @@ The **core** is the set the owner fixed on 2026-11-22: the air supply, the air t
 valves, the OR/AND, the cylinders and the terminations. The rest of the catalog is outside
 this pass and keeps its own record.
 
+The **second reader is Cristian Muñoz, the owner**: he signed the core's records on
+2026-11-24, and that signature is what closes a row, so every row below reads `done`. The
+batch command `symbol-sheet --all assets/symbols/review` regenerated the three captures of
+every built-in; the core's captures did not change, because the Phase 2–6 passes had already
+written them from the same drawing code.
+
 ## The core
 
 | Symbol | Family | Figure / rule | Ports | State | Record |
 |---|---|---|---|---|---|
-| `supply.network` | supply | to read | 1 supply | `pending` | [review](review/supply.network.md) |
-| `supply.compressor` | supply | `X11400` (7.2.4) | 2: `1` intake, `2` delivery | `pending` | [review](review/supply.compressor.md) |
-| `supply.compressor_adjustable` | supply | `X11400` + `RF040` | 2: `1` intake, `2` delivery | `pending` | [review](review/supply.compressor_adjustable.md) |
-| `filter.air` | conditioning | `X11980` (7.4.4.1) | 2 | `pending` | [review](review/filter.air.md) |
-| `filter.air_manual_drain` | conditioning | `X12190` (7.4.4.20) | 2 + drain mark | `pending` | [review](review/filter.air_manual_drain.md) |
-| `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `pending` | [review](review/lubricator.oil.md) |
-| `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2 | `pending` | [review](review/preparation.service_unit.md) |
-| `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation | 2 | `pending` | [review](review/preparation.service_unit_simple.md) |
-| `valve.3_2.base` | valve | `X10280` (6.1.2.6 / 7.1.2.8): composition of the body and positions, no single X-number | 3 | `pending` | [review](review/valve.3_2.base.md) |
-| `valve.3_2.spring_return` | valve | `X10270` (6.1.2.5 / 7.1.2.7) body and spring + `688V1` lever | 3 | `pending` | [review](review/valve.3_2.spring_return.md) |
-| `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `pending` | [review](review/valve.3_2.solenoid.md) |
-| `valve.5_2.base` | valve | `X10400` (6.1.2.15 / 7.1.2.16): composition of the body and positions, no single X-number | 5 | `pending` | [review](review/valve.5_2.base.md) |
-| `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `pending` | [review](review/valve.5_2.spring_return.md) |
-| `valve.shuttle` | valve | `X10740` (6.1.5.5 / 7.1.5.5 in ISO 1219-1:2006; the same in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `in review` | [review](review/valve.shuttle.md) |
-| `valve.two_pressure` | valve | `X10620` (7.1.3.6 in ISO 1219-1:2006; **7.1.3.5** in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `in review` | [review](review/valve.two_pressure.md) |
-| `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.1 hydraulic) | 1: `1` working, cap end | `in review` | [review](review/cylinder.single_acting_20_100.md) |
-| `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.2 hydraulic) | 2: `1` and `2`, one per cap | `in review` | [review](review/cylinder.double_acting_32_200.md) |
-| `plug.blind` | accessory | `2172V1` (8.2.9) closed-path/port bar; the `F038V1` (8.2.10) in-line square is a different figure and is recorded | 1: `1` working, the capped port | `in review` | [review](review/plug.blind.md) |
-| `silencer.pneumatic` | accessory | `2033V1` (8.7.37): the standard draws a 4M × 2M box with three relief lines; the contract's cone differs and is recorded | 1: `1` exhaust | `in review` | [review](review/silencer.pneumatic.md) |
+| `supply.network` | supply | to read | 1 supply | `done` | [review](review/supply.network.md) |
+| `supply.compressor` | supply | `X11400` (7.2.4) | 2: `1` intake, `2` delivery | `done` | [review](review/supply.compressor.md) |
+| `supply.compressor_adjustable` | supply | `X11400` + `RF040` | 2: `1` intake, `2` delivery | `done` | [review](review/supply.compressor_adjustable.md) |
+| `filter.air` | conditioning | `X11980` (7.4.4.1) | 2 | `done` | [review](review/filter.air.md) |
+| `filter.air_manual_drain` | conditioning | `X12190` (7.4.4.20) | 2 + drain mark | `done` | [review](review/filter.air_manual_drain.md) |
+| `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `done` | [review](review/lubricator.oil.md) |
+| `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2 | `done` | [review](review/preparation.service_unit.md) |
+| `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation | 2 | `done` | [review](review/preparation.service_unit_simple.md) |
+| `valve.3_2.base` | valve | `X10280` (6.1.2.6 / 7.1.2.8): composition of the body and positions, no single X-number | 3 | `done` | [review](review/valve.3_2.base.md) |
+| `valve.3_2.spring_return` | valve | `X10270` (6.1.2.5 / 7.1.2.7) body and spring + `688V1` lever | 3 | `done` | [review](review/valve.3_2.spring_return.md) |
+| `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `done` | [review](review/valve.3_2.solenoid.md) |
+| `valve.5_2.base` | valve | `X10400` (6.1.2.15 / 7.1.2.16): composition of the body and positions, no single X-number | 5 | `done` | [review](review/valve.5_2.base.md) |
+| `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `done` | [review](review/valve.5_2.spring_return.md) |
+| `valve.shuttle` | valve | `X10740` (6.1.5.5 / 7.1.5.5 in ISO 1219-1:2006; the same in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `done` | [review](review/valve.shuttle.md) |
+| `valve.two_pressure` | valve | `X10620` (7.1.3.6 in ISO 1219-1:2006; **7.1.3.5** in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `done` | [review](review/valve.two_pressure.md) |
+| `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.1 hydraulic) | 1: `1` working, cap end | `done` | [review](review/cylinder.single_acting_20_100.md) |
+| `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.2 hydraulic) | 2: `1` and `2`, one per cap | `done` | [review](review/cylinder.double_acting_32_200.md) |
+| `plug.blind` | accessory | `2172V1` (8.2.9) closed-path/port bar; the `F038V1` (8.2.10) in-line square is a different figure and is recorded | 1: `1` working, the capped port | `done` | [review](review/plug.blind.md) |
+| `silencer.pneumatic` | accessory | `2033V1` (8.7.37): the standard draws a 4M × 2M box with three relief lines; the contract's cone differs and is recorded | 1: `1` exhaust | `done` | [review](review/silencer.pneumatic.md) |
 
-The two cylinders are `in review` after the Phase 5 pass: their records, fixtures and
-captures are rewritten and their state waits for the 300 dpi signature. `X11440` also prints
-a spring-chamber connection at the rod end; the catalog declares the working port only, a
+The two cylinders are `done` after the Phase 5 and Phase 7 passes. `X11440` also prints a
+spring-chamber connection at the rod end; the catalog declares the working port only, a
 recorded `RF052` omission (the model has one working chamber and the schema has no breather
-role), so the row does not claim `done`.
+role). The record states the omission instead of drawing a port the model does not have, and
+the row is `done` on a complete, signed record that names it.
 
-The four terminations and pressure elements are `in review` after the Phase 6 pass: the
-figures were read again, the records, fixtures and captures rewritten, and the state waits
-for the 300 dpi signature. Two differences are recorded rather than hidden: the plug is
-drawn with `2172V1`'s closed-port bar and not with `F038V1`'s in-line square, and the
-silencer keeps the contract's cone (ADR 0016) while `2033V1` draws a box with three relief
-lines. Neither row claims `done` while those are open.
+The four terminations and pressure elements are `done` after the Phase 6 and Phase 7 passes.
+Two differences are recorded rather than hidden: the plug is drawn with `2172V1`'s
+closed-port bar and not with `F038V1`'s in-line square, and the silencer keeps the contract's
+cone (ADR 0016) while `2033V1` draws a box with three relief lines. Both records carry those
+as open items, and the second reader signed them on 2026-11-24.
 
 ## Outside this pass
 

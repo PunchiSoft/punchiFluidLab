@@ -3,9 +3,9 @@
 
 # Review record: `valve.3_2.solenoid`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: 3/2 directional control valve, single solenoid, spring return, normally closed
 
 ## The claim
@@ -90,12 +90,12 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 | Does the arrow point at the far end of the connection? | yes: at `3` at rest, at `2` when actuated |
 | Are spring and actuator on the declared sides? | yes: solenoid at the left, spring at the right |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the body's y moved from 0.24 to 0.28 so it is
   centred like the other 3/2 files; the two positions now carry their blocking marks
@@ -104,8 +104,6 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - The coil terminal is a project connection point: ISO 1219-1 does not define it on the
   valve symbol, and the schema requires it inside the 0..1 box, so it sits at the left
   edge rather than at the coil's outer end.

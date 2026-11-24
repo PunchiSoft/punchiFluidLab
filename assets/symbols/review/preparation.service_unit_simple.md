@@ -1,8 +1,8 @@
 # preparation.service_unit_simple — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: service unit, simplified representation
 
 ## The claim
@@ -69,11 +69,18 @@
 
 ## What is still open
 
-- The second reader's signature.
 - The 2012 text is read through the Japanese adoption, not the ISO text itself.
 - The tick's meaning is not stated by the figure; the review records what is drawn.
 - The model is the same fixed restriction as the full unit: it does not regulate, filter or
   lubricate.
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

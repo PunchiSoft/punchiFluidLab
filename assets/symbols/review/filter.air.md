@@ -1,8 +1,8 @@
 # filter.air — conformance review
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: air filter
 
 ## The claim
@@ -62,10 +62,17 @@ The symbol box is 20 mm; the normalised coordinates map to millimetres on both a
 
 ## What is still open
 
-- The second reader's signature.
 - The 2012 text is read through the Japanese adoption, not the ISO text itself.
 - The filter is modelled as a fixed restriction with a high conductance: it does not clog,
   and nothing separates the particles it traps.
+
+## Sign-off
+
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-24
+- **What changed since the last record**: nothing in the record changed; the
+  second reader signed its measures and open items on 2026-11-24.
 
 ## Images
 

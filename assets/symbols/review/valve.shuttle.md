@@ -1,8 +1,8 @@
 # Review record: `valve.shuttle`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, pending a person's sign-off
+    reviewer: Cristian Muñoz (owner), second reader
     function: shuttle valve (OR); the outlet follows the higher-pressure inlet
 
 ## The claim
@@ -94,11 +94,10 @@ millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
 | Does the arrow point at the far end of the connection? | No flow arrow on a flat pressure symbol: the seats and the dot carry the meaning. |
 | Are spring and actuator on the declared sides? | No spring and no actuator. |
 | Is the symbol legible at palette size? | Yes: `valve.shuttle-light.png`, `valve.shuttle-dark.png`. |
-| Is the symbol legible at 300 dpi? | Yes: `valve.shuttle-300.png`; the second reader's signature is still owed. |
+| Is the symbol legible at 300 dpi? | Yes: `valve.shuttle-300.png`. |
 
 ## Open items
 
-- The second reader's signature is owed (the record is `pending-300dpi`).
 - The standard prints no port numerals; the two `1`s and the `2` are the project's
   `RF053` designations, and the record says so instead of claiming the figure prints them.
 - The moving ball's centre and right seats are the state display of ADR 0041, not
@@ -115,8 +114,8 @@ millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: automated pass, pending a person's sign-off
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: the body follows the figure's 8M × 4M (it was
   12 × 10 mm), the seats, ball and junction dot were moved to the figure's positions, and

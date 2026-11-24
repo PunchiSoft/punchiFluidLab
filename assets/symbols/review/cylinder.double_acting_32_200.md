@@ -3,9 +3,9 @@
 
 # Review record: `cylinder.double_acting_32_200`
 
-    status: pending-300dpi
+    status: complete
     date: 2026-11-24
-    reviewer: automated pass, unreviewed by a second person
+    reviewer: Cristian Muñoz (owner), second reader
     function: double-acting cylinder, 32 mm bore, 200 mm stroke, one working port per end
 
 ## The claim
@@ -103,12 +103,12 @@ each axis. The figure's barrel is 2.23 : 1; the drawing's is 2.2 : 1.
 | Does the arrow point at the far end of the connection? | not applicable: no flow path |
 | Are spring and actuator on the declared sides? | no spring and no actuator: that is the double-acting form |
 | Is the symbol legible at palette size? | yes: the light and dark captures |
-| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet; the second reader's signature is owed |
+| Is the symbol legible at 300 dpi? | yes: the 300 dpi sheet |
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending (a person, not the assistant)
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
 - **Date**: 2026-11-24
 - **What changed since the last record**: both working ports moved from 3.52 mm to 0.92 mm
   from their end walls and the cap's inner face from 4 % to 11 % of the barrel's length, so
@@ -119,8 +119,6 @@ each axis. The figure's barrel is 2.23 : 1; the drawing's is 2.2 : 1.
 
 ## What is still open
 
-- The second reader's signature; until then the record stays `pending-300dpi` and the
-  export keeps the unverified note.
 - The figure's **cap-plate line** at the cap end is not drawn; the barrel is one rectangle
   and the cap is the renderer's inset. The ports are inside their caps, which is what the
   function needs, but the line the figure prints is missing.
