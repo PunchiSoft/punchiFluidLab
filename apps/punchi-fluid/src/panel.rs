@@ -240,7 +240,10 @@ impl Panel {
         let shown = panel
             .exact_width(width)
             .resizable(false)
-            .frame(egui::Frame::NONE)
+            // The column behind the card is the workspace's own colour, never the unthemed
+            // window background: the card floats on the canvas grey and the collapsed rail
+            // keeps that same ground in every theme.
+            .frame(egui::Frame::default().fill(tokens.surface_sunken))
             .show(context, |ui| {
                 if self.shade <= 0.001 && !self.open {
                     if self.rail(ui, tokens) {
