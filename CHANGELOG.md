@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### La tarjeta de Descripción muestra su imagen — 2026-11-24
+
+- **Tarjeta**: la ventana **Descripción** vuelve a mostrar la imagen del componente; faltaba el
+  loader de raster de `egui_extras` (feature `image`), y sin él la ventana pintaba el «?» del
+  loader en lugar de la imagen. La imagen y sus datos ya estaban compilados en el binario.
+- **Pruebas**: `the_description_card_image_is_loaded` comprueba que el PNG de 800 × 450 se
+  decodifica y se sube como textura; sin la feature de imagen la prueba falla.
+
 ### El exportador lee sus etiquetas del catálogo — 2026-11-24
 
 - **Etiquetas**: los juegos inglés/español de `Labels` salen de la crate de exportación y

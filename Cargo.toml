@@ -54,7 +54,7 @@ eframe = { version = "0.32", default-features = false, features = [
     "x11",
 ] }
 # The ribbon's SVG icons (ADR 0036) and the headless UI tests.
-egui_extras = { version = "0.32", features = ["svg"] }
+egui_extras = { version = "0.32", features = ["svg", "image"] }
 egui_kittest = "0.32"
 
 [workspace.lints.rust]
