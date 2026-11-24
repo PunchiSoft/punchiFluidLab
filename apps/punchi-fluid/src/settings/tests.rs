@@ -134,6 +134,8 @@ fn settings(catalog: (bool, f32), inspector: (bool, f32), autohide: bool) -> Set
         language: punchi_fluid_i18n::Language::English,
         strip_folded: false,
         block_visible: true,
+        grid: false,
+        grid_step: crate::grid::DEFAULT_STEP_MM,
     }
 }
 
@@ -561,4 +563,18 @@ fn the_strip_fold_and_the_block_visibility_round_trip() {
     let older = crate::settings::parse("version=1\n").expect("an older file");
     assert!(!older.strip_folded);
     assert!(older.block_visible);
+}
+
+#[test]
+fn the_grid_and_its_step_round_trip() {
+    let mut expected = settings((true, 240.0), (true, 360.0), false);
+    expected.grid = true;
+    expected.grid_step = 20;
+    let text = crate::settings::format(&expected).expect("the settings format");
+    assert_eq!(crate::settings::parse(&text), Some(expected));
+    let older = crate::settings::parse("version=1\n").expect("an older file");
+    assert!(!older.grid);
+    assert_eq!(older.grid_step, crate::grid::DEFAULT_STEP_MM);
+    let unknown = crate::settings::parse("version=1\ngrid_step=7\n").expect("an unknown step");
+    assert_eq!(unknown.grid_step, crate::grid::DEFAULT_STEP_MM);
 }

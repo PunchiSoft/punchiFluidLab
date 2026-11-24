@@ -32,6 +32,7 @@ mod edit_commands;
 mod export;
 mod export_options;
 mod files;
+mod grid;
 mod inspector;
 mod layout;
 mod lifecycle;
@@ -185,6 +186,8 @@ struct Window {
     zoom_drag: Option<crate::view::ZoomWindow>,
     /// The floating view strip over the right edge of the drawing area and its fold state.
     strip: view_strip::ViewStrip,
+    /// The view grid: visible or hidden, and its step in millimetres.
+    grid: grid::GridView,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.
@@ -597,6 +600,7 @@ impl Window {
                 self.drag = None;
             }
             Command::Hand => self.hand_mode = !self.hand_mode,
+            Command::Grid => self.grid.visible = !self.grid.visible,
             Command::Catalog | Command::Properties | Command::Autohide | Command::ResetView => {
                 self.view_command(command);
             }

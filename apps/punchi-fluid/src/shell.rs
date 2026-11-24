@@ -553,11 +553,12 @@ impl Window {
 
     /// Draws the page with the block or without it, as the view toggle asks.
     fn draw_page(&self, drawing: &mut EguiSurface) {
+        sheet::draw_frame(drawing, &self.page);
+        crate::grid::draw(drawing, &self.page, self.grid, &self.theme.tokens);
         if self.show_block {
-            sheet::draw(drawing, &self.page, &self.block);
-        } else {
-            sheet::draw_without_block(drawing, &self.page);
+            sheet::draw_block(drawing, &self.page, &self.block);
         }
+        sheet::draw_parts(drawing, &self.page);
     }
 
     /// The circuit's scene for this frame, with the live drag or armed move previewed on the

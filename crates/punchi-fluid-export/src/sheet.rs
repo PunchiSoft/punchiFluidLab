@@ -27,17 +27,22 @@ pub(crate) const HEADING: f32 = 5.0;
 pub(crate) const MUTED: Colour = Colour::new(90, 90, 90);
 /// Draws the frame, the reference zones, the centring marks and the title block.
 pub fn draw(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
-    draw_sheet(surface, page, Some(block));
+    draw_frame(surface, page);
+    draw_block(surface, page, block);
+    draw_parts(surface, page);
 }
 
 /// The sheet without its title block: the window's view toggle hides the block, never the
 /// frame, the reference zones, the centring marks or the parts list. The print surface keeps
 /// the block, because a sheet without it is not identifiable.
 pub fn draw_without_block(surface: &mut dyn Surface, page: &Page) {
-    draw_sheet(surface, page, None);
+    draw_frame(surface, page);
+    draw_parts(surface, page);
 }
 
-fn draw_sheet(surface: &mut dyn Surface, page: &Page, block: Option<&TitleBlock>) {
+/// The paper, the frame, the reference zones and the centring marks: what the sheet is,
+/// before its block and its parts. The window draws the view grid between this and the block.
+pub fn draw_frame(surface: &mut dyn Surface, page: &Page) {
     // The paper belongs to the drawing, not to the window: the print surface paints it
     // white, and the window's surface maps that white to the theme's `paper` token. It is
     // the first call so the frame, the block and the circuit sit on top of it.
@@ -46,20 +51,22 @@ fn draw_sheet(surface: &mut dyn Surface, page: &Page, block: Option<&TitleBlock>
     surface.rect(content, 0.0, None, Some(Stroke::new(FRAME, Colour::BLACK)));
     draw_reference_zones(surface, page);
     draw_centring_marks(surface, page);
-    if let Some(block) = block {
-        draw_title_block(surface, page, block);
-        if let Some(note) = &block.note {
-            // Inside the frame, never in the margin: the margin band belongs to the paper.
-            surface.text(
-                Pt::new(content.min.x + 2.0, content.min.y + 2.5),
-                note,
-                LABEL,
-                Colour::new(170, 40, 40),
-                Anchor::Start,
-            );
-        }
+}
+
+/// The title block and its note, when the sheet carries them.
+pub fn draw_block(surface: &mut dyn Surface, page: &Page, block: &TitleBlock) {
+    draw_title_block(surface, page, block);
+    if let Some(note) = &block.note {
+        // Inside the frame, never in the margin: the margin band belongs to the paper.
+        let content = page.content_rect();
+        surface.text(
+            Pt::new(content.min.x + 2.0, content.min.y + 2.5),
+            note,
+            LABEL,
+            Colour::new(170, 40, 40),
+            Anchor::Start,
+        );
     }
-    draw_parts(surface, page);
 }
 
 /// Length of a centring mark beyond the frame, in millimetres (ISO 5457 §4.3).
@@ -120,7 +127,8 @@ fn draw_centring_marks(surface: &mut dyn Surface, page: &Page) {
 /// A schematic without it is a drawing a technician cannot build from: the symbols say
 /// what kind of valve it is, the list says how many and with which designation. The column
 /// shares the block's width so the bottom-right corner reads as one block of information.
-fn draw_parts(surface: &mut dyn Surface, page: &Page) {
+/// The parts list on the sheet, when the page carries one.
+pub fn draw_parts(surface: &mut dyn Surface, page: &Page) {
     let rect = page.parts_rect();
     if rect.is_empty() {
         return;
