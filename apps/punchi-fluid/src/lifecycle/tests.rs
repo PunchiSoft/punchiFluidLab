@@ -14,6 +14,7 @@ use egui_kittest::kittest::Queryable;
 use punchi_fluid_doc::{Document, Placement};
 use punchi_fluid_draw::Pt;
 use punchi_fluid_file::sheet::Sheet;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::safety::SafetyCopy;
 
@@ -272,7 +273,7 @@ fn the_banner_offers_the_copy_and_recovering_installs_it_without_a_path() {
         window.is_modified(),
         "recovered work counts as unsaved work"
     );
-    assert_eq!(window.notice.as_deref(), Some("recuperado"));
+    assert_eq!(window.notice.as_deref(), Some("recovered"));
     assert!(!window.has_recovery(), "the offer has been answered");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -296,7 +297,7 @@ fn discarding_the_recovery_removes_the_copy_and_hides_the_banner() {
     }
     assert!(!copy_path.exists(), "discarding removes the copy");
     assert!(window.start_open, "discarding keeps the page");
-    assert_eq!(window.notice.as_deref(), Some("copia descartada"));
+    assert_eq!(window.notice.as_deref(), Some("recovery copy discarded"));
     assert!(!window.has_recovery());
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -324,7 +325,7 @@ fn a_corrupt_copy_keeps_the_banner_and_reports_the_reason() {
         window
             .notice
             .as_deref()
-            .is_some_and(|notice| notice.contains("no se pudo recuperar")),
+            .is_some_and(|notice| notice.contains("Could not recover")),
         "the status bar says why: {:?}",
         window.notice
     );
@@ -351,11 +352,11 @@ fn the_close_question_appears_and_cancel_keeps_the_window() {
 
     {
         let mut harness = panel_harness(&mut window);
-        assert!(harness.query_by_label("Guardar y cerrar").is_some());
-        harness.get_by_label("Cancelar").click();
+        assert!(harness.query_by_label("Save and close").is_some());
+        harness.get_by_label("Cancel").click();
         harness.run();
         harness.step();
-        assert!(harness.query_by_label("Guardar y cerrar").is_none());
+        assert!(harness.query_by_label("Save and close").is_none());
     }
     assert!(
         window.lifecycle.panel.is_none(),
@@ -366,7 +367,7 @@ fn the_close_question_appears_and_cancel_keeps_the_window() {
 }
 
 #[test]
-fn guardar_y_cerrar_saves_the_document_and_closes_the_window() {
+fn save_and_close_saves_the_document_and_closes_the_window() {
     let dir = scratch("close-save");
     let copy_path = dir.join("recovery.pfluid");
     let target = dir.join("trabajo.pfluid");
@@ -381,7 +382,7 @@ fn guardar_y_cerrar_saves_the_document_and_closes_the_window() {
 
     {
         let mut harness = panel_harness(&mut window);
-        harness.get_by_label("Guardar y cerrar").click();
+        harness.get_by_label("Save and close").click();
         harness.run();
         harness.step();
     }
@@ -397,7 +398,7 @@ fn guardar_y_cerrar_saves_the_document_and_closes_the_window() {
 }
 
 #[test]
-fn cerrar_sin_guardar_discards_the_copy_and_closes_the_window() {
+fn close_without_saving_discards_the_copy_and_closes_the_window() {
     let dir = scratch("close-discard");
     let copy_path = dir.join("recovery.pfluid");
     let target = dir.join("trabajo.pfluid");
@@ -412,7 +413,7 @@ fn cerrar_sin_guardar_discards_the_copy_and_closes_the_window() {
 
     {
         let mut harness = panel_harness(&mut window);
-        harness.get_by_label("Cerrar sin guardar").click();
+        harness.get_by_label("Close without saving").click();
         harness.run();
         harness.step();
     }
@@ -429,7 +430,7 @@ fn cerrar_sin_guardar_discards_the_copy_and_closes_the_window() {
 }
 
 #[test]
-fn a_guardar_y_cerrar_without_a_path_waits_for_the_save_dialog() {
+fn save_and_close_without_a_path_waits_for_the_save_dialog() {
     let dir = scratch("close-nopath");
     let mut window = window_with(None, SafetyCopy::at(None));
     window.document = valve_document();
@@ -438,7 +439,7 @@ fn a_guardar_y_cerrar_without_a_path_waits_for_the_save_dialog() {
     assert!(commands.contains(&egui::ViewportCommand::CancelClose));
     {
         let mut harness = panel_harness(&mut window);
-        harness.get_by_label("Guardar y cerrar").click();
+        harness.get_by_label("Save and close").click();
         harness.run();
     }
     assert!(
@@ -454,7 +455,7 @@ fn a_guardar_y_cerrar_without_a_path_waits_for_the_save_dialog() {
 }
 
 #[test]
-fn a_guardar_y_cerrar_saved_from_the_dialog_closes_after_the_name_is_chosen() {
+fn save_and_close_from_the_dialog_closes_after_the_name_is_chosen() {
     let dir = scratch("close-dialog-save");
     let target = dir.join("guardado.pfluid");
     let mut window = window_with(None, SafetyCopy::at(None));
@@ -464,7 +465,7 @@ fn a_guardar_y_cerrar_saved_from_the_dialog_closes_after_the_name_is_chosen() {
     assert!(commands.contains(&egui::ViewportCommand::CancelClose));
     {
         let mut harness = panel_harness(&mut window);
-        harness.get_by_label("Guardar y cerrar").click();
+        harness.get_by_label("Save and close").click();
         harness.run();
     }
     assert!(window.dialog.is_some(), "the name is still missing");
@@ -484,6 +485,78 @@ fn a_guardar_y_cerrar_saved_from_the_dialog_closes_after_the_name_is_chosen() {
 }
 
 #[test]
+fn the_lifecycle_panels_follow_the_language() {
+    let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+    {
+        let mut harness = page_harness(&mut window);
+        harness.get_by_label("About").click();
+        harness.run();
+        harness.step();
+        assert!(harness.query_all_by_label("About").count() >= 1);
+        assert!(harness.query_all_by_label_contains("Version ").count() >= 1);
+        assert!(harness.query_by_label("Close").is_some());
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        harness.step();
+        harness.get_by_label("License").click();
+        harness.run();
+        harness.step();
+        assert!(
+            harness
+                .query_all_by_label_contains("GNU General Public License, version 3")
+                .count()
+                >= 1
+        );
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        harness.step();
+    }
+    window.language = Language::Spanish;
+    {
+        let mut harness = page_harness(&mut window);
+        harness.get_by_label("Acerca de").click();
+        harness.run();
+        harness.step();
+        assert!(harness.query_all_by_label("Acerca de").count() >= 1);
+        assert!(harness.query_all_by_label_contains("Versión ").count() >= 1);
+        assert!(harness.query_by_label("Cerrar").is_some());
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        harness.step();
+        harness.get_by_label("Licencia").click();
+        harness.run();
+        harness.step();
+        assert!(
+            harness
+                .query_all_by_label_contains("GNU General Public License, versión 3")
+                .count()
+                >= 1
+        );
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        harness.step();
+    }
+    let dir = scratch("lang-close");
+    let mut window = window_with(Some(dir.join("trabajo.pfluid")), SafetyCopy::at(None));
+    window.document = valve_document();
+    window.language = Language::Spanish;
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, close_input());
+    {
+        let harness = panel_harness(&mut window);
+        assert!(
+            harness
+                .query_all_by_label("Hay cambios sin guardar")
+                .count()
+                >= 1
+        );
+        assert!(harness.query_by_label("Guardar y cerrar").is_some());
+        assert!(harness.query_by_label("Cancelar").is_some());
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn about_and_licence_open_and_escape_closes_them() {
     let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
     {
@@ -493,16 +566,16 @@ fn about_and_licence_open_and_escape_closes_them() {
         harness.step();
         assert!(
             harness
-                .query_by_label_contains(&format!("Versión {}", env!("CARGO_PKG_VERSION")))
+                .query_by_label_contains(&format!("Version {}", env!("CARGO_PKG_VERSION")))
                 .is_some(),
             "the About panel names the version"
         );
-        assert!(harness.query_by_label("Cerrar").is_some());
+        assert!(harness.query_by_label("Close").is_some());
         harness.key_press(egui::Key::Escape);
         harness.run();
         harness.step();
         assert!(
-            harness.query_by_label("Cerrar").is_none(),
+            harness.query_by_label("Close").is_none(),
             "Esc closes About"
         );
     }
@@ -522,7 +595,7 @@ fn about_and_licence_open_and_escape_closes_them() {
         harness.run();
         harness.step();
         assert!(
-            harness.query_by_label("Cerrar").is_none(),
+            harness.query_by_label("Close").is_none(),
             "Esc closes Licence"
         );
     }

@@ -62,6 +62,17 @@ impl Language {
             .unwrap_or(key)
     }
 
+    /// A number formatted with the language's decimal separator: `.` in English, `,` in
+    /// Spanish. The caller keeps the unit and the precision.
+    #[must_use]
+    pub fn decimal(self, value: f64, decimals: usize) -> String {
+        let text = format!("{value:.decimals$}");
+        match self {
+            Self::English => text,
+            Self::Spanish => text.replace('.', ","),
+        }
+    }
+
     /// The text of `key` with named `{parameter}` placeholders replaced.
     #[must_use]
     pub fn format(self, key: &'static str, parameters: &[(&str, &str)]) -> String {
@@ -163,6 +174,14 @@ mod tests {
         assert_eq!(Language::English.text("menu.move"), "Move");
         assert_eq!(Language::Spanish.text("menu.move"), "Mover");
         assert_eq!(Language::Spanish.text("does.not.exist"), "does.not.exist");
+    }
+
+    #[test]
+    fn a_number_uses_the_language_decimal_separator() {
+        assert_eq!(Language::English.decimal(4.5, 2), "4.50");
+        assert_eq!(Language::Spanish.decimal(4.5, 2), "4,50");
+        assert_eq!(Language::English.decimal(1200.0, 0), "1200");
+        assert_eq!(Language::Spanish.decimal(0.25, 1), "0,2");
     }
 
     #[test]

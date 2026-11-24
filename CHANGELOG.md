@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Barra de estado y ciclo de vida eligen idioma — 2026-11-24
+
+- **Barra de estado**: la línea completa (tamaño de hoja, zoom, escala, tiempo de dibujo,
+  último comando, documento y simulación) lee el catálogo; los decimales usan el separador del
+  idioma y «sin título» se traduce. La telemetría de simulación también.
+- **Ciclo de vida**: Acerca de (título, versión, descripción), Licencia (título y versión de la
+  GPL) y la pregunta de cambios sin guardar con guardar y cerrar / cerrar sin guardar /
+  cancelar; los avisos de recuperación y descarte.
+- **i18n**: nuevo `Language::decimal` para formatear números con el separador del idioma, con
+  prueba propia.
+- **Pruebas**: `the_status_bar_follows_the_language`,
+  `the_lifecycle_panels_follow_the_language` y `a_number_uses_the_language_decimal_separator`;
+  la suite de la ventana pasa a **315**.
+- **Fase 3 cerrada**: toda la ventana Rust lee el catálogo. Queda la fase 4 (crates, catálogo,
+  exportador y CLI).
+
 ### Inicio elige idioma — 2026-11-24
 
 - **Inicio completo**: el título y el subtítulo, las secciones Empezar/Plantillas/Recientes con
