@@ -587,12 +587,10 @@ fn tile(
     chosen: bool,
 ) -> (TileAction, egui::Rect) {
     let name_font = egui::FontId::proportional(tokens.text_body);
-    let id_font = egui::FontId::proportional(tokens.text_small);
-    // Two lines of name and one of id, measured rather than guessed: a 42-character name
-    // used to draw four lines over the next row.
+    // Two lines of name, measured rather than guessed, over the symbol; the tile shows only
+    // the symbol and the name, as the reference does.
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
-    let id_row = ui.fonts(|fonts| fonts.row_height(&id_font));
-    let height = 32.0 + name_row * 2.0 + 4.0 + id_row + 2.0;
+    let height = 32.0 + name_row * 2.0 + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -668,27 +666,8 @@ fn tile(
         name_galley,
         tokens.ink,
     );
-    let id_galley = ui.painter().layout(
-        definition.id.clone(),
-        id_font,
-        tokens.ink_muted,
-        width - 4.0,
-    );
-    ui.painter().galley(
-        egui::pos2(
-            rect.center().x - id_galley.size().x * 0.5,
-            rect.max.y - id_galley.size().y - 1.0,
-        ),
-        id_galley,
-        tokens.ink_muted,
-    );
     response.widget_info(|| {
-        egui::WidgetInfo::selected(
-            egui::WidgetType::Button,
-            ui.is_enabled(),
-            chosen,
-            format!("{name}, {}", definition.id),
-        )
+        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), chosen, name)
     });
     let clicked = response.clicked();
     let secondary = response.secondary_clicked();
@@ -701,7 +680,7 @@ fn tile(
         .unwrap_or(rect.center());
     let focus = response.has_focus();
     let menu_key = focus && ui.input(|input| input.key_pressed(egui::Key::F10));
-    response.on_hover_text(format!("{name}\n{}", definition.id));
+    response.on_hover_text(name);
     if clicked || started {
         // The keyboard follows the tile the reader picked or is carrying.
         ui.memory_mut(|memory| memory.request_focus(id));

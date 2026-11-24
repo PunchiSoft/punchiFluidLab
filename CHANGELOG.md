@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### Las baldosas muestran solo el símbolo y el nombre — 2026-11-24
+
+- La baldosa del catálogo deja de dibujar el `id`: muestra **solo el símbolo y el nombre**, como
+  la referencia. El identificador sigue en el catálogo y en la búsqueda, pero no ocupa una línea
+  de la baldosa ni de su nombre accesible.
+- **Pruebas**: las de la paleta siguen en verde; la suite de la ventana pasa a **362**.
+
 ### El catálogo vuelve a la tarjeta de la referencia — 2026-11-24
 
 - El catálogo acoplado se dibuja como la **tarjeta flotante** de la referencia: margen propio,
