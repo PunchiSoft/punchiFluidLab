@@ -310,15 +310,52 @@ checked and reads nothing.
   review stays `pending` until a second reader checks it
   ([review](../assets/symbols/review/)).
 
+### Flat pressure elements (OR and AND)
+
+A shuttle and a two-pressure valve are **flat symbols**: they are a pressure function, not
+a spool with positions, so they declare no `body` and the square-per-position rule does not
+apply (ADR 0039). Both were read in `X10740` (shuttle, OR) and `X10620` (two-pressure,
+AND) — ISO 1219-1:2006 at 6.1.5.5/7.1.5.5 and 7.1.3.6, confirmed against JIS B 0125-1:2020
+at 6.1.5.5/7.1.5.5 and **7.1.3.5** (the clause number differs between the editions; the
+registration number does not).
+
+- **The shuttle (`X10740`) is one rectangle with two opposed check seats and one ball
+  between them**, the junction dot on the through path and the outlet branching from it at
+  the centre. Both inlets are on opposite sides at mid-height; the ball is pushed off the
+  inlet that carries the higher pressure and onto the other, so the outlet follows the
+  higher one. The figure's body is **8M × 4M** and the ball **1M** across (M = 2 mm, so
+  16 × 8 mm and a 1 mm radius). The ball's three positions are the live state of
+  ADR 0041; the seats and the dot are the figure's static form.
+- **The two-pressure valve (`X10620`) is one rectangle with two baffles hanging from the
+  top edge either side of the outlet and a free double piston between the inlets.** The
+  rod is drawn as two parallel lines between the two faces. The figure draws **no through
+  line inside the body**: the inlets stop at the body edge. Its body is **8M × 4M**, the
+  baffles **1M** long at **2M** either side of the centre, the piston faces **2M** tall at
+  **3M** either side, and the rod **0.5M** thick.
+- **Both inlets print `1` and keep distinct ids** (`1a`, `1b`), and the outlet prints `2`
+  (`RF053`; ADR 0039). The figure is a symbol and prints no numerals: the designations are
+  the circuit convention's, so the drawing adds them and the ids stay what a pipe and the
+  solver address.
+- Neither symbol carries a spring or an actuator, and neither has a flow arrow: the check
+  seats, the junction dot and the double piston are what state the function.
+
 ### Terminations
 
 - A **blind plug** is a **stub that ends in the blocking bar**, the same mark a valve draws
-  for a closed way: a reader learns one shape for "closed" and finds it everywhere. It has
-  one port, on the side the hose arrives, and no stub on the far side because nothing
-  leaves.
-- A **silencer** is a **cone that widens away from its port**, with two relief lines across
-  its mouth: the air spreads as it leaves, and the relief lines are what tell it apart from
-  a plain nozzle. It sits on an **exhaust** port and nowhere else. Its body is a solid
+  for a closed way: a reader learns one shape for "closed" and finds it everywhere. The mark
+  is the standard's **`2172V1` (8.2.9), closed path or port**: a stub 1M long closed by a bar
+  1M across. It has one port, on the side the hose arrives, and no stub on the far side
+  because nothing leaves. The standard's other plug figure, **`F038V1` (8.2.10), plug inside
+  a fluid line**, is a square plug drawn *in* the line; a closure fitted on the port itself
+  uses `2172V1`'s bar, and the review records that these are two different figures instead
+  of mixing them.
+- A **silencer** is, in this contract, a **cone that widens away from its port**, with two
+  relief lines across the widening cone: the air spreads as it leaves, and the relief lines
+  are what tell it apart from a plain nozzle. **The standard does not draw that form**:
+  `2033V1` (8.7.37) draws a rectangle **4M × 2M** with **three** relief lines at 1M spacing,
+  two from one edge and one from the other. The difference is recorded in the review and
+  kept as an open item for the owner; the contract's cone is not presented as the figure's
+  geometry. The silencer sits on an **exhaust** port and nowhere else. Its body is a solid
   working line like any component's; the class describes lines, not the things fitted to
   them.
 - **Neither symbol claims a property the model does not have.** The plug is the closed
@@ -326,8 +363,9 @@ checked and reads nothing.
   the noise is not modelled.
 - **A closure is drawn at the port it belongs to**, outside the host body and along the
   port's outward edge, with the closure definition's own hand-drawn symbol. The closure is
-  a small accessory box (10 mm) whose own port faces the host, so the plug's bar or the
-  silencer's cone starts at the connection and points away from the body; it grows the
+  a small accessory box (10 mm) whose own port faces the host, so the plug's stem (ending in
+  the bar) or the silencer's cone (widening to its mouth) starts at the connection and grows
+  away from the body; it grows the
   drawn footprint but is not a separate selectable item and has no selection ring of its
   own. The closure's **own port numeral is suppressed** — the plug or the cone must not
   read as a labelled component — while the **host port's numeral stays visible** and is
@@ -413,6 +451,11 @@ Independent of what a definition file says:
 6. **Every port carries the small open circle** of a connection, drawn by the renderer and
    filled with the paper colour so the last millimetre of a hose goes behind it. A
    definition cannot forget it, and a beginner always sees where a hose attaches.
+7. **A closure fitted to a port belongs to that port.** It is drawn outside the host body,
+   on the port's outward edge, after the body and its port stub so it lies on top of the
+   stub; the host port numeral is kept and stays clear of the closure, the closure's own
+   numeral is suppressed, and the closure draws no selection ring of its own. The closure
+   is part of the host's drawing, not a placement with its own box in the document.
 
 ## Conformance review
 

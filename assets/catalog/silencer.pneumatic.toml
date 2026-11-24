@@ -8,9 +8,13 @@
 # The acoustic part is not modelled: the conductance is the whole of what the file says
 # (ADR 0016), and the review says so.
 #
-# The cone with two relief lines is our drawing of the air leaving: the port arrives from
-# the left and the cone widens away from it. The body is a solid working line, like every
-# other component: the class describes the line, not the thing fitted to it.
+# The symbol is the contract's cone that widens away from its port, with two relief lines
+# across the widening cone: the air spreads as it leaves. The cone's throat is at the port
+# and its mouth is the far end, so the taper never reads as a nozzle that speeds the air up.
+#
+# ISO 1219-1 2033V1 (8.7.37) does not draw a cone: it draws a rectangle 4M x 2M with three
+# relief lines at 1M spacing. That difference is recorded in the review and in
+# docs/symbology.md; this file keeps the contract's form until the owner settles it.
 
 schema = 3
 id = "silencer.pneumatic"
@@ -28,24 +32,26 @@ position = [0.0, 0.5]
 type = "silencer"
 conductance = 4.0e-10
 
+# The port's own stem reaches the throat of the cone.
 [[symbol]]
 kind = "line"
-points = [0.0, 0.5, 0.30, 0.5]
+points = [0.0, 0.50, 0.28, 0.50]
 line_class = "working"
 
-# The cone: the air widens as it leaves.
+# The cone: throat at the port, mouth away from it, so it widens in the flow direction.
 [[symbol]]
 kind = "polygon"
-points = [0.30, 0.24, 0.30, 0.76, 0.78, 0.5]
+points = [0.78, 0.22, 0.78, 0.78, 0.28, 0.50]
 line_class = "working"
 
-# Two relief lines across the mouth, which is what tells a silencer from a plain nozzle.
+# Two relief lines across the widening cone, which is what tells a silencer from a plain
+# nozzle. Each one spans the cone's section at its own position and stops on its walls.
 [[symbol]]
 kind = "line"
-points = [0.50, 0.30, 0.50, 0.70]
+points = [0.54, 0.36, 0.54, 0.64]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.64, 0.38, 0.64, 0.62]
+points = [0.68, 0.28, 0.68, 0.72]
 line_class = "working"

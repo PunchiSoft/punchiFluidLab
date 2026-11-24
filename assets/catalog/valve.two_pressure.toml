@@ -1,14 +1,19 @@
 # SPDX-FileCopyrightText: 2026 PunchiSoft
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Two-pressure valve (AND): the outlet receives only while both inlets carry pressure,
-# and then follows the lower of the two.
+# Two-pressure valve (AND), ISO 1219-1 X10620.
+#
+# The standard draws the functional unit frame with two baffles hanging from the top
+# edge either side of the outlet, and a free double piston between the two inlets: the
+# outlet receives only while both inlets carry pressure, and then follows the lower of
+# the two. The geometry below is read from the 2006 copy of ISO 1219-1 (7.1.3.6, the
+# same figure is 7.1.3.5 in JIS B 0125-1:2020) and confirmed against JIS B 0125-1:2020.
 #
 # The two inlets carry the numeral 1 and the outlet the numeral 2, as the standard
 # draws them; the ids stay distinct because a pipe, the document and the solver
-# address a port by id. The body, the double piston and the outlet path are
-# hand-drawn primitives (ADR 0039): the element is a flat symbol, not a position
-# valve, so it declares no `body` for the valve drawer.
+# address a port by id. The body and the mechanism are hand-drawn primitives (ADR
+# 0039): the element is a flat symbol, not a position valve, so it declares no `body`
+# for the valve drawer.
 
 schema = 3
 id = "valve.two_pressure"
@@ -17,70 +22,80 @@ name_es = "Válvula de dos presiones (AND)"
 category = "valve"
 summary = "Passes air only while both inlets are pressurised, at the lower of the two."
 
-# The square body and the three stubs to the ports.
+# The body: 8M x 4M of the standard's module, M = 2 mm.
 [[symbol]]
 kind = "rect"
-points = [0.25, 0.3, 0.5, 0.4]
+points = [0.10, 0.30, 0.80, 0.40]
+line_class = "working"
+
+# The two inlets stop at the body edge; the chambers inside are drawn by the mechanism.
+[[symbol]]
+kind = "line"
+points = [0.0, 0.50, 0.10, 0.50]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.0, 0.5, 0.25, 0.5]
+points = [0.90, 0.50, 1.0, 0.50]
+line_class = "working"
+
+# The outlet leaves the top edge at the centre and stops there: the figure draws no
+# line from the edge to the piston.
+[[symbol]]
+kind = "line"
+points = [0.50, 0.0, 0.50, 0.30]
+line_class = "working"
+
+# The two baffles hang 1M from the top edge, one each side of the outlet.
+[[symbol]]
+kind = "line"
+points = [0.30, 0.30, 0.30, 0.40]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.75, 0.5, 1.0, 0.5]
+points = [0.70, 0.30, 0.70, 0.40]
+line_class = "working"
+
+# The free double piston: two faces 2M tall, 3M either side of the centre.
+[[symbol]]
+kind = "line"
+points = [0.20, 0.40, 0.20, 0.60]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.5, 0.0, 0.5, 0.3]
+points = [0.80, 0.40, 0.80, 0.60]
 line_class = "working"
 
-# The through path and the double piston that decides with it.
+# The rod is one bar, drawn as two parallel lines between the faces.
 [[symbol]]
 kind = "line"
-points = [0.25, 0.5, 0.75, 0.5]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.43, 0.4, 0.43, 0.6]
+points = [0.20, 0.475, 0.80, 0.475]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.57, 0.4, 0.57, 0.6]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.43, 0.5, 0.57, 0.5]
-line_class = "working"
-
-# The outlet reaches the piston between its two faces.
-[[symbol]]
-kind = "line"
-points = [0.5, 0.3, 0.5, 0.5]
+points = [0.20, 0.525, 0.80, 0.525]
 line_class = "working"
 
 [[port]]
 id = "1a"
 role = "supply"
-position = [0.0, 0.5]
+position = [0.0, 0.50]
 numeral = "1"
 
 [[port]]
 id = "1b"
 role = "supply"
-position = [1.0, 0.5]
+position = [1.0, 0.50]
 numeral = "1"
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.5, 0.0]
+position = [0.50, 0.0]
+numeral = "2"
 
 [behaviour]
 type = "pressure"

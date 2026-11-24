@@ -6,6 +6,45 @@ publicación.
 
 ## Unreleased
 
+### Las válvulas OR/AND y las terminaciones — 2026-11-24
+
+- La válvula selectora sigue `X10740` (ISO 1219-1:2006, 6.1.5.5 y 7.1.5.5; confirmada en
+  JIS B 0125-1:2020, las mismas cláusulas): el cuerpo pasa de 12 × 10 mm a los 8M × 4M de
+  la figura (16 × 8 mm con M = 2 mm), los dos asientos enfrentados, la bola de 1 mm de radio
+  entre ellos y el punto de unión sobre el camino pasante se colocan donde la figura los
+  dibuja. Las dos entradas siguen imprimiendo `1` con ids distintos (`1a`, `1b`) y la salida
+  `2`; la bola conserva sus tres posiciones como estado de la simulación (ADR 0041), que no
+  es una variante del símbolo.
+- La válvula de dos presiones sigue `X10620` (ISO 1219-1:2006, **7.1.3.6**; la misma figura
+  está en **7.1.3.5** de JIS B 0125-1:2020: la cláusula cambia entre ediciones, el `X` no):
+  cuerpo de 8M × 4M, dos deflectores de 1M colgando del borde superior a 2M del centro, el
+  doble pistón libre con caras de 2M a 3M del centro y el vástago de 0,5M dibujado con dos
+  líneas. Se quitan la línea pasante por dentro del cuerpo y la línea que bajaba de la salida
+  al pistón: la figura no las dibuja.
+- El tapón ciego mantiene la barra de cierre y se corrige su proporción: el vástago y la
+  barra miden 1M cada uno (6,2 mm en la caja de cierre de 10 mm). La barra es `2172V1`
+  (8.2.9, camino u orificio cerrado); se anota que `F038V1` (8.2.10) dibuja un tapón
+  cuadrado **dentro** de la conducción y que son dos figuras distintas: el cierre va en el
+  puerto y usa la barra, no el cuadrado.
+- El silenciador tenía el cono al revés (se estrechaba al alejarse del puerto): ahora el
+  cono se ensancha desde el puerto, con la garganta en la conexión y la boca en el extremo
+  opuesto, y las dos líneas de alivio terminan en las paredes del cono en vez de cruzarlas.
+  Se anota la diferencia con `2033V1` (8.7.37), que dibuja una caja de 4M × 2M con **tres**
+  líneas de alivio a 1M: el cono es la forma del contrato (ADR 0016) y la revisión no la
+  presenta como la figura de la norma. La decisión entre la caja y el cono queda para el
+  dueño.
+- El cierre en el puerto se verificó con las pruebas existentes, sin tocar el dibujante: se
+  dibuja fuera del cuerpo sobre el muñón del puerto, después del cuerpo, el numeral del
+  anfitrión queda visible y el `1` propio se suprime, y el cierre no lleva anillo de
+  selección. No apareció un defecto de cierre que la norma probara, así que
+  `crates/punchi-fluid-draw/src/symbol.rs` no cambia.
+- Revisiones reescritas con cláusula, edición, `X`-number, puertos, medidas en milímetros de
+  la caja de 20 mm (o de la caja de cierre de 10 mm), lista de comprobación y abiertos;
+  fixtures y las tres capturas de cada símbolo regenerados; la matriz de conformidad y
+  `docs/symbology.md` actualizados con la sección de elementos planos OR/AND y la garantía
+  del cierre en el puerto. Quedan abiertos el segundo lector, la diferencia entre la caja de
+  `2033V1` y el cono del contrato, y la diferencia entre `2172V1` y `F038V1` para el tapón.
+
 ### Los cilindros — 2026-11-24
 
 - El cilindro de simple efecto sigue `X11440` (ISO 1219-1:2006, 7.3.1; confirmado en la base

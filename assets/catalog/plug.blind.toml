@@ -7,8 +7,11 @@
 # with nothing leaving it. Attaching one is what turns "this port is open" into "this port
 # is capped", and the check accepts it because the port is connected (ADR 0016).
 #
-# The symbol is a short stub ending in the blocking bar, the same mark a valve uses for a
-# closed port, so a reader recognises "closed" before reading the description.
+# The symbol is a stub 1M long ending in the blocking bar 1M wide, the same mark the
+# standard uses for a closed path or port (ISO 1219-1 2172V1, 8.2.9) and the same mark a
+# valve draws for a shut way. It is not the F038V1 (8.2.10) form: that figure is a plug
+# *inside* a fluid line, drawn as a square, and this is a plug fitted on the port itself.
+# The review records the difference.
 
 schema = 3
 id = "plug.blind"
@@ -25,15 +28,16 @@ position = [0.0, 0.5]
 [behaviour]
 type = "plug"
 
+# The stub: 1M long under the closure's scale, from the port to the bar.
 [[symbol]]
 kind = "line"
 points = [0.0, 0.5, 0.62, 0.5]
 line_class = "working"
 
-# The bar across the end is our marking of a closed port, the same shape the valve lint
-# draws for a blocked way.
+# The bar across the mouth: 1M long, the same closure mark the valve draws for a blocked
+# way (2172V1).
 [[symbol]]
 kind = "line"
-points = [0.62, 0.22, 0.62, 0.78]
+points = [0.62, 0.19, 0.62, 0.81]
 line_class = "working"
 stroke = 1.4
