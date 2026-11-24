@@ -6,6 +6,39 @@ publicación.
 
 ## Unreleased
 
+### Los cilindros — 2026-11-24
+
+- El cilindro de simple efecto sigue `X11440` (ISO 1219-1:2006, 7.3.1; confirmado en la base
+  2012 por JIS B 0125-1:2020, 7.3.1; la misma figura es 6.3.1 en los ejemplos hidráulicos) y
+  el de doble efecto `X11450` (7.3.2 / 6.3.2): barril, pistón, vástago y, solo en el simple,
+  el muelle de retorno en la cámara del lado del vástago, que la llena y se comprime con la
+  carrera (menos vueltas, suelo de dos).
+- **El puerto va en la tapa, no en la cámara**: la cara interior de la tapa pasa del 4 % al
+  11 % de la longitud del barril (2,03 mm en la caja de 44 × 20 mm) y cada puerto se taladra
+  a 0,92 mm de su pared de extremo, como la figura. Antes el pistón barría el puerto: el
+  cilindro de simple efecto presurizaba la cámara del muelle en reposo. El de doble efecto
+  lleva uno por tapa, a la misma profundidad (5,8 mm de vástago), y no lleva muelle; el
+  modelo ya lo simula con dos cámaras.
+- El barril pasa a 18,48 × 8,40 mm (2,2 : 1; la figura, 2,23 : 1) y el pistón cruza los
+  14,41 mm de cámara entre tapas: 95,2 % de carrera en el simple y 96,2 % en el doble, con la
+  longitud muerta declarada en el lado del vástago. El vástago es una pieza de longitud
+  constante: se ve fuera del barril en reposo y llega al borde de la caja a plena carrera.
+- `X11440` imprime además una **conexión de la cámara del muelle** en el lado del vástago.
+  El catálogo declara solo el puerto de trabajo (el modelo tiene una cámara y el esquema no
+  tiene rol de respiradero): la revisión lo anota como omisión de `RF052` y la fila de la
+  matriz no se cierra. Ni `X11440` ni `X11450` imprimen amortiguación ni imán del pistón;
+  son otras figuras (`X11460` con `101V19`, y las `X11540`/`X11630`–`X11660`), así que no
+  se declaran ni se añade un campo.
+- Una prueba nueva: `every_cylinder_port_is_drilled_in_a_cap_and_clear_of_the_chamber`
+  fija el puerto en la tapa y fuera de la cámara barrida; la prueba de la carrera y la del
+  muelle usan la constante de la tapa y conservan sus aserciones. Las demás pruebas de los
+  cilindros siguen pasando.
+- Revisiones reescritas con cláusula, edición y `X`-number, medidas en milímetros de la caja
+  de 44 × 20 mm, listas de comprobación y abiertos; capturas claro/oscuro/300 dpi y fixtures
+  regenerados; matriz y contrato actualizados. Quedan abiertos el segundo lector, la línea
+  de la tapa interior que la figura dibuja, el contorno del vástago y el hecho de que la
+  herramienta de revisión dibuja todos los símbolos en una caja cuadrada de 40 mm.
+
 ### Las válvulas — 2026-11-24
 
 - La 3/2 sigue `X10280` y `X10270`: la alimentación `1` y la salida `2` comparten su

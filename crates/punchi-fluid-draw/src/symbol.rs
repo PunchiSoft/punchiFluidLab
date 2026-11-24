@@ -23,6 +23,14 @@ pub const LINE: f32 = 0.35;
 pub const NUMERAL: f32 = 3.0;
 /// Smallest symbol box that still shows its numerals.
 pub const NUMERAL_FLOOR: f32 = 12.0;
+/// Share of a cylinder barrel's length taken by each end cap, as a fraction of its width.
+///
+/// A cylinder's working port is drilled in an end cap, so the chamber the piston crosses
+/// starts at the cap's inner face and the port sits between the end wall and that face.
+/// The figure `X11440`/`X11450` puts the face about a tenth of the barrel's length in and
+/// the port halfway between the two; the previous one-twenty-fifth inset was too thin to
+/// hold a port and left it inside the swept chamber.
+pub const CYLINDER_CAP_SHARE: f32 = 0.11;
 
 /// Colours the drawing needs, taken from the theme or forced for print.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1396,7 +1404,7 @@ fn draw_flat_with(
 /// Share of the barrel's internal length the piston crosses at full extension.
 ///
 /// The file declares the useful stroke and the residual length standing for the dead
-/// volume; together they are the internal length a reader sees between the two walls.
+/// volume; together they are the internal length a reader sees between the two cap faces.
 /// The piston has to cross the stroke's share of that length, not a decorative part of
 /// it, and the residual share is the room the return spring keeps at the rod side when
 /// the piston is out. A definition that moves without a cylinder behaviour has no such
@@ -1434,13 +1442,14 @@ pub fn draw_cylinder(
     let Some(barrel) = barrel_of(definition, rect) else {
         return;
     };
-    let inner_left = barrel.min.x + barrel.width() * 0.04;
-    let inner_right = barrel.max.x - barrel.width() * 0.04;
-    // The piston crosses the stroke the definition declares, over the chamber that
-    // holds stroke plus dead length. At full extension it stops short of the rod-side
-    // wall by exactly the dead length, which is where the compressed spring sits: the
-    // travel is the internal length the file gives the piston, not a fraction of it
-    // chosen by the renderer.
+    let inner_left = barrel.min.x + barrel.width() * CYLINDER_CAP_SHARE;
+    let inner_right = barrel.max.x - barrel.width() * CYLINDER_CAP_SHARE;
+    // The chamber is the inner length between the two end caps, and the piston crosses the
+    // stroke's share of it: at full extension it stops short of the rod-side cap face by
+    // exactly the dead length, which is where the compressed spring sits. The travel is the
+    // internal length the file gives the piston, not a fraction chosen by the renderer. The
+    // cap is also the room the port needs: a port drilled inside this chamber would be
+    // swept by the piston, and the figure puts it between the end wall and this face.
     let chamber = (inner_right - inner_left).max(0.0);
     let travel = chamber * stroke_share(definition);
     let piston_x = inner_left + travel * extension.clamp(0.0, 1.0);
@@ -1482,9 +1491,9 @@ pub fn draw_cylinder(
     }
 }
 
-/// Return spring between the piston and the rod-side wall, compressed by the stroke.
+/// Return spring between the piston and the rod-side cap face, compressed by the stroke.
 ///
-/// The spring is drawn **across the chamber between the piston and the rod-side wall**, and
+/// The spring is drawn **across the chamber between the piston and the rod-side cap**, and
 /// it spans all of it: the spring is the return element and it belongs to the chamber it
 /// fills, not to a corner of it. It is drawn thin, so the barrel, the piston, the rod and
 /// the coil stay distinguishable without shortening the spring.
@@ -1969,6 +1978,99 @@ mod tests {
     }
 
     #[test]
+    fn every_cylinder_port_is_drilled_in_a_cap_and_clear_of_the_chamber() {
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        // The sheet's box: a cylinder is 44 × 20 mm, so the millimetres below are the ones
+        // the review measures.
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 44.0, 20.0);
+        for id in [
+            "cylinder.single_acting_20_100",
+            "cylinder.double_acting_32_200",
+        ] {
+            let definition = catalog
+                .get(id)
+                .expect("the built-in cylinder exists")
+                .clone();
+            let barrel = barrel_of(&definition, rect).expect("a barrel");
+            let cap = barrel.width() * CYLINDER_CAP_SHARE;
+            let chamber_left = barrel.min.x + cap;
+            let chamber_right = barrel.max.x - cap;
+            let mut depths = Vec::new();
+            for port in &definition.port {
+                let point = at(rect, port.position[0], port.position[1]);
+                // A port inside the chamber would be swept by the piston: a single-acting
+                // cylinder would pressurise the spring chamber at rest, and a double-acting
+                // one would lose the connection when its piston passed over it.
+                assert!(
+                    point.x < chamber_left || point.x > chamber_right,
+                    "{id}: port {} at {:.2} mm is inside the chamber {:.2}..{:.2} mm",
+                    port.id,
+                    point.x,
+                    chamber_left,
+                    chamber_right
+                );
+                // It is drilled in its cap: between the end wall and the cap's inner face.
+                let depth = if point.x < chamber_left {
+                    point.x - barrel.min.x
+                } else {
+                    barrel.max.x - point.x
+                };
+                assert!(
+                    depth > LINE && depth < cap,
+                    "{id}: port {} sits {:.2} mm from its end wall, the cap is {:.2} mm",
+                    port.id,
+                    depth,
+                    cap
+                );
+                depths.push(depth);
+            }
+            // Both ports of a double-acting cylinder sit at the same depth, one per end.
+            if definition.port.len() > 1 {
+                let first = depths.first().copied().unwrap_or_default();
+                assert!(
+                    depths.iter().all(|depth| (depth - first).abs() < 1.0e-3),
+                    "{id}: the ports are not at the same depth from their caps: {depths:?}"
+                );
+                assert!(
+                    definition
+                        .port
+                        .iter()
+                        .map(|port| at(rect, port.position[0], port.position[1]).x)
+                        .fold((false, false), |(left, right), x| {
+                            (left || (x < chamber_left), right || (x > chamber_right))
+                        })
+                        == (true, true),
+                    "{id}: a port is missing from one of the two caps"
+                );
+            }
+        }
+
+        // The single-acting cylinder's only port is in the cap end (the left one), so the
+        // rod side carries the spring and the rod and no working connection.
+        let single = catalog
+            .get("cylinder.single_acting_20_100")
+            .expect("the built-in cylinder exists")
+            .clone();
+        let barrel = barrel_of(&single, rect).expect("a barrel");
+        let cap = barrel.width() * CYLINDER_CAP_SHARE;
+        let ports: Vec<Pt> = single
+            .port
+            .iter()
+            .map(|port| at(rect, port.position[0], port.position[1]))
+            .collect();
+        assert_eq!(
+            ports.len(),
+            1,
+            "a single-acting cylinder has one working port"
+        );
+        assert!(
+            ports[0].x < barrel.min.x + cap,
+            "the only port must be in the cap end, at {:.2} mm",
+            ports[0].x
+        );
+    }
+
+    #[test]
     fn the_rod_keeps_its_length_at_every_stroke() {
         let catalog = punchi_fluid_catalog::Catalog::builtin();
         for id in [
@@ -2036,7 +2138,7 @@ mod tests {
                 .expect("the built-in cylinder exists")
                 .clone();
             let barrel = barrel_of(&definition, rect).expect("a barrel");
-            let inset = barrel.width() * 0.04;
+            let inset = barrel.width() * CYLINDER_CAP_SHARE;
             let chamber = barrel.width() - 2.0 * inset;
             let Behaviour::Cylinder {
                 stroke_mm,
@@ -2087,7 +2189,7 @@ mod tests {
             .clone();
         let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 100.0, 50.0);
         let barrel = barrel_of(&definition, rect).expect("a barrel");
-        let wall = barrel.max.x - barrel.width() * 0.04;
+        let wall = barrel.max.x - barrel.width() * CYLINDER_CAP_SHARE;
         let spring = |extension: f32| {
             let mut recording = Recording::default();
             draw_cylinder(&mut recording, rect, &definition, extension, &Ink::print());
