@@ -10,6 +10,7 @@ use punchi_fluid_draw::{Orientation, Pt};
 
 use punchi_fluid_i18n::Language;
 
+use crate::shell::SheetProbe;
 use crate::{Window, theme};
 
 use super::MenuAction;
@@ -33,10 +34,12 @@ struct Probe {
     can_undo: bool,
     pressed_valve: bool,
     valve_position: usize,
+    sheet: Option<SheetProbe>,
 }
 
 impl Probe {
     fn read(&mut self, window: &Window) {
+        self.sheet = window.sheet_probe;
         self.revision = window.document.revision();
         self.menu = window.menu.is_open();
         self.moving = window.moving.is_some();
@@ -151,6 +154,12 @@ fn harness(window: &mut Window) -> egui_kittest::Harness<'_, Probe> {
     harness
 }
 
+/// The screen point of the page's centre: the components are placed there, while the canvas
+/// centre moves with the frame fit and the strip's gutter.
+fn page_centre(harness: &egui_kittest::Harness<'_, Probe>) -> egui::Pos2 {
+    harness.state().sheet.expect("a sheet frame").paper.center()
+}
+
 fn right_click_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2) {
     harness
         .input_mut()
@@ -188,7 +197,9 @@ fn right_click_selects_the_symbol_and_opens_its_menu() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
     let revision = harness.state().revision;
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     assert!(harness.state().menu, "the menu is open");
     assert_eq!(harness.state().selected, vec![0]);
@@ -205,7 +216,9 @@ fn right_click_selects_the_symbol_and_opens_its_menu() {
 fn right_click_on_the_empty_sheet_opens_nothing() {
     let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     assert!(!harness.state().menu);
     assert!(harness.state().selected.is_empty());
@@ -262,7 +275,9 @@ fn right_click_on_a_pipe_opens_nothing_and_keeps_the_selection() {
 fn escape_closes_the_menu() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     assert!(harness.state().menu);
     harness.key_press(egui::Key::Escape);
@@ -303,7 +318,9 @@ fn the_menu_follows_the_language() {
     let mut window = window_with_component();
     window.language = Language::Spanish;
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("hoja de dibujo").rect();
+    let canvas = harness.get_by_label("hoja de dibujo").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     assert!(harness.query_by_label("Girar").is_some());
     assert!(harness.query_by_label("Rotate").is_none());
@@ -322,7 +339,9 @@ fn shift_f10_without_a_selection_opens_nothing() {
 fn the_menu_rotates_the_selection_and_closes() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Rotate").click();
     harness.run();
@@ -338,7 +357,9 @@ fn the_menu_rotates_the_selection_and_closes() {
 fn the_menu_mirrors_the_selection_horizontally() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Mirror horizontally").click();
     harness.run();
@@ -355,7 +376,9 @@ fn the_menu_mirrors_the_selection_horizontally() {
 fn the_menu_removes_the_selection_as_one_undo() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Delete").click();
     harness.run();
@@ -368,7 +391,9 @@ fn the_menu_opens_the_properties_even_when_the_dock_was_open() {
     let mut window = window_with_component();
     window.inspector.close();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Properties").click();
     harness.run();
@@ -380,7 +405,9 @@ fn the_configuration_entry_opens_a_blank_window_named_configuration() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
     let revision = harness.state().revision;
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Configure").click();
     harness.run();
@@ -402,7 +429,9 @@ fn the_simple_cylinder_description_shows_its_card() {
     let mut window = window_with_single_acting_cylinder();
     let mut harness = harness(&mut window);
     let revision = harness.state().revision;
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Component description").click();
     harness.run();
@@ -444,7 +473,9 @@ fn the_description_card_image_is_loaded() {
     let mut window = window_with_single_acting_cylinder();
     let mut harness = harness(&mut window);
     egui_extras::install_image_loaders(&harness.ctx);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Component description").click();
     let mut loaded = false;
@@ -478,7 +509,9 @@ fn the_card_follows_the_language() {
     let mut window = window_with_single_acting_cylinder();
     window.language = Language::Spanish;
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("hoja de dibujo").rect();
+    let canvas = harness.get_by_label("hoja de dibujo").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Descripción del componente").click();
     harness.run();
@@ -508,7 +541,9 @@ fn the_card_follows_the_language() {
 fn the_description_entry_opens_a_blank_window_named_descripcion() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Component description").click();
     harness.run();
@@ -524,7 +559,9 @@ fn the_description_entry_opens_a_blank_window_named_descripcion() {
 fn moving_follows_the_pointer_and_drops_with_one_click() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Move").click();
     harness.run();
@@ -557,7 +594,9 @@ fn moving_follows_the_pointer_and_drops_with_one_click() {
 fn escape_cancels_the_armed_move_without_a_document_change() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Move").click();
     harness.run();
@@ -578,7 +617,9 @@ fn escape_cancels_the_armed_move_without_a_document_change() {
 fn the_arrow_keys_nudge_the_armed_selection_one_millimetre() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Move").click();
     harness.run();
@@ -601,7 +642,9 @@ fn right_click_on_a_valve_does_not_press_it() {
     let mut window = window_with_a_model();
     let mut harness = harness(&mut window);
     let position = harness.state().valve_position;
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     let centre = sheet.center();
     harness
         .input_mut()
@@ -633,7 +676,9 @@ fn right_click_on_a_valve_does_not_press_it() {
 fn a_click_outside_closes_the_menu() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     assert!(harness.state().menu);
     primary_click_at(&mut harness, sheet.left_top() + egui::vec2(8.0, 8.0));
@@ -645,7 +690,9 @@ fn the_mockup_subject_is_the_selected_component_name() {
     let mut window = window_with_component();
     {
         let mut harness = harness(&mut window);
-        let sheet = harness.get_by_label("drawing sheet").rect();
+        let canvas = harness.get_by_label("drawing sheet").rect();
+        let centre = page_centre(&harness);
+        let sheet = egui::Rect::from_center_size(centre, canvas.size());
         right_click_at(&mut harness, sheet.center());
         harness.get_by_label("Configure").click();
         harness.run();
@@ -659,7 +706,9 @@ fn the_mockup_subject_is_the_selected_component_name() {
     window.language = Language::Spanish;
     {
         let mut harness = harness(&mut window);
-        let sheet = harness.get_by_label("hoja de dibujo").rect();
+        let canvas = harness.get_by_label("hoja de dibujo").rect();
+        let centre = page_centre(&harness);
+        let sheet = egui::Rect::from_center_size(centre, canvas.size());
         right_click_at(&mut harness, sheet.center());
         harness.get_by_label("Configurar").click();
         harness.run();
@@ -674,7 +723,9 @@ fn the_mockup_subject_is_the_selected_component_name() {
 fn the_menu_mirrors_the_selection_vertically() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("drawing sheet").rect();
+    let canvas = harness.get_by_label("drawing sheet").rect();
+    let centre = page_centre(&harness);
+    let sheet = egui::Rect::from_center_size(centre, canvas.size());
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Mirror vertically").click();
     harness.run();
