@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### La tira flotante es la tarjeta de la referencia — 2026-11-24
+
+- El marco de la tira flotante y el de su panel de zoom usan ahora el **radio de control y la
+  sombra del tema**, con el mismo patrón que el cajón compacto y los menús: antes eran un
+  borde plano sin sombra, y por eso no se leían como la tarjeta flotante de la referencia.
+- **Prueba**: la suite de la ventana (sin cambio de comportamiento); capturas claro/oscuro
+  pendientes como evidencia manual.
+
+### La paleta vuelve a dos columnas — 2026-11-24
+
+- El ancho de la baldosa se mide **dentro del cuerpo del grupo** (la cabecera plegable lo
+  indenta); medido fuera, la baldosa era más ancha que su columna y el catálogo caía a **una
+  sola columna**. Ahora el catálogo vuelve a las **dos columnas** de la referencia.
+- **Prueba**: `the_palette_lays_two_columns_of_tiles`; la suite de la ventana pasa a **362**.
+
 ### El renombrado en línea de la pestaña — 2026-11-24
 
 - **`F2` o doble clic** abre el editor **en la propia pestaña**; `Enter` guarda como un undo,
