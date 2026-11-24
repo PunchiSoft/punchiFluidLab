@@ -35,18 +35,25 @@ this pass and keeps its own record.
 | `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `pending` | [review](review/valve.3_2.solenoid.md) |
 | `valve.5_2.base` | valve | `X10400` (6.1.2.15 / 7.1.2.16): composition of the body and positions, no single X-number | 5 | `pending` | [review](review/valve.5_2.base.md) |
 | `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `pending` | [review](review/valve.5_2.spring_return.md) |
-| `valve.shuttle` | valve | `X10740` (7.1.5.5) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.shuttle.md) |
-| `valve.two_pressure` | valve | `X10620` (7.1.3.6) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.two_pressure.md) |
+| `valve.shuttle` | valve | `X10740` (6.1.5.5 / 7.1.5.5 in ISO 1219-1:2006; the same in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `in review` | [review](review/valve.shuttle.md) |
+| `valve.two_pressure` | valve | `X10620` (7.1.3.6 in ISO 1219-1:2006; **7.1.3.5** in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `in review` | [review](review/valve.two_pressure.md) |
 | `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.1 hydraulic) | 1: `1` working, cap end | `in review` | [review](review/cylinder.single_acting_20_100.md) |
 | `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.2 hydraulic) | 2: `1` and `2`, one per cap | `in review` | [review](review/cylinder.double_acting_32_200.md) |
-| `plug.blind` | accessory | `F038V1` (8.2.10) and the plugged-port rule | 1 | `pending` | [review](review/plug.blind.md) |
-| `silencer.pneumatic` | accessory | `2033V1` (8.7.37) | 1 exhaust | `pending` | [review](review/silencer.pneumatic.md) |
+| `plug.blind` | accessory | `2172V1` (8.2.9) closed-path/port bar; the `F038V1` (8.2.10) in-line square is a different figure and is recorded | 1: `1` working, the capped port | `in review` | [review](review/plug.blind.md) |
+| `silencer.pneumatic` | accessory | `2033V1` (8.7.37): the standard draws a 4M × 2M box with three relief lines; the contract's cone differs and is recorded | 1: `1` exhaust | `in review` | [review](review/silencer.pneumatic.md) |
 
 The two cylinders are `in review` after the Phase 5 pass: their records, fixtures and
 captures are rewritten and their state waits for the 300 dpi signature. `X11440` also prints
 a spring-chamber connection at the rod end; the catalog declares the working port only, a
 recorded `RF052` omission (the model has one working chamber and the schema has no breather
 role), so the row does not claim `done`.
+
+The four terminations and pressure elements are `in review` after the Phase 6 pass: the
+figures were read again, the records, fixtures and captures rewritten, and the state waits
+for the 300 dpi signature. Two differences are recorded rather than hidden: the plug is
+drawn with `2172V1`'s closed-port bar and not with `F038V1`'s in-line square, and the
+silencer keeps the contract's cone (ADR 0016) while `2033V1` draws a box with three relief
+lines. Neither row claims `done` while those are open.
 
 ## Outside this pass
 
