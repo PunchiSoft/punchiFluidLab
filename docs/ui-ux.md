@@ -116,8 +116,8 @@ Depth comes from the palette, never from a new hue.
   that act on the circuit in view. Today the strip shows one tab per circuit, the home
   control, the × on every tab but the last, the + after the last tab, and switches with a
   click, `Enter`/`Space` or `Ctrl+Tab`/`Ctrl+Shift+Tab` as a view change; `F2` or a double
-  click opens the window's rename dialog. The canvas reserves its band. The inline editor in
-  the tab remains the next slice. One button per circuit says the same thing twice, makes
+  click opens the inline editor in the tab (`Enter` commits as one undo, `Escape` cancels).
+  The canvas reserves its band. One button per circuit says the same thing twice, makes
   the group's width grow with the project (the adaptive breakpoints cannot measure it) and
   leaves the closing and the renaming in one place and the switching in two.
 - **One file is a project; one sheet in it is a circuit.** A command, a dialog or a hint that

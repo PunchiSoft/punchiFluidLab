@@ -191,6 +191,8 @@ struct Window {
     grid: grid::GridView,
     /// A palette drop waiting for the sheet's placement: the id and the screen release point.
     pending_drop: Option<(String, egui::Pos2)>,
+    /// The device the strip's inline rename is editing, if any.
+    strip_edit: Option<crate::circuit_strip::Edit>,
     /// The valve held under the pointer, so the gesture presses once and releases once.
     pressed_valve: Option<usize>,
     /// Whether the Inicio page is the screen, not the sheet.

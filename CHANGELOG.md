@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### El renombrado en línea de la pestaña — 2026-11-24
+
+- **`F2` o doble clic** abre el editor **en la propia pestaña**; `Enter` guarda como un undo,
+  `Escape` cancela, y un nombre vacío no pisa el título y avisa. El editor pide el teclado y
+  se cierra al confirmar.
+- **Pruebas**: `the_inline_editor_renames_in_the_tab`; la suite pasa a **361**.
+- **Anexo D cerrado**: la fila **F4 pasa a `covered`** con pruebas Rust de la tira completa.
+  Con ella, el plan de la tira flotante y sus anexos queda terminado; solo resta el acta de
+  cierre y las capturas manuales como evidencia visual.
+
 ### La tira de circuitos: cerrar, añadir y renombrar — 2026-11-24
 
 - **×** en todas las pestañas menos la última (con su nombre accesible), **+** tras la última

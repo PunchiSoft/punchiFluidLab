@@ -103,3 +103,30 @@ fn switching_a_circuit_is_a_view_change_without_undo() {
         "the selection belongs to the circuit in view and clears"
     );
 }
+
+#[test]
+fn the_inline_editor_renames_in_the_tab() {
+    let mut window = window_with();
+    let id = window.document.active_circuit();
+    window.strip_edit = Some(crate::circuit_strip::Edit {
+        id,
+        title: "Renamed circuit".to_owned(),
+        focus: true,
+    });
+    {
+        let mut harness = sheet_harness(&mut window, egui::vec2(1200.0, 800.0));
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+    }
+    let title = window
+        .document
+        .circuits()
+        .iter()
+        .find(|circuit| circuit.id == id)
+        .map(|circuit| circuit.title.clone());
+    assert_eq!(
+        title.as_deref(),
+        Some("Renamed circuit"),
+        "Enter commits the editor as a rename"
+    );
+}

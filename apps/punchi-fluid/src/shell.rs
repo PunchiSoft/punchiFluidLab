@@ -634,6 +634,7 @@ impl Window {
             &self.theme.tokens,
             self.language,
             &self.document,
+            &mut self.strip_edit,
         );
         match action {
             Some(crate::circuit_strip::Action::Home) => self.open_start(),
@@ -642,9 +643,12 @@ impl Window {
                 self.switch_circuit(id);
                 self.open_circuit_close();
             }
-            Some(crate::circuit_strip::Action::Rename(id)) => {
-                self.switch_circuit(id);
-                self.open_circuit_rename();
+            Some(crate::circuit_strip::Action::CommitRename { id, title }) => {
+                if title.is_empty() {
+                    self.notice = Some(self.language.text("circuit.empty_name").to_owned());
+                } else {
+                    self.document.rename_circuit(id, title);
+                }
             }
             Some(crate::circuit_strip::Action::Add) => self.new_circuit(),
             None => {}
