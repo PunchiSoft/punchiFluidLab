@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Vista: una vuelta atrás y el cajetín de vista — 2026-11-24
+
+- **Vista anterior**: el ajuste, el zoom y la ventana de zoom dejan **un paso** de historial;
+  **Ver ▸ Vista anterior** vuelve a él una vez y se deshabilita cuando no hay vuelta.
+- **Cajetín de vista**: **Ver ▸ Cajetín** muestra u oculta el cajetín **solo en pantalla**, sin
+  tocar el documento, el undo ni la marca de modificado; la hoja impresa conserva el cajetín.
+  El preset **Sin cajetín** sigue siendo un cambio del documento, aparte.
+- **Pruebas**: `one_step_of_view_history_goes_back`, `the_fit_records_the_view_it_leaves`,
+  `back_without_history_does_nothing`, `hiding_the_block_changes_nothing_in_the_document` y
+  `the_block_can_be_hidden_without_losing_the_frame`; la suite de la ventana pasa a **329** y
+  la de exportación a **51**.
+- **Fase 3b en curso**: quedan la ventana de zoom y el modo Mover.
+
 ### El ajuste encuadra el marco — 2026-11-24
 
 - **Vista**: el ajuste (zoom 1) encuadra el **marco interior** de la hoja, no el papel; el

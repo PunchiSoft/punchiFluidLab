@@ -26,6 +26,7 @@ impl Ribbon {
             }
             Command::Undo => self.can_undo,
             Command::Redo => self.can_redo,
+            Command::ViewBack => self.can_go_back,
             Command::BlockReset => self.can_reset_block,
             Command::CircuitClose => self.can_close_circuit,
             Command::PipeClass(_) | Command::Tube => self.has_pipe,

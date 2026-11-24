@@ -176,7 +176,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
-| **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, and the arrows pan from the keyboard |
+| **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original, Vista anterior, and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the frame, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
@@ -825,16 +825,15 @@ canvas, never the window, so a zoom above the fit cannot paint over the ribbon o
   instant.
 - **No minimap.** A second drawing of a single sheet is not a map, and it costs a frame
   budget to say what the zoom readout and **Ajustar a la hoja** already say.
-- **Target, not migrated.** The strip, its panel, the fold, the one-step view history, the
-  zoom window, the hand mode and the view-only **Mostrar cajetín** toggle are specified here
-  and **target**. Today the Rust window fits the **frame inside the margins** (the fit on
-  `Ctrl+0` and on the middle button's double click), has the ribbon's **Aumentar**,
-  **Disminuir** and **Tamaño original**, the wheel and `Ctrl` + wheel zooming around the
-  pointer, the wheel and the middle button panning and the arrows panning; the fit is the
-  frame, so the paper's margins may lie beyond the canvas and are clipped there. The block's
-  **Sin cajetín** preset is a document change, not the view-only toggle. The `--selftest`
-  steps and captures that named the strip belonged to the Qt window and are retired
-  evidence.
+- **Target, not migrated.** The strip, its panel, the fold, the zoom window and the hand mode
+  are specified here and **target**. Today the Rust window fits the **frame inside the
+  margins** (the fit on `Ctrl+0` and on the middle button's double click), has the ribbon's
+  **Aumentar**, **Disminuir**, **Tamaño original**, **Vista anterior** (one step) and the
+  view-only **Cajetín** toggle, the wheel and `Ctrl` + wheel zooming around the pointer, the
+  wheel and the middle button panning and the arrows panning; the fit is the frame, so the
+  paper's margins may lie beyond the canvas and are clipped there. The block's **Sin cajetín**
+  preset is a document change, separate from the view toggle. The `--selftest` steps and
+  captures that named the strip belonged to the Qt window and are retired evidence.
 
 ### 4. Status bar
 

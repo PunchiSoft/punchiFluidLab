@@ -83,6 +83,8 @@ pub struct Ribbon {
     /// Whether the document has something to undo or redo; the window sets both every frame.
     pub can_undo: bool,
     pub can_redo: bool,
+    /// Whether the view has a previous state for **Vista anterior**.
+    pub can_go_back: bool,
     /// Whether the active circuit's block differs from its default; the window sets it.
     pub can_reset_block: bool,
     /// Whether a pipe is selected; the window sets it every frame.
@@ -108,6 +110,7 @@ impl Ribbon {
             has_clipboard: false,
             can_undo: false,
             can_redo: false,
+            can_go_back: false,
             can_reset_block: false,
             has_pipe: false,
             can_close_circuit: false,

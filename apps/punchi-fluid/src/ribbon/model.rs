@@ -340,6 +340,16 @@ pub(super) const VER: &[Group] = &[
                 "ribbon.item.zoom_reset",
                 Some(Command::ZoomReset),
             ),
+            Item::Small(
+                "edit-undo",
+                "ribbon.item.view_back",
+                Some(Command::ViewBack),
+            ),
+            Item::Small(
+                "document-properties",
+                "ribbon.item.block_visible",
+                Some(Command::BlockVisible),
+            ),
         ],
     },
     Group {
