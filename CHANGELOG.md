@@ -6,6 +6,15 @@ publicación.
 
 ## Unreleased
 
+### Accionar válvulas solo con Play activo — 2026-11-24
+
+- En edición detenida o pausada, un clic en la válvula ya no cambia el modelo y se puede
+  arrastrar como los demás componentes. Con Play activo, el clic primario la acciona; pausar
+  libera una válvula sostenida para que el estado momentáneo no quede pegado.
+- Tres pruebas headless cubren edición sin activación, acción solo durante Play y liberación
+  al pausar. La suite de la ventana tiene **372 pruebas**.
+- `docs/ui-ux.md` y `docs/capabilities.md` detallan la separación entre edición y simulación.
+
 ### Reconectar puertos con un arrastre — 2026-11-24
 
 - En Edición, arrastrar de un puerto a otro vuelve a crear la conexión: la vista previa es

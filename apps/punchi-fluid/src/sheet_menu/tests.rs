@@ -15,6 +15,8 @@ use crate::{Window, theme};
 
 use super::MenuAction;
 
+mod valve_simulation;
+
 /// What the frame left behind, so a test can read the window while the harness borrows it.
 #[expect(
     clippy::struct_excessive_bools,
@@ -34,6 +36,7 @@ struct Probe {
     can_undo: bool,
     pressed_valve: bool,
     valve_position: usize,
+    valve_centre: Option<Pt>,
     sheet: Option<SheetProbe>,
 }
 
@@ -63,6 +66,11 @@ impl Probe {
             .model
             .as_ref()
             .map_or(0, |model| model.valve_position(1));
+        self.valve_centre = window
+            .document
+            .placements()
+            .get(1)
+            .map(|placement| placement.centre);
     }
 }
 
@@ -177,18 +185,31 @@ fn right_click_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui
 }
 
 fn primary_click_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2) {
+    primary_press_at(harness, position);
+    primary_release_at(harness, position);
+}
+
+fn primary_press_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2) {
     harness
         .input_mut()
         .events
         .push(egui::Event::PointerMoved(position));
-    for pressed in [true, false] {
-        harness.input_mut().events.push(egui::Event::PointerButton {
-            pos: position,
-            button: egui::PointerButton::Primary,
-            pressed,
-            modifiers: egui::Modifiers::default(),
-        });
-    }
+    harness.input_mut().events.push(egui::Event::PointerButton {
+        pos: position,
+        button: egui::PointerButton::Primary,
+        pressed: true,
+        modifiers: egui::Modifiers::default(),
+    });
+    harness.run();
+}
+
+fn primary_release_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2) {
+    harness.input_mut().events.push(egui::Event::PointerButton {
+        pos: position,
+        button: egui::PointerButton::Primary,
+        pressed: false,
+        modifiers: egui::Modifiers::default(),
+    });
     harness.run();
 }
 
