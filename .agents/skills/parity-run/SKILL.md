@@ -60,9 +60,9 @@ its own board, use [phased-plan](../phased-plan/SKILL.md) instead.
 2. Update `docs-private/parity-run.md` with the final state and the report material.
 3. Push the branch and open **one** pull request against `main`, with the template filled and
    a section per capability: what was built, the test that proves it, what remains.
-4. Hand it over. The owner merges by default. The pilot of ADR 0043 is scoped to the ribbon
-   plan, so a parity run's pull request stays manual; the agent never approves on its own
-   behalf and never pushes to `main`.
+4. Hand it over. A parity run is not a phased plan, so its pull request stays manual under
+   ADR 0046; the historical pilot of ADR 0043 is not a standing permission. The agent never
+   approves on its own behalf and never pushes to `main`.
 
 ## Gotchas
 

@@ -14,6 +14,23 @@ session that loses the conversation can resume from the plan alone.
 A plan is work, not product: it lives in the owner's private notes. The capability entries,
 the ADRs and the pull requests are what the repository keeps.
 
+## When a plan is required
+
+- **A code change needs a plan.** A feature, a fix, a failing test or a refactor starts with
+  an implementation plan the owner approves before the first branch. A question that only
+  asks for information does not need one; if it turns into a change, the plan comes first.
+- **One pull request:** a short plan in the conversation, naming what changes, the files,
+  the evidence and the risk, is enough. It still needs the owner's `proceede`.
+- **Two or more pull requests:** this formal shape, with Phase 0, a phase board and a
+  checklist per phase. The owner approves it before Phase 1.
+- **The automatic pilot:** [auto-pilot](../auto-pilot/SKILL.md) runs only an approved plan
+  with a board and at least two delivery phases. Without it, the answer is
+  `Se necesita planificación previa; no se procede.`; the agent may offer to write the plan
+  and waits.
+
+The approval is written in the plan (`Approved by owner: <date>`). An unapproved plan is a
+proposal, not a delivery contract.
+
 ## The shape
 
 | Phase | Question it answers | Ends with |
@@ -40,6 +57,7 @@ in Spanish (`Fase`, `Hecho`, `Falta`); the marks are the ones below.
 **Base:** `main` at `<sha>`, gate `<result>`.
 **Scope:** <one sentence a student would recognise>.
 **Out of scope:** <what this plan does not do, and why>.
+**Approved by owner:** <YYYY-MM-DD, or "pending">.
 
 ## Phase board
 - [ ] 0 — preparation (0A–0C) — in progress
@@ -121,10 +139,12 @@ drawing, interface, document format. It never pretends to deliver a layer it ski
 | Acceptance | the tests and captures that fail without it |
 | Evidence | gate result, CI check, capture, measurement |
 | Checklist | the one written in 0C, marked during delivery |
-| Exit | merged by the owner, with its checklist and evidence |
+| Exit | merged by the owner, or by the agent under an approved automatic run (ADR 0046), with its checklist and evidence |
 
 A phase is not finished because the code compiles or the pull request is open: it is
-finished when the owner merges it ([pull-request-workflow](../pull-request-workflow/SKILL.md)).
+finished when the owner merges it, or the agent merges it under an approved automatic run of
+[auto-pilot](../auto-pilot/SKILL.md) and ADR 0046
+([pull-request-workflow](../pull-request-workflow/SKILL.md)).
 The next phase starts from updated `main`, unless the owner explicitly authorises parallel
 work; in that case the branch is created from `main` and the plan says so.
 
@@ -206,8 +226,9 @@ public document in its own change; the audit itself stays in the owner's notes.
 2. **Write Phase 0**, 0A to 0C, before naming a single delivery phase.
 3. **Split the work** into phases that each merge alone; name the branch of each.
 4. **Write the checklists** of every phase now, with the evidence each item will need.
-5. **Get the plan approved** by the owner before Phase 1. The plan is a document, not code;
-   a phase that starts before 0C is a guess with a branch.
+5. **Get the plan approved** by the owner before Phase 1 and write the approval in the
+   plan. The plan is a document, not code; a phase that starts before 0C is a guess with a
+   branch. Without the approval the automatic pilot does not start.
 6. **Deliver each phase** through [pull-request-workflow](../pull-request-workflow/SKILL.md),
    with its checklist in the body, mark its row on the board, and hand off with
    [step-report](../step-report/SKILL.md); the board is what the owner reads to know what
@@ -254,6 +275,8 @@ links the rest.
   plan.
 - **A plan without a board is a list of phases.** The board is what the owner reads to know
   what remains; the phase checklist is the phase, not the plan.
+- **A plan without the owner's approval is a proposal.** The automatic pilot refuses it, and
+  the manual mode does not start the first branch from it.
 - **A `[x]` on the board without a merged pull request (or an approved Phase 0) is a false
   claim.** The board is updated after the merge, not after the push.
 - **The final audit reads the repository, not the plan.** Git, CI and the merged pull
