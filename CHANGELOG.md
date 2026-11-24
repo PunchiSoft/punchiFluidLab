@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### La rail de Inicio según la referencia — 2026-11-24
+
+- **Rail**: **Inicio** elegida con **píldora clara** (y estado *selected* para accesibilidad, no
+  solo color), **Nuevo proyecto**, **Abrir…**, separador, **Configuración** con **engranaje** y,
+  al pie, **Acerca de** y **Licencia**. Sin marca ni títulos de grupo; los atajos quedan en el
+  tooltip, no en la fila; **Volver a la hoja** solo aparece cuando hay un documento abierto.
+- **Icono**: `preferences-system.svg` (engranaje) se añade a la familia de 24 px y la fila de
+  Configuración lo usa; **Ver ▸ Tema** conserva el icono de tema.
+- **Pruebas**: la rail por la referencia (sin marca ni títulos), el engranaje, las filas y el
+  orden, Inicio seleccionado, el teclado y la vuelta solo con documento; la suite de la ventana
+  pasa a **354**.
+- **Anexo C cerrado**; las capturas claro/oscuro quedan como evidencia manual pendiente.
+
 ### El arrastre del catálogo — 2026-11-24
 
 - **Arrastre**: la baldosa conserva el gesto aunque el puntero derive en diagonal (el área de

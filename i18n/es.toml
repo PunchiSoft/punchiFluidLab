@@ -431,8 +431,6 @@ open = "Abrir…"
 preferences = "Configuración"
 about = "Acerca de"
 licence = "Licencia"
-group_start = "Iniciar"
-group_learn = "Aprender"
 
 [start.template]
 or_name = "Circuito OR"

@@ -431,8 +431,6 @@ open = "Open…"
 preferences = "Settings"
 about = "About"
 licence = "License"
-group_start = "Start"
-group_learn = "Learn"
 
 [start.template]
 or_name = "OR circuit"
