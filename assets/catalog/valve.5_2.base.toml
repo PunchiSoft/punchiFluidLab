@@ -20,17 +20,20 @@ summary = "Base 5/2 directional valve: two positions, no return, no actuation."
 # Two squares of 0.44 side by side.
 body = [0.06, 0.28, 0.88, 0.44]
 
-# Ports are drawn once, at the default square. 4 and 5 on the left, 1 in the middle,
-# 2 and 3 on the right, so each exhaust path keeps its own outer edge.
+# Ports are drawn once, at the default square. The working ports are the pair above: 4
+# and 5 on the left, 1 in the middle, 2 and 3 on the right, so each exhaust path keeps
+# its own outer edge and the supply feeds the middle of the body. In each square the
+# paths then run from the middle to an outer working port, and from the other working
+# port to its exhaust at the same outer edge.
 [[port]]
 id = "4"
 role = "working"
-position = [0.15, 0.0]
+position = [0.1333, 0.0]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.41, 0.0]
+position = [0.4267, 0.0]
 
 [[port]]
 id = "1"
@@ -40,12 +43,12 @@ position = [0.28, 1.0]
 [[port]]
 id = "5"
 role = "exhaust"
-position = [0.15, 1.0]
+position = [0.1333, 1.0]
 
 [[port]]
 id = "3"
 role = "exhaust"
-position = [0.41, 1.0]
+position = [0.4267, 1.0]
 
 [behaviour]
 type = "valve"

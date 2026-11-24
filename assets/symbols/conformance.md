@@ -30,11 +30,11 @@ this pass and keeps its own record.
 | `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `pending` | [review](review/lubricator.oil.md) |
 | `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2 | `pending` | [review](review/preparation.service_unit.md) |
 | `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation | 2 | `pending` | [review](review/preparation.service_unit_simple.md) |
-| `valve.3_2.base` | valve | `X10280` (7.1.2.8) family | 3 | `pending` | [review](review/valve.3_2.base.md) |
-| `valve.3_2.spring_return` | valve | `X10280` + spring | 3 | `pending` | [review](review/valve.3_2.spring_return.md) |
-| `valve.3_2.solenoid` | valve | `X10290` (7.1.2.9) | 3 + coil | `pending` | [review](review/valve.3_2.solenoid.md) |
-| `valve.5_2.base` | valve | to read | 5 | `pending` | [review](review/valve.5_2.base.md) |
-| `valve.5_2.spring_return` | valve | to read | 5 | `pending` | [review](review/valve.5_2.spring_return.md) |
+| `valve.3_2.base` | valve | `X10280` (6.1.2.6 / 7.1.2.8): composition of the body and positions, no single X-number | 3 | `pending` | [review](review/valve.3_2.base.md) |
+| `valve.3_2.spring_return` | valve | `X10270` (6.1.2.5 / 7.1.2.7) body and spring + `688V1` lever | 3 | `pending` | [review](review/valve.3_2.spring_return.md) |
+| `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `pending` | [review](review/valve.3_2.solenoid.md) |
+| `valve.5_2.base` | valve | `X10400` (6.1.2.15 / 7.1.2.16): composition of the body and positions, no single X-number | 5 | `pending` | [review](review/valve.5_2.base.md) |
+| `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `pending` | [review](review/valve.5_2.spring_return.md) |
 | `valve.shuttle` | valve | `X10740` (7.1.5.5) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.shuttle.md) |
 | `valve.two_pressure` | valve | `X10620` (7.1.3.6) | 3: `1a`, `1b` inlets, `2` outlet | `pending` | [review](review/valve.two_pressure.md) |
 | `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1) | 1 | `pending` | [review](review/cylinder.single_acting_20_100.md) |

@@ -23,22 +23,24 @@ summary = "Base 3/2 directional valve: two positions, no return, no actuation."
 # Two squares of 0.44 side by side.
 body = [0.06, 0.28, 0.88, 0.44]
 
-# The three ports are drawn at the square of the default position: 1 and 3 below, 2
-# above, each at the same offset inside its own square.
+# The three ports are drawn at the square of the default position. In each square the
+# supply and the working port share their offset at the left quarter (1 and 2, so the
+# actuated path is straight) and the exhaust sits at the right quarter (3, so the rest
+# path is the diagonal). 1 and 3 below, 2 above, as the three-port symbol is drawn.
 [[port]]
 id = "1"
 role = "supply"
-position = [0.157, 1.0]
+position = [0.17, 1.0]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.28, 0.0]
+position = [0.17, 0.0]
 
 [[port]]
 id = "3"
 role = "exhaust"
-position = [0.403, 1.0]
+position = [0.39, 1.0]
 
 [behaviour]
 type = "valve"

@@ -12,7 +12,7 @@
 # Nothing in this file draws the valve: `body` is split into one equal square per
 # position, the spring and the lever are declared parts, the stubs and numerals
 # come from the port table, and the arrow inside each position is the connection
-# it opens. Position 0 is the leftmost square, the one next to the spring.
+# it opens. Position 0 is the rightmost square, the one next to the spring.
 
 schema = 3
 id = "valve.3_2.spring_return"
@@ -35,21 +35,23 @@ side = "left"
 
 # The three ports are drawn at the square of the rest position, which is how a
 # 3/2 valve is read: one set of numerals, and each square shows its own connections
-# at the same offsets inside itself. 1 and 3 below, 2 above.
+# at the same offsets inside itself. In each square 1 and 2 share the left quarter,
+# so the actuated path is straight, and 3 sits at the right quarter, so the rest path
+# is the diagonal. 1 and 3 below, 2 above.
 [[port]]
 id = "1"
 role = "supply"
-position = [0.597, 1.0]
+position = [0.61, 1.0]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.72, 0.0]
+position = [0.61, 0.0]
 
 [[port]]
 id = "3"
 role = "exhaust"
-position = [0.843, 1.0]
+position = [0.83, 1.0]
 
 [behaviour]
 type = "valve"
