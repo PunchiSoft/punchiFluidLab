@@ -286,6 +286,7 @@ hint_export = "drawing.pdf"
 forgotten = "removed from recents"
 
 [circuit]
+home = "Home"
 last_circuit = "The last circuit cannot be closed"
 empty_name = "The name cannot be empty"
 renamed = "circuit renamed"

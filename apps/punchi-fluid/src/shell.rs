@@ -625,6 +625,35 @@ impl Window {
         }
     }
 
+    /// The circuit strip at the foot of the sheet: its home control and its tabs. Switching
+    /// circuits is view state; the model follows the active circuit and the selection clears.
+    fn show_circuit_strip(&mut self, ui: &egui::Ui, rect: egui::Rect) {
+        let action = crate::circuit_strip::show(
+            ui.ctx(),
+            rect,
+            &self.theme.tokens,
+            self.language,
+            &self.document,
+        );
+        match action {
+            Some(crate::circuit_strip::Action::Home) => self.open_start(),
+            Some(crate::circuit_strip::Action::Switch(id)) => self.switch_circuit(id),
+            None => {}
+        }
+    }
+
+    /// Switches the active circuit as a view change: no undo, selection cleared and the model
+    /// rebuilt for the circuit now in view.
+    pub(crate) fn switch_circuit(&mut self, id: u32) {
+        if id == self.document.active_circuit() || !self.document.select_circuit(id) {
+            return;
+        }
+        self.selected.clear();
+        // `select_circuit` is not an edit and does not bump the revision, so force the rebuild.
+        self.model = None;
+        self.model_revision = self.document.revision().wrapping_add(1);
+    }
+
     /// The gesture the sheet is taking this frame: the zoom window, or the editor.
     fn handle_sheet_gestures(
         &mut self,
@@ -662,6 +691,8 @@ impl Window {
             if let Some((id, screen)) = self.pending_drop.take() {
                 self.drop_catalog(&id, screen, &placement);
             }
+            let strip = crate::layout::circuit_strip_rect(area, self.theme.tokens.unit);
+            self.show_circuit_strip(ui, strip);
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
             self.handle_sheet_gestures(&sheet, &placement, fit, sheet_area, page_min);

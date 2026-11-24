@@ -18,6 +18,7 @@ use crate::layout::LayoutMode;
 use crate::ribbon::Command;
 use crate::shell::{Drawer, SheetProbe};
 
+mod circuit_strip;
 mod sheet_gestures;
 mod view_strip;
 use crate::theme::Theme;

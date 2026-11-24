@@ -286,6 +286,7 @@ hint_export = "circuito.pdf"
 forgotten = "quitado de recientes"
 
 [circuit]
+home = "Inicio"
 last_circuit = "el último circuito no se puede cerrar"
 empty_name = "el nombre no puede estar vacío"
 renamed = "circuito renombrado"
