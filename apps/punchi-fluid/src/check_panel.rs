@@ -9,6 +9,7 @@
 
 use eframe::egui;
 use punchi_fluid_draw::surface::{Pt, Rect};
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::check::{Finding, check_circuit};
 
 use crate::Window;
@@ -70,7 +71,8 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        match check_panel_window(context, &tokens, &self.check_panel) {
+        let language = self.language;
+        match check_panel_window(context, &tokens, &self.check_panel, language) {
             Some(Action::Recheck) => self.open_check(),
             Some(Action::Select(index)) => self.select_finding(index),
             Some(Action::Close) => self.check_panel.open = false,
@@ -90,6 +92,7 @@ fn check_panel_window(
     context: &egui::Context,
     tokens: &Tokens,
     panel: &CheckPanel,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     let screen = context.screen_rect();
@@ -99,7 +102,7 @@ fn check_panel_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new("Comprobar circuito")
+    egui::Window::new(language.text("check.title"))
         .id(egui::Id::new("window.check-panel"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -109,7 +112,7 @@ fn check_panel_window(
         .show(context, |ui| {
             if panel.findings.is_empty() {
                 ui.label(
-                    egui::RichText::new("sin faltas: el circuito pasa la comprobación")
+                    egui::RichText::new(language.text("check.clean"))
                         .size(tokens.text_body)
                         .color(tokens.ink),
                 );
@@ -130,10 +133,10 @@ fn check_panel_window(
             }
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("Recomprobar").clicked() {
+                if ui.button(language.text("check.recheck")).clicked() {
                     action = Some(Action::Recheck);
                 }
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     action = Some(Action::Close);
                 }
             });
@@ -144,8 +147,10 @@ fn check_panel_window(
 #[cfg(test)]
 mod tests {
     use eframe::egui;
+    use egui_kittest::kittest::Queryable;
     use punchi_fluid_doc::{Document, Placement};
     use punchi_fluid_draw::surface::Pt;
+    use punchi_fluid_i18n::Language;
 
     use crate::Window;
     use crate::theme::Theme;
@@ -170,6 +175,28 @@ mod tests {
         }
         harness.run();
         harness
+    }
+
+    #[test]
+    fn the_check_panel_follows_the_language() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_check();
+        {
+            let mut harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Check circuit").count() >= 1);
+            assert!(harness.query_all_by_label_contains("no faults").count() >= 1);
+            harness.get_by_label("Close").click();
+            harness.run();
+        }
+        window.language = Language::Spanish;
+        window.open_check();
+        {
+            let mut harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Comprobar circuito").count() >= 1);
+            assert!(harness.query_all_by_label_contains("sin faltas").count() >= 1);
+            harness.get_by_label("Cerrar").click();
+            harness.run();
+        }
     }
 
     #[test]

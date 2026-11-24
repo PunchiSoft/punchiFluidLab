@@ -315,3 +315,41 @@ resolution = "Resolución (PNG)"
 dpi = "{dpi} ppp"
 parts = "Incluir lista de piezas"
 applied = "opciones de exportación aplicadas"
+
+[preferences]
+title = "Configuración"
+reset_page = "Restaurar página"
+reset_appearance = "Restaurar apariencia"
+day_night = "Día / Noche"
+editing = "Editando"
+themes = "Temas"
+in_use = "En uso"
+built_in = "Integrado"
+appearance_body = "Colores, tema y contraste."
+panels_body = "Qué se recuerda de la ventana; nada de esto es del documento."
+autohide = "Ocultar al salir"
+
+[preferences.page]
+appearance = "Apariencia"
+panels = "Paneles"
+
+[preferences.slot]
+day = "Día"
+night = "Noche"
+
+[appearance.mode]
+desktop = "Escritorio"
+system = "Sistema"
+theme = "Un tema"
+
+[appearance.theme]
+cad = "CAD claro"
+slate = "Pizarra"
+nordic = "Nórdico"
+indigo = "Azul profundo"
+graphite = "Grafito"
+
+[check]
+title = "Comprobar circuito"
+clean = "sin faltas: el circuito pasa la comprobación"
+recheck = "Recomprobar"

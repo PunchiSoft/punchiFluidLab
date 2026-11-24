@@ -51,14 +51,14 @@ impl Appearance {
         }
     }
 
-    /// The label of the mode segment: a fixed theme reads as "Un tema", because the segment
-    /// chooses the mode and the card chooses which theme.
+    /// The catalog key of the mode segment: a fixed theme reads as one mode, because the
+    /// segment chooses the mode and the card chooses which theme.
     #[must_use]
-    pub fn mode_label_es(self) -> &'static str {
+    pub fn mode_label_key(self) -> &'static str {
         match self {
-            Self::Desktop => "Escritorio",
-            Self::System => "Sistema",
-            Self::Theme(_) => "Un tema",
+            Self::Desktop => "appearance.mode.desktop",
+            Self::System => "appearance.mode.system",
+            Self::Theme(_) => "appearance.mode.theme",
         }
     }
 }
@@ -100,15 +100,15 @@ impl ThemeId {
         }
     }
 
-    /// The Spanish name the card shows.
+    /// The catalog key of the name the card shows.
     #[must_use]
-    pub fn label_es(self) -> &'static str {
+    pub fn label_key(self) -> &'static str {
         match self {
-            Self::Cad => "CAD claro",
-            Self::Slate => "Pizarra",
-            Self::Nordic => "Nórdico",
-            Self::Indigo => "Azul profundo",
-            Self::Graphite => "Grafito",
+            Self::Cad => "appearance.theme.cad",
+            Self::Slate => "appearance.theme.slate",
+            Self::Nordic => "appearance.theme.nordic",
+            Self::Indigo => "appearance.theme.indigo",
+            Self::Graphite => "appearance.theme.graphite",
         }
     }
 

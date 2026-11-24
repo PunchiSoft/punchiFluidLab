@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Configuración y comprobaciones eligen idioma — 2026-11-24
+
+- **Configuración**: título, las dos páginas, las ranuras día/noche, los modos de apariencia,
+  los nombres de los cinco temas, «en uso»/«integrado», «editando», restaurar página y
+  apariencia, y la página de paneles con su descripción y la casilla de ocultar al salir.
+- **Panel de comprobaciones**: título, el mensaje de hoja limpia, recomprobar y cerrar. Las
+  frases de cada falta siguen viniendo de `punchi-fluid-check` y son fase 4.
+- **Pruebas**: `the_settings_window_follows_the_language` y
+  `the_check_panel_follows_the_language`; la suite de la ventana pasa a **312**.
+- **Pendiente**: Inicio y la barra de estado; después las crates, el catálogo, el exportador
+  y el CLI.
+
 ### Página, cajetín y exportación eligen idioma — 2026-11-24
 
 - **Configurar página**: título, papel, tamaño personalizado, orientación, márgenes con sus

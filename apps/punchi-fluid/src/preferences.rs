@@ -23,8 +23,10 @@ pub(crate) enum Page {
 }
 
 impl Page {
-    const ALL: [(Self, &'static str); 2] =
-        [(Self::Appearance, "Apariencia"), (Self::Panels, "Paneles")];
+    const ALL: [(Self, &'static str); 2] = [
+        (Self::Appearance, "preferences.page.appearance"),
+        (Self::Panels, "preferences.page.panels"),
+    ];
 }
 
 /// Which of the two system slots a theme card fills.
@@ -36,10 +38,10 @@ enum Slot {
 }
 
 impl Slot {
-    fn label_es(self) -> &'static str {
+    fn label_key(self) -> &'static str {
         match self {
-            Self::Day => "Día",
-            Self::Night => "Noche",
+            Self::Day => "preferences.slot.day",
+            Self::Night => "preferences.slot.night",
         }
     }
 }
@@ -210,7 +212,7 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new("Configuración")
+    egui::Window::new(data.language.text("preferences.title"))
         .id(egui::Id::new("window.preferences"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -224,7 +226,10 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
                     ui.add_space(data.tokens.unit * 0.4);
                     for (candidate, label) in Page::ALL {
                         if ui
-                            .selectable_label(data.current_page(candidate), label)
+                            .selectable_label(
+                                data.current_page(candidate),
+                                data.language.text(label),
+                            )
                             .clicked()
                         {
                             chosen.page = Some(candidate);
@@ -243,18 +248,27 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
                             if data.current_page(Page::Appearance) {
                                 appearance_page(ui, data, &mut chosen);
                             } else {
-                                panels_page(ui, data.tokens, autohide_on, &mut chosen.action);
+                                panels_page(
+                                    ui,
+                                    data.tokens,
+                                    autohide_on,
+                                    &mut chosen.action,
+                                    data.language,
+                                );
                             }
                         });
                 });
             });
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("Restaurar página").clicked() {
+                if ui
+                    .button(data.language.text("preferences.reset_page"))
+                    .clicked()
+                {
                     chosen.action = Some(Action::ResetPage);
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Cerrar").clicked() {
+                    if ui.button(data.language.text("dialog.close")).clicked() {
                         chosen.action = Some(Action::Close);
                     }
                 });
@@ -309,12 +323,12 @@ fn appearance_page(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) 
     language_row(ui, data, chosen);
     ui.add_space(data.tokens.unit * 0.5);
     ui.heading(
-        egui::RichText::new("Apariencia")
+        egui::RichText::new(data.language.text("preferences.page.appearance"))
             .size(data.tokens.text_label)
             .color(data.tokens.ink),
     );
     ui.label(
-        egui::RichText::new("Colores, tema y contraste.")
+        egui::RichText::new(data.language.text("preferences.appearance_body"))
             .size(data.tokens.text_body)
             .color(data.tokens.ink_dim),
     );
@@ -327,7 +341,10 @@ fn appearance_page(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) 
     }
     theme_cards(ui, data, chosen);
     ui.add_space(data.tokens.unit * 0.6);
-    if ui.button("Restaurar apariencia").clicked() {
+    if ui
+        .button(data.language.text("preferences.reset_appearance"))
+        .clicked()
+    {
         chosen.action = Some(Action::ResetPage);
     }
 }
@@ -351,7 +368,7 @@ fn mode_segments(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
                 Appearance::Theme(_) => matches!(data.current, Appearance::Theme(_)),
             };
             if ui
-                .selectable_label(selected, mode.mode_label_es())
+                .selectable_label(selected, data.language.text(mode.mode_label_key()))
                 .clicked()
             {
                 chosen.appearance = Some(mode);
@@ -363,7 +380,7 @@ fn mode_segments(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
 /// The two slots the system mode uses: the day theme and the night theme.
 fn slot_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
     ui.label(
-        egui::RichText::new("Día / Noche")
+        egui::RichText::new(data.language.text("preferences.day_night"))
             .size(data.tokens.text_small)
             .color(data.tokens.ink_muted),
     );
@@ -374,22 +391,32 @@ fn slot_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
         ] {
             ui.vertical(|ui| {
                 let aimed = data.aimed == slot;
-                if preview_card(ui, data.tokens, preview, aimed, slot.label_es()) {
+                if preview_card(
+                    ui,
+                    data.tokens,
+                    preview,
+                    aimed,
+                    data.language.text(slot.label_key()),
+                ) {
                     chosen.slot = Some(slot);
                 }
                 ui.label(
-                    egui::RichText::new(slot.label_es())
+                    egui::RichText::new(data.language.text(slot.label_key()))
                         .size(data.tokens.text_body)
                         .color(data.tokens.ink),
                 );
                 ui.label(
-                    egui::RichText::new(if aimed { "Editando" } else { id.label_es() })
-                        .size(data.tokens.text_small)
-                        .color(if aimed {
-                            data.tokens.accent
-                        } else {
-                            data.tokens.ink_muted
-                        }),
+                    egui::RichText::new(if aimed {
+                        data.language.text("preferences.editing")
+                    } else {
+                        data.language.text(id.label_key())
+                    })
+                    .size(data.tokens.text_small)
+                    .color(if aimed {
+                        data.tokens.accent
+                    } else {
+                        data.tokens.ink_muted
+                    }),
                 );
                 ui.add_space(data.tokens.unit * 0.8);
             });
@@ -400,7 +427,7 @@ fn slot_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
 /// The theme cards: a light and a dark engineering theme.
 fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
     ui.label(
-        egui::RichText::new("Temas")
+        egui::RichText::new(data.language.text("preferences.themes"))
             .size(data.tokens.text_small)
             .color(data.tokens.ink_muted),
     );
@@ -418,22 +445,32 @@ fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
                 Appearance::Desktop => false,
             };
             ui.vertical(|ui| {
-                if preview_card(ui, data.tokens, preview, selected, id.label_es()) {
+                if preview_card(
+                    ui,
+                    data.tokens,
+                    preview,
+                    selected,
+                    data.language.text(id.label_key()),
+                ) {
                     chosen.theme = Some(*id);
                 }
                 ui.label(
-                    egui::RichText::new(id.label_es())
+                    egui::RichText::new(data.language.text(id.label_key()))
                         .size(data.tokens.text_body)
                         .color(data.tokens.ink),
                 );
                 ui.label(
-                    egui::RichText::new(if selected { "En uso" } else { "Integrado" })
-                        .size(data.tokens.text_small)
-                        .color(if selected {
-                            data.tokens.accent
-                        } else {
-                            data.tokens.ink_muted
-                        }),
+                    egui::RichText::new(if selected {
+                        data.language.text("preferences.in_use")
+                    } else {
+                        data.language.text("preferences.built_in")
+                    })
+                    .size(data.tokens.text_small)
+                    .color(if selected {
+                        data.tokens.accent
+                    } else {
+                        data.tokens.ink_muted
+                    }),
                 );
                 ui.add_space(data.tokens.unit);
             });
@@ -442,24 +479,33 @@ fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
 }
 
 /// The panel page: the auto-hide flag and the view reset, the same settings as **Ver**.
-fn panels_page(ui: &mut egui::Ui, tokens: &Tokens, autohide_on: bool, action: &mut Option<Action>) {
+fn panels_page(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    autohide_on: bool,
+    action: &mut Option<Action>,
+    language: Language,
+) {
     ui.heading(
-        egui::RichText::new("Paneles")
+        egui::RichText::new(language.text("preferences.page.panels"))
             .size(tokens.text_label)
             .color(tokens.ink),
     );
     ui.label(
-        egui::RichText::new("Qué se recuerda de la ventana; nada de esto es del documento.")
+        egui::RichText::new(language.text("preferences.panels_body"))
             .size(tokens.text_body)
             .color(tokens.ink_dim),
     );
     ui.add_space(tokens.unit * 0.8);
     let mut on = autohide_on;
-    if ui.checkbox(&mut on, "Ocultar al salir").changed() {
+    if ui
+        .checkbox(&mut on, language.text("preferences.autohide"))
+        .changed()
+    {
         *action = Some(Action::ToggleAutohide);
     }
     ui.add_space(tokens.unit * 0.6);
-    if ui.button("Restablecer vista").clicked() {
+    if ui.button(language.text("ribbon.item.reset_view")).clicked() {
         *action = Some(Action::ResetView);
     }
 }
@@ -537,16 +583,40 @@ mod tests {
     }
 
     #[test]
+    fn the_settings_window_follows_the_language() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Settings").count() >= 1);
+            assert!(harness.query_all_by_label("Appearance").count() >= 1);
+            assert!(harness.query_all_by_label("Slate").count() >= 1);
+            harness.get_by_label("Close").click();
+            harness.run();
+        }
+        window.language = punchi_fluid_i18n::Language::Spanish;
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Configuración").count() >= 1);
+            assert!(harness.query_all_by_label("Apariencia").count() >= 1);
+            assert!(harness.query_all_by_label("Pizarra").count() >= 1);
+            harness.get_by_label("Cerrar").click();
+            harness.run();
+        }
+    }
+
+    #[test]
     fn the_window_chooses_pizarra_and_closes() {
         let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
         window.open_preferences();
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Pizarra")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Slate")
                 .click();
             harness.run();
-            harness.get_by_label("Cerrar").click();
+            harness.get_by_label("Close").click();
             harness.run();
         }
         assert_eq!(
@@ -589,7 +659,7 @@ mod tests {
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "CAD claro")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Light CAD")
                 .click();
             harness.run();
         }
@@ -607,7 +677,7 @@ mod tests {
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Nórdico")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Nordic")
                 .click();
             harness.run();
         }
@@ -625,7 +695,7 @@ mod tests {
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Azul profundo")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Deep blue")
                 .click();
             harness.run();
         }
@@ -643,7 +713,7 @@ mod tests {
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Grafito")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Graphite")
                 .click();
             harness.run();
         }
@@ -661,15 +731,15 @@ mod tests {
         {
             let mut harness = harness(&mut window);
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Sistema")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "System")
                 .click();
             harness.run();
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "Noche")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Night")
                 .click();
             harness.run();
             harness
-                .get_by_role_and_label(egui::accesskit::Role::Button, "CAD claro")
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Light CAD")
                 .click();
             harness.run();
         }
