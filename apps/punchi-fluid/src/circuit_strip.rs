@@ -30,6 +30,12 @@ pub(crate) enum Action {
     Home,
     /// A tab, or `Ctrl+Tab`, chose another circuit.
     Switch(u32),
+    /// The tab's close cross: close that circuit through the window's dialog.
+    Close(u32),
+    /// The tab's rename gesture (`F2` or a double click): rename the circuit in view.
+    Rename(u32),
+    /// The plus after the last tab: add a circuit.
+    Add,
 }
 
 /// Draws the strip in `rect` and returns the reader's choice. The tabs are painted controls,
@@ -72,10 +78,11 @@ pub(crate) fn show(
                             .auto_shrink([false, true])
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
+                                    let many = document.circuits().len() > 1;
                                     for circuit in document.circuits() {
                                         let active = circuit.id == document.active_circuit();
-                                        let (response, tab_rect) =
-                                            tab(ui, tokens, language, &circuit.title, active);
+                                        let (response, close, rename, tab_rect) =
+                                            tab(ui, tokens, language, &circuit.title, active, many);
                                         if active {
                                             // Scroll only when the circuit changes: a
                                             // scroll every frame never settles and repaints.
@@ -92,9 +99,18 @@ pub(crate) fn show(
                                                 );
                                             }
                                         }
-                                        if response && !active {
+                                        if close {
+                                            action = Some(Action::Close(circuit.id));
+                                        } else if rename {
+                                            action = Some(Action::Rename(circuit.id));
+                                        } else if response && !active {
                                             action = Some(Action::Switch(circuit.id));
                                         }
+                                    }
+                                    if document.circuits().len() < punchi_fluid_doc::MAX_CIRCUITS
+                                        && add(ui, tokens, language)
+                                    {
+                                        action = Some(Action::Add);
                                     }
                                 });
                             });
@@ -139,31 +155,36 @@ fn home(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> bool {
     clicked
 }
 
-/// One circuit tab: the document, its name and, when active, the accent rule on the seam and
-/// a clearer fill. Returns whether it was activated, with its rectangle for scrolling.
+/// One circuit tab: the document, its name, the close cross and, when active, the accent rule
+/// on the seam. Returns whether the tab, the cross or the rename gesture fired, with its
+/// rectangle for scrolling.
 fn tab(
     ui: &mut egui::Ui,
     tokens: &Tokens,
     language: Language,
     title: &str,
     active: bool,
-) -> (bool, egui::Rect) {
+    many: bool,
+) -> (bool, bool, bool, egui::Rect) {
     let font = egui::FontId::proportional(tokens.text_body);
-    let width = ui
-        .fonts(|fonts| {
-            fonts
-                .layout_no_wrap(title.to_owned(), font.clone(), tokens.ink)
-                .size()
-                .x
-        })
-        .min(200.0)
-        + tokens.unit * 3.2;
+    let text_width = ui.fonts(|fonts| {
+        fonts
+            .layout_no_wrap(title.to_owned(), font.clone(), tokens.ink)
+            .size()
+            .x
+    });
+    let width = text_width.min(200.0) + tokens.unit * 3.2 + if many { tokens.unit } else { 0.0 };
     let height = (tokens.unit * 2.0).max(28.0) - 6.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
-    let id = ui.make_persistent_id(("circuit.strip.tab", title));
-    let response = focusable(ui, rect, id);
+    let close_width = if many { tokens.unit * 1.2 } else { 0.0 };
+    let label_rect = egui::Rect::from_min_max(
+        rect.min,
+        egui::pos2(rect.right() - close_width, rect.bottom()),
+    );
+    let tab_id = ui.make_persistent_id(("circuit.strip.tab", title));
+    let response = focusable(ui, label_rect, tab_id);
     if !ui.is_rect_visible(rect) {
-        return (false, rect);
+        return (false, false, false, rect);
     }
     if active {
         ui.painter()
@@ -194,9 +215,12 @@ fn tab(
         egui::vec2(tokens.unit, tokens.unit),
     );
     paint_icon(ui, ICON_CIRCUIT, icon_rect, ink);
-    let galley = ui
-        .painter()
-        .layout(title.to_owned(), font, ink, width - tokens.unit * 2.4);
+    let galley = ui.painter().layout(
+        title.to_owned(),
+        font,
+        ink,
+        label_rect.width() - tokens.unit * 2.4,
+    );
     ui.painter().galley(
         egui::pos2(
             icon_rect.right() + tokens.unit * 0.4,
@@ -207,10 +231,62 @@ fn tab(
     );
     response
         .widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active, title));
-    let activated = response.clicked() || activated(ui, &response);
+    let rename = response.double_clicked()
+        || (response.has_focus() && ui.input(|input| input.key_pressed(egui::Key::F2)));
+    let clicked = response.clicked() || activated(ui, &response);
     response.on_hover_text(title);
-    let _ = language;
-    (activated, rect)
+    let mut close = false;
+    if many {
+        let close_rect =
+            egui::Rect::from_min_max(egui::pos2(rect.right() - close_width, rect.top()), rect.max);
+        let close_id = ui.make_persistent_id(("circuit.strip.close", title));
+        let close_response = focusable(ui, close_rect, close_id);
+        let label = language.format("circuit.close_tab", &[("title", title)]);
+        if close_response.hovered() || close_response.has_focus() {
+            ui.painter()
+                .rect_filled(close_rect, tokens.radius_control, tokens.surface_raised);
+        }
+        let close_ink = tokens.ink_muted;
+        ui.painter().text(
+            close_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "×",
+            egui::FontId::proportional(tokens.text_body),
+            close_ink,
+        );
+        close_response
+            .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
+        close = close_response.clicked() || activated(ui, &close_response);
+        close_response.on_hover_text(label);
+    }
+    (clicked, close, rename, rect)
+}
+
+/// The plus after the last tab: another circuit, as one undo.
+fn add(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> bool {
+    let label = language.text("circuit.new_tab");
+    let side = tokens.unit * 1.6;
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(side, side), egui::Sense::hover());
+    let id = ui.make_persistent_id("circuit.strip.add");
+    let response = focusable(ui, rect, id);
+    if !ui.is_rect_visible(rect) {
+        return false;
+    }
+    if response.hovered() || response.has_focus() {
+        ui.painter()
+            .rect_filled(rect, tokens.radius_control, tokens.surface_raised);
+    }
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        "+",
+        egui::FontId::proportional(tokens.text_body),
+        tokens.ink,
+    );
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label));
+    let clicked = response.clicked() || activated(ui, &response);
+    response.on_hover_text(label);
+    clicked
 }
 
 /// A painted control gets the keyboard focus and the accessibility layer's name.
