@@ -52,9 +52,9 @@ data, a message the reader can act on, and a test that pushes past it.
 ## Where the limit lives
 
 In the crate that owns the data (`punchi-fluid-core`, `-file`, `-catalog`, `-doc`), as a
-`pub const` with a doc comment, used by both the writer and the reader. The ABI and the
-window read it through a getter when they must show it ("10 recientes", "máximo 32
-circuitos"). A limit that exists only in QML is not a limit: a second front end would
+`pub const` with a doc comment, used by both the writer and the reader. The window
+reads it through a getter when it must show it ("10 recientes", "máximo 32
+circuitos"). A limit that exists only in a widget is not a limit: a second front end would
 not have it.
 
 ## The table this repository keeps
@@ -62,15 +62,12 @@ not have it.
 | Limit | Value | Owner | Evidence |
 |---|---|---|---|
 | Recent projects | 10 | `punchi-fluid-file` | fifteen remembered, ten kept |
-| Recent rows on Inicio | 5 | `punchi-fluid-ffi` | `PF_RECENT_PAGE_LIMIT` compared with the list bound in the gate |
 | Recent path | 4096 bytes | `punchi-fluid-file` | a longer path is refused |
 | Recent list file | 64 KB | `punchi-fluid-file` | a larger file is refused |
 | Sheet document | 8 MiB (`MAX_BYTES`) | `punchi-fluid-file` | read only from a regular file, through a bounded reader; a device and one byte past the limit are refused |
 | Circuits per project | 32 | `punchi-fluid-core` | refused opening and adding |
 | Undo depth | the document's | `punchi-fluid-doc` | bounded steps |
 | Catalog keys and numbers | per field | `punchi-fluid-catalog` | one test per rule |
-| Icon cache | 200 entries per size and tint | `apps/punchi-fluid-qt` | LRU bound in `docs/engineering.md` |
-| Start-view template thumbnails | 4 × 512 × 288 RGBA pixels (≤ 2.25 MiB) | `apps/punchi-fluid-qt` | fixed template count, bounded raster dimensions, selftest checks four cards |
 
 When a limit moves, the table and the changelog move with it.
 

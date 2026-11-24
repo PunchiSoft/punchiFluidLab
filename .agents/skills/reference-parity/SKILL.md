@@ -17,6 +17,8 @@ measured and understood, never traced: every symbol is written by hand to confor
 
 A change is not finished because it compiles. It is finished when the reference and the
 implementation show the same thing, the evidence is in the repository, and the gate is green.
+When the running app does not answer the question, the installed code and data side is
+[parent-source-review](../parent-source-review/SKILL.md); use both together.
 
 ## Before touching a symbol or an animation
 
@@ -99,7 +101,7 @@ quantity in the queue and the continuity note, and do not fake it.
 1. Read the owner's local `docs-private/work-queue.md` and `docs-private/parity-run.md`;
    take the first `ready` entry.
 2. Audit the reference for that entry (palette and running behaviour).
-3. Implement in layer order: catalog file, model, drawing, ABI, window, format only if
+3. Implement in layer order: catalog file, model, drawing, window, format only if
    unavoidable.
 4. Regenerate every affected review image with
    `PUNCHI_FLUID_WRITE_SAMPLE=1 cargo test -p punchi-fluid-export --test generate`.

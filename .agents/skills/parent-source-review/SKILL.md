@@ -40,11 +40,11 @@ A question without a test is not a reason to read code.
    repository.
 3. **Answer one question at a time.** Read the smallest file that answers it. Write a short
    note with: the question, what was observed, what it means for the model, and which Rust
-   layer owns it (`catalog`, `solver`, `doc`, `draw`, `ffi`, `export`).
+   layer owns it (`catalog`, `solver`, `doc`, `draw`, `export`).
 4. **Turn the observation into a rule, not a copy.** A valve position becomes a list of open
    paths in a catalog file; a timing becomes a step counter; a symbol becomes hand-written
    geometry. The rule must be testable without the parent app.
-5. **Write the evidence.** A unit/invariant/reference test, an ABI test, or a drawing test; a
+5. **Write the evidence.** A unit/invariant/reference test, a session or window test, or a drawing test; a
    symbol review when the geometry changed. The test never reads the parent's files.
 6. **Record the decision.** If the rule changes the model, write the ADR. If it is only a
    fact (a threshold, a port order), put it in the catalog file and its guide.
@@ -69,10 +69,10 @@ A question without a test is not a reason to read code.
 | Observation | Rust home | Evidence |
 |---|---|---|
 | Ports, roles, open paths, thresholds | `assets/catalog/*.toml` | catalog lint and validation test |
-| Flow, pressure, timing, counting | `punchi-fluid-solver`, `punchi-fluid-ffi` | invariant/reference/step test |
+| Flow, pressure, timing, counting | `punchi-fluid-solver`, `punchi-fluid-session` | invariant/reference/step test |
 | Positions, bindings, projects, units | `punchi-fluid-doc`, `punchi-fluid-file` | document and migration test |
 | Symbol family and geometry | `punchi-fluid-draw`, `assets/symbols/review` | symbol lint, light/dark review |
-| What the window shows and when | `punchi-fluid-ffi`, `punchi-fluid-qt` | ABI/selftest/QML check |
+| What the window shows and when | `apps/punchi-fluid` | headless window test and a capture |
 
 ## Stopping
 
@@ -98,7 +98,7 @@ prove the answer. A summary of intentions is not progress.
 ```bash
 # The question, the observation and the Rust layer are written in the issue/ADRs/tests.
 cargo test -p punchi-fluid-solver
-cargo test -p punchi-fluid-ffi
+cargo test -p punchi-fluid-window
 cargo test -p punchi-fluid-catalog
 ./scripts-dev/check.sh
 git --no-pager log --oneline -1

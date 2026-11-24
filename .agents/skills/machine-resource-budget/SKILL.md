@@ -100,9 +100,8 @@ biggest, which makes an out-of-memory kill unambiguous.
   process per binary with the default thread count; measure with `test.sh`.
 - **Do not raise `jobs` to "compile faster" here.** The gain is small and the cost is the
   session.
-- **The Qt application is a separate build.** `cmake --build apps/punchi-fluid-qt/build`,
-  with that directory ignored. Its link step needs the Rust static library, which is why
-  the CMake target depends on `cargo build --release -p punchi-fluid-ffi`.
+- **The window is a cargo target.** Build it with `cargo build -p punchi-fluid-window` and
+  test it with `cargo test -p punchi-fluid-window`; there is no separate CMake or ABI step.
 
 ## Validation
 
@@ -110,9 +109,9 @@ biggest, which makes an out-of-memory kill unambiguous.
 bash -n scripts-dev/limits.sh && bash -n scripts-dev/test.sh && bash -n scripts-dev/check.sh
 bash -c 'source scripts-dev/limits.sh; echo "$PUNCHI_BUILD_JOBS $PUNCHI_TEST_MEMORY_KB"'
 ./scripts-dev/test.sh                                        # every binary, all green
-apps/punchi-fluid-qt/build/punchi-fluid --report-paints 4     # a settled window: 1 paint
+cargo test -p punchi-fluid-window                              # the window's headless suite
 journalctl -k -n 20 --no-pager | grep -ci oom                 # 0 after a full run
 ```
 
-The paint count is the evidence for the redraw rule; an empty `oom` count after a complete
-run is the evidence for the budget.
+The headless window suite is the behavioural evidence; an empty `oom` count after a
+complete run is the evidence for the budget.

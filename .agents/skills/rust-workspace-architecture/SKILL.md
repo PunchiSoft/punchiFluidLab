@@ -6,11 +6,11 @@ license: GPL-3.0-or-later
 
 # Workspace architecture
 
-The workspace is twelve crates and, during the migration, two windows: the Qt one in
-`apps/punchi-fluid-qt` and the Rust one in `apps/punchi-fluid`, with one
-allowed dependency graph and exactly three extension points. Both are decisions recorded
-in [docs/adr/](../../../docs/adr/); a new edge or a fourth extension point is an ADR,
-not a refactor.
+The workspace is eleven product crates, the retired `punchi-fluid-ffi` crate with no
+product consumer, and one window in `apps/punchi-fluid`. It has one allowed dependency graph
+and exactly three extension points. The graph and the extension points are decisions recorded in
+[docs/adr/](../../../docs/adr/); a new edge or a fourth extension point is an ADR, not a
+refactor.
 
 ## The graph
 
@@ -22,10 +22,9 @@ catalog, core, solver ← draw
 draw ← doc
 catalog, doc, draw ← check
 catalog, draw, solver ← export
-catalog, check, doc, draw, file, solver, session ← ffi ← apps/punchi-fluid-qt
-core, file, solver ← cli
-catalog, core, doc, draw, export, file, session ← apps/punchi-fluid
-check, doc, draw, file ← session
+core, catalog, check, doc, draw, file, solver ← session
+core, catalog, check, doc, draw, file, solver ← cli
+core, doc, draw, export, session, catalog, file, i18n ← apps/punchi-fluid
 ```
 
 `catalog` has no internal dependency: the schema is self-contained. `check` reaches
@@ -48,11 +47,10 @@ short form:
 | `punchi-fluid-check` | design faults found before the run | physics, UI |
 | `punchi-fluid-draw` | mm geometry, `Surface`, symbol drawing | windows, I/O |
 | `punchi-fluid-export` | page geometry, PNG/PDF backends | interaction |
-| `punchi-fluid-ffi` | the C ABI: session, frame, hit test | logic of its own |
+| `punchi-fluid-ffi` | the retired C ABI; no product consumer (ADR 0035) | product logic |
 | `punchi-fluid-session` | the sheet↔document conversion and the editor state | physics, widgets |
 | `punchi-fluid-cli` | headless validate and simulate | UI |
-| `apps/punchi-fluid-qt` | the Qt window: ribbon, sidebar, sheet, theme (retires with ADR 0035) | physics, the document |
-| `apps/punchi-fluid` | the Rust window: fixed layout, sheet, ribbon, theme | physics, the document |
+| `apps/punchi-fluid` | the Rust window: ribbon, sidebar, sheet, status bar, start view, theme adapter and i18n | physics, the document |
 
 ## Procedure: deciding where code goes
 
@@ -73,8 +71,8 @@ short form:
 
 ## Gotchas
 
-- **`cargo` prevents cycles, not layering.** `ffi` depending on `export` compiles and is
-  still wrong: the ABI would gain page geometry. `check` reaching into `solver` compiles
+- **`cargo` prevents cycles, not layering.** `draw` depending on `export` compiles and is
+  still wrong: the drawing would gain page geometry. `check` reaching into `solver` compiles
   too, and would make a design check depend on the physics it is meant to precede. Review
   the edge, not the build.
 - **Dev-dependencies may cross layers** because they never reach the binary, but do not

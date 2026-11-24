@@ -71,7 +71,7 @@ git commit -s -m "fix(catalog): reject a port outside the symbol box" -m "The lo
 - Check the budget table when the change touches the solver, the draw loop, a cache or
   the export.
 - Check the layer: a file-I/O call in `punchi-fluid-draw`, logic of its own in
-  `punchi-fluid-ffi`, or a physics formula in `punchi-fluid-core` is a design finding
+  `apps/punchi-fluid`, or a physics formula in `punchi-fluid-core` is a design finding
   even when tests pass.
 
 ## Issues
