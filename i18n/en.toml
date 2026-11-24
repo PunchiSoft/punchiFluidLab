@@ -160,3 +160,26 @@ none = "No title block"
 top_right = "Top right"
 bottom_right = "Bottom right"
 bottom_full = "Bottom centred"
+
+[catalog]
+title = "Catalog"
+search = "Search…"
+components = "{count} components"
+integrated = "Built-in catalog"
+integrated_skipped = "Built-in catalog · {count} skipped"
+
+[catalog.category]
+supply = "Supply"
+valve = "Valves"
+actuator = "Actuators"
+throttle = "Flow control"
+accessory = "Accessories"
+sensor = "Sensors and instruments"
+
+[panel]
+resize = "Drag to resize the panel"
+
+[panel.catalog]
+width = "Catalog panel width"
+show = "Show catalog panel"
+hide = "Hide catalog panel"

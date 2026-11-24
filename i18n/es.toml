@@ -160,3 +160,26 @@ none = "Sin cajetín"
 top_right = "Superior derecha"
 bottom_right = "Inferior derecha"
 bottom_full = "Inferior centrado"
+
+[catalog]
+title = "Catálogo"
+search = "Buscar…"
+components = "{count} componentes"
+integrated = "Catálogo integrado"
+integrated_skipped = "Catálogo integrado · {count} omitidos"
+
+[catalog.category]
+supply = "Alimentación"
+valve = "Válvulas"
+actuator = "Actuadores"
+throttle = "Cierre y control de caudal"
+accessory = "Accesorios"
+sensor = "Sensores e instrumentos"
+
+[panel]
+resize = "Arrastra para cambiar el ancho del panel"
+
+[panel.catalog]
+width = "Ancho del panel del catálogo"
+show = "Mostrar el panel del catálogo"
+hide = "Ocultar el panel del catálogo"

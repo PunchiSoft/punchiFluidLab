@@ -10,6 +10,7 @@
 //! share this module and keep their own content and width bounds.
 
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 use crate::theme::Tokens;
 
@@ -82,6 +83,8 @@ pub struct Panel {
     show_label: &'static str,
     hide_label: &'static str,
     shortcut: &'static str,
+    /// The visible language the panel's own labels resolve with.
+    language: Language,
     margin: i8,
     /// What the last frame told the auto-hide timers, refreshed on every draw.
     probe: Probe,
@@ -103,9 +106,19 @@ impl Panel {
             show_label: settings.show_label,
             hide_label: settings.hide_label,
             shortcut: settings.shortcut,
+            language: Language::English,
             margin: settings.margin,
             probe: Probe::default(),
         }
+    }
+
+    /// Sets the language the panel's own labels resolve with.
+    pub fn set_language(&mut self, language: Language) {
+        self.language = language;
+    }
+
+    fn label(&self, key: &'static str) -> &'static str {
+        self.language.text(key)
     }
 
     #[must_use]
@@ -327,11 +340,10 @@ impl Panel {
             }
             draw_panel_glyph(ui, rect, tokens.ink, tokens.accent);
         }
-        response.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, self.show_label)
-        });
+        let show = self.label(self.show_label);
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, show));
         let activated = activated(ui, &response);
-        response.on_hover_text(format!("{} ({})", self.show_label, self.shortcut));
+        response.on_hover_text(format!("{} ({})", show, self.shortcut));
         activated
     }
 
@@ -396,11 +408,10 @@ impl Panel {
             }
             draw_panel_glyph(ui, rect, tokens.ink, tokens.accent);
         }
-        button.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, self.hide_label)
-        });
+        let hide = self.label(self.hide_label);
+        button.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, hide));
         let activated = activated(ui, &button);
-        button.on_hover_text(format!("{} ({})", self.hide_label, self.shortcut));
+        button.on_hover_text(format!("{} ({})", hide, self.shortcut));
         activated
     }
 
@@ -411,16 +422,15 @@ impl Panel {
             egui::Sense::hover(),
         );
         let grip = focusable(ui, rect, ui.make_persistent_id((self.id, "grip")));
-        grip.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Other, true, self.width_label)
-        });
+        let width = self.label(self.width_label);
+        grip.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Other, true, width));
         if grip.hovered() || grip.dragged() {
             ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
         }
         if grip.dragged() {
             self.resize_by(self.edge.widen(grip.drag_delta().x));
         }
-        grip.on_hover_text("Arrastra para cambiar el ancho del panel");
+        grip.on_hover_text(self.label("panel.resize"));
     }
 }
 
