@@ -205,6 +205,7 @@ search = "Search…"
 components = "{count} components"
 integrated = "Built-in catalog"
 integrated_skipped = "Built-in catalog · {count} skipped"
+add_to_sheet = "Add to sheet"
 
 [catalog.category]
 supply = "Supply"

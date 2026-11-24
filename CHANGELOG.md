@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### El catálogo elige y su menú añade — 2026-11-24
+
+- **Baldosas**: un clic **elige** la baldosa (relleno de panel y barra de acento, no solo
+  hover); **Enter/Espacio** coloca la enfocada en el centro de la hoja y **clic derecho,
+  `Shift+F10` o `F10`** abren su menú con **Añadir a la hoja**, que coloca en el centro como
+  un solo undo. El botón derecho nunca arrastra ni coloca por sí mismo; el menú cierra con
+  `Esc` o un clic fuera. Nombres accesibles y foco de teclado.
+- **Pruebas**: `a_click_chooses_a_tile_without_adding_it`,
+  `the_tile_menu_adds_the_entry_at_the_centre` y `the_keyboard_adds_the_chosen_tile`; la suite
+  de la ventana pasa a **348**.
+- **Anexo A en curso**: queda el arrastre de la baldosa (A2), que sigue `partial` en el
+  registro.
+
 ### La cuadrícula de vista — 2026-11-24
 
 - **Cuadrícula**: guía de vista sobre el papel y bajo el cajetín y el dibujo; no se imprime ni

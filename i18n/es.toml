@@ -205,6 +205,7 @@ search = "Buscar…"
 components = "{count} componentes"
 integrated = "Catálogo integrado"
 integrated_skipped = "Catálogo integrado · {count} omitidos"
+add_to_sheet = "Añadir a la hoja"
 
 [catalog.category]
 supply = "Alimentación"
