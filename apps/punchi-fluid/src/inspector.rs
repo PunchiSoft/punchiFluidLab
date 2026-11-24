@@ -12,6 +12,7 @@ use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::{Connection, Document};
 use punchi_fluid_draw::LineClass;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::Model;
 
 use crate::Window;
@@ -54,6 +55,8 @@ struct Fields {
 pub struct Inspector {
     chrome: Panel,
     fields: Fields,
+    /// The language the panel and its content draw with; the window sets it each frame.
+    pub(crate) language: Language,
 }
 
 impl Default for Inspector {
@@ -65,13 +68,14 @@ impl Default for Inspector {
                 default_width: DEFAULT_WIDTH,
                 min_width: MIN_WIDTH,
                 max_width: MAX_WIDTH,
-                width_label: "Ancho del panel de propiedades",
-                show_label: "Mostrar el panel de propiedades",
-                hide_label: "Ocultar el panel de propiedades",
+                width_label: "panel.inspector.width",
+                show_label: "panel.inspector.show",
+                hide_label: "panel.inspector.hide",
                 shortcut: "Ctrl+J",
                 margin: 5,
             }),
             fields: Fields::default(),
+            language: Language::English,
         }
     }
 }
@@ -182,8 +186,13 @@ impl Inspector {
         selected_pipe: Option<usize>,
         docked_width: f32,
     ) -> Option<Action> {
-        let title = title_of(document, catalog, selected, selected_pipe);
-        let Inspector { chrome, fields } = self;
+        let title = title_of(document, catalog, selected, selected_pipe, self.language);
+        let Inspector {
+            chrome,
+            fields,
+            language,
+        } = self;
+        chrome.set_language(*language);
         chrome
             .show(context, tokens, &title, None, docked_width, |ui| {
                 fields.show(
@@ -194,6 +203,7 @@ impl Inspector {
                     model,
                     selected,
                     selected_pipe,
+                    *language,
                 )
             })
             .flatten()
@@ -201,6 +211,7 @@ impl Inspector {
 
     /// Draws only the rail, for the compact shell.
     pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
+        self.chrome.set_language(self.language);
         self.chrome.show_rail(context, tokens)
     }
 
@@ -220,8 +231,13 @@ impl Inspector {
         selected: &[usize],
         selected_pipe: Option<usize>,
     ) -> (Option<Action>, bool) {
-        let title = title_of(document, catalog, selected, selected_pipe);
-        let Inspector { chrome, fields } = self;
+        let title = title_of(document, catalog, selected, selected_pipe, self.language);
+        let Inspector {
+            chrome,
+            fields,
+            language,
+        } = self;
+        chrome.set_language(*language);
         chrome.show_body(ui, tokens, &title, None, |ui| {
             fields.show(
                 ui,
@@ -231,6 +247,7 @@ impl Inspector {
                 model,
                 selected,
                 selected_pipe,
+                *language,
             )
         })
     }
@@ -251,6 +268,7 @@ impl Fields {
         model: Option<&Model>,
         selected: &[usize],
         selected_pipe: Option<usize>,
+        language: Language,
     ) -> Option<Action> {
         let mut action = None;
         egui::ScrollArea::vertical()
@@ -264,6 +282,7 @@ impl Fields {
                     model,
                     selected,
                     selected_pipe,
+                    language,
                 );
             });
         action
@@ -283,18 +302,19 @@ impl Fields {
         model: Option<&Model>,
         selected: &[usize],
         selected_pipe: Option<usize>,
+        language: Language,
     ) -> Option<Action> {
         if let Some(index) = selected_pipe {
-            return pipe_body(ui, tokens, document, index);
+            return pipe_body(ui, tokens, document, index, language);
         }
         match *selected {
-            [index] => self.component_body(ui, tokens, document, catalog, model, index),
+            [index] => self.component_body(ui, tokens, document, catalog, model, index, language),
             [] => {
-                empty_body(ui, tokens, document);
+                empty_body(ui, tokens, document, language);
                 None
             }
             _ => {
-                multi_body(ui, tokens, selected.len());
+                multi_body(ui, tokens, selected.len(), language);
                 None
             }
         }
@@ -302,6 +322,10 @@ impl Fields {
 
     /// One component: its name and catalog id, its designation and, when the selection
     /// reaches exactly one hose, that hose's tube; then its ports and their readings.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the body reads the document, the catalog, the model, the selection and the language"
+    )]
     fn component_body(
         &mut self,
         ui: &mut egui::Ui,
@@ -310,6 +334,7 @@ impl Fields {
         catalog: &Catalog,
         model: Option<&Model>,
         index: usize,
+        language: Language,
     ) -> Option<Action> {
         let placement = document.placements().get(index)?;
         let definition = catalog.get(&placement.catalog_id);
@@ -317,7 +342,10 @@ impl Fields {
         ui.add_space(tokens.unit * 0.35);
         match definition {
             Some(definition) => {
-                let name = definition.name_es.as_deref().unwrap_or(&definition.name);
+                let name = match language {
+                    Language::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
+                    Language::English => &definition.name,
+                };
                 ui.label(
                     egui::RichText::new(name)
                         .size(tokens.text_body)
@@ -344,7 +372,7 @@ impl Fields {
         // name when the text is emptied.
         ui.add_space(tokens.unit * 0.5);
         ui.label(
-            egui::RichText::new("Designación")
+            egui::RichText::new(language.text("inspector.designation"))
                 .size(tokens.text_small)
                 .color(tokens.ink_muted),
         );
@@ -354,11 +382,15 @@ impl Fields {
         }
         let field = ui.add(
             egui::TextEdit::singleline(&mut self.buffer)
-                .hint_text("Sin designación")
+                .hint_text(language.text("inspector.no_designation"))
                 .desired_width(f32::INFINITY),
         );
         field.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::TextEdit, true, "Designación")
+            egui::WidgetInfo::labeled(
+                egui::WidgetType::TextEdit,
+                true,
+                language.text("inspector.designation"),
+            )
         });
         if field.lost_focus() {
             action = Some(Action::Designation {
@@ -388,16 +420,16 @@ impl Fields {
                     .connections()
                     .get(*hose)
                     .and_then(Connection::tube_od_hundredths);
-                if let Some(chosen) = tube_row(ui, *hose, tube) {
+                if let Some(chosen) = tube_row(ui, *hose, tube, language) {
                     action = Some(chosen);
                 }
             }
             many if many.len() > 1 => {
                 ui.add_space(tokens.unit * 0.35);
                 ui.label(
-                    egui::RichText::new(format!(
-                        "{} conductos: selecciona uno en la hoja para su diámetro.",
-                        many.len()
+                    egui::RichText::new(language.format(
+                        "inspector.hoses_multi",
+                        &[("count", &many.len().to_string())],
                     ))
                     .size(tokens.text_small)
                     .color(tokens.ink_muted),
@@ -407,7 +439,7 @@ impl Fields {
         }
 
         if let Some(definition) = definition {
-            ports(ui, tokens, model, index, &definition.port);
+            ports(ui, tokens, model, index, &definition.port, language);
         }
         action
     }
@@ -418,6 +450,7 @@ impl Window {
     /// the status panel and before the sheet, so the sheet's available area follows it; the
     /// dock computes its docked width from the same mode the shell derived.
     pub(crate) fn show_inspector(&mut self, context: &egui::Context) {
+        self.inspector.language = self.language;
         let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
         if mode == crate::layout::LayoutMode::Compact {
             return;
@@ -489,7 +522,7 @@ impl Window {
             Action::PipeTube { index, tube } => self.document.set_pipe_tube(index, tube),
         };
         if changed {
-            self.notice = Some(String::from("propiedades actualizadas"));
+            self.notice = Some(self.language.text("inspector.updated").to_owned());
         }
     }
 }
@@ -501,11 +534,12 @@ fn title_of(
     catalog: &Catalog,
     selected: &[usize],
     selected_pipe: Option<usize>,
+    language: Language,
 ) -> String {
     if let Some(index) = selected_pipe
         && document.connections().get(index).is_some()
     {
-        return String::from("Conducto");
+        return language.text("inspector.pipe").to_owned();
     }
     if let [index] = *selected
         && let Some(placement) = document.placements().get(index)
@@ -516,14 +550,17 @@ fn title_of(
             return designation.to_owned();
         }
         if let Some(definition) = catalog.get(&placement.catalog_id) {
-            return definition
-                .name_es
-                .clone()
-                .unwrap_or_else(|| definition.name.clone());
+            return match language {
+                Language::Spanish => definition
+                    .name_es
+                    .clone()
+                    .unwrap_or_else(|| definition.name.clone()),
+                Language::English => definition.name.clone(),
+            };
         }
         return placement.catalog_id.clone();
     }
-    String::from("Propiedades")
+    language.text("inspector.title").to_owned()
 }
 
 #[cfg(test)]

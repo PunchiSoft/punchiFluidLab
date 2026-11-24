@@ -183,3 +183,38 @@ resize = "Arrastra para cambiar el ancho del panel"
 width = "Ancho del panel del catálogo"
 show = "Mostrar el panel del catálogo"
 hide = "Ocultar el panel del catálogo"
+
+[inspector]
+title = "Propiedades"
+pipe = "Conducto"
+designation = "Designación"
+no_designation = "Sin designación"
+line_class = "Clase de línea"
+tube = "Diámetro exterior"
+tube_unspecified = "Sin especificar"
+ports = "Puertos"
+empty_title = "Sin selección"
+empty_body = "Selecciona un componente o un conducto en la hoja para ver sus propiedades."
+counts = "{components} componentes · {hoses} conductos"
+multi_title = "{count} componentes seleccionados"
+multi_body = "Selecciona un solo componente para editar sus propiedades."
+hoses_multi = "{count} conductos: selecciona uno en la hoja para su diámetro."
+updated = "propiedades actualizadas"
+
+[inspector.class]
+working = "Trabajo"
+pilot = "Pilotaje"
+drain = "Drenaje"
+electrical = "Eléctrica"
+
+[inspector.port]
+supply = "suministro"
+working = "trabajo"
+exhaust = "escape"
+mechanical = "mecánico"
+electrical = "eléctrico"
+
+[panel.inspector]
+width = "Ancho del panel de propiedades"
+show = "Mostrar el panel de propiedades"
+hide = "Ocultar el panel de propiedades"

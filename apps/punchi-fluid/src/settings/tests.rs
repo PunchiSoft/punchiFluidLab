@@ -416,9 +416,7 @@ fn the_panels_open_where_the_file_left_them_and_a_closed_one_starts_as_a_rail() 
             "the closed panel has no content"
         );
         assert!(
-            harness
-                .query_by_label("Ocultar el panel de propiedades")
-                .is_some(),
+            harness.query_by_label("Hide properties panel").is_some(),
             "the open dock keeps its header"
         );
     }

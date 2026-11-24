@@ -183,3 +183,38 @@ resize = "Drag to resize the panel"
 width = "Catalog panel width"
 show = "Show catalog panel"
 hide = "Hide catalog panel"
+
+[inspector]
+title = "Properties"
+pipe = "Hose"
+designation = "Designation"
+no_designation = "No designation"
+line_class = "Line class"
+tube = "Outside diameter"
+tube_unspecified = "Not specified"
+ports = "Ports"
+empty_title = "No selection"
+empty_body = "Select a component or a hose on the sheet to see its properties."
+counts = "{components} components · {hoses} hoses"
+multi_title = "{count} components selected"
+multi_body = "Select one component to edit its properties."
+hoses_multi = "{count} hoses: select one on the sheet for its diameter."
+updated = "properties updated"
+
+[inspector.class]
+working = "Working"
+pilot = "Pilot"
+drain = "Drain"
+electrical = "Electrical"
+
+[inspector.port]
+supply = "supply"
+working = "working"
+exhaust = "exhaust"
+mechanical = "mechanical"
+electrical = "electrical"
+
+[panel.inspector]
+width = "Properties panel width"
+show = "Show properties panel"
+hide = "Hide properties panel"
