@@ -9,6 +9,7 @@
 
 use eframe::egui;
 use punchi_fluid_doc::paper::{Margins, Orientation, PaperSize, Sheet};
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::ribbon::MarginPreset;
@@ -77,16 +78,16 @@ impl Window {
     /// Applies the draft as one undo and closes the panel; an impossible sheet is refused.
     pub(crate) fn apply_page_setup(&mut self) {
         let Some(sheet) = self.page_setup.sheet() else {
-            self.notice = Some(String::from("los márgenes no dejan espacio al dibujo"));
+            self.notice = Some(self.language.text("page.no_room").to_owned());
             return;
         };
         if !self.document.set_sheet(sheet) {
-            self.notice = Some(String::from("la hoja no admite ese cambio"));
+            self.notice = Some(self.language.text("page.refused").to_owned());
             return;
         }
         self.refresh_page();
         self.page_setup.open = false;
-        self.notice = Some(String::from("hoja actualizada"));
+        self.notice = Some(self.language.text("page.updated").to_owned());
     }
 
     /// Draws the panel; it closes with `Esc` or **Cerrar** without touching the document.
@@ -99,7 +100,8 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        let action = page_setup_window(context, &tokens, &mut self.page_setup);
+        let language = self.language;
+        let action = page_setup_window(context, &tokens, &mut self.page_setup, language);
         match action {
             Some(Action::Apply) => self.apply_page_setup(),
             Some(Action::Close) => self.page_setup.open = false,
@@ -118,6 +120,7 @@ fn page_setup_window(
     context: &egui::Context,
     tokens: &Tokens,
     draft: &mut PageSetup,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     let screen = context.screen_rect();
@@ -127,7 +130,7 @@ fn page_setup_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new("Configurar página")
+    egui::Window::new(language.text("page.title"))
         .id(egui::Id::new("window.page-setup"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -135,11 +138,11 @@ fn page_setup_window(
         .resizable(false)
         .fixed_size(egui::vec2(tokens.unit * 34.0, tokens.unit * 27.0))
         .show(context, |ui| {
-            sheet_controls(ui, tokens, draft);
-            margin_controls(ui, tokens, draft);
+            sheet_controls(ui, tokens, draft, language);
+            margin_controls(ui, tokens, draft, language);
             if draft.sheet().is_none() {
                 ui.label(
-                    egui::RichText::new("los márgenes no dejan espacio al dibujo")
+                    egui::RichText::new(language.text("page.no_room"))
                         .size(tokens.text_body)
                         .color(tokens.ink_muted),
                 );
@@ -147,12 +150,15 @@ fn page_setup_window(
             ui.separator();
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(draft.sheet().is_some(), egui::Button::new("Aplicar"))
+                    .add_enabled(
+                        draft.sheet().is_some(),
+                        egui::Button::new(language.text("dialog.apply")),
+                    )
                     .clicked()
                 {
                     action = Some(Action::Apply);
                 }
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     action = Some(Action::Close);
                 }
             });
@@ -161,15 +167,15 @@ fn page_setup_window(
 }
 
 /// Paper and orientation: the named sizes, the custom millimetres and the turn.
-fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
+fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, language: Language) {
     ui.label(
-        egui::RichText::new("Papel")
+        egui::RichText::new(language.text("page.paper"))
             .size(tokens.text_label)
             .strong()
             .color(tokens.ink),
     );
     egui::ComboBox::from_id_salt("page-setup.paper")
-        .selected_text(draft.paper_label())
+        .selected_text(draft.paper_label(language))
         .show_ui(ui, |ui| {
             for paper in PaperSize::ALL {
                 if ui
@@ -180,7 +186,10 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
                     draft.custom = false;
                 }
             }
-            if ui.selectable_label(draft.custom, "Personalizado").clicked() {
+            if ui
+                .selectable_label(draft.custom, language.text("page.custom"))
+                .clicked()
+            {
                 draft.custom = true;
             }
         });
@@ -203,20 +212,26 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
     }
     ui.add_space(tokens.unit * 0.4);
     ui.label(
-        egui::RichText::new("Orientación")
+        egui::RichText::new(language.text("page.orientation"))
             .size(tokens.text_label)
             .strong()
             .color(tokens.ink),
     );
     ui.horizontal(|ui| {
         if ui
-            .selectable_label(draft.orientation == Orientation::Portrait, "Vertical")
+            .selectable_label(
+                draft.orientation == Orientation::Portrait,
+                language.text("page.portrait"),
+            )
             .clicked()
         {
             draft.orientation = Orientation::Portrait;
         }
         if ui
-            .selectable_label(draft.orientation == Orientation::Landscape, "Apaisado")
+            .selectable_label(
+                draft.orientation == Orientation::Landscape,
+                language.text("page.landscape"),
+            )
             .clicked()
         {
             draft.orientation = Orientation::Landscape;
@@ -225,10 +240,10 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
 }
 
 /// The frame: four presets, then the millimetres.
-fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
+fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, language: Language) {
     ui.add_space(tokens.unit * 0.4);
     ui.label(
-        egui::RichText::new("Márgenes")
+        egui::RichText::new(language.text("page.margins"))
             .size(tokens.text_label)
             .strong()
             .color(tokens.ink),
@@ -239,7 +254,7 @@ fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
         MarginPreset::Moderate,
         MarginPreset::Wide,
     ] {
-        if ui.button(preset.label()).clicked() {
+        if ui.button(preset.label(language)).clicked() {
             draft.margins = preset.margins();
         }
     }
@@ -248,10 +263,10 @@ fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
         .spacing([tokens.unit * 0.4, tokens.unit * 0.2])
         .show(ui, |ui| {
             for (label, value) in [
-                ("Superior", &mut draft.margins.top),
-                ("Derecha", &mut draft.margins.right),
-                ("Inferior", &mut draft.margins.bottom),
-                ("Izquierda", &mut draft.margins.left),
+                (language.text("page.top"), &mut draft.margins.top),
+                (language.text("page.right"), &mut draft.margins.right),
+                (language.text("page.bottom"), &mut draft.margins.bottom),
+                (language.text("page.left"), &mut draft.margins.left),
             ] {
                 ui.label(label);
                 ui.add(
@@ -267,9 +282,9 @@ fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup) {
 
 impl PageSetup {
     /// The name the combo shows: the named size or **Personalizado**.
-    fn paper_label(&self) -> &'static str {
+    fn paper_label(&self, language: Language) -> &'static str {
         if self.custom {
-            "Personalizado"
+            language.text("page.custom")
         } else {
             self.paper.label()
         }
@@ -277,22 +292,24 @@ impl PageSetup {
 }
 
 impl MarginPreset {
-    /// The name the panel and the gallery show.
-    fn label(self) -> &'static str {
-        match self {
-            Self::Narrow => "Estrecho",
-            Self::Normal => "Normal",
-            Self::Moderate => "Moderado",
-            Self::Wide => "Ancho",
-        }
+    /// The name the panel and the gallery show; the four live once, in the ribbon gallery.
+    fn label(self, language: Language) -> &'static str {
+        language.text(match self {
+            Self::Narrow => "ribbon.gallery.margin.narrow",
+            Self::Normal => "ribbon.gallery.margin.normal",
+            Self::Moderate => "ribbon.gallery.margin.moderate",
+            Self::Wide => "ribbon.gallery.margin.wide",
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use eframe::egui;
+    use egui_kittest::kittest::Queryable;
     use punchi_fluid_doc::Document;
     use punchi_fluid_doc::paper::{PaperSize, Sheet};
+    use punchi_fluid_i18n::Language;
 
     use crate::Window;
     use crate::theme::Theme;
@@ -306,6 +323,40 @@ mod tests {
         }
         harness.run();
         harness
+    }
+
+    #[test]
+    fn the_page_setup_follows_the_language() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_page_setup();
+        {
+            let harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Page setup").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Apply")
+                    .is_some()
+            );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Close")
+                    .is_some()
+            );
+            assert!(harness.query_all_by_label("Portrait").count() >= 1);
+        }
+        window.page_setup.open = false;
+        window.language = Language::Spanish;
+        window.open_page_setup();
+        {
+            let harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Configurar página").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Aplicar")
+                    .is_some()
+            );
+            assert!(harness.query_all_by_label("Vertical").count() >= 1);
+        }
     }
 
     #[test]
@@ -365,7 +416,7 @@ mod tests {
             window
                 .notice
                 .as_deref()
-                .is_some_and(|notice| notice.contains("no dejan espacio")),
+                .is_some_and(|notice| notice.contains("no room for the drawing")),
             "the refusal is explained: {:?}",
             window.notice
         );

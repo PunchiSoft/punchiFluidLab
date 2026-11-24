@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### Página, cajetín y exportación eligen idioma — 2026-11-24
+
+- **Configurar página**: título, papel, tamaño personalizado, orientación, márgenes con sus
+  cuatro lados, aplicar, cerrar y los avisos de hoja imposible y hoja actualizada.
+- **Editar datos del cajetín**: título, modelo, posición, los doce campos, la casilla de
+  mostrar, aplicar y cerrar. Los cuatro nombres de margen se comparten con la galería de la
+  cinta, así que una sola traducción sirve a las dos superficies.
+- **Opciones de exportación**: título, formato, resolución, la etiqueta `dpi`/`ppp` por idioma,
+  lista de piezas, aplicar y cerrar.
+- **Pruebas**: `the_page_setup_follows_the_language`, `the_block_editor_follows_the_language`
+  y `the_export_options_follow_the_language`; la suite de la ventana pasa a **310**.
+- **Pendiente**: Configuración, panel de comprobaciones, Inicio y la barra de estado; después
+  las crates, el catálogo, el exportador y el CLI.
+
 ### Los diálogos eligen idioma — 2026-11-24
 
 - **Abrir, Guardar como y Exportar**: título, botones, carpeta, campo de nombre, carpeta

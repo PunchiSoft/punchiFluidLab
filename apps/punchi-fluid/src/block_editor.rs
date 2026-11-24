@@ -9,6 +9,7 @@
 
 use eframe::egui;
 use punchi_fluid_doc::title_block::{BlockPosition, ContentModel, TitleBlock, TitleField};
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::theme::Tokens;
@@ -40,7 +41,7 @@ impl Window {
         }
         self.refresh_page();
         self.block_editor.open = false;
-        self.notice = Some(String::from("cajetín actualizado"));
+        self.notice = Some(self.language.text("block.updated").to_owned());
     }
 
     /// Draws the editor; `Esc` or **Cerrar** discards the draft.
@@ -53,7 +54,8 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        let action = block_editor_window(context, &tokens, &mut self.block_editor.block);
+        let language = self.language;
+        let action = block_editor_window(context, &tokens, &mut self.block_editor.block, language);
         match action {
             Some(Action::Apply) => self.apply_block_editor(),
             Some(Action::Close) => self.block_editor.open = false,
@@ -72,6 +74,7 @@ fn block_editor_window(
     context: &egui::Context,
     tokens: &Tokens,
     block: &mut TitleBlock,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     let screen = context.screen_rect();
@@ -81,7 +84,7 @@ fn block_editor_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new("Editar datos del cajetín")
+    egui::Window::new(language.text("block.title"))
         .id(egui::Id::new("window.block-editor"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -95,17 +98,17 @@ fn block_editor_window(
                     .auto_shrink([false, false])
                     .max_height(height)
                     .show(ui, |ui| {
-                        model_and_position(ui, tokens, block);
+                        model_and_position(ui, tokens, block, language);
                         ui.add_space(tokens.unit * 0.4);
-                        fields(ui, tokens, block);
+                        fields(ui, tokens, block, language);
                     });
             });
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("Aplicar").clicked() {
+                if ui.button(language.text("dialog.apply")).clicked() {
                     action = Some(Action::Apply);
                 }
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     action = Some(Action::Close);
                 }
             });
@@ -113,20 +116,25 @@ fn block_editor_window(
     action
 }
 
-fn model_and_position(ui: &mut egui::Ui, tokens: &Tokens, block: &mut TitleBlock) {
+fn model_and_position(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    block: &mut TitleBlock,
+    language: Language,
+) {
     ui.horizontal(|ui| {
         ui.label(
-            egui::RichText::new("Modelo")
+            egui::RichText::new(language.text("block.model"))
                 .size(tokens.text_label)
                 .strong()
                 .color(tokens.ink),
         );
         egui::ComboBox::from_id_salt("block-editor.model")
-            .selected_text(model_label(block.model))
+            .selected_text(model_label(language, block.model))
             .show_ui(ui, |ui| {
                 for model in ContentModel::ALL {
                     if ui
-                        .selectable_label(block.model == model, model_label(model))
+                        .selectable_label(block.model == model, model_label(language, model))
                         .clicked()
                     {
                         block.model = model;
@@ -137,17 +145,20 @@ fn model_and_position(ui: &mut egui::Ui, tokens: &Tokens, block: &mut TitleBlock
     });
     ui.horizontal(|ui| {
         ui.label(
-            egui::RichText::new("Posición")
+            egui::RichText::new(language.text("block.position"))
                 .size(tokens.text_label)
                 .strong()
                 .color(tokens.ink),
         );
         egui::ComboBox::from_id_salt("block-editor.position")
-            .selected_text(position_label(block.position))
+            .selected_text(position_label(language, block.position))
             .show_ui(ui, |ui| {
                 for position in BlockPosition::ALL {
                     if ui
-                        .selectable_label(block.position == position, position_label(position))
+                        .selectable_label(
+                            block.position == position,
+                            position_label(language, position),
+                        )
                         .clicked()
                     {
                         block.position = position;
@@ -157,19 +168,22 @@ fn model_and_position(ui: &mut egui::Ui, tokens: &Tokens, block: &mut TitleBlock
     });
 }
 
-fn fields(ui: &mut egui::Ui, tokens: &Tokens, block: &mut TitleBlock) {
+fn fields(ui: &mut egui::Ui, tokens: &Tokens, block: &mut TitleBlock, language: Language) {
     egui::Grid::new("block-editor.fields")
         .num_columns(3)
         .spacing([tokens.unit * 0.4, tokens.unit * 0.2])
         .show(ui, |ui| {
             for field in TitleField::ALL {
-                ui.label(field_label(field));
+                ui.label(field_label(language, field));
                 ui.add(
                     egui::TextEdit::singleline(field_text(block, field))
                         .desired_width(tokens.unit * 22.0),
                 );
                 let mut visible = block.visible.contains(field);
-                if ui.checkbox(&mut visible, "Mostrar").changed() {
+                if ui
+                    .checkbox(&mut visible, language.text("block.show"))
+                    .changed()
+                {
                     block.visible.set(field, visible);
                 }
                 ui.end_row();
@@ -195,45 +209,47 @@ fn field_text(block: &mut TitleBlock, field: TitleField) -> &mut String {
     }
 }
 
-fn field_label(field: TitleField) -> &'static str {
-    match field {
-        TitleField::Owner => "Propietario",
-        TitleField::Project => "Proyecto",
-        TitleField::Equipment => "Equipo",
-        TitleField::Title => "Título",
-        TitleField::Number => "Número",
-        TitleField::Revision => "Revisión",
-        TitleField::Date => "Fecha",
-        TitleField::Prepared => "Preparado por",
-        TitleField::Checked => "Revisado por",
-        TitleField::Approved => "Aprobado por",
-        TitleField::Scale => "Escala",
-        TitleField::Norms => "Normas",
-    }
+fn field_label(language: Language, field: TitleField) -> &'static str {
+    language.text(match field {
+        TitleField::Owner => "block.field.owner",
+        TitleField::Project => "block.field.project",
+        TitleField::Equipment => "block.field.equipment",
+        TitleField::Title => "block.field.title",
+        TitleField::Number => "block.field.number",
+        TitleField::Revision => "block.field.revision",
+        TitleField::Date => "block.field.date",
+        TitleField::Prepared => "block.field.prepared",
+        TitleField::Checked => "block.field.checked",
+        TitleField::Approved => "block.field.approved",
+        TitleField::Scale => "block.field.scale",
+        TitleField::Norms => "block.field.norms",
+    })
 }
 
-fn model_label(model: ContentModel) -> &'static str {
-    match model {
-        ContentModel::School => "Escolar",
-        ContentModel::Technical => "Técnico",
-        ContentModel::Industrial => "Industrial",
-    }
+fn model_label(language: Language, model: ContentModel) -> &'static str {
+    language.text(match model {
+        ContentModel::School => "block.content.school",
+        ContentModel::Technical => "block.content.technical",
+        ContentModel::Industrial => "block.content.industrial",
+    })
 }
 
-fn position_label(position: BlockPosition) -> &'static str {
-    match position {
-        BlockPosition::TopRight => "Superior derecha",
-        BlockPosition::BottomRight => "Inferior derecha",
-        BlockPosition::BottomFull => "Inferior centrado",
-        BlockPosition::None => "Sin cajetín",
-    }
+fn position_label(language: Language, position: BlockPosition) -> &'static str {
+    language.text(match position {
+        BlockPosition::TopRight => "block.placement.top_right",
+        BlockPosition::BottomRight => "block.placement.bottom_right",
+        BlockPosition::BottomFull => "block.placement.bottom_full",
+        BlockPosition::None => "block.placement.none",
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use eframe::egui;
+    use egui_kittest::kittest::Queryable;
     use punchi_fluid_doc::Document;
     use punchi_fluid_doc::title_block::{BlockPosition, TitleField};
+    use punchi_fluid_i18n::Language;
 
     use crate::Window;
     use crate::theme::Theme;
@@ -247,6 +263,40 @@ mod tests {
         }
         harness.run();
         harness
+    }
+
+    #[test]
+    fn the_block_editor_follows_the_language() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_block_editor();
+        {
+            let harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Edit title block data").count() >= 1);
+            assert!(harness.query_all_by_label("Owner").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Apply")
+                    .is_some()
+            );
+        }
+        window.block_editor.open = false;
+        window.language = Language::Spanish;
+        window.open_block_editor();
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_all_by_label("Editar datos del cajetín")
+                    .count()
+                    >= 1
+            );
+            assert!(harness.query_all_by_label("Propietario").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Aplicar")
+                    .is_some()
+            );
+        }
     }
 
     #[test]

@@ -8,6 +8,7 @@
 //! here is neither an undo nor a modified mark.
 
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 use crate::Window;
 use crate::theme::Tokens;
@@ -77,7 +78,7 @@ impl Window {
     /// Keeps the choices and closes the panel; an export does not touch the document.
     pub(crate) fn apply_export_options(&mut self) {
         self.export_options.open = false;
-        self.notice = Some(String::from("opciones de exportación aplicadas"));
+        self.notice = Some(self.language.text("export.applied").to_owned());
     }
 
     /// Draws the panel; `Esc` or **Cerrar** discards the changes.
@@ -90,7 +91,8 @@ impl Window {
             return;
         }
         let tokens = self.theme.tokens.clone();
-        let action = export_options_window(context, &tokens, &mut self.export_options);
+        let language = self.language;
+        let action = export_options_window(context, &tokens, &mut self.export_options, language);
         match action {
             Some(Action::Apply) => self.apply_export_options(),
             Some(Action::Close) => self.export_options.open = false,
@@ -109,6 +111,7 @@ fn export_options_window(
     context: &egui::Context,
     tokens: &Tokens,
     options: &mut ExportOptions,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     let screen = context.screen_rect();
@@ -118,7 +121,7 @@ fn export_options_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new("Opciones de exportación")
+    egui::Window::new(language.text("export.title"))
         .id(egui::Id::new("window.export-options"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -127,7 +130,7 @@ fn export_options_window(
         .fixed_size(egui::vec2(tokens.unit * 30.0, tokens.unit * 20.0))
         .show(context, |ui| {
             ui.label(
-                egui::RichText::new("Formato")
+                egui::RichText::new(language.text("export.format"))
                     .size(tokens.text_label)
                     .strong()
                     .color(tokens.ink),
@@ -144,7 +147,7 @@ fn export_options_window(
             });
             ui.add_space(tokens.unit * 0.4);
             ui.label(
-                egui::RichText::new("Resolución (PNG)")
+                egui::RichText::new(language.text("export.resolution"))
                     .size(tokens.text_label)
                     .strong()
                     .color(tokens.ink),
@@ -152,7 +155,7 @@ fn export_options_window(
             ui.horizontal(|ui| {
                 for dpi in ExportOptions::DPI {
                     let chosen = options.dpi == dpi;
-                    let label = format!("{dpi} ppp");
+                    let label = language.format("export.dpi", &[("dpi", &dpi.to_string())]);
                     if ui
                         .add_enabled(
                             options.format == ExportFormat::Png,
@@ -165,13 +168,13 @@ fn export_options_window(
                 }
             });
             ui.add_space(tokens.unit * 0.4);
-            ui.checkbox(&mut options.parts, "Incluir lista de piezas");
+            ui.checkbox(&mut options.parts, language.text("export.parts"));
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("Aplicar").clicked() {
+                if ui.button(language.text("dialog.apply")).clicked() {
                     action = Some(Action::Apply);
                 }
-                if ui.button("Cerrar").clicked() {
+                if ui.button(language.text("dialog.close")).clicked() {
                     action = Some(Action::Close);
                 }
             });
@@ -182,11 +185,48 @@ fn export_options_window(
 #[cfg(test)]
 mod tests {
     use eframe::egui;
+    use egui_kittest::kittest::Queryable;
     use punchi_fluid_doc::{Document, Placement};
     use punchi_fluid_draw::Pt;
 
     use crate::Window;
     use crate::theme::Theme;
+
+    #[test]
+    fn the_export_options_follow_the_language() {
+        let mut window = window_with_a_valve();
+        window.open_export_options();
+        {
+            let harness = harness(&mut window);
+            assert!(harness.query_all_by_label("Export options").count() >= 1);
+            assert!(harness.query_all_by_label("300 dpi").count() >= 1);
+            assert!(
+                harness
+                    .query_all_by_label_contains("Include parts list")
+                    .count()
+                    >= 1
+            );
+        }
+        window.export_options.open = false;
+        window.language = punchi_fluid_i18n::Language::Spanish;
+        window.open_export_options();
+        {
+            let harness = harness(&mut window);
+            assert!(
+                harness
+                    .query_all_by_label("Opciones de exportación")
+                    .count()
+                    >= 1
+            );
+            assert!(harness.query_all_by_label("300 ppp").count() >= 1);
+            assert!(
+                harness
+                    .query_all_by_label_contains("Incluir lista de piezas")
+                    .count()
+                    >= 1
+            );
+        }
+    }
 
     fn window_with_a_valve() -> Window {
         let mut document = Document::new();

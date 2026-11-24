@@ -12,6 +12,7 @@ delete = "Delete"
 select_one = "Select one component"
 
 [dialog]
+apply = "Apply"
 configuration = "Configuration"
 description = "Description"
 close = "Close"
@@ -257,3 +258,60 @@ name = "Circuit name"
 close_question = "Close “{title}”?"
 close_body = "Its components and hoses come back with Undo."
 cancel = "Cancel"
+
+
+[page]
+title = "Page setup"
+paper = "Paper"
+custom = "Custom"
+orientation = "Orientation"
+portrait = "Portrait"
+landscape = "Landscape"
+margins = "Margins"
+top = "Top"
+right = "Right"
+bottom = "Bottom"
+left = "Left"
+no_room = "The margins leave no room for the drawing"
+refused = "The sheet does not accept that change"
+updated = "sheet updated"
+
+[block]
+title = "Edit title block data"
+model = "Model"
+position = "Position"
+show = "Show"
+updated = "title block updated"
+
+[block.field]
+owner = "Owner"
+project = "Project"
+equipment = "Equipment"
+title = "Title"
+number = "Number"
+revision = "Revision"
+date = "Date"
+prepared = "Prepared by"
+checked = "Checked by"
+approved = "Approved by"
+scale = "Scale"
+norms = "Standards"
+
+[block.content]
+school = "School"
+technical = "Technical"
+industrial = "Industrial"
+
+[block.placement]
+top_right = "Top right"
+bottom_right = "Bottom right"
+bottom_full = "Bottom centred"
+none = "No title block"
+
+[export]
+title = "Export options"
+format = "Format"
+resolution = "PNG resolution"
+dpi = "{dpi} dpi"
+parts = "Include parts list"
+applied = "export options applied"
