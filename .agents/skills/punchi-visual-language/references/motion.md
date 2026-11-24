@@ -50,11 +50,13 @@ in [Animation on the sheet](../../../../docs/ui-ux.md#animation-on-the-sheet).
 
 ```bash
 ./scripts-dev/check-docs.sh        # a documentation-only change
+cargo test -p punchi-fluid-window   # the window's theme, ribbon and motion tests
 ./scripts-dev/check.sh             # a change that touches code
 ```
 
-`--check-theme` prints `motionMs` and asserts the contrast only: it cannot prove that a
-widget used the token or honoured the zero. Those are the test and the manual capture.
+The theme tests read `motionMs` from `theme.rs` (`motion_from`) and the contrast tests; they
+do not prove that a widget used the token or honoured the zero. Those are the test and the
+manual capture.
 
 ## Evidence
 
@@ -69,8 +71,8 @@ widget used the token or honoured the zero. Those are the test and the manual ca
   fidelity bug; the position and the flow are the model's.
 - **A literal is a bug.** A duration, a curve name, a delay or a spring constant in a widget
   is a second token; the theme owns the clock.
-- **`--check-theme` prints motion; it does not assert it.** A green run does not prove the
-  zero branch, the curve or the frame budget.
+- **The theme test reads the desktop's motion; it does not prove a widget used it.** A green
+  run does not prove the zero branch, the curve or the frame budget.
 - **No spring, no bounce, no overshoot.** The interface does not imitate physics this
   product does not simulate.
 - **No faster exit.** One desktop factor is the contract; an exit that outruns its entrance

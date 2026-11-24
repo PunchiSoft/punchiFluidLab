@@ -173,9 +173,9 @@ attaches commits that are not yours, and the mistake stays invisible until revie
   commit that landed on `main` by mistake is moved, not reverted: `git branch
   salvage-<name> <sha>` keeps it reachable, `git reset --hard origin/main` puts `main`
   back, the branch is reset onto the salvage and a `--force-with-lease` push publishes it.
-- **The window is part of the gate.** A Rust-green branch whose ribbon overflows or
-  whose `--selftest` fails is red: `check.sh` builds and drives the window when it is
-  configured.
+- **The window is part of the gate.** A Rust-green branch whose ribbon overflows or whose
+  window tests fail is red: `check.sh` runs the window suite and CI's `window` job runs
+  `cargo test -p punchi-fluid-window`.
 - **`main` is protected, but that is not the rule.** [Branch
   protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
   requires a pull request, the `check`, `window` and `minimum supported Rust version`
@@ -189,7 +189,7 @@ attaches commits that are not yours, and the mistake stays invisible until revie
   agent's to perform. The owner is the only one who authorizes and merges, so the
   command is never issued and never suggested as the next step.
 - **The delivery branch is not a scratch pad.** Ignored build output
-  (`apps/punchi-fluid-qt/build`, `target/`), editor files and session notes do not belong
+  (`target/`, `.worktrees/`), editor files and session notes do not belong
   in it; `git status --short` before the first commit catches them.
 - **A branch that was squash-merged has no commits in `main`.** Compare content, not
   commits, before treating an old branch as a base: it is already delivered.

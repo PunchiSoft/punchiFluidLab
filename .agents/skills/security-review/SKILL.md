@@ -22,7 +22,7 @@ outbound action is a link the user clicks; anything else needs an ADR.
 | Circuit document (`.pfluid`) | bytes, ids, numbers, paths | `punchi-fluid-file` |
 | Catalog file | bytes, keys, numbers, ids | `punchi-fluid-catalog` |
 | Recent list | paths, names | `punchi-fluid-file` |
-| Autosave and recovery | a copy of the user's document | `punchi-fluid-doc`, ABI |
+| Autosave and recovery | a copy of the user's document | `punchi-fluid-session` |
 | Export (PDF, PNG, SVG) | paper, dpi, target path, title | `punchi-fluid-export` |
 | Clipboard and paste | placements from another session | `punchi-fluid-doc` |
 | Dialogs and paths | a chosen path, a name | the window |

@@ -18,7 +18,6 @@ skill is the bug.
 | [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) | budgets, allocation-free hot paths, bounded caches | solver step, draw loop, cache, profiling, budget changes |
 | [untrusted-input-bounds](untrusted-input-bounds/SKILL.md) | a limit, a message and a one-past-it test for every untrusted input and every collection that grows | writing a parser, a list, a queue, a cache, an undo history or a loop over file data |
 | [security-review](security-review/SKILL.md) | the surface a change touches, the control that already exists, the hostile case and the record | a change reads or writes a file, resolves a path, exports, pastes, autosaves, opens a link, or touches dependencies, workflows or a release |
-| [qt-lifetimes](qt-lifetimes/SKILL.md) | one owner per QObject, connections that end with their context, models and images that do not grow | adding a QObject, item, connection, model or cached image; a window that grows while idle |
 | [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) | licence allowlist, MSRV, `cargo deny`, lockfile | a crate is proposed; dependabot PR; `Cargo.toml` changes |
 | [github-collaboration](github-collaboration/SKILL.md) | commits, PRs, review, issues, releases, repo settings | committing, reviewing, triaging, releasing, changelog |
 | [pull-request-workflow](pull-request-workflow/SKILL.md) | one branch from updated `main` per change, gate, pull request, hand-over to the owner | starting any change; creating or switching a branch; committing, pushing, opening or updating a PR |
@@ -31,8 +30,7 @@ skill is the bug.
 | [machine-resource-budget](machine-resource-budget/SKILL.md) | the cargo job profile, the per-binary memory ceiling, runaway-allocation diagnosis | a build or test kills the session; the desktop slows down; a loop may allocate without a bound; an idle window keeps redrawing |
 | [repo-maintenance](repo-maintenance/SKILL.md) | the maintenance pass: local backup first, merged branches and worktrees, `target` and cargo caches, CI caches, and a restore test | after a merge; weekly; when disk, caches or the local backup need review |
 | [project-backup](project-backup/SKILL.md) | a compressed, verified snapshot before a risky change: what to include, the name and format, the README beside it, and the restore | before a test modification, a refactor, a destructive cleanup or a milestone |
-| [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) | breakpoints on available room, Layout versus anchors, per-panel minimums, the size and DPI matrix | resizing the shell; adding a panel, dock or view strip; proving the adaptive stage |
-| [punchi-visual-language](punchi-visual-language/SKILL.md) | route a visual change to its canonical document, its command and its evidence; controls, tokens, icons, ribbon, layout and review | changing a control, token, icon or the ribbon; reviewing the window's visual language |
+| [punchi-visual-language](punchi-visual-language/SKILL.md) | route a visual change in the Rust window to its canonical document, its code and its evidence; controls, tokens, icons, ribbon, layout and language | changing a control, token, icon, ribbon, layout or string; reviewing the window's visual language |
 | [capability-plan](capability-plan/SKILL.md) | turn a teaching need into a specified, proven capability, then improve it | starting a phase; planning a feature; deciding what the product must do next |
 | [parity-run](parity-run/SKILL.md) | the loop of an owner-authorized long run: queue, one commit per capability, gate, one pull request | a parity run is authorized or resumed; a fresh session continues it after a reset |
 | [reference-parity](reference-parity/SKILL.md) | inspect the running parent app as the reference for symbols, animations and workflow, then prove parity without copying | a symbol, animation or workflow must match the parent app; the owner says the result does not look like the reference |
@@ -48,10 +46,9 @@ skill is the bug.
 4. [rust-performance-and-memory](rust-performance-and-memory/SKILL.md) — what it costs.
 5. [untrusted-input-bounds](untrusted-input-bounds/SKILL.md) — what it accepts.
 6. [security-review](security-review/SKILL.md) — what it must refuse.
-7. [qt-lifetimes](qt-lifetimes/SKILL.md) — what must die when.
-8. [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) —
+7. [rust-dependencies-and-supply-chain](rust-dependencies-and-supply-chain/SKILL.md) —
    what it brings in.
-9. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
+8. [machine-resource-budget](machine-resource-budget/SKILL.md) — what the machine can
    survive, and how to find the process when it cannot.
 
 At the start of a session, when the owner asks to read the project and get in context,
@@ -78,8 +75,9 @@ fixes the scope and 0C writes the acceptance and the checklists, so no phase sta
 and every delivery arrives with its marked list.
 
 For a change to the window — a panel, a dock, the ribbon, the view strip or a new
-breakpoint — read [qt-adaptive-layout](qt-adaptive-layout/SKILL.md) before choosing a
-width: the content sets the limits, the room chooses the mode.
+breakpoint — read [punchi-visual-language](punchi-visual-language/SKILL.md) and [The window
+adapts](../../docs/ui-ux.md#22-the-window-adapts) before choosing a width: the content sets
+the limits, the room chooses the mode.
 
 For a capability that does something a student needs — that is most of the product — read
 [capability-plan](capability-plan/SKILL.md) first: it is the gate that turns a need into a
@@ -99,7 +97,7 @@ that apply at that stage, not all of them: the table above has the full list.
 ```mermaid
 flowchart TD
     E["Entrada<br/>docs/README.md · AGENTS.md<br/>capabilities.md · plan.md"] --> P["1 · Planificar<br/>phased-plan · capability-plan<br/>run largo: parity-run"]
-    P --> B["2 · Construir<br/>rust-* · solver-validation · fluid-power-symbology<br/>reference-parity · punchi-visual-language<br/>qt-adaptive-layout · qt-lifetimes"]
+    P --> B["2 · Construir<br/>rust-* · solver-validation · fluid-power-symbology<br/>reference-parity · punchi-visual-language"]
     B --> G["3 · Gate<br/>check.sh · check-docs.sh<br/>machine-resource-budget<br/>rojo 2x o ruta prohibida -> parar"]
     G --> R["4 · Entregar<br/>pull-request-workflow · github-collaboration<br/>github-actions-security · step-report"]
     R --> M{"¿Quién fusiona?"}

@@ -77,7 +77,9 @@ the default; dropping it is the exception.
 | Physics | `crates/punchi-fluid-solver` | invariant or reference curve, tolerance stated |
 | Drawing | `crates/punchi-fluid-draw` behind `Surface` | geometry test, then the same drawing on both devices |
 | Export | `crates/punchi-fluid-export` | PDF and raster acceptance test |
-| Interface | `crates/punchi-fluid-ffi` for the ABI, `apps/punchi-fluid-qt` for the window | headless ABI test plus a capture |
+| The live model and the session | `crates/punchi-fluid-session` | the session tests over the solver's network |
+| Interface | `apps/punchi-fluid` | `cargo test -p punchi-fluid-window` plus a capture |
+| Language and strings | `crates/punchi-fluid-i18n`, `i18n/en.toml` and `i18n/es.toml` | the i18n tests and the missing-key fallback |
 
 A capability that seems to need a new `behaviour` variant, a `match` on a component id or
 hardcoded geometry is the signal to stop: a component is a file
@@ -123,7 +125,7 @@ hardcoded geometry is the signal to stop: a component is a file
 - **We have**: selection and deletion; no drag.
 - **Gap**: dragging a selected pipe, with the hit test against the drawn polyline and not
   the chord between ports.
-- **Evidence**: an ABI test that drags a bend, asserts both endpoints and undoes it.
+- **Evidence**: a window test that drags a bend, asserts both endpoints and undoes it.
 - **Then better**: snapping a bend to 45° and a keyboard nudge in whole millimetres,
   because free angles read as sloppy on a sheet and cannot be set without a mouse; the
   nudge test asserts both.

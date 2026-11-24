@@ -13,7 +13,8 @@ pick up the work from the repository alone.
 
 The run does not invent the work: the owner's local `docs-private/work-queue.md` is the
 queue and [docs/capabilities.md](../../../docs/capabilities.md) is the authority for what a
-capability is and how it is proven. This skill is the loop.
+capability is and how it is proven. This skill is the loop. For a plan split into phases with
+its own board, use [phased-plan](../phased-plan/SKILL.md) instead.
 
 ## Before the first commit
 
@@ -31,7 +32,7 @@ capability is and how it is proven. This skill is the loop.
 1. **Take the first `ready` entry** in the queue. Do not reorder by taste; if the order is
    wrong, say so in the report and continue with the next one.
 2. **Mark it `doing`** in the queue and in the continuity note, with the date.
-3. **Implement in layer order**: catalog file, model, drawing, ABI, window, document format.
+3. **Implement in layer order**: catalog file, model, drawing, session/window, document format.
    A capability that skips a layer is either not built or faked.
 4. **Write the evidence the queue names** — the test that fails without the change — and the
    documentation in the same commit: the capability entry, the ADR when a decision changed,
@@ -59,15 +60,16 @@ capability is and how it is proven. This skill is the loop.
 2. Update `docs-private/parity-run.md` with the final state and the report material.
 3. Push the branch and open **one** pull request against `main`, with the template filled and
    a section per capability: what was built, the test that proves it, what remains.
-4. Hand it over. The owner merges; the agent never merges, enables auto-merge, approves or
-   pushes to `main` — not even with option c.
+4. Hand it over. The owner merges by default. The pilot of ADR 0043 is scoped to the ribbon
+   plan, so a parity run's pull request stays manual; the agent never approves on its own
+   behalf and never pushes to `main`.
 
 ## Gotchas
 
 - **One commit per capability, and the docs travel inside it.** A later "docs for the run"
   commit makes the review impossible to bisect.
-- **The gate includes the window.** `--check-qml`, `--theme`, `--icons` and `--selftest` run
-  when the build is configured; a Rust-green branch with a broken ribbon is red.
+- **The gate includes the window.** `cargo test -p punchi-fluid-window` runs on the branch; a
+  Rust-green branch with a broken ribbon is red.
 - **Shared documents conflict first.** The queue, the ledger and the changelog are edited by
   every capability; keep the edits small and in the same commit.
 - **A file over 800 lines fails the architecture check.** Move the tests out (`#[path]`
