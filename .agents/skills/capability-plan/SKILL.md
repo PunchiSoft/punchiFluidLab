@@ -1,6 +1,6 @@
 ---
 name: capability-plan
-description: Turn a teaching need into a specified capability before writing code: purpose, behaviour, evidence, then an improvement with a reason and a test. Use when planning a feature, starting a phase, or deciding what the program must do next.
+description: "Turn a teaching need into a specified capability before writing code: purpose, behaviour, evidence, then an improvement with a reason and a test. Use when planning a feature, starting a phase, or deciding what the program must do next."
 license: GPL-3.0-or-later
 ---
 

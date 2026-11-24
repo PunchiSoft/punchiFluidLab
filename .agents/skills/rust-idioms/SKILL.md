@@ -1,6 +1,6 @@
 ---
 name: rust-idioms
-description: 'Idiomatic Rust for this workspace: ownership, typed errors, units and lints under a pinned MSRV. Use when writing, reviewing, refactoring or debugging Rust code, designing a public API, or fixing clippy and rustfmt findings.'
+description: "Idiomatic Rust for this workspace: ownership, typed errors, units and lints under a pinned MSRV. Use when writing, reviewing, refactoring or debugging Rust code, designing a public API, or fixing clippy and rustfmt findings."
 license: GPL-3.0-or-later
 ---
 

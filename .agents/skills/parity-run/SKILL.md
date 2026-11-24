@@ -1,6 +1,6 @@
 ---
 name: parity-run
-description: Run an owner-authorized batch on one branch: take the next capability from the local private work queue, build it with its test and docs, gate, one signed commit each, and one pull request. Use when a parity run is authorized or resumed, or a fresh session continues it.
+description: "Run an owner-authorized batch on one branch: take the next capability from the local private work queue, build it with its test and docs, gate, one signed commit each, and one pull request. Use when a parity run is authorized or resumed, or a fresh session continues it."
 license: GPL-3.0-or-later
 ---
 

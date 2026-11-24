@@ -1,6 +1,6 @@
 ---
 name: github-collaboration
-description: Commit, pull request, review, issue and release practice for this repository. Use when committing, opening or reviewing a PR, triaging an issue, cutting a release, or updating the changelog.
+description: "Commit, pull request, review, issue and release practice for this repository. Use when committing, opening or reviewing a PR, triaging an issue, cutting a release, or updating the changelog."
 license: GPL-3.0-or-later
 ---
 

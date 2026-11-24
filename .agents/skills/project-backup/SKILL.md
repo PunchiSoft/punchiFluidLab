@@ -1,6 +1,6 @@
 ---
 name: project-backup
-description: Take a compressed, verified snapshot of the project before a risky change: what to include and exclude, the archive name and format, the README beside it, and how to restore and retain it. Use before a test modification, a refactor, a destructive cleanup or a milestone.
+description: "Take a compressed, verified snapshot of the project before a risky change: what to include and exclude, the archive name and format, the README beside it, and how to restore and retain it. Use when a snapshot is needed before a test modification, a refactor, a destructive cleanup or a milestone."
 license: GPL-3.0-or-later
 ---
 

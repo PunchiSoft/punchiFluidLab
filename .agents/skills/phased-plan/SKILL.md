@@ -1,6 +1,6 @@
 ---
 name: phased-plan
-description: Structure a requested plan as Phase 0 (baseline, scope, specification), delivery phases 1..N and a final evaluation and process audit, with a delivery checklist in every pull request. Use when the owner asks for a plan, a phase breakdown, or a multi-pull-request run.
+description: "Structure a requested plan as Phase 0 (baseline, scope, specification), delivery phases 1..N and a final evaluation and process audit, with a delivery checklist in every pull request. Use when the owner asks for a plan, a phase breakdown, or a multi-pull-request run."
 license: GPL-3.0-or-later
 ---
 

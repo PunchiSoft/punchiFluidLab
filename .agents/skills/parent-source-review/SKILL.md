@@ -1,6 +1,6 @@
 ---
 name: parent-source-review
-description: Inspect the parent application's installed code and data read-only to derive behaviour, then reimplement it in Rust in our own model and format without copying bytes, geometry or files. Use when behaviour, timing, a symbol family or a workflow must be matched to the parent app, or when the running app alone does not answer the question.
+description: "Inspect the parent application's installed code and data read-only to derive behaviour, then reimplement it in Rust in our own model and format without copying bytes, geometry or files. Use when a timing, port order, symbol family or workflow must be matched."
 license: GPL-3.0-or-later
 ---
 

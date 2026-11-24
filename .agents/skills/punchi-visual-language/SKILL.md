@@ -1,6 +1,6 @@
 ---
 name: punchi-visual-language
-description: Route a visual change in the Punchi window to its canonical document, its command and its evidence: controls, tokens, icons, the ribbon, layout and review. Use when adding or changing a control, a theme token, an icon, the ribbon, a window layout, or when reviewing the visual language.
+description: "Route a visual change in the Punchi window to its canonical document, its command and its evidence: controls, tokens, icons, the ribbon, layout and review. Use when adding or changing a control, a theme token, an icon, the ribbon, a window layout, or when reviewing the visual language."
 license: GPL-3.0-or-later
 ---
 

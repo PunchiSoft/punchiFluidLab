@@ -1,6 +1,6 @@
 ---
 name: qt-lifetimes
-description: Keep Qt and QML objects alive exactly as long as they are used, with one owner, connections that end and images and models that do not grow. Use when adding a QObject, a QML item, a connection, a model, a cached image or a per-frame grab, or when a window grows in memory while idle.
+description: "Keep Qt and QML objects alive exactly as long as they are used, with one owner, connections that end and images and models that do not grow. Use when adding a QObject, a QML item, a connection, a model, a cached image or a per-frame grab, or when a window grows in memory while idle."
 license: GPL-3.0-or-later
 ---
 

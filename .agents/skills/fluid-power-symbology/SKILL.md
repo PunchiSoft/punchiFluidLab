@@ -1,6 +1,6 @@
 ---
 name: fluid-power-symbology
-description: Author, reconstruct, correct and verify ISO 1219 pneumatic and hydraulic symbols using owner-provided visual references, functional instructions, catalog definitions and geometric conformance reviews. Use when adding or changing a symbol.
+description: "Author, reconstruct, correct and verify ISO 1219 pneumatic and hydraulic symbols using owner-provided visual references, functional instructions, catalog definitions and geometric conformance reviews. Use when adding or changing a symbol."
 license: GPL-3.0-or-later
 ---
 

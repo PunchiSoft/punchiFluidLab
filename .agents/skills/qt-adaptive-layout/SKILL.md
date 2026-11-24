@@ -1,6 +1,6 @@
 ---
 name: qt-adaptive-layout
-description: Choose and prove the window's adaptive layout in QML: breakpoints on available room, Layout versus anchors, per-panel minimum and preferred widths, and the size and DPI test matrix. Use when resizing the shell, adding a panel or a view strip, or proving the adaptive stage.
+description: "Choose and prove the window's adaptive layout in QML: breakpoints on available room, Layout versus anchors, per-panel minimum and preferred widths, and the size and DPI test matrix. Use when resizing the shell, adding a panel or a view strip, or proving the adaptive stage."
 license: GPL-3.0-or-later
 ---
 

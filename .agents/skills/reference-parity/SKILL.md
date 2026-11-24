@@ -1,6 +1,6 @@
 ---
 name: reference-parity
-description: Review the running parent app as the reference for symbols, animations and workflow, then implement and prove parity by hand without copying geometry. Use when a symbol, an animation or a workflow must match the parent app, before changing one, or when the owner says the result does not look like the reference.
+description: "Review the running parent app as the reference for symbols, animations and workflow, then implement and prove parity by hand without copying geometry. Use when a symbol, animation or workflow must match the parent, or the owner says it does not look like the reference."
 license: GPL-3.0-or-later
 ---
 

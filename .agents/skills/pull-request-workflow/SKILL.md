@@ -1,6 +1,6 @@
 ---
 name: pull-request-workflow
-description: Work on a branch created from updated main and deliver it through a pull request that the project owner merges. Use when starting any change, creating or switching a branch, committing, pushing, or opening or updating a pull request.
+description: "Work on a branch created from updated main and deliver it through a pull request that the project owner merges. Use when starting any change, creating or switching a branch, committing, pushing, or opening or updating a pull request."
 license: GPL-3.0-or-later
 ---
 

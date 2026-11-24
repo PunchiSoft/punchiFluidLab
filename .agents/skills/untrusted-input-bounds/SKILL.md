@@ -1,6 +1,6 @@
 ---
 name: untrusted-input-bounds
-description: Bound every untrusted input and every collection or cache that can grow, in the crate that owns the data, with a message and a one-past-the-limit test. Use when writing a parser, a list, a queue, a cache, an undo history or any loop over data from a file or the UI.
+description: "Bound every untrusted input and every collection or cache that can grow, in the crate that owns the data, with a message and a one-past-the-limit test. Use when writing a parser, a list, a queue, a cache, an undo history or any loop over data from a file or the UI."
 license: GPL-3.0-or-later
 ---
 

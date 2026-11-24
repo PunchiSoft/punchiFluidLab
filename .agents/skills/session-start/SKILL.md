@@ -1,6 +1,6 @@
 ---
 name: session-start
-description: Load the project context read-only at the start of a session: AGENTS, docs, capabilities, plan, skills and open work; then say you are in context and wait for the owner's theme, without asking what to fix. Use when the first message asks to read the project and get in context.
+description: "Load the project context read-only at the start of a session: AGENTS, docs, capabilities, plan, skills and open work; then say you are in context and wait for the owner's theme, without asking what to fix. Use when the first message asks to read the project and get in context."
 license: GPL-3.0-or-later
 ---
 

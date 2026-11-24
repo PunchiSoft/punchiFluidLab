@@ -1,6 +1,6 @@
 ---
 name: rust-dependencies-and-supply-chain
-description: Adding and auditing Cargo dependencies under the licence allowlist, MSRV and deny rules. Use when a crate is proposed, a dependabot PR lands, Cargo.toml changes, or a build fails on the pinned toolchain.
+description: "Adding and auditing Cargo dependencies under the licence allowlist, MSRV and deny rules. Use when a crate is proposed, a dependabot PR lands, Cargo.toml changes, or a build fails on the pinned toolchain."
 license: GPL-3.0-or-later
 ---
 

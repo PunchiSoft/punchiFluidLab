@@ -1,6 +1,6 @@
 ---
 name: github-actions-security
-description: Threat model and hardening checklist for .github/workflows. Use when writing or reviewing a workflow, touching permissions, secrets, caching, third-party actions, or a release pipeline.
+description: "Threat model and hardening checklist for .github/workflows. Use when writing or reviewing a workflow, touching permissions, secrets, caching, third-party actions, or a release pipeline."
 license: GPL-3.0-or-later
 ---
 

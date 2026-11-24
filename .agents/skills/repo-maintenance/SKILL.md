@@ -1,6 +1,6 @@
 ---
 name: repo-maintenance
-description: Keep the working copy lean and the local backup trustworthy: prune merged branches and worktrees, sweep target and cargo caches, prune CI caches, and create or verify the local backup. Use after a merge, on a weekly pass, or when disk, caches or backups need review.
+description: "Keep the working copy lean and the local backup trustworthy: prune merged branches and worktrees, sweep target and cargo caches, prune CI caches, and create or verify the local backup. Use when a branch merges, on a weekly pass, or when disk, caches or backups need review."
 license: GPL-3.0-or-later
 ---
 

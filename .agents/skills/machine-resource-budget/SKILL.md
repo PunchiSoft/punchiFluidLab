@@ -1,6 +1,6 @@
 ---
 name: machine-resource-budget
-description: 'Building, testing and diagnosing this project on a 15 GiB laptop: the cargo job profile, the per-binary memory ceiling and runaway-allocation diagnosis. Use when a build or test run kills the session, the desktop slows down, a loop may allocate without a bound, or an idle window keeps redrawing.'
+description: "Building, testing and diagnosing this project on a 15 GiB laptop: the cargo job profile, the per-binary memory ceiling and runaway-allocation diagnosis. Use when a build or test run kills the session, the desktop slows down, a loop may allocate without a bound, or an idle window keeps redrawing."
 license: GPL-3.0-or-later
 ---
 
