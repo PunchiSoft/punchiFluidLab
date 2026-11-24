@@ -300,12 +300,14 @@ fn the_medium_mode_docks_both_panels_at_their_minimums() {
 #[test]
 fn a_wide_header_font_never_widens_a_docked_panel() {
     // The font a machine has is not part of the layout contract: the catalog keeps 220 and
-    // the sheet keeps its floor even when the header's text is far wider than the column.
-    // The condition is forced here, instead of trusting this machine's font, because the
-    // same panel drew wider than its column on the continuous integration runner.
+    // the sheet keeps its floor even when the panel header and a category name are far wider
+    // than the column. The condition is forced here, instead of trusting this machine's
+    // font, because the same panel drew wider than its column on the continuous integration
+    // runner, whose font lays the sensor category out 7 points wider.
     let mut window = window_with();
     window.theme.tokens.text_label = 46.0;
     window.theme.tokens.text_small = 38.0;
+    window.theme.tokens.text_body = 30.0;
     let sheet;
     {
         let harness = shell_harness(&mut window, egui::vec2(1020.0, 768.0));

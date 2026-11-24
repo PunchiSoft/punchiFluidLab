@@ -158,6 +158,34 @@ fn the_panels_keep_their_own_shortcut() {
 }
 
 #[test]
+fn the_category_name_collapses_and_opens_its_group() {
+    let mut window = window_with(Document::new());
+    let mut harness = catalog_harness(&mut window);
+    assert!(
+        harness
+            .query_by_label_contains("Compressor, 4 bar")
+            .is_some(),
+        "the supply group starts open"
+    );
+    harness.get_by_label_contains("Supply").click();
+    harness.run();
+    assert!(
+        harness
+            .query_by_label_contains("Compressor, 4 bar")
+            .is_none(),
+        "a click on the category name collapses its group"
+    );
+    harness.get_by_label_contains("Supply").click();
+    harness.run();
+    assert!(
+        harness
+            .query_by_label_contains("Compressor, 4 bar")
+            .is_some(),
+        "the name opens the group again"
+    );
+}
+
+#[test]
 fn the_catalog_rail_brings_it_back_at_the_width_it_had() {
     let mut window = window_with(Document::new());
     window.sidebar.resize_by(20.0);

@@ -6,18 +6,22 @@ publicación.
 
 ## Unreleased
 
-### La cabecera del panel no ensancha su columna — 2026-11-24
+### El nombre de la categoría no ensancha el catálogo — 2026-11-24
 
-- **Corrección**: el título y el conteo de la cabecera se **recortan con elipsis** dentro del
-  ancho que dejan el control de ocultar y el agarre. Antes crecían con su texto: con una
-  fuente más ancha que la de esta máquina, el catálogo acoplado se dibujaba **7 px por encima
-  de sus 220** y le robaba ese ancho a la hoja en el modo Media (lo cazó el CI; en local la
-  fuente lo tapaba). El texto completo sigue en el nombre accesible y en el tooltip.
-- **Prueba**: `a_wide_header_font_never_widens_a_docked_panel` fuerza una cabecera más ancha
-  que su columna y exige la hoja en su suelo; la suite de la ventana pasa a **363**.
+- **Causa real**: `CollapsingHeader` compone su etiqueta con `Extend`, así que el nombre largo
+  de una categoría —«Sensores e instrumentos» en la fuente del runner— medía **185 pt** en una
+  columna de 178 y el catálogo acoplado crecía **7 pt por encima de sus 220**, robándole ese
+  ancho a la hoja en el modo Media. El CI lo cazó; en esta máquina la fuente lo tapaba.
+- **Corrección**: el nombre es un botón sin marco que **se recorta con elipsis** dentro de la
+  columna, conserva su texto completo en el nombre accesible y sigue plegando el grupo al
+  pulsarlo. La cabecera del panel recorta igual el título y el conteo, por la misma razón.
+- **Pruebas**: `a_wide_header_font_never_widens_a_docked_panel` fuerza tipografía ancha en la
+  cabecera del panel y en un nombre de categoría y exige la hoja en su suelo;
+  `the_category_name_collapses_and_opens_its_group` cubre el clic en el nombre. La suite de la
+  ventana pasa a **364**.
 - **Documentos**: [ui-ux.md](docs/ui-ux.md) y la fila F0 de
   [capabilities.md](docs/capabilities.md) dicen ya que la baldosa es el símbolo y el nombre,
-  con el `id` en el tooltip, y que la cabecera recorta en vez de ensanchar.
+  con el `id` en el tooltip, y que los nombres recortan en vez de ensanchar.
 
 ### El pliegue y el scroll del catálogo — 2026-11-24
 

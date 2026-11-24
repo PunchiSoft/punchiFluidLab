@@ -349,9 +349,9 @@ The panel that lists the reasons for each skipped file is still target.
   label is translated in the session, so the widget never learns the numeric enum.
 - The sidebar is **a palette of tiles**, two per row: the symbol and the name on two lines,
   with the `id` in the tooltip and the accessible name. The header carries the title, the
-  number of entries and the search field; the title and the count elide in place, because
-  the header never widens the panel past its column. The footer names the folder in use and
-  the number of skipped files.
+  number of entries and the search field; the title, the count and a category's name elide in
+  place, because no text in the palette widens the panel past its column. The footer names
+  the folder in use and the number of skipped files.
 - The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - **A closure is not a palette entry.** `plug.blind` and `silencer.pneumatic` are closure

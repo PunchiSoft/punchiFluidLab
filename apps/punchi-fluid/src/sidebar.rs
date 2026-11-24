@@ -362,14 +362,35 @@ impl Body {
                     if matching.is_empty() {
                         continue;
                     }
-                    egui::CollapsingHeader::new(
-                        egui::RichText::new(format!("{label}  {}", matching.len()))
-                            .size(tokens.text_body)
-                            .color(tokens.ink),
-                    )
-                    .id_salt(category.as_str())
-                    .default_open(true)
-                    .show(ui, |ui| {
+                    // `CollapsingHeader` lays its label out with `Extend`, so a long category
+                    // name — the sensor group on a wider font — widened the whole palette.
+                    // The name is a frameless button here: it elides inside the column, still
+                    // collapses the group with a click and keeps its full text for the
+                    // accessibility layer.
+                    let id = ui.make_persistent_id(category.as_str());
+                    let mut collapse = false;
+                    let mut header =
+                        egui::collapsing_header::CollapsingState::load_with_default_open(
+                            ui.ctx(),
+                            id,
+                            true,
+                        )
+                        .show_header(ui, |ui| {
+                            let name = ui.add(
+                                egui::Button::new(
+                                    egui::RichText::new(format!("{label}  {}", matching.len()))
+                                        .size(tokens.text_body)
+                                        .color(tokens.ink),
+                                )
+                                .frame(false)
+                                .truncate(),
+                            );
+                            collapse = name.clicked();
+                        });
+                    if collapse {
+                        header.toggle();
+                    }
+                    let _ = header.body(|ui| {
                         // The width comes from the group's body: the collapsing header indents
                         // it, and a width measured outside made the tiles wrap to one column.
                         let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
