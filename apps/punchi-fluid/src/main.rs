@@ -18,7 +18,6 @@ use punchi_fluid_draw::{CYLINDER_RATIO, Pt, SYMBOL_BOX_MM};
 #[cfg(test)]
 use punchi_fluid_export::sheet;
 use punchi_fluid_export::{Page, TitleBlock};
-use punchi_fluid_file::sheet::Sheet;
 use punchi_fluid_session::recents::Recents;
 
 use crate::ribbon::{Command, Speed};
@@ -60,26 +59,7 @@ mod window_state;
 
 fn main() -> eframe::Result<()> {
     let path = std::env::args().nth(1).map(PathBuf::from);
-    let mut notice = None;
-    let mut recents = Recents::load();
-    let document = match path.as_deref() {
-        Some(path) => match Sheet::read(path)
-            .map_err(|cause| cause.to_string())
-            .and_then(|sheet| punchi_fluid_session::load(&sheet))
-        {
-            Ok(document) => {
-                // A document named on the command line is a document the page offers to
-                // reopen, exactly as if it had been opened from the dialog.
-                recents.remember(path);
-                document
-            }
-            Err(cause) => {
-                notice = Some(format!("no se pudo abrir el documento: {cause}"));
-                Document::new()
-            }
-        },
-        None => Document::new(),
-    };
+    let (document, startup_error, recents) = lifecycle::load_startup(path.as_deref());
     let safety = punchi_fluid_session::safety::SafetyCopy::load();
     // The screen is only known after the window exists: the first frame sizes and centres it
     // from the monitor the viewport reports. The provisional size is the remembered one when
@@ -116,11 +96,17 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&context.egui_ctx);
             theme::install_font(&context.egui_ctx, theme.font_family())?;
             theme.apply(&context.egui_ctx);
-            Ok(Box::new(
-                Window::with_safety(theme, document, path, notice, recents, safety)
-                    .with_window_state(geometry)
-                    .with_settings(settings),
-            ))
+            let mut window = Window::with_safety(theme, document, path, None, recents, safety)
+                .with_window_state(geometry)
+                .with_settings(settings);
+            if let Some(cause) = startup_error {
+                window.notice = Some(
+                    window
+                        .language
+                        .format("notice.open_failed", &[("cause", &cause)]),
+                );
+            }
+            Ok(Box::new(window))
         }),
     )
 }
@@ -221,7 +207,10 @@ impl Window {
     /// it. The box is the canonical one, or the actuator's wider barrel box.
     fn add_component(&mut self, catalog_id: &str) {
         let Some(definition) = self.catalog.get(catalog_id) else {
-            self.notice = Some(format!("no está en el catálogo: {catalog_id}"));
+            self.notice = Some(
+                self.language
+                    .format("notice.not_in_catalog", &[("id", catalog_id)]),
+            );
             return;
         };
         let (width, height) = if definition.kinematics == Kinematics::LinearActuator {
@@ -234,8 +223,13 @@ impl Window {
             .document
             .place(Placement::new(catalog_id, centre, width, height));
         self.selected = vec![index];
-        let name = definition.name_es.as_deref().unwrap_or(&definition.name);
-        self.notice = Some(format!("añadida {name}"));
+        let name = match self.language {
+            punchi_fluid_i18n::Language::Spanish => {
+                definition.name_es.as_deref().unwrap_or(&definition.name)
+            }
+            punchi_fluid_i18n::Language::English => &definition.name,
+        };
+        self.notice = Some(self.language.format("notice.added", &[("name", name)]));
     }
 
     /// Rebuilds the model when the document changed, and says why when it cannot.
@@ -246,7 +240,10 @@ impl Window {
         self.model = match punchi_fluid_session::Model::build(&self.document, &self.catalog) {
             Ok(model) => Some(model),
             Err(cause) => {
-                self.notice = Some(cause);
+                self.notice = Some(
+                    self.language
+                        .format("notice.build_failed", &[("cause", &cause)]),
+                );
                 None
             }
         };
@@ -269,7 +266,10 @@ impl Window {
         };
         if let Err(cause) = model.advance(dt) {
             self.running = false;
-            self.notice = Some(format!("la simulación se detuvo: {cause}"));
+            self.notice = Some(
+                self.language
+                    .format("notice.sim_stopped", &[("cause", &cause)]),
+            );
         }
     }
 
@@ -370,7 +370,10 @@ impl Window {
         }
         self.selected = copies;
         let count = self.selected.len();
-        self.notice = Some(format!("duplicadas {count}"));
+        self.notice = Some(
+            self.language
+                .format("notice.duplicated", &[("count", &count.to_string())]),
+        );
     }
 
     /// Aligns the selection on its furthest edge, as one undo entry.
@@ -379,7 +382,7 @@ impl Window {
             return;
         }
         if self.document.align_many(&self.selected, align) {
-            self.notice = Some(String::from("alineado"));
+            self.notice = Some(self.language.text("notice.aligned").to_owned());
         }
     }
 
@@ -392,7 +395,10 @@ impl Window {
             .collect();
         let count = self.clipboard.len();
         if count > 0 {
-            self.notice = Some(format!("copiadas {count}"));
+            self.notice = Some(
+                self.language
+                    .format("notice.copied", &[("count", &count.to_string())]),
+            );
         }
     }
 
@@ -411,7 +417,10 @@ impl Window {
             .collect();
         self.selected = self.document.place_many(copies);
         let count = self.selected.len();
-        self.notice = Some(format!("pegadas {count}"));
+        self.notice = Some(
+            self.language
+                .format("notice.pasted", &[("count", &count.to_string())]),
+        );
     }
 
     /// Cuts the selection: copies it and removes it as one undo entry.
@@ -495,7 +504,7 @@ impl Window {
         if self.document.undo() {
             self.selected.clear();
             self.selected_pipe = None;
-            self.notice = Some(String::from("deshecho"));
+            self.notice = Some(self.language.text("notice.undone").to_owned());
         }
     }
 
@@ -504,7 +513,7 @@ impl Window {
         if self.document.redo() {
             self.selected.clear();
             self.selected_pipe = None;
-            self.notice = Some(String::from("rehecho"));
+            self.notice = Some(self.language.text("notice.redone").to_owned());
         }
     }
 
@@ -579,7 +588,7 @@ impl Window {
         let title = format!("Circuito {}", self.document.circuits().len() + 1);
         let id = self.document.add_circuit(title);
         if id == 0 {
-            self.notice = Some(String::from("no caben más circuitos"));
+            self.notice = Some(self.language.text("notice.circuit_limit").to_owned());
             return;
         }
         let (page, block) = files::page_and_block(&self.document);
@@ -589,7 +598,7 @@ impl Window {
         self.selected_pipe = None;
         self.model = None;
         self.model_revision = 0;
-        self.notice = Some(String::from("circuito nuevo"));
+        self.notice = Some(self.language.text("notice.circuit_new").to_owned());
     }
 
     /// The keyboard commands and the ribbon's enabled state, so `update` stays the layout.

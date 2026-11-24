@@ -518,7 +518,7 @@ fn until_change_stops_at_the_piston_end() {
         window
             .notice
             .as_deref()
-            .is_some_and(|notice| notice.contains("tope")),
+            .is_some_and(|notice| notice.contains("end stop")),
         "the piston reached an end: {:?}",
         window.notice
     );

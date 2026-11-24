@@ -38,7 +38,7 @@ impl Window {
             return;
         }
         self.refresh_page();
-        self.notice = Some(String::from("cajetín actualizado"));
+        self.notice = Some(self.language.text("block.updated").to_owned());
     }
 
     /// **Cajetín ▸ Restablecer**: the block a circuit is born with, one undo.
@@ -57,7 +57,7 @@ impl Window {
             return;
         }
         self.refresh_page();
-        self.notice = Some(String::from("cajetín restablecido"));
+        self.notice = Some(self.language.text("notice.block_reset").to_owned());
     }
 
     /// Whether the active circuit's block differs from the one it is born with.
@@ -110,7 +110,7 @@ impl Window {
     /// document records the change; the window only follows it.
     fn apply_sheet(&mut self, sheet: PaperSheet, refit: bool) {
         if !self.document.set_sheet(sheet) {
-            self.notice = Some(String::from("la hoja no admite ese cambio"));
+            self.notice = Some(self.language.text("page.refused").to_owned());
             return;
         }
         let (page, block) = files::page_and_block(&self.document);
@@ -119,6 +119,6 @@ impl Window {
         if refit {
             self.view.reset();
         }
-        self.notice = Some(String::from("hoja actualizada"));
+        self.notice = Some(self.language.text("page.updated").to_owned());
     }
 }

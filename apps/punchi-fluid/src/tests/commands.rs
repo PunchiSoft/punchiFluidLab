@@ -333,6 +333,16 @@ fn the_recent_menu_lists_the_real_documents() {
 }
 
 #[test]
+fn the_notices_follow_the_language() {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    window.new_document();
+    assert_eq!(window.notice.as_deref(), Some("new document"));
+    window.language = punchi_fluid_i18n::Language::Spanish;
+    window.new_document();
+    assert_eq!(window.notice.as_deref(), Some("documento nuevo"));
+}
+
+#[test]
 fn a_missing_recent_is_marked_and_refused() {
     let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
     window.recents = punchi_fluid_session::recents::Recents::at(None);
@@ -351,7 +361,7 @@ fn a_missing_recent_is_marked_and_refused() {
         window
             .notice
             .as_deref()
-            .is_some_and(|notice| notice.contains("no se pudo abrir")),
+            .is_some_and(|notice| notice.contains("Could not open")),
         "the refusal is explained: {:?}",
         window.notice
     );

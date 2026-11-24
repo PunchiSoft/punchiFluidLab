@@ -3,9 +3,12 @@
 **Status: target.** The mechanism is decided and its first slice is implemented:
 `punchi-fluid-i18n` reads the two embedded catalogs, **Configuración** offers the language,
 and the whole Rust window is translated: the ribbon, the catalog, the inspector, Configuración,
-the check panel and its finding sentences, the start page, the status bar, the lifecycle panels
-and every dialog. The file and session error causes, the exporter and the catalog summary are
-the remaining phase-4 debt; the CLI is a fixed English contract.
+the check panel and its finding sentences, the start page, the status bar and its notices, the
+lifecycle panels and every dialog. The exporter labels and the catalog summary are the
+remaining phase-4 debt, and the CLI is a fixed English contract. The technical error causes
+from `punchi-fluid-file` and `punchi-fluid-session` stay in English as a diagnostic inside the
+translated frame: they are not UI copy, and a typed-error translation would be a separate
+decision.
 
 ## The decision
 
@@ -53,10 +56,10 @@ migration plan are the owner's working notes, outside the repository.
 
 ## Where the copy lives today
 
-- **The Rust window** (`apps/punchi-fluid`): every surface reads the catalog, and the check
-  crate returns only a stable `kind`; the panel maps it to `check.finding.*`. The error causes
-  from `punchi-fluid-file` and `punchi-fluid-session`, the exporter and the catalog summary are
-  phase-4 debt.
+- **The Rust window** (`apps/punchi-fluid`): every surface and every notice reads the catalog,
+  and the check crate returns only a stable `kind`; the panel maps it to `check.finding.*`. The
+  exporter labels and the catalog summary are phase-4 debt; the crate error causes are
+  technical English diagnostics inside the translated frame.
 - **The crates:** `punchi-fluid-check::FindingKind::message_es`, the title-block headers in
   `punchi-fluid-export`, the parts-list words and the CLI output are Spanish sentences, not
   keys.
@@ -68,9 +71,8 @@ migration plan are the owner's working notes, outside the repository.
 
 ## What is not done
 
-- The file and session error causes, the exporter and the catalog summary still return
-  Spanish; the whole Rust window and the check findings are on the catalog today, and the CLI
-  speaks English.
+- The exporter labels and the catalog summary are still pending; the whole Rust window and
+  the check findings are on the catalog today, and the CLI speaks English.
 - The manual classification of every string, test and contract is still pending for the
   surfaces after the pilot; the pilot's key map is the first classified slice.
 - The catalog data (`name_es`, `summary`) and the Spanish translation of the rest of the
