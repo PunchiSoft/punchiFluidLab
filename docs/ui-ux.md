@@ -1080,8 +1080,8 @@ the check panel and its finding sentences, the start page, the status bar and it
 lifecycle panels, the file, circuit, page-setup, title-block and export-options dialogs, the
 sheet menu, the description card and the language selector. The technical error causes from
 the crates stay in English inside the translated frame (a diagnostic, not UI copy); the
-exporter labels and the catalog summary are the remaining debt, and the CLI is a fixed English
-contract. Keys live in the catalogs, the exporter receives its labels
+exporter labels are the remaining debt, and the CLI is a fixed English contract. The
+description card reads `name_es`/`summary_es` when the definition has them. Keys live in the catalogs, the exporter receives its labels
 from the caller, the CLI keeps a fixed English contract, and no sentence is concatenated. Until
 a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/README.md)).
 

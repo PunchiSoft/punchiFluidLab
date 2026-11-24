@@ -420,13 +420,15 @@ impl Window {
             .and_then(|index| self.document.placements().get(*index))
             .map(|placed| placed.catalog_id.clone());
         let definition = catalog_id.as_deref().and_then(|id| self.catalog.get(id));
+        let language = self.language;
         let subject = definition.map_or_else(
-            || String::from("Componente"),
-            |definition| {
-                definition
+            || language.text("dialog.component").to_owned(),
+            |definition| match language {
+                punchi_fluid_i18n::Language::Spanish => definition
                     .name_es
                     .clone()
-                    .unwrap_or_else(|| definition.name.clone())
+                    .unwrap_or_else(|| definition.name.clone()),
+                punchi_fluid_i18n::Language::English => definition.name.clone(),
             },
         );
         let card = if kind == Mockup::Describe {
@@ -436,8 +438,21 @@ impl Window {
                 .zip(definition)
                 .map(|(image, definition)| CardView {
                     image,
-                    name: definition.name.clone(),
-                    summary: definition.summary.clone().unwrap_or_default(),
+                    name: match language {
+                        punchi_fluid_i18n::Language::Spanish => definition
+                            .name_es
+                            .clone()
+                            .unwrap_or_else(|| definition.name.clone()),
+                        punchi_fluid_i18n::Language::English => definition.name.clone(),
+                    },
+                    summary: match language {
+                        punchi_fluid_i18n::Language::Spanish => definition
+                            .summary_es
+                            .clone()
+                            .or_else(|| definition.summary.clone()),
+                        punchi_fluid_i18n::Language::English => definition.summary.clone(),
+                    }
+                    .unwrap_or_default(),
                     id: definition.id.clone(),
                 })
         } else {

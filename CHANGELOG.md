@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### La tarjeta lee el resumen español — 2026-11-24
+
+- **Catálogo**: nuevo campo opcional `summary_es` en la definición, documentado en
+  `assets/catalog/README.md`; el cilindro de simple efecto que tiene tarjeta ya lo lleva.
+- **Tarjeta**: la descripción y el título de las ventanas de Configuración/Descripción siguen
+  el idioma; la tarjeta usa `name_es`/`summary_es` en español y `name`/`summary` en inglés.
+- **Pruebas**: `the_card_follows_the_language`; la suite de la ventana pasa a **317**.
+- **Pendiente de fase 4**: las etiquetas del exportador; el resto de resúmenes españoles se
+  añaden cuando el propietario los revise (el campo ya está listo).
+
 ### Todos los avisos de la ventana eligen idioma — 2026-11-24
 
 - **Avisos**: simulación detenida, válvula cambiada, pistón en un tope, sin cambio en 60 s,

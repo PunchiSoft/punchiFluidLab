@@ -437,6 +437,37 @@ fn the_simple_cylinder_description_shows_its_card() {
 }
 
 #[test]
+fn the_card_follows_the_language() {
+    let mut window = window_with_single_acting_cylinder();
+    window.language = Language::Spanish;
+    let mut harness = harness(&mut window);
+    let sheet = harness.get_by_label("hoja de dibujo").rect();
+    right_click_at(&mut harness, sheet.center());
+    harness.get_by_label("Descripción del componente").click();
+    harness.run();
+    assert!(
+        harness
+            .query_by_role_and_label(
+                egui::accesskit::Role::Label,
+                "Cilindro de simple efecto, 20/100",
+            )
+            .is_some(),
+        "the card names the definition in Spanish"
+    );
+    assert!(
+        harness
+            .query_by_role_and_label(
+                egui::accesskit::Role::Label,
+                "Diámetro 20 mm, carrera 100 mm, muelle de retorno.",
+            )
+            .is_some(),
+        "the card carries the Spanish summary when the definition has one"
+    );
+    harness.get_by_label("Cerrar").click();
+    harness.run();
+}
+
+#[test]
 fn the_description_entry_opens_a_blank_window_named_descripcion() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
@@ -575,15 +606,31 @@ fn a_click_outside_closes_the_menu() {
 #[test]
 fn the_mockup_subject_is_the_selected_component_name() {
     let mut window = window_with_component();
-    let mut harness = harness(&mut window);
-    let sheet = harness.get_by_label("hoja de dibujo").rect();
-    right_click_at(&mut harness, sheet.center());
-    harness.get_by_label("Configure").click();
-    harness.run();
-    assert!(
-        harness.query_by_label_contains("Válvula").is_some(),
-        "the mockup names the component"
-    );
+    {
+        let mut harness = harness(&mut window);
+        let sheet = harness.get_by_label("hoja de dibujo").rect();
+        right_click_at(&mut harness, sheet.center());
+        harness.get_by_label("Configure").click();
+        harness.run();
+        assert!(
+            harness.query_by_label_contains("3/2 valve").is_some(),
+            "the mockup names the component in English"
+        );
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+    }
+    window.language = Language::Spanish;
+    {
+        let mut harness = harness(&mut window);
+        let sheet = harness.get_by_label("hoja de dibujo").rect();
+        right_click_at(&mut harness, sheet.center());
+        harness.get_by_label("Configurar").click();
+        harness.run();
+        assert!(
+            harness.query_by_label_contains("Válvula").is_some(),
+            "the mockup names the component in Spanish"
+        );
+    }
 }
 
 #[test]
