@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_file::recent::Recent;
+use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates::{self, Template};
 
@@ -40,6 +41,7 @@ pub(super) fn recovery_banner(
     ui: &mut egui::Ui,
     tokens: &Tokens,
     document_name: Option<&str>,
+    language: Language,
 ) -> Option<Action> {
     let mut action = None;
     egui::Frame::default()
@@ -50,18 +52,14 @@ pub(super) fn recovery_banner(
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             ui.label(
-                egui::RichText::new("Se encontró trabajo sin guardar")
+                egui::RichText::new(language.text("start.recovery_title"))
                     .size(tokens.text_label)
                     .strong()
                     .color(tokens.ink),
             );
             let detail = match document_name {
-                Some(name) => format!(
-                    "La copia de seguridad de {name} se escribió mientras había cambios sin guardar."
-                ),
-                None => String::from(
-                    "La copia de seguridad se escribió mientras había cambios sin guardar.",
-                ),
+                Some(name) => language.format("start.recovery_body", &[("name", name)]),
+                None => language.text("start.recovery_body_unnamed").to_owned(),
             };
             ui.label(
                 egui::RichText::new(detail)
@@ -70,10 +68,10 @@ pub(super) fn recovery_banner(
             );
             ui.add_space(tokens.unit * 0.3);
             ui.horizontal(|ui| {
-                if ui.button("Recuperar").clicked() {
+                if ui.button(language.text("start.recover")).clicked() {
                     action = Some(Action::Recover);
                 }
-                if ui.button("Descartar").clicked() {
+                if ui.button(language.text("start.discard")).clicked() {
                     action = Some(Action::DiscardRecovery);
                 }
             });
@@ -82,7 +80,7 @@ pub(super) fn recovery_banner(
 }
 
 /// The two «Empezar» cards: the default way in and the quieter secondary one.
-pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
+pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> Option<Action> {
     let mut action = None;
     let spacing = ui.spacing().item_spacing.x;
     let width = ((ui.available_width() - spacing) * 0.5).max(tokens.unit * 6.0);
@@ -91,8 +89,8 @@ pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
             ui,
             tokens,
             ICON_NEW,
-            "Nuevo proyecto",
-            "Crea una hoja de trabajo desde cero",
+            language.text("start.begin_new"),
+            language.text("start.begin_new_detail"),
             true,
             width,
         ) {
@@ -102,8 +100,8 @@ pub(super) fn begin_row(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
             ui,
             tokens,
             ICON_OPEN,
-            "Abrir…",
-            "Un proyecto guardado",
+            language.text("start.begin_open"),
+            language.text("start.begin_open_detail"),
             false,
             width,
         ) {
@@ -191,7 +189,12 @@ fn begin_card(
 }
 
 /// The four template cards, each one a thumbnail of its own document and its label.
-pub(super) fn template_grid(ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalog) -> Option<u32> {
+pub(super) fn template_grid(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    catalog: &Catalog,
+    language: Language,
+) -> Option<u32> {
     let mut chosen = None;
     let indices: Vec<u32> = (0..templates::COUNT).collect();
     let spacing = ui.spacing().item_spacing.x;
@@ -202,7 +205,7 @@ pub(super) fn template_grid(ui: &mut egui::Ui, tokens: &Tokens, catalog: &Catalo
     for row in indices.chunks(usize::from(columns)) {
         ui.horizontal(|ui| {
             for index in row {
-                if template_card(ui, tokens, catalog, *index, width) {
+                if template_card(ui, tokens, catalog, *index, width, language) {
                     chosen = Some(*index);
                 }
             }
@@ -236,11 +239,12 @@ fn template_card(
     catalog: &Catalog,
     index: u32,
     width: f32,
+    language: Language,
 ) -> bool {
     let Some(template) = Template::from_index(index) else {
         return false;
     };
-    let (name, description) = labels(template);
+    let (name, description) = labels(language, template);
     let padding = tokens.unit * 0.5;
     let plate_width = width - padding * 2.0;
     let plate_height = plate_width * PLATE_RATIO;
@@ -277,9 +281,15 @@ fn template_card(
     thumbnail(ui, tokens, catalog, index, plate);
     let top = plate.top() + tokens.unit * 0.4;
     let mut right = plate.right() - tokens.unit * 0.4;
-    let category = chip(ui, tokens, egui::pos2(right, top), category(template), true);
+    let category = chip(
+        ui,
+        tokens,
+        egui::pos2(right, top),
+        category(language, template),
+        true,
+    );
     right = category.left() - tokens.unit * 0.35;
-    if let Some(badge) = example_badge(template) {
+    if let Some(badge) = example_badge(language, template) {
         chip(ui, tokens, egui::pos2(right, top), badge, false);
     }
     let name_top = egui::pos2(plate.left(), plate.bottom() + tokens.unit * 0.45);
@@ -306,7 +316,11 @@ fn template_card(
     }
     let activated = activated(ui, &response);
     response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, accessible_label(template))
+        egui::WidgetInfo::labeled(
+            egui::WidgetType::Button,
+            true,
+            accessible_label(language, template),
+        )
     });
     response.on_hover_text(format!("{name}: {description}"));
     activated
@@ -349,14 +363,19 @@ fn chip(
 }
 
 /// The `Recientes` rows, newest first, or the empty state when nothing is remembered.
-pub(super) fn recent_rows(ui: &mut egui::Ui, tokens: &Tokens, recents: &Recents) -> Option<Action> {
+pub(super) fn recent_rows(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    recents: &Recents,
+    language: Language,
+) -> Option<Action> {
     if recents.entries().is_empty() {
-        recent_placeholder(ui, tokens);
+        recent_placeholder(ui, tokens, language);
         return None;
     }
     let mut action = None;
     for recent in recents.entries() {
-        match recent_row(ui, tokens, recent) {
+        match recent_row(ui, tokens, recent, language) {
             Some(RowAction::Open) => {
                 action = Some(Action::OpenRecent(PathBuf::from(&recent.path)));
             }
@@ -381,7 +400,12 @@ enum RowAction {
 /// One remembered document: its name, its folder, a click that opens it and a small button
 /// that forgets it. A row whose file is gone is painted muted with `no encontrado`, cannot
 /// be opened, and stays until the reader removes it.
-fn recent_row(ui: &mut egui::Ui, tokens: &Tokens, recent: &Recent) -> Option<RowAction> {
+fn recent_row(
+    ui: &mut egui::Ui,
+    tokens: &Tokens,
+    recent: &Recent,
+    language: Language,
+) -> Option<RowAction> {
     let path = Path::new(&recent.path);
     let missing = recent_missing(path);
     let height = (tokens.unit * 2.6).max(40.0);
@@ -421,13 +445,13 @@ fn recent_row(ui: &mut egui::Ui, tokens: &Tokens, recent: &Recent) -> Option<Row
         open,
         remove,
     };
-    let detail = recent_detail(path, missing);
-    paint_recent_row(ui, tokens, recent, missing, &detail, &layout);
+    let detail = recent_detail(path, missing, language);
+    paint_recent_row(ui, tokens, recent, missing, &detail, &layout, language);
     let accessible = format!("{}. {detail}", recent.name);
     layout.open.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::Button, !missing, accessible.clone())
     });
-    let forget_label = format!("Quitar {}", recent.name);
+    let forget_label = language.format("start.forget_named", &[("name", &recent.name)]);
     layout.remove.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::Button, true, forget_label.clone())
     });
@@ -436,13 +460,15 @@ fn recent_row(ui: &mut egui::Ui, tokens: &Tokens, recent: &Recent) -> Option<Row
     if missing {
         layout
             .open
-            .on_hover_text("El archivo ya no está: quita esta fila para olvidarla.");
+            .on_hover_text(language.text("start.missing_recent"));
     } else {
-        layout.open.on_hover_text(format!("Abrir {}", recent.name));
+        layout
+            .open
+            .on_hover_text(language.format("start.open_named", &[("name", &recent.name)]));
     }
     layout
         .remove
-        .on_hover_text(format!("Quitar {} de la lista", recent.name));
+        .on_hover_text(language.format("start.forget_named", &[("name", &recent.name)]));
     if forget {
         Some(RowAction::Forget)
     } else if open_activated {
@@ -468,6 +494,7 @@ fn paint_recent_row(
     missing: bool,
     detail: &str,
     layout: &RecentLayout,
+    language: Language,
 ) {
     let rect = layout.rect;
     let remove_rect = layout.remove_rect;
@@ -515,7 +542,7 @@ fn paint_recent_row(
     ui.painter().text(
         remove_rect.center(),
         egui::Align2::CENTER_CENTER,
-        "Quitar",
+        language.text("start.forget"),
         egui::FontId::proportional(tokens.text_small),
         if layout.remove.hovered() || layout.remove.has_focus() {
             tokens.accent
@@ -526,10 +553,10 @@ fn paint_recent_row(
 }
 
 /// The second line of a recent row: the folder, and that the file is gone when it is.
-fn recent_detail(path: &Path, missing: bool) -> String {
+fn recent_detail(path: &Path, missing: bool, language: Language) -> String {
     let folder = folder_of(path);
     if missing {
-        format!("{folder} · no encontrado")
+        language.format("start.not_found", &[("folder", &folder)])
     } else {
         folder
     }
@@ -558,7 +585,7 @@ fn folder_of(path: &Path) -> String {
 }
 
 /// The empty `Recientes` state: the next step in words, not a blank table.
-pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens) {
+pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens, language: Language) {
     egui::Frame::default()
         .fill(tokens.surface_raised)
         .stroke(egui::Stroke::new(1.0_f32, tokens.line))
@@ -571,20 +598,24 @@ pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens) {
                     ui.cursor().min,
                     egui::vec2(tokens.unit * 1.2, tokens.unit * 1.2),
                 );
-                icon(ui, ICON_RECENT, "Recientes", tokens.ink_muted, icon_rect);
+                icon(
+                    ui,
+                    ICON_RECENT,
+                    language.text("start.section_recents"),
+                    tokens.ink_muted,
+                    icon_rect,
+                );
                 ui.allocate_space(egui::vec2(tokens.unit * 1.4, tokens.unit * 1.2));
                 ui.vertical(|ui| {
                     ui.label(
-                        egui::RichText::new("Todavía no hay documentos recientes")
+                        egui::RichText::new(language.text("start.empty_title"))
                             .size(tokens.text_body)
                             .color(tokens.ink),
                     );
                     ui.label(
-                        egui::RichText::new(
-                            "Crea un proyecto nuevo o abre un archivo; aparecerá aquí.",
-                        )
-                        .size(tokens.text_small)
-                        .color(tokens.ink_dim),
+                        egui::RichText::new(language.text("start.empty_body"))
+                            .size(tokens.text_small)
+                            .color(tokens.ink_dim),
                     );
                 });
             });
@@ -611,48 +642,49 @@ fn elided(ui: &egui::Ui, tokens: &Tokens, text: &str, width: f32) -> std::sync::
 }
 
 /// The name and the one-line description of each start template.
-pub(super) fn labels(template: Template) -> (&'static str, &'static str) {
-    match template {
-        Template::WorkedExample => (
-            "Circuito OR",
-            "Dos entradas; el shuttle deja pasar la mayor y con las dos cierra la salida.",
-        ),
+pub(super) fn labels(language: Language, template: Template) -> (&'static str, &'static str) {
+    let (name, description) = match template {
+        Template::WorkedExample => ("start.template.or_name", "start.template.or_description"),
         Template::DoubleActing => (
-            "Cilindro de doble efecto",
-            "Una válvula 5/2 y un cilindro de dos cámaras.",
+            "start.template.double_name",
+            "start.template.double_description",
         ),
-        Template::AirPreparation => (
-            "Preparación de aire",
-            "Filtro, regulador y lubricador antes de la válvula.",
+        Template::AirPreparation => ("start.template.air_name", "start.template.air_description"),
+        Template::ElectricalControl => (
+            "start.template.electrical_name",
+            "start.template.electrical_description",
         ),
-        Template::ElectricalControl => {
-            ("Control eléctrico", "Un relé y una válvula con solenoide.")
-        }
-    }
+    };
+    (language.text(name), language.text(description))
 }
 
 /// The domain chip of each template: the circuit's own medium.
-pub(super) fn category(template: Template) -> &'static str {
-    match template {
-        Template::ElectricalControl => "ELÉCTRICA",
-        Template::WorkedExample | Template::DoubleActing | Template::AirPreparation => "NEUMÁTICA",
-    }
+pub(super) fn category(language: Language, template: Template) -> &'static str {
+    language.text(match template {
+        Template::ElectricalControl => "start.template.electrical",
+        Template::WorkedExample | Template::DoubleActing | Template::AirPreparation => {
+            "start.template.pneumatic"
+        }
+    })
 }
 
 /// The badge of the owner's worked example, and nothing on the other three cards.
-pub(super) fn example_badge(template: Template) -> Option<&'static str> {
+pub(super) fn example_badge(language: Language, template: Template) -> Option<&'static str> {
     match template {
-        Template::WorkedExample => Some("EJEMPLO"),
+        Template::WorkedExample => Some(language.text("start.template.example")),
         Template::DoubleActing | Template::AirPreparation | Template::ElectricalControl => None,
     }
 }
 
 /// The name the accessibility layer reads for a template card: its title, its description
 /// and, for the first one, that it is the owner's worked example.
-pub(super) fn accessible_label(template: Template) -> String {
-    let (name, description) = labels(template);
-    match example_badge(template) {
-        Some(_) => format!("{name}. {description} Ejemplo resuelto."),
+pub(super) fn accessible_label(language: Language, template: Template) -> String {
+    let (name, description) = labels(language, template);
+    match example_badge(language, template) {
+        Some(_) => language.format(
+            "start.template.example_accessible",
+            &[("name", name), ("description", description)],
+        ),
         None => format!("{name}. {description}"),
     }
 }

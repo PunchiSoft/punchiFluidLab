@@ -9,6 +9,7 @@
 //! `Space` activate them, as they do the ribbon's own controls.
 
 use eframe::egui;
+use punchi_fluid_i18n::Language;
 
 use super::{
     Action, Drawing, ICON_ABOUT, ICON_BACK, ICON_HOME, ICON_LICENSE, ICON_NEW, ICON_OPEN,
@@ -28,50 +29,50 @@ struct NavItem {
 }
 
 const NAV_TO_SHEET: NavItem = NavItem {
-    label: "Volver a la hoja",
+    label: "start.nav.back",
     drawing: ICON_BACK,
     shortcut: None,
     current: false,
 };
 const NAV_HOME: NavItem = NavItem {
-    label: "Inicio",
+    label: "start.nav.home",
     drawing: ICON_HOME,
     shortcut: None,
     current: true,
 };
 const NAV_NEW: NavItem = NavItem {
-    label: "Nuevo proyecto",
+    label: "start.nav.new",
     drawing: ICON_NEW,
     shortcut: Some("Ctrl+N"),
     current: false,
 };
 const NAV_OPEN: NavItem = NavItem {
-    label: "Abrir…",
+    label: "start.nav.open",
     drawing: ICON_OPEN,
     shortcut: Some("Ctrl+O"),
     current: false,
 };
 const NAV_PREFERENCES: NavItem = NavItem {
-    label: "Configuración",
+    label: "start.nav.preferences",
     drawing: ICON_PREFERENCES,
     shortcut: Some("Ctrl+,"),
     current: false,
 };
 const NAV_ABOUT: NavItem = NavItem {
-    label: "Acerca de",
+    label: "start.nav.about",
     drawing: ICON_ABOUT,
     shortcut: None,
     current: false,
 };
 const NAV_LICENSE: NavItem = NavItem {
-    label: "Licencia",
+    label: "start.nav.licence",
     drawing: ICON_LICENSE,
     shortcut: None,
     current: false,
 };
 
 /// Draws the rail: the brand, the way back, the `Iniciar` group and the `Aprender` group.
-pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
+pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens, language: Language) -> Option<Action> {
     let mut action = None;
     let seam = ui.max_rect();
     ui.add_space(tokens.unit * 0.75);
@@ -87,26 +88,26 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
     ui.add_space(tokens.unit * 0.6);
     ui.separator();
     ui.add_space(tokens.unit * 0.6);
-    if nav_row(ui, tokens, &NAV_TO_SHEET) {
+    if nav_row(ui, tokens, &NAV_TO_SHEET, language) {
         action = Some(Action::Sheet);
     }
-    nav_heading(ui, tokens, "Iniciar");
+    nav_heading(ui, tokens, language.text("start.nav.group_start"));
     // Inicio is the page itself: choosing it keeps the reader where it is.
-    nav_row(ui, tokens, &NAV_HOME);
-    if nav_row(ui, tokens, &NAV_NEW) {
+    nav_row(ui, tokens, &NAV_HOME, language);
+    if nav_row(ui, tokens, &NAV_NEW, language) {
         action = Some(Action::NewProject);
     }
-    if nav_row(ui, tokens, &NAV_OPEN) {
+    if nav_row(ui, tokens, &NAV_OPEN, language) {
         action = Some(Action::OpenDialog);
     }
-    if nav_row(ui, tokens, &NAV_PREFERENCES) {
+    if nav_row(ui, tokens, &NAV_PREFERENCES, language) {
         action = Some(Action::Preferences);
     }
-    nav_heading(ui, tokens, "Aprender");
-    if nav_row(ui, tokens, &NAV_ABOUT) {
+    nav_heading(ui, tokens, language.text("start.nav.group_learn"));
+    if nav_row(ui, tokens, &NAV_ABOUT, language) {
         action = Some(Action::About);
     }
-    if nav_row(ui, tokens, &NAV_LICENSE) {
+    if nav_row(ui, tokens, &NAV_LICENSE, language) {
         action = Some(Action::Licence);
     }
     // The seam between the two planes of the page: the rail's edge, not a colour.
@@ -123,7 +124,8 @@ pub(super) fn nav(ui: &mut egui::Ui, tokens: &Tokens) -> Option<Action> {
 /// One rail row: its drawing, its label, the shortcut hint and the accent mark when it is
 /// the current view. Reachable by `Tab`, named for the accessibility layer, activated with
 /// `Enter` or `Space` like the ribbon's own controls.
-fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem) -> bool {
+fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Language) -> bool {
+    let label = language.text(item.label);
     let height = (tokens.unit * 2.0).max(32.0);
     let (rect, _) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), height),
@@ -158,11 +160,11 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem) -> bool {
         egui::pos2(rect.left() + tokens.unit * 1.3, rect.center().y),
         egui::vec2(tokens.unit * RAIL_ICON, tokens.unit * RAIL_ICON),
     );
-    icon(ui, item.drawing, item.label, ink, icon_rect);
+    icon(ui, item.drawing, label, ink, icon_rect);
     ui.painter().text(
         egui::pos2(icon_rect.right() + tokens.unit * 0.6, rect.center().y),
         egui::Align2::LEFT_CENTER,
-        item.label,
+        label,
         egui::FontId::proportional(tokens.text_body),
         ink,
     );
@@ -182,15 +184,15 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem) -> bool {
     let current = item.current;
     response.widget_info(|| {
         if current {
-            egui::WidgetInfo::selected(egui::WidgetType::Button, true, true, item.label)
+            egui::WidgetInfo::selected(egui::WidgetType::Button, true, true, label)
         } else {
-            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, item.label)
+            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
         }
     });
     let activated = activated(ui, &response);
     match item.shortcut {
-        Some(shortcut) => response.on_hover_text(format!("{} ({shortcut})", item.label)),
-        None => response.on_hover_text(item.label),
+        Some(shortcut) => response.on_hover_text(format!("{label} ({shortcut})")),
+        None => response.on_hover_text(label),
     };
     activated
 }

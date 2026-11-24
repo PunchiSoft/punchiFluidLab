@@ -255,16 +255,14 @@ fn the_banner_offers_the_copy_and_recovering_installs_it_without_a_path() {
     {
         let mut harness = page_harness(&mut window);
         assert!(
-            harness
-                .query_by_label("Se encontró trabajo sin guardar")
-                .is_some(),
+            harness.query_by_label("Unsaved work was found").is_some(),
             "the copy found at start is offered above Empezar"
         );
         assert!(
             harness.query_by_label_contains("trabajo.pfluid").is_some(),
             "the offer names the document's file when it has one"
         );
-        harness.get_by_label("Recuperar").click();
+        harness.get_by_label("Recover").click();
         harness.run();
     }
     assert!(!window.start_open, "recovering closes Inicio");
@@ -287,18 +285,12 @@ fn discarding_the_recovery_removes_the_copy_and_hides_the_banner() {
     let mut window = window_with(None, safety);
     {
         let mut harness = page_harness(&mut window);
-        assert!(
-            harness
-                .query_by_label("Se encontró trabajo sin guardar")
-                .is_some()
-        );
-        harness.get_by_label("Descartar").click();
+        assert!(harness.query_by_label("Unsaved work was found").is_some());
+        harness.get_by_label("Discard").click();
         harness.run();
         harness.step();
         assert!(
-            harness
-                .query_by_label("Se encontró trabajo sin guardar")
-                .is_none(),
+            harness.query_by_label("Unsaved work was found").is_none(),
             "the answered banner is gone"
         );
     }
@@ -318,13 +310,11 @@ fn a_corrupt_copy_keeps_the_banner_and_reports_the_reason() {
     let mut window = window_with(None, safety);
     {
         let mut harness = page_harness(&mut window);
-        harness.get_by_label("Recuperar").click();
+        harness.get_by_label("Recover").click();
         harness.run();
         harness.step();
         assert!(
-            harness
-                .query_by_label("Se encontró trabajo sin guardar")
-                .is_some(),
+            harness.query_by_label("Unsaved work was found").is_some(),
             "a copy that cannot be read is still offered"
         );
     }
@@ -498,7 +488,7 @@ fn about_and_licence_open_and_escape_closes_them() {
     let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
     {
         let mut harness = page_harness(&mut window);
-        harness.get_by_label("Acerca de").click();
+        harness.get_by_label("About").click();
         harness.run();
         harness.step();
         assert!(
@@ -519,7 +509,7 @@ fn about_and_licence_open_and_escape_closes_them() {
     assert!(window.start_open, "the page stays under the panels");
     {
         let mut harness = page_harness(&mut window);
-        harness.get_by_label("Licencia").click();
+        harness.get_by_label("License").click();
         harness.run();
         harness.step();
         assert!(
