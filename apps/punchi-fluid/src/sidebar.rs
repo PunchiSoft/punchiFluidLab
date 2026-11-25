@@ -24,6 +24,10 @@ use crate::panel::{Edge, Panel, Probe, Settings};
 use crate::surface::EguiSurface;
 use crate::theme::Tokens;
 
+mod names;
+
+pub(crate) use names::{name_job, split_name, variant_job};
+
 /// The categories in the palette's order, with their catalog key.
 const CATEGORIES: [(Category, &str); 6] = [
     (Category::Supply, "catalog.category.supply"),
@@ -347,6 +351,7 @@ impl Body {
             })
             .max_height(ui.available_height() - footer_height)
             .show(ui, |ui| {
+                let mut shown = false;
                 for (category, label) in CATEGORIES {
                     let label = language.text(label);
                     let matching: Vec<&ComponentDefinition> = catalog
@@ -358,6 +363,7 @@ impl Body {
                     if matching.is_empty() {
                         continue;
                     }
+                    shown = true;
                     // `CollapsingHeader` lays its label out with `Extend`, so a long category
                     // name — the sensor group on a wider font — widened the whole palette.
                     // The name is a frameless button here: it elides inside the column, still
@@ -421,6 +427,15 @@ impl Body {
                             }
                         });
                     });
+                }
+                if !shown && !self.filter.trim().is_empty() {
+                    ui.label(
+                        egui::RichText::new(
+                            language.format("catalog.no_matches", &[("query", &self.filter)]),
+                        )
+                        .size(tokens.text_secondary)
+                        .color(tokens.ink_dim),
+                    );
                 }
             });
         let skipped = catalog.problems().len();
@@ -603,14 +618,18 @@ fn tile(
     language: Language,
     chosen: bool,
 ) -> (TileAction, egui::Rect) {
-    // The tile name keeps the body step until phase 3 separates the variant line;
-    // a larger name here would split the same two lines further.
     let name_font = egui::FontId::proportional(tokens.text_body);
-    // Two lines of name, measured rather than guessed, over the symbol; the tile shows only
-    // the symbol and the name, with the reference's roomy padding.
+    let variant_font = egui::FontId::proportional(tokens.text_small);
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
+    let variant_row = ui.fonts(|fonts| fonts.row_height(&variant_font));
     let pad = tokens.unit * 0.4;
-    let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + 2.0;
+    let full_name = match language {
+        Language::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
+        Language::English => &definition.name,
+    };
+    let (principal, variant) = split_name(full_name);
+    let detail_row = if variant.is_some() { variant_row } else { 0.0 };
+    let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + detail_row + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -671,12 +690,8 @@ fn tile(
         &preview_ink(tokens),
     );
     ui.painter().extend(drawing.shapes);
-    let name = match language {
-        Language::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
-        Language::English => &definition.name,
-    };
     let name_galley = ui.painter().layout_job(name_job(
-        name,
+        principal,
         (width - 4.0).max(1.0),
         name_font,
         tokens.ink,
@@ -686,11 +701,27 @@ fn tile(
             rect.center().x - name_galley.size().x * 0.5,
             symbol.max.y + 2.0,
         ),
-        name_galley,
+        name_galley.clone(),
         tokens.ink,
     );
+    if let Some(variant) = variant {
+        let variant_galley = ui.painter().layout_job(variant_job(
+            variant,
+            (width - 4.0).max(1.0),
+            variant_font,
+            tokens.ink_dim,
+        ));
+        ui.painter().galley(
+            egui::pos2(
+                rect.center().x - variant_galley.size().x * 0.5,
+                symbol.max.y + name_galley.size().y + 3.0,
+            ),
+            variant_galley,
+            tokens.ink_dim,
+        );
+    }
     response.widget_info(|| {
-        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), chosen, name)
+        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), chosen, full_name)
     });
     let clicked = response.clicked();
     let secondary = response.secondary_clicked();
@@ -703,7 +734,7 @@ fn tile(
         .unwrap_or(rect.center());
     let focus = response.has_focus();
     let menu_key = focus && ui.input(|input| input.key_pressed(egui::Key::F10));
-    response.on_hover_text(name);
+    response.on_hover_text(full_name);
     if clicked || started {
         // The keyboard follows the tile the reader picked or is carrying.
         ui.memory_mut(|memory| memory.request_focus(id));
@@ -722,35 +753,6 @@ fn tile(
         TileAction::None
     };
     (action, rect)
-}
-
-/// The name of a tile: at most two lines, elided, so a long name cannot grow over the next
-/// tile. The full name stays in the tooltip and in the accessible name.
-fn name_job(
-    name: &str,
-    width: f32,
-    font: egui::FontId,
-    colour: egui::Color32,
-) -> egui::text::LayoutJob {
-    let mut job = egui::text::LayoutJob {
-        wrap: egui::text::TextWrapping {
-            max_width: width,
-            max_rows: 2,
-            break_anywhere: true,
-            overflow_character: Some('…'),
-        },
-        ..Default::default()
-    };
-    job.append(
-        name,
-        0.0,
-        egui::TextFormat {
-            font_id: font,
-            color: colour,
-            ..Default::default()
-        },
-    );
-    job
 }
 
 impl Window {

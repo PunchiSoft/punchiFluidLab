@@ -347,11 +347,13 @@ The panel that lists the reasons for each skipped file is still target.
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
   `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the
   label is translated in the session, so the widget never learns the numeric enum.
-- The sidebar is **a palette of tiles**, two per row: the symbol and the name on two lines,
-  with the `id` in the tooltip and the accessible name. The header carries the title, the
+- The sidebar is **a palette of tiles**, two per row: the symbol, the principal name on up
+  to two lines and the variant on its own line, with the full name and the `id` in the
+  tooltip and in the accessible name. A name wraps at a space and the variant elides; no
+  text in the palette widens the panel past its column. The header carries the title, the
   number of entries and the search field; the title, the count and a category's name elide in
-  place, because no text in the palette widens the panel past its column. The footer names
-  the folder in use and the number of skipped files.
+  place. The footer names the folder in use and the number of skipped files. A search with no
+  match says so in the panel instead of leaving it blank.
 - The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - **A closure is not a palette entry.** `plug.blind` and `silencer.pneumatic` are closure

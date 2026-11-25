@@ -206,6 +206,7 @@ bottom_right = "Bottom right"
 bottom_full = "Bottom centred"
 
 [catalog]
+no_matches = "No components match \"{query}\"."
 title = "Catalog"
 search = "Search…"
 components = "{count} components"
