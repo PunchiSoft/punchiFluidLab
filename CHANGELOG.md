@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Cinta coherente — 2026-11-25
+
+- La fila de pestañas muestra el estado (Edición, En marcha, En pausa) y un transporte
+  compacto (Iniciar/Pausa, Paso, Detener) cuando la pestaña abierta no es Simular; usa los
+  mismos comandos, reglas de disponibilidad y atajos que el grupo completo. Detener funciona
+  también desde una pausa.
+- Nuevas pruebas `the_tab_row_transport_starts_and_stops`,
+  `the_collapsed_ribbon_keeps_the_transport_keyboard_reachable`, `stop_waits_for_a_model_or_a_run`
+  y `the_mode_word_follows_the_real_state`; las cinco pestañas, Cajetín y el resto de comandos
+  se conservan.
+
 ### Catálogo legible — 2026-11-25
 
 - Las tarjetas del catálogo separan el nombre principal de la variante en la primera coma de

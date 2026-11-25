@@ -169,9 +169,18 @@ pause = "Pause"
 step = "Step"
 until_change = "Until change"
 stop = "Stop"
+start_run = "Start run"
+pause_run = "Pause run"
+step_run = "Step run"
+stop_run = "Stop run"
 speed_quarter = "0.25×"
 speed_normal = "1×"
 speed_double = "2×"
+
+[ribbon.transport_state]
+editing = "Editing"
+running = "Running"
+paused = "Paused"
 
 [ribbon.gallery.margin]
 normal = "Normal"

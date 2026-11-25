@@ -169,9 +169,18 @@ pause = "Pausa"
 step = "Paso"
 until_change = "Hasta cambio"
 stop = "Detener"
+start_run = "Iniciar ejecución"
+pause_run = "Pausar ejecución"
+step_run = "Avanzar ejecución"
+stop_run = "Detener ejecución"
 speed_quarter = "0,25×"
 speed_normal = "1×"
 speed_double = "2×"
+
+[ribbon.transport_state]
+editing = "Edición"
+running = "En marcha"
+paused = "En pausa"
 
 [ribbon.gallery.margin]
 normal = "Normal"

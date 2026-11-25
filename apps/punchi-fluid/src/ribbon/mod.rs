@@ -17,6 +17,7 @@ mod command;
 mod enabled;
 mod icons;
 mod model;
+mod transport;
 
 pub(crate) use command::{Command, MarginPreset, Speed};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
@@ -70,6 +71,7 @@ pub struct Ribbon {
     pub(crate) language: Language,
     pub(crate) active_speed: &'static str,
     pub(crate) running: bool,
+    pub(crate) simulation: bool,
     pub last: String,
     /// Whether there is a path to save to; the window sets it every frame.
     pub savable: bool,
@@ -103,6 +105,7 @@ impl Ribbon {
             language: Language::English,
             active_speed: "ribbon.item.speed_normal",
             running: false,
+            simulation: false,
             last: String::from("—"),
             savable: false,
             selected: 0,
@@ -134,8 +137,18 @@ impl Ribbon {
             return;
         }
         match command {
-            Command::Start => self.running = true,
-            Command::Pause | Command::Stop => self.running = false,
+            Command::Start => {
+                self.running = true;
+                self.simulation = true;
+            }
+            Command::Pause => {
+                self.running = false;
+                self.simulation = true;
+            }
+            Command::Stop => {
+                self.running = false;
+                self.simulation = false;
+            }
             Command::Speed(speed) => self.active_speed = speed.label_key(),
             _ => {}
         }
@@ -184,6 +197,19 @@ impl Ribbon {
                         if response.clicked() {
                             self.active = index;
                         }
+                    }
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(
+                            self.language
+                                .text(transport::mode_key(self.running, self.simulation)),
+                        )
+                        .size(palette.text_body)
+                        .color(palette.muted),
+                    );
+                    let simulate_tab = TABS[self.active].name == "ribbon.tab.simulate";
+                    if !simulate_tab && ui.available_width() > 320.0 {
+                        transport::buttons(ui, palette, self.language, self, &mut picked);
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.label(

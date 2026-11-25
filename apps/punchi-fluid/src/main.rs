@@ -187,6 +187,8 @@ struct Window {
     model_revision: u64,
     /// Whether the model's clock is being advanced.
     running: bool,
+    /// Whether the simulation is active (running or paused); false in editing.
+    simulation: bool,
     /// Whether the sheet draws the title block on screen: view state, never a document field.
     show_block: bool,
     /// The hand mode: the primary drag pans the sheet instead of selecting.
@@ -319,6 +321,7 @@ impl Window {
         self.rebuild_if_stale();
         if self.model.is_some() {
             self.running = true;
+            self.simulation = true;
         }
     }
 
@@ -342,6 +345,7 @@ impl Window {
     /// Stops the clock and throws the model away, so the next start builds it at `t = 0`.
     fn stop(&mut self) {
         self.pause();
+        self.simulation = false;
         self.model = None;
         self.model_revision = 0;
     }
@@ -737,6 +741,7 @@ impl Window {
         self.ribbon.can_close_circuit = self.document.circuits().len() > 1;
         self.ribbon.has_pipe = self.selected_pipe.is_some();
         self.ribbon.running = self.running;
+        self.ribbon.simulation = self.simulation && self.model.is_some();
     }
 }
 
