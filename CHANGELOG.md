@@ -19,6 +19,13 @@ publicación.
   ventana; la confirmación de cierre nombra el circuito, enfoca Cancelar y deja
   identificable la acción que lo quita del proyecto.
 
+### Formularios de configuración — 2026-11-25
+
+- Configurar página y Opciones de exportación usan la cabecera con botón de cierre, las
+  tarjetas de campos relacionados y el pie estable. Aplicar conserva su momento; Cancelar
+  descarta el borrador y la × cierra sin tocar el documento. La cuadrícula de Configurar
+  página sigue siendo estado de vista.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su
