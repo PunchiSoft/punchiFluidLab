@@ -32,6 +32,12 @@ publicación.
   aspecto y el idioma se aplican en vivo, **Restaurar página** actúa sobre la página
   visible y **Listo** cierra; la navegación pasa sobre la página en una ventana estrecha.
 
+### Diálogos de archivos — 2026-11-25
+
+- Abrir, Guardar como y Exportar usan la cabecera con botón de cierre, la navegación y el
+  destino en el cuerpo y el pie estable. El aviso de sobrescritura ocupa una tarjeta propia
+  y nombrar otro destino vuelve a preguntar; Enter confirma, Escape y la × cancelan.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su

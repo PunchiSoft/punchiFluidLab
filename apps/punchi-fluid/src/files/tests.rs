@@ -627,3 +627,128 @@ fn an_export_from_the_dialog_prints_without_saving_the_document() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn changing_the_destination_after_the_warning_asks_again() {
+    let dir = scratch("overwrite-change");
+    std::fs::write(dir.join("uno.pfluid"), "{}").expect("the first existing document");
+    std::fs::write(dir.join("dos.pfluid"), "{}").expect("the second existing document");
+    let mut dialog = Dialog::open(Mode::SaveAs, dir.clone());
+    dialog.set_name("uno");
+    assert_eq!(
+        dialog.confirm(),
+        None,
+        "the first target asks before replacing"
+    );
+    assert!(
+        dialog
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("uno")),
+        "the question names the first target: {:?}",
+        dialog.error
+    );
+    dialog.set_name("dos");
+    assert_eq!(
+        dialog.confirm(),
+        None,
+        "a different target is a different question"
+    );
+    assert!(
+        dialog
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("dos")),
+        "the question names the new target: {:?}",
+        dialog.error
+    );
+    assert_eq!(
+        dialog.confirm(),
+        Some(Outcome::Save(dir.join("dos.pfluid"))),
+        "the confirmation only replaces the target it named"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_overwrite_question_is_shown_before_the_second_confirmation() {
+    let dir = scratch("overwrite-ui");
+    let target = dir.join("existe.pfluid");
+    std::fs::write(&target, "{}").expect("the existing document");
+    let mut window = window_with(Some(dir.join("base.pfluid")), Recents::at(None));
+    window.open_dialog(Mode::SaveAs);
+    if let Some(dialog) = window.dialog.as_mut() {
+        dialog.set_name("existe");
+    }
+    {
+        let mut harness = harness(&mut window);
+        harness
+            .get_by_role_and_label(egui::accesskit::Role::Button, "Save")
+            .hover();
+        harness.run();
+        harness
+            .get_by_role_and_label(egui::accesskit::Role::Button, "Save")
+            .click();
+        harness.run();
+        assert!(
+            harness.query_by_label_contains("replace").is_some(),
+            "the warning says the next click replaces the file"
+        );
+        harness
+            .get_by_role_and_label(egui::accesskit::Role::Button, "Save")
+            .click();
+        harness.run();
+    }
+    assert!(window.dialog.is_none(), "the second confirmation replaces");
+    assert_eq!(window.path.as_deref(), Some(target.as_path()));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_file_dialog_fits_a_narrow_window() {
+    let dir = scratch("narrow");
+    let mut window = window_with(Some(dir.join("base.pfluid")), Recents::at(None));
+    window.open_dialog(Mode::SaveAs);
+    {
+        let mut harness = harness(&mut window);
+        harness.set_size(egui::vec2(420.0, 420.0));
+        harness.run_steps(5);
+        let close = harness.get_by_label("Close");
+        assert!(close.rect().size().min_elem() >= 32.0);
+        assert!(close.rect().right() <= 420.0);
+        for label in ["Save", "Cancel"] {
+            let rect = harness.get_by_label(label).rect();
+            assert!(rect.height() >= 32.0, "{label} has a full height target");
+            assert!(
+                rect.left() >= 0.0
+                    && rect.right() <= 420.0
+                    && rect.top() >= 0.0
+                    && rect.bottom() <= 420.0,
+                "{label} fits the narrow window: {rect:?}"
+            );
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_long_entry_name_does_not_widen_the_dialog() {
+    let dir = scratch("long-name");
+    let long = format!("{}.pfluid", "a".repeat(180));
+    std::fs::write(dir.join(&long), "{}").expect("the long-named document");
+    let mut window = window_with(Some(dir.join("base.pfluid")), Recents::at(None));
+    window.open_dialog(Mode::Open);
+    {
+        let mut harness = harness(&mut window);
+        harness.set_size(egui::vec2(420.0, 420.0));
+        harness.run_steps(5);
+        let row = harness.get_by_label_contains(&long);
+        assert!(
+            row.rect().right() <= 420.0,
+            "the long row is truncated inside the dialog: {:?}",
+            row.rect()
+        );
+        assert!(harness.get_by_label("Close").rect().right() <= 420.0);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}

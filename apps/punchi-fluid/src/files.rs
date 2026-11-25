@@ -28,6 +28,9 @@ use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 
 use crate::Window;
+use crate::dialog::{
+    Action as DialogAction, ButtonRole, Dialog as SharedDialog, DialogResult, DialogStyle,
+};
 use crate::theme::{Theme, Tokens};
 
 /// Extension of a saved document, as the sheet format writes it.
@@ -139,6 +142,8 @@ pub(crate) struct Dialog {
     /// the whole overwrite prompt: the dialog says the file exists and what the next click
     /// does, so nothing is replaced without the reader having read the sentence.
     confirm_overwrite: bool,
+    /// The target the overwrite question was asked for; a different target asks again.
+    overwrite_target: Option<PathBuf>,
     /// Whether the name field still has to take the keyboard, on the first frame.
     focus_name: bool,
     /// Extension an export defaults to when the reader types none.
@@ -158,6 +163,7 @@ impl Dialog {
             name: String::new(),
             error: None,
             confirm_overwrite: false,
+            overwrite_target: None,
             focus_name: matches!(mode, Mode::SaveAs | Mode::Export),
             export_extension: "pdf",
             language: Language::English,
@@ -183,6 +189,7 @@ impl Dialog {
     fn set_name(&mut self, name: &str) {
         name.clone_into(&mut self.name);
         self.confirm_overwrite = false;
+        self.overwrite_target = None;
         self.error = None;
     }
 
@@ -191,6 +198,7 @@ impl Dialog {
         self.directory = directory;
         self.name.clear();
         self.confirm_overwrite = false;
+        self.overwrite_target = None;
         self.error = None;
         self.read_directory();
     }
@@ -284,19 +292,25 @@ impl Dialog {
             }
         };
         let target = self.directory.join(&file_name);
-        if target.exists() && !self.confirm_overwrite {
-            self.confirm_overwrite = true;
-            let verb = match write {
-                Write::Document => self.language.text("file.save"),
-                Write::Export => self.language.text("file.export"),
-            };
-            self.error = Some(
-                self.language
-                    .format("file.overwrite", &[("name", &file_name), ("verb", verb)]),
-            );
-            return None;
+        if target.exists() {
+            let confirmed = self.confirm_overwrite
+                && self.overwrite_target.as_deref() == Some(target.as_path());
+            if !confirmed {
+                self.confirm_overwrite = true;
+                self.overwrite_target = Some(target.clone());
+                let verb = match write {
+                    Write::Document => self.language.text("file.save"),
+                    Write::Export => self.language.text("file.export"),
+                };
+                self.error = Some(
+                    self.language
+                        .format("file.overwrite", &[("name", &file_name), ("verb", verb)]),
+                );
+                return None;
+            }
         }
         self.confirm_overwrite = false;
+        self.overwrite_target = None;
         Some(match write {
             Write::Document => Outcome::Save(target),
             Write::Export => Outcome::Export(target),
@@ -305,63 +319,66 @@ impl Dialog {
 
     /// Draws the dialog over the page and returns what it asked for, if anything.
     fn show(&mut self, context: &egui::Context, tokens: &Tokens) -> Option<Outcome> {
-        // The spec is explicit: `Enter` confirms and `Esc` cancels. `Esc` is answered before
-        // the window is drawn so the dialog leaves on the same frame.
-        if context.input(|input| input.key_pressed(egui::Key::Escape)) {
+        // `Enter` is read before the widgets run: when it activates a focused button the
+        // button answers, and this variable only confirms when nothing else did.
+        let entered = context.input(|input| input.key_pressed(egui::Key::Enter));
+        let style = DialogStyle::new(tokens);
+        let confirm_label = self.language.text(self.mode.confirm_label());
+        let cancel_label = self.language.text("file.cancel");
+        let dialog = SharedDialog {
+            id: egui::Id::new("files.dialog"),
+            title: self.language.text(self.mode.title()),
+            close_label: self.language.text("dialog.close"),
+            preferred_width: (tokens.unit * 30.0).max(480.0),
+            style,
+        };
+        let response = dialog.show(
+            context,
+            self,
+            |ui, dialog| dialog.contents(ui, style, tokens),
+            |_dialog| {
+                vec![
+                    DialogAction {
+                        label: confirm_label,
+                        value: true,
+                        role: ButtonRole::Primary,
+                        enabled: true,
+                        focus: false,
+                    },
+                    DialogAction {
+                        label: cancel_label,
+                        value: false,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                        focus: false,
+                    },
+                ]
+            },
+        );
+        if let Some(result) = response.inner {
+            return match result {
+                DialogResult::Action(true) => self.confirm(),
+                DialogResult::Action(false) | DialogResult::Close => Some(Outcome::Cancelled),
+            };
+        }
+        if response.should_close() {
             return Some(Outcome::Cancelled);
         }
-        // Read before the widgets run: an `Enter` that activates a focused button is the
-        // button's answer, and this variable only confirms when nothing else did.
-        let entered = context.input(|input| input.key_pressed(egui::Key::Enter));
-        let mut outcome = None;
-        let mut button_acted = false;
-        Self::block_page(context);
-        // A fixed frame, not an anchor: the dialog must keep its place under the pointer
-        // while the reader clicks it, and a fixed size keeps every frame the same layout.
-        let size = egui::vec2(tokens.unit * 30.0, tokens.unit * 26.0);
-        let position = context.screen_rect().center() - size * 0.5;
-        egui::Window::new(self.language.text(self.mode.title()))
-            .id(egui::Id::new("files.dialog"))
-            .order(egui::Order::Foreground)
-            .fixed_pos(position)
-            .fixed_size(size)
-            .collapsible(false)
-            .resizable(false)
-            .show(context, |ui| {
-                button_acted = self.contents(ui, tokens, &mut outcome);
-            });
-        // An `Enter` that a focused button already answered is that button's, not a second
-        // confirmation: otherwise a save over an existing file would replace it on the same
-        // key press that asked the question.
-        if outcome.is_none() && entered && !button_acted {
-            outcome = self.confirm();
+        if entered {
+            return self.confirm();
         }
-        outcome
+        None
     }
 
-    /// The dialog's body: the folder, its rows, the name field and the buttons. Returns
-    /// whether a button answered this frame, so `show` does not confirm twice.
-    fn contents(
-        &mut self,
-        ui: &mut egui::Ui,
-        tokens: &Tokens,
-        outcome: &mut Option<Outcome>,
-    ) -> bool {
-        let mut button_acted = false;
-        ui.label(
-            egui::RichText::new(self.language.format(
-                "file.folder",
-                &[("path", &self.directory.display().to_string())],
-            ))
-            .size(tokens.text_body)
-            .color(tokens.ink_dim),
+    /// The dialog's body: the folder, its rows, the name field and the warning.
+    fn contents(&mut self, ui: &mut egui::Ui, style: DialogStyle, tokens: &Tokens) {
+        let folder = self.language.format(
+            "file.folder",
+            &[("path", &self.directory.display().to_string())],
         );
+        ui.add(egui::Label::new(egui::RichText::new(folder).color(style.muted)).truncate());
         if let Some(error) = self.listing_error.as_deref() {
-            ui.label(
-                egui::RichText::new(error)
-                    .size(tokens.text_body)
-                    .color(tokens.ink),
-            );
+            ui.label(egui::RichText::new(error).color(style.error));
         }
         // The entries are taken out for the frame so the list can be drawn while the
         // dialog's own fields are mutated afterwards; they are put back before anything
@@ -376,7 +393,7 @@ impl Dialog {
             .show(ui, |ui| {
                 ui.set_width(ui.available_width());
                 if let Some(parent) = self.directory.parent().map(Path::to_path_buf) {
-                    let row = ui.add(egui::Button::new("..").frame(false));
+                    let row = ui.add(egui::Button::new("..").frame(false).truncate());
                     row.widget_info(|| {
                         egui::WidgetInfo::labeled(
                             egui::WidgetType::Button,
@@ -395,7 +412,7 @@ impl Dialog {
                         entry.name.clone()
                     };
                     let is_selected = entry.name == selected;
-                    let row = ui.add(egui::Button::selectable(is_selected, label));
+                    let row = ui.add(egui::Button::selectable(is_selected, label).truncate());
                     if row.clicked() {
                         if entry.folder {
                             navigate = Some(entry.path.clone());
@@ -408,7 +425,7 @@ impl Dialog {
         self.entries = entries;
         if let Some(directory) = navigate {
             self.enter(directory);
-            return true;
+            return;
         }
         if let Some(path) = chosen {
             // A click selects the document; `Enter` or the main button opens or overwrites
@@ -418,44 +435,22 @@ impl Dialog {
             }
         }
         if self.mode.write().is_some() {
-            self.name_field(ui, tokens);
+            self.name_field(ui, style, tokens);
         }
-        if let Some(error) = self.error.as_deref() {
-            ui.label(
-                egui::RichText::new(error)
-                    .size(tokens.text_small)
-                    .color(tokens.ink),
-            );
-        }
-        ui.horizontal(|ui| {
-            if ui
-                .button(self.language.text(self.mode.confirm_label()))
-                .clicked()
-            {
-                *outcome = self.confirm();
-                button_acted = true;
-            }
-            if ui.button(self.language.text("file.cancel")).clicked() {
-                *outcome = Some(Outcome::Cancelled);
-                button_acted = true;
-            }
-        });
-        button_acted
+        self.show_error(ui, style);
     }
 
     /// The name row of a dialog that writes: the field, its hint for the mode, and the
-    /// keyboard focus it takes on the first frame.
-    fn name_field(&mut self, ui: &mut egui::Ui, tokens: &Tokens) {
+    /// keyboard focus it takes on the first frame. A changed name forgets an answered
+    /// overwrite, because a different destination is a different question.
+    fn name_field(&mut self, ui: &mut egui::Ui, style: DialogStyle, tokens: &Tokens) {
         let hint = match self.mode {
             Mode::Export => self.language.text("file.hint_export"),
             Mode::Open | Mode::SaveAs => self.language.text("file.hint_document"),
         };
         ui.horizontal(|ui| {
-            let label = ui.label(
-                egui::RichText::new(self.language.text("file.name"))
-                    .size(tokens.text_body)
-                    .color(tokens.ink_dim),
-            );
+            let label =
+                ui.label(egui::RichText::new(self.language.text("file.name")).color(style.muted));
             let field = ui
                 .add(
                     egui::TextEdit::singleline(&mut self.name)
@@ -463,6 +458,11 @@ impl Dialog {
                         .desired_width(tokens.unit * 18.0),
                 )
                 .labelled_by(label.id);
+            if field.changed() {
+                self.confirm_overwrite = false;
+                self.overwrite_target = None;
+                self.error = None;
+            }
             if self.focus_name {
                 field.request_focus();
                 self.focus_name = false;
@@ -470,17 +470,25 @@ impl Dialog {
         });
     }
 
-    /// A transparent layer over the page: the dialog is modal, so the pointer finds nothing
-    /// to press behind it. It is not painted dim: the window is a panel over the page, and
-    /// the page stays readable while the reader chooses a file.
-    fn block_page(context: &egui::Context) {
-        let screen = context.screen_rect();
-        egui::Area::new(egui::Id::new("files.blocker"))
-            .order(egui::Order::Middle)
-            .fixed_pos(screen.min)
-            .show(context, |ui| {
-                ui.allocate_rect(screen, egui::Sense::click_and_drag());
-            });
+    /// The rejection or the overwrite question, the latter in its own bordered card so the
+    /// second confirmation is recognisable as a different step.
+    fn show_error(&self, ui: &mut egui::Ui, style: DialogStyle) {
+        let Some(error) = self.error.as_deref() else {
+            return;
+        };
+        if self.confirm_overwrite {
+            egui::Frame::new()
+                .fill(style.band)
+                .stroke(egui::Stroke::new(1.0_f32, style.error))
+                .corner_radius(8)
+                .inner_margin(12)
+                .show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    ui.label(egui::RichText::new(error).color(style.error));
+                });
+        } else {
+            ui.label(egui::RichText::new(error).color(style.error));
+        }
     }
 
     /// Puts a message in the dialog after a failed read or write, so the error is shown
