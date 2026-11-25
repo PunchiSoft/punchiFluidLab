@@ -6,6 +6,14 @@ publicación.
 
 ## Unreleased
 
+### Anatomía común de los diálogos — 2026-11-25
+
+- Las once ventanas comparten la misma anatomía: el título a tamaño de cuerpo —no el de una
+  página—, las acciones pegadas al borde derecho con la acción segura al final, y la acción
+  por defecto en acento, con el foco y `Enter` cuando ningún campo de texto tiene el teclado.
+  La pieza vive en `apps/punchi-fluid/src/dialog.rs`; la pregunta de cierre deja **Cancelar**
+  por defecto y ninguna ventana dibuja ya su fila a mano.
+
 ### Cierre sin guardar — 2026-11-25
 
 - **«Cerrar sin guardar» cierra la ventana.** El `Close` que la ventana pide vuelve como

@@ -8,6 +8,7 @@
 //! the document, its history or its modified mark. A built-in theme is a `Palette` seed
 //! through the same theme adapter (ADR 0042); the card shows the measured result.
 
+use crate::dialog;
 use eframe::egui;
 use punchi_fluid_i18n::Language;
 
@@ -212,7 +213,8 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new(data.language.text("preferences.title"))
+    let title = dialog::title(data.tokens, data.language.text("preferences.title"));
+    egui::Window::new(title)
         .id(egui::Id::new("window.preferences"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -259,20 +261,21 @@ fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on:
                         });
                 });
             });
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui
-                    .button(data.language.text("preferences.reset_page"))
-                    .clicked()
-                {
-                    chosen.action = Some(Action::ResetPage);
-                }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button(data.language.text("dialog.close")).clicked() {
-                        chosen.action = Some(Action::Close);
-                    }
-                });
-            });
+            ui.add_space(data.tokens.unit * 0.3);
+            if ui
+                .button(data.language.text("preferences.reset_page"))
+                .clicked()
+            {
+                chosen.action = Some(Action::ResetPage);
+            }
+            if dialog::actions(
+                ui,
+                data.tokens,
+                &[dialog::Action::default(data.language.text("dialog.close"))],
+            ) == Some(0)
+            {
+                chosen.action = Some(Action::Close);
+            }
         });
     chosen
 }

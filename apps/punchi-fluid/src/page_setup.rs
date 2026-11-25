@@ -7,6 +7,7 @@
 //! document's own `set_sheet` validates it, so a draft that leaves no drawing space is
 //! refused with a notice instead of a broken sheet.
 
+use crate::dialog;
 use eframe::egui;
 use punchi_fluid_doc::paper::{Margins, Orientation, PaperSize, Sheet};
 use punchi_fluid_i18n::Language;
@@ -137,7 +138,7 @@ fn page_setup_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new(language.text("page.title"))
+    egui::Window::new(dialog::title(tokens, language.text("page.title")))
         .id(egui::Id::new("window.page-setup"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -155,21 +156,23 @@ fn page_setup_window(
                         .color(tokens.ink_muted),
                 );
             }
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui
-                    .add_enabled(
-                        draft.sheet().is_some(),
-                        egui::Button::new(language.text("dialog.apply")),
-                    )
-                    .clicked()
-                {
-                    action = Some(Action::Apply);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
+            let can_apply = draft.sheet().is_some();
+            let close = if can_apply {
+                dialog::Action::new(language.text("dialog.close"))
+            } else {
+                dialog::Action::default(language.text("dialog.close"))
+            };
+            let actions = [
+                dialog::Action::default(language.text("dialog.apply")).enabled(can_apply),
+                close,
+            ];
+            if let Some(index) = dialog::actions(ui, tokens, &actions) {
+                action = Some(if index == 0 {
+                    Action::Apply
+                } else {
+                    Action::Close
+                });
+            }
         });
     action
 }

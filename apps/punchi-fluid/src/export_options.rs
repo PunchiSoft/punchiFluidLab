@@ -7,6 +7,7 @@
 //! The options are view state: an export prints the document and never edits it, so a change
 //! here is neither an undo nor a modified mark.
 
+use crate::dialog;
 use eframe::egui;
 use punchi_fluid_i18n::Language;
 
@@ -121,7 +122,7 @@ fn export_options_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new(language.text("export.title"))
+    egui::Window::new(dialog::title(tokens, language.text("export.title")))
         .id(egui::Id::new("window.export-options"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -169,15 +170,17 @@ fn export_options_window(
             });
             ui.add_space(tokens.unit * 0.4);
             ui.checkbox(&mut options.parts, language.text("export.parts"));
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(language.text("dialog.apply")).clicked() {
-                    action = Some(Action::Apply);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
+            let actions = [
+                dialog::Action::default(language.text("dialog.apply")),
+                dialog::Action::new(language.text("dialog.close")),
+            ];
+            if let Some(index) = dialog::actions(ui, tokens, &actions) {
+                action = Some(if index == 0 {
+                    Action::Apply
+                } else {
+                    Action::Close
+                });
+            }
         });
     action
 }

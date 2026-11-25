@@ -7,6 +7,7 @@
 //! only paints the findings and points at them. Selecting one selects the component or the
 //! pipe it names, which the sheet already highlights.
 
+use crate::dialog;
 use eframe::egui;
 use punchi_fluid_draw::surface::{Pt, Rect};
 use punchi_fluid_i18n::Language;
@@ -130,7 +131,7 @@ fn check_panel_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new(language.text("check.title"))
+    egui::Window::new(dialog::title(tokens, language.text("check.title")))
         .id(egui::Id::new("window.check-panel"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -162,15 +163,17 @@ fn check_panel_window(
                         }
                     });
             }
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(language.text("check.recheck")).clicked() {
-                    action = Some(Action::Recheck);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
+            let actions = [
+                dialog::Action::new(language.text("check.recheck")),
+                dialog::Action::default(language.text("dialog.close")),
+            ];
+            if let Some(index) = dialog::actions(ui, tokens, &actions) {
+                action = Some(if index == 0 {
+                    Action::Recheck
+                } else {
+                    Action::Close
+                });
+            }
         });
     action
 }

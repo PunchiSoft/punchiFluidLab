@@ -7,6 +7,7 @@
 //! undo, and the last circuit is refused. Both are document changes, never view state.
 
 use crate::Window;
+use crate::dialog;
 use crate::theme::Tokens;
 use eframe::egui;
 use punchi_fluid_i18n::Language;
@@ -127,7 +128,7 @@ fn circuit_dialog_window(
         CircuitDialog::Close { .. } => ("circuit.close_title", "circuit.close"),
     };
     let (title, apply_label) = (language.text(title), language.text(apply_label));
-    egui::Window::new(title)
+    egui::Window::new(dialog::title(tokens, title))
         .id(egui::Id::new("window.circuit-dialog"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -159,15 +160,23 @@ fn circuit_dialog_window(
                     );
                 }
             }
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(apply_label).clicked() {
-                    answer = Some(true);
-                }
-                if ui.button(language.text("circuit.cancel")).clicked() {
-                    answer = Some(false);
-                }
-            });
+            // A rename is the expected answer; a close throws work away, so Cancel is the
+            // one that takes the focus and `Enter` there.
+            let renaming = matches!(dialog, CircuitDialog::Rename { .. });
+            let apply = if renaming {
+                dialog::Action::default(apply_label)
+            } else {
+                dialog::Action::new(apply_label)
+            };
+            let cancel = language.text("circuit.cancel");
+            let cancel = if renaming {
+                dialog::Action::new(cancel)
+            } else {
+                dialog::Action::default(cancel)
+            };
+            if let Some(index) = dialog::actions(ui, tokens, &[apply, cancel]) {
+                answer = Some(index == 0);
+            }
         });
     answer
 }

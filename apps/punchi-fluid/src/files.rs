@@ -28,6 +28,7 @@ use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 
 use crate::Window;
+use crate::dialog;
 use crate::theme::{Theme, Tokens};
 
 /// Extension of a saved document, as the sheet format writes it.
@@ -320,7 +321,7 @@ impl Dialog {
         // while the reader clicks it, and a fixed size keeps every frame the same layout.
         let size = egui::vec2(tokens.unit * 30.0, tokens.unit * 26.0);
         let position = context.screen_rect().center() - size * 0.5;
-        egui::Window::new(self.language.text(self.mode.title()))
+        egui::Window::new(dialog::title(tokens, self.language.text(self.mode.title())))
             .id(egui::Id::new("files.dialog"))
             .order(egui::Order::Foreground)
             .fixed_pos(position)
@@ -427,19 +428,18 @@ impl Dialog {
                     .color(tokens.ink),
             );
         }
-        ui.horizontal(|ui| {
-            if ui
-                .button(self.language.text(self.mode.confirm_label()))
-                .clicked()
-            {
-                *outcome = self.confirm();
-                button_acted = true;
-            }
-            if ui.button(self.language.text("file.cancel")).clicked() {
-                *outcome = Some(Outcome::Cancelled);
-                button_acted = true;
-            }
-        });
+        let actions = [
+            dialog::Action::default(self.language.text(self.mode.confirm_label())),
+            dialog::Action::new(self.language.text("file.cancel")),
+        ];
+        if let Some(index) = dialog::actions(ui, tokens, &actions) {
+            button_acted = true;
+            *outcome = if index == 0 {
+                self.confirm()
+            } else {
+                Some(Outcome::Cancelled)
+            };
+        }
         button_acted
     }
 

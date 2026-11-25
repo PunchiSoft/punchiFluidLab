@@ -471,6 +471,45 @@ fn closing_without_saving_does_not_cancel_the_close_it_asked_for() {
 }
 
 #[test]
+fn the_close_question_focuses_cancel_and_enter_cancels() {
+    let mut window = window_with(None, SafetyCopy::at(None));
+    window.document = valve_document();
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, close_input());
+    {
+        let mut harness = panel_harness(&mut window);
+        assert!(
+            harness.get_by_label("Cancel").is_focused(),
+            "the safe answer is where the keyboard lands"
+        );
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+    }
+    assert_eq!(window.lifecycle.close, Close::Idle, "Cancel cancels");
+    assert!(
+        window.lifecycle.panel.is_none(),
+        "Enter answers the question"
+    );
+    assert!(window.is_modified(), "Cancel keeps the work");
+}
+
+#[test]
+fn the_close_question_ends_with_cancel_at_the_right_edge() {
+    let mut window = window_with(None, SafetyCopy::at(None));
+    window.document = valve_document();
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, close_input());
+    let harness = panel_harness(&mut window);
+    let save = harness.get_by_label("Save and close").rect();
+    let discard = harness.get_by_label("Close without saving").rect();
+    let cancel = harness.get_by_label("Cancel").rect();
+    assert!(
+        save.right() < discard.right() && discard.right() < cancel.right(),
+        "the actions end with the safe one"
+    );
+}
+
+#[test]
 fn save_and_close_without_a_path_waits_for_the_save_dialog() {
     let dir = scratch("close-nopath");
     let mut window = window_with(None, SafetyCopy::at(None));

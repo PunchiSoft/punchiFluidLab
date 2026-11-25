@@ -889,6 +889,13 @@ tokens for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`:
 hardcoded colour or pixel size in a widget is a bug, and the only literals in the
 application are the fallback palette and the forced palettes used to test light and dark.
 
+**A dialog is not a page.** Its title is drawn at body size, never at the display size a
+page title takes; a separator closes the body; and the actions end against the right edge,
+the safe one last — **Cancelar** or **Cerrar** — so a click aimed at the edge answers
+safely. The default action carries the accent, takes the focus when the window opens and
+runs on `Enter`, while a text field keeps its own `Enter`. The one helper is
+`apps/punchi-fluid/src/dialog.rs`, and no window draws its own row.
+
 A colour that does not reach its criterion against the surface is shifted just enough to
 reach it (`ensureContrast`), because a desktop may hand the application an accent that
 disappears on its own window colour.

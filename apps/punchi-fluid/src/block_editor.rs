@@ -7,6 +7,7 @@
 //! The panel edits a copy and only touches the document when the reader applies; the change
 //! is one undo and the page the window draws follows it.
 
+use crate::dialog;
 use eframe::egui;
 use punchi_fluid_doc::title_block::{BlockPosition, ContentModel, TitleBlock, TitleField};
 use punchi_fluid_i18n::Language;
@@ -84,7 +85,7 @@ fn block_editor_window(
         .show(context, |ui| {
             ui.allocate_rect(screen, egui::Sense::click_and_drag());
         });
-    egui::Window::new(language.text("block.title"))
+    egui::Window::new(dialog::title(tokens, language.text("block.title")))
         .id(egui::Id::new("window.block-editor"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -103,15 +104,17 @@ fn block_editor_window(
                         fields(ui, tokens, block, language);
                     });
             });
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(language.text("dialog.apply")).clicked() {
-                    action = Some(Action::Apply);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
+            let actions = [
+                dialog::Action::default(language.text("dialog.apply")),
+                dialog::Action::new(language.text("dialog.close")),
+            ];
+            if let Some(index) = dialog::actions(ui, tokens, &actions) {
+                action = Some(if index == 0 {
+                    Action::Apply
+                } else {
+                    Action::Close
+                });
+            }
         });
     action
 }

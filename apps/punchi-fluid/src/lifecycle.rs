@@ -24,7 +24,7 @@ use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::safety::SafetyCopy;
 
-use crate::{Window, files, inspector, ribbon, sidebar, theme, view};
+use crate::{Window, dialog, files, inspector, ribbon, sidebar, theme, view};
 
 /// How often the window rewrites the safety copy while the document has unsaved changes.
 const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5);
@@ -462,7 +462,7 @@ impl Window {
             .show(context, |ui| {
                 clicked_out = ui.allocate_rect(screen, egui::Sense::click()).clicked();
             });
-        egui::Window::new(language.text("about.title"))
+        egui::Window::new(dialog::title(&tokens, language.text("about.title")))
             .id(egui::Id::new("lifecycle.about"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -534,7 +534,8 @@ impl Window {
                         .color(tokens.ink_muted),
                 );
                 ui.add_space(tokens.unit * 0.6);
-                if ui.button(language.text("dialog.close")).clicked() {
+                let close_action = dialog::Action::default(language.text("dialog.close"));
+                if dialog::actions(ui, &tokens, &[close_action]) == Some(0) {
                     close = true;
                 }
             });
@@ -553,7 +554,7 @@ impl Window {
         let tokens = self.theme.tokens.clone();
         let language = self.language;
         let mut close = false;
-        egui::Window::new(language.text("licence.title"))
+        egui::Window::new(dialog::title(&tokens, language.text("licence.title")))
             .id(egui::Id::new("lifecycle.licence"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -579,7 +580,8 @@ impl Window {
                         );
                     });
                 ui.add_space(tokens.unit * 0.4);
-                if ui.button(language.text("dialog.close")).clicked() {
+                let close_action = dialog::Action::default(language.text("dialog.close"));
+                if dialog::actions(ui, &tokens, &[close_action]) == Some(0) {
                     close = true;
                 }
             });
@@ -604,7 +606,7 @@ impl Window {
         let mut answer = None;
         // A fixed size keeps the question under the same pointer while the reader answers it:
         // an auto-sized window narrows while its long line wraps, and the buttons move with it.
-        egui::Window::new(language.text("unsaved.title"))
+        egui::Window::new(dialog::title(&tokens, language.text("unsaved.title")))
             .id(egui::Id::new("lifecycle.close"))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -618,17 +620,18 @@ impl Window {
                         .color(tokens.ink),
                 );
                 ui.add_space(tokens.unit * 0.6);
-                ui.horizontal(|ui| {
-                    if ui.button(language.text("unsaved.save_close")).clicked() {
-                        answer = Some(CloseAnswer::Save);
-                    }
-                    if ui.button(language.text("unsaved.close_without")).clicked() {
-                        answer = Some(CloseAnswer::Discard);
-                    }
-                    if ui.button(language.text("unsaved.cancel")).clicked() {
-                        answer = Some(CloseAnswer::Cancel);
-                    }
-                });
+                let actions = [
+                    dialog::Action::new(language.text("unsaved.save_close")),
+                    dialog::Action::new(language.text("unsaved.close_without")),
+                    dialog::Action::default(language.text("unsaved.cancel")),
+                ];
+                if let Some(index) = dialog::actions(ui, &tokens, &actions) {
+                    answer = Some(match index {
+                        0 => CloseAnswer::Save,
+                        1 => CloseAnswer::Discard,
+                        _ => CloseAnswer::Cancel,
+                    });
+                }
             });
         if let Some(answer) = answer {
             self.answer_close(answer, context);

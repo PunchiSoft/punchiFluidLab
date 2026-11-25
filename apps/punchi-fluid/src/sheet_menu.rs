@@ -16,6 +16,7 @@ use punchi_fluid_draw::Pt;
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
+use crate::dialog;
 use crate::layout::LayoutMode;
 use crate::shell::Drawer;
 use crate::view;
@@ -489,7 +490,7 @@ impl Window {
             });
         let mut close = false;
         let title = self.language.text(kind.title());
-        egui::Window::new(title)
+        egui::Window::new(dialog::title(&tokens, title))
             .id(egui::Id::new(kind.id()))
             .order(egui::Order::Foreground)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -514,12 +515,14 @@ impl Window {
                     );
                 }
                 ui.add_space(tokens.unit);
-                ui.separator();
-                ui.horizontal(|ui| {
-                    if ui.button(self.language.text("dialog.close")).clicked() {
-                        close = true;
-                    }
-                });
+                if dialog::actions(
+                    ui,
+                    &tokens,
+                    &[dialog::Action::default(self.language.text("dialog.close"))],
+                ) == Some(0)
+                {
+                    close = true;
+                }
             });
         if close {
             self.mockups.close();
