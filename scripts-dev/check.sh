@@ -24,6 +24,9 @@ cargo fmt --all --check
 # A malformed skill frontmatter disappears from the model catalog without failing a build;
 # the lint and its fixtures make that loud.
 ./scripts-dev/test-check-skills.sh
+# "Signed" must mean the owner's SSH signature over the manifest and the hashes it pins,
+# not a `status: complete` line: the lint runs in check-docs.sh, its fixtures run here.
+./scripts-dev/test-check-signed-symbols.sh
 # `cargo` prevents cycles, not layering: the graph, the one home of `unsafe` and the file
 # budget are enforced here.
 ./scripts-dev/check-architecture.sh

@@ -321,6 +321,15 @@ if [[ -z ${ROOT:-} ]]; then
     fi
 fi
 
+# The signed symbols are checked on every branch, documentation-only ones included: a
+# symbol's definition, review and captures are data, and a pull request that edits one
+# must not pass on the `docs` classifier alone.
+if [[ -z ${ROOT:-} ]]; then
+    if ! ./scripts-dev/check-signed-symbols.sh; then
+        status=1
+    fi
+fi
+
 if ((status == 0)); then
     echo "check-docs: the workspace documents match Cargo.toml"
     echo "check-docs: the documentation index, links and ADRs are complete"
