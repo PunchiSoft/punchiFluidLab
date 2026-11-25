@@ -7,13 +7,15 @@ use super::{Command, Ribbon};
 
 impl Ribbon {
     /// Whether the command may run in the current state. The transport is the demo: it
-    /// starts stopped, so Pausa, Paso, Hasta cambio and Detener wait for Iniciar. Guardar is
+    /// starts stopped, so Pausa, Paso and Hasta cambio wait for Iniciar; Detener also works
+    /// from a paused model, because the model is still there to be thrown away. Guardar is
     /// always live: without a path the window asks for one. A control whose command is not
     /// here yet is not a command at all and is painted disabled.
     pub(super) fn enabled(&self, command: Command) -> bool {
         match command {
             Command::Start => !self.running,
-            Command::Pause | Command::Stop => self.running,
+            Command::Pause => self.running,
+            Command::Stop => self.running || self.simulation,
             Command::Step | Command::UntilChange => self.can_step,
             Command::Delete
             | Command::Rotate

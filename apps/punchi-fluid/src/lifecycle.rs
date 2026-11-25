@@ -296,6 +296,7 @@ impl Window {
             model: None,
             model_revision: 0,
             running: false,
+            simulation: false,
             show_block: true,
             hand_mode: false,
             zoom_window_armed: false,

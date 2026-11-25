@@ -12,6 +12,7 @@ use punchi_fluid_i18n::Language;
 
 use super::hint;
 use super::model::{Item, TABS};
+use super::transport::mode_key;
 use super::{Command, Palette, Ribbon};
 
 #[test]
@@ -367,6 +368,52 @@ fn the_transport_follows_the_state() {
     click(&mut ribbon, "Stop");
     assert_eq!(ribbon.take(), Some(Command::Stop));
     assert_eq!(ribbon.last, "Stop");
+}
+
+#[test]
+fn the_tab_row_transport_starts_and_stops() {
+    let mut ribbon = Ribbon::new();
+    click(&mut ribbon, "Start run");
+    assert_eq!(ribbon.take(), Some(Command::Start));
+    assert!(ribbon.running);
+    click(&mut ribbon, "Stop run");
+    assert_eq!(ribbon.take(), Some(Command::Stop));
+    assert!(!ribbon.running);
+}
+
+#[test]
+fn the_collapsed_ribbon_keeps_the_transport_keyboard_reachable() {
+    let mut ribbon = Ribbon::new();
+    let palette = palette();
+    {
+        let mut harness = harness(&mut ribbon, &palette, &[]);
+        harness.get_by_label("Start run").focus();
+        harness.run();
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+    }
+    assert!(ribbon.running, "Enter on the compact Start starts the run");
+}
+
+#[test]
+fn stop_waits_for_a_run_or_a_pause() {
+    let mut ribbon = Ribbon::new();
+    assert!(!ribbon.enabled(Command::Stop), "nothing to stop");
+    ribbon.running = true;
+    assert!(ribbon.enabled(Command::Stop), "a run can be stopped");
+    ribbon.running = false;
+    ribbon.simulation = true;
+    assert!(
+        ribbon.enabled(Command::Stop),
+        "a paused simulation can be stopped"
+    );
+}
+
+#[test]
+fn the_mode_word_follows_the_real_state() {
+    assert_eq!(mode_key(false, false), "ribbon.transport_state.editing");
+    assert_eq!(mode_key(true, true), "ribbon.transport_state.running");
+    assert_eq!(mode_key(false, true), "ribbon.transport_state.paused");
 }
 
 /// Opens the margins gallery, or the collapsed group's flyout, which lists its cards.

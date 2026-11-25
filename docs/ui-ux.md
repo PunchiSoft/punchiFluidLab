@@ -73,8 +73,9 @@ width to work) while the transport stays visible beside it, and at 125 % scaling
 recorded case, not an exception. The ribbon height does not
 change (121 px at the default unit), so the sheet below keeps its room and the A4 page is
 not covered. **Today** the window applies that one breakpoint and keeps the catalog at
-248 px and the right panels at 360 px; the three modes of *The window adapts* below are
-target (the owner's staged plan, stage 6).
+248 px and the right panels at 360 px; the tab row carries the mode word and the compact
+Start/pause, Step and Stop outside the Simular tab, and the full transport stays in Simular.
+The three modes of *The window adapts* below are target (the owner's staged plan, stage 6).
 
 ### 1. Ribbon (top)
 
@@ -107,10 +108,11 @@ Depth comes from the palette, never from a new hue.
   same presentation as Nuevo, Abrir and Guardar: the six transport actions and the three
   speeds are what the hand goes to while a model runs, so they are not small menu rows. The
   speed in force is marked on its button.
-- **No command appears twice.** The **Simular** tab owns start, pause, step, hasta cambio,
-  stop, reset, the speed and the mode; no other tab repeats them. There is no separate
-  "animate" action: being in simulation mode *is* the animation, and its commands are the
-  transport's.
+- **The Simular tab owns the full transport; the tab row carries its compact form.** Start,
+  pause, step and stop are also in the tab row when another tab is open, with the same
+  command table, enabled rules and shortcuts, so a lesson does not need a tab switch; the
+  full group keeps reset, speed and until-change. There is no separate "animate" action:
+  being in simulation mode *is* the animation, and its commands are the transport's.
 - **A list of circuits is not a ribbon command.** The strip at the foot of the sheet owns the
   list — its order, switching, closing and renaming — and the ribbon offers only the commands
   that act on the circuit in view. Today the strip shows one tab per circuit, the home
@@ -186,8 +188,10 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 
 
 The transport is the **Simular** tab. The shortcuts stay, so running the model still never
-needs a pointer or a tab switch; the tab is where the commands are found. The speed chosen
-is marked and the state is a word, never colour alone.
+needs a pointer or a tab switch; the tab is where the full commands are found, and the tab
+row keeps the compact Start/pause, Step and Stop while another tab is open. The speed chosen
+is marked and the state is a word (Editing, Running or Paused), never colour alone. The
+until-change pass is still synchronous, so its transient state has no stable word.
 
 **The Cajetín tab and its docked editor edit one circuit while the sheet stays visible.**
 The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular.
