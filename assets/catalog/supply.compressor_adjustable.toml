@@ -4,8 +4,9 @@
 # Compressor with an adjustable delivery: X11400 plus the adjustability arrow.
 #
 # The body is the compressor's: the outline triangle of a gas, its point at the delivery, the
-# shaft bar at the drive side (RF038), the intake below (port 1) and the delivery above
-# (port 2, RF052). The arrow is the one difference, and the standard fixes where it goes:
+# intake below (port 1) and the delivery above (port 2, RF052). X11400 prints no shaft bar;
+# the previous record read one from another symbology, and the owner's 2026-11-25 correction
+# removed it. The arrow is the one difference, and the standard fixes where it goes:
 # on the **diameter** of the machine's circle (RF040), with a filled head, and it may be
 # longer than the circle it crosses.
 #
@@ -43,10 +44,6 @@ points = [0.64, 0.45, 0.28]
 kind = "polygon"
 points = [0.64, 0.17, 0.736, 0.334, 0.544, 0.334]
 filled = false
-
-[[symbol]]
-kind = "rect"
-points = [0.08, 0.405, 0.28, 0.09]
 
 [[symbol]]
 kind = "line"

@@ -3,16 +3,16 @@ Rect { rect: Rect { min: Pt { x: 2.3999999, y: 11.2 }, max: Pt { x: 20.0, y: 28.
 Rect { rect: Rect { min: Pt { x: 20.0, y: 11.2 }, max: Pt { x: 37.6, y: 28.8 } }, corner: 0.6, fill: None, stroke: Some(Stroke { width: 0.42000002, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
 Line { points: [Pt { x: 6.8, y: 40.0 }, Pt { x: 6.8, y: 28.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Circle { centre: Pt { x: 6.8, y: 40.0 }, radius: 1.4, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
-Text { at: Pt { x: -2.1599998, y: 32.7 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
-Text { at: Pt { x: -2.1599998, y: 32.7 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
+Text { at: Pt { x: 2.9000003, y: 32.7 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 2.9000003, y: 32.7 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
 Line { points: [Pt { x: 6.8, y: 0.0 }, Pt { x: 6.8, y: 11.2 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Circle { centre: Pt { x: 6.8, y: 0.0 }, radius: 1.4, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
-Text { at: Pt { x: 15.76, y: 7.3 }, text: "2", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
-Text { at: Pt { x: 15.76, y: 7.3 }, text: "2", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
+Text { at: Pt { x: 2.9000003, y: 7.3 }, text: "2", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 2.9000003, y: 7.3 }, text: "2", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
 Line { points: [Pt { x: 15.599999, y: 40.0 }, Pt { x: 15.599999, y: 28.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Circle { centre: Pt { x: 15.599999, y: 40.0 }, radius: 1.4, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
-Text { at: Pt { x: 24.56, y: 32.7 }, text: "3", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
-Text { at: Pt { x: 24.56, y: 32.7 }, text: "3", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
+Text { at: Pt { x: 19.5, y: 32.7 }, text: "3", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 19.5, y: 32.7 }, text: "3", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
 Line { points: [Pt { x: 24.4, y: 27.744 }, Pt { x: 24.4, y: 12.256 }], stroke: Stroke { width: 0.35, colour: Colour { r: 130, g: 130, b: 130 }, class: Working } }
 Polygon { points: [Pt { x: 24.4, y: 12.256 }, Pt { x: 25.70944, y: 14.367999 }, Pt { x: 23.090559, y: 14.367999 }], fill: Some(Colour { r: 130, g: 130, b: 130 }), stroke: None }
 Line { points: [Pt { x: 33.199997, y: 28.8 }, Pt { x: 33.199997, y: 25.279999 }], stroke: Stroke { width: 0.35, colour: Colour { r: 130, g: 130, b: 130 }, class: Working } }

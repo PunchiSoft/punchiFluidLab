@@ -18,7 +18,7 @@ mod line_class;
 mod port;
 
 pub use line_class::LineClass;
-pub use port::{Port, Primitive, PrimitiveKind};
+pub use port::{NumeralSide, Port, Primitive, PrimitiveKind};
 
 /// Version of the file format understood by this build.
 ///

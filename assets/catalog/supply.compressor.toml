@@ -4,14 +4,15 @@
 # Compressor: the machine that makes the compressed air, not the air itself.
 #
 # ISO 1219-1 draws it as X11400: a circle with the **outline** triangle of a gas, the
-# triangle's point at the delivery, the **shaft bar** at the drive side (the left, RF038) and
-# the two connections the standard requires (RF052): the intake below, port 1, open to the
-# atmosphere, and the delivery above, port 2. A filled triangle is the hydraulic source
-# (RF060), so the outline is the medium and not a style choice.
+# triangle's point at the delivery and the two connections the standard requires (RF052): the
+# intake below, port 1, open to the atmosphere, and the delivery above, port 2. A filled
+# triangle is the hydraulic source (RF060), so the outline is the medium and not a style
+# choice.
 #
 # The point of the triangle touches the circle where the delivery leaves, and the base sits a
-# little above the centre. The shaft bar is drawn, but the model has no mechanical domain: it
-# is the machine's drive, not a hose connection.
+# little above the centre. The previous record read a **shaft bar** into X11400; the owner's
+# 2026-11-25 correction identified it as a visual mark of another symbology, not part of the
+# standard, and removed it. It is a correction, not a deviation.
 #
 # A compressor alone is not a usable air line: the air it delivers is wet and its pressure
 # wanders. The service unit (`preparation.service_unit`) is what makes it usable.
@@ -40,7 +41,7 @@ position = [0.64, 0.858]
 type = "supply"
 pressure_bar = 4.0
 
-# The circle, centred to leave the shaft bar its room on the left of the 20 mm box.
+# The circle, centred in the 20 mm box.
 [[symbol]]
 kind = "circle"
 points = [0.64, 0.45, 0.28]
@@ -51,12 +52,6 @@ points = [0.64, 0.45, 0.28]
 kind = "polygon"
 points = [0.64, 0.17, 0.736, 0.334, 0.544, 0.334]
 filled = false
-
-# The drive shaft: the thick bar of a machine at the drive side, at mid-height (X11400,
-# RF038). It is a mark, not a port: nothing in the model connects to it.
-[[symbol]]
-kind = "rect"
-points = [0.08, 0.405, 0.28, 0.09]
 
 [[symbol]]
 kind = "line"

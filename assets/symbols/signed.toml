@@ -24,10 +24,12 @@ toml = "assets/catalog/cylinder.double_acting_32_200.toml"
 captures = ["assets/symbols/review/cylinder.double_acting_32_200-300.png", "assets/symbols/review/cylinder.double_acting_32_200-light.png", "assets/symbols/review/cylinder.double_acting_32_200-dark.png"]
 sha256_toml = "04d61d2b6cff2957627349209dc279de8aadeb8c31e59cd656be6a1726520543"
 sha256_review = "620d1be3f97680a94906857586a5a01405ef8bc17882397fed3b4c615dd17a10"
-sha256_300 = "5aaa3e045eaee0be4e9c9f678607403d484e9f9eece19273547aeb85460e6f92"
-sha256_light = "e7420f7cea8c9f917a08029ff32a2d5d5af6b7f19978fb6224237ee095892d36"
-sha256_dark = "2c99085f74835db10c5813262d4ef4486f450218ed0e22315cbf9ec5d7ae3c5c"
-commit = "b6db7977cd9a94c5ba2a32ad34a85ddc8e644a70"
+sha256_300 = "c83e1df23b945b52160b7875ceb096c52f992d53cabbd5295ddf9879ddfaf531"
+sha256_light = "4f8b670042381948c9dd3fcf0496f750f941376a4b8d28162c827cec971c3cca"
+sha256_dark = "ccf7c191af2ccf9212add52fc8977be5e22b15fb75b2a9a395714f44f07cb5f2"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "cylinder.single_acting_20_100"
@@ -38,10 +40,12 @@ toml = "assets/catalog/cylinder.single_acting_20_100.toml"
 captures = ["assets/symbols/review/cylinder.single_acting_20_100-300.png", "assets/symbols/review/cylinder.single_acting_20_100-light.png", "assets/symbols/review/cylinder.single_acting_20_100-dark.png"]
 sha256_toml = "ab4ab05e731ea6636b7ffc5e4afa6ad89e5323293dbd0c69f9d1c1066e426fc0"
 sha256_review = "1c2c9c7d3cf7c1d83a947bf404dd0ef027b1c74b2584f924166f64e697a51b12"
-sha256_300 = "546a6981cc591c7ac7351786b9fda4278fe312bfe4672d374a28e45f57c8bb7e"
-sha256_light = "f99ba118e3ff8d439a31c5c2b624f37245fbd3c9e0acf58abcb8302b9be9bed8"
-sha256_dark = "8f97f3adf2580ad5a0217c2239238116c8230d4fdf7321f7eb9fc66dbebd16b8"
-commit = "b6db7977cd9a94c5ba2a32ad34a85ddc8e644a70"
+sha256_300 = "56e24d64b4896ebfb8c3ae51bca7a35f03103b99c278afee9406e64f8436e963"
+sha256_light = "75f6832e4d420b5d2a45889a6479165a04297109a5597f9cf1bd037d6ae28422"
+sha256_dark = "f7402fffd1d46f5d11b64ddd0001a5e743299c4a3b4558f5dc141f905de04437"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "filter.air"
@@ -55,7 +59,9 @@ sha256_review = "7108f08e727f10cd2847b383c30e1c8ddd985b4ad65f8a3f7e4ad3d6a7ab38a
 sha256_300 = "4f366515b5abebeae213e1e8df7e834eef45aca2911ec61903df8bd0a1edd8cc"
 sha256_light = "c18629d99c6905eddd83843ea65f28ac7029f0cf8613a3c1a7ae6ab7ef4d3ac8"
 sha256_dark = "f02270511e1037d1c565075ec2605dfb32fb33ebd08660b43b672239615cef68"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "filter.air_manual_drain"
@@ -69,7 +75,9 @@ sha256_review = "cd7e77e2a3ff9cdb1bb082a7836a0e71c7a1898fd03ec389321c96b2aba1a5d
 sha256_300 = "2cc1a823aa0d5845e7a0aecff831891f62a773feb1fb1ce321e32b2871869317"
 sha256_light = "c3318f2f0b063adab99aed107ad97382d0d7219736b67825238aece3defffec0"
 sha256_dark = "0c682d9b2eb83b5d9af2edc8d4edb09f0bb4efbfa10885f6c5ac0106ab33d94a"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "lubricator.oil"
@@ -83,7 +91,9 @@ sha256_review = "b1719f9ff9e89e58e195f5a46cf0615214bc668ff4392daa479f9cdce16734c
 sha256_300 = "4c173d54e569c0c39cd6acbc0ca38696803d0243ce9f8f456286ec36c443e89a"
 sha256_light = "e661f5af9ca1d59d4bb17c74ea9711145fef694913c0192fd27d36b9ce79b4bb"
 sha256_dark = "9404b4d51d8bc7975e9293b7004e59217e5daddf333adacfaa6e6cdf3796c977"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "plug.blind"
@@ -120,12 +130,14 @@ previous_revision = 0
 review = "assets/symbols/review/supply.compressor.md"
 toml = "assets/catalog/supply.compressor.toml"
 captures = ["assets/symbols/review/supply.compressor-300.png", "assets/symbols/review/supply.compressor-light.png", "assets/symbols/review/supply.compressor-dark.png"]
-sha256_toml = "26c3284681856be945349836b9f4ccd8890b51b549113a51053bb114bc7982eb"
-sha256_review = "760a4ce87191570d2e7547dc9b8b367898adec6d17088200916669340bdad89d"
-sha256_300 = "7e1ab5bf1dfaca7d945647fbbb04c63e76bc82cc02b2622228d8c5befafa477a"
-sha256_light = "f3b7e45da2361e4c32c11e47220dece0588e0696a8bcd7ee6bfe520dbd429006"
-sha256_dark = "bd85623282fb0d9b14e3c293f859c218e2fb528c645c8e249199fd39e2aa9cc1"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+sha256_toml = "b5c66ee399a95c80e9e6e1bc50791aeafa6e4f5bfcbdf15d10aac67e7879301a"
+sha256_review = "386c0732a6f086036f49684836ba9ad60715d7da52378bdb4ed196b7655b724f"
+sha256_300 = "45afa1dd30c1649cd2ec4d3869d7496a59a7a1e1e7f924c6c23b6af99da55bdd"
+sha256_light = "d163f0ce94019a96ee311dc2927e8e26bb5e3dd85f239376f1f443ef115c020b"
+sha256_dark = "699b894497c271f4235632e3fdcea2c1a72a3773256e227acee684b67e94865b"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "supply.compressor_adjustable"
@@ -134,12 +146,14 @@ previous_revision = 0
 review = "assets/symbols/review/supply.compressor_adjustable.md"
 toml = "assets/catalog/supply.compressor_adjustable.toml"
 captures = ["assets/symbols/review/supply.compressor_adjustable-300.png", "assets/symbols/review/supply.compressor_adjustable-light.png", "assets/symbols/review/supply.compressor_adjustable-dark.png"]
-sha256_toml = "e51cc97d0ce33489ddeef7146eeaa062c5bbb6121b382ad98217ce2d692c7078"
-sha256_review = "ca5afc942a2c5d793c8f15e46d42effdbe9fe3ccf5f9abc7edc6557e319f3c16"
-sha256_300 = "5d559762befe5185fe7a79b19e7518b62403e2a70d2ea378de6a79b7153e90a8"
-sha256_light = "fcf5b9c47bba4ff1929535ee4604d480f32335a2278157a46669b1b33de1dda4"
-sha256_dark = "eb9a8dc6560f0b308c7c48d2286ca5ac5ecc446de4aec2c264551e0961172ad7"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+sha256_toml = "77f61f5794bf9b64cde9bc04ccb14823ee0319622e815c3a6d406d0ab972189c"
+sha256_review = "1c70dce615d0bd7032a4ab386e9284671f44cd56f459234f0b44eb35ddec3d38"
+sha256_300 = "865b548fcef86257a3e92f02e1751b51d74133353390347319300947571ff8e3"
+sha256_light = "2cbf62ad4abebedde981cecf2f231edde47551950647ecfb843d457b6a29940a"
+sha256_dark = "51ebcaee17b37a7e7c10959cad23e37846f15e9d60268f57fa50a38f7f6a8115"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "supply.network"
@@ -148,12 +162,14 @@ previous_revision = 0
 review = "assets/symbols/review/supply.network.md"
 toml = "assets/catalog/supply.network.toml"
 captures = ["assets/symbols/review/supply.network-300.png", "assets/symbols/review/supply.network-light.png", "assets/symbols/review/supply.network-dark.png"]
-sha256_toml = "a3f8134e84b2d4e0f1d4e1489af73059303587c2588038deb0251d348ad406b4"
-sha256_review = "aaea32bb3468a0cc7b5f5174d98bd14deacc266281eb9c0e07ab3df7166b6955"
-sha256_300 = "ba0d51330d8bab82982739095ab799a935a6ad8a683f710c8b4d5976b8010bb7"
-sha256_light = "6d5382bab302b7bbed2876cd7d9d58537e6dbd3332e1f069a3682e73f2af8bf2"
-sha256_dark = "c128d2dada16eca64981edf01593404f2a6d4a4c11f94af8b981badf55ff7a7b"
-commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+sha256_toml = "daf882a4174961c59e35dea1bd225d1df3dd5856ef5d4e4791bba18154cf4654"
+sha256_review = "731178c7502f55097192d7ee846736569d21da6f989d0508115b15db51101303"
+sha256_300 = "3346e53e14261ff0b02f2d45c97f68999d885192888014cab12c7a0d9ea8725f"
+sha256_light = "434e3c653279db132283ac25aeeb242eb11ca4fb7fd82424bf938ca4baf15757"
+sha256_dark = "b7bc84b9fde470ad3bc137c4c63005fe85ef2b6aeb0e6385b0b27fcf5d7995c0"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "valve.3_2.base"
@@ -240,3 +256,99 @@ sha256_300 = "75958a1311722b856ee9c5f1573f62cdf9a78d891ea0ace500d090a35c656b4b"
 sha256_light = "827da856d116b6a5f62fd9e510b2e4050e589f55bc97660b2bf848164b01fd52"
 sha256_dark = "ab2dde1895ec67a24b81e7d6aeb735e8b638cf81f9a7d32c7ca1e68daeb9b16d"
 commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "preparation.service_unit"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/preparation.service_unit.md"
+toml = "assets/catalog/preparation.service_unit.toml"
+captures = ["assets/symbols/review/preparation.service_unit-300.png", "assets/symbols/review/preparation.service_unit-light.png", "assets/symbols/review/preparation.service_unit-dark.png"]
+sha256_toml = "d4e2c651640d83e978adf98d059d2a9363a675784a724dd6ab2512c7a7994a01"
+sha256_review = "30089bff13ac1b49da44fbc2d207d3bcbbd2d93a6bbbc71c0bb2d2e74823ea6a"
+sha256_300 = "d7ae13bd28cdd0d50b637ad6378cb1a0528d7b691a05755dea44ce76e45a6966"
+sha256_light = "9817e218f2c4c60f1b063b75a440fa1fb36a1588d35e8c70a60d80cc12574300"
+sha256_dark = "2f2f26f7108bf62dfa32261ae242233dda24ba4aea681b419a4406b69d031dcc"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
+
+[[symbol]]
+id = "preparation.service_unit_simple"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/preparation.service_unit_simple.md"
+toml = "assets/catalog/preparation.service_unit_simple.toml"
+captures = ["assets/symbols/review/preparation.service_unit_simple-300.png", "assets/symbols/review/preparation.service_unit_simple-light.png", "assets/symbols/review/preparation.service_unit_simple-dark.png"]
+sha256_toml = "952d311af65d7c35784994015e4f2fdf77783f661faa5479dd1120da742c2cd4"
+sha256_review = "52a4898b8e077d87164585979c6c0773fc7d7121220f5d1ab5fb562bbf31cf74"
+sha256_300 = "c976f9fd3e28cfb82547c43ac87b4365fa3327a8b39308f9f1f8bab01d967bae"
+sha256_light = "cb044b2a5790cb4d1ffd87493dcdbb2f119714a4fc78138e218b0d031f4f5c17"
+sha256_dark = "e111cb2d50836c5518c8e12265eb568a4a4665a0b1a196eaee70d15bb59ac49c"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
+
+[[symbol]]
+id = "valve.shuttle"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.shuttle.md"
+toml = "assets/catalog/valve.shuttle.toml"
+captures = ["assets/symbols/review/valve.shuttle-300.png", "assets/symbols/review/valve.shuttle-light.png", "assets/symbols/review/valve.shuttle-dark.png"]
+sha256_toml = "5da6fd901cf81d672cdc8afbcabfd6305e3e70a623eea8e6d799d1a6905c8019"
+sha256_review = "8b3cfc067f92ceb09e825e3ad0e0c670caf8255d2ffa80f9b85a73072157eb1e"
+sha256_300 = "2bc3d9053af1687d15d62153974a1c1285b8feb7e771c07725dfc7ed711d1040"
+sha256_light = "962c63d97990f802b0794e66fe050b14c3bfa0e53e3fdf4f79c017f2c829b6b3"
+sha256_dark = "3b94b4808b4ce4ef9620276d5f32b69c45daaed45af4bbb38ecbf3edf74969b1"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
+
+[[symbol]]
+id = "preparation.filter_regulator"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/preparation.filter_regulator.md"
+toml = "assets/catalog/preparation.filter_regulator.toml"
+captures = ["assets/symbols/review/preparation.filter_regulator-300.png", "assets/symbols/review/preparation.filter_regulator-light.png", "assets/symbols/review/preparation.filter_regulator-dark.png"]
+sha256_toml = "3701e64231ca18dc1578e81e2f531010425172760afc7e296cc59ad95e23439b"
+sha256_review = "ab1b2b2936b85332f86fa5816fd825de8c3603d130c6be43d34d7c368a3d2ee2"
+sha256_300 = "218b9d4a97ac581600d5f7afbac4a1a43e78962563ef5ced41c9e7864c57cdf0"
+sha256_light = "2c82979530e01fd95491dd8c1f38bd4f6833d4b3b269c375b0e0d791647c0068"
+sha256_dark = "170964a631904d048bd1c09df469f01b3dce33ab214761107ab726ee5f4e819b"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
+
+[[symbol]]
+id = "filter.air_auto_drain"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/filter.air_auto_drain.md"
+toml = "assets/catalog/filter.air_auto_drain.toml"
+captures = ["assets/symbols/review/filter.air_auto_drain-300.png", "assets/symbols/review/filter.air_auto_drain-light.png", "assets/symbols/review/filter.air_auto_drain-dark.png"]
+sha256_toml = "752c6b09d8eccddda290b80e7b844e436189508c660ed344e3548697f2074482"
+sha256_review = "072192a166acf9c804b2c260b9216e5654ac784bc02153805c374bf7b063c1d7"
+sha256_300 = "ad61946f60401302b8bd02d90bf357e66d9762849e352bd2cc4f129b2900f55d"
+sha256_light = "234ae4e9b52647bc073286b9e4fedcc020ba4d4220bd8cfceca333312caa55cc"
+sha256_dark = "97998399407ab6da1e8fbbcee238a7b6669db30c9057778c68f8168d068ff44e"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
+
+[[symbol]]
+id = "preparation.filter_regulator_simple"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/preparation.filter_regulator_simple.md"
+toml = "assets/catalog/preparation.filter_regulator_simple.toml"
+captures = ["assets/symbols/review/preparation.filter_regulator_simple-300.png", "assets/symbols/review/preparation.filter_regulator_simple-light.png", "assets/symbols/review/preparation.filter_regulator_simple-dark.png"]
+sha256_toml = "b1d5e8d845707b188f28b3100083e9b5c1cce0183e28203c7718e0a38d01b63e"
+sha256_review = "0f208221223c9a126cd28c6717962a8f268a7a51a0b0e7af5eb5e94ead36948f"
+sha256_300 = "8eef180dc1867f9abc6c77cb4e51412ad4387deddcbe707d2646236fd12250bd"
+sha256_light = "178edfaef4837c7e7fa3d3b953d7b3d99f43beb7092489b6f6623d5eedf34924"
+sha256_dark = "aac1dbd0053f195659ca18e84bef54e51d703307a842388520cbc0898203d5ec"
+commit = "7c0a6968ed2fc38e111735003021d6a8b3cc68a1"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"

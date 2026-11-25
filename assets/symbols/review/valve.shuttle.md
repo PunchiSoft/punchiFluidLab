@@ -1,8 +1,8 @@
 # Review record: `valve.shuttle`
 
-    status: pending-300dpi
-    date: 2026-11-24
-    reviewer: pending — the owner signs after the PR review
+    status: complete
+    date: 2026-11-25
+    reviewer: Cristian Muñoz (owner)
     function: shuttle valve (OR); the outlet follows the higher-pressure inlet
 
 ## The claim
@@ -29,16 +29,19 @@
   two-signal case, and it is not stored or traced either.
 - **Observed**: a horizontal rectangle with the two inlets on opposite sides at
   mid-height and the outlet on the top edge at the centre; a junction dot where the
-  outlet branch meets the through path; two opposed V seats on the through path, one on
-  each side of the dot, with a ball drawn on the left seat at rest.
+  outlet branch meets the through path; two opposed V seats of **equal size** on the
+  through path, with a ball drawn on the left seat at rest.
 - **Required by the owner**: the two inlets must both read `1` while staying distinct
   ids (`1a`, `1b`), the outlet reads `2`, and the ball keeps the three positions of
   ADR 0041 (left, centre, right) as the live state.
 - **Stated by the standard**: the figure's body measures 8M × 4M and the ball 1M across
-  (M = 2 mm, so 16 × 8 mm and a 1 mm radius, read from the figure); the seat's arms reach
-  about 1M either side of the through path; the junction dot is a filled dot on the
-  through path at the body centre. The figure prints no port numerals: it is a symbol,
-  not a circuit. The numerals here follow `RF053` (1 inlet, 2 outlet).
+  (M = 2 mm, so 16 × 8 mm and a 1 mm radius, read from the figure); the junction dot is a
+  filled dot on the through path at the body centre. The figure prints no port numerals:
+  it is a symbol, not a circuit. The numerals here follow `RF053` (1 inlet, 2 outlet).
+- **Owner's correction, 2026-11-25**: the reference draws the two seats as **equal V**s; the
+  previous record's "1M either side" reading and the later small/large reading were wrong.
+  The two `1` numerals are **above** their stubs (`numeral_side = "above"`), not one above
+  and one below. The ball's tangent centres follow the new seats.
 - **Assumption**: the moving ball's centre and right positions (ADR 0041) are the
   simulator's state display and have no printed dimension in the standard; they are
   placed symmetrically about the body centre. The 20 mm project box maps the figure's
@@ -46,23 +49,26 @@
 
 ## Measures
 
-The symbol box is 20 mm square (1 normalized unit = 20 mm). Features are given in
-millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
+The symbol box is **25 × 17 mm**: the 16 × 8 mm body and the 4.5 mm margins the numerals
+need outside it (the owner's general rule: a numeral never sits on the symbol). Features are
+given in millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
 
 | Feature | Requirement (figure) | Drawing (mm) |
 |---|---|---|
-| Body | one rectangle 8M × 4M | x 2.00 … 18.00, y 6.00 … 14.00 (16.00 × 8.00) |
-| Inlet ports | on opposite sides, at mid-height | `1a` (0.00, 10.00), `1b` (20.00, 10.00) |
-| Outlet port | top edge, at the body centre | `2` (10.00, 0.00) |
-| Inlet stubs | 1M each side | 0.00 … 2.00 and 18.00 … 20.00 |
-| Outlet stem | from the top edge to the through path | x 10.00, y 0.00 … 10.00 (6.00 outside the body) |
-| Through path | **continuous** from inlet to inlet, the ball and the seats drawn on top | y 10.00, x 0.00 … 20.00, one segment |
-| Ball | 1M diameter, seated on the left and **tangent** to the seat's arms, unfilled | centre (5.63, 10.00), radius 1.00; the circumference touches the left seat at its perimeter |
-| Junction dot | filled, on the through path at the centre | (10.00, 10.00), radius 0.30 |
-| Left seat | V opening towards the centre, arms ≈ 1M above/below | vertex (4.39, 10.00), tips (6.00, 7.82) and (6.00, 12.18) |
-| Right seat | the same, mirrored about the centre | vertex (16.10, 10.00), tips (13.08, 7.82) and (13.08, 12.18) |
-| Moving ball | left, centre and right seats, each tangent to its seat | x 5.63, 10.00 and 14.39 at y 10.00 |
-| Numerals | one per port, clear of the body and the numerals of the others | `1` above the left stub, `1` below the right stub, `2` beside the outlet |
+| Box | 25 × 17 mm, the body plus the numeral margins | `box = [25, 17]` |
+| Body | one rectangle 8M × 4M | x 4.50 … 20.50, y 4.50 … 12.50 (16.00 × 8.00) |
+| Frame | the body's edge, the numerals' boundary | `frame = [0.18, 0.2647, 0.82, 0.7353]` |
+| Inlet ports | on opposite sides, at mid-height | `1a` (0.00, 8.50), `1b` (25.00, 8.50) |
+| Outlet port | top edge, at the body centre | `2` (12.50, 0.00) |
+| Inlet stubs | from the box edge to the body | 0.00 … 4.50 and 20.50 … 25.00 |
+| Outlet stem | from the top edge to the through path | x 12.50, y 0.00 … 8.50 (4.50 outside the body) |
+| Through path | **continuous** from inlet to inlet, the ball and the seats drawn on top | y 8.50, x 0.00 … 25.00, one segment |
+| Ball | 1M diameter, seated on the left and **tangent** to the seat's arms, unfilled | centre (8.31, 8.50), radius 1.00; the circumference touches the left seat at its perimeter |
+| Junction dot | filled, on the through path at the centre | (12.50, 8.50), radius 0.30 |
+| Left seat | V opening towards the ball, the reference's equal arms | vertex (6.89, 8.50), tips (9.09, 6.32) and (9.09, 10.68) |
+| Right seat | the same V mirrored about the centre | vertex (18.60, 8.50), tips (16.40, 6.32) and (16.40, 10.68) |
+| Moving ball | left, centre and right seats, each tangent to its seat | x 8.31, 12.50 and 17.18 at y 8.50 |
+| Numerals | one per port, **outside the body**, clear of the body and of each other; the two `1`s on the same side by the owner's reference | `1` outside the left of the body, `1` outside the right, `2` above the outlet (`numeral_side = "above"` for the two `1`s) |
 | Line class | every line and the seat polylines solid working | `working` on every primitive |
 
 ## Evidence
@@ -109,9 +115,11 @@ millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
   centres are derived from the seat's own arms, not printed by the figure.
 - The owner's 2026-11-24 correction is visual: the line, the tangency and the unfilled
   ball; the solver and ADR 0041 are unchanged.
-- The two seat polylines are drawn as the figure draws them (V opening towards the
-  centre). The figure prints no dimensions for them, so the arms' 1M reach is read from
-  the figure and recorded as derived.
+- **Owner's 2026-11-25 correction**: the left seat is the **small V** and the right the
+  **large V** of the reference; the two `1` numerals are **above** their stubs
+  (`numeral_side = "above"`). The ball tangent centres follow the new seats.
+- The two seat polylines are the reference's: the two Vs are equal and open towards the ball. The figure prints no dimensions; the sizes are read from
+  the owner's reference and recorded.
 
 ## Images
 
@@ -121,9 +129,9 @@ millimetres of that box; the figure's own proportions are in M, with M = 2 mm.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending — the owner signs after the PR review
-- **Date**: 2026-11-24
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-25
 - **What changed since the last record**: the owner's 2026-11-24 correction. The through
   line is one continuous segment, the ball's centre is at the tangent distance from each
   seat so the circumference touches the arms without crossing them, and the ball is

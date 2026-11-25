@@ -38,7 +38,7 @@ The **filter-regulator** is a new family member of 2026-11-24 and is `in review`
 
 | Symbol | Family | Figure / rule | Ports | State | Signature | Record |
 |---|---|---|---|---|---|---|
-| `supply.network` | supply | to read | 1 supply | `done` | `pending` | [review](review/supply.network.md) |
+| `supply.network` | supply | `RF059` (9.6.4.1), owner's 8 × 8 mm size | 1 supply, no printed numeral | `in review` | — | [review](review/supply.network.md) |
 | `supply.compressor` | supply | `X11400` (7.2.4) | 2: `1` intake, `2` delivery | `done` | `pending` | [review](review/supply.compressor.md) |
 | `supply.compressor_adjustable` | supply | `X11400` + `RF040` | 2: `1` intake, `2` delivery | `done` | `pending` | [review](review/supply.compressor_adjustable.md) |
 | `filter.air` | conditioning | `X11980` (7.4.4.1) | 2 | `done` | `pending` | [review](review/filter.air.md) |
@@ -46,6 +46,7 @@ The **filter-regulator** is a new family member of 2026-11-24 and is `in review`
 | `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `done` | `pending` | [review](review/lubricator.oil.md) |
 | `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2, outside the chain-line frame | `in review` | — | [review](review/preparation.service_unit.md) |
 | `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation, with the owner's automatic-drain purge arrow | 2, outside the body | `in review` | — | [review](review/preparation.service_unit_simple.md) |
+| `preparation.filter_regulator_simple` | conditioning | `X12160` (7.4.4.17), simplified filter-regulator, no lubricator | 2, outside the body | `in review` | — | [review](review/preparation.filter_regulator_simple.md) |
 | `valve.3_2.base` | valve | `X10280` (6.1.2.6 / 7.1.2.8): composition of the body and positions, no single X-number | 3 | `done` | `pending` | [review](review/valve.3_2.base.md) |
 | `valve.3_2.spring_return` | valve | `X10270` (6.1.2.5 / 7.1.2.7) body and spring + `688V1` lever | 3 | `done` | `pending` | [review](review/valve.3_2.spring_return.md) |
 | `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `done` | `pending` | [review](review/valve.3_2.solenoid.md) |

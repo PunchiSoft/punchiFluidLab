@@ -11,7 +11,7 @@
 
 use punchi_fluid_catalog::{
     ActuatorKind, Behaviour, ComponentDefinition, Kinematics, LineClass as CatalogLineClass,
-    MovingPart, Primitive, PrimitiveKind, ReturnKind, Side,
+    MovingPart, NumeralSide, Primitive, PrimitiveKind, ReturnKind, Side,
 };
 use punchi_fluid_solver::network::BallSeat;
 
@@ -340,11 +340,11 @@ struct NumeralGeometry {
     boundary: Rect,
     centre: Pt,
     point: Pt,
-    reach: f32,
     clear: f32,
     normal: f32,
     gap: f32,
     epsilon: f32,
+    numeral_side: NumeralSide,
 }
 
 ///
@@ -385,16 +385,25 @@ pub fn draw_numeral(
     let on_top_or_bottom =
         level_x && (point.y <= boundary.min.y + epsilon || point.y >= boundary.max.y - epsilon);
 
+    let numeral_side = definition
+        .port
+        .iter()
+        .find(|candidate| {
+            (candidate.position[0] - port[0]).abs() < 1.0e-9
+                && (candidate.position[1] - port[1]).abs() < 1.0e-9
+                && candidate.numeral() == id
+        })
+        .map_or(NumeralSide::Auto, |candidate| candidate.numeral_side);
     let geometry = NumeralGeometry {
         rect,
         boundary,
         centre,
         point,
-        reach,
         clear,
         normal,
         gap,
         epsilon,
+        numeral_side,
     };
     let placed = if on_side {
         side_numeral(&geometry)
@@ -446,7 +455,11 @@ fn side_numeral(geometry: &NumeralGeometry) -> Pt {
             };
             // Port 1 (left) reads above its stub and port 2 (right) below it, the way the
             // reference sheet places the pair; a box too short flips it to the other side.
-            let prefer_below = geometry.point.x > geometry.centre.x;
+            let prefer_below = match geometry.numeral_side {
+                NumeralSide::Above => false,
+                NumeralSide::Below => true,
+                NumeralSide::Auto => geometry.point.x > geometry.centre.x,
+            };
             let first = if prefer_below {
                 geometry.point.y + geometry.normal
             } else {
@@ -472,11 +485,10 @@ fn side_numeral(geometry: &NumeralGeometry) -> Pt {
     };
     // The whole glyph has to fit outside: `gap` plus the cap. If it does not, the
     // inside is the only clear space (the service-unit frame leaves 1.2 mm).
-    let direction = if outside_room + geometry.epsilon < geometry.gap + NUMERAL {
-        -outside
-    } else {
-        outside
-    };
+    // The numeral never sits on the symbol: outside the boundary, even if the symbol box
+    // has to grow to hold it. The owner's 2026-11-25 rule.
+    let direction = outside;
+    let _ = outside_room;
     let (dx, dy) = geometry.centre.to(geometry.point);
     let length = dx.hypot(dy);
     let lateral = if length > f32::EPSILON {
@@ -484,12 +496,17 @@ fn side_numeral(geometry: &NumeralGeometry) -> Pt {
     } else {
         Pt::new(geometry.clear, 0.0)
     };
-    let mut at = Pt::new(
-        edge + direction * geometry.normal + lateral.x,
-        geometry.point.y + lateral.y,
-    );
+    let preferred_y = match geometry.numeral_side {
+        NumeralSide::Above => geometry.point.y - geometry.clear,
+        NumeralSide::Below => geometry.point.y + geometry.clear,
+        NumeralSide::Auto => geometry.point.y + lateral.y,
+    };
+    let mut at = Pt::new(edge + direction * geometry.normal + lateral.x, preferred_y);
     if at.y - NUMERAL * 0.5 < geometry.rect.min.y || at.y + NUMERAL * 0.5 > geometry.rect.max.y {
-        at.y = geometry.point.y - lateral.y;
+        at.y = match geometry.numeral_side {
+            NumeralSide::Auto => geometry.point.y - lateral.y,
+            NumeralSide::Above | NumeralSide::Below => preferred_y,
+        };
     }
     at
 }
@@ -508,11 +525,10 @@ fn top_bottom_numeral(
     } else {
         geometry.boundary.min.y - geometry.rect.min.y
     };
-    let direction = if outside_room + geometry.epsilon < geometry.gap + NUMERAL {
-        -outward
-    } else {
-        outward
-    };
+    // Same rule for a top/bottom port: the numeral goes outside the boundary, never on
+    // the symbol.
+    let direction = outward;
+    let _ = outside_room;
     let edge = if below {
         geometry.boundary.max.y
     } else {
@@ -542,27 +558,20 @@ fn top_bottom_numeral(
     }
     let side = if let Some((_, away)) = nearest {
         away
+    } else if geometry.point.x < geometry.boundary.center().x {
+        -1.0
     } else {
-        let outward = if geometry.point.x < geometry.boundary.center().x {
-            -1.0
-        } else {
-            1.0
-        };
-        let room = if outward < 0.0 {
-            geometry.point.x - geometry.boundary.min.x
-        } else {
-            geometry.boundary.max.x - geometry.point.x
-        };
-        if room > geometry.reach * 1.1 {
-            outward
-        } else {
-            -outward
-        }
+        1.0
     };
-    Pt::new(
-        anchor.x + side * geometry.clear,
-        edge + direction * geometry.normal,
-    )
+    // The designation goes **beside its own stub**, at the port's height, not a whole
+    // clearance away at the body corner: the owner's 2026-11-25 correction. The glyph is
+    // clamped inside the symbol box so a port near the edge does not push it out.
+    let half = NUMERAL * 0.5;
+    let x = (anchor.x + side * geometry.normal)
+        .clamp(geometry.rect.min.x + half, geometry.rect.max.x - half);
+    let y = (edge + direction * geometry.normal)
+        .clamp(geometry.rect.min.y + half, geometry.rect.max.y - half);
+    Pt::new(x, y)
 }
 
 /// The port is already inside the boundary: keep the numeral lateral to the stub and off
@@ -2667,6 +2676,79 @@ mod tests {
     }
 
     #[test]
+    fn the_network_source_prints_no_numeral() {
+        // The owner's reference shows the source as the bare triangle: no port numeral.
+        // The port id stays `1` for the solver and the hoses, but `show_numeral = false`.
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog
+            .get("supply.network")
+            .expect("the network source exists")
+            .clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 8.0, 8.0);
+        let mut recording = Recording::default();
+        draw_component(
+            &mut recording,
+            rect,
+            &definition,
+            0,
+            0.0,
+            None,
+            &Ink::print(),
+        );
+        assert!(
+            numerals(recording.calls()).is_empty(),
+            "the source prints a numeral the reference does not"
+        );
+    }
+
+    #[test]
+    fn the_3_2_valve_places_each_numeral_beside_its_port() {
+        // The owner's 2026-11-25 correction: the designation sits beside its own stub at
+        // the port's height, not at a body corner; `2` was at the top right and `1`/`3` at
+        // the sides.
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog
+            .get("valve.3_2.base")
+            .expect("the 3/2 base exists")
+            .clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut recording = Recording::default();
+        draw_component(
+            &mut recording,
+            rect,
+            &definition,
+            0,
+            0.0,
+            None,
+            &Ink::print(),
+        );
+        let numerals = numerals(recording.calls());
+        assert_eq!(numerals.len(), 3, "one numeral per port");
+        for (id, anchor, cap) in &numerals {
+            let port = definition.port(id).expect("the numeral names a port");
+            let port_at = at(rect, port.position[0], port.position[1]);
+            let glyph = numeral_box(*anchor, *cap);
+            assert!(
+                rect.contains(glyph.min) && rect.contains(glyph.max),
+                "numeral {id} leaves the box: {glyph:?}"
+            );
+            assert!(
+                (anchor.x - port_at.x).abs() <= NUMERAL * 1.2,
+                "numeral {id} is not beside its stub: {anchor:?} vs {port_at:?}"
+            );
+            assert!(
+                (anchor.y - port_at.y).abs() <= NUMERAL * 1.2,
+                "numeral {id} is not at its port's height: {anchor:?} vs {port_at:?}"
+            );
+            let side = if id == "3" { 1.0 } else { -1.0 };
+            assert!(
+                (anchor.x - port_at.x) * side > 0.0,
+                "numeral {id} is on the wrong side of its stub: {anchor:?} vs {port_at:?}"
+            );
+        }
+    }
+
+    #[test]
     fn every_actuation_kind_draws_its_own_glyph() {
         let body = Rect::from_min_size(Pt::new(50.0, 20.0), 40.0, 20.0);
         let mut shapes: Vec<(ActuatorKind, Vec<crate::surface::Call>)> = Vec::new();
@@ -2958,7 +3040,10 @@ mod tests {
     fn the_moving_ball_takes_the_left_centre_and_right_seats() {
         let catalog = punchi_fluid_catalog::Catalog::builtin();
         let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
-        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let [width, height] = definition
+            .declared_box_mm()
+            .expect("the shuttle declares its box");
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
         let mut centres = Vec::new();
         for seat in [BallSeat::Left, BallSeat::Centre, BallSeat::Right] {
             let mut recording = Recording::default();
@@ -3010,7 +3095,10 @@ mod tests {
         // cut around the ball. The ball and its seats are drawn on top of it.
         let catalog = punchi_fluid_catalog::Catalog::builtin();
         let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
-        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let [width, height] = definition
+            .declared_box_mm()
+            .expect("the shuttle declares its box");
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
         let mut recording = Recording::default();
         draw_primitives(
             &mut recording,
@@ -3023,9 +3111,9 @@ mod tests {
             crate::surface::Call::Line { points, .. } => {
                 points.len() == 2
                     && (points[0].x - 0.0).abs() < 1.0e-4
-                    && (points[0].y - 10.0).abs() < 1.0e-4
-                    && (points[1].x - 20.0).abs() < 1.0e-4
-                    && (points[1].y - 10.0).abs() < 1.0e-4
+                    && (points[0].y - height * 0.5).abs() < 1.0e-4
+                    && (points[1].x - width).abs() < 1.0e-4
+                    && (points[1].y - height * 0.5).abs() < 1.0e-4
             }
             _ => false,
         });
@@ -3041,7 +3129,10 @@ mod tests {
         // perimeter; it does not sit over the vertex and cross them.
         let catalog = punchi_fluid_catalog::Catalog::builtin();
         let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
-        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let [width, height] = definition
+            .declared_box_mm()
+            .expect("the shuttle declares its box");
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
         let seats: Vec<&punchi_fluid_catalog::Primitive> = definition
             .symbol
             .iter()
@@ -3099,7 +3190,10 @@ mod tests {
         // defect the owner reported.
         let catalog = punchi_fluid_catalog::Catalog::builtin();
         let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
-        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let [width, height] = definition
+            .declared_box_mm()
+            .expect("the shuttle declares its box");
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
         let mut recording = Recording::default();
         draw_primitives(
             &mut recording,

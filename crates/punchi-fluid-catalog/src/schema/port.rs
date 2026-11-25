@@ -57,6 +57,23 @@ fn default_stroke() -> f64 {
     1.0
 }
 
+/// Where the renderer places a port numeral, when the automatic side is not the reference's.
+///
+/// The automatic rule puts a left side port's numeral above its stub and a right one's
+/// below; a file whose reference puts both on the same side says so here. It is a placement
+/// of the standard's numeral (`RF053`), not a different numeral.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NumeralSide {
+    /// Above the left stub, below the right one (the default).
+    #[default]
+    Auto,
+    /// Above the stub, whichever side the port is on.
+    Above,
+    /// Below the stub, whichever side the port is on.
+    Below,
+}
+
 /// Connection point of a component.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -80,6 +97,10 @@ pub struct Port {
     /// (`1a` and `1b`, both drawn as `1`). Absent means the id is the numeral (ADR 0039).
     #[serde(default)]
     pub numeral: Option<String>,
+    /// Where to place this port's numeral, when the automatic side is wrong for the
+    /// reference. The default keeps the automatic rule.
+    #[serde(default)]
+    pub numeral_side: NumeralSide,
 }
 
 impl Port {

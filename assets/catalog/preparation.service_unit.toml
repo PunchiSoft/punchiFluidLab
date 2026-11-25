@@ -114,7 +114,8 @@ points = [
 ]
 line_class = "boundary"
 
-# The filter: a square turned 45°, its element dashed down to the bowl chord.
+# The filter: a square turned 45°, its element dashed down to the bowl chord. The element
+# uses the short `pilot` dash, not the long `drain` dash: the owner's 2026-11-25 correction.
 [[symbol]]
 kind = "polygon"
 points = [0.206522, 0.372, 0.276087, 0.5, 0.206522, 0.628, 0.136957, 0.5]
@@ -123,7 +124,7 @@ filled = false
 [[symbol]]
 kind = "line"
 points = [0.206522, 0.372, 0.206522, 0.564]
-line_class = "drain"
+line_class = "pilot"
 
 # The bowl chord: the element stops here because the bowl owns the space below it.
 [[symbol]]
@@ -131,10 +132,11 @@ kind = "line"
 points = [0.171739, 0.564, 0.241304, 0.564]
 line_class = "working"
 
-# Its drain stem, crossing the frame on its way out.
+# Its drain stem: short, ending inside the frame. It does not cross the frame or leave the
+# unit; the owner's 2026-11-25 correction.
 [[symbol]]
 kind = "line"
-points = [0.206522, 0.628, 0.206522, 0.94]
+points = [0.206522, 0.628, 0.206522, 0.75]
 line_class = "working"
 
 # The regulator: an upright square, flow through it, and the two facing arrows.
@@ -183,15 +185,16 @@ kind = "polygon"
 points = [0.5, 0.192, 0.481913, 0.243040, 0.467435, 0.203120]
 filled = true
 
-# Its sensing line: the outlet fed back to the underside of the regulator, dashed.
-[[symbol]]
-kind = "line"
-points = [0.434783, 0.628, 0.434783, 0.72]
-line_class = "working"
-
+# Its sensing line: the outlet fed back to the underside of the regulator. The whole path is
+# dashed, including the drop from the regulator: the `pilot` class, not a solid stub followed
+# by a dashed loop (the owner's 2026-11-25 correction).
+# The sensing line: it leaves the working line at the regulator's right edge, goes
+# **down-right** with the diagonal to the vertical right leg, down to the bottom, left under
+# the regulator and up to its underside. The right leg is outside the body; the left leg is
+# inside it. The owner's 2026-11-25 correction.
 [[symbol]]
 kind = "polyline"
-points = [0.434783, 0.72, 0.652174, 0.72, 0.652174, 0.5]
+points = [0.493478, 0.5, 0.564000, 0.647, 0.564000, 0.770, 0.420000, 0.770, 0.420000, 0.628]
 line_class = "pilot"
 
 # Its dial: a gauge on a stem that taps the line, with the needle as an arrow from the centre.
@@ -206,12 +209,12 @@ points = [0.652174, 0.32, 0.08]
 
 [[symbol]]
 kind = "line"
-points = [0.652174, 0.32, 0.621739, 0.276]
+points = [0.621435, 0.376566, 0.682935, 0.263434]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.621739, 0.276, 0.641804, 0.287200, 0.632413, 0.309200]
+points = [0.682935, 0.263434, 0.673739, 0.314400, 0.655217, 0.280400]
 filled = true
 
 [[symbol]]

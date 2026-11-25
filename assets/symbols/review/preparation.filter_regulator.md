@@ -1,8 +1,8 @@
 # preparation.filter_regulator — conformance review
 
-    status: pending-300dpi
-    date: 2026-11-24
-    reviewer: pending — the owner's signature after the PR review is the closing step
+    status: complete
+    date: 2026-11-25
+    reviewer: Cristian Muñoz (owner)
     function: filter and pressure-reducing regulator, without a lubricator
 
 ## The claim
@@ -47,13 +47,13 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
 |---|---|---|
 | Box | owner's 46 × 25 mm, declared in the file | `box = [46, 25]` |
 | Frame | chain line around the functions, one group | x 4.6–41.4, y 2.5–22.5; `line_class = "boundary"` |
-| Filter | diamond, element dashed down to the chord, bowl and drain stem | centre (9.5; 12.5), half-diagonal 3.2 mm; element to y 14.1; chord (7.9–11.1; 14.1); drain to y 23.5 |
+| Filter | diamond, element with short dashes down to the chord, bowl and short drain stem inside the frame | centre (9.5; 12.5), half-diagonal 3.2 mm; element to y 14.1 (`pilot`); chord (7.9–11.1; 14.1); drain to y 18.75, inside the frame |
 | Regulator | upright square, flow through it, two facing arrows | square (16.3; 9.3)–(22.7; 15.7); arrow tips at 18.2 and 21.0 on y 12.5 |
 | Vent | open triangle on the regulator's left | base x 16.3, y 9.9–11.1; apex (14.9; 10.5) |
 | Spring | above the square, four peaks | x 18.6–21.4, y 4.8–9.3 |
 | Adjustability | arrow through the spring, filled head (`RF048`) | (17; 8.8)–(23; 4.8) |
-| Sensing line | dashed, from the outlet to the underside | stub (20; 15.7)–(20; 18); loop to (34; 18) and up to y 12.5 |
-| Gauge | circle on a stem, needle as an arrow from the centre | centre (34; 8), r 2; stem from y 12.5; needle to (32.6; 6.9) |
+| Sensing line | dashed: diagonal down-right from the working line at the regulator's right edge, right leg down, bottom, left leg up to the underside | diagonal (22.7; 12.5)–(25.9; 16.2), right leg to (25.9; 19.25), bottom to (19.3; 19.25), left leg up to (19.3; 15.7); all `pilot` |
+| Gauge | circle on a stem, needle crossing from the lower-left to the upper-right, filled head | centre (34; 8), r 2; stem from y 12.5; needle (32.6; 9.4)–(35.4; 6.6), head at the upper-right |
 | Tap | filled dot where the stem meets the line | (34; 12.5), r 0.25 |
 | Lubricator | **absent**: this is the filter-regulator, not the FRL | no diamond and no oil mark |
 | Ports | outside the frame, stubs crossing it | `1` at (1.84; 12.5), `2` at (44.16; 12.5) |
@@ -79,11 +79,11 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
 |---|---|
 | Is every port the standard draws drawn? | yes: `1` and `2`, outside the frame |
 | Do the numerals match the declared ports? | yes: `1` and `2` working |
-| Is the filter's element dashed, and does the drain leave the bottom vertex? | yes, with the bowl chord |
+| Is the filter's element dashed, and does the drain leave the bottom vertex inside the frame? | yes, with the bowl chord; the stem ends inside the frame |
 | Is the regulator a square with the flow through it and two facing arrows? | yes |
 | Is the setting's arrow through the spring, with a filled head? | yes (`RF048`) |
-| Is the vent and the feedback line drawn? | yes: open triangle and dashed line |
-| Is the gauge drawn on its stem, with the needle from the centre? | yes |
+| Is the vent and the feedback line drawn? | yes: open triangle and the dashed sensing path |
+| Is the gauge drawn on its stem, with the full diagonal needle and the filled head at the upper-right? | yes |
 | Is the lubricator absent? | yes: this form is the filter-regulator |
 | Is the frame the standard's chain line? | yes: `line_class = "boundary"` |
 | Are the ports and their numerals outside the frame? | yes, in the 4.6 mm margin, beside each port |
@@ -100,14 +100,16 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
 - `RF053`'s exact position (above or to the left of the port) remains an open question; the
   numerals are outside the frame and beside their ports, the owner's 2026-11-24 decision.
 - The unit is modelled as a **fixed restriction**: it does not regulate or filter.
-- **The signature is pending**: the owner signs after reviewing the three captures and this
-  record.
+- **Owner's 2026-11-25 correction**: the filter element uses short dashes, the drain ends
+  inside the frame, the sensing path is the FRL's diagonal-plus-U, and the gauge needle
+  crosses from the lower-left to the upper-right with the filled head. The signature is
+  pending after the owner reviews the three captures and this record.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending — the owner signs after the PR review
-- **Date**: 2026-11-24
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-25
 - **What changed since the last record**: new file; no previous record.
 
 ## Images
