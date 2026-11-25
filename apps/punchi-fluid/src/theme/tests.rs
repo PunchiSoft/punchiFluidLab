@@ -109,6 +109,57 @@ fn the_tokens_meet_the_contrast_criteria() {
 }
 
 #[test]
+fn the_text_roles_keep_their_order_and_follow_the_font() {
+    let small = sample_tokens();
+    let large_sample = SAMPLE.replace("font=Noto Sans,10", "font=Noto Sans,15");
+    let large = tokens_from(
+        palette_from(&large_sample).expect("the large sample has the palette groups"),
+        &font_from(&large_sample),
+        180,
+    );
+    for tokens in [&small, &large] {
+        assert!(
+            tokens.text_page > tokens.text_section,
+            "the page title is above a section"
+        );
+        assert!(
+            tokens.text_section >= tokens.text_name,
+            "a section is not smaller than a name"
+        );
+        assert!(
+            tokens.text_name >= tokens.text_action,
+            "a name is not smaller than an action"
+        );
+        assert!(
+            tokens.text_action >= tokens.text_secondary,
+            "an action is not smaller than its secondary line"
+        );
+        assert!(tokens.target_min >= 24.0, "the 24-point target floor");
+        assert!(
+            tokens.row_height >= tokens.target_min,
+            "a row is at least its target"
+        );
+        assert!(
+            tokens.tile_band >= tokens.target_min,
+            "a tile's symbol band is at least its target"
+        );
+        assert!(tokens.focus_width > 0.0, "the focus ring is visible");
+    }
+    assert!(
+        large.text_page > small.text_page,
+        "the page title follows the desktop font"
+    );
+    assert!(
+        large.text_section > small.text_section,
+        "the section follows the desktop font"
+    );
+    assert!(
+        large.target_min >= small.target_min,
+        "the target follows the desktop font"
+    );
+}
+
+#[test]
 fn the_dialog_palette_meets_the_contrast_criteria() {
     let dark = {
         let palette = palette_from(BREEZE_DARK).expect("the dark sample has the palette groups");

@@ -909,6 +909,13 @@ is shown over the valve editor.
 | motion | `motionMs`, read from `[KDE] AnimationDurationFactor`; `0` disables every animation and keeps the state change ([Motion](#motion)) |
 | icons | the ribbon's own line family, one ink; the rest of the window the desktop theme ([ADR 0028](adr/0028-the-ribbon-draws-its-own-icons.md)) |
 
+**Text roles and control measures.** The adapter derives one scale from the desktop font, so
+a larger font moves every step: `text_page` is the title of a view that is not a document,
+`text_section` a group label, `text_name` a component or row, `text_action` a command,
+`text_value` a reading and `text_secondary` a path or an explanation. The same adapter owns
+`row_height`, `tile_band`, `target_min` — never below 24 points — and `focus_width`; a
+widget asks for the role or the measure and never sets a pixel of its own.
+
 A single semantic layer, `apps/punchi-fluid/src/theme.rs`, reads the desktop's
 `kdeglobals` once at start, derives the tokens and applies them to egui. Widgets ask the
 tokens for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`: a

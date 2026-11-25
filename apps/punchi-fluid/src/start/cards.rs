@@ -53,7 +53,7 @@ pub(super) fn recovery_banner(
             ui.set_width(ui.available_width());
             ui.label(
                 egui::RichText::new(language.text("start.recovery_title"))
-                    .size(tokens.text_label)
+                    .size(tokens.text_name)
                     .strong()
                     .color(tokens.ink),
             );
@@ -63,7 +63,7 @@ pub(super) fn recovery_banner(
             };
             ui.label(
                 egui::RichText::new(detail)
-                    .size(tokens.text_body)
+                    .size(tokens.text_secondary)
                     .color(tokens.ink_dim),
             );
             ui.add_space(tokens.unit * 0.3);
@@ -159,7 +159,7 @@ fn begin_card(
         ),
         egui::Align2::LEFT_CENTER,
         title,
-        egui::FontId::proportional(tokens.text_label),
+        egui::FontId::proportional(tokens.text_name),
         tokens.ink,
     );
     ui.painter().text(
@@ -169,14 +169,14 @@ fn begin_card(
         ),
         egui::Align2::LEFT_CENTER,
         detail,
-        egui::FontId::proportional(tokens.text_body),
+        egui::FontId::proportional(tokens.text_secondary),
         tokens.ink_dim,
     );
     if response.has_focus() {
         ui.painter().rect_stroke(
             rect.shrink(1.5),
             tokens.radius,
-            egui::Stroke::new(2.0_f32, tokens.accent),
+            egui::Stroke::new(tokens.focus_width, tokens.accent),
             egui::StrokeKind::Inside,
         );
     }
@@ -297,20 +297,20 @@ fn template_card(
         name_top,
         egui::Align2::LEFT_TOP,
         name,
-        egui::FontId::proportional(tokens.text_label),
+        egui::FontId::proportional(tokens.text_name),
         tokens.ink,
     );
     let detail = elided(ui, tokens, description, plate.width());
     let detail_top = egui::pos2(
         plate.left(),
-        name_top.y + tokens.text_label + tokens.unit * 0.15,
+        name_top.y + tokens.text_name + tokens.unit * 0.15,
     );
     ui.painter().galley(detail_top, detail, tokens.ink_dim);
     if response.has_focus() {
         ui.painter().rect_stroke(
             rect.shrink(1.5),
             tokens.radius,
-            egui::Stroke::new(2.0_f32, tokens.accent),
+            egui::Stroke::new(tokens.focus_width, tokens.accent),
             egui::StrokeKind::Inside,
         );
     }
@@ -417,7 +417,10 @@ fn recent_row(
     // floor, and never overlaps the open target: a click does one thing.
     let remove_rect = egui::Rect::from_center_size(
         egui::pos2(rect.right() - tokens.unit * 1.5, rect.center().y),
-        egui::vec2(tokens.unit * 2.4, (tokens.unit * 1.6).max(24.0)),
+        egui::vec2(
+            tokens.unit * 2.4,
+            (tokens.unit * 1.6).max(tokens.target_min),
+        ),
     );
     let open_rect = egui::Rect::from_min_max(
         rect.min,
@@ -525,7 +528,7 @@ fn paint_recent_row(
         egui::pos2(title_left, rect.center().y - tokens.unit * 0.4),
         egui::Align2::LEFT_CENTER,
         &recent.name,
-        egui::FontId::proportional(tokens.text_body),
+        egui::FontId::proportional(tokens.text_name),
         recent_ink(tokens, missing),
     );
     ui.painter().text(
@@ -609,12 +612,12 @@ pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens, language: L
                 ui.vertical(|ui| {
                     ui.label(
                         egui::RichText::new(language.text("start.empty_title"))
-                            .size(tokens.text_body)
+                            .size(tokens.text_name)
                             .color(tokens.ink),
                     );
                     ui.label(
                         egui::RichText::new(language.text("start.empty_body"))
-                            .size(tokens.text_small)
+                            .size(tokens.text_secondary)
                             .color(tokens.ink_dim),
                     );
                 });
@@ -627,7 +630,7 @@ fn elided(ui: &egui::Ui, tokens: &Tokens, text: &str, width: f32) -> std::sync::
     let mut job = egui::text::LayoutJob::single_section(
         text.to_owned(),
         egui::TextFormat {
-            font_id: egui::FontId::proportional(tokens.text_body),
+            font_id: egui::FontId::proportional(tokens.text_secondary),
             color: tokens.ink_dim,
             ..Default::default()
         },

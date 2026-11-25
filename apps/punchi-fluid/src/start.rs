@@ -224,13 +224,13 @@ fn page(
             ui.add_space(tokens.unit * 0.5);
             ui.label(
                 egui::RichText::new(language.text("start.title"))
-                    .size(tokens.text_display)
+                    .size(tokens.text_page)
                     .strong()
                     .color(tokens.ink),
             );
             ui.label(
                 egui::RichText::new(language.text("start.subtitle"))
-                    .size(tokens.text_body)
+                    .size(tokens.text_secondary)
                     .color(tokens.ink_dim),
             );
             ui.add_space(tokens.unit * 1.2);
@@ -277,14 +277,14 @@ fn page(
 fn section(ui: &mut egui::Ui, tokens: &Tokens, title: &str, detail: Option<&str>) {
     ui.label(
         egui::RichText::new(title)
-            .size(tokens.text_label)
+            .size(tokens.text_section)
             .strong()
             .color(tokens.ink),
     );
     if let Some(detail) = detail {
         ui.label(
             egui::RichText::new(detail)
-                .size(tokens.text_body)
+                .size(tokens.text_secondary)
                 .color(tokens.ink_dim),
         );
     }
