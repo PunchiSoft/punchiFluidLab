@@ -109,3 +109,38 @@ fn the_valve_editor_names_the_component_in_both_languages() {
         );
     }
 }
+
+#[test]
+fn the_editor_switches_the_actuation_variant_and_undoes_it() {
+    let mut window = window_with_component();
+    {
+        let mut harness = harness(&mut window);
+        let centre = page_centre(&harness);
+        right_click_at(&mut harness, centre);
+        harness.get_by_label("Configure").click();
+        harness.run();
+        assert!(harness.state().valve_editor);
+        harness
+            .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Actuation")
+            .hover();
+        harness.run();
+        harness
+            .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Actuation")
+            .click();
+        harness.run();
+        harness.get_by_label("3/2 valve").click();
+        harness.run();
+        harness.get_by_label("Apply").click();
+        harness.run();
+    }
+    assert_eq!(
+        window.document.placements()[0].catalog_id,
+        "valve.3_2.base",
+        "the editor writes the selected variant"
+    );
+    assert!(window.document.undo(), "the variant change is one undo");
+    assert_eq!(
+        window.document.placements()[0].catalog_id,
+        "valve.3_2.spring_return"
+    );
+}

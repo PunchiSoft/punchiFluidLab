@@ -38,6 +38,14 @@ publicación.
   destino en el cuerpo y el pie estable. El aviso de sobrescritura ocupa una tarjeta propia
   y nombrar otro destino vuelve a preguntar; Enter confirma, Escape y la × cancelan.
 
+### Accionamiento y retorno de válvulas — 2026-11-25
+
+- El editor de válvulas ofrece las variantes de accionamiento y retorno que ya están en el
+  catálogo. El cambio es un solo paso de deshacer, la vista previa y el modelo lo siguen y
+  se guarda con el proyecto. Una válvula sin accionamiento deja de poder accionarse en el
+  modelo. Reversible, señal dominante, caudal y los demás accionamientos manuales quedan
+  pendientes.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su

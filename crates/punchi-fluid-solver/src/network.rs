@@ -739,6 +739,9 @@ impl Network {
         let Some(target) = self.valves.get(valve) else {
             return false;
         };
+        if target.actuation == Actuation::None {
+            return false;
+        }
         let position = usize::from(target.default == 0);
         self.set_valve_position_at(valve, position)
     }

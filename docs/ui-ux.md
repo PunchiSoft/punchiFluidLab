@@ -879,7 +879,7 @@ height. Buttons have a minimum height of 32 logical points. The theme owns a fix
 dark dialog palette, so the approved tones do not follow the desktop scheme. The rename
 dialog starts with the name field focused and keeps itself open on an empty name; the close
 circuit confirmation names the circuit and focuses Cancel, never the action that removes it.
-The configuration forms group related fields in cards and keep their Apply/Cancel moment:
+The valve editor offers the actuation and return variants the catalog holds; the variant is one undo, the preview and the model follow it, and it survives saving. The configuration forms group related fields in cards and keep their Apply/Cancel moment:
 page setup applies the sheet as one undo and discards its draft on Cancel, while its grid
 stays view state; export options commit on Apply and discard the draft on Cancel. The
 settings window applies its appearance and language live, groups its pages in cards, acts on
