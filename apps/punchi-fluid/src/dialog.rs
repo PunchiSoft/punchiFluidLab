@@ -161,6 +161,9 @@ pub(crate) struct Action<'a, T> {
     pub value: T,
     pub role: ButtonRole,
     pub enabled: bool,
+    /// Request the keyboard focus for this action on the frame it is built. The state behind
+    /// the dialog clears the flag, so a default action does not steal the focus again.
+    pub focus: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -184,7 +187,7 @@ impl<'a> Dialog<'a> {
         context: &egui::Context,
         state: &mut S,
         body: impl FnOnce(&mut Ui, &mut S),
-        actions: impl FnOnce(&S) -> Vec<Action<'a, A>>,
+        actions: impl FnOnce(&mut S) -> Vec<Action<'a, A>>,
     ) -> egui::ModalResponse<Option<DialogResult<A>>> {
         let style = self.style;
         let size = context.screen_rect().size();
@@ -304,6 +307,9 @@ impl<'a> Dialog<'a> {
                                 action.role,
                                 action.enabled,
                             );
+                            if action.focus {
+                                response.request_focus();
+                            }
                             if response.clicked() {
                                 answer = Some(action.value);
                             }

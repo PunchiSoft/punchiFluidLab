@@ -871,12 +871,15 @@ definition count and the mode text are the target, not in the bar yet.
 
 ## Visual language
 
-The unsaved changes confirmation and the valve editor share a dialog frame. The heading
-and visible close button sit on a raised band, and a matching footer aligns the actions to
-the right. The body scrolls when it exceeds the available height. Buttons have a minimum
-height of 32 logical points. The theme owns a fixed light and dark dialog palette, so the
-approved tones do not follow the desktop scheme. The close button cancels the pending
-action, including when the unsaved changes question is shown over the valve editor.
+The unsaved changes confirmation, the valve editor, and the rename and close circuit
+dialogs share a dialog frame. The heading and visible close button sit on a raised band,
+and a matching footer aligns the actions to the right. The body scrolls when it exceeds the
+available height. Buttons have a minimum height of 32 logical points. The theme owns a
+fixed light and dark dialog palette, so the approved tones do not follow the desktop
+scheme. The rename dialog starts with the name field focused and keeps itself open on an
+empty name; the close circuit confirmation names the circuit and focuses Cancel, never the
+action that removes it. The close button cancels the pending action, including when the
+unsaved changes question is shown over the valve editor.
 
 | Token | Source |
 |---|---|

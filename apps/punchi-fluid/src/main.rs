@@ -669,7 +669,7 @@ impl Window {
     fn sync_commands(&mut self, context: &egui::Context) {
         // The dialog owns the keyboard while it is open: no document command may run behind
         // it, and `Enter`/`Esc` belong to it until it closes.
-        if self.dialog.is_some() || self.close_question_open() {
+        if self.dialog.is_some() || self.close_question_open() || self.circuit_dialog.is_some() {
             return;
         }
         if self.preferences.open {
