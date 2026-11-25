@@ -542,24 +542,24 @@ its own. While `base_open = true`, an entry without `signed_by`/`signed_at` is *
 its hashes are pinned and protected, but it is not signed; read the manifest before calling a
 symbol signed.
 
-As of 2026-11-24, 16 reviews are `complete`; 1 of them (`valve.5_2.base`) is signed and the
-other 15 wait for the owner's signature. The two service units and the OR valve returned to
-`pending-300dpi` after their correction, and the filter-regulator and the automatic-drain
-filter are new pending forms: 3 core and 2 family reviews are open.
+As of 2026-11-25, 22 reviews are `complete`: 15 are **signed** and 7 are `pending` the
+owner's signature; the other 21 reviews are `pending-300dpi` (16 electrical, 3 instruments,
+the tee and the throttle). The two service units, the OR valve, the filter-regulator and the
+automatic-drain filter were corrected on 2026-11-24, reviewed again and signed on 2026-11-25.
+The seven `pending` entries are the symbols the owner left out for a known correction: the
+port closures, the spool valves and the two-pressure valve.
 
 ## Current state, honestly
 
 The structural half of the contract is **implemented** and the visual half is **reviewed at
-palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
-were signed off by the second reader on 2026-11-24, and the symbols outside the core still wait
-for that sign-off. The 2026-11-24 correction of the two service units and of the OR
-valve changed their drawing, so **their three reviews are `pending-300dpi` again** until the
-owner signs off the new captures: the core is not complete while they are open, and the export
-keeps its unverified note. The **filter-regulator** and the **filter with automatic drain**
-added on 2026-11-24 are new conditioning forms and are pending as well. The sign-off records
-the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020; the Chilean adoption
-(**NCh-ISO 1219**) is still unconfirmed from this machine, as the national-adoptions section
-says.
+palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records and
+the **2026-11-25 batch** were signed off by the second reader, and the symbols outside that
+set still wait for that sign-off. The 2026-11-24 corrections —the two service units, the OR
+valve, the filter-regulator and the automatic-drain filter— were reviewed again and signed on
+2026-11-25, with new captures. The **21 reviews outside the core** remain `pending-300dpi`, so
+the export keeps its unverified note. The sign-off records the ISO 1219-1:2006 reading
+confirmed against JIS B 0125-1:2020; the Chilean adoption (**NCh-ISO 1219**) is still
+unconfirmed from this machine, as the national-adoptions section says.
 
 | Requirement | State | Evidence |
 |---|---|---|
@@ -576,14 +576,14 @@ says.
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **drawn** | the content block is on the canvas and in the export ([capabilities](capabilities.md), [ADR 0030](adr/0030-the-block-protects-its-own-box.md)) |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **done for the core except the two service units and the OR valve, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed off 2026-11-24; the two service units and the OR valve were redrawn on 2026-11-24 and await the owner's sign-off |
-| Review sign-off (the record is `complete`) | **the core was signed off; the two service units and the OR valve are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed off the core on 2026-11-24; the 2026-11-24 corrections return `preparation.service_unit`, `preparation.service_unit_simple` and `valve.shuttle` to `pending-300dpi` |
-| Signed symbols (the SSH manifest) | **partial** | `assets/symbols/signed.toml` pins the 16 `complete` core symbols; `valve.5_2.base` is signed and 15 are pending the owner's signature; the change is gated by `check-signed-symbols.sh` ([ADR 0047](adr/0047-the-signed-symbols-are-immutable.md)) |
+| Legible at 300 dpi | **done for the core and the 2026-11-25 batch; open for the 21 reviews outside the pass** | the 300 dpi sheets are in the review folder, signed off 2026-11-24 and 2026-11-25; the electrical, instrument, tee and throttle reviews still need the owner's reading |
+| Review sign-off (the record is `complete`) | **the core and the 2026-11-25 batch were signed off; the 21 reviews outside the pass are open** | Cristian Muñoz (owner), second reader, signed off the core on 2026-11-24 and the batch on 2026-11-25; the 16 electrical, 3 instrument, tee and throttle reviews are `pending-300dpi` |
+| Signed symbols (the SSH manifest) | **partial** | `assets/symbols/signed.toml` pins all 22 `complete` symbols; 15 are signed and 7 are pending the owner's signature; `base_open = true` until the last batch; the change is gated by `check-signed-symbols.sh` ([ADR 0047](adr/0047-the-signed-symbols-are-immutable.md)) |
 
 Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/).
-The core's files read `status: complete`, signed off by the second reader; the files outside
-the core keep `status: pending-300dpi`, and one complete symbol (`valve.5_2.base`) is also
-signed in the SSH manifest. The reviews are compiled into the binary
+The complete files read `status: complete`, signed off by the second reader; fifteen of them
+are also signed in the SSH manifest, and the files outside the set keep
+`status: pending-300dpi`. The reviews are compiled into the binary
 (`punchi-fluid-catalog::reviews`), and the PDF export asks them whether it may drop the
 note “symbols not yet verified against ISO 1219-1” from its title block: it may not while
 any review is not `complete`, which is why the note stays while a non-core review is open.

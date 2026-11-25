@@ -18,9 +18,20 @@ publicación.
   lubricador); la unidad de servicio simplificada conserva la marca del lubricador.
 - Correcciones aplicadas al FRL, al filtro-regulador detallado, a las válvulas OR y al filtro
   con purga automática (elemento discontinuo, drenaje dentro del marco, sensado y manómetro).
-- **Pendiente antes de firmar:** las capturas de los cilindros a 44×20 y los compresores sin
-  eje, la actualización del manifiesto `signed.toml` y la firma SSH del dueño; el lote no se
-  firma en este cambio.
+- Las capturas de los cilindros a 44×20 y de los compresores sin eje se regeneraron antes de
+  firmar; el lote se firmó en el mismo cambio (subsección siguiente).
+
+### Firma del lote de símbolos — 2026-11-25
+
+- El dueño firmó `assets/symbols/signed.toml`: **15 símbolos firmados** (los 14 aprobados en
+  la revisión más `valve.5_2.base`) y **7 `pending`** con sus hashes ya fijados, los que
+  necesitan corrección conocida (cierres de puerto, válvulas de corredera y válvula de dos
+  presiones). `check-signed-symbols`: `15 signed, 7 pending, 22 complete reviews, base open`.
+- `signed.toml.sig` es la firma SSH detached sobre el manifiesto y `owner_signers` la clave
+  pública que la verifica; la compuerta comprueba la firma, los hashes y que toda ficha
+  `complete` tenga entrada. `base_open = true` sigue hasta el último lote.
+- Un símbolo firmado es inmutable ([ADR 0047](docs/adr/0047-the-signed-symbols-are-immutable.md)):
+  cambiar su TOML, su ficha o una captura exige revisión nueva (`revision + 1`) y firma nueva.
 
 ### La regla de los símbolos firmados — 2026-11-24
 
