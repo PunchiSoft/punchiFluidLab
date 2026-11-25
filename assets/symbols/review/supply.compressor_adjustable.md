@@ -12,7 +12,9 @@
 - **Family**: supply (a machine).
 - **Normative source**: ISO 1219-1:2006, 7.2.4, figure `X11400`, plus 9.4.3, rule `RF040`
   (the adjustability arrow on the diameter), read in the owner's copy and confirmed on the
-  2012 basis in JIS B 0125-1:2020. Also `RF052`, `RF053` and `RF038`.
+  2012 basis in JIS B 0125-1:2020. Also `RF052`, `RF053`. The owner's 2026-11-25 correction
+  removes the drive bar the previous record read into `X11400`; it belongs to another
+  symbology, not the standard, and the removal is a correction, not a deviation.
 - **Ports**: `1` intake, open to the atmosphere · `2` delivery, the pressure source.
 
 ## Reference and assumptions
@@ -34,7 +36,6 @@
 | Feature | Requirement | Drawing |
 |---|---|---|
 | Body | the compressor's, unchanged | circle (0,640; 0,450), r 0,280; triangle apex (0,640; 0,170) |
-| Drive | the shaft bar at the left | rect (0,080; 0,405)–(0,360; 0,495) |
 | Ports | all of them drawn | `2` (0,640; 0,060); `1` (0,640; 0,858) |
 | Arrow | on the diameter, at 45°, out of both sides | (0,341; 0,749) → (0,913; 0,177) |
 | Head | filled, at the upper end, outside the circle | tip (0,973; 0,118) |
@@ -56,7 +57,7 @@
 | Is every closed port of every position marked? | not applicable: the intake is open to the atmosphere |
 | Is every port the standard draws drawn? | yes: `1` and `2` |
 | Do the numerals match the declared ports? | yes: `2` delivery, `1` intake |
-| If it is a machine, is the drive bar on the standard's side? | yes, on the left |
+| If it is a machine, is the drive bar on the standard's side? | no drive bar: X11400 prints none; the previous record read one from another symbology (owner's 2026-11-25 correction) |
 | If it is adjustable, is the arrow on the diameter? | yes, and the head is filled |
 | Is every numeral clear of the frame, the body and the lines? | the capture shows `2` beside the arrow's head, clear of it |
 | Is the symbol legible at palette size and at 300 dpi? | yes, both captures |
@@ -78,3 +79,10 @@
 
 - `supply.compressor_adjustable-300.png`
 - `supply.compressor_adjustable-light.png`, `-dark.png`
+
+## Correction — 2026-11-25
+
+The owner corrected the record: the drive bar the previous review read into `X11400` belongs
+to another symbology and is removed from the definition and the captures. It is a
+**correction**, not a deviation; the body is the circle, the outlined gas triangle and the two
+ports.

@@ -252,9 +252,9 @@ fn the_compressor_triangle_leaves_from_the_top_of_its_circle() {
 }
 
 #[test]
-fn the_compressor_shows_its_drive_shaft() {
-    // The machine's drive is a thick bar at the left, one radius long, at mid-height
-    // (X11400, RF038).
+fn the_compressor_has_no_drive_mark() {
+    // X11400 prints the circle, the triangle and the two ports. The previous record read a
+    // shaft bar from another symbology; the owner's 2026-11-25 correction removed it.
     let calls = draw_builtin("supply.compressor");
     let (centre, radius) = calls
         .iter()
@@ -263,24 +263,15 @@ fn the_compressor_shows_its_drive_shaft() {
             _ => None,
         })
         .expect("the compressor draws its circle");
-    let bar = calls
-        .iter()
-        .find_map(|call| match call {
-            Call::Rect { rect, .. } => Some(*rect),
-            _ => None,
-        })
-        .expect("the compressor draws its shaft bar");
+    let left = centre.x - radius;
+    let drive = calls.iter().any(|call| match call {
+        Call::Rect { .. } => true,
+        Call::Line { points, .. } => points.iter().all(|point| point.x < left - 0.01),
+        _ => false,
+    });
     assert!(
-        (bar.max.x - (centre.x - radius)).abs() < 0.01,
-        "the bar does not meet the circle's left: {bar:?}"
-    );
-    assert!(
-        (bar.min.y.midpoint(bar.max.y) - centre.y).abs() < 0.01,
-        "the bar is not at mid-height: {bar:?}"
-    );
-    assert!(
-        (bar.width() - radius).abs() < 0.1,
-        "the bar is not one radius long: {bar:?}"
+        !drive,
+        "the compressor draws a drive mark that X11400 does not print"
     );
 }
 

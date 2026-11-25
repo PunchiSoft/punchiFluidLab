@@ -1,6 +1,5 @@
 Circle { centre: Pt { x: 25.599998, y: 18.0 }, radius: 11.2, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
 Line { points: [Pt { x: 25.599998, y: 6.8 }, Pt { x: 29.44, y: 13.36 }, Pt { x: 21.760002, y: 13.36 }, Pt { x: 25.599998, y: 6.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
-Rect { rect: Rect { min: Pt { x: 3.1999998, y: 16.2 }, max: Pt { x: 14.4, y: 19.800001 } }, corner: 0.6, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
 Line { points: [Pt { x: 25.599998, y: 2.3999999 }, Pt { x: 25.599998, y: 6.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 25.599998, y: 29.2 }, Pt { x: 25.599998, y: 34.32 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 13.639999, y: 29.960001 }, Pt { x: 36.52, y: 7.08 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }

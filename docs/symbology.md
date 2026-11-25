@@ -145,7 +145,7 @@ reference set so that a hose is visibly meant to arrive there.
 | Symbol | Shape, and what carries the meaning |
 |---|---|
 | Compressed-air **network** | The bare **outline triangle** on a stem, **apex up at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering downwards, away from its own line. The source is drawn at the reference's **8 × 8 mm** (a small triangle, 4.6 × 4.0 mm) and prints **no numeral**: the triangle is the source, not a numbered port |
-| **Compressor** | The same triangle inside a **circle**, apex up, the point touching the delivery where the stem leaves the top; the **shaft bar** at the drive side, a thick bar at mid-height, because a machine shows its drive; the delivery above (port 2) and the intake below (port 1) |
+| **Compressor** | The same triangle inside a **circle**, apex up, the point touching the delivery where the stem leaves the top; the delivery above (port 2) and the intake below (port 1). `X11400` prints **no drive bar**: the previous record read one from another symbology and the owner's 2026-11-25 correction removed it |
 | **Adjustable compressor** | The compressor plus the **adjustability arrow** on the diameter, at 45°, with a filled head at the upper end; the standard allows a longer arrow |
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
 | **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal**, a **solid chord across the lower part** (the bowl the condensate collects in) and the **drain stem** leaving the bottom vertex. The element stops at the chord because the bowl owns the space below it. Without the chord and the stem it is a filter, not a separator with a drain |
@@ -492,11 +492,13 @@ Manual, once per symbol, signed off in the pull request:
   function, done by reading the standard — not by comparing with another program;
 - every port the symbol has is drawn (`RF052`) and carries the numeral `RF053` gives it
   (`1` inlet, `2`/`4` outlets, `3`/`5` exhausts, `12`/`14` pilots);
-- a machine shows its drive bar on the standard's side (`RF038`), and an adjustable one its
-  arrow on the diameter (`RF040`) or through the element (`RF048`);
+- a **pump** shows its drive shaft on the standard's side (`RF038`); `X11400`'s compressor
+  prints **no drive bar** (owner's 2026-11-25 correction); an adjustable symbol its arrow on
+  the diameter (`RF040`) or through the element (`RF048`);
 - the record names the edition read and the registration number of the figure;
-- every port designation sits clear of the outer boundary, the body and the primitive
-  lines, inside or outside but never on a line, in both themes;
+- every port designation sits **outside** the outer boundary, the body and the primitive
+  lines; a numeral never sits on the symbol, and the box grows if the margin is not enough,
+  in both themes;
 - the symbol is legible at 24 px (palette) and at 300 dpi (PDF export);
 - a screenshot of the symbol in light and dark themes is attached to the PR.
 
