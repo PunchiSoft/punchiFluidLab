@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### El filtro con purga automática — 2026-11-24
+
+- Componente nuevo **`filter.air_auto_drain`**: el mismo cuerpo de filtro con la cuerda del
+  vaso y el vástago de purga, separado de `filter.air_manual_drain` para que el usuario elija
+  la purga eligiendo el componente. El plan registra la marca como `X12200`/`F065V1`; la
+  figura no se releyó en esta pasada y la revisión lo dice en lugar de atribuirse una lectura
+  que no hizo.
+- La **automatización no se modela**: el solver no tiene un vaso que vaciar y el archivo
+  declara los dos puertos de trabajo. La revisión queda `pending-300dpi` hasta la firma.
+- La **opción manual/automática por colocación** se anota como capacidad propia y queda
+  `partial`: hoy se elige por archivo; la opción por colocación necesita un campo del formato
+  de hoja y un control del inspector, con el mismo patrón que las variantes de cilindro.
+- Evidencia: `the_two_drain_filters_are_separate_files`, la revisión y sus tres capturas, el
+  fixture de geometría, la fila de la familia en la matriz y las dos filas de capacidad.
+
 ### El filtro-regulador de la familia — 2026-11-24
 
 - Componente nuevo **`preparation.filter_regulator`**: filtro con purga manual, regulador de

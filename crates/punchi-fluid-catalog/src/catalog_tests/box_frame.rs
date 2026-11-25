@@ -159,3 +159,45 @@ fn the_filter_regulator_is_the_filter_and_regulator_without_a_lubricator() {
         "the filter-regulator must draw its chain-line frame"
     );
 }
+
+#[test]
+fn the_two_drain_filters_are_separate_files() {
+    let catalog = Catalog::builtin();
+    let manual = catalog
+        .get("filter.air_manual_drain")
+        .expect("the manual drain filter");
+    let auto = catalog
+        .get("filter.air_auto_drain")
+        .expect("the automatic drain filter");
+    assert_ne!(manual.id, auto.id);
+    assert_ne!(manual.name, auto.name);
+    assert_eq!(manual.port.len(), 2);
+    assert_eq!(auto.port.len(), 2);
+    // Both carry the bowl chord and the stem from the bottom vertex; the automatic one is
+    // its own file, so a user chooses the drain by choosing the component.
+    for definition in [manual, auto] {
+        assert!(
+            definition
+                .symbol
+                .iter()
+                .any(|primitive| primitive.kind == PrimitiveKind::Line
+                    && primitive.points == [0.5, 0.72, 0.5, 0.9]),
+            "{} has no drain stem",
+            definition.id
+        );
+        assert!(
+            definition
+                .symbol
+                .iter()
+                .filter(|primitive| {
+                    primitive.kind == PrimitiveKind::Line
+                        && primitive.points.len() == 4
+                        && (primitive.points[1] - 0.642).abs() < 1.0e-9
+                })
+                .count()
+                >= 1,
+            "{} has no bowl chord",
+            definition.id
+        );
+    }
+}

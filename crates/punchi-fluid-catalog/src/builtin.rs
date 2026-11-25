@@ -41,6 +41,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/filter.air_manual_drain.toml"),
     ),
     (
+        "filter.air_auto_drain.toml",
+        include_str!("../../../assets/catalog/filter.air_auto_drain.toml"),
+    ),
+    (
         "lubricator.oil.toml",
         include_str!("../../../assets/catalog/lubricator.oil.toml"),
     ),

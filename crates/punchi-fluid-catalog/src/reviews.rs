@@ -51,6 +51,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/filter.air_manual_drain.md"),
     ),
     (
+        "filter.air_auto_drain",
+        include_str!("../../../assets/symbols/review/filter.air_auto_drain.md"),
+    ),
+    (
         "lubricator.oil",
         include_str!("../../../assets/symbols/review/lubricator.oil.md"),
     ),
