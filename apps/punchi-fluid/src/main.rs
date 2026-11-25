@@ -10,9 +10,8 @@
 //! motion come from the desktop through `theme`.
 
 use eframe::egui;
-use punchi_fluid_catalog::Kinematics;
 use punchi_fluid_doc::{Align, Document, Placement, Turn};
-use punchi_fluid_draw::{CYLINDER_RATIO, Pt, SYMBOL_BOX_MM};
+use punchi_fluid_draw::Pt;
 #[cfg(test)]
 use punchi_fluid_export::sheet;
 use punchi_fluid_export::{Page, TitleBlock};
@@ -781,12 +780,8 @@ fn drop_position(
     page.contains(position).then_some(position)
 }
 
-/// The box a placed definition occupies on the sheet, in millimetres: a cylinder keeps the
-/// symbol's width ratio.
+/// The box a placed definition occupies on the sheet, in millimetres: its own declared
+/// box, so the drop, the palette and the templates agree.
 fn component_size(definition: &punchi_fluid_catalog::ComponentDefinition) -> (f32, f32) {
-    if definition.kinematics == Kinematics::LinearActuator {
-        (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)
-    } else {
-        (SYMBOL_BOX_MM, SYMBOL_BOX_MM)
-    }
+    punchi_fluid_draw::symbol_box_mm(definition)
 }

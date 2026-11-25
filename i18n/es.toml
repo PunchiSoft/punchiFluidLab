@@ -249,6 +249,7 @@ working = "Trabajo"
 pilot = "Pilotaje"
 drain = "Drenaje"
 electrical = "Eléctrica"
+boundary = "Contorno"
 
 [inspector.port]
 supply = "suministro"
@@ -533,6 +534,7 @@ working = "trabajo"
 pilot = "pilotaje"
 drain = "drenaje"
 electrical = "eléctrico"
+boundary = "contorno"
 
 [export.port]
 supply = "suministro"

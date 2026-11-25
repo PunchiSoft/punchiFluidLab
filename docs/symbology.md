@@ -110,9 +110,10 @@ application.** This project implements them; it does not own them and may not ad
   stub, at the position of the port in the definition. The numerals are the same in
   every square, which is what makes the valve readable when the spool moves.
 - Line classes are not interchangeable: working lines solid, pilot lines dashed,
-  drain lines dashed and distinct, electrical connections dotted. The renderer draws
-  each class with its own pattern; a definition declares which class a line belongs
-  to instead of picking a random dash pattern.
+  drain lines dashed and distinct, electrical connections dotted, and an assembly boundary a
+  **chain line** (a long dash, a gap, a dot and a gap). The renderer draws each class with
+  its own pattern; a definition declares which class a line belongs to instead of picking a
+  random dash pattern.
 
 ### Ports and their designations
 
@@ -127,6 +128,12 @@ application.** This project implements them; it does not own them and may not ad
   renderer places it beside its stub on the clear side; whether the standard asks for that
   position or only for the room is an open question of this contract, recorded here until
   the owner settles it.
+- **A designation outside a frame sits in the margin, beside its port.** When the ports are
+  drawn outside the unit's chain-line frame (the service unit, after the owner's 2026-11-24
+  decision), the numeral goes outside the frame too: `1` above the left stub and `2` below
+  the right one, each inside the symbol box and clear of the frame, the stubs and the drawn
+  parts. A numeral back inside the frame is the defect the owner reported on the reference
+  capture.
 
 ### The air line
 
@@ -143,34 +150,32 @@ reference set so that a hose is visibly meant to arrive there.
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
 | **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal**, a **solid chord across the lower part** (the bowl the condensate collects in) and the **drain stem** leaving the bottom vertex. The element stops at the chord because the bowl owns the space below it. Without the chord and the stem it is a filter, not a separator with a drain |
 | **Oil lubricator** | The same diamond, a **plain line from the top vertex toward the centre** and **no dashed element**: nothing is filtered here, oil is added. The line has no arrowhead, because a head would read as a flow direction; the absent element and the line are the difference |
-| **Service unit, full** | A **frame** around the functions, in the order the air meets them: the filter diamond with its bowl chord and drain, the regulator as an **upright square with the flow through it and the two facing arrows**, its **setting spring on top** with the **diagonal arrow** that says the setting is adjustable, its **vent** as an open triangle on the left and its **sensing line** from the outlet back to its underside, the **dial** as a gauge on a stem that taps the line after the regulator, and the **lubricator diamond** at the right |
-| **Service unit, simplified** | One body with the **dashed element line at the left**, the **dial** inside it and the **short mark on the top edge at the right**. It prints no drain: the drain belongs to the filter, and this form does not draw the filter as a separate part. A plain rectangle is not this symbol |
+| **Service unit, full** | A **chain-line frame** around the functions, in the order the air meets them: the filter diamond with its element down to the bowl chord, the chord and the drain, the regulator as an **upright square with the flow through it and the two facing arrows**, its **setting spring on top** with the **diagonal arrow** that says the setting is adjustable, its **vent** as an open triangle on the left and its **sensing line** from the outlet back to its underside, the **dial** as a gauge on a stem that taps the line after the regulator, and the **lubricator diamond** at the right. The ports sit **outside the frame** on the working line, and their numerals outside it, beside each port |
+| **Service unit, simplified** | One wide body with the **dashed element line at the left**, the **dial** inside it, the **purge arrow in the bottom band** and the **short mark on the top edge at the right**. This compact form carries the automatic drain by the owner's reference; the generic simplified figure of `X12160` does not print it, and the review says so. A plain rectangle is not this symbol |
 
 Rules that hold for all of them:
 
-- **The box is square.** The drawing is laid out as a horizontal band inside a square symbol
-  box, so the normalised coordinates map to the same number of millimetres on both axes. A
-  diamond drawn in a box that is wider than it is tall comes out stretched, and a stretched
-  symbol is not the symbol. The cylinder is the one exception, because its barrel is a
-  rectangle and a rectangle stays a rectangle.
+- **The box is the file's, and it follows the function.** The drawing is laid out inside a
+  symbol box declared by the definition (`box = [width, height]`), and the default is the
+  **20 mm square**. A square box is the rule for a valve, a filter or a supply; a cylinder
+  declares **44 × 20 mm**, because its barrel is a rectangle, and the two service units
+  declare **46 × 25 mm** and **40 × 20 mm**, the wide proportions of `X12160` that a square
+  box compressed. A cylinder's barrel fills 18.48 × 8.40 mm of its 44 × 20 mm box (2.2 : 1;
+  the figure's barrel is 2.23 : 1) and the rest of the box is the rod's travel. The box is a
+  project size and not a fraction of the sheet: A3 does not make a valve bigger and a crowded
+  A4 does not make it smaller. The worked example composes with
+  `min(0.26 · height, 0.17 · width, 20 mm)`, so a thumbnail shrinks below the rule and a full
+  sheet stops at it ([`schematic::layout`](../crates/punchi-fluid-draw/src/schematic.rs)).
+  A box that is not the declared one stretches the drawing: a 3/2 valve placed in a 1.2 : 1
+  box came out wide, which is a drawing that is not the symbol. The templates and the
+  worked example are checked for the declared box, and the capture
+  `assets/screenshots/symbol-size-light.png` records the 20 mm grid, where a valve box is
+  two cells across. The service unit's band used to be compressed into the square; the
+  review now records the 46 × 25 mm measures instead of claiming the proportions are the
+  figure's.
 - **A square stays a square.** The regulator's body is drawn as an upright square of equal
   sides, and the filter and the lubricator as squares turned 45°: four equal sides, diagonals
   meeting at the centre. The proportions are the shape's, not an accident of the box.
-- **Twenty millimetres, whatever the paper.** A symbol is read by shape, so its box is a
-  project size and not a fraction of the sheet: **20 mm square** for every component and
-  **44 × 20 mm** for a cylinder, whose barrel is the one rectangle. A cylinder's barrel
-  fills 18.48 × 8.40 mm of that box (2.2 : 1; the figure's barrel is 2.23 : 1) and the rest
-  of the box is the rod's travel. A3 does not make a valve
-  bigger and a crowded A4 does not make it smaller. The worked example composes with
-  `min(0.26 · height, 0.17 · width, 20 mm)`, so a thumbnail shrinks below the rule and a full
-  sheet stops at it ([`schematic::layout`](../crates/punchi-fluid-draw/src/schematic.rs)).
-  A box that is not that size stretches the drawing: a 3/2 valve placed in a 1.2 : 1 box came
-  out wide, which is a drawing that is not the symbol. The templates and the worked example
-  are checked for the aspect ratio, and the capture `assets/screenshots/symbol-size-light.png`
-  records it with the 10 mm grid, where one box is two cells across. The service unit is the
-  one crowded symbol: the standard draws `X12160` wider than tall and the square box
-  compresses the band, so its lubricator is smaller than its filter. Every mark is present and
-  the review records the compression instead of claiming the proportions are the figure's.
 - **The line stops at the symbol.** A working line is not drawn through the inside of a
   diamond: what is inside it is the element or the oil mark, and a line across it reads as two
   overlapping drawings. A square is different only when it is a valve body and the line is its
@@ -471,7 +476,7 @@ Automated (`symbol lint`, part of the catalog validation, milestone M1.5):
 - a declared envelope lies inside `0..=1`, contains the body, every port and the frame
   primitive; a missing envelope is allowed, a malformed one is not;
 - a port numeral is placed clear of the resolved outer boundary — the envelope, else the
-  body, else the 20 mm box — inside or outside but never on it, and clear of a primitive
+  body, else the symbol box — inside or outside but never on it, and clear of a primitive
   line; the draw test proves `preparation.service_unit` today and P-018b extends it to the
   rest of the inventory;
 - minimum legibility: stroke and gaps above the floor at the smallest palette size.
@@ -516,9 +521,12 @@ drawn by hand, and checked with the lint and the manual list.
 The structural half of the contract is **implemented** and the visual half is **reviewed at
 palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
 were signed by the second reader on 2026-11-24, and the symbols outside the core still wait
-for that signature. The signatures record the ISO 1219-1:2006 reading confirmed against
-JIS B 0125-1:2020; the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this
-machine, as the national-adoptions section says.
+for that signature. The 2026-11-24 correction of the two service units changed their
+drawing, so **their two reviews are `pending-300dpi` again** until the owner signs the new
+captures: the core is not complete while they are open, and the export keeps its unverified
+note. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
+the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this machine, as the
+national-adoptions section says.
 
 | Requirement | State | Evidence |
 |---|---|---|
@@ -526,17 +534,17 @@ machine, as the national-adoptions section says.
 | Blocking mark on every closed port of a position | **enforced** | drawn from `blocked`, never authored |
 | Port numerals from the `port` table | **enforced** | `parts::draw_port_numeral`; the file has no shape to disagree with |
 | Port designation per `RF053` | **partial** | the numerals come from the port table; whether the designation belongs above/left of the port is open (see “Ports and their designations”) |
-| A port designation clear of the symbol | **enforced for `preparation.service_unit`; the general rule is in the drawing** | `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing`; P-018b extends it to the rest |
+| A port designation clear of the symbol | **enforced for the two service units; the general rule is in the drawing** | `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing` and `the_simplified_service_unit_numerals_sit_outside_its_body`; P-018b extends it to the rest |
 | Flow path arrows along the connection | **enforced** | the path is routed from `connection`, the arrow points at its far end |
 | Spring and actuator as declared parts | **enforced** | `[spring]` / `[actuator]`, required by the lint |
-| Line classes with their own dash pattern | **enforced** | `line_class` on every line and polyline |
+| Line classes with their own dash pattern | **enforced** | `line_class` on every line and polyline; the boundary class is the chain line of `a_chain_line_draws_a_dash_a_gap_a_dot_and_a_gap`, and its four SVG values are in `a_chain_line_writes_its_four_dash_values` |
 | Pipe stroke from the tube size, capped below the frame | **enforced, reviewed by hand** | `tube_width_mm` and `the_line_width_is_the_series_width_below_the_frame`; the manual checklist and the 4/10/16 mm captures attached to the pull request |
 | Flow direction shown on a line that carries air | **enforced** | solid arrowhead on the line, straight from the sign of the flow |
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **drawn** | the content block is on the canvas and in the export ([capabilities](capabilities.md), [ADR 0030](adr/0030-the-block-protects-its-own-box.md)) |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **done for the core; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the rest are captured and unsigned |
-| Second reader's signature | **the core is signed; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24 |
+| Legible at 300 dpi | **done for the core except the two service units, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the two service units were redrawn on 2026-11-24 and await the owner's signature |
+| Second reader's signature | **the core was signed; the two service units are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24; the 2026-11-24 correction returns `preparation.service_unit` and `preparation.service_unit_simple` to `pending-300dpi` |
 
 Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/).
 The core's files read `status: complete`, signed by the second reader; the files outside the

@@ -27,6 +27,9 @@ pub use placed::{
 pub use route::{route_between_boxes, route_between_boxes_avoiding};
 pub use schematic::{
     CYLINDER_RATIO, Layout, SYMBOL_BOX_MM, draw, draw_readouts, draw_with_layout, layout,
+    layout_for,
 };
 pub use surface::{Anchor, Call, Colour, LineClass, Pt, Recording, Rect, Stroke, Surface, dashes};
-pub use symbol::{Ink, LINE, NUMERAL, draw_component, draw_component_preview, draw_valve};
+pub use symbol::{
+    Ink, LINE, NUMERAL, draw_component, draw_component_preview, draw_valve, symbol_box_mm,
+};

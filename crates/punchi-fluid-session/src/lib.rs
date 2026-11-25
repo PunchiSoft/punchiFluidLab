@@ -178,8 +178,10 @@ pub fn to_sheet(document: &Document) -> Sheet {
                 LineClass::Pilot => punchi_fluid_file::sheet::StoredClass::Pilot,
                 LineClass::Drain => punchi_fluid_file::sheet::StoredClass::Drain,
                 // The file has no electrical class yet, so a line the format cannot name is
-                // written as working until F6 gives it one.
-                LineClass::Working | LineClass::Electrical => {
+                // written as working until F6 gives it one. A document cannot hold the
+                // boundary class either (the document refuses it), so this arm is a
+                // defensive fallback for a value the sheet format cannot represent.
+                LineClass::Working | LineClass::Electrical | LineClass::Boundary => {
                     punchi_fluid_file::sheet::StoredClass::Working
                 }
             },

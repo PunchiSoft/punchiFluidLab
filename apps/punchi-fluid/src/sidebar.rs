@@ -13,10 +13,10 @@
 //! back, exactly as the right dock does.
 
 use eframe::egui;
-use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition, Kinematics};
+use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition};
 use punchi_fluid_draw::surface::Colour;
 use punchi_fluid_draw::symbol::Ink;
-use punchi_fluid_draw::{CYLINDER_RATIO, Pt, Rect, SYMBOL_BOX_MM, draw_component_preview};
+use punchi_fluid_draw::{Pt, Rect, draw_component_preview};
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
@@ -63,14 +63,10 @@ fn matches(definition: &ComponentDefinition, filter: &str) -> bool {
             .is_some_and(|name| name.to_lowercase().contains(&filter))
 }
 
-/// The symbol box of a definition, in millimetres: the canonical square, or the actuator's
-/// wider barrel box, the same box the templates place.
+/// The symbol box of a definition, in millimetres: the one its file declares, the same
+/// the templates place and the drop uses.
 fn box_of(definition: &ComponentDefinition) -> (f32, f32) {
-    if definition.kinematics == Kinematics::LinearActuator {
-        (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)
-    } else {
-        (SYMBOL_BOX_MM, SYMBOL_BOX_MM)
-    }
+    punchi_fluid_draw::symbol_box_mm(definition)
 }
 
 /// The ink of a thumbnail: the desktop's colours, not the printed sheet's.

@@ -212,6 +212,7 @@ fn export_labels(language: Language) -> Labels {
         class_pilot: language.text("export.class.pilot"),
         class_drain: language.text("export.class.drain"),
         class_electrical: language.text("export.class.electrical"),
+        class_boundary: language.text("export.class.boundary"),
         port_supply: language.text("export.port.supply"),
         port_working: language.text("export.port.working"),
         port_exhaust: language.text("export.port.exhaust"),

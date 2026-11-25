@@ -19,6 +19,7 @@ name_es = "Cilindro de doble efecto, 32/200"
 category = "actuator"
 summary = "32 mm bore, 200 mm stroke, two working ports."
 kinematics = "linear_actuator"
+box = [44, 20]
 
 # Port 1 extends, port 2 retracts, one drilled in each end cap. Both sit between an end
 # wall and its cap's inner face, at the same depth from their wall and leaving their cap

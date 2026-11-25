@@ -89,6 +89,7 @@ fn class_label(labels: &Labels, class: LineClass) -> &'static str {
         LineClass::Pilot => labels.class_pilot,
         LineClass::Drain => labels.class_drain,
         LineClass::Electrical => labels.class_electrical,
+        LineClass::Boundary => labels.class_boundary,
     }
 }
 
@@ -137,6 +138,9 @@ fn class_rank(class: LineClass) -> u8 {
         LineClass::Pilot => 1,
         LineClass::Drain => 2,
         LineClass::Electrical => 3,
+        // A hose cannot carry the boundary class, so this rank is only here to keep the
+        // match total; the session refuses the class before a pipe can reach the list.
+        LineClass::Boundary => 4,
     }
 }
 
@@ -419,6 +423,29 @@ mod tests {
         assert_eq!(
             list.tubes[2].text(&crate::test_labels::spanish()),
             "Tubo 10 mm · pilotaje · < 0,1 m"
+        );
+    }
+
+    #[test]
+    fn the_boundary_class_has_a_label_and_never_panics_the_list() {
+        // A hose cannot carry the boundary class (the document refuses it), but the parts
+        // list is a lower-level API and its match must stay total: a row that arrives with
+        // the class prints the class's label instead of dropping the row or panicking.
+        let list = PartsList::group(
+            &Catalog::builtin(),
+            [],
+            [],
+            [TubeRowInput {
+                od: Some(600),
+                class: LineClass::Boundary,
+                length_mm: 2_000,
+            }],
+            &crate::test_labels::spanish(),
+        );
+        assert_eq!(list.tubes.len(), 1);
+        assert_eq!(
+            list.tubes[0].text(&crate::test_labels::spanish()),
+            "Tubo 6 mm · contorno · 2,0 m"
         );
     }
 

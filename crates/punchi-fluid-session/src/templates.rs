@@ -43,12 +43,21 @@ struct Part {
 }
 
 impl Part {
-    fn at(area: Rect, unit: f32, catalog_id: &'static str, x: f32, y: f32, w: f32, h: f32) -> Self {
+    /// A part at a normalised position of the area, sized by the box its own file
+    /// declares. The catalog is the source of the size: a template does not choose it.
+    fn at(area: Rect, catalog: &Catalog, catalog_id: &'static str, x: f32, y: f32) -> Self {
+        let (width, height) = catalog.get(catalog_id).map_or(
+            (
+                punchi_fluid_draw::SYMBOL_BOX_MM,
+                punchi_fluid_draw::SYMBOL_BOX_MM,
+            ),
+            punchi_fluid_draw::symbol_box_mm,
+        );
         Self {
             catalog_id,
             centre: area.point_at(x, y),
-            width: unit * w,
-            height: unit * h,
+            width,
+            height,
         }
     }
 }
@@ -110,138 +119,97 @@ const ELECTRICAL_CONTROL_WIRES: [Wire; 5] = [
 
 type Composition = (Vec<Part>, &'static [Wire]);
 
-fn worked_example(area: Rect) -> Composition {
+fn worked_example(area: Rect, catalog: &Catalog) -> Composition {
     // The OR circuit of the owner: the supply feeds the service unit, the unit feeds two
     // 3/2 valves, the valves feed the two inlets of the shuttle and the shuttle feeds the
-    // single-acting cylinder.
-    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+    // single-acting cylinder. Each part takes the box its own file declares.
     (
         vec![
             Part::at(
                 area,
-                unit,
+                catalog,
                 punchi_fluid_draw::schematic::SUPPLY_ID,
-                0.12,
-                0.80,
-                1.0,
-                1.0,
+                0.08,
+                0.82,
             ),
             Part::at(
                 area,
-                unit,
+                catalog,
                 punchi_fluid_draw::schematic::PREPARATION_ID,
-                0.24,
-                0.68,
-                1.0,
-                1.0,
+                0.30,
+                0.72,
             ),
             Part::at(
                 area,
-                unit,
+                catalog,
                 punchi_fluid_draw::schematic::VALVE_ID,
-                0.36,
-                0.56,
-                1.0,
-                1.0,
-            ),
-            Part::at(
-                area,
-                unit,
-                punchi_fluid_draw::schematic::VALVE_ID,
-                0.52,
-                0.56,
-                1.0,
-                1.0,
-            ),
-            Part::at(area, unit, "valve.shuttle", 0.44, 0.42, 1.0, 1.0),
-            Part::at(
-                area,
-                unit,
-                punchi_fluid_draw::schematic::CYLINDER_ID,
                 0.54,
-                0.26,
-                2.2,
-                1.0,
+                0.56,
+            ),
+            Part::at(
+                area,
+                catalog,
+                punchi_fluid_draw::schematic::VALVE_ID,
+                0.70,
+                0.56,
+            ),
+            Part::at(area, catalog, "valve.shuttle", 0.60, 0.33),
+            Part::at(
+                area,
+                catalog,
+                punchi_fluid_draw::schematic::CYLINDER_ID,
+                0.84,
+                0.20,
             ),
         ],
         &WORKED_EXAMPLE_WIRES,
     )
 }
 
-fn double_acting(area: Rect) -> Composition {
-    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
-    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+fn double_acting(area: Rect, catalog: &Catalog) -> Composition {
     (
         vec![
-            Part::at(area, unit, "supply.compressor", 0.10, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "valve.5_2.spring_return", 0.43, 0.58, 1.0, 1.0),
-            Part::at(
-                area,
-                unit,
-                "cylinder.double_acting_32_200",
-                0.80,
-                0.27,
-                2.2,
-                1.0,
-            ),
+            Part::at(area, catalog, "supply.compressor", 0.08, 0.76),
+            Part::at(area, catalog, "valve.5_2.spring_return", 0.42, 0.58),
+            Part::at(area, catalog, "cylinder.double_acting_32_200", 0.84, 0.24),
         ],
         &DOUBLE_ACTING_WIRES,
     )
 }
 
-fn air_preparation(area: Rect) -> Composition {
-    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
-    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+fn air_preparation(area: Rect, catalog: &Catalog) -> Composition {
     (
         vec![
-            Part::at(area, unit, "supply.compressor", 0.10, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "filter.air", 0.29, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "preparation.service_unit", 0.48, 0.76, 1.0, 1.0),
-            Part::at(area, unit, "valve.3_2.spring_return", 0.68, 0.53, 1.0, 1.0),
-            Part::at(
-                area,
-                unit,
-                "cylinder.single_acting_20_100",
-                0.84,
-                0.23,
-                2.2,
-                1.0,
-            ),
+            Part::at(area, catalog, "supply.compressor", 0.08, 0.76),
+            Part::at(area, catalog, "filter.air", 0.26, 0.76),
+            Part::at(area, catalog, "preparation.service_unit", 0.50, 0.72),
+            Part::at(area, catalog, "valve.3_2.spring_return", 0.75, 0.52),
+            Part::at(area, catalog, "cylinder.single_acting_20_100", 0.84, 0.22),
         ],
         &AIR_PREPARATION_WIRES,
     )
 }
 
-fn electrical_control(area: Rect) -> Composition {
-    // The size is the project's, not a fraction of the paper: a symbol is read by shape.
-    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
+fn electrical_control(area: Rect, catalog: &Catalog) -> Composition {
     (
         vec![
-            Part::at(area, unit, "supply.compressor", 0.10, 0.77, 1.0, 1.0),
-            Part::at(area, unit, "preparation.service_unit", 0.30, 0.77, 1.0, 1.0),
-            Part::at(area, unit, "valve.3_2.solenoid", 0.55, 0.77, 1.0, 1.0),
-            Part::at(
-                area,
-                unit,
-                "cylinder.single_acting_20_100",
-                0.84,
-                0.77,
-                2.2,
-                1.0,
-            ),
-            Part::at(area, unit, "electrical.supply", 0.15, 0.20, 1.0, 1.0),
-            Part::at(area, unit, "electrical.contact", 0.43, 0.20, 1.0, 1.0),
+            Part::at(area, catalog, "supply.compressor", 0.08, 0.77),
+            Part::at(area, catalog, "preparation.service_unit", 0.34, 0.72),
+            Part::at(area, catalog, "valve.3_2.solenoid", 0.62, 0.77),
+            Part::at(area, catalog, "cylinder.single_acting_20_100", 0.86, 0.75),
+            Part::at(area, catalog, "electrical.supply", 0.15, 0.20),
+            Part::at(area, catalog, "electrical.contact", 0.43, 0.20),
         ],
         &ELECTRICAL_CONTROL_WIRES,
     )
 }
 
-fn composition(template: Template, area: Rect) -> Composition {
+fn composition(template: Template, catalog: &Catalog, area: Rect) -> Composition {
     match template {
-        Template::WorkedExample => worked_example(area),
-        Template::DoubleActing => double_acting(area),
-        Template::AirPreparation => air_preparation(area),
-        Template::ElectricalControl => electrical_control(area),
+        Template::WorkedExample => worked_example(area, catalog),
+        Template::DoubleActing => double_acting(area, catalog),
+        Template::AirPreparation => air_preparation(area, catalog),
+        Template::ElectricalControl => electrical_control(area, catalog),
     }
 }
 
@@ -254,7 +222,7 @@ fn composition(template: Template, area: Rect) -> Composition {
 pub fn document(index: u32, catalog: &Catalog, area: Rect) -> Result<Document, String> {
     let template = Template::from_index(index)
         .ok_or_else(|| String::from("that start-page template does not exist"))?;
-    let (parts, wires) = composition(template, area);
+    let (parts, wires) = composition(template, catalog, area);
 
     for part in &parts {
         if catalog.get(part.catalog_id).is_none() {
@@ -325,30 +293,41 @@ mod tests {
             let document = document(index, &catalog, area).expect("template should build");
             assert_eq!(document.placements().len(), components);
             assert_eq!(document.connections().len(), pipes);
-            for part in document.placements() {
+            for (position, part) in document.placements().iter().enumerate() {
                 assert!(
                     part.rect().min.x >= area.min.x
                         && part.rect().max.x <= area.max.x
                         && part.rect().min.y >= area.min.y
                         && part.rect().max.y <= area.max.y
                 );
-                // A box that is not the canonical size stretches the symbol: a 3/2 valve in
-                // a 1.2 : 1 box is a drawing that is not the symbol. The cylinder is the
-                // only rectangle, because its barrel is one.
-                let ratio = part.width / part.height;
-                if part.catalog_id.starts_with("cylinder.") {
-                    assert!((ratio - punchi_fluid_draw::CYLINDER_RATIO).abs() < 0.01);
-                    assert!((part.height - punchi_fluid_draw::SYMBOL_BOX_MM).abs() < 0.01);
-                } else {
+                for other in document.placements().iter().skip(position + 1) {
+                    let (a, b) = (part.rect(), other.rect());
+                    let overlap = a.min.x < b.max.x
+                        && b.min.x < a.max.x
+                        && a.min.y < b.max.y
+                        && b.min.y < a.max.y;
                     assert!(
-                        (ratio - 1.0).abs() < 0.001,
-                        "{} is not square: {} x {}",
-                        part.catalog_id,
-                        part.width,
-                        part.height
+                        !overlap,
+                        "template {}: {} and {} overlap: {a:?} {b:?}",
+                        index, part.catalog_id, other.catalog_id
                     );
-                    assert!((part.width - punchi_fluid_draw::SYMBOL_BOX_MM).abs() < 0.01);
                 }
+                // A box that is not the one its file declares stretches the symbol: a 3/2
+                // valve in a 1.2 : 1 box is a drawing that is not the symbol. The declared
+                // box is the datum, so a template cannot choose another size.
+                let definition = catalog
+                    .get(&part.catalog_id)
+                    .expect("the template's catalog entry exists");
+                let (expected_width, expected_height) =
+                    punchi_fluid_draw::symbol_box_mm(definition);
+                assert!(
+                    (part.width - expected_width).abs() < 0.01
+                        && (part.height - expected_height).abs() < 0.01,
+                    "{} is {} x {}, not the declared {expected_width} x {expected_height}",
+                    part.catalog_id,
+                    part.width,
+                    part.height
+                );
             }
         }
     }

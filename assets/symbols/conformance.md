@@ -19,10 +19,10 @@ valves, the OR/AND, the cylinders and the terminations. The rest of the catalog 
 this pass and keeps its own record.
 
 The **second reader is Cristian Muñoz, the owner**: he signed the core's records on
-2026-11-24, and that signature is what closes a row, so every row below reads `done`. The
-batch command `symbol-sheet --all assets/symbols/review` regenerated the three captures of
-every built-in; the core's captures did not change, because the Phase 2–6 passes had already
-written them from the same drawing code.
+2026-11-24, and that signature is what closes a row. Every row read `done` after that
+signature. The **2026-11-24 correction of the two service units** changed their drawing
+(box, chain-line frame, ports and numerals outside, internal forms), so those two rows are
+`in review` again until the owner signs the new captures; the rest of the core stays `done`.
 
 ## The core
 
@@ -34,8 +34,8 @@ written them from the same drawing code.
 | `filter.air` | conditioning | `X11980` (7.4.4.1) | 2 | `done` | [review](review/filter.air.md) |
 | `filter.air_manual_drain` | conditioning | `X12190` (7.4.4.20) | 2 + drain mark | `done` | [review](review/filter.air_manual_drain.md) |
 | `lubricator.oil` | conditioning | `X12240` (7.4.4.25) | 2 | `done` | [review](review/lubricator.oil.md) |
-| `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2 | `done` | [review](review/preparation.service_unit.md) |
-| `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation | 2 | `done` | [review](review/preparation.service_unit_simple.md) |
+| `preparation.service_unit` | conditioning | `X12160` (7.4.4.17) | 2, outside the chain-line frame | `in review` | [review](review/preparation.service_unit.md) |
+| `preparation.service_unit_simple` | conditioning | `X12160` (7.4.4.17), simplified representation, with the owner's automatic-drain purge arrow | 2, outside the body | `in review` | [review](review/preparation.service_unit_simple.md) |
 | `valve.3_2.base` | valve | `X10280` (6.1.2.6 / 7.1.2.8): composition of the body and positions, no single X-number | 3 | `done` | [review](review/valve.3_2.base.md) |
 | `valve.3_2.spring_return` | valve | `X10270` (6.1.2.5 / 7.1.2.7) body and spring + `688V1` lever | 3 | `done` | [review](review/valve.3_2.spring_return.md) |
 | `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `done` | [review](review/valve.3_2.solenoid.md) |
@@ -53,6 +53,15 @@ spring-chamber connection at the rod end; the catalog declares the working port 
 recorded `RF052` omission (the model has one working chamber and the schema has no breather
 role). The record states the omission instead of drawing a port the model does not have, and
 the row is `done` on a complete, signed record that names it.
+
+**The service-unit correction (2026-11-24).** The owner rejected the drawn FRL: the box was
+a 20 mm square that compressed the band, the frame was dashed instead of a chain line, the
+numerals sat inside the frame and the internal forms were too small. The two files now
+declare their boxes (`46 × 25` and `40 × 20`), draw the frame with the new `boundary` class,
+put the ports and their numerals outside it, and redraw the filter, regulator, gauge,
+lubricator and the compact's purge arrow at the reference's proportion. The two rows are
+`in review` because the reviews and their three captures are rewritten and the owner has not
+signed them yet; the export keeps its unverified note while they are open.
 
 The four terminations and pressure elements are `done` after the Phase 6 and Phase 7 passes.
 Two differences are recorded rather than hidden: the plug is drawn with `2172V1`'s

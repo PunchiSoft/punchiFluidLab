@@ -14,8 +14,10 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::switch::{LimitEnd, RelayKind};
 
+mod line_class;
 mod port;
 
+pub use line_class::LineClass;
 pub use port::{Port, Primitive, PrimitiveKind};
 
 /// Version of the file format understood by this build.
@@ -117,36 +119,6 @@ pub enum PressureKind {
     Shuttle,
     /// Two-pressure valve (AND): the outlet follows the lower while both are in pressure.
     TwoPressure,
-}
-
-/// Kind of line, with its own pattern in the drawing.
-///
-/// The class is not decorative: a pilot line drawn solid is a misreading risk, so the
-/// renderer picks the pattern and the definition only declares the class.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum LineClass {
-    /// Working line, carries the fluid.
-    Working,
-    /// Pilot line, carries a control signal of the same fluid.
-    Pilot,
-    /// Drain or leak line.
-    Drain,
-    /// Electrical connection.
-    Electrical,
-}
-
-impl LineClass {
-    /// Stable name written in the definition file.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Working => "working",
-            Self::Pilot => "pilot",
-            Self::Drain => "drain",
-            Self::Electrical => "electrical",
-        }
-    }
 }
 
 /// End of the symbol box where a part sits.
@@ -657,6 +629,16 @@ pub struct ComponentDefinition {
     /// per position.
     #[serde(default)]
     pub body: Option<[f64; 4]>,
+    /// Box the symbol occupies on the sheet, `[width, height]` in millimetres.
+    ///
+    /// Absent means the canonical 20 mm square. A cylinder declares the wider box its
+    /// barrel needs, and the two service units declare the wide frame the standard draws
+    /// (`X12160`), because their proportions are the function's and not the renderer's
+    /// choice. The box is a datum of the file: the palette preview, the drop and the
+    /// templates read the same numbers, so a symbol cannot change size because it
+    /// arrived by a different route.
+    #[serde(rename = "box", default)]
+    pub box_mm: Option<[f64; 2]>,
     /// Functional outer boundary of the whole symbol, `[x1, y1, x2, y2]`: the two
     /// opposite corners in coordinates of the symbol box.
     ///
@@ -666,6 +648,15 @@ pub struct ComponentDefinition {
     /// against `body`, then against the whole 20 mm box.
     #[serde(default)]
     pub envelope: Option<[f64; 4]>,
+    /// Frame the ports and their numerals are read against, `[x1, y1, x2, y2]`.
+    ///
+    /// The envelope is the symbol's outer extent and contains the ports even when they sit
+    /// outside the frame; the frame is the line the designations belong outside of. A
+    /// symbol that draws an assembly boundary with the `boundary` class does not need this:
+    /// the drawn frame is the boundary. The simplified service unit declares it because its
+    /// body is a solid rectangle, not a chain line, and the ports sit outside it.
+    #[serde(default)]
+    pub frame: Option<[f64; 4]>,
     /// Return spring, drawn by the renderer at the declared end.
     ///
     /// The short spelling of `[return] kind = "spring"`; a file declares one or the
@@ -774,5 +765,20 @@ impl ComponentDefinition {
             Behaviour::Valve { positions, .. } => positions.len(),
             _ => 1,
         }
+    }
+
+    /// The symbol box this file declares, in millimetres, or `None` for the canonical
+    /// square.
+    ///
+    /// The loader validates the pair: finite, positive and inside the documented bounds,
+    /// so a caller can trust the numbers here.
+    #[must_use]
+    pub fn declared_box_mm(&self) -> Option<[f32; 2]> {
+        self.box_mm.map(|[width, height]| {
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                [width as f32, height as f32]
+            }
+        })
     }
 }

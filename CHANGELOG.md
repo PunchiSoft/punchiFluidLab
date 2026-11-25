@@ -6,6 +6,42 @@ publicación.
 
 ## Unreleased
 
+### El FRL, redibujado con su caja, su marco y sus números fuera — 2026-11-24
+
+- La **unidad de mantenimiento completa** y la **simplificada** declaran su caja en el
+  archivo: **46 × 25 mm** y **40 × 20 mm**, las proporciones que el dueño derivó de su
+  referencia con un cilindro como escala. El campo `box` es dato de la definición; el
+  catálogo lo valida entre 1 y 200 mm, y la paleta, el arrastre y las plantillas leen la
+  misma caja. Los cilindros declaran también la suya (44 × 20) y se retira la regla por
+  categoría.
+- Nueva clase de línea **`boundary`**: el marco de conjunto de `X12160` se dibuja como
+  **trazo y punto** (raya, hueco, punto, hueco) en pantalla, PNG, PDF y SVG. Recorre el
+  esquema, el catálogo, el dibujo, el export, la i18n y el `ffi`; un tubo no puede llevarla
+  y el formato de hoja no gana la clase, así que no sube versión.
+- Los **puertos** de las dos unidades van **fuera del marco** (x ≈ 0,04/0,96), los stubs lo
+  cruzan y los **numerales** quedan **fuera, junto a su puerto**: `1` sobre el stub izquierdo
+  y `2` bajo el derecho, dentro de la caja y limpios del marco y del dibujo. La prueba
+  `the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing` cambia su criterio (de
+  dentro a fuera), no se debilita; la simplificada gana la suya.
+- **Formas internas** a la proporción de la referencia y con medidas de la norma: filtro con
+  el elemento hasta la cuerda, cuerda y purga; regulador cuadrado con las dos flechas,
+  muelle y flecha diagonal, venteo y realimentación discontinua; manómetro con aguja desde el
+  centro y punto de toma; lubricador al final. La simplificada lleva el cuerpo ancho, el
+  elemento, el manómetro, la **flecha de purga automática** en la banda inferior y la marca
+  corta del lubricador en el borde superior.
+- Las **dos revisiones** vuelven a `pending-300dpi` con la caja, las medidas y la diferencia
+  anotada (la figura simplificada genérica de `X12160` no imprime la purga; este compacto la
+  lleva por la referencia del dueño y la marca de purga automática). Sus capturas 300 dpi,
+  claro y oscuro se regeneran; la matriz, el contrato, las filas de capacidad y este
+  changelog viajan en el mismo PR.
+- El capturador `symbol-sheet` dibuja ahora cada símbolo en **su caja declarada** (lado mayor
+  a 40 mm, sin reducir), no en un cuadrado de 40 × 40 que estiraba las unidades y los
+  cilindros.
+- Evidencia: las pruebas del campo `box` y del `frame`, `a_chain_line_draws_a_dash_a_gap_a_dot_and_a_gap`,
+  `a_chain_line_writes_its_four_dash_values`, `a_hose_cannot_take_the_assembly_boundary_class`,
+  `the_composition_uses_the_boxes_the_files_declare` y las dos pruebas de numerales; fixtures
+  de geometría regenerados; compuerta completa en la rama. El formato de hoja sigue en 15.
+
 ### La simbología del núcleo, revisada y firmada — 2026-11-24
 
 - Cierre del plan de simbología aprobado el 2026-11-24, fases 1–7: el contrato

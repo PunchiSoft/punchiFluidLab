@@ -395,6 +395,8 @@ fn class_code(class: LineClass) -> u32 {
         LineClass::Pilot => 1,
         LineClass::Drain => 2,
         LineClass::Electrical => 3,
+        // A symbol primitive may carry the assembly boundary; it is not a pipe class.
+        LineClass::Boundary => 4,
     }
 }
 
@@ -2354,7 +2356,7 @@ impl PfSession {
     /// The sheet starts with the circuit the model simulates, at the positions the fixed
     /// layout uses, so the picture the user already knows is the starting document.
     fn seed_document(&mut self, area: Rect) {
-        let Some(layout) = punchi_fluid_draw::layout(area) else {
+        let Some(layout) = punchi_fluid_draw::layout_for(area, &self.catalog) else {
             return;
         };
         // The unit is seeded last on purpose: the order of this list is the index the ABI
@@ -3404,20 +3406,14 @@ pub unsafe extern "C" fn pf_session_restart(session: *mut PfSession) -> i32 {
     })
 }
 
-/// The box a component of this category takes when it is dropped on the sheet.
+/// The box a component takes when it is dropped on the sheet.
 ///
-/// A drop takes exactly the box the templates use: the canonical symbol square, and a
-/// cylinder whose barrel is [`punchi_fluid_draw::CYLINDER_RATIO`] wide. The symbol is read
-/// by shape, so a component does not change size because it arrived by drag instead of in
-/// a template. The valve box stays square: its body is two cells side by side inside one
-/// square box, and a rectangle would squash them to half their height.
-fn default_size(category: u32) -> (f32, f32) {
-    let unit = punchi_fluid_draw::SYMBOL_BOX_MM;
-    if category == PF_CATEGORY_ACTUATOR {
-        (unit * punchi_fluid_draw::CYLINDER_RATIO, unit)
-    } else {
-        (unit, unit)
-    }
+/// A drop takes exactly the box the templates use: the one the definition file declares,
+/// which is the canonical symbol square unless the file says otherwise (a cylinder's wider
+/// barrel, the service units' wide frame). The symbol is read by shape, so a component does
+/// not change size because it arrived by drag instead of in a template.
+fn default_size(definition: &punchi_fluid_catalog::ComponentDefinition) -> (f32, f32) {
+    punchi_fluid_draw::symbol_box_mm(definition)
 }
 
 /// Snaps a point to the grid the sheet draws, so components line up instead of floating.
@@ -3450,7 +3446,7 @@ pub unsafe extern "C" fn pf_session_place_component(
         let Some(definition) = session.catalog.get(&id) else {
             return session.fail("the catalog entry disappeared");
         };
-        let (width, height) = default_size(category_code(definition.category));
+        let (width, height) = default_size(definition);
         let centre = session.clear_of_block(
             Pt::new(
                 snap(x_mm, session.grid_step_mm),
@@ -6648,8 +6644,9 @@ pub unsafe extern "C" fn pf_session_pipe_class(session: *const PfSession, index:
         LineClass::Working => 0,
         LineClass::Pilot => 1,
         LineClass::Drain => 2,
-        // The electrical class arrives with F6; the ABI does not offer it yet.
-        LineClass::Electrical => PF_ERR_MODEL,
+        // The electrical class arrives with F6; the ABI does not offer it yet. A hose is
+        // not an assembly boundary either, so no pipe can carry the boundary class.
+        LineClass::Electrical | LineClass::Boundary => PF_ERR_MODEL,
     }
 }
 
@@ -9172,6 +9169,7 @@ fn english_labels() -> punchi_fluid_export::Labels {
         class_pilot: "pilot",
         class_drain: "drain",
         class_electrical: "electrical",
+        class_boundary: "boundary",
         port_supply: "supply",
         port_working: "working",
         port_exhaust: "exhaust",

@@ -49,6 +49,7 @@ pub struct Labels {
     pub class_pilot: &'static str,
     pub class_drain: &'static str,
     pub class_electrical: &'static str,
+    pub class_boundary: &'static str,
     /// Port roles in the closure rows.
     pub port_supply: &'static str,
     pub port_working: &'static str,
@@ -90,6 +91,7 @@ impl Default for Labels {
             class_pilot: "",
             class_drain: "",
             class_electrical: "",
+            class_boundary: "",
             port_supply: "",
             port_working: "",
             port_exhaust: "",

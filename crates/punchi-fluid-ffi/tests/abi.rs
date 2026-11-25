@@ -1403,6 +1403,26 @@ fn a_dropped_valve_and_cylinder_take_the_template_box() {
 }
 
 #[test]
+fn a_dropped_service_unit_takes_its_declared_box() {
+    // The 46 x 25 mm box is a datum of the catalog file, so a drop and a template take the
+    // same size; before the `box` field the drop used the canonical square and squashed it.
+    let session = self::session();
+    let unit = catalog_index(session, "preparation.service_unit");
+    // SAFETY: live session and finite coordinates.
+    let placed = unsafe { pf_session_place_component(session, unit, 100.0, 80.0) };
+    assert!(placed >= 0, "the service unit is placed");
+    let rect = component_box(session, u32::try_from(placed).unwrap_or_default());
+    let width = rect[2] - rect[0];
+    let height = rect[3] - rect[1];
+    assert!(
+        (width - 46.0).abs() < 0.01 && (height - 25.0).abs() < 0.01,
+        "a dropped service unit is its 46 x 25 mm box, not {width} x {height}"
+    );
+    // SAFETY: the session is still alive.
+    unsafe { pf_session_free(session) };
+}
+
+#[test]
 fn a_component_dropped_on_the_sheet_can_be_moved_and_undone() {
     let session = session();
     let mut frame = PfFrame::default();

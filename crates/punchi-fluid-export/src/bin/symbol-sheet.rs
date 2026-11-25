@@ -121,13 +121,23 @@ fn capture(
     ink: Ink,
     fit: bool,
 ) -> Result<(), String> {
-    if catalog.get(id).is_none() {
-        return Err(format!("no such symbol: {id}"));
-    }
+    let definition = catalog
+        .get(id)
+        .ok_or_else(|| format!("no such symbol: {id}"))?;
+    // The capture keeps the symbol's own proportions: the declared box, enlarged to a
+    // 40 mm longest side when it is smaller, but never shrunk. A 20 mm square is drawn
+    // twice its size (as before); the wide service unit is drawn at its 46 x 25 mm, where
+    // its margin and its numeral fit, instead of being stretched into a square.
+    let (width, height) = punchi_fluid_draw::symbol_box_mm(definition);
+    let scale = (40.0 / width.max(height)).max(1.0);
     let mut placed = Placed {
         index: 0,
         catalog_id: id,
-        rect: Rect::from_center_size(Pt::new(PAGE_MM * 0.5, PAGE_MM * 0.5), 40.0, 40.0),
+        rect: Rect::from_center_size(
+            Pt::new(PAGE_MM * 0.5, PAGE_MM * 0.5),
+            width * scale,
+            height * scale,
+        ),
         extension: 0.0,
         moving: None,
         valve_position: 0,

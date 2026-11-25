@@ -23,6 +23,23 @@ pub const LINE: f32 = 0.35;
 pub const NUMERAL: f32 = 3.0;
 /// Smallest symbol box that still shows its numerals.
 pub const NUMERAL_FLOOR: f32 = 12.0;
+
+/// Box a definition occupies on the sheet, in millimetres.
+///
+/// The file declares it with `box = [width, height]`; a file without the key keeps the
+/// canonical [`crate::schematic::SYMBOL_BOX_MM`] square. The palette, the drop and the
+/// templates all read this one function, so a symbol cannot take one size when it is
+/// dragged and another when a template places it.
+#[must_use]
+pub fn symbol_box_mm(definition: &ComponentDefinition) -> (f32, f32) {
+    definition.declared_box_mm().map_or(
+        (
+            crate::schematic::SYMBOL_BOX_MM,
+            crate::schematic::SYMBOL_BOX_MM,
+        ),
+        |[width, height]| (width, height),
+    )
+}
 /// Share of a cylinder barrel's length taken by each end cap, as a fraction of its width.
 ///
 /// A cylinder's working port is drilled in an end cap, so the chamber the piston crosses
@@ -79,6 +96,7 @@ fn class_of(primitive: &Primitive) -> LineClass {
         Some(CatalogLineClass::Pilot) => LineClass::Pilot,
         Some(CatalogLineClass::Drain) => LineClass::Drain,
         Some(CatalogLineClass::Electrical) => LineClass::Electrical,
+        Some(CatalogLineClass::Boundary) => LineClass::Boundary,
         Some(CatalogLineClass::Working) | None => LineClass::Working,
     }
 }
@@ -390,12 +408,63 @@ pub fn draw_numeral(
 
 /// A side port joins the symbol through a horizontal stub; place the numeral on the
 /// clear side of the boundary, perpendicular to it.
+///
+/// A port drawn **outside** the functional boundary already has a margin: the numeral
+/// goes in that margin, beside its port and above or below the stub, instead of being
+/// pushed a whole clearance away. That is the service unit's case: the ports sit outside
+/// the frame and the designation belongs next to its own port (`RF053`).
 fn side_numeral(geometry: &NumeralGeometry) -> Pt {
     let outside = if geometry.point.x < geometry.centre.x {
         -1.0
     } else {
         1.0
     };
+    let edge = if outside < 0.0 {
+        geometry.boundary.min.x
+    } else {
+        geometry.boundary.max.x
+    };
+    let port_outside = if outside < 0.0 {
+        geometry.point.x < geometry.boundary.min.x - geometry.epsilon
+    } else {
+        geometry.point.x > geometry.boundary.max.x + geometry.epsilon
+    };
+    if port_outside {
+        let margin = if outside < 0.0 {
+            edge - geometry.rect.min.x
+        } else {
+            geometry.rect.max.x - edge
+        };
+        // The glyph whole, with its gap, has to fit in the margin. The service unit's
+        // 4.6 mm margin does; a narrower one keeps the old rule and places it inside.
+        if margin + geometry.epsilon >= NUMERAL + geometry.gap {
+            let half = NUMERAL * 0.5;
+            let x = if outside < 0.0 {
+                geometry.rect.min.x + half
+            } else {
+                geometry.rect.max.x - half
+            };
+            // Port 1 (left) reads above its stub and port 2 (right) below it, the way the
+            // reference sheet places the pair; a box too short flips it to the other side.
+            let prefer_below = geometry.point.x > geometry.centre.x;
+            let first = if prefer_below {
+                geometry.point.y + geometry.normal
+            } else {
+                geometry.point.y - geometry.normal
+            };
+            let second = if prefer_below {
+                geometry.point.y - geometry.normal
+            } else {
+                geometry.point.y + geometry.normal
+            };
+            let fits = |y: f32| {
+                y - half >= geometry.rect.min.y - geometry.epsilon
+                    && y + half <= geometry.rect.max.y + geometry.epsilon
+            };
+            let y = if fits(first) { first } else { second };
+            return Pt::new(x, y);
+        }
+    }
     let outside_room = if outside < 0.0 {
         geometry.boundary.min.x - geometry.rect.min.x
     } else {
@@ -407,11 +476,6 @@ fn side_numeral(geometry: &NumeralGeometry) -> Pt {
         -outside
     } else {
         outside
-    };
-    let edge = if outside < 0.0 {
-        geometry.boundary.min.x
-    } else {
-        geometry.boundary.max.x
     };
     let (dx, dy) = geometry.centre.to(geometry.point);
     let length = dx.hypot(dy);
@@ -524,14 +588,75 @@ fn inside_numeral(geometry: &NumeralGeometry) -> Pt {
 
 /// The outer boundary a port numeral is placed against.
 ///
-/// The declared envelope is the symbol's functional edge, the body is the renderer's box
-/// for a valve, and the whole 20 mm box is the fallback for a flat symbol with neither.
+/// The assembly frame the file draws with the `boundary` class is the boundary when it
+/// exists: a port may sit outside it, in the box's margin, and the designation belongs
+/// outside the frame. Otherwise the declared envelope is the functional edge, then the
+/// body is the renderer's box for a valve, and the whole box is the fallback for a flat
+/// symbol with neither.
 fn outer_boundary(rect: Rect, definition: &ComponentDefinition, body: Option<Rect>) -> Rect {
     definition
-        .envelope
+        .frame
         .map(|[x1, y1, x2, y2]| Rect::from_corners(at(rect, x1, y1), at(rect, x2, y2)))
+        .or_else(|| frame_boundary(rect, definition))
+        .or_else(|| {
+            definition
+                .envelope
+                .map(|[x1, y1, x2, y2]| Rect::from_corners(at(rect, x1, y1), at(rect, x2, y2)))
+        })
         .or(body)
         .unwrap_or(rect)
+}
+
+/// Bounding box of the `boundary`-class primitives, in millimetres of `rect`.
+///
+/// A chain line is the frame that groups the functions of one unit; it is not a second
+/// body and the renderer does not invent one. The function is total: a primitive that
+/// cannot be bounded (an arc used as a frame, which no built-in does) is skipped.
+fn frame_boundary(rect: Rect, definition: &ComponentDefinition) -> Option<Rect> {
+    let mut bounds: Option<Rect> = None;
+    for primitive in &definition.symbol {
+        if primitive.line_class != Some(CatalogLineClass::Boundary) {
+            continue;
+        }
+        let points: Vec<Pt> = match primitive.kind {
+            PrimitiveKind::Rect => {
+                let Some(shape) = rect_from(rect, &primitive.points) else {
+                    continue;
+                };
+                vec![shape.min, shape.max]
+            }
+            PrimitiveKind::Line | PrimitiveKind::Polyline | PrimitiveKind::Polygon => primitive
+                .points
+                .chunks_exact(2)
+                .map(|pair| at(rect, pair[0], pair[1]))
+                .collect(),
+            PrimitiveKind::Circle | PrimitiveKind::Arc => continue,
+        };
+        let Some(first) = points.first().copied() else {
+            continue;
+        };
+        let mut frame = Rect::from_corners(first, first);
+        for point in points.into_iter().skip(1) {
+            frame = Rect::from_corners(
+                Pt::new(frame.min.x.min(point.x), frame.min.y.min(point.y)),
+                Pt::new(frame.max.x.max(point.x), frame.max.y.max(point.y)),
+            );
+        }
+        bounds = Some(match bounds {
+            Some(existing) => Rect::from_corners(
+                Pt::new(
+                    existing.min.x.min(frame.min.x),
+                    existing.min.y.min(frame.min.y),
+                ),
+                Pt::new(
+                    existing.max.x.max(frame.max.x),
+                    existing.max.y.max(frame.max.y),
+                ),
+            ),
+            None => frame,
+        });
+    }
+    bounds
 }
 
 fn axis(body: Rect, side: Side) -> (Pt, Pt) {
@@ -2426,64 +2551,110 @@ mod tests {
             .collect()
     }
 
-    #[test]
-    fn the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing() {
+    /// The two service units carry their designations outside their frame, in the box's
+    /// margin, beside their own ports, in both themes. A numeral that goes back inside the
+    /// frame is the defect the owner reported on the reference capture.
+    fn assert_service_unit_numerals_are_outside_the_frame(
+        id: &str,
+        frame_width: f32,
+        frame_height: f32,
+    ) {
         let catalog = punchi_fluid_catalog::Catalog::builtin();
-        let definition = catalog
-            .get("preparation.service_unit")
-            .expect("the built-in service unit exists")
-            .clone();
-        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
-        let mut recording = Recording::default();
-        draw_component(
-            &mut recording,
-            rect,
-            &definition,
-            0,
-            0.0,
-            None,
-            &Ink::print(),
-        );
-
-        let numerals = numerals(recording.calls());
-        assert_eq!(numerals.len(), 2, "the two ports carry one numeral each");
-
+        let definition = catalog.get(id).expect("the built-in exists").clone();
+        let [width, height] = definition
+            .declared_box_mm()
+            .expect("the unit declares its box");
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
         let boundary = outer_boundary(rect, &definition, None);
+        assert!(
+            (boundary.width() - frame_width).abs() < 1.0e-4
+                && (boundary.height() - frame_height).abs() < 1.0e-4,
+            "{id}: the frame is not {frame_width} x {frame_height} mm: {boundary:?}"
+        );
         let gap = (rect.height() * 0.06).max(1.0);
         let (strokes, circles) = drawn_strokes(rect, &definition);
-        for (id, anchor, cap) in &numerals {
-            let glyph = numeral_box(*anchor, *cap);
-            assert!(
-                boundary.expand(-1.0e-3).contains(glyph.min)
-                    && boundary.expand(-1.0e-3).contains(glyph.max),
-                "numeral {id} leaves the envelope {boundary:?}: {glyph:?}"
+        let dark = Ink {
+            line: Colour::WHITE,
+            dim: Colour::new(150, 150, 150),
+            muted: Colour::new(180, 180, 180),
+            text: Colour::WHITE,
+            supply: Colour::WHITE,
+            work: Colour::WHITE,
+            accent: Colour::new(40, 46, 60),
+            background: Colour::new(20, 20, 20),
+        };
+        for ink in [Ink::print(), dark] {
+            let mut recording = Recording::default();
+            draw_component(&mut recording, rect, &definition, 0, 0.0, None, &ink);
+            let numerals = numerals(recording.calls());
+            assert_eq!(
+                numerals.len(),
+                2,
+                "{id}: the two ports carry one numeral each"
             );
-            // The glyph keeps the same gap from the frame the placement asked for: the
-            // frame is the dashed line the numeral used to sit on.
-            let near = glyph.expand(gap - 1.0e-3);
-            for (from, to) in rect_edges(boundary) {
+            for (numeral, anchor, cap) in &numerals {
+                let glyph = numeral_box(*anchor, *cap);
+                // The designation is outside the frame, in the box's margin, beside its
+                // own port: outside on the side the port leaves, never on the frame.
+                let port = definition
+                    .port(numeral)
+                    .expect("the numeral names a declared port");
+                let port_at = at(rect, port.position[0], port.position[1]);
+                let outside = if port_at.x < boundary.center().x {
+                    glyph.max.x < boundary.min.x - 1.0e-3
+                } else {
+                    glyph.min.x > boundary.max.x + 1.0e-3
+                };
                 assert!(
-                    !segment_hits_rect(from, to, near),
-                    "numeral {id} is not clear of the frame edge {from:?}–{to:?}: {near:?}"
+                    outside,
+                    "{id}: numeral {numeral} is not outside the frame {boundary:?}: {glyph:?}"
                 );
-            }
-            assert!(
-                rect.contains(glyph.min) && rect.contains(glyph.max),
-                "numeral {id} leaves the 20 mm box: {glyph:?}"
-            );
-            for (from, to) in &strokes {
+                // It stays in the margin, close to its port, not across the drawing.
                 assert!(
-                    !segment_hits_rect(*from, *to, glyph),
-                    "numeral {id} touches a primitive {from:?}–{to:?}: {glyph:?}"
+                    (glyph.center().x - port_at.x).abs() <= NUMERAL
+                        && (glyph.center().y - port_at.y).abs() <= NUMERAL * 1.6,
+                    "{id}: numeral {numeral} is not beside its port {port_at:?}: {glyph:?}"
                 );
-            }
-            for (centre, radius) in &circles {
+                // The glyph keeps the gap from the frame the placement asked for.
+                let near = glyph.expand(gap - 1.0e-3);
+                for (from, to) in rect_edges(boundary) {
+                    assert!(
+                        !segment_hits_rect(from, to, near),
+                        "{id}: numeral {numeral} is not clear of the frame edge {from:?}–{to:?}: {near:?}"
+                    );
+                }
                 assert!(
-                    !circle_hits_rect(*centre, *radius, glyph),
-                    "numeral {id} touches the dial at {centre:?} r {radius}: {glyph:?}"
+                    rect.contains(glyph.min) && rect.contains(glyph.max),
+                    "{id}: numeral {numeral} leaves the {width} x {height} mm box: {glyph:?}"
                 );
+                for (from, to) in &strokes {
+                    assert!(
+                        !segment_hits_rect(*from, *to, glyph),
+                        "{id}: numeral {numeral} touches a primitive {from:?}–{to:?}: {glyph:?}"
+                    );
+                }
+                for (centre, radius) in &circles {
+                    assert!(
+                        !circle_hits_rect(*centre, *radius, glyph),
+                        "{id}: numeral {numeral} touches the dial at {centre:?} r {radius}: {glyph:?}"
+                    );
+                }
             }
         }
+    }
+
+    #[test]
+    fn the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing() {
+        assert_service_unit_numerals_are_outside_the_frame("preparation.service_unit", 36.8, 20.0);
+    }
+
+    #[test]
+    fn the_simplified_service_unit_numerals_sit_outside_its_body() {
+        assert_service_unit_numerals_are_outside_the_frame(
+            "preparation.service_unit_simple",
+            31.2,
+            15.2,
+        );
     }
 
     #[test]

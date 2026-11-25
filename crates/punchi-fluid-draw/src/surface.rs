@@ -200,17 +200,27 @@ pub enum LineClass {
     Drain,
     /// Electrical line: dotted.
     Electrical,
+    /// Assembly boundary: chain line, a long dash, a gap, a dot and a gap.
+    ///
+    /// The frame of a service unit is the case: `X12160` draws it as a chain line, and it
+    /// is not a drain or a pilot line that happens to be long. Only a symbol primitive may
+    /// carry it; a hose cannot, because a hose is not an assembly boundary.
+    Boundary,
 }
 
 impl LineClass {
-    /// Dash and gap in millimetres, or `None` for a solid line.
+    /// The dash phases in millimetres, alternating ink and gap, or `None` for a solid line.
     #[must_use]
-    pub fn pattern(self) -> Option<(f32, f32)> {
+    pub fn pattern(self) -> Option<&'static [f32]> {
         match self {
             Self::Working => None,
-            Self::Pilot => Some((1.6, 0.9)),
-            Self::Drain => Some((2.6, 1.3)),
-            Self::Electrical => Some((0.5, 0.7)),
+            Self::Pilot => Some(&[1.6, 0.9]),
+            Self::Drain => Some(&[2.6, 1.3]),
+            Self::Electrical => Some(&[0.5, 0.7]),
+            // A chain line: a long dash, a gap, a dot and a gap. The dot is half a
+            // millimetre, which is a visible short dash at 300 dpi and at palette size;
+            // a zero-length phase would be invisible on paper and a trap in the walk.
+            Self::Boundary => Some(&[4.0, 1.2, 0.5, 1.2]),
         }
     }
 }
@@ -439,17 +449,31 @@ impl Surface for Recording {
 /// so nudging the phase past the boundary is lossless.
 const DASH_STEP_FLOOR: f32 = 1.0e-4;
 
-/// Splits a polyline into the solid segments of a dashed pattern.
+/// Splits a polyline into the solid segments of a dash pattern.
+///
+/// `pattern` is the alternating list of ink and gap phases in millimetres: the even
+/// positions are drawn, the odd ones are left blank. A single pair is a plain dashed line;
+/// four phases are a chain line (`X12160`'s assembly boundary). An absent pattern is solid,
+/// and a malformed one falls back to solid instead of looping: the walk must always
+/// advance.
 ///
 /// Dashing is done once here, in drawing millimetres, so the screen and the paper
 /// agree on where the gaps fall instead of each device inventing its own.
 #[must_use]
-pub fn dashes(points: &[Pt], pattern: Option<(f32, f32)>) -> Vec<Vec<Pt>> {
-    let Some((dash, gap)) = pattern else {
+pub fn dashes(points: &[Pt], pattern: Option<&[f32]>) -> Vec<Vec<Pt>> {
+    let Some(phases) = pattern else {
         return vec![points.to_vec()];
     };
-    let period = dash + gap;
-    if period <= 0.0 || points.len() < 2 {
+    if phases.len() < 2
+        || phases
+            .iter()
+            .any(|phase| !phase.is_finite() || *phase <= 0.0)
+        || points.len() < 2
+    {
+        return vec![points.to_vec()];
+    }
+    let period: f32 = phases.iter().sum();
+    if period <= 0.0 {
         return vec![points.to_vec()];
     }
 
@@ -468,19 +492,24 @@ pub fn dashes(points: &[Pt], pattern: Option<(f32, f32)>) -> Vec<Vec<Pt>> {
         // The most boundaries a segment of this length can hold, with slack. The bound
         // turns any future defect of the same kind into a slightly wrong drawing instead
         // of an allocation that takes the machine with it.
-        let mut budget = (length / period).ceil() * 4.0 + 16.0;
+        #[allow(clippy::cast_precision_loss)]
+        let mut budget = (length / period).ceil() * phases.len() as f32 + 16.0;
         while travelled < length {
             if budget <= 0.0 {
                 break;
             }
             budget -= 1.0;
             let phase = position % period;
-            let in_dash = phase < dash;
-            let remaining = if in_dash {
-                dash - phase
-            } else {
-                period - phase
-            };
+            // Find which phase the walk is in, and how far into it. The last index is
+            // clamped so a rounding error at the period boundary stays in a real phase.
+            let mut index = 0;
+            let mut offset = phase;
+            while index + 1 < phases.len() && offset >= phases[index] {
+                offset -= phases[index];
+                index += 1;
+            }
+            let in_dash = index % 2 == 0;
+            let remaining = phases[index] - offset;
             let step = remaining.min(length - travelled);
             if step <= DASH_STEP_FLOOR {
                 position += DASH_STEP_FLOOR;
@@ -524,7 +553,7 @@ mod tests {
     #[test]
     fn dashing_respects_the_period() {
         let points = [Pt::new(0.0, 0.0), Pt::new(10.0, 0.0)];
-        let segments = dashes(&points, Some((2.0, 1.0)));
+        let segments = dashes(&points, Some(&[2.0, 1.0]));
         // 10 mm at 2 on, 1 off: 2-3, 5-6, 8-9 and the last dash is cut at 10.
         assert_eq!(segments.len(), 4, "{segments:?}");
         assert!((segments[0][0].x - 0.0).abs() < 1.0e-4);
@@ -534,9 +563,52 @@ mod tests {
     }
 
     #[test]
+    fn a_chain_line_draws_a_dash_a_gap_a_dot_and_a_gap() {
+        let points = [Pt::new(0.0, 0.0), Pt::new(20.0, 0.0)];
+        let pattern = LineClass::Boundary
+            .pattern()
+            .expect("the boundary class is not solid");
+        assert_eq!(pattern.len(), 4, "a chain line has four phases");
+        let segments = dashes(&points, Some(pattern));
+        // 20 mm at 6.9 mm a cycle: three long dashes and three dots. Every third segment
+        // is the dot of the chain, and it is the short one.
+        assert!(segments.len() >= 4, "{segments:?}");
+        let short = segments
+            .iter()
+            .filter(|segment| {
+                let length: f32 = segment
+                    .windows(2)
+                    .map(|pair| pair[0].to(pair[1]).0.abs())
+                    .sum();
+                (length - 0.5).abs() < 1.0e-3
+            })
+            .count();
+        assert!(short >= 2, "the chain line prints no dot: {segments:?}");
+        assert!(
+            segments.iter().all(|segment| segment.len() >= 2),
+            "a segment must have two points: {segments:?}"
+        );
+    }
+
+    #[test]
+    fn a_malformed_pattern_falls_back_to_a_solid_line() {
+        let points = [Pt::new(0.0, 0.0), Pt::new(10.0, 0.0)];
+        for pattern in [
+            &[0.0, 1.0][..],
+            &[2.0][..],
+            &[2.0, -1.0][..],
+            &[f32::NAN, 1.0][..],
+        ] {
+            let segments = dashes(&points, Some(pattern));
+            assert_eq!(segments.len(), 1);
+            assert_eq!(segments[0], points);
+        }
+    }
+
+    #[test]
     fn dashing_keeps_corners() {
         let points = [Pt::new(0.0, 0.0), Pt::new(4.0, 0.0), Pt::new(4.0, 4.0)];
-        let segments = dashes(&points, Some((3.0, 1.0)));
+        let segments = dashes(&points, Some(&[3.0, 1.0]));
         assert!(segments.len() >= 2);
         assert!(segments.iter().all(|segment| segment.len() >= 2));
     }
