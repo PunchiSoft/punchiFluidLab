@@ -36,6 +36,7 @@ skill is the bug.
 | [auto-pilot](auto-pilot/SKILL.md) | run an approved phased plan unattended: one phase at a time, gate, PR, CI, squash merge under ADR 0046, main check and cleanup | the owner says `piloto automatico` and a phased plan is approved |
 | [reference-parity](reference-parity/SKILL.md) | inspect the running parent app as the reference for symbols, animations and workflow, then prove parity without copying | a symbol, animation or workflow must match the parent app; the owner says the result does not look like the reference |
 | [parent-source-review](parent-source-review/SKILL.md) | read the parent app's installed code and data read-only to derive behaviour, then reimplement it in Rust without copying bytes or files | the running app does not answer how a rule works; a timing, port order, threshold or binding must be matched |
+| [token-efficiency](token-efficiency/SKILL.md) | spend less context on the same work: result-first prose, index before file, grouped calls, local edits, the gate never skipped | writing a response; planning what to load; deciding what evidence a claim needs |
 
 ## The order to read them
 
