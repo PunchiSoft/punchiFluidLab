@@ -6,6 +6,34 @@ publicación.
 
 ## Unreleased
 
+### La simbología del núcleo, revisada y firmada — 2026-11-24
+
+- Cierre del plan de simbología aprobado el 2026-11-24, fases 1–7: el contrato
+  (`docs/symbology.md`), la matriz de conformidad (`assets/symbols/conformance.md`), el
+  compresor y la fuente (`X11400`, #300), el tratamiento del aire (`X11980`, `X12190`,
+  `X12240`, `X12160`, #301), las válvulas y sus glifos de accionamiento (`X10280`, `X10270`,
+  `X10400`, #302), los cilindros (`X11440`, `X11450`, #303), los elementos planos OR/AND y
+  las terminaciones (`X10740`, `X10620`, `2172V1`, `2033V1`, #304) y la evidencia a 300 dpi
+  (#305). La fase final (evaluación y auditoría) no cambia código.
+- Las **19 revisiones del núcleo** pasan a `complete`, firmadas por **Cristian Muñoz
+  (dueño)** como segundo lector el 2026-11-24; las **21 revisiones fuera del núcleo** siguen
+  `pending-300dpi`. Por eso la exportación conserva la nota «symbols not yet verified against
+  ISO 1219-1»: no se retira mientras quede una revisión abierta.
+- La evidencia: 120 capturas (300 dpi, claro y oscuro) de los 40 símbolos incorporados, con
+  las 57 del núcleo idénticas byte a byte a las de las fases 2–6; la matriz marca `done` las
+  19 filas del núcleo; `all_complete_is_true_only_when_every_review_is_complete` y
+  `the_export_note_is_on_while_any_review_is_open` fijan la condición de la nota.
+- **Deudas registradas, no ocultas:** el marco de la unidad de servicio (`X12160`) sigue
+  discontinuo en vez de la línea de trazo y punto de la norma (falta la clase de línea en el
+  dibujante, el esquema, la hoja, la exportación y la i18n); `X11440` imprime una conexión en
+  la cámara del muelle que el archivo no declara (`RF052`, no hay rol de respiradero); el
+  silenciador conserva el cono del contrato (ADR 0016) frente a la caja 4M × 2M de `2033V1`
+  (decisión del dueño); y las 21 revisiones fuera del núcleo siguen abiertas (16 eléctricos,
+  manómetro, caudalímetro, registrador, estrangulador fijo y tee).
+- **Próxima capacidad:** las **variantes configurables de cilindro** que pidió el dueño el
+  2026-11-24 (doble efecto con detector magnético y/o amortiguación regulable). No se
+  implementan en este cierre: el requisito queda registrado y necesita su plan aprobado.
+
 ### La evidencia a 300 dpi — 2026-11-24
 
 - `symbol-sheet --all <dir>` escribe de una vez las tres capturas de cada símbolo
