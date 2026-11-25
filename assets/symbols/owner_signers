@@ -10,3 +10,4 @@
 # signature, but the private key never enters the repository or a session. Rotating the
 # key means adding the new one, re-signing the manifest, and only then removing the old
 # line, because removing it invalidates the signatures made with it.
+cristian@punchisoft ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgxnnL4oZFrSDfFo3ehuxjFHbaTmPeoEf13T/E9F8k+ cristian@punchisoft
