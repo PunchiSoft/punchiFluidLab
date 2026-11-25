@@ -12,6 +12,13 @@ publicación.
   con botón de cierre, una zona de contenido y un pie con botones más grandes. Los dos
   se adaptan al tema claro u oscuro y mantienen visibles las acciones al desplazarse.
 
+### Diálogos de circuito — 2026-11-25
+
+- Renombrar y Cerrar circuito usan la cabecera con botón de cierre, el pie estable y la
+  paleta de los diálogos. Renombrar enfoca el nombre y rechaza uno vacío sin cerrar la
+  ventana; la confirmación de cierre nombra el circuito, enfoca Cancelar y deja
+  identificable la acción que lo quita del proyecto.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su

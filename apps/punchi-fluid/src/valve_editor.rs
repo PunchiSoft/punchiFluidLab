@@ -234,12 +234,14 @@ impl ValveForm<'_> {
                 value: true,
                 role: ButtonRole::Primary,
                 enabled: valid_designation(&editor.designation) && changed,
+                focus: false,
             },
             Action {
                 label: self.language.text("valve_editor.cancel"),
                 value: false,
                 role: ButtonRole::Secondary,
                 enabled: true,
+                focus: false,
             },
         ]
     }

@@ -369,13 +369,15 @@ impl Window {
         self.lifecycle.is_modified(&self.document)
     }
 
-    /// Whether a dialog is in front of the window: the file dialog or one of the informational
-    /// panels. The auto-hide timers never fire while one is open.
+    /// Whether a dialog is in front of the window: the file dialog, one of the informational
+    /// panels, the valve editor or a circuit dialog. The auto-hide timers never fire while one
+    /// is open.
     pub(crate) fn dialog_open(&self) -> bool {
         self.dialog.is_some()
             || self.lifecycle.panel.is_some()
             || self.mockups.is_open()
             || self.valve_editor.is_some()
+            || self.circuit_dialog.is_some()
     }
 
     /// Turns the current revision of the document into the saved one, and throws the copy
@@ -622,18 +624,21 @@ impl Window {
                         value: CloseAnswer::Save,
                         role: ButtonRole::Primary,
                         enabled: true,
+                        focus: false,
                     },
                     Action {
                         label: language.text("unsaved.close_without"),
                         value: CloseAnswer::Discard,
                         role: ButtonRole::Secondary,
                         enabled: true,
+                        focus: false,
                     },
                     Action {
                         label: language.text("unsaved.cancel"),
                         value: CloseAnswer::Cancel,
                         role: ButtonRole::Secondary,
                         enabled: true,
+                        focus: false,
                     },
                 ]
             },
