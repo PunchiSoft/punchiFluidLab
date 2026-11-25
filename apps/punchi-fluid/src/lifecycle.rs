@@ -285,6 +285,7 @@ impl Window {
             moving: None,
             menu: crate::sheet_menu::SheetMenu::new(),
             mockups: crate::sheet_menu::Mockups::new(),
+            valve_editor: None,
             clipboard: Vec::new(),
             model: None,
             model_revision: 0,
@@ -371,7 +372,10 @@ impl Window {
     /// Whether a dialog is in front of the window: the file dialog or one of the informational
     /// panels. The auto-hide timers never fire while one is open.
     pub(crate) fn dialog_open(&self) -> bool {
-        self.dialog.is_some() || self.lifecycle.panel.is_some() || self.mockups.is_open()
+        self.dialog.is_some()
+            || self.lifecycle.panel.is_some()
+            || self.mockups.is_open()
+            || self.valve_editor.is_some()
     }
 
     /// Turns the current revision of the document into the saved one, and throws the copy

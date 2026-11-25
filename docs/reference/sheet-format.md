@@ -1,6 +1,6 @@
 # The `.pfluid` sheet format
 
-Status: current, format 15. The implementation is
+Status: current, format 16. The implementation is
 `crates/punchi-fluid-file/src/sheet.rs`; its tests are the authority when this page and the
 code disagree.
 
@@ -13,10 +13,14 @@ keys. It is **not** the old circuit format that `validate` and `simulate` read; 
 
 | Field | Current | Read | Write |
 |---|---|---|---|
-| `format` | `15` | `1` to `15` | always `15` |
+| `format` | `16` | `1` to `16` | always `16` |
 
 - A file with a **newer** `format` is refused with `sheet format N is newer than this build
-  understands (15)`; it is never guessed.
+  understands (16)`; it is never guessed.
+- **Version 16** adds `edit.valve_initial_position`, an optional starting position of a
+  two-position valve. The values `0` and `1` refer to positions in catalog order.
+  An absent field selects the catalog's starting position. A setting does not change
+  where the spring takes the valve when released.
 - **Version 15** moved the compressor's delivery from port `1` to port `2` and gave its
   intake port `1`: a format-14 pipe the compressor had on port `1` was on the delivery and
   moves with it, and no other port changes. A sheet that names a compressor and had no pipe
@@ -85,7 +89,7 @@ too.
 
 ```json
 {
-  "format": 15,
+  "format": 16,
   "title": "Proyecto",
   "circuits": [
     { "id": 0, "title": "Potencia" },
@@ -231,7 +235,7 @@ from the two ports, moved by `offset_tenths`.
 
 ```json
 {
-  "format": 15,
+  "format": 16,
   "title": "Válvula 3/2 y control",
   "circuits": [
     { "id": 0, "title": "Potencia" },

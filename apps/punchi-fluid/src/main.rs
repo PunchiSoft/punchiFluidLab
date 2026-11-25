@@ -56,6 +56,7 @@ mod state_file;
 mod surface;
 mod theme;
 mod trace;
+mod valve_editor;
 mod view;
 mod view_strip;
 mod window_state;
@@ -174,6 +175,7 @@ struct Window {
     menu: sheet_menu::SheetMenu,
     /// The empty Configuración and Descripción windows the menu opens.
     mockups: sheet_menu::Mockups,
+    valve_editor: Option<valve_editor::ValveEditor>,
     /// The window's clipboard: the placements cut or copied, ready to paste.
     clipboard: Vec<Placement>,
     /// The live model of the active circuit, rebuilt when the document changes.
@@ -674,7 +676,7 @@ impl Window {
         }
         // The sheet's menu and the mockups own the keyboard while they are open, as a
         // dialog does: no document command may run behind them.
-        if self.menu.is_open() || self.mockups.is_open() {
+        if self.menu.is_open() || self.mockups.is_open() || self.valve_editor.is_some() {
             return;
         }
         // A carried tile owns `Esc`: it drops the carry and the release places nothing.

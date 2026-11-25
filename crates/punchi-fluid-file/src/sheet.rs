@@ -37,7 +37,9 @@ use closure::{identifier_is_valid, is_closed};
 /// release drew on, a block whose title is the circuit title, whose revision is `A`, whose
 /// scale is `S/E`, whose model is the full industrial block and whose note is empty, a
 /// pipe whose tube is unspecified, and a component whose ports are all open.
-pub const SHEET_VERSION: u32 = 15;
+/// 15 moved the compressor delivery port. 16 added the optional initial position of a
+/// two-position valve. Absence keeps the catalog's starting position.
+pub const SHEET_VERSION: u32 = 16;
 
 /// Oldest format version this build still reads.
 pub const SHEET_MIN: u32 = 1;
@@ -171,6 +173,9 @@ pub struct StoredEdits {
     /// Conductance, `m³ / (s · Pa)`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub conductance: Option<f64>,
+    /// Starting position of a two-position valve, indexed in catalog order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valve_initial_position: Option<u8>,
     /// Cylinder stroke, millimetres.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stroke_mm: Option<f64>,
@@ -687,6 +692,14 @@ impl StoredEdits {
     ///
     /// Returns [`SheetError::Invalid`] when a value is not finite or outside its range.
     pub fn validate(self) -> Result<(), SheetError> {
+        if self
+            .valve_initial_position
+            .is_some_and(|position| position > 1)
+        {
+            return Err(SheetError::Invalid(String::from(
+                "a two-position valve initial position must be 0 or 1",
+            )));
+        }
         let non_negative = [("pressure_bar", self.pressure_bar), ("rod_mm", self.rod_mm)];
         for (name, value) in non_negative {
             if let Some(value) = value

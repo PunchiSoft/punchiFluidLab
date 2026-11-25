@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### Editor de válvulas direccionales — 2026-11-25
+
+- Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su
+  designación, posición inicial y reflejos, con una vista previa del símbolo y sus conexiones.
+- Aplicar registra un solo paso de deshacer. El formato 16 guarda la posición inicial elegida.
+  Los proyectos anteriores mantienen la posición del catálogo.
+
 ### Cierre sin guardar — 2026-11-25
 
 - **«Cerrar sin guardar» cierra la ventana.** El `Close` que la ventana pide vuelve como

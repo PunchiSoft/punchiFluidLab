@@ -373,7 +373,7 @@ impl Window {
         }
         if let Some(action) = action {
             self.menu.close();
-            self.run_menu_action(action);
+            self.run_menu_action(action, sheet.id);
         }
     }
 
@@ -381,20 +381,28 @@ impl Window {
     /// it; the transforms and the removal work on the whole selection.
     fn menu_enabled(&self, action: MenuAction) -> bool {
         match action {
-            MenuAction::Configure | MenuAction::Describe => self.selected.len() == 1,
+            MenuAction::Configure => self.selected.len() == 1 && !self.running,
+            MenuAction::Describe => self.selected.len() == 1,
             _ => !self.selected.is_empty(),
         }
     }
 
     /// Runs the entry. The transform and removal methods are the ribbon's own, so the menu
     /// cannot drift from it.
-    fn run_menu_action(&mut self, action: MenuAction) {
+    fn run_menu_action(&mut self, action: MenuAction, sheet_focus: egui::Id) {
         match action {
             MenuAction::Move => self.arm_move(),
             MenuAction::Rotate => self.rotate_selected(),
             MenuAction::MirrorHorizontal => self.reflect_selected(),
             MenuAction::MirrorVertical => self.reflect_vertical_selected(),
-            MenuAction::Configure => self.open_mockup(Mockup::Configure),
+            MenuAction::Configure => {
+                if let Some(index) = self.selected.last().copied()
+                    && self.open_valve_editor(index, sheet_focus)
+                {
+                    return;
+                }
+                self.open_mockup(Mockup::Configure);
+            }
             MenuAction::Properties => self.open_properties(),
             MenuAction::Describe => self.open_mockup(Mockup::Describe),
             MenuAction::Delete => self.remove_selected(),

@@ -6,7 +6,7 @@
 //! The placements and pipes of the active circuit, with model readings carried into the
 //! drawing. The document owns geometry; the session owns the moving state.
 
-use punchi_fluid_catalog::Catalog;
+use punchi_fluid_catalog::{Behaviour, Catalog};
 use punchi_fluid_doc::Document;
 use punchi_fluid_draw::placed::{Pipe, PipeEnd, Placed};
 
@@ -53,7 +53,22 @@ pub fn build_for_frame<'a>(
                 .and_then(|model| model.extension(index))
                 .unwrap_or(0.0),
             moving: model.and_then(|model| model.moving_seat(index)),
-            valve_position: model.map_or(0, |model| model.valve_position(index)),
+            valve_position: model.map_or_else(
+                || match definition.map(|definition| &definition.behaviour) {
+                    Some(Behaviour::Valve {
+                        default_position,
+                        positions,
+                        ..
+                    }) => placement
+                        .edits
+                        .valve_initial_position
+                        .map(usize::from)
+                        .filter(|position| positions.len() == 2 && *position < positions.len())
+                        .unwrap_or(*default_position),
+                    _ => 0,
+                },
+                |model| model.valve_position(index),
+            ),
             reading: model.and_then(|model| {
                 definition.and_then(|definition| model.reading(index, definition))
             }),

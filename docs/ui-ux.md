@@ -730,8 +730,14 @@ click outside closes it. While it is open the view stays fixed, so the arrow key
 **Mover** arms the gesture instead of requiring a drag: the selection follows the pointer,
 the arrows nudge it 1 mm (`Shift` 10 mm), a click or `Enter` drops it as one undo and `Esc`
 cancels. Opening the menu is view state, never a document edit; the right button
-never presses a valve. **Configurar** opens the **Configuración** mockup with the component's
-name and the word *Maqueta* until its dialog exists. **Descripción del componente** opens a
+never presses a valve. In editing mode, a double click on a two-position 3/2 or 5/2
+directional valve opens its editor. **Configurar** in the context menu, reachable with
+`Shift+F10`, opens the same editor. It has a designation field, left and right catalog
+actuation panels, a graphical choice of initial position and a preview from the shared
+renderer. The preview shows the selected paths and follows horizontal and vertical
+reflection. **Apply** commits the draft as one undo. **Cancel** or Escape discards it.
+Outside these valve families, **Configurar** still opens the placeholder.
+**Descripción del componente** opens a
 read-only card for a catalog id with a picture: the normalized 800 × 450 image and the
 definition's English name, summary and id, with **Cerrar**; a component without a card keeps
 the mockup note. The card is catalog metadata, never an editor, and it does not touch the

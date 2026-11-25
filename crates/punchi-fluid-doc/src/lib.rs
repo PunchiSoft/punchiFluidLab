@@ -26,6 +26,13 @@ use punchi_fluid_draw::surface::{LineClass, Pt, Rect};
 /// drawing.
 pub const MAX_DESIGNATION: usize = 40;
 
+/// Whether a designation can be stored after trimming outer whitespace.
+#[must_use]
+pub fn valid_designation(text: &str) -> bool {
+    let text = text.trim();
+    text.chars().count() <= MAX_DESIGNATION && !text.chars().any(char::is_control)
+}
+
 /// Longest accepted port or closure identifier.
 ///
 /// It matches `punchi_fluid_file::sheet::MAX_ID`; the format crate does not depend on the
@@ -46,6 +53,8 @@ pub struct PlacementEdits {
     pub pressure_bar: Option<f64>,
     /// Conductance of every internal path of a valve or throttle.
     pub conductance: Option<f64>,
+    /// Starting position of a two-position valve, indexed in catalog order.
+    pub valve_initial_position: Option<u8>,
     /// Cylinder stroke, millimetres.
     pub stroke_mm: Option<f64>,
     /// Cylinder bore, millimetres.
@@ -1410,6 +1419,55 @@ impl Document {
         true
     }
 
+    /// Applies a two-position valve draft as one undo, retaining the other overrides.
+    pub fn configure_valve(
+        &mut self,
+        index: usize,
+        designation: &str,
+        initial: Option<u8>,
+        orientation: Orientation,
+    ) -> bool {
+        if !valid_designation(designation) || initial.is_some_and(|position| position > 1) {
+            return false;
+        }
+        let Some(placement) = self.placements.get_mut(index) else {
+            return false;
+        };
+        let mut changes = Vec::new();
+        let designation = designation.trim();
+        let wanted = (!designation.is_empty()).then(|| designation.to_owned());
+        if placement.designation != wanted {
+            let from = std::mem::replace(&mut placement.designation, wanted.clone());
+            changes.push(Change::Designated {
+                index,
+                from,
+                to: wanted,
+            });
+        }
+        if placement.edits.valve_initial_position != initial {
+            let from = placement.edits.clone();
+            placement.edits.valve_initial_position = initial;
+            changes.push(Change::Edited {
+                index,
+                from,
+                to: placement.edits.clone(),
+            });
+        }
+        if placement.orientation != orientation {
+            let from = std::mem::replace(&mut placement.orientation, orientation);
+            changes.push(Change::Turned {
+                index,
+                from,
+                to: orientation,
+            });
+        }
+        if changes.is_empty() {
+            return false;
+        }
+        self.record_group(changes);
+        true
+    }
+
     /// Gives a placement a designation, or takes it away with `None`.
     ///
     /// Whitespace is trimmed, and an empty text means no designation: a name of spaces is
@@ -1421,9 +1479,10 @@ impl Document {
             .map(str::trim)
             .filter(|text| !text.is_empty())
             .map(str::to_owned);
-        if wanted.as_ref().is_some_and(|text| {
-            text.chars().count() > MAX_DESIGNATION || text.chars().any(char::is_control)
-        }) {
+        if wanted
+            .as_deref()
+            .is_some_and(|text| !valid_designation(text))
+        {
             return false;
         }
         let Some(placement) = self.placements.get_mut(index) else {
@@ -2808,6 +2867,37 @@ mod tests {
         assert!(document.undo());
         assert_eq!(document.orientation_of(a), Some(Orientation::NONE));
         assert_eq!(document.orientation_of(b), Some(Orientation::new(0, true)));
+    }
+
+    #[test]
+    fn configuring_a_valve_groups_its_fields_and_reflection_in_one_undo() {
+        let mut document = Document::new();
+        let index = document.place(Placement::new(
+            "valve.5_2.base",
+            Pt::new(100.0, 100.0),
+            20.0,
+            20.0,
+        ));
+        let reflected = Orientation::NONE.reflected();
+        let revision = document.revision();
+        assert!(!document.configure_valve(index, "1V1", Some(2), reflected));
+        assert_eq!(document.revision(), revision);
+        assert!(document.configure_valve(index, " 1V1 ", Some(1), reflected));
+        assert_eq!(document.revision(), revision + 1);
+        assert_eq!(document.designation_of(index), Some("1V1"));
+        assert!(document.undo());
+        assert_eq!(document.designation_of(index), None);
+        assert_eq!(
+            document.placements()[index].edits.valve_initial_position,
+            None
+        );
+        assert_eq!(document.orientation_of(index), Some(Orientation::NONE));
+        assert!(document.redo());
+        assert_eq!(
+            document.placements()[index].edits.valve_initial_position,
+            Some(1)
+        );
+        assert_eq!(document.orientation_of(index), Some(reflected));
     }
 
     #[test]

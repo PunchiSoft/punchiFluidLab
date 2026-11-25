@@ -50,6 +50,7 @@ pub fn load(sheet: &Sheet) -> Result<Document, String> {
                 placement.edits = PlacementEdits {
                     pressure_bar: edit.pressure_bar,
                     conductance: edit.conductance,
+                    valve_initial_position: edit.valve_initial_position,
                     stroke_mm: edit.stroke_mm,
                     bore_mm: edit.bore_mm,
                     rod_mm: edit.rod_mm,
@@ -133,6 +134,7 @@ pub fn to_sheet(document: &Document) -> Sheet {
                 Some(StoredEdits {
                     pressure_bar: edits.pressure_bar,
                     conductance: edits.conductance,
+                    valve_initial_position: edits.valve_initial_position,
                     stroke_mm: edits.stroke_mm,
                     bore_mm: edits.bore_mm,
                     rod_mm: edits.rod_mm,

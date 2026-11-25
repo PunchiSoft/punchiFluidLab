@@ -119,6 +119,7 @@ impl Sheet {
                 }
             }
         }
+        // 15 → 16: no stored override means the starting position from the catalog.
         self.format = SHEET_VERSION;
         Ok(())
     }

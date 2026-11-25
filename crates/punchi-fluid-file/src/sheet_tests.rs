@@ -792,3 +792,6 @@ fn a_format_fourteen_sheet_moves_the_compressor_hose_to_its_discharge() {
         "a cylinder's port 1 is not the compressor's"
     );
 }
+
+#[path = "sheet/valve_tests.rs"]
+mod valve_tests;
