@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### La válvula OR: línea continua y bola tangente — 2026-11-24
+
+- `valve.shuttle` (`X10740`) corrige las tres observaciones del dueño sobre la captura de la
+  OR: la **línea pasante es una sola** de puerto a puerto (ya no dos tramos cortados por la
+  bola), la **bola toca su asiento en el perímetro** (centros de tangencia 5,63 y 14,39 mm,
+  derivados de los brazos del asiento, no del vértice) y la **bola no lleva relleno** que
+  corte la línea. El punto de unión sigue relleno y el estado de la bola sigue siendo el de
+  ADR 0041.
+- Evidencia: `the_shuttle_through_line_is_continuous`,
+  `the_shuttle_ball_touches_its_seat_without_crossing_it` y
+  `the_shuttle_ball_is_not_filled`, el fixture regenerado y las tres capturas; la revisión
+  vuelve a `pending-300dpi` hasta la firma del dueño, y la matriz y las capacidades cuentan
+  16 de 19 revisiones del núcleo completas.
+
 ### El filtro con purga automática — 2026-11-24
 
 - Componente nuevo **`filter.air_auto_drain`**: el mismo cuerpo de filtro con la cuerda del

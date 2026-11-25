@@ -51,12 +51,13 @@ Ribbon, sidebar, sheet frame, status bar, theme layer.
 
 ## M1.5 — Symbol conformance (runs with M2)
 
-**Status:** partial — the structural half is done and 17 of the 19 core symbols have a
+**Status:** partial — the structural half is done and 16 of the 19 core symbols have a
 `complete` review signed by **Cristian Muñoz (owner)** as second reader on 2026-11-24, with
 the 300 dpi, light and dark captures and the conformance matrix. The two service units were
 redrawn on 2026-11-24 (declared 46 × 25 and 40 × 20 boxes, chain-line frame, ports and
-numerals outside, internal forms at the reference's proportion), so their reviews are
-`pending-300dpi` until the owner signs the new captures. What remains: acceptance 4 covers
+numerals outside, internal forms at the reference's proportion), and the OR valve was
+corrected the same day (continuous through line, ball tangent to its seat and unfilled), so
+their three reviews are `pending-300dpi` until the owner signs the new captures. What remains: acceptance 4 covers
 the four symbols the milestone names, and one of them (`throttle.fixed`) is outside the core
 and still `pending-300dpi` (one of the 21 non-core reviews), so the export note stays;
 `X11440`'s spring-chamber connection is omitted (`RF052`; no breather role in the schema),

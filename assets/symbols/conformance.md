@@ -21,8 +21,10 @@ this pass and keeps its own record.
 The **second reader is Cristian Muñoz, the owner**: he signed the core's records on
 2026-11-24, and that signature is what closes a row. Every row read `done` after that
 signature. The **2026-11-24 correction of the two service units** changed their drawing
-(box, chain-line frame, ports and numerals outside, internal forms), so those two rows are
-`in review` again until the owner signs the new captures; the rest of the core stays `done`.
+(box, chain-line frame, ports and numerals outside, internal forms), and the **OR valve**
+was corrected the same day (continuous through line, ball tangent to its seat and unfilled);
+those three rows are `in review` again until the owner signs the new captures; the rest of
+the core stays `done`.
 The **filter-regulator** is a new family member of 2026-11-24 and is `in review` with them.
 
 ## The core
@@ -42,7 +44,7 @@ The **filter-regulator** is a new family member of 2026-11-24 and is `in review`
 | `valve.3_2.solenoid` | valve | `X10280` (6.1.2.6 / 7.1.2.8) | 3 + coil | `done` | [review](review/valve.3_2.solenoid.md) |
 | `valve.5_2.base` | valve | `X10400` (6.1.2.15 / 7.1.2.16): composition of the body and positions, no single X-number | 5 | `done` | [review](review/valve.5_2.base.md) |
 | `valve.5_2.spring_return` | valve | `X10400` body and ports + `X10460` (7.1.2.22) spring return + `688V1` lever | 5 | `done` | [review](review/valve.5_2.spring_return.md) |
-| `valve.shuttle` | valve | `X10740` (6.1.5.5 / 7.1.5.5 in ISO 1219-1:2006; the same in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `done` | [review](review/valve.shuttle.md) |
+| `valve.shuttle` | valve | `X10740` (6.1.5.5 / 7.1.5.5 in ISO 1219-1:2006; the same in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `in review` | [review](review/valve.shuttle.md) |
 | `valve.two_pressure` | valve | `X10620` (7.1.3.6 in ISO 1219-1:2006; **7.1.3.5** in JIS B 0125-1:2020) | 3: `1a`, `1b` inlets printed `1`, `2` outlet | `done` | [review](review/valve.two_pressure.md) |
 | `cylinder.single_acting_20_100` | actuator | `X11440` (7.3.1, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.1 hydraulic) | 1: `1` working, cap end | `done` | [review](review/cylinder.single_acting_20_100.md) |
 | `cylinder.double_acting_32_200` | actuator | `X11450` (7.3.2, ISO 1219-1:2006 and JIS B 0125-1:2020; also 6.3.2 hydraulic) | 2: `1` and `2`, one per cap | `done` | [review](review/cylinder.double_acting_32_200.md) |
