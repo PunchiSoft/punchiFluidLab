@@ -516,7 +516,9 @@ drawn by hand, and checked with the lint and the manual list.
 The structural half of the contract is **implemented** and the visual half is **reviewed at
 palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
 were signed by the second reader on 2026-11-24, and the symbols outside the core still wait
-for that signature.
+for that signature. The signatures record the ISO 1219-1:2006 reading confirmed against
+JIS B 0125-1:2020; the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this
+machine, as the national-adoptions section says.
 
 | Requirement | State | Evidence |
 |---|---|---|
@@ -531,7 +533,7 @@ for that signature.
 | Pipe stroke from the tube size, capped below the frame | **enforced, reviewed by hand** | `tube_width_mm` and `the_line_width_is_the_series_width_below_the_frame`; the manual checklist and the 4/10/16 mm captures attached to the pull request |
 | Flow direction shown on a line that carries air | **enforced** | solid arrowhead on the line, straight from the sign of the flow |
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
-| Title block on the sheet itself | **not drawn** | M2 |
+| Title block on the sheet itself | **drawn** | the content block is on the canvas and in the export ([capabilities](capabilities.md), [ADR 0030](adr/0030-the-block-protects-its-own-box.md)) |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
 | Legible at 300 dpi | **done for the core; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the rest are captured and unsigned |
 | Second reader's signature | **the core is signed; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24 |
