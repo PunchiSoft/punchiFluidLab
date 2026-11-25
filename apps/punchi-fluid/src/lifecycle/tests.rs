@@ -65,7 +65,16 @@ fn frame(
     window: &mut Window,
     input: egui::RawInput,
 ) -> Vec<egui::ViewportCommand> {
-    let output = context.run(input, |context| window.lifecycle_frame(context));
+    frame_with_start(context, window, input, false)
+}
+
+fn frame_with_start(
+    context: &egui::Context,
+    window: &mut Window,
+    input: egui::RawInput,
+    start_open: bool,
+) -> Vec<egui::ViewportCommand> {
+    let output = context.run(input, |context| window.lifecycle_frame(context, start_open));
     viewport_commands(&output)
 }
 
@@ -104,7 +113,8 @@ fn close_input() -> egui::RawInput {
 /// The life's panels drawn headless at the window's floor, with the Inicio page under them.
 fn page_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
     let mut harness = egui_kittest::Harness::new(move |context| {
-        window.lifecycle_frame(context);
+        let start_open = window.start_open;
+        window.lifecycle_frame(context, start_open);
         window.show_start(context);
     });
     harness.set_size(egui::vec2(1366.0, 768.0));
@@ -119,7 +129,10 @@ fn page_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
 
 /// Only the life's panels, with no page under them.
 fn panel_harness(window: &mut Window) -> egui_kittest::Harness<'_> {
-    let mut harness = egui_kittest::Harness::new(move |context| window.lifecycle_frame(context));
+    let mut harness = egui_kittest::Harness::new(move |context| {
+        let start_open = window.start_open;
+        window.lifecycle_frame(context, start_open);
+    });
     harness.set_size(egui::vec2(1366.0, 768.0));
     if crate::theme::install_font(&harness.ctx, None).is_err() {
         eprintln!("no system font: the lifecycle tests need one");
@@ -169,6 +182,14 @@ fn the_modified_state_follows_the_revision_and_clears_on_save() {
     ));
     assert!(window.is_modified(), "the next edit marks it again");
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_start_page_title_names_the_program() {
+    let mut window = window_with(None, SafetyCopy::at(None));
+    let context = egui::Context::default();
+    let commands = frame_with_start(&context, &mut window, egui::RawInput::default(), true);
+    assert_eq!(titles(&commands), vec![String::from("Punchi Fluid Lab")]);
 }
 
 #[test]

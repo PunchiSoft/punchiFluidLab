@@ -406,6 +406,9 @@ title = "Comprobar circuito"
 clean = "sin faltas: el circuito pasa la comprobación"
 recheck = "Recomprobar"
 
+[app]
+name = "Punchi Fluid Lab"
+
 [start]
 title = "Inicio"
 subtitle = "Crea un proyecto nuevo o continúa trabajando en uno existente"

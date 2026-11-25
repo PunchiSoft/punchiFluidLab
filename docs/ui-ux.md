@@ -577,8 +577,8 @@ selected.
 
 - **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The page
   lists at most `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, newest first, with the
-  name, the folder, the **modified** relative time (its absolute value in the tooltip) and the
-  **real size** read from the file's metadata — the file is never opened or parsed. When more
+  name, the folder and the **size** read from the file's metadata — the file is never opened
+  or parsed; the modified relative time waits for P-034b. When more
   than five are remembered, a line says the rest are in **Archivo ▸ Recientes**, whose group
   already lists all ten. A document whose file has gone stays in the list in muted ink, marked
   **no encontrado**, cannot be opened, and leaves it only through its **quitar** control, which
@@ -586,12 +586,12 @@ selected.
   modified mark.
 - **An empty Recientes** says the next step instead of showing a blank table: *Aún no hay
   proyectos recientes. Crea un proyecto nuevo o abre un archivo; aparecerá aquí.*
-- **Plantillas**, **three** circuits offered and authored for this project: a 3/2 valve and
-  single-acting cylinder (the worked example), a 5/2 valve and double-acting cylinder, and air
-  preparation ahead of a valve. The fourth compiled template — an electrical pushbutton driving
-  a solenoid valve — stays in the ABI for **P-026**, but its card is not offered while that
-  connection is deferred. Each card is a keyboard-focusable button; choosing one copies its
-  circuit into a clean project, while **Nuevo proyecto** remains empty.
+- **Plantillas**, **four** circuits offered and authored for this project: a 3/2 valve and
+  single-acting cylinder (the worked example), a 5/2 valve and double-acting cylinder, air
+  preparation ahead of a valve, and an electrical pushbutton driving a solenoid valve. The
+  fourth is offered with the rest; its electrical connection remains **P-026**. Each card is a
+  keyboard-focusable button; choosing one copies its circuit into a clean project, while
+  **Nuevo proyecto** remains empty.
 - **Aprender**: **Acerca de** and **Licencia**. The shortcuts and what “conforme a ISO 1219”
   means need their own content and are not invented in this pass.
 

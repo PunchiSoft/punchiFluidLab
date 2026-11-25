@@ -179,16 +179,21 @@ impl Lifecycle {
         document: &Document,
         path: Option<&Path>,
         language: Language,
+        start_open: bool,
     ) {
-        let name = path
-            .and_then(Path::file_name)
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or(language.text("status.unsaved"));
-        let base = format!("punchi-fluid — {name}");
-        let title = if self.is_modified(document) {
-            format!("• {base}")
+        let title = if start_open {
+            language.text("app.name").to_owned()
         } else {
-            base
+            let name = path
+                .and_then(Path::file_name)
+                .and_then(std::ffi::OsStr::to_str)
+                .unwrap_or(language.text("status.unsaved"));
+            let base = format!("punchi-fluid — {name}");
+            if self.is_modified(document) {
+                format!("• {base}")
+            } else {
+                base
+            }
         };
         if self.title.as_deref() == Some(title.as_str()) {
             return;
@@ -338,9 +343,14 @@ impl Window {
 
     /// The one call `update` makes into this module: the title, the safety copy, the close
     /// question and the panels, before the page or the sheet draws under them.
-    pub(crate) fn lifecycle_frame(&mut self, context: &egui::Context) {
-        self.lifecycle
-            .sync_title(context, &self.document, self.path.as_deref(), self.language);
+    pub(crate) fn lifecycle_frame(&mut self, context: &egui::Context, start_open: bool) {
+        self.lifecycle.sync_title(
+            context,
+            &self.document,
+            self.path.as_deref(),
+            self.language,
+            start_open,
+        );
         self.lifecycle.autosave(context, &self.document);
         // The save «Guardar y cerrar» awaited finished, on the document's path or through the
         // dialog that asked for one: the window can go.

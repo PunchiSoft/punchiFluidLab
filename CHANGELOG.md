@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Inicio equilibrado — 2026-11-25
+
+- Inicio nombra el programa en el título de la ventana y separa la etiqueta de sección «Get
+  started» del título de página; las cuatro plantillas compiladas siguen ofreciéndose.
+- Las filas de recientes eliden nombre y carpeta dentro del ancho disponible, muestran el
+  tamaño leído de los metadatos y conservan el nombre completo en la etiqueta accesible.
+- Volver a la hoja conserva documento, selección y vista, y la prueba
+  `returning_from_home_preserves_the_document_selection_and_view` lo fija. Sin cambios de
+  documento, física, símbolos ni formato.
+
 ### Interfaz: jerarquía visual y tokens — 2026-11-25
 
 - La ventana deriva roles de texto (`text_page`, `text_section`, `text_name`, `text_action`,
