@@ -18,6 +18,7 @@ configuration = "Configuración"
 description = "Descripción"
 close = "Cerrar"
 cancel = "Cancelar"
+done = "Listo"
 mockup = "Maqueta · el contenido de este diálogo llegará más adelante."
 
 [notice]
