@@ -100,7 +100,7 @@ pub(super) fn nav(
     }
     // Acerca de and Licencia keep the foot of the rail: the space between them and the
     // settings row is what the capture calls the rail's quiet end.
-    let height = (tokens.unit * 2.0).max(32.0);
+    let height = tokens.row_height;
     let foot = height * 2.0 + ui.spacing().item_spacing.y;
     ui.add_space((ui.available_height() - foot).max(0.0));
     if nav_row(ui, tokens, &NAV_ABOUT, language) {
@@ -125,7 +125,7 @@ pub(super) fn nav(
 /// `Enter` or `Space` like the ribbon's own controls.
 fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Language) -> bool {
     let label = language.text(item.label);
-    let height = (tokens.unit * 2.0).max(32.0);
+    let height = tokens.row_height;
     let (rect, _) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), height),
         egui::Sense::hover(),
@@ -149,7 +149,7 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Languag
         ui.painter().rect_stroke(
             rect,
             tokens.radius_control,
-            egui::Stroke::new(2.0_f32, tokens.accent),
+            egui::Stroke::new(tokens.focus_width, tokens.accent),
             egui::StrokeKind::Inside,
         );
     }
@@ -162,7 +162,7 @@ fn nav_row(ui: &mut egui::Ui, tokens: &Tokens, item: &NavItem, language: Languag
         egui::pos2(icon_rect.right() + tokens.unit * 0.6, rect.center().y),
         egui::Align2::LEFT_CENTER,
         label,
-        egui::FontId::proportional(tokens.text_body),
+        egui::FontId::proportional(tokens.text_action),
         ink,
     );
     let current = item.current;

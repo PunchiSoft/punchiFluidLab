@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Interfaz: jerarquía visual y tokens — 2026-11-25
+
+- La ventana deriva roles de texto (`text_page`, `text_section`, `text_name`, `text_action`,
+  `text_value`, `text_secondary`) y medidas de control (`row_height`, `tile_band`,
+  `target_min`, `focus_width`) del adaptador de tema. Inicio y el catálogo usan los roles y
+  dejan de fijar el objetivo de 24 puntos y la banda del símbolo en el widget.
+- Nueva prueba `the_text_roles_keep_their_order_and_follow_the_font`; las capturas de Inicio
+  y editor en claro/oscuro confirman la jerarquía. Sin cambios de documento, física, símbolos
+  ni formato.
+
 ### Apariencia de los diálogos — 2026-11-25
 
 - La confirmación de cambios sin guardar y el editor de válvulas comparten una cabecera

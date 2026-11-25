@@ -45,6 +45,7 @@ impl Rgb {
 }
 
 mod appearance;
+mod dialog;
 
 pub use appearance::{Appearance, ThemeId};
 
@@ -113,61 +114,27 @@ pub struct Tokens {
     pub text_body: f32,
     pub text_label: f32,
     pub text_display: f32,
+    /// The page title of a view that is not a document.
+    pub text_page: f32,
+    /// A section label above a group of choices.
+    pub text_section: f32,
+    /// A component, card or row name.
+    pub text_name: f32,
+    /// An action's label.
+    pub text_action: f32,
+    /// A measured value or datum.
+    pub text_value: f32,
+    /// A secondary line: a path, a count or an explanation.
+    pub text_secondary: f32,
+    /// The smallest interactive target, never below the 24-point rule.
+    pub target_min: f32,
+    /// The symbol band of a catalog tile.
+    pub tile_band: f32,
+    /// The height of a navigation or list row, never below its target.
+    pub row_height: f32,
+    /// The width of a focus ring.
+    pub focus_width: f32,
     pub motion_ms: u32,
-}
-
-/// The approved dialog palette: a fixed light and dark pair, so the two pilot windows keep
-/// the tones of the approved design on every desktop instead of following its palette.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct DialogPalette {
-    pub surface: Color32,
-    pub band: Color32,
-    pub text: Color32,
-    pub muted: Color32,
-    pub border: Color32,
-    pub accent: Color32,
-    pub on_accent: Color32,
-    pub selected: Color32,
-    pub error: Color32,
-    pub shadow: Color32,
-    pub backdrop: Color32,
-}
-
-impl Tokens {
-    /// The dialog palette for this light or dark mode.
-    #[must_use]
-    pub(crate) fn dialog_palette(&self) -> DialogPalette {
-        let rgb = Color32::from_rgb;
-        if self.dark {
-            DialogPalette {
-                surface: rgb(35, 45, 58),
-                band: rgb(27, 36, 48),
-                text: rgb(238, 243, 251),
-                muted: rgb(189, 201, 218),
-                border: rgb(88, 106, 128),
-                accent: rgb(169, 202, 255),
-                on_accent: rgb(20, 46, 84),
-                selected: rgb(44, 67, 97),
-                error: rgb(255, 180, 178),
-                shadow: Color32::from_black_alpha(48),
-                backdrop: Color32::from_black_alpha(60),
-            }
-        } else {
-            DialogPalette {
-                surface: WHITE.colour(),
-                band: rgb(244, 246, 250),
-                text: rgb(24, 38, 57),
-                muted: rgb(80, 96, 118),
-                border: rgb(196, 204, 216),
-                accent: rgb(34, 87, 163),
-                on_accent: WHITE.colour(),
-                selected: rgb(230, 239, 254),
-                error: rgb(160, 45, 41),
-                shadow: Color32::from_black_alpha(48),
-                backdrop: Color32::from_black_alpha(60),
-            }
-        }
-    }
 }
 
 /// The pairings `docs/ui-ux.md` fixes and their measured ratios, proved by the tests.
@@ -731,6 +698,12 @@ fn tokens_from(palette: Palette, font: &DesktopFont, motion: u32) -> Tokens {
     let text_body = (unit * 0.61).max(11.0).round();
     let text_label = (unit * 0.66).max(12.0).round();
     let text_display = (unit * 1.50).max(24.0).round();
+    // The section label is one step above a name, so a group title is not read as another
+    // row; the other roles alias an existing step and add meaning, not a second scale.
+    let text_section = (text_label * 1.1).max(13.0).round();
+    let target_min = (unit * 1.34).max(24.0).round();
+    let tile_band = (unit * 2.4).max(44.0).round();
+    let row_height = (unit * 2.0).max(32.0).round();
     Tokens {
         dark,
         background: background.colour(),
@@ -760,6 +733,16 @@ fn tokens_from(palette: Palette, font: &DesktopFont, motion: u32) -> Tokens {
         text_body,
         text_label,
         text_display,
+        text_page: text_display,
+        text_section,
+        text_name: text_label,
+        text_action: text_body,
+        text_value: text_body,
+        text_secondary: text_body,
+        target_min,
+        tile_band,
+        row_height,
+        focus_width: 2.0,
         motion_ms: motion,
     }
 }

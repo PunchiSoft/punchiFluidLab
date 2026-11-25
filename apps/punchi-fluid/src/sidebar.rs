@@ -375,7 +375,7 @@ impl Body {
                             let name = ui.add(
                                 egui::Button::new(
                                     egui::RichText::new(format!("{label}  {}", matching.len()))
-                                        .size(tokens.text_body)
+                                        .size(tokens.text_section)
                                         .color(tokens.ink),
                                 )
                                 .frame(false)
@@ -603,12 +603,14 @@ fn tile(
     language: Language,
     chosen: bool,
 ) -> (TileAction, egui::Rect) {
+    // The tile name keeps the body step until phase 3 separates the variant line;
+    // a larger name here would split the same two lines further.
     let name_font = egui::FontId::proportional(tokens.text_body);
     // Two lines of name, measured rather than guessed, over the symbol; the tile shows only
     // the symbol and the name, with the reference's roomy padding.
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
     let pad = tokens.unit * 0.4;
-    let height = pad * 2.0 + 44.0 + name_row * 2.0 + 2.0;
+    let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -635,7 +637,7 @@ fn tile(
             egui::StrokeKind::Inside,
         );
         ui.painter().rect_filled(
-            egui::Rect::from_min_size(rect.min, egui::vec2(2.0, rect.height())),
+            egui::Rect::from_min_size(rect.min, egui::vec2(tokens.focus_width, rect.height())),
             0.0,
             tokens.accent,
         );
@@ -646,14 +648,14 @@ fn tile(
     if response.has_focus() {
         ui.painter().rect_stroke(
             rect,
-            4.0,
-            egui::Stroke::new(1.0_f32, tokens.accent),
+            tokens.radius_small,
+            egui::Stroke::new(tokens.focus_width, tokens.accent),
             egui::StrokeKind::Inside,
         );
     }
     let symbol = egui::Rect::from_min_size(
         rect.min + egui::vec2(pad, pad),
-        egui::vec2(width - pad * 2.0, 44.0),
+        egui::vec2(width - pad * 2.0, tokens.tile_band),
     );
     let (box_width, box_height) = box_of(definition);
     let scale = (symbol.width().min(symbol.height()) * 0.8 / box_width.max(box_height)).max(0.05);
