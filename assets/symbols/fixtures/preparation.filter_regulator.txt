@@ -1,0 +1,72 @@
+Line { points: [Pt { x: 1.8399999, y: 12.5 }, Pt { x: 4.6, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 4.6, y: 12.5 }, Pt { x: 6.300022, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 12.700002, y: 12.5 }, Pt { x: 16.300009, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 16.300009, y: 12.5 }, Pt { x: 22.699987, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 22.699987, y: 12.5 }, Pt { x: 33.99998, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 33.99998, y: 12.5 }, Pt { x: 41.399998, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 41.399998, y: 12.5 }, Pt { x: 44.16, y: 12.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 4.6, y: 2.5 }, Pt { x: 8.6, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 9.799999, y: 2.5 }, Pt { x: 10.2999, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 11.4998, y: 2.5 }, Pt { x: 15.4998, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 16.699799, y: 2.5 }, Pt { x: 17.1997, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 18.3996, y: 2.5 }, Pt { x: 22.3996, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 23.5996, y: 2.5 }, Pt { x: 24.0996, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 25.299599, y: 2.5 }, Pt { x: 29.299599, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 30.4996, y: 2.5 }, Pt { x: 30.9996, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 32.199596, y: 2.5 }, Pt { x: 36.199596, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 37.399597, y: 2.5 }, Pt { x: 37.899597, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 39.099598, y: 2.5 }, Pt { x: 41.399998, y: 2.5 }, Pt { x: 41.399998, y: 4.1995983 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 5.399596 }, Pt { x: 41.399998, y: 5.8994985 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 7.0994005 }, Pt { x: 41.399998, y: 11.0994005 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 12.2994 }, Pt { x: 41.399998, y: 12.799399 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 13.999399 }, Pt { x: 41.399998, y: 17.999397 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 19.1993 }, Pt { x: 41.399998, y: 19.699203 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 41.399998, y: 20.899105 }, Pt { x: 41.399998, y: 22.5 }, Pt { x: 39.000893, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 37.80089, y: 22.5 }, Pt { x: 37.30089, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 36.100895, y: 22.5 }, Pt { x: 32.100895, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 30.900898, y: 22.5 }, Pt { x: 30.400997, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 29.201094, y: 22.5 }, Pt { x: 25.201097, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 24.0011, y: 22.5 }, Pt { x: 23.5011, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 22.301102, y: 22.5 }, Pt { x: 18.301199, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 17.101295, y: 22.5 }, Pt { x: 16.601297, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 15.4013, y: 22.5 }, Pt { x: 11.4013, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 10.2013, y: 22.5 }, Pt { x: 9.701395, y: 22.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 8.501492, y: 22.5 }, Pt { x: 4.5999985, y: 22.5 }, Pt { x: 4.6, y: 22.401491 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 21.201492 }, Pt { x: 4.6, y: 20.701591 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 19.50169 }, Pt { x: 4.6, y: 15.501693 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 14.301788 }, Pt { x: 4.6, y: 13.801789 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 12.601789 }, Pt { x: 4.6, y: 8.601887 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 7.401984 }, Pt { x: 4.6, y: 6.901987 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 4.6, y: 5.70199 }, Pt { x: 4.6, y: 2.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Boundary } }
+Line { points: [Pt { x: 9.500012, y: 9.3 }, Pt { x: 12.700002, y: 12.5 }, Pt { x: 9.500012, y: 15.700001 }, Pt { x: 6.300022, y: 12.5 }, Pt { x: 9.500012, y: 9.3 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 9.500012, y: 9.3 }, Pt { x: 9.500012, y: 11.9 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Drain } }
+Line { points: [Pt { x: 9.500012, y: 13.2 }, Pt { x: 9.500012, y: 14.1 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Drain } }
+Line { points: [Pt { x: 7.899994, y: 14.1 }, Pt { x: 11.099984, y: 14.1 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 9.500012, y: 15.700001 }, Pt { x: 9.500012, y: 23.5 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Rect { rect: Rect { min: Pt { x: 16.300009, y: 9.3 }, max: Pt { x: 22.69999, y: 15.700001 } }, corner: 0.6, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Polygon { points: [Pt { x: 18.199991, y: 12.5 }, Pt { x: 16.99999, y: 11.900001 }, Pt { x: 16.99999, y: 13.099999 }], fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }
+Polygon { points: [Pt { x: 21.000011, y: 12.5 }, Pt { x: 22.200014, y: 11.900001 }, Pt { x: 22.200014, y: 13.099999 }], fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }
+Line { points: [Pt { x: 16.300009, y: 9.9 }, Pt { x: 16.300009, y: 11.1 }, Pt { x: 14.899999, y: 10.5 }, Pt { x: 16.300009, y: 9.9 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 20.00002, y: 9.3 }, Pt { x: 18.600008, y: 8.5 }, Pt { x: 21.399982, y: 7.7 }, Pt { x: 18.600008, y: 6.8999996 }, Pt { x: 21.399982, y: 6.1 }, Pt { x: 18.600008, y: 5.2999997 }, Pt { x: 20.00002, y: 4.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 16.99999, y: 8.8 }, Pt { x: 23.0, y: 4.8 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Polygon { points: [Pt { x: 23.0, y: 4.8 }, Pt { x: 22.167997, y: 6.0759997 }, Pt { x: 21.50201, y: 5.078 }], fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }
+Line { points: [Pt { x: 20.00002, y: 15.700001 }, Pt { x: 20.00002, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Line { points: [Pt { x: 20.00002, y: 18.0 }, Pt { x: 21.60002, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 22.50002, y: 18.0 }, Pt { x: 24.10002, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 24.99992, y: 18.0 }, Pt { x: 26.599918, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 27.499819, y: 18.0 }, Pt { x: 29.09982, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 29.999819, y: 18.0 }, Pt { x: 31.59982, y: 18.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 32.499817, y: 18.0 }, Pt { x: 33.99998, y: 18.0 }, Pt { x: 33.99998, y: 17.900162 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 33.99998, y: 17.000162 }, Pt { x: 33.99998, y: 15.400163 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 33.99998, y: 14.500163 }, Pt { x: 33.99998, y: 12.900163 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Pilot } }
+Line { points: [Pt { x: 33.99998, y: 12.5 }, Pt { x: 33.99998, y: 10.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Circle { centre: Pt { x: 33.99998, y: 8.0 }, radius: 2.0, fill: None, stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Line { points: [Pt { x: 33.99998, y: 8.0 }, Pt { x: 32.600018, y: 6.8999996 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
+Polygon { points: [Pt { x: 32.600018, y: 6.8999996 }, Pt { x: 33.523006, y: 7.1800003 }, Pt { x: 33.09102, y: 7.7299995 }], fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }
+Circle { centre: Pt { x: 33.99998, y: 12.5 }, radius: 0.25, fill: Some(Colour { r: 0, g: 0, b: 0 }), stroke: None }
+Circle { centre: Pt { x: 1.8399999, y: 12.5 }, radius: 1.25, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Text { at: Pt { x: 1.5, y: 9.5 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 1.5, y: 9.5 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
+Circle { centre: Pt { x: 44.16, y: 12.5 }, radius: 1.25, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
+Text { at: Pt { x: 44.5, y: 15.5 }, text: "2", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: 44.5, y: 15.5 }, text: "2", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }

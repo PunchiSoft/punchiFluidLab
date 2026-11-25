@@ -29,6 +29,10 @@ pub const FILES: &[(&str, &str)] = &[
         include_str!("../../../assets/catalog/preparation.service_unit_simple.toml"),
     ),
     (
+        "preparation.filter_regulator.toml",
+        include_str!("../../../assets/catalog/preparation.filter_regulator.toml"),
+    ),
+    (
         "filter.air.toml",
         include_str!("../../../assets/catalog/filter.air.toml"),
     ),

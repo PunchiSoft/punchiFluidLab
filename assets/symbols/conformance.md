@@ -23,6 +23,7 @@ The **second reader is Cristian Muñoz, the owner**: he signed the core's record
 signature. The **2026-11-24 correction of the two service units** changed their drawing
 (box, chain-line frame, ports and numerals outside, internal forms), so those two rows are
 `in review` again until the owner signs the new captures; the rest of the core stays `done`.
+The **filter-regulator** is a new family member of 2026-11-24 and is `in review` with them.
 
 ## The core
 
@@ -68,6 +69,17 @@ Two differences are recorded rather than hidden: the plug is drawn with `2172V1`
 closed-port bar and not with `F038V1`'s in-line square, and the silencer keeps the contract's
 cone (ADR 0016) while `2033V1` draws a box with three relief lines. Both records carry those
 as open items, and the second reader signed them on 2026-11-24.
+
+## The conditioning family
+
+The owner enumerated four conditioning forms on 2026-11-24: the filter, the filter-regulator,
+the FRL and the FRL compact. The first and the last two are in the core table above; the
+filter-regulator is the second, added after the FRL correction and reviewed against the same
+contract.
+
+| Symbol | Family | Figure / rule | Ports | State | Record |
+|---|---|---|---|---|---|
+| `preparation.filter_regulator` | conditioning | `X12150` plus the gauge of `X12160` (composed; stated in the record) | 2, outside the chain-line frame | `in review` | [review](review/preparation.filter_regulator.md) |
 
 ## Outside this pass
 

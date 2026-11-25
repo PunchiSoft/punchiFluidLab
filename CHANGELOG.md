@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### El filtro-regulador de la familia — 2026-11-24
+
+- Componente nuevo **`preparation.filter_regulator`**: filtro con purga manual, regulador de
+  presión con venteo y realimentación y manómetro, **sin lubricador**. La caja es la misma
+  **46 × 25 mm** de la FRL, el marco es la línea de trazo y punto y los puertos y sus
+  numerales van fuera del marco, junto a cada puerto.
+- La figura **compone** `X12150` (filtro con purga manual y regulador sin manómetro) con el
+  manómetro de `X12160`; la revisión lo dice y no atribuye la composición a una sola figura.
+- Evidencia: la revisión nueva `preparation.filter_regulator.md`, sus tres capturas, el
+  fixture de geometría, `the_filter_regulator_numerals_sit_outside_its_frame` y
+  `the_filter_regulator_is_the_filter_and_regulator_without_a_lubricator`; la matriz y el
+  contrato llevan la fila de la familia. La revisión queda `pending-300dpi` hasta la firma
+  del dueño.
+
 ### El FRL, redibujado con su caja, su marco y sus números fuera — 2026-11-24
 
 - La **unidad de mantenimiento completa** y la **simplificada** declaran su caja en el
