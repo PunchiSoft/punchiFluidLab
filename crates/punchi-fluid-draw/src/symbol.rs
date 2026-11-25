@@ -2989,4 +2989,137 @@ mod tests {
             "the ball stayed put: {centres:?}"
         );
     }
+
+    /// Distance from a point to a segment, in millimetres of the drawing.
+    fn distance_to_segment(point: Pt, a: Pt, b: Pt) -> f32 {
+        let (dx, dy) = a.to(b);
+        let length2 = dx * dx + dy * dy;
+        if length2 <= f32::EPSILON {
+            let (px, py) = a.to(point);
+            return px.hypot(py);
+        }
+        let t = (((point.x - a.x) * dx + (point.y - a.y) * dy) / length2).clamp(0.0, 1.0);
+        let nearest = Pt::new(a.x + dx * t, a.y + dy * t);
+        let (nx, ny) = point.to(nearest);
+        nx.hypot(ny)
+    }
+
+    #[test]
+    fn the_shuttle_through_line_is_continuous() {
+        // The owner's correction: the line must read from port to port, not as two tramos
+        // cut around the ball. The ball and its seats are drawn on top of it.
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut recording = Recording::default();
+        draw_primitives(
+            &mut recording,
+            rect,
+            &definition.symbol,
+            Ink::print().line,
+            LINE,
+        );
+        let continuous = recording.calls().iter().any(|call| match call {
+            crate::surface::Call::Line { points, .. } => {
+                points.len() == 2
+                    && (points[0].x - 0.0).abs() < 1.0e-4
+                    && (points[0].y - 10.0).abs() < 1.0e-4
+                    && (points[1].x - 20.0).abs() < 1.0e-4
+                    && (points[1].y - 10.0).abs() < 1.0e-4
+            }
+            _ => false,
+        });
+        assert!(
+            continuous,
+            "the through line is not one segment from port to port"
+        );
+    }
+
+    #[test]
+    fn the_shuttle_ball_touches_its_seat_without_crossing_it() {
+        // The owner's correction: the circumference touches the seat's arms at its
+        // perimeter; it does not sit over the vertex and cross them.
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let seats: Vec<&punchi_fluid_catalog::Primitive> = definition
+            .symbol
+            .iter()
+            .filter(|primitive| {
+                primitive.kind == PrimitiveKind::Polyline && primitive.points.len() == 6
+            })
+            .collect();
+        assert_eq!(seats.len(), 2, "the shuttle has two check seats");
+        for (index, seat) in seats.iter().enumerate() {
+            let ball_seat = if index == 0 {
+                BallSeat::Left
+            } else {
+                BallSeat::Right
+            };
+            let mut recording = Recording::default();
+            draw_primitives_seated(
+                &mut recording,
+                rect,
+                &definition.symbol,
+                definition.moving.first().zip(Some(ball_seat)),
+                Ink::print().line,
+                LINE,
+            );
+            let centre = recording
+                .calls()
+                .iter()
+                .find_map(|call| match call {
+                    crate::surface::Call::Circle { centre, radius, .. }
+                        if (radius - 1.0).abs() < 1.0e-3 =>
+                    {
+                        Some(*centre)
+                    }
+                    _ => None,
+                })
+                .expect("the ball");
+            let points: Vec<Pt> = seat
+                .points
+                .chunks_exact(2)
+                .map(|pair| at(rect, pair[0], pair[1]))
+                .collect();
+            let nearest = points
+                .windows(2)
+                .map(|pair| distance_to_segment(centre, pair[0], pair[1]))
+                .fold(f32::INFINITY, f32::min);
+            assert!(
+                (nearest - 1.0).abs() < 1.0e-3,
+                "the ball at seat {index} is {nearest} mm from its seat, not tangent at 1 mm"
+            );
+        }
+    }
+
+    #[test]
+    fn the_shuttle_ball_is_not_filled() {
+        // A canvas-coloured fill would cut the continuous through line, which is the
+        // defect the owner reported.
+        let catalog = punchi_fluid_catalog::Catalog::builtin();
+        let definition = catalog.get("valve.shuttle").expect("the shuttle").clone();
+        let rect = Rect::from_min_size(Pt::new(0.0, 0.0), 20.0, 20.0);
+        let mut recording = Recording::default();
+        draw_primitives(
+            &mut recording,
+            rect,
+            &definition.symbol,
+            Ink::print().line,
+            LINE,
+        );
+        let fill = recording
+            .calls()
+            .iter()
+            .find_map(|call| match call {
+                crate::surface::Call::Circle { radius, fill, .. }
+                    if (radius - 1.0).abs() < 1.0e-3 =>
+                {
+                    Some(*fill)
+                }
+                _ => None,
+            })
+            .expect("the ball");
+        assert!(fill.is_none(), "the ball is filled and would cut the line");
+    }
 }

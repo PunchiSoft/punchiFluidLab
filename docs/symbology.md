@@ -523,11 +523,11 @@ drawn by hand, and checked with the lint and the manual list.
 The structural half of the contract is **implemented** and the visual half is **reviewed at
 palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
 were signed by the second reader on 2026-11-24, and the symbols outside the core still wait
-for that signature. The 2026-11-24 correction of the two service units changed their
-drawing, so **their two reviews are `pending-300dpi` again** until the owner signs the new
-captures: the core is not complete while they are open, and the export keeps its unverified
-note. The **filter-regulator** and the **filter with automatic drain** added on
-2026-11-24 are new conditioning forms and are pending as well. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
+for that signature. The 2026-11-24 correction of the two service units and of the OR
+valve changed their drawing, so **their three reviews are `pending-300dpi` again** until the
+owner signs the new captures: the core is not complete while they are open, and the export
+keeps its unverified note. The **filter-regulator** and the **filter with automatic drain**
+added on 2026-11-24 are new conditioning forms and are pending as well. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
 the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this machine, as the
 national-adoptions section says.
 
@@ -546,8 +546,8 @@ national-adoptions section says.
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **drawn** | the content block is on the canvas and in the export ([capabilities](capabilities.md), [ADR 0030](adr/0030-the-block-protects-its-own-box.md)) |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **done for the core except the two service units, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the two service units were redrawn on 2026-11-24 and await the owner's signature |
-| Second reader's signature | **the core was signed; the two service units are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24; the 2026-11-24 correction returns `preparation.service_unit` and `preparation.service_unit_simple` to `pending-300dpi` |
+| Legible at 300 dpi | **done for the core except the two service units and the OR valve, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the two service units and the OR valve were redrawn on 2026-11-24 and await the owner's signature |
+| Second reader's signature | **the core was signed; the two service units and the OR valve are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24; the 2026-11-24 corrections return `preparation.service_unit`, `preparation.service_unit_simple` and `valve.shuttle` to `pending-300dpi` |
 
 Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/).
 The core's files read `status: complete`, signed by the second reader; the files outside the
