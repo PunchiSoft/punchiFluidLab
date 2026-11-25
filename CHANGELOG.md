@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### La regla de los símbolos firmados — 2026-11-24
+
+- La skill `fluid-power-symbology` gana la sección **«Signed symbols are immutable»**: un
+  símbolo está firmado solo cuando el manifiesto `assets/symbols/signed.toml` fija sus hashes
+  y la firma SSH verifica contra `owner_signers`; `status: complete` es la condición previa,
+  no la prueba. Un símbolo firmado no se edita: hace falta autorización del dueño, una
+  revisión nueva (`revision + 1`, `previous_revision`) y una firma nueva; el agente no firma,
+  no posee la clave y no edita el manifiesto ni su firma.
+- La regla del **ID exacto** queda escrita: si el pedido es ambiguo o solo se parece
+  visualmente, se para y se pregunta; nunca se elige un símbolo por parecido.
+- `assets/symbols/README.md`, `docs/symbology.md` y `conformance.md` distinguen **`done`**
+  (revisión `complete`) de **`signed`** (entrada verificada en el manifiesto): la matriz gana
+  la columna de firma, con `valve.5_2.base` firmado y los otros 15 `complete` pendientes.
+- Solo documentación: no se toca ningún TOML de símbolo, ni revisión, ni captura, ni el
+  manifiesto o su firma. Evidencia: `check-docs` y `check-skills` verdes.
+
 ### Símbolos firmados: manifiesto y compuerta — 2026-11-24
 
 - **`assets/symbols/signed.toml`** fija el SHA-256 de la definición, el review y las tres

@@ -518,18 +518,43 @@ not corrected by
 comparing it with a drawing from another program: the requirement is read, written in words,
 drawn by hand, and checked with the lint and the manual list.
 
+## Signed symbols
+
+A review that says `status: complete` has been **signed off** by the second reader; that is a
+statement in the record, not proof that the files have not changed since. From 2026-11-24 a
+symbol can also be **signed**: `assets/symbols/signed.toml` pins the SHA-256 of its TOML, its
+review and its three captures, `signed.toml.sig` is the owner's detached SSH signature over
+the manifest, and `owner_signers` holds the public key that verifies it
+([ADR 0047](adr/0047-the-signed-symbols-are-immutable.md)). `scripts-dev/check-signed-symbols.sh`
+runs from `check.sh` and `check-docs.sh`: it verifies the signature and every hash, fails when
+a `complete` review has no entry, and fails when a signed file was edited.
+
+A signed symbol is **immutable**. A change needs the owner's direct authorization and a new
+review, with `revision` incremented and `previous_revision` naming the old one; the old
+revision stays in Git, and the owner signs the new manifest. The agent prepares the evidence;
+it never signs, never holds the private key, and never edits the manifest or its signature on
+its own. While `base_open = true`, an entry without `signed_by`/`signed_at` is **pending**:
+its hashes are pinned and protected, but it is not signed; read the manifest before calling a
+symbol signed.
+
+As of 2026-11-24, 16 reviews are `complete`; 1 of them (`valve.5_2.base`) is signed and the
+other 15 wait for the owner's signature. The two service units and the OR valve returned to
+`pending-300dpi` after their correction, and the filter-regulator and the automatic-drain
+filter are new pending forms: 3 core and 2 family reviews are open.
+
 ## Current state, honestly
 
 The structural half of the contract is **implemented** and the visual half is **reviewed at
 palette and canvas size**. Every built-in has its 300 dpi capture; the **core's** records
-were signed by the second reader on 2026-11-24, and the symbols outside the core still wait
-for that signature. The 2026-11-24 correction of the two service units and of the OR
+were signed off by the second reader on 2026-11-24, and the symbols outside the core still wait
+for that sign-off. The 2026-11-24 correction of the two service units and of the OR
 valve changed their drawing, so **their three reviews are `pending-300dpi` again** until the
-owner signs the new captures: the core is not complete while they are open, and the export
+owner signs off the new captures: the core is not complete while they are open, and the export
 keeps its unverified note. The **filter-regulator** and the **filter with automatic drain**
-added on 2026-11-24 are new conditioning forms and are pending as well. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
-the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this machine, as the
-national-adoptions section says.
+added on 2026-11-24 are new conditioning forms and are pending as well. The sign-off records
+the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020; the Chilean adoption
+(**NCh-ISO 1219**) is still unconfirmed from this machine, as the national-adoptions section
+says.
 
 | Requirement | State | Evidence |
 |---|---|---|
@@ -546,15 +571,19 @@ national-adoptions section says.
 | Junction dots at three-way junctions | **drawn** | a tee is a component and its filled dot is its symbol ([ADR 0006](adr/0006-a-junction-is-a-component.md)); the solver treats its ports as one point |
 | Title block on the sheet itself | **drawn** | the content block is on the canvas and in the export ([capabilities](capabilities.md), [ADR 0030](adr/0030-the-block-protects-its-own-box.md)) |
 | Legible at palette size (24–30 px) | **reviewed** | screenshots in `assets/symbols/review/` |
-| Legible at 300 dpi | **done for the core except the two service units and the OR valve, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed 2026-11-24; the two service units and the OR valve were redrawn on 2026-11-24 and await the owner's signature |
-| Second reader's signature | **the core was signed; the two service units and the OR valve are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed the core on 2026-11-24; the 2026-11-24 corrections return `preparation.service_unit`, `preparation.service_unit_simple` and `valve.shuttle` to `pending-300dpi` |
+| Legible at 300 dpi | **done for the core except the two service units and the OR valve, pending their new captures; open outside it** | the core's 300 dpi sheets are in the review folder, signed off 2026-11-24; the two service units and the OR valve were redrawn on 2026-11-24 and await the owner's sign-off |
+| Review sign-off (the record is `complete`) | **the core was signed off; the two service units and the OR valve are pending again; the rest is open** | Cristian Muñoz (owner), second reader, signed off the core on 2026-11-24; the 2026-11-24 corrections return `preparation.service_unit`, `preparation.service_unit_simple` and `valve.shuttle` to `pending-300dpi` |
+| Signed symbols (the SSH manifest) | **partial** | `assets/symbols/signed.toml` pins the 16 `complete` core symbols; `valve.5_2.base` is signed and 15 are pending the owner's signature; the change is gated by `check-signed-symbols.sh` ([ADR 0047](adr/0047-the-signed-symbols-are-immutable.md)) |
 
 Each built-in has a review file in [assets/symbols/review/](../assets/symbols/review/).
-The core's files read `status: complete`, signed by the second reader; the files outside the
-core keep `status: pending-300dpi`. The reviews are compiled into the binary
+The core's files read `status: complete`, signed off by the second reader; the files outside
+the core keep `status: pending-300dpi`, and one complete symbol (`valve.5_2.base`) is also
+signed in the SSH manifest. The reviews are compiled into the binary
 (`punchi-fluid-catalog::reviews`), and the PDF export asks them whether it may drop the
 note “symbols not yet verified against ISO 1219-1” from its title block: it may not while
 any review is not `complete`, which is why the note stays while a non-core review is open.
+That note depends on the review's `complete` state, not on the signed manifest; the manifest
+adds immutability, not conformance.
 A test asserts the compiled reviews cover every built-in, another asserts the exported file
 carries the note while any review is open, and the catalog's review logic has a case for the
 one condition that drops it — every review `complete`.
