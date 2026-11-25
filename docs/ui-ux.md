@@ -354,10 +354,13 @@ The panel that lists the reasons for each skipped file is still target.
 - The sidebar is **a palette of tiles**, two per row: the symbol, the principal name on up
   to two lines and the variant on its own line, with the full name and the `id` in the
   tooltip and in the accessible name. A name wraps at a space and the variant elides; no
-  text in the palette widens the panel past its column. The header carries the title, the
-  number of entries and the search field; the title, the count and a category's name elide in
-  place. The footer names the folder in use and the number of skipped files. A search with no
-  match says so in the panel instead of leaving it blank.
+  text in the palette widens the panel past its column. When a word would not fit at the
+  current desktop font, the group uses **one column** instead of splitting that word between
+  two rows, so the label stays legible and the full name remains in the tooltip and the
+  accessible name. The header carries the title, the number of entries and the search field;
+  the title, the count and a category's name elide in place. The footer names the folder in
+  use and the number of skipped files. A search with no match says so in the panel instead of
+  leaving it blank.
 - The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - **A closure is not a palette entry.** `plug.blind` and `silencer.pneumatic` are closure

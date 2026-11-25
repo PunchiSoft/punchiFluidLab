@@ -26,7 +26,7 @@ use crate::theme::Tokens;
 
 mod names;
 
-pub(crate) use names::{name_job, split_name, variant_job};
+pub(crate) use names::{full_name, name_job, name_rows, split_name, tile_width_for, variant_job};
 
 /// The categories in the palette's order, with their catalog key.
 const CATEGORIES: [(Category, &str); 6] = [
@@ -395,7 +395,17 @@ impl Body {
                     let _ = header.body(|ui| {
                         // The width comes from the group's body: the collapsing header indents
                         // it, and a width measured outside made the tiles wrap to one column.
-                        let tile_width = (ui.available_width() - ui.spacing().item_spacing.x) * 0.5;
+                        let names = matching
+                            .iter()
+                            .map(|definition| full_name(definition, language));
+                        let tile_width = tile_width_for(
+                            ui,
+                            ui.available_width(),
+                            ui.spacing().item_spacing.x,
+                            names,
+                            &egui::FontId::proportional(tokens.text_body),
+                            tokens.ink,
+                        );
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
                                 let (action, tile_rect) = tile(
@@ -623,10 +633,7 @@ fn tile(
     let name_row = ui.fonts(|fonts| fonts.row_height(&name_font));
     let variant_row = ui.fonts(|fonts| fonts.row_height(&variant_font));
     let pad = tokens.unit * 0.4;
-    let full_name = match language {
-        Language::Spanish => definition.name_es.as_deref().unwrap_or(&definition.name),
-        Language::English => &definition.name,
-    };
+    let full_name = full_name(definition, language);
     let (principal, variant) = split_name(full_name);
     let detail_row = if variant.is_some() { variant_row } else { 0.0 };
     let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + detail_row + 2.0;
@@ -690,11 +697,10 @@ fn tile(
         &preview_ink(tokens),
     );
     ui.painter().extend(drawing.shapes);
+    let name_width = (width - 4.0).max(1.0);
+    let name_rows = name_rows(ui, principal, name_width, &name_font, tokens.ink);
     let name_galley = ui.painter().layout_job(name_job(
-        principal,
-        (width - 4.0).max(1.0),
-        name_font,
-        tokens.ink,
+        principal, name_width, name_font, tokens.ink, name_rows,
     ));
     ui.painter().galley(
         egui::pos2(
