@@ -51,17 +51,18 @@ Ribbon, sidebar, sheet frame, status bar, theme layer.
 
 ## M1.5 — Symbol conformance (runs with M2)
 
-**Status:** partial — the structural half is done and the core is reviewed and signed, but
-the milestone is not closed. The 19 core symbols have a `complete` review signed by
-**Cristian Muñoz (owner)** as second reader on 2026-11-24, with the 300 dpi, light and dark
-captures and the conformance matrix. What remains: acceptance 4 covers the four symbols the
-milestone names, and one of them (`throttle.fixed`) is outside the core and still
-`pending-300dpi` (one of the 21 non-core reviews), so the export note stays; the known debts
-are the service unit's dashed frame instead of `X12160`'s
-chain line (needs a line class through the renderer, the schema, the sheet, the export and
-i18n), `X11440`'s spring-chamber connection omitted (`RF052`; no breather role in the
-schema), the silencer's contract cone against `2033V1`'s box (owner decision, ADR 0016) and
-the 21 symbols outside the core. See [symbology.md](symbology.md) and the
+**Status:** partial — the structural half is done and 17 of the 19 core symbols have a
+`complete` review signed by **Cristian Muñoz (owner)** as second reader on 2026-11-24, with
+the 300 dpi, light and dark captures and the conformance matrix. The two service units were
+redrawn on 2026-11-24 (declared 46 × 25 and 40 × 20 boxes, chain-line frame, ports and
+numerals outside, internal forms at the reference's proportion), so their reviews are
+`pending-300dpi` until the owner signs the new captures. What remains: acceptance 4 covers
+the four symbols the milestone names, and one of them (`throttle.fixed`) is outside the core
+and still `pending-300dpi` (one of the 21 non-core reviews), so the export note stays;
+`X11440`'s spring-chamber connection is omitted (`RF052`; no breather role in the schema),
+the silencer keeps the contract cone against `2033V1`'s box (owner decision, ADR 0016) and
+the 21 symbols outside the core are open. The service unit's chain-line debt is **closed**.
+See [symbology.md](symbology.md) and the
 [conformance matrix](../assets/symbols/conformance.md).
 
 Close the gap between what is drawn today and what ISO 1219-1:2012 requires. The

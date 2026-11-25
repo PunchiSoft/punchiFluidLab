@@ -12,6 +12,12 @@ use crate::schema::{
     RelayKind, SCHEMA_MIN, SCHEMA_VERSION,
 };
 
+mod limits;
+
+pub use limits::{MAX_BOX_MM, MIN_BOX_MM};
+
+use limits::{check_box, check_frame};
+
 /// Every definition this build can use, indexed by identifier.
 ///
 /// Building the catalog never fails as a whole: a file with a mistake is skipped
@@ -179,6 +185,8 @@ pub const MAX_PORTS: usize = 64;
 fn validate(definition: &ComponentDefinition, path: &Path) -> Result<(), CatalogError> {
     check_identity(definition, path)?;
     check_ports(definition, path)?;
+    check_box(definition, path)?;
+    check_frame(definition, path)?;
     if matches!(definition.behaviour, Behaviour::Gauge { .. }) {
         let working = definition
             .port

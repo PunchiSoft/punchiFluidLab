@@ -274,6 +274,9 @@ fn class_label(language: Language, class: LineClass) -> &'static str {
         LineClass::Pilot => "inspector.class.pilot",
         LineClass::Drain => "inspector.class.drain",
         LineClass::Electrical => "inspector.class.electrical",
+        // The menu never offers it (a hose is not an assembly boundary), but the label
+        // keeps the match total for a value that came from somewhere else.
+        LineClass::Boundary => "inspector.class.boundary",
     };
     language.text(key)
 }

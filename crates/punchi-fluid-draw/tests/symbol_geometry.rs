@@ -22,10 +22,16 @@ fn every_symbol_keeps_its_geometry() {
     let update = std::env::var_os("UPDATE_SYMBOL_FIXTURES").is_some();
     let mut failures = 0;
     for definition in catalog.iter() {
+        // A symbol that declares its box is frozen at that box, so the fixture records the
+        // drawing the sheet makes (the service unit's 46 x 25, the cylinder's 44 x 20).
+        // A definition without the key keeps the 40 mm test square the fixtures used.
+        let (width, height) = definition
+            .declared_box_mm()
+            .map_or((40.0, 40.0), |[width, height]| (width, height));
         let placed = Placed {
             index: 0,
             catalog_id: &definition.id,
-            rect: Rect::from_min_size(Pt::new(0.0, 0.0), 40.0, 40.0),
+            rect: Rect::from_min_size(Pt::new(0.0, 0.0), width, height),
             extension: 0.0,
             moving: None,
             valve_position: 0,

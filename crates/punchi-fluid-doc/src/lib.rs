@@ -980,7 +980,14 @@ impl Document {
     }
 
     /// Gives a seeded pipe its class without recording an edit.
+    ///
+    /// A hose is not an assembly boundary: the `boundary` class belongs to a symbol's
+    /// frame, and the sheet format has no class for it, so a pipe that asked for it is
+    /// refused instead of being stored under a class the file cannot name.
     pub fn seed_pipe_class(&mut self, index: usize, class: LineClass) -> bool {
+        if class == LineClass::Boundary {
+            return false;
+        }
         let Some(connection) = self.connections.get_mut(index) else {
             return false;
         };
@@ -992,8 +999,12 @@ impl Document {
     ///
     /// The class is what makes a pilot or drain line readable as itself; it is a property
     /// of the pipe and not of the component, so it travels with the connection and the
-    /// drawing only has to follow it.
+    /// drawing only has to follow it. The boundary class is refused: it is a symbol's
+    /// frame, not a line a hose can be.
     pub fn set_pipe_class(&mut self, index: usize, class: LineClass) -> bool {
+        if class == LineClass::Boundary {
+            return false;
+        }
         let Some(connection) = self.connections.get_mut(index) else {
             return false;
         };
@@ -2511,6 +2522,27 @@ mod tests {
         assert!(document.placements()[0].edits.is_empty());
         assert!(document.redo());
         assert_eq!(document.placements()[0].edits.stroke_mm, Some(50.0));
+    }
+
+    #[test]
+    fn a_hose_cannot_take_the_assembly_boundary_class() {
+        // The `boundary` class is a symbol's frame, not a line a hose can be. The sheet
+        // format has no class for it, so the document refuses it before it can be stored
+        // under a class the file cannot name.
+        let mut document = Document::new();
+        document.seed(vec![placement("a", 10.0, 10.0), placement("b", 90.0, 10.0)]);
+        let (a, b) = (document.placements()[0].id(), document.placements()[1].id());
+        assert!(document.seed_connect(Endpoint::new(a, "1"), Endpoint::new(b, "1")));
+        let revision = document.revision();
+        assert!(!document.set_pipe_class(0, LineClass::Boundary));
+        assert_eq!(document.connections()[0].class(), LineClass::Working);
+        assert_eq!(
+            document.revision(),
+            revision,
+            "a refused edit is not history"
+        );
+        assert!(!document.seed_pipe_class(0, LineClass::Boundary));
+        assert_eq!(document.connections()[0].class(), LineClass::Working);
     }
 
     #[test]

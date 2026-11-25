@@ -60,6 +60,7 @@ fn spanish() -> punchi_fluid_export::Labels {
         class_pilot: "pilotaje",
         class_drain: "drenaje",
         class_electrical: "eléctrico",
+        class_boundary: "contorno",
         port_supply: "suministro",
         port_working: "trabajo",
         port_exhaust: "escape",
@@ -97,6 +98,7 @@ fn english() -> punchi_fluid_export::Labels {
         class_pilot: "pilot",
         class_drain: "drain",
         class_electrical: "electrical",
+        class_boundary: "boundary",
         port_supply: "supply",
         port_working: "working",
         port_exhaust: "exhaust",
@@ -277,4 +279,27 @@ fn the_drawing_stays_inside_the_sheet() {
             }
         }
     }
+}
+
+#[test]
+fn a_chain_line_writes_its_four_dash_values() {
+    // The assembly boundary is a chain line, not a plain dash: the SVG has to carry the
+    // long dash, the gap, the dot and the gap, or a reader sees a drain line instead.
+    let page = Page::a4(TitleBlock::new("A chain line", "2026-11-24"));
+    let block = page.title_block.clone().unwrap_or_default();
+    let draw = |surface: &mut dyn punchi_fluid_draw::Surface, area: Rect| {
+        surface.line(
+            &[
+                Pt::new(area.min.x + 10.0, area.min.y + 10.0),
+                Pt::new(area.min.x + 60.0, area.min.y + 10.0),
+            ],
+            punchi_fluid_draw::Stroke::new(0.35, punchi_fluid_draw::Colour::BLACK)
+                .with_class(punchi_fluid_draw::LineClass::Boundary),
+        );
+    };
+    let svg = render_svg_with(&page, &block, draw).expect("the page renders");
+    assert!(
+        svg.contains("stroke-dasharray=\"4.000 1.200 0.500 1.200\""),
+        "the chain pattern is not in the file: {svg}"
+    );
 }

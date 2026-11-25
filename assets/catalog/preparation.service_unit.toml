@@ -9,10 +9,10 @@
 # line pressure the rest of the circuit is designed around.
 #
 # X12160 draws the three functions in the order the air meets them, inside a frame that says
-# they are one unit:
+# they are one unit. The frame is a chain line (`boundary`), not a drain or a pilot line:
 #
-# - the **filter** with manual drain: the diamond with the element, the bowl chord and the
-#   drain stem leaving the bottom vertex;
+# - the **filter** with manual drain: the diamond with the element down to the bowl chord,
+#   the chord and the drain stem leaving the bottom vertex;
 # - the **pressure-relieving regulator**: an upright square with the flow through it and the
 #   two facing arrows inside, the spring above with the diagonal arrow that says the setting
 #   is adjustable, the vent triangle on its left and the dashed sensing line from the outlet
@@ -21,9 +21,14 @@
 #   from its centre for the needle;
 # - the **lubricator**: the diamond with the plain line from its top vertex.
 #
-# The ports sit on the frame's left and right edges: the 20 mm box leaves the 1.2 mm margin
-# the numerals need only inside the frame, so the frame is also the symbol's envelope and the
-# hose arrives at the unit's edge.
+# The box is 46 × 25 mm, the proportion the owner derived from his reference with a cylinder
+# as the scale; the standard draws the unit wider than tall, and a square box compressed it.
+# The ports sit outside the frame, on the working line, and the frame is the boundary their
+# numerals are read against: `1` above the left stub and `2` below the right one, in the
+# margin the box leaves for them (`RF053`).
+#
+# All coordinates are fractions of the 46 × 25 mm box, so the millimetres in the review are
+# the drawing: x_mm = fraction · 46, y_mm = fraction · 25.
 
 schema = 3
 id = "preparation.service_unit"
@@ -31,21 +36,21 @@ name = "Service unit (FRL)"
 name_es = "Unidad de mantenimiento (FRL)"
 category = "accessory"
 summary = "Filters, regulates and lubricates the air before it enters the circuit."
+box = [46, 25]
 
-# The functional outer boundary: the two opposite corners of the frame below. The ports sit
-# on its left and right edges, so the renderer reads the frame as the edge a numeral must
-# stay clear of.
-envelope = [0.06, 0.12, 0.94, 0.88]
+# The envelope is the whole box: the ports live outside the frame, in its margin, so the
+# outer boundary of the symbol is the box and the frame is the chain line below.
+envelope = [0.0, 0.0, 1.0, 1.0]
 
 [[port]]
 id = "1"
 role = "supply"
-position = [0.06, 0.5]
+position = [0.04, 0.5]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.94, 0.5]
+position = [0.96, 0.5]
 
 # A service unit drops a little pressure and nothing else: the conductance is high on
 # purpose, so the model does not pretend the unit is a restriction the designer chose.
@@ -53,143 +58,174 @@ position = [0.94, 0.5]
 type = "throttle"
 conductance = 5.0e-9
 
-# The working line, in the pieces between the parts it joins. It runs through the regulator's
-# square because that is the flow the two facing arrows mark; it stops at the filter's and the
-# lubricator's vertices, because inside a diamond the element or the oil mark is the symbol.
+# The working line, in the pieces between the parts it joins. It crosses the frame at the
+# two ports, runs through the regulator's square because that is the flow the two facing
+# arrows mark, and stops at the filter's and the lubricator's vertices: inside a diamond
+# the element or the oil mark is the symbol, not a line through it.
 [[symbol]]
 kind = "line"
-points = [0.06, 0.5, 0.10, 0.5]
+points = [0.04, 0.5, 0.1, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.34, 0.5, 0.37, 0.5]
+points = [0.1, 0.5, 0.136957, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.37, 0.5, 0.55, 0.5]
+points = [0.276087, 0.5, 0.354348, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.55, 0.5, 0.68, 0.5]
+points = [0.354348, 0.5, 0.493478, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.86, 0.5, 0.94, 0.5]
+points = [0.493478, 0.5, 0.652174, 0.5]
 line_class = "working"
 
-# The frame: the functions are one body.
+[[symbol]]
+kind = "line"
+points = [0.652174, 0.5, 0.743478, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.865217, 0.5, 0.9, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.9, 0.5, 0.96, 0.5]
+line_class = "working"
+
+# The frame: the functions are one body, and the chain line is the assembly boundary.
 [[symbol]]
 kind = "polyline"
-points = [0.06, 0.12, 0.94, 0.12, 0.94, 0.88, 0.06, 0.88, 0.06, 0.12]
-line_class = "drain"
+points = [
+    0.1, 0.1,
+    0.9, 0.1,
+    0.9, 0.9,
+    0.1, 0.9,
+    0.1, 0.1,
+]
+line_class = "boundary"
 
 # The filter: a square turned 45°, its element dashed down to the bowl chord.
 [[symbol]]
 kind = "polygon"
-points = [0.22, 0.38, 0.34, 0.5, 0.22, 0.62, 0.10, 0.5]
+points = [0.206522, 0.372, 0.276087, 0.5, 0.206522, 0.628, 0.136957, 0.5]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.22, 0.38, 0.22, 0.5775]
+points = [0.206522, 0.372, 0.206522, 0.564]
 line_class = "drain"
 
+# The bowl chord: the element stops here because the bowl owns the space below it.
 [[symbol]]
 kind = "line"
-points = [0.1875, 0.5775, 0.2625, 0.5775]
+points = [0.171739, 0.564, 0.241304, 0.564]
 line_class = "working"
 
 # Its drain stem, crossing the frame on its way out.
 [[symbol]]
 kind = "line"
-points = [0.22, 0.62, 0.22, 0.95]
+points = [0.206522, 0.628, 0.206522, 0.94]
 line_class = "working"
 
 # The regulator: an upright square, flow through it, and the two facing arrows.
 [[symbol]]
 kind = "rect"
-points = [0.37, 0.40, 0.18, 0.18]
+points = [0.354348, 0.372, 0.139130, 0.256]
 
 [[symbol]]
 kind = "polygon"
-points = [0.385, 0.5, 0.425, 0.482, 0.425, 0.518]
+points = [0.395652, 0.5, 0.369565, 0.476, 0.369565, 0.524]
 filled = true
 
 [[symbol]]
 kind = "polygon"
-points = [0.535, 0.5, 0.495, 0.482, 0.495, 0.518]
+points = [0.456522, 0.5, 0.482609, 0.476, 0.482609, 0.524]
 filled = true
 
 # Its vent: an open triangle on the left, the relieving regulator's way to the atmosphere.
 [[symbol]]
 kind = "polygon"
-points = [0.37, 0.43, 0.37, 0.47, 0.335, 0.45]
+points = [0.354348, 0.396, 0.354348, 0.444, 0.323913, 0.42]
 filled = false
 
 # Its setting spring, on top of the square.
 [[symbol]]
 kind = "polyline"
-points = [0.48, 0.40, 0.42, 0.376, 0.54, 0.352, 0.42, 0.328, 0.54, 0.304, 0.42, 0.28, 0.48, 0.26]
+points = [
+    0.434783, 0.372,
+    0.404348, 0.34,
+    0.465217, 0.308,
+    0.404348, 0.276,
+    0.465217, 0.244,
+    0.404348, 0.212,
+    0.434783, 0.192,
+]
 line_class = "working"
 
-# The diagonal arrow of an adjustable setting, through the spring.
+# The diagonal arrow of an adjustable setting, through the spring (`RF048`).
 [[symbol]]
 kind = "line"
-points = [0.40, 0.38, 0.5735, 0.2629]
+points = [0.369565, 0.352, 0.5, 0.192]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.60, 0.245, 0.5813, 0.2745, 0.5657, 0.2513]
+points = [0.5, 0.192, 0.481913, 0.243040, 0.467435, 0.203120]
 filled = true
 
 # Its sensing line: the outlet fed back to the underside of the regulator, dashed.
 [[symbol]]
 kind = "line"
-points = [0.42, 0.58, 0.42, 0.64]
+points = [0.434783, 0.628, 0.434783, 0.72]
 line_class = "working"
 
 [[symbol]]
 kind = "polyline"
-points = [0.42, 0.64, 0.585, 0.64, 0.585, 0.5]
+points = [0.434783, 0.72, 0.652174, 0.72, 0.652174, 0.5]
 line_class = "pilot"
 
 # Its dial: a gauge on a stem that taps the line, with the needle as an arrow from the centre.
 [[symbol]]
 kind = "line"
-points = [0.62, 0.5, 0.62, 0.37]
+points = [0.652174, 0.5, 0.652174, 0.4]
 line_class = "working"
 
 [[symbol]]
 kind = "circle"
-points = [0.62, 0.315, 0.055]
+points = [0.652174, 0.32, 0.08]
 
 [[symbol]]
 kind = "line"
-points = [0.62, 0.315, 0.5986, 0.2936]
+points = [0.652174, 0.32, 0.621739, 0.276]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.585, 0.28, 0.6064, 0.2858, 0.5908, 0.3014]
+points = [0.621739, 0.276, 0.641804, 0.287200, 0.632413, 0.309200]
 filled = true
 
 [[symbol]]
 kind = "circle"
-points = [0.62, 0.5, 0.009]
+points = [0.652174, 0.5, 0.01]
 filled = true
 
 # The lubricator: the diamond with the plain line from its top vertex, no dashed element.
 [[symbol]]
 kind = "polygon"
-points = [0.77, 0.41, 0.86, 0.5, 0.77, 0.59, 0.68, 0.5]
+points = [0.804348, 0.388, 0.865217, 0.5, 0.804348, 0.612, 0.743478, 0.5]
 filled = false
 
 [[symbol]]
 kind = "line"
-points = [0.77, 0.41, 0.77, 0.442]
+points = [0.804348, 0.388, 0.804348, 0.44]
 line_class = "working"

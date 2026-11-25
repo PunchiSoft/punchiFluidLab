@@ -81,7 +81,37 @@ summary_es = "Una línea en español"           # optional; the Spanish card rea
 disabled = false                    # optional, hides this id from the catalog
 kinematics = "linear_actuator"      # optional: none (default) | linear_actuator
 body = [0.06, 0.28, 0.88, 0.44]     # valves: x, y, width, height of the body
+box = [46, 25]                      # optional: symbol box in mm, default 20 x 20
 ```
+
+### The symbol box
+
+`box = [width, height]` is the size the symbol occupies on the sheet, in millimetres.
+A definition without the key keeps the canonical **20 mm square**. The box belongs to the
+file because the symbol's proportion is the function's, not the renderer's choice:
+
+- a **cylinder** declares `44 × 20`, because its barrel is a rectangle;
+- the **service unit** declares `46 × 25` and the **simplified service unit** `40 × 20`,
+  the wide proportions of `X12160` that a square box compressed.
+
+The loader accepts a box between **1 and 200 mm** on each side and refuses anything else
+with the limit in the message. The palette preview, a drop and the templates all read the
+same number, so a symbol cannot change size because it arrived by a different route.
+
+### The frame and the envelope
+
+`envelope = [x1, y1, x2, y2]` is the symbol's outer extent and must contain every port.
+When the ports sit outside the drawing's frame, the envelope is the whole box (`[0, 0, 1,
+1]`) and the frame is declared apart:
+
+- `frame = [x1, y1, x2, y2]` is the line the port numerals are placed outside of. The
+  simplified service unit declares it because its body is a solid rectangle, not a chain
+  line.
+- A symbol that draws an assembly boundary with `line_class = "boundary"` does not need
+  `frame`: the drawn chain line is the boundary.
+
+A `frame` must be a real rectangle inside the symbol box; the loader checks it and reports
+the rule.
 
 ### Declared parts
 
@@ -422,8 +452,10 @@ dashed = false               # optional, for a part that is dashed by nature
 stroke = 1.0                 # optional width multiplier, floor 0.5
 ```
 
-`line_class` is `working`, `pilot`, `drain` or `electrical`: the renderer picks the
-dash pattern, so a pilot line can never be drawn as a working line by accident.
+`line_class` is `working`, `pilot`, `drain`, `electrical` or `boundary`: the renderer
+picks the dash pattern, so a pilot line can never be drawn as a working line by accident.
+`boundary` is the chain line of an assembly frame (a long dash, a gap, a dot and a gap); it
+belongs to a symbol primitive, never to a hose.
 
 `points` is a flat list, interpreted by `kind`:
 
@@ -471,7 +503,7 @@ version:
 - every port identified with its numeral, identical in every square;
 - the return spring at the spring end and the actuator at the actuator end, declared
   as parts and not as loose lines;
-- working, pilot and drain lines drawn in their own line class;
+- working, pilot, drain and boundary lines drawn in their own line class;
 - a filled dot where three or more lines join, no dot where lines cross.
 
 `symbol lint` enforces the structural half of those rules when the catalog loads: eight
@@ -510,6 +542,8 @@ The loader rejects a file when:
 - `name` is empty, or the component has no ports;
 - two ports share `id`, or a `position` falls outside `0..=1`;
 - a primitive has the wrong number of values or a non-positive radius or stroke;
+- a `box` is not a finite, positive pair between 1 and 200 mm, or a `frame` is not a real
+  rectangle inside `0..=1`;
 - a valve has fewer than two positions, a `default_position` that does not exist, a
   connection to an unknown port or to itself, or a non-positive conductance;
 - a cylinder has a non-positive bore, stroke or mass.

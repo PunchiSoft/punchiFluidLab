@@ -3,15 +3,21 @@
 #
 # Service unit, simplified: the compact form a schematic uses when the unit is not the point.
 #
-# X12160 gives both representations: the detailed one above, with the three functions drawn
-# side by side, and the simplified one below, a single body. The simplified body keeps only
-# the marks that say what the unit does: the dashed line at the left is the filter element,
-# the circle with the arrow is the regulator's gauge, and the short line on the top edge at
-# the right is the mark the standard carries for the lubricator. It has no drain: the drain
-# belongs to the filter, and this form does not draw the filter as a separate part.
+# X12160 gives both representations: the detailed one, with the three functions drawn side by
+# side, and this one, a single wide body. The body keeps only the marks that say what the unit
+# does: the dashed element line at the left, the gauge circle with its needle in the middle,
+# the short mark of the lubricator on the top edge at the right and, because the owner asked
+# for the compact with an automatic drain, the purge arrow in the bottom band. It prints no
+# separate filter bowl: the drain belongs to the filter, and this form does not draw the
+# filter as a separate part.
 #
-# The two are the same device at two levels of detail; this one is for the circuit that uses
-# the unit, and a plain rectangle is not this symbol.
+# The box is 40 × 20 mm (2 : 1), the proportion the owner derived from his reference. The body
+# is 32 × 15.2 mm inside it; the ports sit outside the body on the working line, and the body
+# is the frame their numerals are read against: `1` above the left stub and `2` below the
+# right one. The body is solid, so the frame is declared rather than drawn as a chain line.
+#
+# All coordinates are fractions of the 40 × 20 mm box: x_mm = fraction · 40, y_mm = fraction ·
+# 20.
 
 schema = 3
 id = "preparation.service_unit_simple"
@@ -19,58 +25,78 @@ name = "Service unit, simplified"
 name_es = "Unidad de mantenimiento simplificada"
 category = "accessory"
 summary = "The compact form of the service unit."
+box = [40, 20]
+
+# The envelope is the whole box: the ports are outside the body, in its margin.
+envelope = [0.0, 0.0, 1.0, 1.0]
+# The body is the frame the numerals are placed against; it is a solid rectangle, not a
+# chain line, so the frame is a datum and not a primitive's class.
+frame = [0.11, 0.12, 0.89, 0.88]
 
 [[port]]
 id = "1"
 role = "supply"
-position = [0.06, 0.5]
+position = [0.04, 0.5]
 
 [[port]]
 id = "2"
 role = "working"
-position = [0.94, 0.5]
+position = [0.96, 0.5]
 
 [behaviour]
 type = "throttle"
 conductance = 5.0e-9
 
+# The body: one rectangle, wider than tall.
 [[symbol]]
 kind = "rect"
-points = [0.14, 0.34, 0.72, 0.32]
+points = [0.11, 0.12, 0.78, 0.76]
 
-# The filter element.
+# The filter element: a dashed line at the left, full height.
 [[symbol]]
 kind = "line"
-points = [0.28, 0.34, 0.28, 0.66]
+points = [0.22, 0.12, 0.22, 0.88]
 line_class = "drain"
 
 # The regulator's gauge, inside the body, with the needle as an arrow from its centre.
 [[symbol]]
 kind = "circle"
-points = [0.60, 0.50, 0.115]
+points = [0.6, 0.5, 0.115]
 
 [[symbol]]
 kind = "line"
-points = [0.60, 0.50, 0.5553, 0.4553]
+points = [0.6, 0.5, 0.56, 0.44]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.5269, 0.4269, 0.5694, 0.4412, 0.5412, 0.4694]
+points = [0.56, 0.44, 0.58525, 0.456, 0.57475, 0.484]
 filled = true
 
-# The lubricator's mark on the top edge, at the right.
+# The lubricator's mark on the top edge, at the right: the short line the simplified figure
+# of X12160 carries, kept by the owner's decision.
 [[symbol]]
 kind = "line"
-points = [0.80, 0.34, 0.80, 0.42]
+points = [0.8, 0.12, 0.8, 0.2]
+line_class = "working"
+
+# The automatic drain of the filter: the purge arrow in the bottom band, pointing out.
+[[symbol]]
+kind = "line"
+points = [0.22, 0.88, 0.22, 0.96]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.22, 0.96, 0.205, 0.92, 0.235, 0.92]
+filled = true
+
+[[symbol]]
+kind = "line"
+points = [0.04, 0.5, 0.11, 0.5]
 line_class = "working"
 
 [[symbol]]
 kind = "line"
-points = [0.06, 0.5, 0.14, 0.5]
-line_class = "working"
-
-[[symbol]]
-kind = "line"
-points = [0.86, 0.5, 0.94, 0.5]
+points = [0.89, 0.5, 0.96, 0.5]
 line_class = "working"

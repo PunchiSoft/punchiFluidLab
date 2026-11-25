@@ -62,7 +62,7 @@ today, kept here so a translator does not invent a second vocabulary.
 | route | recorrido | The waypoints between the two ends of a pipe. | `punchi-fluid-doc` |
 | port | puerto | A named connection point on a component, with a role: supply, working or exhaust. | `punchi-fluid-catalog` |
 | finding | falta | A design fault the check reports, with the place it happens. | `punchi-fluid-check` |
-| line class | clase de línea | The ISO 1219 class of a drawn line: working, pilot, drain or electrical. | `punchi-fluid-draw` |
+| line class | clase de línea | The ISO 1219 class of a drawn line: working, pilot, drain, electrical, or boundary (the chain line of an assembly frame). | `punchi-fluid-draw` |
 | print ink | tinta de papel | The black-on-white palette the exported page uses, independent of the desktop theme. | `punchi-fluid-export` |
 | `Surface` | superficie | The trait a drawing calls, implemented once by the window and once by the paper. | ADR 0003 |
 | frame | marco | The ISO 5457 border of a printed sheet. | ADR 0012 |

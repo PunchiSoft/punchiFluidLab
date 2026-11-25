@@ -49,12 +49,44 @@ pub struct Layout {
     pub cylinder: Rect,
 }
 
-/// Fixed placement of the four components inside `area`.
+/// Fixed placement of the four components inside `area`, with the canonical boxes.
 ///
 /// Returns `None` when the area is too small to draw something readable, so a tiny
 /// canvas or a thumbnail does not produce a smudge.
 #[must_use]
 pub fn layout(area: Rect) -> Option<Layout> {
+    layout_with_boxes(
+        area,
+        (SYMBOL_BOX_MM, SYMBOL_BOX_MM),
+        (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM),
+    )
+}
+
+/// The fixed placement with the boxes the catalog declares.
+///
+/// The service unit and the cylinder take the box their own file declares (46 × 25 and
+/// 44 × 20 today), scaled with the composition when the drawing is a thumbnail. The
+/// layout is the only place the worked example chooses a size, so reading the boxes here
+/// is what keeps the printed example and the start templates the same drawing.
+#[must_use]
+pub fn layout_for(area: Rect, catalog: &Catalog) -> Option<Layout> {
+    let declared = |id: &str, fallback: (f32, f32)| {
+        catalog
+            .get(id)
+            .map_or(fallback, crate::symbol::symbol_box_mm)
+    };
+    layout_with_boxes(
+        area,
+        declared(PREPARATION_ID, (SYMBOL_BOX_MM, SYMBOL_BOX_MM)),
+        declared(CYLINDER_ID, (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)),
+    )
+}
+
+fn layout_with_boxes(
+    area: Rect,
+    preparation_box: (f32, f32),
+    cylinder_box: (f32, f32),
+) -> Option<Layout> {
     // The width fraction keeps the four boxes inside a portrait sheet; the cap is the rule:
     // a symbol does not grow with the paper. Three squares plus the cylinder's 2.2 make 5.2
     // boxes across, which fits A4 landscape with room for the hoses.
@@ -64,6 +96,9 @@ pub fn layout(area: Rect) -> Option<Layout> {
     if square < 8.0 {
         return None;
     }
+    // A declared box shrinks with the composition at the same rate as the canonical square,
+    // so a thumbnail is still the same drawing and a full sheet stops at the declared size.
+    let scale = square / SYMBOL_BOX_MM;
     // The composition a student meets on opening: the source bottom left, the service unit
     // beside it, the valve at the middle right and the cylinder top right. The air reads
     // left to right along the bottom and rises to the actuator, which is the order the parts
@@ -72,12 +107,17 @@ pub fn layout(area: Rect) -> Option<Layout> {
     // The service unit sits between the source and the first valve, in series and in that
     // order: what comes out of it is the line pressure the rest of the circuit is designed
     // around, so it cannot be drawn after the valve.
-    // Square, like every other accessory: the symbol is drawn in a square box, so a box of
-    // another shape would stretch its diamonds and its dial.
-    let preparation = Rect::from_center_size(area.point_at(0.38, 0.82), square, square);
+    let preparation = Rect::from_center_size(
+        area.point_at(0.38, 0.82),
+        preparation_box.0 * scale,
+        preparation_box.1 * scale,
+    );
     let valve = Rect::from_center_size(area.point_at(0.64, 0.58), square, square);
-    let cylinder =
-        Rect::from_center_size(area.point_at(0.76, 0.22), square * CYLINDER_RATIO, square);
+    let cylinder = Rect::from_center_size(
+        area.point_at(0.76, 0.22),
+        cylinder_box.0 * scale,
+        cylinder_box.1 * scale,
+    );
     Some(Layout {
         supply,
         preparation,
@@ -94,7 +134,7 @@ pub fn draw(
     catalog: &Catalog,
     ink: &Ink,
 ) -> Option<Layout> {
-    let placed = layout(area)?;
+    let placed = layout_for(area, catalog)?;
     draw_with_layout(surface, &placed, system, catalog, ink);
     Some(placed)
 }
@@ -458,6 +498,7 @@ mod tests {
         // A4 portrait at the ISO 5457 frame is the new default: 170 × 267 mm. The boxes
         // must fit across it, or the starting circuit cannot be spread without overlapping
         // and the "outside the sheet" check would fire on the example itself.
+        let catalog = Catalog::builtin();
         for (width, height) in [
             (170.0, 267.0),
             (200.0, 130.0),
@@ -465,7 +506,7 @@ mod tests {
             (277.0, 190.0),
         ] {
             let area = Rect::from_min_size(Pt::new(0.0, 0.0), width, height);
-            let placed = layout(area).expect("the area is big enough");
+            let placed = layout_for(area, &catalog).expect("the area is big enough");
             let boxes = [
                 placed.supply,
                 placed.preparation,
@@ -485,6 +526,27 @@ mod tests {
                 area.width()
             );
         }
+    }
+
+    #[test]
+    fn the_composition_uses_the_boxes_the_files_declare() {
+        let catalog = Catalog::builtin();
+        let area = Rect::from_min_size(Pt::new(0.0, 0.0), 277.0, 190.0);
+        let placed = layout_for(area, &catalog).expect("the area is big enough");
+        let preparation = catalog
+            .get(PREPARATION_ID)
+            .and_then(ComponentDefinition::declared_box_mm)
+            .expect("the unit declares its box");
+        assert!((placed.preparation.width() - preparation[0]).abs() < 0.01);
+        assert!((placed.preparation.height() - preparation[1]).abs() < 0.01);
+        let cylinder = catalog
+            .get(CYLINDER_ID)
+            .and_then(ComponentDefinition::declared_box_mm)
+            .expect("the cylinder declares its box");
+        assert!((placed.cylinder.width() - cylinder[0]).abs() < 0.01);
+        assert!((placed.cylinder.height() - cylinder[1]).abs() < 0.01);
+        // A valve still has no box key, so it keeps the canonical square.
+        assert!((placed.valve.width() - SYMBOL_BOX_MM).abs() < 0.01);
     }
 
     #[test]

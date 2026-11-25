@@ -50,13 +50,20 @@ impl SvgSurface {
     }
 
     /// The dash array of a class, or nothing for a solid line.
+    ///
+    /// The class's phases are written in order: a two-phase class is a plain dash, and a
+    /// four-phase one is the chain line, so the SVG carries every value the drawing uses.
     fn dash(stroke: Stroke) -> String {
-        stroke
-            .class
-            .pattern()
-            .map_or_else(String::new, |(dash, gap)| {
-                format!(" stroke-dasharray=\"{dash:.3} {gap:.3}\"")
-            })
+        stroke.class.pattern().map_or_else(String::new, |phases| {
+            let mut values = String::new();
+            for (index, phase) in phases.iter().enumerate() {
+                if index > 0 {
+                    values.push(' ');
+                }
+                let _ = write!(values, "{phase:.3}");
+            }
+            format!(" stroke-dasharray=\"{values}\"")
+        })
     }
 
     /// A `points` attribute from a run of points.
