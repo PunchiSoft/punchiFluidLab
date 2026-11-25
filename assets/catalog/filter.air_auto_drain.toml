@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Filter with an automatic drain: filters the air and empties the bowl by itself.
+#
+# The drawing is the same filter body as `filter.air_manual_drain`: the square turned 45°,
+# the element as the dashed line down to the bowl chord, the solid chord across the lower
+# part and the stem leaving the bottom vertex. The plan records the automatic-drain mark as
+# `X12200`/`F065V1`, and the owner's reference of 2026-11-24 draws the same diamond, chord
+# and stem, without a separate manual actuation. The difference between this file and the
+# manual one is the automatic action, which the model does not simulate (the solver has no
+# bowl to empty); the review states that and does not invent a mark the figure does not print.
+#
+# The file is separate on purpose: a user picks the drain by picking the component, the same
+# way the cylinder variants are files. The per-placement option is recorded as a capability
+# of its own, not pretended here.
+
+schema = 3
+id = "filter.air_auto_drain"
+name = "Air filter with automatic drain"
+name_es = "Filtro de aire con purgado automático"
+category = "accessory"
+summary = "Filters the air and empties the bowl automatically."
+summary_es = "Filtra el aire y vacía el vaso automáticamente."
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.06, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.94, 0.5]
+
+[behaviour]
+type = "throttle"
+conductance = 2.0e-9
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.28, 0.72, 0.5, 0.5, 0.72, 0.28, 0.5]
+filled = false
+
+# The element, from the top vertex down to the bowl chord.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.28, 0.5, 0.642]
+line_class = "drain"
+
+# The bowl: the solid chord across the lower part of the diamond.
+[[symbol]]
+kind = "line"
+points = [0.422, 0.642, 0.578, 0.642]
+line_class = "working"
+
+# The automatic drain, leaving the bottom vertex.
+[[symbol]]
+kind = "line"
+points = [0.5, 0.72, 0.5, 0.9]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.06, 0.5, 0.28, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.72, 0.5, 0.94, 0.5]
+line_class = "working"

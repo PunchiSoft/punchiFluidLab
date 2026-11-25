@@ -74,12 +74,13 @@ as open items, and the second reader signed them on 2026-11-24.
 
 The owner enumerated four conditioning forms on 2026-11-24: the filter, the filter-regulator,
 the FRL and the FRL compact. The first and the last two are in the core table above; the
-filter-regulator is the second, added after the FRL correction and reviewed against the same
-contract.
+filter-regulator is the second, added after the FRL correction, and the automatic-drain
+filter is the filter's drain choice, both reviewed against the same contract.
 
 | Symbol | Family | Figure / rule | Ports | State | Record |
 |---|---|---|---|---|---|
 | `preparation.filter_regulator` | conditioning | `X12150` plus the gauge of `X12160` (composed; stated in the record) | 2, outside the chain-line frame | `in review` | [review](review/preparation.filter_regulator.md) |
+| `filter.air_auto_drain` | conditioning | `X12200`/`F065V1` (automatic-drain mark; the figure was not re-read in this pass) | 2 + drain | `in review` | [review](review/filter.air_auto_drain.md) |
 
 ## Outside this pass
 

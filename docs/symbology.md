@@ -153,6 +153,7 @@ reference set so that a hose is visibly meant to arrive there.
 | **Service unit, full** | A **chain-line frame** around the functions, in the order the air meets them: the filter diamond with its element down to the bowl chord, the chord and the drain, the regulator as an **upright square with the flow through it and the two facing arrows**, its **setting spring on top** with the **diagonal arrow** that says the setting is adjustable, its **vent** as an open triangle on the left and its **sensing line** from the outlet back to its underside, the **dial** as a gauge on a stem that taps the line after the regulator, and the **lubricator diamond** at the right. The ports sit **outside the frame** on the working line, and their numerals outside it, beside each port |
 | **Service unit, simplified** | One wide body with the **dashed element line at the left**, the **dial** inside it, the **purge arrow in the bottom band** and the **short mark on the top edge at the right**. This compact form carries the automatic drain by the owner's reference; the generic simplified figure of `X12160` does not print it, and the review says so. A plain rectangle is not this symbol |
 | **Filter regulator** | The filter with manual drain and the pressure-relieving regulator in the same **chain-line frame**, with the regulator's vent, setting spring, diagonal arrow, vent and dashed feedback, and the gauge on its stem after it; **no lubricator**. `X12150` prints the regulator without the gauge and `X12160` prints the gauge; the file composes the two and the review says so |
+| **Filter with automatic drain** | The same diamond as the manual-drain filter, with the element down to the **bowl chord**, the chord and the **drain stem**; the drain empties the bowl by itself. The owner's reference draws the same body, without a separate manual actuation; the plan records the automatic-drain mark as `X12200`/`F065V1`, and the review states that the figure itself was not re-read in this pass |
 
 Rules that hold for all of them:
 
@@ -525,8 +526,8 @@ were signed by the second reader on 2026-11-24, and the symbols outside the core
 for that signature. The 2026-11-24 correction of the two service units changed their
 drawing, so **their two reviews are `pending-300dpi` again** until the owner signs the new
 captures: the core is not complete while they are open, and the export keeps its unverified
-note. The **filter-regulator** added on 2026-11-24 is a new conditioning form and is
-pending as well. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
+note. The **filter-regulator** and the **filter with automatic drain** added on
+2026-11-24 are new conditioning forms and are pending as well. The signatures record the ISO 1219-1:2006 reading confirmed against JIS B 0125-1:2020;
 the Chilean adoption (**NCh-ISO 1219**) is still unconfirmed from this machine, as the
 national-adoptions section says.
 
