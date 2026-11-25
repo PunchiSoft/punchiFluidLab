@@ -430,7 +430,8 @@ mod tests {
     fn a_valve_uses_its_stored_initial_position_without_changing_the_spring_return() {
         let mut document = worked_document();
         let orientation = document.placements()[1].orientation;
-        assert!(document.configure_valve(1, "1V1", Some(1), orientation));
+        let catalog_id = document.placements()[1].catalog_id.clone();
+        assert!(document.configure_valve(1, &catalog_id, "1V1", Some(1), orientation));
         let sheet = crate::to_sheet(&document);
         let encoded = sheet.to_json().expect("valid configuration");
         let decoded = punchi_fluid_file::sheet::Sheet::parse(&encoded).expect("format 16 reads");
@@ -450,6 +451,24 @@ mod tests {
             rebuilt.valve_position(1),
             1,
             "reset reads the stored position again"
+        );
+    }
+
+    #[test]
+    fn a_valve_variant_survives_the_sheet_format_and_changes_the_model() {
+        let mut document = worked_document();
+        let orientation = document.placements()[1].orientation;
+        assert!(document.configure_valve(1, "valve.3_2.base", "", None, orientation));
+        let sheet = crate::to_sheet(&document);
+        let encoded = sheet.to_json().expect("valid configuration");
+        let decoded = punchi_fluid_file::sheet::Sheet::parse(&encoded).expect("format 16 reads");
+        let reopened = crate::load(&decoded).expect("document reloads");
+        assert_eq!(reopened.placements()[1].catalog_id, "valve.3_2.base");
+        let catalog = Catalog::builtin();
+        let mut model = Model::build(&reopened, &catalog).expect("the worked circuit builds");
+        assert!(
+            !model.press_valve(1),
+            "the base valve has no actuator to press"
         );
     }
 

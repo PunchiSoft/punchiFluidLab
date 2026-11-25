@@ -5,7 +5,7 @@
 
 use eframe::egui;
 use punchi_fluid_catalog::{
-    ActuatorKind, Behaviour, ComponentDefinition, ReturnKind, Side, ValvePosition,
+    ActuatorKind, Behaviour, Catalog, ComponentDefinition, ReturnKind, Side, ValvePosition,
 };
 use punchi_fluid_doc::{Placement, valid_designation};
 use punchi_fluid_draw::{
@@ -21,6 +21,7 @@ use crate::theme::Tokens;
 #[derive(Debug)]
 pub(crate) struct ValveEditor {
     target: u64,
+    catalog_id: String,
     designation: String,
     initial: usize,
     reflect_horizontal: bool,
@@ -32,6 +33,46 @@ pub(crate) struct ValveEditor {
 fn editable(definition: &ComponentDefinition) -> bool {
     matches!(&definition.behaviour, Behaviour::Valve { positions, .. }
         if positions.len() == 2 && definition.body.is_some() && matches!(definition.port.len(), 3 | 5))
+}
+
+/// Every catalog definition with the same valve body: same ports, same paths and the same
+/// blocked ports. These are the actuation and return variants the editor can switch
+/// between without changing the circuit's connections.
+fn family_variants<'a>(
+    catalog: &'a Catalog,
+    definition: &ComponentDefinition,
+) -> Vec<&'a ComponentDefinition> {
+    catalog
+        .iter()
+        .filter(|candidate| same_valve_body(definition, candidate))
+        .collect()
+}
+
+fn same_valve_body(a: &ComponentDefinition, b: &ComponentDefinition) -> bool {
+    let (
+        Behaviour::Valve {
+            positions: a_positions,
+            ..
+        },
+        Behaviour::Valve {
+            positions: b_positions,
+            ..
+        },
+    ) = (&a.behaviour, &b.behaviour)
+    else {
+        return false;
+    };
+    a.body == b.body
+        && a.port.len() == b.port.len()
+        && a.port.iter().all(|port| {
+            b.port
+                .iter()
+                .any(|other| other.id == port.id && other.role == port.role)
+        })
+        && a_positions.len() == b_positions.len()
+        && a_positions.iter().zip(b_positions).all(|(left, right)| {
+            left.blocked == right.blocked && left.connection == right.connection
+        })
 }
 
 impl Window {
@@ -58,6 +99,7 @@ impl Window {
         };
         self.valve_editor = Some(ValveEditor {
             target: placement.id(),
+            catalog_id: placement.catalog_id.clone(),
             designation: placement.designation.clone().unwrap_or_default(),
             initial: placement
                 .edits
@@ -87,7 +129,7 @@ impl Window {
         if placement.circuit != self.document.active_circuit() {
             return;
         }
-        let Some(definition) = self.catalog.get(&placement.catalog_id) else {
+        let Some(definition) = self.catalog.get(&editor.catalog_id) else {
             return;
         };
         let Behaviour::Valve {
@@ -98,8 +140,10 @@ impl Window {
         else {
             return;
         };
+        let variants = family_variants(&self.catalog, definition);
         let form = ValveForm {
             definition,
+            variants: &variants,
             placement,
             positions,
             default: *default_position,
@@ -135,6 +179,7 @@ impl Window {
             };
             if self.document.configure_valve(
                 index,
+                &editor.catalog_id,
                 &editor.designation,
                 initial,
                 editor.orientation(placement.orientation),
@@ -166,6 +211,7 @@ impl ValveEditor {
 
 struct ValveForm<'a> {
     definition: &'a ComponentDefinition,
+    variants: &'a [&'a ComponentDefinition],
     placement: &'a Placement,
     positions: &'a [ValvePosition],
     default: usize,
@@ -194,6 +240,34 @@ impl ValveForm<'_> {
                 self.language.text("valve_editor.invalid_designation"),
             );
         }
+        let _ = self.section_heading(ui, "valve_editor.actuation");
+        let selected = match self.language {
+            Language::English => self.definition.name.as_str(),
+            Language::Spanish => self.definition.display_name(),
+        };
+        let response = egui::ComboBox::from_id_salt("valve-editor.actuation")
+            .selected_text(selected)
+            .show_ui(ui, |ui| {
+                for variant in self.variants {
+                    let name = match self.language {
+                        Language::English => variant.name.as_str(),
+                        Language::Spanish => variant.display_name(),
+                    };
+                    if ui
+                        .selectable_label(variant.id == self.definition.id, name)
+                        .clicked()
+                    {
+                        editor.catalog_id.clone_from(&variant.id);
+                    }
+                }
+            });
+        response.response.widget_info(|| {
+            egui::WidgetInfo::labeled(
+                egui::WidgetType::ComboBox,
+                true,
+                self.language.text("valve_editor.actuation"),
+            )
+        });
         ui.add_space(4.0);
         if ui.available_width() >= 680.0 {
             ui.columns(3, |columns| {
@@ -223,8 +297,8 @@ impl ValveForm<'_> {
             .edits
             .valve_initial_position
             .map_or(self.default, usize::from);
-        let changed = editor.designation.trim()
-            != self.placement.designation.as_deref().unwrap_or("")
+        let changed = editor.catalog_id != self.placement.catalog_id
+            || editor.designation.trim() != self.placement.designation.as_deref().unwrap_or("")
             || editor.initial != source
             || editor.reflect_horizontal
             || editor.reflect_vertical;

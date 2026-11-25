@@ -465,6 +465,69 @@ impl Connection {
     }
 }
 
+/// Replaces a placement's catalog definition, or says nothing changed.
+fn replace_catalog_id(placement: &mut Placement, index: usize, catalog_id: &str) -> Option<Change> {
+    if placement.catalog_id == catalog_id {
+        return None;
+    }
+    let from = std::mem::replace(&mut placement.catalog_id, catalog_id.to_owned());
+    Some(Change::Replaced {
+        index,
+        from,
+        to: catalog_id.to_owned(),
+    })
+}
+
+/// Replaces the designation, or says nothing changed.
+fn replace_designation(
+    placement: &mut Placement,
+    index: usize,
+    designation: &str,
+) -> Option<Change> {
+    let designation = designation.trim();
+    let wanted = (!designation.is_empty()).then(|| designation.to_owned());
+    if placement.designation == wanted {
+        return None;
+    }
+    let from = std::mem::replace(&mut placement.designation, wanted.clone());
+    Some(Change::Designated {
+        index,
+        from,
+        to: wanted,
+    })
+}
+
+/// Replaces the initial-position override, or says nothing changed.
+fn replace_initial(placement: &mut Placement, index: usize, initial: Option<u8>) -> Option<Change> {
+    if placement.edits.valve_initial_position == initial {
+        return None;
+    }
+    let from = placement.edits.clone();
+    placement.edits.valve_initial_position = initial;
+    Some(Change::Edited {
+        index,
+        from,
+        to: placement.edits.clone(),
+    })
+}
+
+/// Turns the placement, or says nothing changed.
+fn turn_placement(
+    placement: &mut Placement,
+    index: usize,
+    orientation: Orientation,
+) -> Option<Change> {
+    if placement.orientation == orientation {
+        return None;
+    }
+    let from = std::mem::replace(&mut placement.orientation, orientation);
+    Some(Change::Turned {
+        index,
+        from,
+        to: orientation,
+    })
+}
+
 /// A change that can be undone.
 #[derive(Debug, Clone, PartialEq)]
 enum Change {
@@ -515,6 +578,12 @@ enum Change {
         index: usize,
         from: Option<String>,
         to: Option<String>,
+    },
+    /// One instance was pointed at another catalog definition.
+    Replaced {
+        index: usize,
+        from: String,
+        to: String,
     },
     /// A pipe was given another line class.
     Classed {
@@ -1423,44 +1492,29 @@ impl Document {
     pub fn configure_valve(
         &mut self,
         index: usize,
+        catalog_id: &str,
         designation: &str,
         initial: Option<u8>,
         orientation: Orientation,
     ) -> bool {
-        if !valid_designation(designation) || initial.is_some_and(|position| position > 1) {
+        if !valid_designation(designation)
+            || initial.is_some_and(|position| position > 1)
+            || catalog_id.trim().is_empty()
+        {
             return false;
         }
         let Some(placement) = self.placements.get_mut(index) else {
             return false;
         };
-        let mut changes = Vec::new();
-        let designation = designation.trim();
-        let wanted = (!designation.is_empty()).then(|| designation.to_owned());
-        if placement.designation != wanted {
-            let from = std::mem::replace(&mut placement.designation, wanted.clone());
-            changes.push(Change::Designated {
-                index,
-                from,
-                to: wanted,
-            });
-        }
-        if placement.edits.valve_initial_position != initial {
-            let from = placement.edits.clone();
-            placement.edits.valve_initial_position = initial;
-            changes.push(Change::Edited {
-                index,
-                from,
-                to: placement.edits.clone(),
-            });
-        }
-        if placement.orientation != orientation {
-            let from = std::mem::replace(&mut placement.orientation, orientation);
-            changes.push(Change::Turned {
-                index,
-                from,
-                to: orientation,
-            });
-        }
+        let changes: Vec<Change> = [
+            replace_catalog_id(placement, index, catalog_id),
+            replace_designation(placement, index, designation),
+            replace_initial(placement, index, initial),
+            turn_placement(placement, index, orientation),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
         if changes.is_empty() {
             return false;
         }
@@ -1793,6 +1847,13 @@ impl Document {
         true
     }
 
+    /// Points one placement at another catalog definition.
+    fn set_catalog_id(&mut self, index: usize, catalog_id: &str) {
+        if let Some(placement) = self.placements.get_mut(index) {
+            catalog_id.clone_into(&mut placement.catalog_id);
+        }
+    }
+
     fn take_id(&mut self) -> u64 {
         self.next_id += 1;
         self.next_id
@@ -1933,6 +1994,7 @@ impl Document {
                     placement.designation.clone_from(to);
                 }
             }
+            Change::Replaced { index, to, .. } => self.set_catalog_id(*index, to),
             Change::Classed { index, to, .. } => {
                 if let Some(connection) = self.connections.get_mut(*index) {
                     connection.class = *to;
@@ -2038,6 +2100,7 @@ impl Document {
                     placement.designation.clone_from(from);
                 }
             }
+            Change::Replaced { index, from, .. } => self.set_catalog_id(*index, from),
             Change::Classed { index, from, .. } => {
                 if let Some(connection) = self.connections.get_mut(*index) {
                     connection.class = *from;
@@ -2880,9 +2943,9 @@ mod tests {
         ));
         let reflected = Orientation::NONE.reflected();
         let revision = document.revision();
-        assert!(!document.configure_valve(index, "1V1", Some(2), reflected));
+        assert!(!document.configure_valve(index, "valve.5_2.base", "1V1", Some(2), reflected));
         assert_eq!(document.revision(), revision);
-        assert!(document.configure_valve(index, " 1V1 ", Some(1), reflected));
+        assert!(document.configure_valve(index, "valve.5_2.base", " 1V1 ", Some(1), reflected));
         assert_eq!(document.revision(), revision + 1);
         assert_eq!(document.designation_of(index), Some("1V1"));
         assert!(document.undo());
@@ -2922,6 +2985,37 @@ mod tests {
         assert!(!document.designate(index, Some("con\nsalto")));
         assert_eq!(document.designation_of(index), Some("2A1"));
         assert_eq!(document.designation_of(99), None);
+    }
+
+    #[test]
+    fn switching_a_valve_variant_is_one_undoable_change() {
+        let mut document = Document::new();
+        let index = document.place(Placement::new(
+            "valve.5_2.base",
+            Pt::new(100.0, 100.0),
+            20.0,
+            20.0,
+        ));
+        let revision = document.revision();
+        assert!(document.configure_valve(
+            index,
+            "valve.5_2.spring_return",
+            "",
+            None,
+            Orientation::NONE
+        ));
+        assert_eq!(document.revision(), revision + 1);
+        assert_eq!(
+            document.placements()[index].catalog_id,
+            "valve.5_2.spring_return"
+        );
+        assert!(document.undo());
+        assert_eq!(document.placements()[index].catalog_id, "valve.5_2.base");
+        assert!(document.redo());
+        assert_eq!(
+            document.placements()[index].catalog_id,
+            "valve.5_2.spring_return"
+        );
     }
 
     #[test]
