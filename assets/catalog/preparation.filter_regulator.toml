@@ -102,7 +102,7 @@ filled = false
 [[symbol]]
 kind = "line"
 points = [0.206522, 0.372, 0.206522, 0.564]
-line_class = "drain"
+line_class = "pilot"
 
 # The bowl chord: the element stops here because the bowl owns the space below it.
 [[symbol]]
@@ -110,10 +110,10 @@ kind = "line"
 points = [0.171739, 0.564, 0.241304, 0.564]
 line_class = "working"
 
-# Its drain stem, crossing the frame on its way out.
+# Its drain stem: short, ending inside the frame (owner's 2026-11-25 correction).
 [[symbol]]
 kind = "line"
-points = [0.206522, 0.628, 0.206522, 0.94]
+points = [0.206522, 0.628, 0.206522, 0.75]
 line_class = "working"
 
 # The regulator: an upright square, flow through it, and the two facing arrows.
@@ -162,15 +162,12 @@ kind = "polygon"
 points = [0.5, 0.192, 0.481913, 0.243040, 0.467435, 0.203120]
 filled = true
 
-# Its sensing line: the outlet fed back to the underside of the regulator, dashed.
-[[symbol]]
-kind = "line"
-points = [0.434783, 0.628, 0.434783, 0.72]
-line_class = "working"
-
+# Its sensing line: the FRL's dashed path, leaving the working line at the regulator's right
+# edge with the diagonal, down to the bottom, left under the regulator and up to its
+# underside (owner's 2026-11-25 correction).
 [[symbol]]
 kind = "polyline"
-points = [0.434783, 0.72, 0.73913, 0.72, 0.73913, 0.5]
+points = [0.493478, 0.5, 0.564000, 0.647, 0.564000, 0.770, 0.420000, 0.770, 0.420000, 0.628]
 line_class = "pilot"
 
 # Its dial: a gauge on a stem that taps the line after the regulator, with the needle as an
@@ -186,12 +183,12 @@ points = [0.73913, 0.32, 0.08]
 
 [[symbol]]
 kind = "line"
-points = [0.73913, 0.32, 0.708696, 0.276]
+points = [0.708391, 0.376566, 0.769891, 0.263434]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.708696, 0.276, 0.728761, 0.287200, 0.719370, 0.309200]
+points = [0.769891, 0.263434, 0.760695, 0.314400, 0.742173, 0.280400]
 filled = true
 
 [[symbol]]

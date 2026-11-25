@@ -1,8 +1,8 @@
 # filter.air_auto_drain — conformance review
 
-    status: pending-300dpi
-    date: 2026-11-24
-    reviewer: pending — the owner's signature after the PR review is the closing step
+    status: complete
+    date: 2026-11-25
+    reviewer: Cristian Muñoz (owner)
     function: air filter with an automatic drain
 
 ## The claim
@@ -12,8 +12,8 @@
 - **Family**: conditioning (a two-port part with a drain).
 - **Normative source**: the plan records the automatic-drain mark as **`X12200`/`F065V1`**.
   The owner's drawn reference of 2026-11-24 shows the same filter body as `X12190`: the
-  square turned 45°, the element dashed down to the bowl chord, the solid chord and the stem
-  from the bottom vertex, with no separate manual actuation. **The figure itself was not
+  square turned 45°, the element dashed down to the bowl chord, the solid chord, the **inner
+  V under the chord** and the stem from the bottom vertex. **The figure itself was not
   re-read in this pass**; the record names the registration from the plan and the reference
   as the authority for the form (ADR 0040). Rules: `RF052` and `RF053`.
 - **Ports**: `1` inlet at the left vertex · `2` outlet at the right vertex. The drain is
@@ -31,9 +31,12 @@
   not pretended by this file.
 - **Stated by the plan**: the automatic-drain mark is `X12200`/`F065V1`; **the figure was
   not re-read here**, and the record says so instead of claiming a reading it did not do.
-- **Assumption**: the automatic drain prints the same diamond, chord and stem as the manual
-  one in the owner's reference; the difference is the automatic action, which the model
-  does not simulate. The review does not invent a mark the figure does not print.
+  The owner's 2026-11-25 correction identifies the mark: the **inner V under the chord**,
+  from the chord's ends to the bottom vertex, with the plain stem. The manual filter has the
+  chord and the stem but no inner V.
+- **Correction, 2026-11-25**: the plain stem alone was the **manual** drain. The automatic
+  form adds the **inner V under the chord**; the model does not simulate the action, but the
+  mark is what the owner's reference prints.
 - **Assumption**: the element stops at the chord because the bowl occupies the space below
   it; the chord spans the diamond's lower edges.
 
@@ -45,10 +48,11 @@ The symbol box is the canonical 20 mm square (no `box` key).
 |---|---|---|
 | Diamond | the same square turned 45° as `filter.air` | vertices (10; 5,6), (14,4; 10), (10; 14,4), (5,6; 10) |
 | Element | dashed, from the top vertex to the chord | (10; 5,6)–(10; 12,84), 7,24 mm |
-| Bowl | solid chord across the lower part | y 12,84 from x 8,44 to 11,56 |
-| Drain | stem from the bottom vertex | (10; 14,4)–(10; 18) |
+| Bowl | solid chord across the lower part, touching the diamond edges | y 12,84 from x 8,44 to 11,56 |
+| Drain | stem from the bottom vertex; the automatic mark is the inner V under the chord | (10; 14,4)–(10; 18) stem; inner V (8,84; 12,84)–(10; 14,0)–(11,16; 12,84), arms parallel to the lower diamond edges |
 | Ports | all of them drawn | `1` at (1,2; 10), `2` at (18,8; 10) |
-| Numerals | from the port table, clear of the drawing | `1` above the left stub, `2` below the right stub |
+| Numerals | from the port table, outside the drawing | `1` above the left stub, `2` below the right stub |
+| Automatic mark | the inner V under the chord, `X12200`/`F065V1` | two lines from the chord ends to the bottom vertex |
 
 ## Evidence
 
@@ -87,9 +91,9 @@ The symbol box is the canonical 20 mm square (no `box` key).
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending — the owner signs after the PR review
-- **Date**: 2026-11-24
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-25
 - **What changed since the last record**: new file; no previous record.
 
 ## Images

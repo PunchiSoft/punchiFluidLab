@@ -15,5 +15,5 @@ Circle { centre: Pt { x: 22.0, y: 16.8 }, radius: 6.8, fill: None, stroke: Some(
 Line { points: [Pt { x: 17.2, y: 12.0 }, Pt { x: 26.800001, y: 21.6 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Line { points: [Pt { x: 17.2, y: 21.6 }, Pt { x: 26.800001, y: 12.0 }], stroke: Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working } }
 Circle { centre: Pt { x: 0.0, y: 16.8 }, radius: 1.4, fill: Some(Colour { r: 255, g: 255, b: 255 }), stroke: Some(Stroke { width: 0.35, colour: Colour { r: 0, g: 0, b: 0 }, class: Working }) }
-Text { at: Pt { x: 5.315595, y: 7.952532 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
-Text { at: Pt { x: 5.315595, y: 7.952532 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }
+Text { at: Pt { x: -2.4844046, y: 7.952532 }, text: "1", size: 4.3500004, colour: Colour { r: 255, g: 255, b: 255 }, anchor: Middle }
+Text { at: Pt { x: -2.4844046, y: 7.952532 }, text: "1", size: 3.0, colour: Colour { r: 0, g: 0, b: 0 }, anchor: Middle }

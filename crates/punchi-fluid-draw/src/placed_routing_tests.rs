@@ -421,6 +421,7 @@ fn an_ordinary_port_keeps_its_edge() {
             position: [0.0, 0.0],
             show_numeral: true,
             numeral: None,
+            numeral_side: punchi_fluid_catalog::NumeralSide::Auto,
         }],
         symbol: Vec::new(),
         body: None,

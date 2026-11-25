@@ -144,15 +144,16 @@ reference set so that a hose is visibly meant to arrive there.
 
 | Symbol | Shape, and what carries the meaning |
 |---|---|
-| Compressed-air **network** | The bare **outline triangle** on a stem, **apex up at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering downwards, away from its own line |
+| Compressed-air **network** | The bare **outline triangle** on a stem, **apex up at the connection**: the air arrives from the plant, the machine that makes it is drawn elsewhere, and the point is where the hose attaches. A triangle standing on its base would read as a source delivering downwards, away from its own line. The source is drawn at the reference's **8 × 8 mm** (a small triangle, 4.6 × 4.0 mm) and prints **no numeral**: the triangle is the source, not a numbered port |
 | **Compressor** | The same triangle inside a **circle**, apex up, the point touching the delivery where the stem leaves the top; the **shaft bar** at the drive side, a thick bar at mid-height, because a machine shows its drive; the delivery above (port 2) and the intake below (port 1) |
 | **Adjustable compressor** | The compressor plus the **adjustability arrow** on the diameter, at 45°, with a filled head at the upper end; the standard allows a longer arrow |
 | **Filter** | A square turned 45° with the flow crossing it from vertex to vertex; the line stops at each vertex and is not drawn through the inside |
 | **Filter with manual drain** | The same diamond, plus the element as the **dashed line on the vertical diagonal**, a **solid chord across the lower part** (the bowl the condensate collects in) and the **drain stem** leaving the bottom vertex. The element stops at the chord because the bowl owns the space below it. Without the chord and the stem it is a filter, not a separator with a drain |
 | **Oil lubricator** | The same diamond, a **plain line from the top vertex toward the centre** and **no dashed element**: nothing is filtered here, oil is added. The line has no arrowhead, because a head would read as a flow direction; the absent element and the line are the difference |
 | **Service unit, full** | A **chain-line frame** around the functions, in the order the air meets them: the filter diamond with its element down to the bowl chord, the chord and the drain, the regulator as an **upright square with the flow through it and the two facing arrows**, its **setting spring on top** with the **diagonal arrow** that says the setting is adjustable, its **vent** as an open triangle on the left and its **sensing line** from the outlet back to its underside, the **dial** as a gauge on a stem that taps the line after the regulator, and the **lubricator diamond** at the right. The ports sit **outside the frame** on the working line, and their numerals outside it, beside each port |
-| **Service unit, simplified** | One wide body with the **dashed element line at the left**, the **dial** inside it, the **purge arrow in the bottom band** and the **short mark on the top edge at the right**. This compact form carries the automatic drain by the owner's reference; the generic simplified figure of `X12160` does not print it, and the review says so. A plain rectangle is not this symbol |
+| **Service unit, simplified** | One wide body with the **dashed element line at the left**, the **dial** inside it, the **purge arrow in the bottom band** and the **short mark on the top edge at the right**, which is the **lubricator**. This compact form carries the automatic drain by the owner's reference; the generic simplified figure of `X12160` does not print it, and the review says so. Without the top mark it is the **filter-regulator, simplified**; the two are different components |
 | **Filter regulator** | The filter with manual drain and the pressure-relieving regulator in the same **chain-line frame**, with the regulator's vent, setting spring, diagonal arrow, vent and dashed feedback, and the gauge on its stem after it; **no lubricator**. `X12150` prints the regulator without the gauge and `X12160` prints the gauge; the file composes the two and the review says so |
+| **Filter regulator, simplified** | The compact **wide body** with the **dashed element line at the left**, the **large dial** with its full diagonal needle and the **purge arrow in the bottom band**; **no lubricator mark**. The owner's reference of 2026-11-25 splits it from the service unit: the same body **with** the top mark is the service unit, because the mark is the lubricator |
 | **Filter with automatic drain** | The same diamond as the manual-drain filter, with the element down to the **bowl chord**, the chord and the **drain stem**; the drain empties the bowl by itself. The owner's reference draws the same body, without a separate manual actuation; the plan records the automatic-drain mark as `X12200`/`F065V1`, and the review states that the figure itself was not re-read in this pass |
 
 Rules that hold for all of them:
@@ -330,9 +331,11 @@ registration number does not).
   between them**, the junction dot on the through path and the outlet branching from it at
   the centre. Both inlets are on opposite sides at mid-height; the ball is pushed off the
   inlet that carries the higher pressure and onto the other, so the outlet follows the
-  higher one. The figure's body is **8M × 4M** and the ball **1M** across (M = 2 mm, so
-  16 × 8 mm and a 1 mm radius). The ball's three positions are the live state of
-  ADR 0041; the seats and the dot are the figure's static form.
+  higher one. The **left seat is the small V** and the **right seat the large V** of the
+  owner's reference; the two inlets print `1` **above** their stubs. The figure's body is
+  **8M × 4M** and the ball **1M** across (M = 2 mm, so 16 × 8 mm and a 1 mm radius). The
+  ball's three positions are the live state of ADR 0041; the seats and the dot are the
+  static form.
 - **The two-pressure valve (`X10620`) is one rectangle with two baffles hanging from the
   top edge either side of the outlet and a free double piston between the inlets.** The
   rod is drawn as two parallel lines between the two faces. The figure draws **no through

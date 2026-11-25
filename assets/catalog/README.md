@@ -105,6 +105,8 @@ When the ports sit outside the drawing's frame, the envelope is the whole box (`
 1]`) and the frame is declared apart:
 
 - `frame = [x1, y1, x2, y2]` is the line the port numerals are placed outside of. The
+  numeral **never sits on the symbol**: the declared box must leave the margin it needs and,
+  if it does not, the box is enlarged. The
   simplified service unit declares it because its body is a solid rectangle, not a chain
   line.
 - A symbol that draws an assembly boundary with `line_class = "boundary"` does not need
@@ -189,6 +191,9 @@ the symbol.
 
 A port whose printed numeral differs from its `id` declares `numeral`: the `id` stays the
 unique key a pipe, the document and the solver use, and the renderer prints the numeral.
+A side port whose reference places its numeral on the other side of the stub declares
+`numeral_side = "above"` or `"below"`; absent keeps the automatic left-above/right-below
+placement.
 The two supply inlets of a shuttle are `1a` and `1b`, both printed as `1`
 ([ADR 0039](../docs/adr/0039-the-pressure-element-is-flat-and-constrained.md)).
 

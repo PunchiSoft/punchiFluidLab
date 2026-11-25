@@ -24,7 +24,8 @@ pub use error::CatalogError;
 pub use lint::LintError;
 pub use schema::{
     Actuation, ActuatorKind, ActuatorPart, Behaviour, Category, ComponentDefinition, Connection,
-    Kinematics, LimitEnd, LineClass, MovingPart, Origin, Port, PortRole, PressureKind, Primitive,
+    Kinematics, LimitEnd, LineClass, MovingPart, NumeralSide, Origin, Port, PortRole, PressureKind,
+    Primitive,
     PrimitiveKind, RelayKind, ReturnKind, ReturnPart, SCHEMA_MIN, SCHEMA_VERSION, Side, SpringPart,
     ValvePosition,
 };

@@ -52,13 +52,13 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
 |---|---|---|
 | Box | owner's 46 × 25 mm, declared in the file | `box = [46, 25]` |
 | Frame | chain line around the functions, one group | x 4.6–41.4, y 2.5–22.5; `line_class = "boundary"` |
-| Filter | diamond, element dashed down to the chord, bowl, drain stem | centre (9.5; 12.5), half-diagonal 3.2 mm; element to y 14.1; chord (7.9–11.1; 14.1); drain to y 23.5 |
+| Filter | diamond, element dashed with short dashes down to the chord, bowl, short drain stem inside the frame | centre (9.5; 12.5), half-diagonal 3.2 mm; element to y 14.1 (`pilot` dash); chord (7.9–11.1; 14.1); drain to y 18.75, inside the frame |
 | Regulator | upright square, flow through it, two facing arrows | square (16.3; 9.3)–(22.7; 15.7); arrow tips at 18.2 and 21.0 on y 12.5 |
 | Vent | open triangle on the regulator's left | base x 16.3, y 9.9–11.1; apex (14.9; 10.5) |
 | Spring | above the square, four peaks | x 18.6–21.4, y 4.8–9.3 |
 | Adjustability | arrow through the spring, filled head (`RF048`) | (17; 8.8)–(23; 4.8) |
-| Sensing line | dashed, from the outlet to the underside | stub (20; 15.7)–(20; 18); loop to (30; 18) and up to y 12.5 |
-| Gauge | circle on a stem, needle as an arrow from the centre | centre (30; 8), r 2; stem from y 12.5; needle to (28.6; 6.9) |
+| Sensing line | dashed: diagonal down-right from the working line at the body's right edge, right leg down, bottom left, left leg up to the underside | diagonal (22.7; 12.5)–(25.9; 16.2), right leg to (25.9; 19.25), bottom to (19.3; 19.25), left leg up to (19.3; 15.7); all `pilot` |
+| Gauge | circle on a stem, needle crossing from the lower-left edge to the upper-right, filled head | centre (30; 8), r 2; stem from y 12.5; needle (28.6; 9.4)–(31.4; 6.6), head at the upper-right |
 | Tap | filled dot where the stem meets the line | (30; 12.5), r 0.25 |
 | Lubricator | diamond with the plain line at the top vertex | centre (37; 12.5), half-diagonal 2.8 mm; line to y 11 |
 | Ports | outside the frame, stubs crossing it | `1` at (1.84; 12.5), `2` at (44.16; 12.5) |
@@ -87,7 +87,7 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
 |---|---|
 | Is every port the standard draws drawn? | yes: `1` and `2`, outside the frame |
 | Do the numerals match the declared ports? | yes: `1` supply, `2` working |
-| Is the filter's element dashed, and does the drain leave the bottom vertex? | yes, with the bowl chord |
+| Is the filter's element dashed, and does the drain leave the bottom vertex inside the frame? | yes, with the bowl chord; the stem ends at y 18.75, inside the frame (owner's 2026-11-25 correction) |
 | Is the regulator a square with the flow through it and two facing arrows? | yes |
 | Is the setting's arrow through the spring, with a filled head? | yes (`RF048`) |
 | Is the gauge a circle on a stem, with its needle as an arrow from the centre? | yes |
@@ -107,18 +107,23 @@ The symbol box is 46 × 25 mm; the frame is 36.8 × 20 mm (x 4.6–41.4, y 2.5�
   2026-11-24 decision, and the review records it instead of claiming the standard fixes the
   exact spot.
 - The unit is modelled as a **fixed restriction**: it does not regulate, filter or lubricate.
-- **The signature is pending**: the owner signs after reviewing the three captures and this
-  record, and the status returns to `complete` only then.
+- **The manifest signature is pending**: the review is complete; the owner signs the batch
+  manifest, not this record.
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending — the owner signs after the PR review
-- **Date**: 2026-11-24
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-25
 - **What changed since the last record**: the box (46 × 25), the chain-line frame, the ports
-  and numerals outside, and the internal forms redrawn at the reference's proportion. The
-  previous `complete` record described the 20 mm square and the dashed frame; this record
-  replaces it.
+  and numerals outside, the internal forms redrawn at the reference's proportion, the filter
+  element with short dashes, the drain shortened so it stays inside the frame, the sensing
+  line leaving the working line at the body's right edge with the diagonal down-right, the
+  right leg down outside the body, the bottom, and the left leg up to the underside, and the
+  gauge needle crossing from the lower-left to the upper-right (owner's 2026-11-25
+  correction).
+  The previous `complete` record described the 20 mm
+  square and the dashed frame; this record replaces it.
 
 ## Images
 

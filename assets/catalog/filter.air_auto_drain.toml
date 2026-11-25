@@ -3,13 +3,12 @@
 #
 # Filter with an automatic drain: filters the air and empties the bowl by itself.
 #
-# The drawing is the same filter body as `filter.air_manual_drain`: the square turned 45°,
-# the element as the dashed line down to the bowl chord, the solid chord across the lower
-# part and the stem leaving the bottom vertex. The plan records the automatic-drain mark as
-# `X12200`/`F065V1`, and the owner's reference of 2026-11-24 draws the same diamond, chord
-# and stem, without a separate manual actuation. The difference between this file and the
-# manual one is the automatic action, which the model does not simulate (the solver has no
-# bowl to empty); the review states that and does not invent a mark the figure does not print.
+# The drawing is the filter body — the square turned 45°, the element as the dashed line
+# down to the bowl chord and the solid chord — with the **automatic-drain mark**: the inner V
+# under the chord, from the chord's ends to the bottom vertex (X12200/F065V1, the owner's
+# reference of 2026-11-25). The manual filter has the chord and the stem but **no inner V**;
+# the mark is what makes this file the automatic drain. The model does not simulate the
+# action (the solver has no bowl to empty); the review states that.
 #
 # The file is separate on purpose: a user picks the drain by picking the component, the same
 # way the cylinder variants are files. The per-placement option is recorded as a capability
@@ -54,7 +53,13 @@ kind = "line"
 points = [0.422, 0.642, 0.578, 0.642]
 line_class = "working"
 
-# The automatic drain, leaving the bottom vertex.
+# The automatic drain mark: the inner V under the chord, from its ends to the bottom vertex.
+[[symbol]]
+kind = "polyline"
+points = [0.442, 0.642, 0.5, 0.70, 0.558, 0.642]
+line_class = "working"
+
+# The drain stem, plain: the action is automatic, the mark is the inner V, not an arrow.
 [[symbol]]
 kind = "line"
 points = [0.5, 0.72, 0.5, 0.9]

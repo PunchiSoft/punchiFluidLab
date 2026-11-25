@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Revisión de símbolos — 2026-11-25
+
+- Revisión del lote 2026-11-25: **14 símbolos aprobados** por el dueño y **7 fuera** por
+  corrección conocida (cierres de puerto, válvulas de corredera y válvula de dos presiones).
+- **Regla general de numerales:** el numeral de un puerto no se dibuja sobre el símbolo; el
+  renderer lo coloca fuera y la caja del símbolo crece cuando hace falta. Los puertos pueden
+  declarar `numeral_side = "above"`/`"below"` cuando la referencia pone los dos numerales del
+  mismo lado.
+- Nuevo componente `preparation.filter_regulator_simple` (filtro-regulador simplificado, sin
+  lubricador); la unidad de servicio simplificada conserva la marca del lubricador.
+- Correcciones aplicadas al FRL, al filtro-regulador detallado, a las válvulas OR y al filtro
+  con purga automática (elemento discontinuo, drenaje dentro del marco, sensado y manómetro).
+- **Pendiente antes de firmar:** las capturas de los cilindros a 44×20 y los compresores sin
+  eje, la actualización del manifiesto `signed.toml` y la firma SSH del dueño; el lote no se
+  firma en este cambio.
+
 ### La regla de los símbolos firmados — 2026-11-24
 
 - La skill `fluid-power-symbology` gana la sección **«Signed symbols are immutable»**: un

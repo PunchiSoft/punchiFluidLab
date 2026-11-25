@@ -11,9 +11,10 @@
 # and its length is what keeps the triangle clear of whatever the symbol is wired to.
 #
 # ISO 1219-1 calls it the pneumatic source of energy (9.6.4.1, RF059): the outline triangle,
-# its point at the fluid supply line and its height 4M (M = 2.5 mm, so 10 mm on the 20 mm
-# box); the filled triangle is the hydraulic source (RF060). The source's line is the supply
-# line, so the project numbers the port 1.
+# its point at the fluid supply line and its height 4M; the filled triangle is the hydraulic
+# source (RF060). The owner's reference of 2026-11-25 sets the size: the source is the small
+# triangle at the plant's scale, 8 x 8 mm (4M with M = 1 mm), not a 20 mm box. The source's
+# line is the supply line, and the reference prints no numeral on it.
 
 schema = 3
 id = "supply.network"
@@ -21,19 +22,23 @@ name = "Compressed air network, 4 bar"
 name_es = "Red de aire comprimido, 4 bar"
 category = "supply"
 summary = "The compressed-air network arrives here."
+box = [8, 8]
 
 [[port]]
 id = "1"
 role = "supply"
 position = [0.5, 0.08]
+# The reference prints no numeral on the source: the triangle is the source, not a port to
+# be numbered. The port id stays `1` for the solver and the hoses.
+show_numeral = false
 
 [behaviour]
 type = "supply"
 pressure_bar = 4.0
 
 # An equilateral triangle with its apex up: the delivery leaves through the apex and the stem
-# goes up to the connection. Its height is 4M = 10 mm, so half the base is tan(30°) of it and
-# the proportions are the source's (RF059).
+# goes up to the connection. In the 8 x 8 mm box its height is 4 mm and half the base is
+# tan(30°) of it; the proportions are the source's (RF059).
 [[symbol]]
 kind = "polygon"
 points = [0.5, 0.30, 0.7887, 0.80, 0.2113, 0.80]

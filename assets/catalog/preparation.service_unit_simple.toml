@@ -58,19 +58,21 @@ kind = "line"
 points = [0.22, 0.12, 0.22, 0.88]
 line_class = "drain"
 
-# The regulator's gauge, inside the body, with the needle as an arrow from its centre.
+# The regulator's gauge, inside the body, the same large circle and full diagonal needle as
+# the filter-regulator: the owner's 2026-11-25 correction. The lubricator mark below is what
+# makes this body the service unit.
 [[symbol]]
 kind = "circle"
-points = [0.6, 0.5, 0.115]
+points = [0.52, 0.5, 0.225]
 
 [[symbol]]
 kind = "line"
-points = [0.6, 0.5, 0.56, 0.44]
+points = [0.5996, 0.6591, 0.4405, 0.3409]
 line_class = "working"
 
 [[symbol]]
 kind = "polygon"
-points = [0.56, 0.44, 0.58525, 0.456, 0.57475, 0.484]
+points = [0.4405, 0.3409, 0.4855, 0.3709, 0.4555, 0.4309]
 filled = true
 
 # The lubricator's mark on the top edge, at the right: the short line the simplified figure

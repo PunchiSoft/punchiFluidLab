@@ -109,6 +109,7 @@ fn the_two_service_units_and_the_cylinders_declare_their_box() {
     let cases = [
         ("preparation.service_unit", [46.0, 25.0]),
         ("preparation.service_unit_simple", [40.0, 20.0]),
+        ("preparation.filter_regulator_simple", [40.0, 20.0]),
         ("cylinder.single_acting_20_100", [44.0, 20.0]),
         ("cylinder.double_acting_32_200", [44.0, 20.0]),
     ];

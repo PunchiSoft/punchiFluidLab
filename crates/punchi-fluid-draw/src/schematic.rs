@@ -58,6 +58,7 @@ pub fn layout(area: Rect) -> Option<Layout> {
     layout_with_boxes(
         area,
         (SYMBOL_BOX_MM, SYMBOL_BOX_MM),
+        (SYMBOL_BOX_MM, SYMBOL_BOX_MM),
         (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM),
     )
 }
@@ -77,6 +78,7 @@ pub fn layout_for(area: Rect, catalog: &Catalog) -> Option<Layout> {
     };
     layout_with_boxes(
         area,
+        declared(SUPPLY_ID, (SYMBOL_BOX_MM, SYMBOL_BOX_MM)),
         declared(PREPARATION_ID, (SYMBOL_BOX_MM, SYMBOL_BOX_MM)),
         declared(CYLINDER_ID, (SYMBOL_BOX_MM * CYLINDER_RATIO, SYMBOL_BOX_MM)),
     )
@@ -84,6 +86,7 @@ pub fn layout_for(area: Rect, catalog: &Catalog) -> Option<Layout> {
 
 fn layout_with_boxes(
     area: Rect,
+    supply_box: (f32, f32),
     preparation_box: (f32, f32),
     cylinder_box: (f32, f32),
 ) -> Option<Layout> {
@@ -103,7 +106,11 @@ fn layout_with_boxes(
     // beside it, the valve at the middle right and the cylinder top right. The air reads
     // left to right along the bottom and rises to the actuator, which is the order the parts
     // are met in and the order the hoses travel.
-    let supply = Rect::from_center_size(area.point_at(0.13, 0.82), square, square);
+    let supply = Rect::from_center_size(
+        area.point_at(0.13, 0.82),
+        supply_box.0 * scale,
+        supply_box.1 * scale,
+    );
     // The service unit sits between the source and the first valve, in series and in that
     // order: what comes out of it is the line pressure the rest of the circuit is designed
     // around, so it cannot be drawn after the valve.

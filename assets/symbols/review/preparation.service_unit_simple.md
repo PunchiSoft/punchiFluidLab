@@ -1,8 +1,8 @@
 # preparation.service_unit_simple — conformance review
 
-    status: pending-300dpi
-    date: 2026-11-24
-    reviewer: pending — the owner's signature after the PR review is the closing step
+    status: complete
+    date: 2026-11-25
+    reviewer: Cristian Muñoz (owner)
     function: service unit, simplified representation, with the owner's automatic-drain purge arrow
 
 ## The claim
@@ -35,6 +35,9 @@
   claiming the simplified figure prints it.
 - **Owner's decision, 2026-11-24**: the **short lubricator mark** on the top edge stays, as
   the simplified figure of `X12160` carries it.
+- **Owner's decision, 2026-11-25**: the short mark is the **lubricator**; the same body
+  **without** it is the separate `preparation.filter_regulator_simple`. The two are
+  different components.
 - **Owner's decision, 2026-11-24**: the box is **40 × 20 mm (2 : 1)**, derived from the
   owner's reference (its body is ≈2.05 : 1), not a measure of the standard.
 - **Owner's decision, 2026-11-24**: the ports sit **outside the body**, and their numerals
@@ -52,7 +55,7 @@ The symbol box is 40 × 20 mm; the body is 31.2 × 15.2 mm (x 4.4–35.6, y 2.4�
 | Box | owner's 40 × 20 mm, declared in the file | `box = [40, 20]` |
 | Body | one rectangle, wider than tall | x 4.4–35.6, y 2.4–17.6 |
 | Element | dashed line at the left, full height | x 8.8, y 2.4–17.6 |
-| Gauge | circle with the needle as an arrow from its centre | centre (24; 10), r 2.3; needle to (22.4; 8.8) |
+| Gauge | large circle with the needle as a full diagonal from the lower-right edge to the upper-left, filled head at the upper-left | centre (20.8; 10), r 4.5; needle (24.0; 13.2)–(17.6; 6.8), head at the upper-left |
 | Lubricator mark | short line from the top edge at the right | x 32, y 2.4–4.0 |
 | Purge arrow | automatic drain in the bottom band, pointing out | x 8.8, y 17.6–19.2; head 1.2 mm across |
 | Ports | outside the body, stubs crossing its edge | `1` at (1.6; 10), `2` at (38.4; 10) |
@@ -80,7 +83,7 @@ The symbol box is 40 × 20 mm; the body is 31.2 × 15.2 mm (x 4.4–35.6, y 2.4�
 | Is every port the standard draws drawn? | yes: `1` and `2`, outside the body |
 | Do the numerals match the declared ports? | yes: `1` supply, `2` working |
 | Is the element a dashed line at the left? | yes, full height |
-| Is the gauge a circle with an arrow-needle? | yes |
+| Is the gauge a large circle with the full diagonal needle and the filled head at the upper-left? | yes |
 | Is the right-hand lubricator mark drawn? | yes: the short line on the top edge |
 | Is the automatic-drain purge arrow drawn? | yes, in the bottom band; the record states the generic `X12160` figure does not print it |
 | Are the ports and their numerals outside the body? | yes, beside each port and inside the 40 × 20 mm box |
@@ -103,9 +106,9 @@ The symbol box is 40 × 20 mm; the body is 31.2 × 15.2 mm (x 4.4–35.6, y 2.4�
 
 ## Sign-off
 
-- **Status**: `pending-300dpi`
-- **Reviewed by**: pending — the owner signs after the PR review
-- **Date**: 2026-11-24
+- **Status**: `complete`
+- **Reviewed by**: Cristian Muñoz (owner)
+- **Date**: 2026-11-25
 - **What changed since the last record**: the box (40 × 20), the wide body, the ports and
   numerals outside, the automatic-drain purge arrow and the redrawn gauge. The previous
   `complete` record described a 20 mm box with no drain; this record replaces it.
