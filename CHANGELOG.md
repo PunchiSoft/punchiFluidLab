@@ -6,6 +6,23 @@ publicación.
 
 ## Unreleased
 
+### Información contextual — 2026-11-25
+
+- La barra de estado se agrupa en modo, vista, selección, lectura contextual y aviso. El modo
+  usa la misma fuente que la cinta; la lectura nombra el puerto y la unidad del componente
+  seleccionado. Sin selección, con selección múltiple, con una tubería o sin modelo imprime
+  `—`, nunca un cero inventado.
+- El tiempo de dibujo y los píxeles por milímetro salen de la barra normal; el nombre del
+  archivo queda en el título. El aviso ocupa el último grupo, con el texto completo en el
+  tooltip, sin modal.
+- El acceso a información sigue siendo el dock Propiedades con `Ctrl+J` y sus controles
+  nombrados; no se añade una cuarta región ni un editor lateral.
+- Nuevas pruebas `the_status_bar_follows_the_language`,
+  `the_status_bar_names_the_mode_and_the_selection`, `a_model_reading_keeps_its_units`,
+  `a_multiple_selection_does_not_borrow_one_reading` y
+  `the_status_bar_follows_the_simulation_state`; sin cambios de documento, física, símbolos ni
+  formato.
+
 ### Hoja y selección — 2026-11-25
 
 - **Ajustar a la hoja** encuadra el papel completo, márgenes y cajetín incluidos; `Ctrl+0`, la

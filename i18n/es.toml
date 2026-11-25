@@ -474,8 +474,15 @@ name = "hoja de dibujo"
 [status]
 untitled = "sin título"
 unsaved = "sin guardar"
-line = "hoja {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms de dibujo · último: {last} · {source}{notice}{simulation}"
-simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
+view = "{width}×{height} mm · {zoom} %"
+selection_none = "Sin selección"
+selection_component = "{name} · {circuit}"
+selection_many = "{count} seleccionados"
+selection_pipe = "Tubería · {circuit}"
+selection_unknown = "Componente desconocido"
+reading_none = "—"
+reading_port = "Puerto {port} · {value} bar"
+mode_time = "{mode} · t {time} s"
 
 [lifecycle]
 recovered = "recuperado"

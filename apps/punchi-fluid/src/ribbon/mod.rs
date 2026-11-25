@@ -18,12 +18,12 @@ mod enabled;
 mod icons;
 mod model;
 mod transport;
+pub(crate) use transport::mode_key;
 
 pub(crate) use command::{Command, MarginPreset, Speed};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
 
-/// One action drawing by id, for the sheet menu, which is not a ribbon surface but uses the
-/// same family.
+/// One action drawing by id, for the sheet menu.
 pub(crate) fn icon_bytes(id: &str) -> Option<&'static [u8]> {
     icons::bytes(id)
 }

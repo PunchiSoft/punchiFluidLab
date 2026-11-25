@@ -54,6 +54,7 @@ mod sim;
 mod start;
 mod start_commands;
 mod state_file;
+mod status_bar;
 mod surface;
 mod theme;
 mod trace;
@@ -351,27 +352,6 @@ impl Window {
     }
 
     /// The status bar's live line: nothing until a model is loaded.
-    fn simulation_line(&self, language: punchi_fluid_i18n::Language) -> String {
-        match self.model.as_ref().map(|model| model.network().telemetry()) {
-            Some(telemetry) => {
-                let time = language.decimal(telemetry.time, 2);
-                let pressure = language.decimal(telemetry.pressure_pa / 1.0e5, 2);
-                let position = language.decimal(telemetry.position * 1000.0, 1);
-                let velocity = language.decimal(telemetry.velocity * 1000.0, 1);
-                language.format(
-                    "status.simulation",
-                    &[
-                        ("time", &time),
-                        ("pressure", &pressure),
-                        ("position", &position),
-                        ("velocity", &velocity),
-                    ],
-                )
-            }
-            None => String::new(),
-        }
-    }
-
     /// The placement under `point` in the active circuit, the one on top first.
     fn hit_placement(&self, point: Pt) -> Option<usize> {
         let circuit = self.document.active_circuit();
@@ -415,8 +395,9 @@ impl Window {
             .filter(|(_, placement)| placement.circuit == circuit)
             .map(|(index, _)| index)
             .collect();
-        let count = self.selected.len();
-        self.notice = (count > 0).then(|| format!("{count} seleccionadas"));
+        // The selection group already counts what was selected; a second notice would be
+        // low-value noise over a real warning.
+        self.notice = None;
     }
 
     /// Copies the selection a little displaced, as one undo entry, and selects the copies.
