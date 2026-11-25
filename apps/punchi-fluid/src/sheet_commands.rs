@@ -128,6 +128,17 @@ impl Window {
 }
 
 impl Window {
+    fn select_clicked_component(&mut self, response: &egui::Response, point: Pt) {
+        let modifiers = response.ctx.input(|input| input.modifiers);
+        let index = self.select_at(point, modifiers.shift);
+        if modifiers.is_none()
+            && response.double_clicked()
+            && let Some(index) = index
+        {
+            self.open_valve_editor(index, response.id);
+        }
+    }
+
     /// The sheet's editing gestures: a click selects the placement under the pointer, a
     /// primary drag moves the selection with a live preview, and the release commits one
     /// undo entry.
@@ -192,11 +203,11 @@ impl Window {
                 let _ = model.release_valve(index);
             }
         }
-        if response.clicked() {
-            if let Some(position) = response.interact_pointer_pos() {
-                let additive = response.ctx.input(|input| input.modifiers.shift);
-                self.select_at(to_mm(position), additive);
-            }
+        if let Some(position) = response
+            .interact_pointer_pos()
+            .filter(|_| response.clicked())
+        {
+            self.select_clicked_component(response, to_mm(position));
         }
         if response.drag_started_by(egui::PointerButton::Primary) {
             if let Some(position) = response.interact_pointer_pos() {

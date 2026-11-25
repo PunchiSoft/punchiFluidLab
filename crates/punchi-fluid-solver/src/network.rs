@@ -697,10 +697,18 @@ impl Network {
 
     /// Moves a valve to `position`, clamped to the positions it has.
     pub fn set_valve_position_at(&mut self, valve: usize, position: usize) -> bool {
+        if valve >= self.valves.len() {
+            return false;
+        }
+        self.active_valve = valve;
+        self.set_initial_valve_position_at(valve, position)
+    }
+
+    /// Sets a newly built valve's spool without changing its spring return or active valve.
+    pub fn set_initial_valve_position_at(&mut self, valve: usize, position: usize) -> bool {
         let Some(target) = self.valves.get_mut(valve) else {
             return false;
         };
-        self.active_valve = valve;
         let position = position.min(target.position_names.len().saturating_sub(1));
         if position == target.position {
             return false;

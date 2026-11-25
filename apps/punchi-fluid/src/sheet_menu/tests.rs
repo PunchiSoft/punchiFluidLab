@@ -28,6 +28,8 @@ struct Probe {
     menu: bool,
     moving: bool,
     mockup: bool,
+    valve_editor: bool,
+    initial_position: Option<u8>,
     inspector: bool,
     selected: Vec<usize>,
     count: usize,
@@ -47,6 +49,12 @@ impl Probe {
         self.menu = window.menu.is_open();
         self.moving = window.moving.is_some();
         self.mockup = window.mockups.is_open();
+        self.valve_editor = window.valve_editor.is_some();
+        self.initial_position = window
+            .document
+            .placements()
+            .first()
+            .and_then(|placed| placed.edits.valve_initial_position);
         self.inspector = window.inspector.is_open();
         self.selected.clone_from(&window.selected);
         self.count = window.document.placements().len();
@@ -152,6 +160,7 @@ fn harness(window: &mut Window) -> egui_kittest::Harness<'_, Probe> {
             move |context, probe: &mut Probe| {
                 window.show_sheet(context);
                 window.show_mockups(context);
+                window.show_valve_editor(context);
                 probe.read(window);
             },
             Probe::default(),
@@ -422,8 +431,8 @@ fn the_menu_opens_the_properties_even_when_the_dock_was_open() {
 }
 
 #[test]
-fn the_configuration_entry_opens_a_blank_window_named_configuration() {
-    let mut window = window_with_component();
+fn an_unsupported_component_still_opens_the_configuration_placeholder() {
+    let mut window = window_with_single_acting_cylinder();
     let mut harness = harness(&mut window);
     let revision = harness.state().revision;
     let canvas = harness.get_by_label("drawing sheet").rect();
@@ -707,40 +716,6 @@ fn a_click_outside_closes_the_menu() {
 }
 
 #[test]
-fn the_mockup_subject_is_the_selected_component_name() {
-    let mut window = window_with_component();
-    {
-        let mut harness = harness(&mut window);
-        let canvas = harness.get_by_label("drawing sheet").rect();
-        let centre = page_centre(&harness);
-        let sheet = egui::Rect::from_center_size(centre, canvas.size());
-        right_click_at(&mut harness, sheet.center());
-        harness.get_by_label("Configure").click();
-        harness.run();
-        assert!(
-            harness.query_by_label_contains("3/2 valve").is_some(),
-            "the mockup names the component in English"
-        );
-        harness.key_press(egui::Key::Escape);
-        harness.run();
-    }
-    window.language = Language::Spanish;
-    {
-        let mut harness = harness(&mut window);
-        let canvas = harness.get_by_label("hoja de dibujo").rect();
-        let centre = page_centre(&harness);
-        let sheet = egui::Rect::from_center_size(centre, canvas.size());
-        right_click_at(&mut harness, sheet.center());
-        harness.get_by_label("Configurar").click();
-        harness.run();
-        assert!(
-            harness.query_by_label_contains("Válvula").is_some(),
-            "the mockup names the component in Spanish"
-        );
-    }
-}
-
-#[test]
 fn the_menu_mirrors_the_selection_vertically() {
     let mut window = window_with_component();
     let mut harness = harness(&mut window);
@@ -789,3 +764,5 @@ fn the_menu_entries_carry_their_icon() {
         );
     }
 }
+
+mod valve_editor;

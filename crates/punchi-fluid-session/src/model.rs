@@ -114,11 +114,25 @@ impl Model {
             }
         }
         match Network::build(&parts, &pipes, &terminations, pipe_count) {
-            Ok(network) if network.cylinder().is_some() => Ok(Self {
-                network,
-                part_of,
-                valve_of,
-            }),
+            Ok(mut network) if network.cylinder().is_some() => {
+                for (placement, valve) in document.placements().iter().zip(&valve_of) {
+                    let Some((valve, position)) = valve.zip(placement.edits.valve_initial_position)
+                    else {
+                        continue;
+                    };
+                    if catalog.get(&placement.catalog_id).is_some_and(|definition| {
+                        matches!(&definition.behaviour, Behaviour::Valve { positions, .. } if positions.len() == 2)
+                    }) {
+                        // A starting position is not the spring's return position.
+                        let _ = network.set_initial_valve_position_at(valve, usize::from(position));
+                    }
+                }
+                Ok(Self {
+                    network,
+                    part_of,
+                    valve_of,
+                })
+            }
             Ok(_) => Err(String::from("the circuit has no cylinder to move")),
             Err(cause) => Err(cause.to_string()),
         }
@@ -409,6 +423,33 @@ mod tests {
         assert!(
             model.hose_pressure(&document, 0) > 0.5,
             "the supply hose carries the supply pressure"
+        );
+    }
+
+    #[test]
+    fn a_valve_uses_its_stored_initial_position_without_changing_the_spring_return() {
+        let mut document = worked_document();
+        let orientation = document.placements()[1].orientation;
+        assert!(document.configure_valve(1, "1V1", Some(1), orientation));
+        let sheet = crate::to_sheet(&document);
+        let encoded = sheet.to_json().expect("valid configuration");
+        let decoded = punchi_fluid_file::sheet::Sheet::parse(&encoded).expect("format 16 reads");
+        let reopened = crate::load(&decoded).expect("document reloads");
+        assert_eq!(reopened.designation_of(1), Some("1V1"));
+        let catalog = Catalog::builtin();
+        let mut model = Model::build(&reopened, &catalog).expect("the worked circuit builds");
+        assert_eq!(model.valve_position(1), 1, "the stored starting position");
+        assert!(model.release_valve(1));
+        assert_eq!(
+            model.valve_position(1),
+            0,
+            "the catalog spring rest position"
+        );
+        let rebuilt = Model::build(&reopened, &catalog).expect("the model rebuilds");
+        assert_eq!(
+            rebuilt.valve_position(1),
+            1,
+            "reset reads the stored position again"
         );
     }
 

@@ -191,6 +191,7 @@ fn document_of(sheet: &Sheet) -> Result<Document, String> {
                 placement.edits = punchi_fluid_doc::PlacementEdits {
                     pressure_bar: edit.pressure_bar,
                     conductance: edit.conductance,
+                    valve_initial_position: edit.valve_initial_position,
                     stroke_mm: edit.stroke_mm,
                     bore_mm: edit.bore_mm,
                     rod_mm: edit.rod_mm,

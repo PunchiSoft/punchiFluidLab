@@ -755,6 +755,7 @@ impl Window {
         self.selected_pipe = None;
         self.drag = None;
         self.clipboard.clear();
+        self.valve_editor = None;
         self.pressed_valve = None;
         self.stop();
         self.dialog = None;

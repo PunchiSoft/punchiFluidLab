@@ -156,6 +156,7 @@ impl Window {
         self.show_regions(context);
         self.show_sheet(context);
         self.show_mockups(context);
+        self.show_valve_editor(context);
         // The auto-hide timers read the pointer and the focus the panels reported this frame,
         // and the settings are noted after both, so a fold or a dwell lands in the file.
         let now = Instant::now();
@@ -709,7 +710,9 @@ impl Window {
             self.show_circuit_strip(ui, strip);
             let page_rect = self.page.rect();
             let page_min = egui::vec2(page_rect.min.x, page_rect.min.y);
-            self.handle_sheet_gestures(&sheet, &placement, fit, sheet_area, page_min);
+            if self.valve_editor.is_none() {
+                self.handle_sheet_gestures(&sheet, &placement, fit, sheet_area, page_min);
+            }
             let origin = placement.origin
                 - egui::vec2(
                     page_rect.min.x * placement.scale,
