@@ -26,6 +26,12 @@ publicación.
   descarta el borrador y la × cierra sin tocar el documento. La cuadrícula de Configurar
   página sigue siendo estado de vista.
 
+### Preferencias — 2026-11-25
+
+- Configuración usa la cabecera con botón de cierre, las tarjetas y el pie estable. El
+  aspecto y el idioma se aplican en vivo, **Restaurar página** actúa sobre la página
+  visible y **Listo** cierra; la navegación pasa sobre la página en una ventana estrecha.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su

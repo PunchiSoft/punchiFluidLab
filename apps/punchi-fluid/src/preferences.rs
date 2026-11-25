@@ -12,7 +12,10 @@ use eframe::egui;
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
+use crate::dialog::{Action as DialogAction, ButtonRole, Dialog, DialogResult, DialogStyle};
 use crate::theme::{Appearance, ThemeId, Tokens};
+
+mod pages;
 
 /// The page the window shows.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -102,11 +105,8 @@ impl Window {
         if !self.preferences.open {
             return;
         }
-        if context.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
-            self.preferences.open = false;
-            return;
-        }
         let tokens = self.theme.tokens.clone();
+        let style = DialogStyle::new(&self.theme.tokens);
         let current = self.theme.appearance;
         let page = self.preferences.page;
         let aimed = self.preferences.aimed;
@@ -121,6 +121,7 @@ impl Window {
         let data = PageData {
             page,
             tokens: &tokens,
+            style,
             previews: &previews,
             current,
             day,
@@ -129,8 +130,45 @@ impl Window {
             day_preview,
             night_preview,
             language,
+            autohide_on: self.autohide_on,
         };
-        let chosen = preferences_window(context, &data, self.autohide_on);
+        let mut chosen = Chosen::default();
+        let dialog = Dialog {
+            id: egui::Id::new("window.preferences"),
+            title: language.text("preferences.title"),
+            close_label: language.text("dialog.close"),
+            preferred_width: (tokens.unit * 46.0).max(736.0),
+            style,
+        };
+        let response = dialog.show(
+            context,
+            &mut chosen,
+            |ui, chosen| pages::preferences_body(ui, &data, chosen),
+            |_chosen| {
+                vec![
+                    DialogAction {
+                        label: language.text("preferences.reset_page"),
+                        value: Action::ResetPage,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                        focus: false,
+                    },
+                    DialogAction {
+                        label: language.text("dialog.done"),
+                        value: Action::Close,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                        focus: false,
+                    },
+                ]
+            },
+        );
+        let action = match response.inner {
+            Some(DialogResult::Action(action)) => Some(action),
+            Some(DialogResult::Close) => Some(Action::Close),
+            None if response.should_close() => Some(Action::Close),
+            None => chosen.action,
+        };
         if let Some(candidate) = chosen.page {
             self.preferences.page = candidate;
         }
@@ -154,7 +192,7 @@ impl Window {
                 self.apply_appearance(context, Appearance::Theme(id));
             }
         }
-        match chosen.action {
+        match action {
             Some(Action::Close) => self.preferences.open = false,
             Some(Action::ResetPage) => match page {
                 Page::Appearance => self.apply_appearance(context, Appearance::Desktop),
@@ -191,6 +229,7 @@ struct Chosen {
 struct PageData<'a> {
     page: Page,
     tokens: &'a Tokens,
+    style: DialogStyle,
     previews: &'a [(Appearance, Tokens)],
     current: Appearance,
     day: ThemeId,
@@ -199,82 +238,7 @@ struct PageData<'a> {
     day_preview: Tokens,
     night_preview: Tokens,
     language: Language,
-}
-
-/// The window's frame: the blocker, the nav, the page and the footer.
-fn preferences_window(context: &egui::Context, data: &PageData<'_>, autohide_on: bool) -> Chosen {
-    let mut chosen = Chosen::default();
-    // The layer under the window keeps the pointer out of the sheet while it is open.
-    let screen = context.screen_rect();
-    egui::Area::new(egui::Id::new("preferences.blocker"))
-        .order(egui::Order::Middle)
-        .fixed_pos(screen.min)
-        .show(context, |ui| {
-            ui.allocate_rect(screen, egui::Sense::click_and_drag());
-        });
-    egui::Window::new(data.language.text("preferences.title"))
-        .id(egui::Id::new("window.preferences"))
-        .order(egui::Order::Foreground)
-        .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .collapsible(false)
-        .resizable(false)
-        .fixed_size(egui::vec2(data.tokens.unit * 46.0, data.tokens.unit * 30.0))
-        .show(context, |ui| {
-            ui.horizontal_top(|ui| {
-                ui.vertical(|ui| {
-                    ui.set_width(data.tokens.unit * 10.5);
-                    ui.add_space(data.tokens.unit * 0.4);
-                    for (candidate, label) in Page::ALL {
-                        if ui
-                            .selectable_label(
-                                data.current_page(candidate),
-                                data.language.text(label),
-                            )
-                            .clicked()
-                        {
-                            chosen.page = Some(candidate);
-                        }
-                    }
-                });
-                ui.separator();
-                ui.vertical(|ui| {
-                    ui.set_width(ui.available_width());
-                    let height = ui.available_height();
-                    egui::ScrollArea::vertical()
-                        .auto_shrink([false, false])
-                        .max_height(height)
-                        .show(ui, |ui| {
-                            ui.set_width(ui.available_width());
-                            if data.current_page(Page::Appearance) {
-                                appearance_page(ui, data, &mut chosen);
-                            } else {
-                                panels_page(
-                                    ui,
-                                    data.tokens,
-                                    autohide_on,
-                                    &mut chosen.action,
-                                    data.language,
-                                );
-                            }
-                        });
-                });
-            });
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui
-                    .button(data.language.text("preferences.reset_page"))
-                    .clicked()
-                {
-                    chosen.action = Some(Action::ResetPage);
-                }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button(data.language.text("dialog.close")).clicked() {
-                        chosen.action = Some(Action::Close);
-                    }
-                });
-            });
-        });
-    chosen
+    autohide_on: bool,
 }
 
 impl PageData<'_> {
@@ -282,284 +246,6 @@ impl PageData<'_> {
     fn current_page(&self, candidate: Page) -> bool {
         self.page == candidate
     }
-}
-
-/// The language row: the visible language, with each option named in its own language.
-fn language_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
-    let tokens = data.tokens;
-    ui.horizontal(|ui| {
-        ui.label(
-            egui::RichText::new(data.language.text("language.label"))
-                .size(tokens.text_body)
-                .color(tokens.ink),
-        );
-        let response = egui::ComboBox::from_id_salt("preferences.language")
-            .selected_text(data.language.text(data.language.label_key()))
-            .show_ui(ui, |ui| {
-                for language in Language::ALL {
-                    if ui
-                        .selectable_label(
-                            data.language == language,
-                            language.text(language.label_key()),
-                        )
-                        .clicked()
-                    {
-                        chosen.language = Some(language);
-                    }
-                }
-            });
-        response.response.widget_info(|| {
-            egui::WidgetInfo::labeled(
-                egui::WidgetType::ComboBox,
-                true,
-                data.language.text("language.label"),
-            )
-        });
-    });
-}
-
-/// The appearance page: the three modes, the two system slots and the theme cards.
-fn appearance_page(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
-    language_row(ui, data, chosen);
-    ui.add_space(data.tokens.unit * 0.5);
-    ui.heading(
-        egui::RichText::new(data.language.text("preferences.page.appearance"))
-            .size(data.tokens.text_label)
-            .color(data.tokens.ink),
-    );
-    ui.label(
-        egui::RichText::new(data.language.text("preferences.appearance_body"))
-            .size(data.tokens.text_body)
-            .color(data.tokens.ink_dim),
-    );
-    ui.add_space(data.tokens.unit * 0.6);
-    mode_segments(ui, data, chosen);
-    ui.add_space(data.tokens.unit * 0.7);
-    if data.current == Appearance::System {
-        slot_row(ui, data, chosen);
-        ui.add_space(data.tokens.unit * 0.6);
-    }
-    theme_cards(ui, data, chosen);
-    ui.add_space(data.tokens.unit * 0.6);
-    if ui
-        .button(data.language.text("preferences.reset_appearance"))
-        .clicked()
-    {
-        chosen.action = Some(Action::ResetPage);
-    }
-}
-
-/// The three modes: the desktop palette, the system slots and a fixed theme.
-fn mode_segments(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
-    let fixed = match data.current {
-        Appearance::Theme(id) => id,
-        _ => data.day,
-    };
-    let modes = [
-        Appearance::Desktop,
-        Appearance::System,
-        Appearance::Theme(fixed),
-    ];
-    ui.horizontal(|ui| {
-        for mode in modes {
-            let selected = match mode {
-                Appearance::Desktop => data.current == Appearance::Desktop,
-                Appearance::System => data.current == Appearance::System,
-                Appearance::Theme(_) => matches!(data.current, Appearance::Theme(_)),
-            };
-            if ui
-                .selectable_label(selected, data.language.text(mode.mode_label_key()))
-                .clicked()
-            {
-                chosen.appearance = Some(mode);
-            }
-        }
-    });
-}
-
-/// The two slots the system mode uses: the day theme and the night theme.
-fn slot_row(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
-    ui.label(
-        egui::RichText::new(data.language.text("preferences.day_night"))
-            .size(data.tokens.text_small)
-            .color(data.tokens.ink_muted),
-    );
-    ui.horizontal(|ui| {
-        for (slot, id, preview) in [
-            (Slot::Day, data.day, &data.day_preview),
-            (Slot::Night, data.night, &data.night_preview),
-        ] {
-            ui.vertical(|ui| {
-                let aimed = data.aimed == slot;
-                if preview_card(
-                    ui,
-                    data.tokens,
-                    preview,
-                    aimed,
-                    data.language.text(slot.label_key()),
-                ) {
-                    chosen.slot = Some(slot);
-                }
-                ui.label(
-                    egui::RichText::new(data.language.text(slot.label_key()))
-                        .size(data.tokens.text_body)
-                        .color(data.tokens.ink),
-                );
-                ui.label(
-                    egui::RichText::new(if aimed {
-                        data.language.text("preferences.editing")
-                    } else {
-                        data.language.text(id.label_key())
-                    })
-                    .size(data.tokens.text_small)
-                    .color(if aimed {
-                        data.tokens.accent
-                    } else {
-                        data.tokens.ink_muted
-                    }),
-                );
-                ui.add_space(data.tokens.unit * 0.8);
-            });
-        }
-    });
-}
-
-/// The theme cards: a light and a dark engineering theme.
-fn theme_cards(ui: &mut egui::Ui, data: &PageData<'_>, chosen: &mut Chosen) {
-    ui.label(
-        egui::RichText::new(data.language.text("preferences.themes"))
-            .size(data.tokens.text_small)
-            .color(data.tokens.ink_muted),
-    );
-    ui.horizontal_wrapped(|ui| {
-        for (appearance, preview) in data.previews {
-            let Appearance::Theme(id) = appearance else {
-                continue;
-            };
-            let selected = match data.current {
-                Appearance::Theme(current) => current == *id,
-                Appearance::System => match data.aimed {
-                    Slot::Day => data.day == *id,
-                    Slot::Night => data.night == *id,
-                },
-                Appearance::Desktop => false,
-            };
-            ui.vertical(|ui| {
-                if preview_card(
-                    ui,
-                    data.tokens,
-                    preview,
-                    selected,
-                    data.language.text(id.label_key()),
-                ) {
-                    chosen.theme = Some(*id);
-                }
-                ui.label(
-                    egui::RichText::new(data.language.text(id.label_key()))
-                        .size(data.tokens.text_body)
-                        .color(data.tokens.ink),
-                );
-                ui.label(
-                    egui::RichText::new(if selected {
-                        data.language.text("preferences.in_use")
-                    } else {
-                        data.language.text("preferences.built_in")
-                    })
-                    .size(data.tokens.text_small)
-                    .color(if selected {
-                        data.tokens.accent
-                    } else {
-                        data.tokens.ink_muted
-                    }),
-                );
-                ui.add_space(data.tokens.unit);
-            });
-        }
-    });
-}
-
-/// The panel page: the auto-hide flag and the view reset, the same settings as **Ver**.
-fn panels_page(
-    ui: &mut egui::Ui,
-    tokens: &Tokens,
-    autohide_on: bool,
-    action: &mut Option<Action>,
-    language: Language,
-) {
-    ui.heading(
-        egui::RichText::new(language.text("preferences.page.panels"))
-            .size(tokens.text_label)
-            .color(tokens.ink),
-    );
-    ui.label(
-        egui::RichText::new(language.text("preferences.panels_body"))
-            .size(tokens.text_body)
-            .color(tokens.ink_dim),
-    );
-    ui.add_space(tokens.unit * 0.8);
-    let mut on = autohide_on;
-    if ui
-        .checkbox(&mut on, language.text("preferences.autohide"))
-        .changed()
-    {
-        *action = Some(Action::ToggleAutohide);
-    }
-    ui.add_space(tokens.unit * 0.6);
-    if ui.button(language.text("ribbon.item.reset_view")).clicked() {
-        *action = Some(Action::ResetView);
-    }
-}
-
-/// A mini window drawn with the theme's own tokens: ribbon, panel, canvas, paper and accent.
-fn preview_card(
-    ui: &mut egui::Ui,
-    tokens: &Tokens,
-    preview: &Tokens,
-    selected: bool,
-    label: &str,
-) -> bool {
-    let size = egui::vec2(tokens.unit * 8.6, tokens.unit * 5.2);
-    let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
-    response.widget_info(|| {
-        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), selected, label)
-    });
-    let painter = ui.painter().with_clip_rect(rect.intersect(ui.clip_rect()));
-    painter.rect_filled(rect, tokens.radius_control, preview.background);
-    let strip = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), tokens.unit * 0.7));
-    painter.rect_filled(strip, tokens.radius_control, preview.surface_raised);
-    let panel = egui::Rect::from_min_size(
-        egui::pos2(rect.left(), strip.bottom()),
-        egui::vec2(rect.width() * 0.28, rect.height() - strip.height()),
-    );
-    painter.rect_filled(panel, 0.0, preview.panel);
-    let paper = egui::Rect::from_min_max(
-        egui::pos2(
-            rect.left() + rect.width() * 0.34,
-            strip.bottom() + tokens.unit * 0.3,
-        ),
-        egui::pos2(
-            rect.right() - rect.width() * 0.06,
-            rect.bottom() - tokens.unit * 0.4,
-        ),
-    );
-    painter.rect_filled(paper, 0.0, preview.paper);
-    painter.circle_filled(
-        egui::pos2(
-            paper.right() - tokens.unit * 0.35,
-            paper.top() + tokens.unit * 0.35,
-        ),
-        tokens.unit * 0.15,
-        preview.accent,
-    );
-    if selected {
-        painter.rect_stroke(
-            rect,
-            tokens.radius_control,
-            egui::Stroke::new(2.0_f32, tokens.accent),
-            egui::StrokeKind::Inside,
-        );
-    }
-    response.clicked()
 }
 
 #[cfg(test)]
@@ -591,6 +277,11 @@ mod tests {
             assert!(harness.query_all_by_label("Settings").count() >= 1);
             assert!(harness.query_all_by_label("Appearance").count() >= 1);
             assert!(harness.query_all_by_label("Slate").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Done")
+                    .is_some()
+            );
             harness.get_by_label("Close").click();
             harness.run();
         }
@@ -601,6 +292,11 @@ mod tests {
             assert!(harness.query_all_by_label("Configuración").count() >= 1);
             assert!(harness.query_all_by_label("Apariencia").count() >= 1);
             assert!(harness.query_all_by_label("Pizarra").count() >= 1);
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Listo")
+                    .is_some()
+            );
             harness.get_by_label("Cerrar").click();
             harness.run();
         }
@@ -635,7 +331,13 @@ mod tests {
             let mut harness = harness(&mut window);
             harness
                 .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Language")
+                .hover();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::ComboBox, "Language")
                 .click();
+            harness.run();
+            harness.get_by_label("Español").hover();
             harness.run();
             harness.get_by_label("Español").click();
             harness.run();
@@ -732,11 +434,23 @@ mod tests {
             let mut harness = harness(&mut window);
             harness
                 .get_by_role_and_label(egui::accesskit::Role::Button, "System")
+                .hover();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "System")
                 .click();
             harness.run();
             harness
                 .get_by_role_and_label(egui::accesskit::Role::Button, "Night")
+                .hover();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Night")
                 .click();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Light CAD")
+                .hover();
             harness.run();
             harness
                 .get_by_role_and_label(egui::accesskit::Role::Button, "Light CAD")
@@ -753,6 +467,61 @@ mod tests {
             ThemeId::Cad,
             "the card filled the aimed night slot"
         );
+    }
+
+    #[test]
+    fn the_footer_reset_returns_to_the_desktop() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Slate")
+                .hover();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Slate")
+                .click();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Reset page")
+                .hover();
+            harness.run();
+            harness
+                .get_by_role_and_label(egui::accesskit::Role::Button, "Reset page")
+                .click();
+            harness.run();
+        }
+        assert_eq!(
+            window.theme.appearance,
+            Appearance::Desktop,
+            "Reset page returns the appearance page to the desktop"
+        );
+    }
+
+    #[test]
+    fn the_preferences_fit_a_narrow_window() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_preferences();
+        {
+            let mut harness = harness(&mut window);
+            harness.set_size(egui::vec2(420.0, 420.0));
+            harness.run_steps(5);
+            let close = harness.get_by_label("Close");
+            assert!(close.rect().size().min_elem() >= 32.0);
+            assert!(close.rect().right() <= 420.0);
+            for label in ["Reset page", "Done"] {
+                let rect = harness.get_by_label(label).rect();
+                assert!(rect.height() >= 32.0, "{label} has a full height target");
+                assert!(
+                    rect.left() >= 0.0
+                        && rect.right() <= 420.0
+                        && rect.top() >= 0.0
+                        && rect.bottom() <= 420.0,
+                    "{label} fits the narrow window: {rect:?}"
+                );
+            }
+        }
     }
 
     #[test]

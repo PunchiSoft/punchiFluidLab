@@ -18,6 +18,7 @@ configuration = "Configuration"
 description = "Description"
 close = "Close"
 cancel = "Cancel"
+done = "Done"
 mockup = "Mockup · this dialog's content will come later."
 
 [notice]
