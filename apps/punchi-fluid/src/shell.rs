@@ -134,7 +134,8 @@ impl Window {
         self.track_geometry(context);
         self.sync_commands(context);
         self.tick(context);
-        self.lifecycle_frame(context);
+        let start_open = self.start_open;
+        self.lifecycle_frame(context, start_open);
         // Inicio is the whole window: the ribbon, the status bar and the panels below are the
         // sheet's chrome, and the start page hides them while it is open.
         if self.start_open {

@@ -524,23 +524,31 @@ fn paint_recent_row(
             .rect_filled(remove_rect, tokens.radius_small, tokens.accent_soft);
     }
     let title_left = rect.left() + tokens.unit * 0.7;
-    ui.painter().text(
-        egui::pos2(title_left, rect.center().y - tokens.unit * 0.4),
-        egui::Align2::LEFT_CENTER,
-        &recent.name,
-        egui::FontId::proportional(tokens.text_name),
-        recent_ink(tokens, missing),
+    let text_right = (remove_rect.left() - tokens.unit * 0.4).max(title_left + 1.0);
+    let text_width = (text_right - title_left).max(1.0);
+    let name_colour = recent_ink(tokens, missing);
+    let name = one_line(ui, &recent.name, text_width, tokens.text_name, name_colour);
+    ui.painter().galley(
+        egui::pos2(
+            title_left,
+            rect.center().y - tokens.unit * 0.4 - name.size().y * 0.5,
+        ),
+        name,
+        name_colour,
     );
-    ui.painter().text(
-        egui::pos2(title_left, rect.center().y + tokens.unit * 0.5),
-        egui::Align2::LEFT_CENTER,
+    let detail_colour = if missing {
+        tokens.ink_muted
+    } else {
+        tokens.ink_dim
+    };
+    let detail = one_line(ui, detail, text_width, tokens.text_small, detail_colour);
+    ui.painter().galley(
+        egui::pos2(
+            title_left,
+            rect.center().y + tokens.unit * 0.5 - detail.size().y * 0.5,
+        ),
         detail,
-        egui::FontId::proportional(tokens.text_small),
-        if missing {
-            tokens.ink_muted
-        } else {
-            tokens.ink_dim
-        },
+        detail_colour,
     );
     ui.painter().text(
         remove_rect.center(),
@@ -555,13 +563,42 @@ fn paint_recent_row(
     );
 }
 
-/// The second line of a recent row: the folder, and that the file is gone when it is.
-fn recent_detail(path: &Path, missing: bool, language: Language) -> String {
+/// The second line of a recent row: the folder and the size, or that the file is gone.
+pub(super) fn recent_detail(path: &Path, missing: bool, language: Language) -> String {
     let folder = folder_of(path);
     if missing {
         language.format("start.not_found", &[("folder", &folder)])
     } else {
-        folder
+        match recent_size(path) {
+            Some(size) => format!("{folder} · {}", size_label(size, language)),
+            None => folder,
+        }
+    }
+}
+
+/// The size of a remembered document, from its metadata; the file is never opened.
+fn recent_size(path: &Path) -> Option<u64> {
+    std::fs::metadata(path)
+        .ok()
+        .filter(std::fs::Metadata::is_file)
+        .map(|metadata| metadata.len())
+}
+
+/// A file size in the readers' units, with the language's decimal separator for megabytes.
+fn size_label(bytes: u64, language: Language) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = 1024 * 1024;
+    if bytes < KB {
+        format!("{bytes} B")
+    } else if bytes < MB {
+        format!("{} kB", bytes / KB)
+    } else {
+        let tenths = bytes.saturating_mul(10) / MB;
+        let sample = language.decimal(0.5, 1);
+        let separator = sample.chars().nth(1).unwrap_or('.');
+        let whole = tenths / 10;
+        let fraction = tenths % 10;
+        format!("{whole}{separator}{fraction} MB")
     }
 }
 
@@ -625,23 +662,34 @@ pub(super) fn recent_placeholder(ui: &mut egui::Ui, tokens: &Tokens, language: L
         });
 }
 
-/// Lays a description out on one line, elided with an ellipsis when the card is narrow.
-fn elided(ui: &egui::Ui, tokens: &Tokens, text: &str, width: f32) -> std::sync::Arc<egui::Galley> {
+/// Lays one line of text out, elided with an ellipsis when the width is not enough.
+fn one_line(
+    ui: &egui::Ui,
+    text: &str,
+    width: f32,
+    font_size: f32,
+    colour: egui::Color32,
+) -> std::sync::Arc<egui::Galley> {
     let mut job = egui::text::LayoutJob::single_section(
         text.to_owned(),
         egui::TextFormat {
-            font_id: egui::FontId::proportional(tokens.text_secondary),
-            color: tokens.ink_dim,
+            font_id: egui::FontId::proportional(font_size),
+            color: colour,
             ..Default::default()
         },
     );
     job.wrap = egui::text::TextWrapping {
-        max_width: width,
+        max_width: width.max(1.0),
         max_rows: 1,
         break_anywhere: true,
         overflow_character: Some('…'),
     };
     ui.fonts(|fonts| fonts.layout_job(job))
+}
+
+/// Lays a description out on one line, elided with an ellipsis when the card is narrow.
+fn elided(ui: &egui::Ui, tokens: &Tokens, text: &str, width: f32) -> std::sync::Arc<egui::Galley> {
+    one_line(ui, text, width, tokens.text_secondary, tokens.ink_dim)
 }
 
 /// The name and the one-line description of each start template.

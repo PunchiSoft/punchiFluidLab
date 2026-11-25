@@ -18,7 +18,9 @@ use punchi_fluid_i18n::Language;
 use punchi_fluid_session::recents::Recents;
 use punchi_fluid_session::templates::{self, Template};
 
-use super::cards::{accessible_label, category, example_badge, labels, recent_ink, recent_missing};
+use super::cards::{
+    accessible_label, category, example_badge, labels, recent_detail, recent_ink, recent_missing,
+};
 use super::document;
 use super::thumbnail::{thumbnail_area, thumbnail_ink};
 use crate::Window;
@@ -66,9 +68,9 @@ fn save_document(path: &std::path::Path) {
     punchi_fluid_session::save(&document, path).expect("the fixture document is saved");
 }
 
-/// The accessibility label of a recent row: its name, a full stop and its folder.
-fn recent_label(name: &str, folder: &std::path::Path) -> String {
-    format!("{name}. {}", folder.display())
+/// The accessibility label of a recent row: its name, a full stop and its detail.
+fn recent_label(name: &str, path: &std::path::Path) -> String {
+    format!("{name}. {}", recent_detail(path, false, Language::English))
 }
 
 #[test]
@@ -221,7 +223,7 @@ fn the_page_draws_the_rail_the_two_ways_in_the_templates_and_the_placeholder() {
         harness.query_all_by_label("Start").count() >= 2,
         "the rail marks Start and the page names it"
     );
-    for label in ["Start", "Templates", "Recent"] {
+    for label in ["Get started", "Templates", "Recent"] {
         assert!(
             harness.query_all_by_label(label).count() >= 1,
             "{label} is a section"
@@ -290,6 +292,69 @@ fn the_keyboard_reaches_the_rail_and_volver_a_la_hoja_closes_the_page() {
         !window.start_open,
         "Enter on the focused rail row returns to the sheet"
     );
+}
+
+#[test]
+fn returning_from_home_preserves_the_document_selection_and_view() {
+    let mut window = window();
+    window.document.place(Placement::new(
+        "valve.5_2",
+        Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
+    window.selected = vec![0];
+    window.view.zoom_in();
+    let zoom = window.view.zoom();
+    let revision = window.document.revision();
+    window.open_start();
+    {
+        let mut harness = harness(&mut window);
+        harness.get_by_label("Back to the sheet").click();
+        harness.run();
+    }
+    assert!(!window.start_open, "the page closes on the way back");
+    assert_eq!(window.document.placements().len(), 1);
+    assert_eq!(window.selected, vec![0], "the selection is still the same");
+    assert!(
+        (window.view.zoom() - zoom).abs() < f32::EPSILON,
+        "the view is still the same"
+    );
+    assert_eq!(window.document.revision(), revision, "nothing was edited");
+    assert!(window.is_modified(), "the unsaved work is still marked");
+}
+
+#[test]
+fn enter_on_a_template_opens_it() {
+    let mut window = window();
+    {
+        let mut harness = harness(&mut window);
+        harness
+            .get_by_label_contains("Double-acting cylinder")
+            .focus();
+        harness.run();
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+    }
+    assert!(!window.start_open, "Enter on a focused card opens it");
+    assert_eq!(window.document.placements().len(), 3);
+}
+
+#[test]
+fn escape_returns_to_the_sheet_when_a_document_is_open() {
+    let mut window = window();
+    window.document.place(Placement::new(
+        "valve.5_2",
+        Pt::new(100.0, 80.0),
+        24.0,
+        24.0,
+    ));
+    {
+        let mut harness = harness(&mut window);
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+    }
+    assert!(!window.start_open, "Esc takes the page back to the sheet");
 }
 
 #[test]
@@ -390,7 +455,7 @@ fn the_inicio_shows_a_remembered_document_and_opens_it() {
     let mut window = Window::with_recents(Theme::fallback(), Document::new(), None, None, recents);
     {
         let mut harness = harness(&mut window);
-        let row = recent_label("taller.pfluid", &dir);
+        let row = recent_label("taller.pfluid", &saved);
         assert!(
             harness.query_by_label(&row).is_some(),
             "the remembered document is a row"
@@ -404,6 +469,24 @@ fn the_inicio_shows_a_remembered_document_and_opens_it() {
         window.document.placements().len(),
         1,
         "the remembered document is the one in the window"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_long_recent_name_keeps_its_full_accessible_label() {
+    let dir = scratch("recent-long");
+    let name = format!("{}.pfluid", "a".repeat(80));
+    let saved = dir.join(&name);
+    save_document(&saved);
+    let mut recents = Recents::at(Some(dir.join("recent.json")));
+    assert!(recents.remember(&saved));
+    let mut window = Window::with_recents(Theme::fallback(), Document::new(), None, None, recents);
+    let harness = harness(&mut window);
+    let row = recent_label(&name, &saved);
+    assert!(
+        harness.query_by_label(&row).is_some(),
+        "the full name stays available even when the row elides it"
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

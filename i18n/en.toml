@@ -406,10 +406,13 @@ title = "Check circuit"
 clean = "no faults: the circuit passes the check"
 recheck = "Recheck"
 
+[app]
+name = "Punchi Fluid Lab"
+
 [start]
 title = "Start"
 subtitle = "Create a new project or continue working on one"
-section_begin = "Start"
+section_begin = "Get started"
 section_templates = "Templates"
 templates_detail = "Choose a starting point; you can edit it on the sheet."
 section_recents = "Recent"
