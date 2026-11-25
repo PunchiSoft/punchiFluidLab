@@ -626,7 +626,8 @@ impl Window {
             Command::AlignBottom => self.align_selected(Align::Bottom),
             Command::ZoomIn => self.view.zoom_in(),
             Command::ZoomOut => self.view.zoom_out(),
-            Command::ZoomReset => self.view.fit(),
+            Command::ZoomReset => self.view.reset(),
+            Command::FitSheet => self.view.fit(),
             Command::ViewBack => self.view.back(),
             Command::BlockVisible => self.show_block = !self.show_block,
             Command::ZoomWindow => {

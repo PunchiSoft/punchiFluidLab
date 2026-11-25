@@ -124,6 +124,7 @@ pub(crate) enum Command {
     ZoomIn,
     ZoomOut,
     ZoomReset,
+    FitSheet,
     ViewBack,
     BlockVisible,
     ZoomWindow,
@@ -148,7 +149,7 @@ impl Command {
         dead_code,
         reason = "the tests iterate the set; the compile-time half is the exhaustive dispatch"
     )]
-    pub(crate) const ALL: [Self; 56] = [
+    pub(crate) const ALL: [Self; 57] = [
         Self::ProjectNew,
         Self::ProjectOpen,
         Self::ProjectSave,
@@ -190,6 +191,7 @@ impl Command {
         Self::ZoomIn,
         Self::ZoomOut,
         Self::ZoomReset,
+        Self::FitSheet,
         Self::ViewBack,
         Self::BlockVisible,
         Self::ZoomWindow,
@@ -252,6 +254,7 @@ impl Command {
             Self::ZoomIn => "ribbon.item.zoom_in",
             Self::ZoomOut => "ribbon.item.zoom_out",
             Self::ZoomReset => "ribbon.item.zoom_reset",
+            Self::FitSheet => "ribbon.item.fit_sheet",
             Self::ViewBack => "ribbon.item.view_back",
             Self::BlockVisible => "ribbon.item.block_visible",
             Self::ZoomWindow => "ribbon.item.zoom_window",

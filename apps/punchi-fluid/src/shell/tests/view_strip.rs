@@ -39,11 +39,11 @@ fn the_strip_buttons_dispatch_the_same_commands() {
     harness.get_by_label("Zoom out").click();
     harness.run();
     assert!(harness.state().zoom < 1.0, "the panel zoomed out");
-    harness.get_by_label("Fit the frame").click();
+    harness.get_by_label("Fit the sheet").click();
     harness.run();
     assert!(
         (harness.state().zoom - 1.0).abs() < 0.01,
-        "the strip fitted the frame"
+        "the strip fitted the sheet"
     );
     harness.get_by_label("Zoom").click();
     harness.run();
@@ -92,7 +92,7 @@ fn every_strip_button_has_an_accessible_name() {
     let harness = sheet_harness(&mut window, egui::vec2(1200.0, 800.0));
     for label in [
         "Pan",
-        "Fit the frame",
+        "Fit the sheet",
         "Zoom",
         "Hide the title block",
         "Start",

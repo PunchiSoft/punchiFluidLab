@@ -340,6 +340,7 @@ pub(super) const VER: &[Group] = &[
                 "ribbon.item.zoom_reset",
                 Some(Command::ZoomReset),
             ),
+            Item::Small("view-fit", "ribbon.item.fit_sheet", Some(Command::FitSheet)),
             Item::Small(
                 "edit-undo",
                 "ribbon.item.view_back",

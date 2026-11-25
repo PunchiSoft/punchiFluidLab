@@ -193,7 +193,7 @@ impl ViewStrip {
             false,
             true,
         ) {
-            command = Some(Command::ZoomReset);
+            command = Some(Command::FitSheet);
         }
         if button(
             ui,

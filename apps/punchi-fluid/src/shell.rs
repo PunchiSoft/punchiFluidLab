@@ -730,9 +730,9 @@ impl Window {
                 &scene.pipes,
                 &self.catalog,
                 &Ink::print(),
-                &self.selected,
+                &[],
             );
-            self.frame_ms = started.elapsed().as_secs_f64() * 1000.0;
+            let frame_ms = started.elapsed().as_secs_f64() * 1000.0;
             let tokens = &self.theme.tokens;
             let clip = ui.max_rect();
             let painter = ui.painter().with_clip_rect(clip);
@@ -748,6 +748,15 @@ impl Window {
                     page_rect.height() * placement.scale,
                 ),
             );
+            painter.rect_filled(paper.translate(egui::vec2(0.0, 3.0)), 0.0, tokens.shadow);
+            painter.rect_stroke(
+                paper,
+                0.0,
+                egui::Stroke::new(1.0_f32, tokens.line_strong),
+                egui::StrokeKind::Inside,
+            );
+            painter.extend(drawing.shapes);
+            self.draw_selection_overlay(&painter, &scene.placed, &placement, page_min, tokens);
             #[cfg(test)]
             {
                 let frame = egui::Rect::from_min_size(
@@ -763,14 +772,8 @@ impl Window {
                     strip: self.strip.rect,
                 });
             }
-            painter.rect_filled(paper.translate(egui::vec2(0.0, 3.0)), 0.0, tokens.shadow);
-            painter.rect_stroke(
-                paper,
-                0.0,
-                egui::Stroke::new(1.0_f32, tokens.line_strong),
-                egui::StrokeKind::Inside,
-            );
-            painter.extend(drawing.shapes);
+
+            self.frame_ms = frame_ms;
             if let Some(drag) = self.connection_drag.as_ref() {
                 crate::connection::draw_preview(&painter, drag, &placement, page_min, tokens);
             }
