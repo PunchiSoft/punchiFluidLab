@@ -210,6 +210,8 @@ sha256_300 = "2f5e2c9075b66dfac4892d8217b2e4b9831a6ab625b885ff89606f2b63793a73"
 sha256_light = "8a25622bafe2a2a509f9ab8020d505f1c9d5e539982a743f7f358c82cedf57e7"
 sha256_dark = "266962f79258092bf839f3483a62df58cc4443197cc3551045e73aab02924238"
 commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+signed_by = "cristian@punchisoft"
+signed_at = "2026-11-25"
 
 [[symbol]]
 id = "valve.5_2.spring_return"
