@@ -474,8 +474,15 @@ name = "drawing sheet"
 [status]
 untitled = "untitled"
 unsaved = "unsaved"
-line = "sheet {width}×{height} mm · {zoom} % · {magnification} px/mm · {frame} ms draw · last: {last} · {source}{notice}{simulation}"
-simulation = " · t {time} s · {pressure} bar · {position} mm · {velocity} mm/s"
+view = "{width}×{height} mm · {zoom} %"
+selection_none = "No selection"
+selection_component = "{name} · {circuit}"
+selection_many = "{count} selected"
+selection_pipe = "Hose · {circuit}"
+selection_unknown = "Unknown component"
+reading_none = "—"
+reading_port = "Port {port} · {value} bar"
+mode_time = "{mode} · t {time} s"
 
 [lifecycle]
 recovered = "recovered"

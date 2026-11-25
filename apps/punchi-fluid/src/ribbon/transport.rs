@@ -10,7 +10,7 @@ use punchi_fluid_i18n::Language;
 use super::{Command, Palette, Ribbon, hint};
 
 /// The word for the state the window is in: editing, running or paused.
-pub(super) fn mode_key(running: bool, simulation: bool) -> &'static str {
+pub(crate) fn mode_key(running: bool, simulation: bool) -> &'static str {
     if running {
         "ribbon.transport_state.running"
     } else if simulation {

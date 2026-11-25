@@ -10,7 +10,6 @@
 //! frame asks the screen for its size and sends the geometry to the viewport, so no resolution
 //! is ever guessed or remembered as a fact.
 
-use std::path::Path;
 use std::time::Instant;
 
 use eframe::egui;
@@ -330,48 +329,9 @@ impl Window {
         }
     }
 
-    /// The status bar: the sheet, the magnification, the frame's time and the document.
+    /// The status bar, whose groups live in `status_bar`.
     fn show_status(&mut self, context: &egui::Context) {
-        let (width, height) = self.page.size_mm();
-        let ink = self.theme.tokens.ink;
-        let last = self.ribbon.last.clone();
-        let zoom = self.view.zoom();
-        let magnification = self.magnification;
-        let language = self.language;
-        let source = self
-            .path
-            .as_deref()
-            .and_then(Path::file_name)
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or(language.text("status.untitled"));
-        let notice = self
-            .notice
-            .as_deref()
-            .map(|notice| format!(" · {notice}"))
-            .unwrap_or_default();
-        let simulation = self.simulation_line(language);
-        let width = format!("{width:.0}");
-        let height = format!("{height:.0}");
-        let zoom = format!("{:.0}", zoom * 100.0);
-        let magnification = language.decimal(f64::from(magnification), 2);
-        let frame = language.decimal(self.frame_ms, 2);
-        let line = language.format(
-            "status.line",
-            &[
-                ("width", &width),
-                ("height", &height),
-                ("zoom", &zoom),
-                ("magnification", &magnification),
-                ("frame", &frame),
-                ("last", &last),
-                ("source", source),
-                ("notice", &notice),
-                ("simulation", &simulation),
-            ],
-        );
-        egui::TopBottomPanel::bottom("status").show(context, |ui| {
-            ui.label(egui::RichText::new(line).color(ink));
-        });
+        self.show_status_bar(context);
     }
 
     /// Both regions below the ribbon, in the presentation the mode asks for.

@@ -878,6 +878,30 @@ toggle, which is a command like the others: a label, the desktop's own icon and 
 paper's name and size, one hint or error line, and the sound toggle. The air consumed, the
 definition count and the mode text are the target, not in the bar yet.
 
+### The status bar
+
+The bar groups, in reading order, **mode**, **view**, **selection**, **contextual reading** and
+the **warning**; each group is a separate label so the reader can stop at the one that matters
+instead of parsing one long sentence.
+
+- The mode comes from the same running/simulation state as the ribbon and the tab row; while a
+  model is loaded it also carries `t` in seconds. It says Edición, Marcha or Pausa in every
+  place, never a second model.
+- The view names the paper and the zoom (`210×297 mm · 100 %`). The frame's draw time and the
+  pixels per millimetre are diagnostics, not part of the normal bar; the file name lives in the
+  window title.
+- The selection names the component and its circuit, counts a multiple selection, or names the
+  hose; it never leaves the previous name under a new selection.
+- The contextual reading is the selected component's first pneumatic or hydraulic port with its
+  value and unit (`Port 1 · 1.01 bar`). With no selection, a multiple selection, a hose, no model
+  or no usable port it prints `—`, never a zero invented to fill the place.
+- The warning is the window's notice, shown in the accent and truncated to the bar with its full
+  sentence in the tooltip, so a refused connection stays readable and never opens a modal. Errors
+  and refusals keep the place over low-priority messages because they set the same notice last.
+- **Information access is the existing right dock**: **Propiedades**, `Ctrl+J`, and the named
+  show/hide controls; opening or closing it changes no document and returns the keyboard to a
+  visible control. The status bar adds no fourth region and no second editor.
+
 ## Visual language
 
 The unsaved changes confirmation, the valve editor, the rename and close circuit dialogs,
