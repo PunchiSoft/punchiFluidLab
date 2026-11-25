@@ -206,6 +206,7 @@ bottom_right = "Inferior derecha"
 bottom_full = "Inferior centrado"
 
 [catalog]
+no_matches = "Ningún componente coincide con «{query}»."
 title = "Catálogo"
 search = "Buscar…"
 components = "{count} componentes"

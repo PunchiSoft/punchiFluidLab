@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Catálogo legible — 2026-11-25
+
+- Las tarjetas del catálogo separan el nombre principal de la variante en la primera coma de
+  la definición y envuelven solo en los espacios, sin partir palabras; el nombre completo
+  sigue en el tooltip y en la etiqueta accesible. Una búsqueda sin coincidencias lo dice en
+  el panel en vez de dejarlo vacío.
+- Nuevas pruebas `a_name_splits_at_its_first_comma` y `a_search_with_no_matches_says_so`; las
+  pruebas de arrastre, teclado y dos columnas se conservan. Sin cambios de documento, física,
+  símbolos ni formato.
+
 ### Inicio equilibrado — 2026-11-25
 
 - Inicio nombra el programa en el título de la ventana y separa la etiqueta de sección «Get

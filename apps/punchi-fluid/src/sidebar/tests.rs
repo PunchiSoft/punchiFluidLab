@@ -5,7 +5,7 @@
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 
-use super::{is_entry, matches};
+use super::{is_entry, matches, split_name};
 
 #[test]
 fn the_palette_hides_the_port_closures() {
@@ -284,5 +284,38 @@ fn the_palette_lays_two_columns_of_tiles() {
     assert!(
         neighbour.is_some(),
         "the palette wraps two tiles per row at the default width"
+    );
+}
+
+#[test]
+fn a_name_splits_at_its_first_comma() {
+    assert_eq!(
+        split_name("3/2 valve, spring return"),
+        ("3/2 valve", Some("spring return"))
+    );
+    assert_eq!(split_name("Buzzer"), ("Buzzer", None));
+    assert_eq!(split_name(", spring"), (", spring", None));
+}
+
+#[test]
+fn a_search_with_no_matches_says_so() {
+    let mut sidebar = Sidebar::new();
+    sidebar.body.filter = String::from("zzzz");
+    let catalog = default_catalog();
+    let tokens = Theme::fallback().tokens;
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(420.0, 600.0))
+        .build(move |context| {
+            let _ = sidebar.show(context, &tokens, "", &catalog, 420.0);
+        });
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the sidebar tests need one");
+    }
+    harness.run();
+    assert!(
+        harness
+            .query_by_label_contains("No components match")
+            .is_some(),
+        "an empty search says so instead of showing a blank panel"
     );
 }
