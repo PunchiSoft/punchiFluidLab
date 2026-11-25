@@ -162,7 +162,15 @@ pub(crate) const ALL: &[(Command, Shortcut)] = &[
     ),
     (
         Command::ResetView,
+        Shortcut::new(egui::Key::Num0, true, true, false, "Ctrl+Shift+0"),
+    ),
+    (
+        Command::FitSheet,
         Shortcut::new(egui::Key::Num0, true, false, false, "Ctrl+0"),
+    ),
+    (
+        Command::ZoomReset,
+        Shortcut::new(egui::Key::Num1, true, false, false, "Ctrl+1"),
     ),
     (
         Command::Start,
@@ -206,6 +214,13 @@ mod tests {
                 "{command:?} has a shortcut and no dispatch arm"
             );
         }
+    }
+
+    #[test]
+    fn the_fit_and_the_actual_size_keep_their_own_keys() {
+        assert_eq!(super::label(Command::FitSheet), Some("Ctrl+0"));
+        assert_eq!(super::label(Command::ZoomReset), Some("Ctrl+1"));
+        assert_eq!(super::label(Command::ResetView), Some("Ctrl+Shift+0"));
     }
 
     #[test]

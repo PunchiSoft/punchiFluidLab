@@ -12,10 +12,12 @@
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
 use punchi_fluid_doc::{Document, Placement};
-use punchi_fluid_draw::placed::{port_edge_towards, port_point};
+use punchi_fluid_draw::placed::{Placed, port_edge_towards, port_point};
 use punchi_fluid_draw::{Pt, Rect, route_between_boxes_avoiding};
 
 use crate::Window;
+use crate::theme::Tokens;
+use crate::view::Placement as ViewPlacement;
 
 /// How far from the drawn route a click still takes the hose, in millimetres: about three
 /// pixels at the fit, wide enough for the hand and narrow enough not to steal the sheet.
@@ -70,6 +72,75 @@ pub fn route_of(document: &Document, catalog: &Catalog, index: usize) -> Option<
         [from_index, to_index],
         connection.offset_mm(),
     ))
+}
+
+/// The screen rectangle of a placement's selection envelope: the symbol box in sheet
+/// millimetres mapped to the canvas, expanded so the envelope never covers the symbol.
+pub(crate) fn envelope_rect(
+    rect: Rect,
+    page_min: egui::Vec2,
+    placement: &ViewPlacement,
+    expansion: f32,
+) -> egui::Rect {
+    let min = placement.origin + (egui::vec2(rect.min.x, rect.min.y) - page_min) * placement.scale;
+    let size = egui::vec2(rect.max.x - rect.min.x, rect.max.y - rect.min.y) * placement.scale;
+    egui::Rect::from_min_size(min, size).expand(expansion)
+}
+
+/// Draws the exterior envelope and its four corner handles around every selected placement.
+/// The symbol's own lines keep the normative ink; selection is a view layer over the sheet.
+pub(crate) fn draw_component_envelopes(
+    painter: &egui::Painter,
+    placed: &[Placed<'_>],
+    selected: &[usize],
+    placement: &ViewPlacement,
+    page_min: egui::Vec2,
+    tokens: &Tokens,
+) {
+    let expansion = tokens.unit * 0.15;
+    let handle = tokens.unit * 0.18;
+    for component in placed
+        .iter()
+        .filter(|placed| selected.contains(&placed.index))
+    {
+        let envelope = envelope_rect(component.rect, page_min, placement, expansion);
+        painter.rect_stroke(
+            envelope,
+            tokens.radius_small,
+            egui::Stroke::new(tokens.focus_width, tokens.accent),
+            egui::StrokeKind::Inside,
+        );
+        for corner in [
+            envelope.left_top(),
+            envelope.right_top(),
+            envelope.left_bottom(),
+            envelope.right_bottom(),
+        ] {
+            let handle = egui::Rect::from_center_size(corner, egui::vec2(handle, handle));
+            painter.rect_filled(handle, tokens.radius_small, tokens.paper);
+            painter.rect_stroke(
+                handle,
+                tokens.radius_small,
+                egui::Stroke::new(1.0_f32, tokens.accent),
+                egui::StrokeKind::Inside,
+            );
+        }
+    }
+}
+
+impl Window {
+    /// Draws the selection layer over the sheet: the exterior envelopes of the selected
+    /// placements, while the symbol's own lines keep the normative ink.
+    pub(crate) fn draw_selection_overlay(
+        &self,
+        painter: &egui::Painter,
+        placed: &[Placed<'_>],
+        placement: &ViewPlacement,
+        page_min: egui::Vec2,
+        tokens: &Tokens,
+    ) {
+        draw_component_envelopes(painter, placed, &self.selected, placement, page_min, tokens);
+    }
 }
 
 /// The pipe under `point` in the active circuit, the nearest one when two routes overlap.
@@ -181,13 +252,14 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
+    use eframe::egui;
     use punchi_fluid_doc::{Document, Endpoint, Placement};
     use punchi_fluid_draw::Pt;
 
     use crate::Window;
     use crate::theme::Theme;
 
-    use super::{distance_to_path, pipe_at, route_of};
+    use super::{distance_to_path, envelope_rect, pipe_at, route_of};
 
     /// A compressor piped to a valve, and the index of the pipe.
     fn circuit() -> (Document, usize) {
@@ -271,5 +343,19 @@ mod tests {
         assert!(window.document.can_undo(), "one undo entry");
         assert!(window.document.undo(), "the removal is undone");
         assert_eq!(window.document.connections().len(), 1);
+    }
+
+    #[test]
+    fn the_envelope_sits_outside_the_symbol() {
+        let placement = crate::view::Placement {
+            scale: 2.0,
+            origin: egui::pos2(10.0, 20.0),
+        };
+        let rect = punchi_fluid_draw::Rect::from_corners(Pt::new(5.0, 5.0), Pt::new(25.0, 15.0));
+        let envelope = envelope_rect(rect, egui::vec2(0.0, 0.0), &placement, 3.0);
+        assert!((envelope.min.x - 17.0).abs() < 0.01);
+        assert!((envelope.min.y - 27.0).abs() < 0.01);
+        assert!((envelope.width() - 46.0).abs() < 0.01);
+        assert!((envelope.height() - 26.0).abs() < 0.01);
     }
 }

@@ -265,6 +265,8 @@ fn the_zoom_window_magnifies_the_rectangle() {
 fn the_hand_mode_pans_and_leaves_on_escape() {
     let mut window = window_with();
     window.hand_mode = true;
+    window.view.zoom_in();
+    window.view.zoom_in();
     let mut harness = sheet_harness(&mut window, egui::vec2(900.0, 700.0));
     let centre = harness.state().sheet.expect("a sheet frame").paper.center();
     let before = harness.state().pan;

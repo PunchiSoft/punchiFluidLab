@@ -6,6 +6,19 @@ publicación.
 
 ## Unreleased
 
+### Hoja y selección — 2026-11-25
+
+- **Ajustar a la hoja** encuadra el papel completo, márgenes y cajetín incluidos; `Ctrl+0`, la
+  tira de vista y el doble clic del botón central lo aplican. **Tamaño original** conserva
+  `Ctrl+1` y **Restablecer vista** pasa a `Ctrl+Shift+0`.
+- La selección de componentes se dibuja como una envolvente exterior con cuatro manejadores;
+  las líneas normativas del símbolo no se recolorean ni se deforman. Una tubería seleccionada
+  conserva su ruta en acento.
+- Nuevas pruebas `the_fit_shows_the_whole_paper_inside_the_canvas`,
+  `the_envelope_sits_outside_the_symbol` y `the_fit_and_the_actual_size_keep_their_own_keys`;
+  las pruebas de navegación, tira y conexión se conservan. Sin cambios de documento, física,
+  símbolos ni formato.
+
 ### Cinta coherente — 2026-11-25
 
 - La fila de pestañas muestra el estado (Edición, En marcha, En pausa) y un transporte

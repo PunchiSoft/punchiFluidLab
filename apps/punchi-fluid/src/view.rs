@@ -3,12 +3,11 @@
 
 //! The view: the zoom and the pan of the sheet, outside the document.
 //!
-//! The document has no zoom and no pan; the reader's view does. The **frame inside the
-//! page's margins** fits the canvas at zoom 1, and above that the sheet is magnified about the
-//! pointer or the centre and dragged with the middle button, the wheel or the arrow keys. The
-//! pan is bounded to the frame's overhang and cleared whenever the view returns to the fit.
-//! The fit target is the frame, not the whole paper: the margins are part of the sheet, not
-//! of the drawing, so at the fit they may lie beyond the canvas and are clipped there.
+//! The document has no zoom and no pan; the reader's view does. The **whole paper**, margins
+//! included, fits the canvas at zoom 1, and above that the sheet is magnified about the
+//! pointer or the centre and dragged with the middle button, the wheel or the arrow keys.
+//! The pan is bounded to the paper's overhang and cleared whenever the view returns to the
+//! fit.
 
 use eframe::egui;
 use punchi_fluid_draw::Pt;
@@ -20,7 +19,7 @@ pub struct Placement {
     pub origin: egui::Pos2,
 }
 
-/// The rectangle the view fits: the frame inside the page's margins, in sheet millimetres.
+/// The page and its frame, in sheet millimetres; the view fits the whole paper.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Fit {
     /// The frame's top-left corner in sheet millimetres.
@@ -129,8 +128,8 @@ impl View {
         let before = self.placement(area, fit);
         let sheet = (pointer - before.origin) / before.scale;
         self.zoom = target;
-        let scale = fit_scale(area, fit.size) * target;
-        let centred = area.center() - fit.size * scale * 0.5 - fit.min * scale;
+        let scale = fit_scale(area, fit.paper) * target;
+        let centred = area.center() - fit.paper * scale * 0.5;
         self.pan = pointer - sheet * scale - centred;
         if (target - 1.0).abs() < f32::EPSILON {
             self.pan = egui::Vec2::ZERO;
@@ -146,7 +145,7 @@ impl View {
         rect_min: egui::Vec2,
         rect_size: egui::Vec2,
     ) {
-        let baseline = fit_scale(area, fit.size);
+        let baseline = fit_scale(area, fit.paper);
         if baseline <= 0.0 || rect_size.x <= 0.0 || rect_size.y <= 0.0 {
             return;
         }
@@ -156,7 +155,7 @@ impl View {
         self.zoom = zoom;
         let scale = baseline * zoom;
         let centre = rect_min + rect_size * 0.5;
-        self.pan = (fit.min + fit.size * 0.5 - centre) * scale;
+        self.pan = (fit.paper * 0.5 - centre) * scale;
     }
 
     pub fn pan_by(&mut self, delta: egui::Vec2) {
@@ -168,8 +167,8 @@ impl View {
     }
 
     /// The sheet's view gestures: `Ctrl` and the wheel zoom about the pointer, the wheel and
-    /// the middle button pan, the middle double click and `Ctrl+0` fit the frame, and the
-    /// arrows pan from the keyboard.
+    /// the middle button pan, the middle double click fits the sheet, and the arrows pan from
+    /// the keyboard. `Ctrl+0` is the shortcut table's `FitSheet`.
     pub(crate) fn handle_input(
         &mut self,
         ui: &egui::Ui,
@@ -200,20 +199,16 @@ impl View {
         // The middle single press pans; its double click is the reader's fit, the gesture the
         // reference teaches for a schematic.
         if response.double_clicked_by(egui::PointerButton::Middle) {
-            self.reset();
+            self.fit();
         }
-        let (left, right, up, down, reset) = ui.input(|input| {
+        let (left, right, up, down) = ui.input(|input| {
             (
                 input.key_pressed(egui::Key::ArrowLeft),
                 input.key_pressed(egui::Key::ArrowRight),
                 input.key_pressed(egui::Key::ArrowUp),
                 input.key_pressed(egui::Key::ArrowDown),
-                input.modifiers.ctrl && input.key_pressed(egui::Key::Num0),
             )
         });
-        if reset {
-            self.fit();
-        }
         let mut x = 0.0;
         let mut y = 0.0;
         if left {
@@ -237,8 +232,7 @@ impl View {
     /// and dropped once the paper fits.
     #[must_use]
     pub fn placement(&mut self, area: egui::Rect, fit: Fit) -> Placement {
-        let scale = fit_scale(area, fit.size) * self.zoom;
-        let frame_px = fit.size * scale;
+        let scale = fit_scale(area, fit.paper) * self.zoom;
         let paper_px = fit.paper * scale;
         let overhang = egui::vec2(
             ((paper_px.x - area.width()) * 0.5).max(0.0),
@@ -250,7 +244,7 @@ impl View {
         );
         Placement {
             scale,
-            origin: area.center() - frame_px * 0.5 - fit.min * scale + self.pan,
+            origin: area.center() - paper_px * 0.5 + self.pan,
         }
     }
 }
@@ -385,18 +379,23 @@ mod tests {
     }
 
     #[test]
-    fn the_fit_frames_the_drawing_inside_the_margins() {
+    fn the_fit_shows_the_whole_paper_inside_the_canvas() {
         let mut view = View::default();
         let placement = view.placement(area(), fit());
-        let expected = (800.0_f32 / 267.0).min(600.0 / 190.0);
+        let expected = (800.0_f32 / fit().paper.x).min(600.0 / fit().paper.y);
         assert!((placement.scale - expected).abs() < 1e-4);
+        let paper = Rect::from_min_size(placement.origin, fit().paper * placement.scale);
         let frame = frame_rect(&placement, fit());
         assert!(
-            (frame.center() - area().center()).length() < 0.01,
-            "{frame:?}"
+            (paper.center() - area().center()).length() < 0.01,
+            "{paper:?}"
         );
-        assert!(frame.width() <= area().width() + 0.01);
-        assert!(frame.height() <= area().height() + 0.01);
+        assert!(paper.width() <= area().width() + 0.01);
+        assert!(paper.height() <= area().height() + 0.01);
+        assert!(
+            paper.contains_rect(frame),
+            "the frame stays inside the paper"
+        );
     }
 
     #[test]
@@ -418,9 +417,8 @@ mod tests {
         view.zoom_in();
         view.pan_by(vec2(10_000.0, 10_000.0));
         let placement = view.placement(area(), fit());
-        let frame_px = fit().size * placement.scale;
         let paper_px = fit().paper * placement.scale;
-        let top_left = area().center() - frame_px * 0.5 - fit().min * placement.scale;
+        let top_left = area().center() - paper_px * 0.5;
         let overhang = (paper_px - area().size()) * 0.5;
         let expected = top_left + overhang;
         assert!(
@@ -462,7 +460,8 @@ mod tests {
         view.reset();
         assert!((view.zoom() - 1.0).abs() < f32::EPSILON);
         let placement = view.placement(area(), fit());
-        assert!((frame_rect(&placement, fit()).center() - area().center()).length() < 0.01);
+        let paper = Rect::from_min_size(placement.origin, fit().paper * placement.scale);
+        assert!((paper.center() - area().center()).length() < 0.01);
     }
 
     #[test]

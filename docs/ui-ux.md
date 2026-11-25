@@ -182,7 +182,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 |---|---|
 | **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
-| **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original, Vista anterior, the grid toggle and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the frame, and the arrows pan from the keyboard |
+| **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original `Ctrl+1`, Ajustar a la hoja `Ctrl+0`, Vista anterior, the grid toggle and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista `Ctrl+Shift+0`), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the sheet, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
@@ -786,22 +786,25 @@ the ribbon button and a direct shortcut are not there yet, so the menu is its ke
   only the short port lead is ignored.
 - **Zoom and pan are view state.** `Ctrl` and the wheel magnify about the pointer in the
   buttons' quarter steps, between 0.4× and 6×; a plain wheel pans and `Shift` swaps the
-  axis; the middle button drags the sheet; the arrow keys pan from the keyboard, and
-  `Ctrl+0` returns to 1:1 and drops the pan. Above 1:1 the sheet can move until only a
-  sliver remains in view, so a zoom at the pointer never throws it away; at 1:1 it stays
-  centred. The status bar prints the magnification and the paper's name and size. None of
-  it is a document change, so none of it enters the undo history.
+  axis; the middle button drags the sheet; the arrow keys pan from the keyboard. **Ajustar
+  a la hoja** (`Ctrl+0`, the view strip and the middle double click) fits the whole paper,
+  margins included, and drops the pan; **Tamaño original** (`Ctrl+1`) returns to 1:1.
+  Above the fit the sheet can move until only a sliver remains in view, so a zoom at the
+  pointer never throws it away; at the fit it stays centred. The status bar prints the
+  magnification and the paper's name and size. None of it is a document change, so none of
+  it enters the undo history.
 - Two modes, visibly different:
   - **Edición** (default, including a stopped or paused model): select, move, connect,
     delete. Grid snapping on. A valve click only selects it, and a drag moves it.
   - **Simulación**: the model runs; pressing a valve actuates it while held. Pausing
     releases a held spring valve. Components cannot be moved or deleted during a run.
     `Esc` stops the simulation and returns to editing.
-- **Selection is the symbol's own lines in the accent colour, not a box around it**: the
-  reference marks the component, and an extra rectangle is a second drawing that says
-  nothing the symbol does not. The inspector names what is selected, so the state is never
-  colour alone. Hover only changes the cursor and shows a tooltip (never moves anything: a
-  hover that changes the document is a known UX trap).
+- **Selection is an exterior envelope with four corner handles**: the symbol's normative
+  lines keep their ink, and the view layer draws a thin accent frame just outside the box,
+  so a selected component is not recoloured or deformed. The inspector names what is
+  selected, so the state is never colour alone; a pipe keeps its accent route. Hover only
+  changes the cursor and shows a tooltip (never moves anything: a hover that changes the
+  document is a known UX trap).
 - Pipes are orthogonal; the route is stored as a list of waypoints so it survives a
   move. Ports snap with a magnet radius derived from the grid step. In Edición, a primary
   drag from one port to another shows the route in the accent and creates the connection on
@@ -854,7 +857,7 @@ canvas, never the window, so a zoom above the fit cannot paint over the ribbon o
   budget to say what the zoom readout and **Ajustar a la hoja** already say.
 - **Today** the strip exists: it floats over the right edge of the drawing, inside the channel
   the drawing area reserves for it, so the page is fitted left of the strip and the strip takes
-  no width from the paper. It carries **Mover**, **Ajustar al marco**, **Zoom** with its panel
+  no width from the paper. It carries **Mover**, **Ajustar a la hoja**, **Zoom** with its panel
   (Disminuir, Aumentar, Zoom a una zona, Vista anterior), the view-only **Cajetín**, the single
   **Iniciar/Pausa** and the **fold**, sized from `unit` and named for the accessibility layer;
   it is remembered as view state and the compact mode starts folded. The window also fits the
@@ -1174,9 +1177,9 @@ a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/READ
 - Whether the page setup and the export editor move from the center to the right dock is
   decided after the adaptive modes are measured
   (the owner's staged plan, stage 6).
-- The **fit and the zoom** are under review: the owner wants the sheet fitted rather than the
-  frame, and the zoom and the middle double click checked against the two CAD references.
-  Nothing changes until that note arrives.
+- The **fit** is decided: the whole sheet fits (`Ctrl+0`, the view strip and the middle
+  double click), and **Tamaño original** keeps `Ctrl+1`. The zoom and the middle double click
+  remain checked against the CAD references.
 - **The block's reserve is decided**: `Sin cajetín` frees the frame, and enabling a block
   over an existing drawing is a fault the check reports
   ([ADR 0030](adr/0030-the-block-protects-its-own-box.md)); the footprint replaces the band
