@@ -436,6 +436,41 @@ fn close_without_saving_discards_the_copy_and_closes_the_window() {
 }
 
 #[test]
+fn closing_without_saving_does_not_cancel_the_close_it_asked_for() {
+    let dir = scratch("close-discard-echo");
+    let copy_path = dir.join("recovery.pfluid");
+    let target = dir.join("trabajo.pfluid");
+    let safety = SafetyCopy::at(Some(copy_path));
+    let mut window = window_with(Some(target), safety);
+    window.document = valve_document();
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, egui::RawInput::default());
+    let commands = frame(&context, &mut window, close_input());
+    assert!(commands.contains(&egui::ViewportCommand::CancelClose));
+
+    {
+        let mut harness = panel_harness(&mut window);
+        harness.get_by_label("Close without saving").click();
+        harness.run();
+        harness.step();
+    }
+    assert_eq!(window.lifecycle.close, Close::Sent);
+
+    // egui-winit turns the `Close` command into a close request of the next frame. Cancelling
+    // that echo reopens the question and the window never closes.
+    let commands = frame(&context, &mut window, close_input());
+    assert!(
+        !commands.contains(&egui::ViewportCommand::CancelClose),
+        "the echo of the close the reader chose must not be cancelled"
+    );
+    assert!(
+        window.lifecycle.panel.is_none(),
+        "the question stays closed"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn save_and_close_without_a_path_waits_for_the_save_dialog() {
     let dir = scratch("close-nopath");
     let mut window = window_with(None, SafetyCopy::at(None));
