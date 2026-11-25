@@ -1,8 +1,8 @@
 # preparation.service_unit — conformance review
 
-    status: pending-300dpi
-    date: 2026-11-24
-    reviewer: pending — the owner's signature after the PR review is the closing step
+    status: complete
+    date: 2026-11-25
+    reviewer: Cristian Muñoz (owner)
     function: service unit — filter, regulator and lubricator — between the compressor and the circuit
 
 ## The claim

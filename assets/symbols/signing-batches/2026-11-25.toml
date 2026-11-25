@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The symbols the owner approved in the 2026-11-25 review and signs together. The owner
+# runs `scripts-dev/sign-symbols.sh --batch` with their private key; the agent prepares the
+# hashes and commits the signature, never the key.
+name = "2026-11-25"
+symbols = [
+    "cylinder.double_acting_32_200",
+    "cylinder.single_acting_20_100",
+    "filter.air",
+    "filter.air_manual_drain",
+    "lubricator.oil",
+    "supply.compressor",
+    "supply.compressor_adjustable",
+    "supply.network",
+    "preparation.service_unit",
+    "preparation.service_unit_simple",
+    "valve.shuttle",
+    "preparation.filter_regulator",
+    "filter.air_auto_drain",
+    "preparation.filter_regulator_simple",
+]
