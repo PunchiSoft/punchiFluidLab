@@ -11,6 +11,7 @@ use eframe::egui;
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
+use crate::dialog::{Action, ButtonRole, Dialog, DialogResult, DialogStyle};
 use crate::theme::Tokens;
 
 /// The format an export defaults its name to. The writer still follows the typed extension;
@@ -70,116 +71,129 @@ impl ExportOptions {
 }
 
 impl Window {
-    /// **Opciones…**: opens the export options.
+    /// **Opciones…**: opens a draft with the committed options.
     pub(crate) fn open_export_options(&mut self) {
+        self.export_options_draft = self.export_options;
+        self.export_options_draft.open = false;
         self.export_options.open = true;
     }
 
-    /// Keeps the choices and closes the panel; an export does not touch the document.
+    /// Commits the draft and closes the panel; an export does not touch the document.
     pub(crate) fn apply_export_options(&mut self) {
+        self.export_options = self.export_options_draft;
         self.export_options.open = false;
         self.notice = Some(self.language.text("export.applied").to_owned());
     }
 
-    /// Draws the panel; `Esc` or **Cerrar** discards the changes.
+    /// Draws the panel; the ×, `Esc` or **Cancelar** discards the draft.
     pub(crate) fn show_export_options(&mut self, context: &egui::Context) {
         if !self.export_options.open {
             return;
         }
-        if context.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
-            self.export_options.open = false;
-            return;
-        }
         let tokens = self.theme.tokens.clone();
+        let style = DialogStyle::new(&self.theme.tokens);
         let language = self.language;
-        let action = export_options_window(context, &tokens, &mut self.export_options, language);
-        match action {
-            Some(Action::Apply) => self.apply_export_options(),
-            Some(Action::Close) => self.export_options.open = false,
+        let dialog = Dialog {
+            id: egui::Id::new("window.export-options"),
+            title: language.text("export.title"),
+            close_label: language.text("dialog.close"),
+            preferred_width: (tokens.unit * 30.0).max(480.0),
+            style,
+        };
+        let draft = &mut self.export_options_draft;
+        let response = dialog.show(
+            context,
+            draft,
+            |ui, draft| export_options_body(ui, style, &tokens, draft, language),
+            |_| {
+                vec![
+                    Action {
+                        label: language.text("dialog.apply"),
+                        value: ExportAction::Apply,
+                        role: ButtonRole::Primary,
+                        enabled: true,
+                        focus: false,
+                    },
+                    Action {
+                        label: language.text("dialog.cancel"),
+                        value: ExportAction::Cancel,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                        focus: false,
+                    },
+                ]
+            },
+        );
+        match response.inner {
+            Some(DialogResult::Action(ExportAction::Apply)) => self.apply_export_options(),
+            Some(DialogResult::Action(ExportAction::Cancel) | DialogResult::Close) => {
+                self.export_options.open = false;
+            }
+            None if response.should_close() => self.export_options.open = false,
             None => {}
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Action {
+enum ExportAction {
     Apply,
-    Close,
+    Cancel,
 }
 
-fn export_options_window(
-    context: &egui::Context,
+fn export_options_body(
+    ui: &mut egui::Ui,
+    style: DialogStyle,
     tokens: &Tokens,
     options: &mut ExportOptions,
     language: Language,
-) -> Option<Action> {
-    let mut action = None;
-    let screen = context.screen_rect();
-    egui::Area::new(egui::Id::new("export-options.blocker"))
-        .order(egui::Order::Middle)
-        .fixed_pos(screen.min)
-        .show(context, |ui| {
-            ui.allocate_rect(screen, egui::Sense::click_and_drag());
+) {
+    style.card(style.surface).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.label(
+            egui::RichText::new(language.text("export.format"))
+                .size(style.text_size)
+                .strong()
+                .color(style.text),
+        );
+        ui.horizontal_wrapped(|ui| {
+            for format in ExportFormat::ALL {
+                if ui
+                    .selectable_label(options.format == format, format.label())
+                    .clicked()
+                {
+                    options.format = format;
+                }
+            }
         });
-    egui::Window::new(language.text("export.title"))
-        .id(egui::Id::new("window.export-options"))
-        .order(egui::Order::Foreground)
-        .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .collapsible(false)
-        .resizable(false)
-        .fixed_size(egui::vec2(tokens.unit * 30.0, tokens.unit * 20.0))
-        .show(context, |ui| {
-            ui.label(
-                egui::RichText::new(language.text("export.format"))
-                    .size(tokens.text_label)
-                    .strong()
-                    .color(tokens.ink),
-            );
-            ui.horizontal(|ui| {
-                for format in ExportFormat::ALL {
-                    if ui
-                        .selectable_label(options.format == format, format.label())
-                        .clicked()
-                    {
-                        options.format = format;
-                    }
+    });
+    ui.add_space(tokens.unit * 0.5);
+    style.card(style.surface).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.label(
+            egui::RichText::new(language.text("export.resolution"))
+                .size(style.text_size)
+                .strong()
+                .color(style.text),
+        );
+        ui.horizontal_wrapped(|ui| {
+            for dpi in ExportOptions::DPI {
+                let chosen = options.dpi == dpi;
+                let label = language.format("export.dpi", &[("dpi", &dpi.to_string())]);
+                if ui
+                    .add_enabled(
+                        options.format == ExportFormat::Png,
+                        egui::Button::new(label).selected(chosen),
+                    )
+                    .clicked()
+                {
+                    options.dpi = dpi;
                 }
-            });
-            ui.add_space(tokens.unit * 0.4);
-            ui.label(
-                egui::RichText::new(language.text("export.resolution"))
-                    .size(tokens.text_label)
-                    .strong()
-                    .color(tokens.ink),
-            );
-            ui.horizontal(|ui| {
-                for dpi in ExportOptions::DPI {
-                    let chosen = options.dpi == dpi;
-                    let label = language.format("export.dpi", &[("dpi", &dpi.to_string())]);
-                    if ui
-                        .add_enabled(
-                            options.format == ExportFormat::Png,
-                            egui::Button::new(label).selected(chosen),
-                        )
-                        .clicked()
-                    {
-                        options.dpi = dpi;
-                    }
-                }
-            });
-            ui.add_space(tokens.unit * 0.4);
-            ui.checkbox(&mut options.parts, language.text("export.parts"));
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(language.text("dialog.apply")).clicked() {
-                    action = Some(Action::Apply);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
+            }
         });
-    action
+    });
+    ui.add_space(tokens.unit * 0.5);
+    ui.checkbox(&mut options.parts, language.text("export.parts"));
 }
 
 #[cfg(test)]
@@ -206,6 +220,17 @@ mod tests {
                     .count()
                     >= 1
             );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Apply")
+                    .is_some()
+            );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancel")
+                    .is_some()
+            );
+            assert!(harness.query_by_label("Close").is_some());
         }
         window.export_options.open = false;
         window.language = punchi_fluid_i18n::Language::Spanish;
@@ -225,6 +250,17 @@ mod tests {
                     .count()
                     >= 1
             );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Aplicar")
+                    .is_some()
+            );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancelar")
+                    .is_some()
+            );
+            assert!(harness.query_by_label("Cerrar").is_some());
         }
     }
 
@@ -251,29 +287,92 @@ mod tests {
     }
 
     #[test]
-    fn escape_closes_the_options() {
+    fn escape_closes_the_options_and_discards_the_draft() {
         let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
         window.open_export_options();
+        window.export_options_draft.format = super::ExportFormat::Png;
         {
             let mut harness = harness(&mut window);
             harness.key_press(egui::Key::Escape);
             harness.run();
         }
         assert!(!window.export_options.open);
+        assert_eq!(window.export_options.format, super::ExportFormat::Pdf);
     }
 
     #[test]
     fn applying_keeps_the_choices() {
         let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
         window.open_export_options();
-        window.export_options.format = super::ExportFormat::Png;
-        window.export_options.dpi = 150;
-        window.export_options.parts = true;
+        window.export_options_draft.format = super::ExportFormat::Png;
+        window.export_options_draft.dpi = 150;
+        window.export_options_draft.parts = true;
         window.apply_export_options();
         assert_eq!(window.export_options.format, super::ExportFormat::Png);
         assert_eq!(window.export_options.dpi, 150);
         assert!(window.export_options.parts);
         assert!(!window.export_options.open);
+    }
+
+    #[test]
+    fn cancel_discards_the_draft() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_export_options();
+        window.export_options_draft.format = super::ExportFormat::Png;
+        window.export_options_draft.dpi = 150;
+        window.export_options_draft.parts = true;
+        {
+            let mut harness = harness(&mut window);
+            harness.get_by_label("Cancel").hover();
+            harness.run();
+            harness.get_by_label("Cancel").click();
+            harness.run();
+        }
+        assert!(!window.export_options.open);
+        assert_eq!(window.export_options.format, super::ExportFormat::Pdf);
+        assert_eq!(window.export_options.dpi, 300);
+        assert!(!window.export_options.parts);
+    }
+
+    #[test]
+    fn the_close_button_discards_the_draft() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_export_options();
+        window.export_options_draft.format = super::ExportFormat::Png;
+        {
+            let mut harness = harness(&mut window);
+            harness.get_by_label("Close").hover();
+            harness.run();
+            harness.get_by_label("Close").click();
+            harness.run();
+        }
+        assert!(!window.export_options.open);
+        assert_eq!(window.export_options.format, super::ExportFormat::Pdf);
+    }
+
+    #[test]
+    fn the_options_fit_a_narrow_window() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_export_options();
+        {
+            let mut harness = harness(&mut window);
+            harness.set_size(egui::vec2(420.0, 420.0));
+            harness.run_steps(5);
+            let close = harness.get_by_label("Close");
+            assert!(close.rect().size().min_elem() >= 32.0);
+            assert!(close.rect().right() <= 420.0);
+            for label in ["Apply", "Cancel"] {
+                let rect = harness.get_by_label(label).rect();
+                assert!(rect.height() >= 32.0, "{label} has a full height target");
+                assert!(
+                    rect.left() >= 0.0
+                        && rect.right() <= 420.0
+                        && rect.top() >= 0.0
+                        && rect.bottom() <= 420.0,
+                    "{label} fits the narrow window: {rect:?}"
+                );
+            }
+        }
     }
 
     #[test]

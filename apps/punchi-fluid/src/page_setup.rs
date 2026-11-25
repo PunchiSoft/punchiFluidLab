@@ -12,6 +12,7 @@ use punchi_fluid_doc::paper::{Margins, Orientation, PaperSize, Sheet};
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
+use crate::dialog::{Action, ButtonRole, Dialog, DialogResult, DialogStyle};
 use crate::ribbon::MarginPreset;
 use crate::theme::Tokens;
 
@@ -90,105 +91,111 @@ impl Window {
         self.notice = Some(self.language.text("page.updated").to_owned());
     }
 
-    /// Draws the panel; it closes with `Esc` or **Cerrar** without touching the document.
+    /// Draws the panel; the ×, `Esc` or **Cancelar** discards the draft.
     pub(crate) fn show_page_setup(&mut self, context: &egui::Context) {
         if !self.page_setup.open {
             return;
         }
-        if context.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
-            self.page_setup.open = false;
-            return;
-        }
         let tokens = self.theme.tokens.clone();
+        let style = DialogStyle::new(&self.theme.tokens);
         let language = self.language;
-        let action = page_setup_window(
+        let dialog = Dialog {
+            id: egui::Id::new("window.page-setup"),
+            title: language.text("page.title"),
+            close_label: language.text("dialog.close"),
+            preferred_width: (tokens.unit * 35.0).max(560.0),
+            style,
+        };
+        let page_setup = &mut self.page_setup;
+        let grid = &mut self.grid;
+        let response = dialog.show(
             context,
-            &tokens,
-            &mut self.page_setup,
-            language,
-            &mut self.grid,
+            page_setup,
+            |ui, draft| page_setup_body(ui, style, &tokens, draft, grid, language),
+            |draft| {
+                vec![
+                    Action {
+                        label: language.text("dialog.apply"),
+                        value: PageAction::Apply,
+                        role: ButtonRole::Primary,
+                        enabled: draft.sheet().is_some(),
+                        focus: false,
+                    },
+                    Action {
+                        label: language.text("dialog.cancel"),
+                        value: PageAction::Cancel,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                        focus: false,
+                    },
+                ]
+            },
         );
-        match action {
-            Some(Action::Apply) => self.apply_page_setup(),
-            Some(Action::Close) => self.page_setup.open = false,
+        match response.inner {
+            Some(DialogResult::Action(PageAction::Apply)) => self.apply_page_setup(),
+            Some(DialogResult::Action(PageAction::Cancel) | DialogResult::Close) => {
+                self.page_setup.open = false;
+            }
+            None if response.should_close() => self.page_setup.open = false,
             None => {}
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Action {
+enum PageAction {
     Apply,
-    Close,
+    Cancel,
 }
 
-fn page_setup_window(
-    context: &egui::Context,
+fn page_setup_body(
+    ui: &mut egui::Ui,
+    style: DialogStyle,
     tokens: &Tokens,
     draft: &mut PageSetup,
-    language: Language,
-    grid: &mut crate::grid::GridView,
-) -> Option<Action> {
-    let mut action = None;
-    let screen = context.screen_rect();
-    egui::Area::new(egui::Id::new("page-setup.blocker"))
-        .order(egui::Order::Middle)
-        .fixed_pos(screen.min)
-        .show(context, |ui| {
-            ui.allocate_rect(screen, egui::Sense::click_and_drag());
-        });
-    egui::Window::new(language.text("page.title"))
-        .id(egui::Id::new("window.page-setup"))
-        .order(egui::Order::Foreground)
-        .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .collapsible(false)
-        .resizable(false)
-        .fixed_size(egui::vec2(tokens.unit * 34.0, tokens.unit * 27.0))
-        .show(context, |ui| {
-            sheet_controls(ui, tokens, draft, language);
-            margin_controls(ui, tokens, draft, language);
-            grid_controls(ui, tokens, grid, language);
-            if draft.sheet().is_none() {
-                ui.label(
-                    egui::RichText::new(language.text("page.no_room"))
-                        .size(tokens.text_body)
-                        .color(tokens.ink_muted),
-                );
-            }
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui
-                    .add_enabled(
-                        draft.sheet().is_some(),
-                        egui::Button::new(language.text("dialog.apply")),
-                    )
-                    .clicked()
-                {
-                    action = Some(Action::Apply);
-                }
-                if ui.button(language.text("dialog.close")).clicked() {
-                    action = Some(Action::Close);
-                }
-            });
-        });
-    action
-}
-
-/// The view grid: its toggle and its step, at the right of the page controls. Both are view
-/// settings: the document, the print and the undo history stay untouched.
-fn grid_controls(
-    ui: &mut egui::Ui,
-    tokens: &Tokens,
     grid: &mut crate::grid::GridView,
     language: Language,
 ) {
-    ui.separator();
-    ui.checkbox(&mut grid.visible, language.text("page.grid"));
+    style.card(style.surface).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        sheet_controls(ui, style, tokens, draft, language);
+    });
+    ui.add_space(8.0);
+    style.card(style.surface).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        margin_controls(ui, style, tokens, draft, language);
+    });
+    ui.add_space(8.0);
+    style.card(style.band).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        grid_controls(ui, style, grid, language);
+    });
+    if draft.sheet().is_none() {
+        ui.add_space(4.0);
+        ui.label(egui::RichText::new(language.text("page.no_room")).color(style.error));
+    }
+}
+
+/// The view grid: its toggle and its step. Both are view settings: the document, the print
+/// and the undo history stay untouched.
+fn grid_controls(
+    ui: &mut egui::Ui,
+    style: DialogStyle,
+    grid: &mut crate::grid::GridView,
+    language: Language,
+) {
+    ui.label(
+        egui::RichText::new(language.text("page.grid"))
+            .size(style.text_size)
+            .strong()
+            .color(style.text),
+    );
+    ui.checkbox(&mut grid.visible, language.text("page.grid_show"));
     ui.horizontal(|ui| {
         ui.label(
             egui::RichText::new(language.text("page.grid_step"))
-                .size(tokens.text_small)
-                .color(tokens.ink_muted),
+                .size(style.text_size * 0.86)
+                .color(style.muted),
         );
         egui::ComboBox::from_id_salt("page.grid.step")
             .selected_text(step_label(grid.step_mm, language))
@@ -210,13 +217,20 @@ fn step_label(step: u16, language: Language) -> String {
     let millimetres = step.to_string();
     language.format("page.grid_step_mm", &[("mm", &millimetres)])
 }
+
 /// Paper and orientation: the named sizes, the custom millimetres and the turn.
-fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, language: Language) {
+fn sheet_controls(
+    ui: &mut egui::Ui,
+    style: DialogStyle,
+    tokens: &Tokens,
+    draft: &mut PageSetup,
+    language: Language,
+) {
     ui.label(
         egui::RichText::new(language.text("page.paper"))
-            .size(tokens.text_label)
+            .size(style.text_size)
             .strong()
-            .color(tokens.ink),
+            .color(style.text),
     );
     egui::ComboBox::from_id_salt("page-setup.paper")
         .selected_text(draft.paper_label(language))
@@ -245,7 +259,7 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, lan
                     .suffix(" mm")
                     .speed(1.0),
             );
-            ui.label("×");
+            ui.label(egui::RichText::new("×").color(style.muted));
             ui.add(
                 egui::DragValue::new(&mut draft.custom_height)
                     .range(PaperSize::MIN_BOUND_MM..=PaperSize::MAX_BOUND_MM)
@@ -257,9 +271,9 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, lan
     ui.add_space(tokens.unit * 0.4);
     ui.label(
         egui::RichText::new(language.text("page.orientation"))
-            .size(tokens.text_label)
+            .size(style.text_size)
             .strong()
-            .color(tokens.ink),
+            .color(style.text),
     );
     ui.horizontal(|ui| {
         if ui
@@ -284,24 +298,31 @@ fn sheet_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, lan
 }
 
 /// The frame: four presets, then the millimetres.
-fn margin_controls(ui: &mut egui::Ui, tokens: &Tokens, draft: &mut PageSetup, language: Language) {
-    ui.add_space(tokens.unit * 0.4);
+fn margin_controls(
+    ui: &mut egui::Ui,
+    style: DialogStyle,
+    tokens: &Tokens,
+    draft: &mut PageSetup,
+    language: Language,
+) {
     ui.label(
         egui::RichText::new(language.text("page.margins"))
-            .size(tokens.text_label)
+            .size(style.text_size)
             .strong()
-            .color(tokens.ink),
+            .color(style.text),
     );
-    for preset in [
-        MarginPreset::Normal,
-        MarginPreset::Narrow,
-        MarginPreset::Moderate,
-        MarginPreset::Wide,
-    ] {
-        if ui.button(preset.label(language)).clicked() {
-            draft.margins = preset.margins();
+    ui.horizontal_wrapped(|ui| {
+        for preset in [
+            MarginPreset::Normal,
+            MarginPreset::Narrow,
+            MarginPreset::Moderate,
+            MarginPreset::Wide,
+        ] {
+            if ui.button(preset.label(language)).clicked() {
+                draft.margins = preset.margins();
+            }
         }
-    }
+    });
     egui::Grid::new("page-setup.margins")
         .num_columns(2)
         .spacing([tokens.unit * 0.4, tokens.unit * 0.2])
@@ -350,7 +371,7 @@ impl MarginPreset {
 #[cfg(test)]
 mod tests {
     use eframe::egui;
-    use egui_kittest::kittest::Queryable;
+    use egui_kittest::kittest::{NodeT, Queryable};
     use punchi_fluid_doc::Document;
     use punchi_fluid_doc::paper::{PaperSize, Sheet};
     use punchi_fluid_i18n::Language;
@@ -383,9 +404,10 @@ mod tests {
             );
             assert!(
                 harness
-                    .query_by_role_and_label(egui::accesskit::Role::Button, "Close")
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancel")
                     .is_some()
             );
+            assert!(harness.query_by_label("Close").is_some());
             assert!(harness.query_all_by_label("Portrait").count() >= 1);
         }
         window.page_setup.open = false;
@@ -399,6 +421,12 @@ mod tests {
                     .query_by_role_and_label(egui::accesskit::Role::Button, "Aplicar")
                     .is_some()
             );
+            assert!(
+                harness
+                    .query_by_role_and_label(egui::accesskit::Role::Button, "Cancelar")
+                    .is_some()
+            );
+            assert!(harness.query_by_label("Cerrar").is_some());
             assert!(harness.query_all_by_label("Vertical").count() >= 1);
         }
     }
@@ -472,5 +500,101 @@ mod tests {
         window.open_page_setup();
         assert_eq!(window.page_setup.margins, Sheet::a4().margins);
         assert_eq!(window.page_setup.orientation, Sheet::a4().orientation);
+    }
+
+    #[test]
+    fn the_dialog_applies_and_cancels_its_draft() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_page_setup();
+        window.page_setup.paper = PaperSize::A3;
+        {
+            let mut harness = harness(&mut window);
+            harness.get_by_label("Apply").hover();
+            harness.run();
+            harness.get_by_label("Apply").click();
+            harness.run();
+        }
+        assert_eq!(window.document.sheet().paper, PaperSize::A3);
+        assert!(!window.page_setup.open);
+
+        window.open_page_setup();
+        window.page_setup.paper = PaperSize::A4;
+        {
+            let mut harness = harness(&mut window);
+            harness.get_by_label("Cancel").hover();
+            harness.run();
+            harness.get_by_label("Cancel").click();
+            harness.run();
+        }
+        assert_eq!(
+            window.document.sheet().paper,
+            PaperSize::A3,
+            "Cancel discards the draft"
+        );
+        assert!(!window.page_setup.open);
+    }
+
+    #[test]
+    fn the_close_button_discards_the_draft() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_page_setup();
+        window.page_setup.paper = PaperSize::A3;
+        {
+            let mut harness = harness(&mut window);
+            harness.get_by_label("Close").hover();
+            harness.run();
+            harness.get_by_label("Close").click();
+            harness.run();
+        }
+        assert!(!window.page_setup.open);
+        assert_eq!(window.document.sheet().paper, Sheet::a4().paper);
+    }
+
+    #[test]
+    fn an_impossible_sheet_disables_apply_and_stays_open() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_page_setup();
+        window.page_setup.margins = punchi_fluid_doc::paper::Margins {
+            top: 500.0,
+            right: 500.0,
+            bottom: 500.0,
+            left: 500.0,
+        };
+        let before = window.document.sheet();
+        {
+            let mut harness = harness(&mut window);
+            assert!(harness.query_by_label_contains("no room").is_some());
+            let apply = harness.get_by_label("Apply");
+            assert!(apply.accesskit_node().is_disabled());
+            apply.click();
+            harness.run();
+        }
+        assert!(window.page_setup.open);
+        assert_eq!(window.document.sheet(), before);
+    }
+
+    #[test]
+    fn the_page_setup_fits_a_narrow_window() {
+        let mut window = Window::new(Theme::fallback(), Document::new(), None, None);
+        window.open_page_setup();
+        {
+            let mut harness = harness(&mut window);
+            harness.set_size(egui::vec2(420.0, 420.0));
+            harness.run_steps(5);
+            let close = harness.get_by_label("Close");
+            assert!(close.rect().size().min_elem() >= 32.0);
+            assert!(close.rect().right() <= 420.0);
+            for label in ["Apply", "Cancel"] {
+                let rect = harness.get_by_label(label).rect();
+                assert!(rect.height() >= 32.0, "{label} has a full height target");
+                assert!(
+                    rect.left() >= 0.0
+                        && rect.right() <= 420.0
+                        && rect.top() >= 0.0
+                        && rect.bottom() <= 420.0,
+                    "{label} fits the narrow window: {rect:?}"
+                );
+            }
+        }
     }
 }

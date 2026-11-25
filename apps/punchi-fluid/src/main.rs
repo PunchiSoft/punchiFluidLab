@@ -153,6 +153,8 @@ struct Window {
     circuit_dialog: Option<circuit_dialogs::CircuitDialog>,
     /// The export options: format, resolution and the parts list.
     export_options: export_options::ExportOptions,
+    /// The export options' draft; only Apply replaces the committed options.
+    export_options_draft: export_options::ExportOptions,
     /// The faults panel's last run and selection.
     check_panel: check_panel::CheckPanel,
     /// The catalog palette: the third region, with its search state.

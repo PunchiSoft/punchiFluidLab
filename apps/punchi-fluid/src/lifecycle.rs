@@ -275,6 +275,7 @@ impl Window {
             block_editor: crate::block_editor::BlockEditor::default(),
             circuit_dialog: None,
             export_options: crate::export_options::ExportOptions::default(),
+            export_options_draft: crate::export_options::ExportOptions::default(),
             check_panel: crate::check_panel::CheckPanel::default(),
             sidebar: sidebar::Sidebar::new(),
             inspector: inspector::Inspector::new(),

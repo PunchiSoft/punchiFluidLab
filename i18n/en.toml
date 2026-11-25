@@ -17,6 +17,7 @@ apply = "Apply"
 configuration = "Configuration"
 description = "Description"
 close = "Close"
+cancel = "Cancel"
 mockup = "Mockup · this dialog's content will come later."
 
 [notice]
