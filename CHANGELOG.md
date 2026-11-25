@@ -6,6 +6,13 @@ publicación.
 
 ## Unreleased
 
+### Cierre sin guardar — 2026-11-25
+
+- **«Cerrar sin guardar» cierra la ventana.** El `Close` que la ventana pide vuelve como
+  petición de cierre en el frame siguiente (egui-winit); el guardia la cancelaba porque el
+  documento seguía modificado y la pregunta reaparecía sin fin. Ahora el eco se deja pasar y
+  la ventana se cierra; una prueba de regresión cubre el frame siguiente.
+
 ### Revisión de símbolos — 2026-11-25
 
 - Revisión del lote 2026-11-25: **14 símbolos aprobados** por el dueño y **7 fuera** por

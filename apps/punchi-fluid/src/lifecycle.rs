@@ -348,8 +348,17 @@ impl Window {
             context.send_viewport_cmd(egui::ViewportCommand::Close);
         }
         if context.input(|input| input.viewport().close_requested()) && self.is_modified() {
-            context.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-            self.lifecycle.panel = Some(Panel::CloseAsk);
+            if self.lifecycle.close == Close::Sent {
+                // The close we asked for comes back as a close request of its own: egui-winit
+                // turns `ViewportCommand::Close` into a `ViewportEvent::Close` for the next
+                // frame. Cancelling that echo would cancel the close the reader just chose and
+                // reopen the question for ever; letting it through closes the window. A
+                // platform that refuses it gets the question again on the next attempt.
+                self.lifecycle.close = Close::Idle;
+            } else {
+                context.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.lifecycle.panel = Some(Panel::CloseAsk);
+            }
         }
         self.show_panels(context);
     }
