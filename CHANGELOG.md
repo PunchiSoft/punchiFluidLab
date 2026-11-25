@@ -6,6 +6,12 @@ publicación.
 
 ## Unreleased
 
+### Apariencia de los diálogos — 2026-11-25
+
+- La confirmación de cambios sin guardar y el editor de válvulas comparten una cabecera
+  con botón de cierre, una zona de contenido y un pie con botones más grandes. Los dos
+  se adaptan al tema claro u oscuro y mantienen visibles las acciones al desplazarse.
+
 ### Editor de válvulas direccionales — 2026-11-25
 
 - Las válvulas 3/2 y 5/2 de dos posiciones comparten un editor en la hoja. Permite editar su

@@ -43,6 +43,40 @@ fn a_double_click_opens_the_valve_editor_and_only_apply_commits() {
 }
 
 #[test]
+fn a_compact_window_keeps_the_editor_actions_and_close_button_inside() {
+    let mut window = window_with_component();
+    let mut harness = harness(&mut window);
+    let centre = page_centre(&harness);
+    right_click_at(&mut harness, centre);
+    harness.get_by_label("Configure").click();
+    harness.run();
+    assert!(harness.state().valve_editor);
+    harness.set_size(egui::vec2(420.0, 420.0));
+    harness.run_steps(5);
+    for label in ["Apply", "Cancel"] {
+        let rect = harness.get_by_label(label).rect();
+        assert!(rect.height() >= 32.0, "{label} has a full height target");
+        assert!(
+            rect.left() >= 0.0
+                && rect.right() <= 420.0
+                && rect.top() >= 0.0
+                && rect.bottom() <= 420.0,
+            "{label} fits the compact window: {rect:?}"
+        );
+    }
+    let close = harness.get_by_label("Close");
+    assert!(close.rect().size().min_elem() >= 32.0);
+    assert!(
+        close.rect().right() <= 420.0,
+        "close button fits: {:?}",
+        close.rect()
+    );
+    harness.get_by_label("Cancel").click();
+    harness.run();
+    assert!(!harness.state().valve_editor, "Cancel closes the editor");
+}
+
+#[test]
 fn the_valve_editor_names_the_component_in_both_languages() {
     let mut window = window_with_component();
     {
