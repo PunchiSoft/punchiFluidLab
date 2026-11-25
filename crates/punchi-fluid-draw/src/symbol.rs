@@ -501,10 +501,7 @@ fn side_numeral(geometry: &NumeralGeometry) -> Pt {
         NumeralSide::Below => geometry.point.y + geometry.clear,
         NumeralSide::Auto => geometry.point.y + lateral.y,
     };
-    let mut at = Pt::new(
-        edge + direction * geometry.normal + lateral.x,
-        preferred_y,
-    );
+    let mut at = Pt::new(edge + direction * geometry.normal + lateral.x, preferred_y);
     if at.y - NUMERAL * 0.5 < geometry.rect.min.y || at.y + NUMERAL * 0.5 > geometry.rect.max.y {
         at.y = match geometry.numeral_side {
             NumeralSide::Auto => geometry.point.y - lateral.y,

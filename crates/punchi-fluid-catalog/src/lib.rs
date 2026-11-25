@@ -25,9 +25,8 @@ pub use lint::LintError;
 pub use schema::{
     Actuation, ActuatorKind, ActuatorPart, Behaviour, Category, ComponentDefinition, Connection,
     Kinematics, LimitEnd, LineClass, MovingPart, NumeralSide, Origin, Port, PortRole, PressureKind,
-    Primitive,
-    PrimitiveKind, RelayKind, ReturnKind, ReturnPart, SCHEMA_MIN, SCHEMA_VERSION, Side, SpringPart,
-    ValvePosition,
+    Primitive, PrimitiveKind, RelayKind, ReturnKind, ReturnPart, SCHEMA_MIN, SCHEMA_VERSION, Side,
+    SpringPart, ValvePosition,
 };
 
 /// Environment variable that points the application at another catalog folder.
