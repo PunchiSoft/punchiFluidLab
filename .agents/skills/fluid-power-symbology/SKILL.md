@@ -32,6 +32,35 @@ The agent must not silently replace the owner's functional instructions with an 
 
 The owner may request a non-standard or custom symbol. Such a symbol must not be represented as ISO-conformant.
 
+### 1.1 Signed symbols are immutable
+
+A symbol is **signed** only when [ADR 0047](../../../docs/adr/0047-the-signed-symbols-are-immutable.md)
+holds: `assets/symbols/signed.toml` has one entry for it, the SHA-256 of its TOML, review and
+three captures match, the entry carries `signed_by`/`signed_at`, and the detached SSH
+signature `signed.toml.sig` verifies against `assets/symbols/owner_signers`. `status:
+complete` is the **precondition** of an entry, not the proof: a review that is complete but
+has no signed entry is reviewed, not signed. `scripts-dev/check-signed-symbols.sh`, run by
+`check.sh` and `check-docs.sh`, is what enforces this.
+
+- **A signed symbol is frozen.** Do not edit its TOML, review or three captures; do not
+  regenerate, reformat or swap them. Any change makes the hashes disagree and the gate fail.
+  A renderer change that moves the drawing also requires regenerating the captures and
+  re-signing, so it is an owner-authorized revision, not a routine edit.
+- **A change needs the owner's direct authorization and a new review.** Then `revision`
+  increments, `previous_revision` names the old one, the old revision stays in Git, and the
+  owner signs the new manifest. The agent prepares the evidence; it never signs, never holds
+  the private key, and never edits the manifest or the signature on its own.
+- **Exact ID or stop.** Match the symbol the owner named by its exact catalog id. If the
+  request is ambiguous, or the only argument is visual similarity, stop and ask; never pick a
+  symbol because it looks like the request.
+- **The base is being signed.** While `base_open = true`, entries without
+  `signed_by`/`signed_at` are **pending**: their hashes are pinned and the gate already
+  protects them, but they are not signed. Read the manifest before saying a symbol is signed;
+  never call a pending entry signed.
+- **The wrong move is to edit first.** If asked to correct a signed symbol, stop and say that
+  the change needs the owner's authorization and a new signed revision, with the reasons; do
+  not change the file and ask afterwards.
+
 ## 2. Visual references supplied by the owner
 
 The owner may provide any visual reference, including:
