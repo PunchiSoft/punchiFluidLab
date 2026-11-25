@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### Símbolos firmados: manifiesto y compuerta — 2026-11-24
+
+- **`assets/symbols/signed.toml`** fija el SHA-256 de la definición, el review y las tres
+  capturas de los 16 símbolos `complete`; `signed.toml.sig` (firma SSH) y `owner_signers`
+  (clave pública) son la prueba de que el dueño los aceptó, no la línea `status: complete`
+  ([ADR 0047](docs/adr/0047-the-signed-symbols-are-immutable.md)).
+- **`scripts-dev/check-signed-symbols.sh`** verifica la firma, los hashes, la cobertura de
+  todo review `complete`, los IDs, las revisiones y la base cerrada; se ejecuta desde
+  `check-docs.sh`, así que toda PR y `main` lo corren. Sus fixtures cubren firma inválida,
+  hash alterado, `complete` sin manifiesto, ID duplicado, revisión no monótona y base cerrada
+  con pendientes.
+- Los 16 entran como `pending` con los hashes ya fijados: cualquier edición falla desde hoy,
+  y la Fase 2 los firma uno por uno con el dueño. El agente no tiene la clave privada.
+
 ### La válvula OR: línea continua y bola tangente — 2026-11-24
 
 - `valve.shuttle` (`X10740`) corrige las tres observaciones del dueño sobre la captura de la

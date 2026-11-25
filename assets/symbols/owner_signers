@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The public keys allowed to sign `assets/symbols/signed.toml`, in the OpenSSH
+# allowed-signers format: one line per principal, never the private key.
+#
+#   cristian@punchisoft ssh-ed25519 AAAA...
+#
+# The owner adds their own key here; the agent prepares the manifest and commits the
+# signature, but the private key never enters the repository or a session. Rotating the
+# key means adding the new one, re-signing the manifest, and only then removing the old
+# line, because removing it invalidates the signatures made with it.

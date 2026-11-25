@@ -1,0 +1,240 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The signed symbols: one entry per reviewed symbol, with the hashes the review accepted.
+# The owner signs this file with an SSH key; the detached signature lives beside it as
+# `signed.toml.sig`, and `owner_signers` holds the public key it is checked against.
+# See ADR 0047 and `check-signed-symbols.sh`.
+#
+# An entry without `signed_by`/`signed_at` is PENDING: its hashes are already pinned, so
+# editing the definition, the review or a capture fails the gate, but the owner has not
+# signed it yet. `base_open = true` allows pending entries while the base is being signed;
+# the last accepted batch sets it to `false` and from then on every entry is signed.
+
+schema = 1
+namespace = "punchi-fluid-signed-symbols"
+base_open = true
+
+[[symbol]]
+id = "cylinder.double_acting_32_200"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/cylinder.double_acting_32_200.md"
+toml = "assets/catalog/cylinder.double_acting_32_200.toml"
+captures = ["assets/symbols/review/cylinder.double_acting_32_200-300.png", "assets/symbols/review/cylinder.double_acting_32_200-light.png", "assets/symbols/review/cylinder.double_acting_32_200-dark.png"]
+sha256_toml = "04d61d2b6cff2957627349209dc279de8aadeb8c31e59cd656be6a1726520543"
+sha256_review = "620d1be3f97680a94906857586a5a01405ef8bc17882397fed3b4c615dd17a10"
+sha256_300 = "5aaa3e045eaee0be4e9c9f678607403d484e9f9eece19273547aeb85460e6f92"
+sha256_light = "e7420f7cea8c9f917a08029ff32a2d5d5af6b7f19978fb6224237ee095892d36"
+sha256_dark = "2c99085f74835db10c5813262d4ef4486f450218ed0e22315cbf9ec5d7ae3c5c"
+commit = "b6db7977cd9a94c5ba2a32ad34a85ddc8e644a70"
+
+[[symbol]]
+id = "cylinder.single_acting_20_100"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/cylinder.single_acting_20_100.md"
+toml = "assets/catalog/cylinder.single_acting_20_100.toml"
+captures = ["assets/symbols/review/cylinder.single_acting_20_100-300.png", "assets/symbols/review/cylinder.single_acting_20_100-light.png", "assets/symbols/review/cylinder.single_acting_20_100-dark.png"]
+sha256_toml = "ab4ab05e731ea6636b7ffc5e4afa6ad89e5323293dbd0c69f9d1c1066e426fc0"
+sha256_review = "1c2c9c7d3cf7c1d83a947bf404dd0ef027b1c74b2584f924166f64e697a51b12"
+sha256_300 = "546a6981cc591c7ac7351786b9fda4278fe312bfe4672d374a28e45f57c8bb7e"
+sha256_light = "f99ba118e3ff8d439a31c5c2b624f37245fbd3c9e0acf58abcb8302b9be9bed8"
+sha256_dark = "8f97f3adf2580ad5a0217c2239238116c8230d4fdf7321f7eb9fc66dbebd16b8"
+commit = "b6db7977cd9a94c5ba2a32ad34a85ddc8e644a70"
+
+[[symbol]]
+id = "filter.air"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/filter.air.md"
+toml = "assets/catalog/filter.air.toml"
+captures = ["assets/symbols/review/filter.air-300.png", "assets/symbols/review/filter.air-light.png", "assets/symbols/review/filter.air-dark.png"]
+sha256_toml = "fc20968ea26983145de3d925f26792cfcae4d9ab864beb5e37715e42c476d339"
+sha256_review = "7108f08e727f10cd2847b383c30e1c8ddd985b4ad65f8a3f7e4ad3d6a7ab38a9"
+sha256_300 = "4f366515b5abebeae213e1e8df7e834eef45aca2911ec61903df8bd0a1edd8cc"
+sha256_light = "c18629d99c6905eddd83843ea65f28ac7029f0cf8613a3c1a7ae6ab7ef4d3ac8"
+sha256_dark = "f02270511e1037d1c565075ec2605dfb32fb33ebd08660b43b672239615cef68"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "filter.air_manual_drain"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/filter.air_manual_drain.md"
+toml = "assets/catalog/filter.air_manual_drain.toml"
+captures = ["assets/symbols/review/filter.air_manual_drain-300.png", "assets/symbols/review/filter.air_manual_drain-light.png", "assets/symbols/review/filter.air_manual_drain-dark.png"]
+sha256_toml = "4e387ccd2e7405ba7b41283feb723acddafb826d0ea975b784c5a44a704d6cad"
+sha256_review = "cd7e77e2a3ff9cdb1bb082a7836a0e71c7a1898fd03ec389321c96b2aba1a5d5"
+sha256_300 = "2cc1a823aa0d5845e7a0aecff831891f62a773feb1fb1ce321e32b2871869317"
+sha256_light = "c3318f2f0b063adab99aed107ad97382d0d7219736b67825238aece3defffec0"
+sha256_dark = "0c682d9b2eb83b5d9af2edc8d4edb09f0bb4efbfa10885f6c5ac0106ab33d94a"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "lubricator.oil"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/lubricator.oil.md"
+toml = "assets/catalog/lubricator.oil.toml"
+captures = ["assets/symbols/review/lubricator.oil-300.png", "assets/symbols/review/lubricator.oil-light.png", "assets/symbols/review/lubricator.oil-dark.png"]
+sha256_toml = "64ab06a6314a3c1ef096787c2fb83d452ae31ccd5addc8d9007c166649bc1293"
+sha256_review = "b1719f9ff9e89e58e195f5a46cf0615214bc668ff4392daa479f9cdce16734cb"
+sha256_300 = "4c173d54e569c0c39cd6acbc0ca38696803d0243ce9f8f456286ec36c443e89a"
+sha256_light = "e661f5af9ca1d59d4bb17c74ea9711145fef694913c0192fd27d36b9ce79b4bb"
+sha256_dark = "9404b4d51d8bc7975e9293b7004e59217e5daddf333adacfaa6e6cdf3796c977"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "plug.blind"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/plug.blind.md"
+toml = "assets/catalog/plug.blind.toml"
+captures = ["assets/symbols/review/plug.blind-300.png", "assets/symbols/review/plug.blind-light.png", "assets/symbols/review/plug.blind-dark.png"]
+sha256_toml = "8c2a55ebb533f714ef6efa349a5c7adcd8ad68c7328147cdda6211bbdfb62e77"
+sha256_review = "146526a0feb07118a322fb0f07b7fc8f460366668b1942a39709feb4ba73e6aa"
+sha256_300 = "dd4276ed38fd4e42b375ad18e5089b11bd939961699216c383d2c3a3899fc5d6"
+sha256_light = "ee2f2f8cc81481f6a612ce84f92ac98e8b2166d22e83257a49728874eaa82976"
+sha256_dark = "9744e040e3b79a7348e2f6bb6e6399272056cec7acadd7af6d0b42f439ab09f4"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "silencer.pneumatic"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/silencer.pneumatic.md"
+toml = "assets/catalog/silencer.pneumatic.toml"
+captures = ["assets/symbols/review/silencer.pneumatic-300.png", "assets/symbols/review/silencer.pneumatic-light.png", "assets/symbols/review/silencer.pneumatic-dark.png"]
+sha256_toml = "8e5a67996b4c500b46cadee23a93687a8be03a242da127bccb9864c658487abe"
+sha256_review = "4e3e053cf5ae0575a0e0757b20322cdc86cbb7040ede40fed18a9ff31c73db29"
+sha256_300 = "7c4e6121d3032f54f0c6352cf139db566424fcdc09e075993e5ceba004139042"
+sha256_light = "7a62f8e7ae5add51c5f38172cd426b5773b05345b17fc0a82f5a1785c642cbc5"
+sha256_dark = "b0a54c95bef0a0bad3ab44fc69f1329a7bdea6fdc25d18a5d43ae781aa557ed6"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "supply.compressor"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/supply.compressor.md"
+toml = "assets/catalog/supply.compressor.toml"
+captures = ["assets/symbols/review/supply.compressor-300.png", "assets/symbols/review/supply.compressor-light.png", "assets/symbols/review/supply.compressor-dark.png"]
+sha256_toml = "26c3284681856be945349836b9f4ccd8890b51b549113a51053bb114bc7982eb"
+sha256_review = "760a4ce87191570d2e7547dc9b8b367898adec6d17088200916669340bdad89d"
+sha256_300 = "7e1ab5bf1dfaca7d945647fbbb04c63e76bc82cc02b2622228d8c5befafa477a"
+sha256_light = "f3b7e45da2361e4c32c11e47220dece0588e0696a8bcd7ee6bfe520dbd429006"
+sha256_dark = "bd85623282fb0d9b14e3c293f859c218e2fb528c645c8e249199fd39e2aa9cc1"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "supply.compressor_adjustable"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/supply.compressor_adjustable.md"
+toml = "assets/catalog/supply.compressor_adjustable.toml"
+captures = ["assets/symbols/review/supply.compressor_adjustable-300.png", "assets/symbols/review/supply.compressor_adjustable-light.png", "assets/symbols/review/supply.compressor_adjustable-dark.png"]
+sha256_toml = "e51cc97d0ce33489ddeef7146eeaa062c5bbb6121b382ad98217ce2d692c7078"
+sha256_review = "ca5afc942a2c5d793c8f15e46d42effdbe9fe3ccf5f9abc7edc6557e319f3c16"
+sha256_300 = "5d559762befe5185fe7a79b19e7518b62403e2a70d2ea378de6a79b7153e90a8"
+sha256_light = "fcf5b9c47bba4ff1929535ee4604d480f32335a2278157a46669b1b33de1dda4"
+sha256_dark = "eb9a8dc6560f0b308c7c48d2286ca5ac5ecc446de4aec2c264551e0961172ad7"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "supply.network"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/supply.network.md"
+toml = "assets/catalog/supply.network.toml"
+captures = ["assets/symbols/review/supply.network-300.png", "assets/symbols/review/supply.network-light.png", "assets/symbols/review/supply.network-dark.png"]
+sha256_toml = "a3f8134e84b2d4e0f1d4e1489af73059303587c2588038deb0251d348ad406b4"
+sha256_review = "aaea32bb3468a0cc7b5f5174d98bd14deacc266281eb9c0e07ab3df7166b6955"
+sha256_300 = "ba0d51330d8bab82982739095ab799a935a6ad8a683f710c8b4d5976b8010bb7"
+sha256_light = "6d5382bab302b7bbed2876cd7d9d58537e6dbd3332e1f069a3682e73f2af8bf2"
+sha256_dark = "c128d2dada16eca64981edf01593404f2a6d4a4c11f94af8b981badf55ff7a7b"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.3_2.base"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.3_2.base.md"
+toml = "assets/catalog/valve.3_2.base.toml"
+captures = ["assets/symbols/review/valve.3_2.base-300.png", "assets/symbols/review/valve.3_2.base-light.png", "assets/symbols/review/valve.3_2.base-dark.png"]
+sha256_toml = "e4df0e1d925661f8d7672a5d3087d62da54d73f8ca75b62d9463011e00a21bca"
+sha256_review = "7683c79049a4741e0c1d2ba76e6b72abb457f81bc17b1887d1f95ac13e3c44bf"
+sha256_300 = "2f5bde4487599afa458c42f9b4875734b93b5497fa43177e4a6be220ce54b121"
+sha256_light = "0787d48e3442446005919fd21ada9c6d348e43e5858809bdedfc5ab87c68f16c"
+sha256_dark = "0bc8c029e48e3c2fdd99661c9ae959616f7014ac87807bb040af0c250d490d64"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.3_2.solenoid"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.3_2.solenoid.md"
+toml = "assets/catalog/valve.3_2.solenoid.toml"
+captures = ["assets/symbols/review/valve.3_2.solenoid-300.png", "assets/symbols/review/valve.3_2.solenoid-light.png", "assets/symbols/review/valve.3_2.solenoid-dark.png"]
+sha256_toml = "7a686f16d1fb77d75af13283f45906a697bde86f2a8096d69ff223c448f72e3e"
+sha256_review = "439646b73ce3a50c7f07e8a37a01bd2432b0b7ff44f6373d3faf9d5ecb27c2fb"
+sha256_300 = "36d5676315d3432841a9e1e0385f38ca3292cd0cf8aa17c1da19a6f549d4c2c5"
+sha256_light = "a87a39eb5f92991d2da9ccc71df1223cec4b33621d3a3c78108a3bac52c09c20"
+sha256_dark = "c048a0a8577bebff821b93c7ca7b76cda83074091e20675afdcb71ff079bdf5f"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.3_2.spring_return"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.3_2.spring_return.md"
+toml = "assets/catalog/valve.3_2.spring_return.toml"
+captures = ["assets/symbols/review/valve.3_2.spring_return-300.png", "assets/symbols/review/valve.3_2.spring_return-light.png", "assets/symbols/review/valve.3_2.spring_return-dark.png"]
+sha256_toml = "1313049dfdf2d70304fc93940193e45ac523b409413b791a9e2e54238dedcb1a"
+sha256_review = "f78ba444f2a157f519a8b2e1b2a44f14a28c9303f6a3a053138ff9254cc35b73"
+sha256_300 = "ddcf027586531bb485ff86d4dc5b31a2027f7570a236bfe76ba349ef5f2c1c5f"
+sha256_light = "6ae416ffdd54b6147b7394a2d5068c118034a44cb0b53121981f9689dd5af1d2"
+sha256_dark = "e2048b994045cbe7172e926b58e498ce51ad05f94f884aa43208abe90a618b80"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.5_2.base"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.5_2.base.md"
+toml = "assets/catalog/valve.5_2.base.toml"
+captures = ["assets/symbols/review/valve.5_2.base-300.png", "assets/symbols/review/valve.5_2.base-light.png", "assets/symbols/review/valve.5_2.base-dark.png"]
+sha256_toml = "6a1070e3cdef58dd8e8a0bd1c967f97923841aee338499416ea64118cdefdff7"
+sha256_review = "30d8ae988e376367827b69aacacf1944ff42ab6d6af2ab74f81f947916fae4f5"
+sha256_300 = "2f5e2c9075b66dfac4892d8217b2e4b9831a6ab625b885ff89606f2b63793a73"
+sha256_light = "8a25622bafe2a2a509f9ab8020d505f1c9d5e539982a743f7f358c82cedf57e7"
+sha256_dark = "266962f79258092bf839f3483a62df58cc4443197cc3551045e73aab02924238"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.5_2.spring_return"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.5_2.spring_return.md"
+toml = "assets/catalog/valve.5_2.spring_return.toml"
+captures = ["assets/symbols/review/valve.5_2.spring_return-300.png", "assets/symbols/review/valve.5_2.spring_return-light.png", "assets/symbols/review/valve.5_2.spring_return-dark.png"]
+sha256_toml = "5e0803f52f8f535fb837d226cd417a4214f176a693e3b869935ef1a8b2c7c103"
+sha256_review = "8dc5c2d9a639eb406b98cfa819927869986b2ecb6301112ca39bce08a0e7b490"
+sha256_300 = "b6246b2f64e122efa93bb29e924a714cb76a818bb37453b3713507176171a83d"
+sha256_light = "917782f7e2ee227ef3fd43a42a716ec80216ebbb597b1dbc8d34d8011f5dad69"
+sha256_dark = "508863901d62099d51268e68ff3be1029cf91c26759cea932a881d90ba0726c9"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
+
+[[symbol]]
+id = "valve.two_pressure"
+revision = 1
+previous_revision = 0
+review = "assets/symbols/review/valve.two_pressure.md"
+toml = "assets/catalog/valve.two_pressure.toml"
+captures = ["assets/symbols/review/valve.two_pressure-300.png", "assets/symbols/review/valve.two_pressure-light.png", "assets/symbols/review/valve.two_pressure-dark.png"]
+sha256_toml = "8d994f3e73008658e67132757ec693ce08f85b17bc3498241ed72c408f754d29"
+sha256_review = "472c9d358f2c5bd2eff37804bfbe7b8b6674b997a72c1bfa83643c33619bca50"
+sha256_300 = "75958a1311722b856ee9c5f1573f62cdf9a78d891ea0ace500d090a35c656b4b"
+sha256_light = "827da856d116b6a5f62fd9e510b2e4050e589f55bc97660b2bf848164b01fd52"
+sha256_dark = "ab2dde1895ec67a24b81e7d6aeb735e8b638cf81f9a7d32c7ca1e68daeb9b16d"
+commit = "4a278acca81426722b2b0214b1f0ac0d66ffdd22"
