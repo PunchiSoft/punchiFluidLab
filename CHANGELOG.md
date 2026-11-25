@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Adaptación y estabilidad — 2026-11-25
+
+- El catálogo usa una columna cuando una palabra del nombre no cabe con la fuente del
+  escritorio; así no parte palabras entre líneas y conserva el nombre completo en el tooltip
+  y en la capa de accesibilidad. Dos columnas siguen siendo el caso normal.
+- Se recorrió la matriz de 1366, 1092 lógicos al 125 %, 1920 y 900, en claro/oscuro y en
+  inglés/español, además de la fuente al 150 %; las capturas acompañan a la fase.
+- Medición release con 200 componentes y `--trace-frames`: 2 304 fotogramas, p95 1,72 ms
+  (objetivo < 6 ms), ninguno por encima de 6 ms. La memoria residente se mantuvo en 95 556 kB
+  antes y después de 400 fotogramas; el intento de 5 000 con entrada X sintética se detuvo por
+  un `BadWindow` del arnés, que se registra como límite del método.
+- Nueva prueba `a_large_font_uses_one_column_instead_of_eliding_every_name` y ajuste de
+  `a_word_wider_than_the_tile_is_elided_on_one_line`; sin cambios de documento, física,
+  símbolos ni formato.
+
 ### Información contextual — 2026-11-25
 
 - La barra de estado se agrupa en modo, vista, selección, lectura contextual y aviso. El modo

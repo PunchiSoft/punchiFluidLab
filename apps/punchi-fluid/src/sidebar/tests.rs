@@ -36,6 +36,7 @@ fn a_long_name_stays_on_two_lines() {
         104.0,
         egui::FontId::proportional(11.0),
         egui::Color32::WHITE,
+        2,
     );
     assert_eq!(job.wrap.max_rows, 2);
     assert_eq!(job.wrap.overflow_character, Some('…'));
@@ -47,6 +48,53 @@ fn a_long_name_stays_on_two_lines() {
             .len();
     });
     assert!(rows <= 2, "the tile draws two lines, not {rows}");
+}
+
+#[test]
+fn a_word_wider_than_the_tile_is_elided_on_one_line() {
+    let context = egui::Context::default();
+    if crate::theme::install_font(&context, None).is_err() {
+        return;
+    }
+    let job = super::name_job(
+        "Compressor",
+        40.0,
+        egui::FontId::proportional(15.0),
+        egui::Color32::WHITE,
+        1,
+    );
+    assert_eq!(job.wrap.max_rows, 1);
+    assert_eq!(job.wrap.overflow_character, Some('…'));
+    let mut rows = 0;
+    let _ = context.run(egui::RawInput::default(), |context| {
+        rows = context
+            .fonts(|fonts| fonts.layout_job(job.clone()))
+            .rows
+            .len();
+    });
+    assert_eq!(rows, 1, "the wide word is elided, not split across rows");
+}
+
+#[test]
+fn a_large_font_uses_one_column_instead_of_eliding_every_name() {
+    let context = egui::Context::default();
+    if crate::theme::install_font(&context, None).is_err() {
+        return;
+    }
+    let mut width = 0.0;
+    let _ = context.run(egui::RawInput::default(), |context| {
+        egui::CentralPanel::default().show(context, |ui| {
+            width = super::tile_width_for(
+                ui,
+                160.0,
+                8.0,
+                ["Compressor", "Compressed air network"].into_iter(),
+                &egui::FontId::proportional(15.0),
+                egui::Color32::WHITE,
+            );
+        });
+    });
+    assert!((width - 160.0).abs() < 0.01, "one column at the large font");
 }
 
 #[test]
