@@ -2554,7 +2554,7 @@ mod tests {
     /// The two service units carry their designations outside their frame, in the box's
     /// margin, beside their own ports, in both themes. A numeral that goes back inside the
     /// frame is the defect the owner reported on the reference capture.
-    fn assert_service_unit_numerals_are_outside_the_frame(
+    fn assert_conditioning_numerals_are_outside_the_frame(
         id: &str,
         frame_width: f32,
         frame_height: f32,
@@ -2645,15 +2645,24 @@ mod tests {
 
     #[test]
     fn the_service_unit_numerals_stay_clear_of_the_frame_and_the_drawing() {
-        assert_service_unit_numerals_are_outside_the_frame("preparation.service_unit", 36.8, 20.0);
+        assert_conditioning_numerals_are_outside_the_frame("preparation.service_unit", 36.8, 20.0);
     }
 
     #[test]
     fn the_simplified_service_unit_numerals_sit_outside_its_body() {
-        assert_service_unit_numerals_are_outside_the_frame(
+        assert_conditioning_numerals_are_outside_the_frame(
             "preparation.service_unit_simple",
             31.2,
             15.2,
+        );
+    }
+
+    #[test]
+    fn the_filter_regulator_numerals_sit_outside_its_frame() {
+        assert_conditioning_numerals_are_outside_the_frame(
+            "preparation.filter_regulator",
+            36.8,
+            20.0,
         );
     }
 

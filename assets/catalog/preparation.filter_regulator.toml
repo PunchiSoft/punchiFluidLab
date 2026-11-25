@@ -1,0 +1,200 @@
+# SPDX-FileCopyrightText: 2026 PunchiSoft
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Filter regulator: filters the air and holds its pressure at the set value, with no
+# lubricator. It is the second form of the conditioning family: the filter with its manual
+# drain, the pressure-relieving regulator and the gauge, in one chain-line frame.
+#
+# X12150 draws the filter with manual drain and the pressure-relieving regulator without a
+# gauge; X12160 draws the same regulator with the gauge. This file composes the two: the
+# review cites both figures and states the composition instead of pretending a single figure
+# prints it.
+#
+# The box is 46 × 25 mm, the same wide frame as the full service unit, so the family is read
+# at one proportion. The ports sit outside the frame on the working line; the frame is the
+# chain line their numerals are read against, and `1` and `2` sit outside it, beside each port.
+#
+# All coordinates are fractions of the 46 × 25 mm box: x_mm = fraction · 46, y_mm = fraction ·
+# 25.
+
+schema = 3
+id = "preparation.filter_regulator"
+name = "Filter regulator"
+name_es = "Filtro regulador"
+category = "accessory"
+summary = "Filters the air and holds its pressure at the set value, without a lubricator."
+summary_es = "Filtra el aire y mantiene su presión en el valor ajustado, sin lubricador."
+box = [46, 25]
+
+# The envelope is the whole box: the ports are outside the frame, in its margin.
+envelope = [0.0, 0.0, 1.0, 1.0]
+
+[[port]]
+id = "1"
+role = "working"
+position = [0.04, 0.5]
+
+[[port]]
+id = "2"
+role = "working"
+position = [0.96, 0.5]
+
+# The conditioning block is a small pressure drop, not a restriction anyone designed.
+[behaviour]
+type = "throttle"
+conductance = 5.0e-9
+
+# The working line, in the pieces between the parts. It crosses the frame at the ports, runs
+# through the regulator's square and stops at the filter's vertices and at the gauge tap.
+[[symbol]]
+kind = "line"
+points = [0.04, 0.5, 0.1, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.1, 0.5, 0.136957, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.276087, 0.5, 0.354348, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.354348, 0.5, 0.493478, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.493478, 0.5, 0.73913, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.73913, 0.5, 0.9, 0.5]
+line_class = "working"
+
+[[symbol]]
+kind = "line"
+points = [0.9, 0.5, 0.96, 0.5]
+line_class = "working"
+
+# The frame: the functions are one body, and the chain line is the assembly boundary.
+[[symbol]]
+kind = "polyline"
+points = [
+    0.1, 0.1,
+    0.9, 0.1,
+    0.9, 0.9,
+    0.1, 0.9,
+    0.1, 0.1,
+]
+line_class = "boundary"
+
+# The filter: a square turned 45°, its element dashed down to the bowl chord.
+[[symbol]]
+kind = "polygon"
+points = [0.206522, 0.372, 0.276087, 0.5, 0.206522, 0.628, 0.136957, 0.5]
+filled = false
+
+[[symbol]]
+kind = "line"
+points = [0.206522, 0.372, 0.206522, 0.564]
+line_class = "drain"
+
+# The bowl chord: the element stops here because the bowl owns the space below it.
+[[symbol]]
+kind = "line"
+points = [0.171739, 0.564, 0.241304, 0.564]
+line_class = "working"
+
+# Its drain stem, crossing the frame on its way out.
+[[symbol]]
+kind = "line"
+points = [0.206522, 0.628, 0.206522, 0.94]
+line_class = "working"
+
+# The regulator: an upright square, flow through it, and the two facing arrows.
+[[symbol]]
+kind = "rect"
+points = [0.354348, 0.372, 0.139130, 0.256]
+
+[[symbol]]
+kind = "polygon"
+points = [0.395652, 0.5, 0.369565, 0.476, 0.369565, 0.524]
+filled = true
+
+[[symbol]]
+kind = "polygon"
+points = [0.456522, 0.5, 0.482609, 0.476, 0.482609, 0.524]
+filled = true
+
+# Its vent: an open triangle on the left, the relieving regulator's way to the atmosphere.
+[[symbol]]
+kind = "polygon"
+points = [0.354348, 0.396, 0.354348, 0.444, 0.323913, 0.42]
+filled = false
+
+# Its setting spring, on top of the square.
+[[symbol]]
+kind = "polyline"
+points = [
+    0.434783, 0.372,
+    0.404348, 0.34,
+    0.465217, 0.308,
+    0.404348, 0.276,
+    0.465217, 0.244,
+    0.404348, 0.212,
+    0.434783, 0.192,
+]
+line_class = "working"
+
+# The diagonal arrow of an adjustable setting, through the spring (RF048).
+[[symbol]]
+kind = "line"
+points = [0.369565, 0.352, 0.5, 0.192]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.5, 0.192, 0.481913, 0.243040, 0.467435, 0.203120]
+filled = true
+
+# Its sensing line: the outlet fed back to the underside of the regulator, dashed.
+[[symbol]]
+kind = "line"
+points = [0.434783, 0.628, 0.434783, 0.72]
+line_class = "working"
+
+[[symbol]]
+kind = "polyline"
+points = [0.434783, 0.72, 0.73913, 0.72, 0.73913, 0.5]
+line_class = "pilot"
+
+# Its dial: a gauge on a stem that taps the line after the regulator, with the needle as an
+# arrow from the centre.
+[[symbol]]
+kind = "line"
+points = [0.73913, 0.5, 0.73913, 0.4]
+line_class = "working"
+
+[[symbol]]
+kind = "circle"
+points = [0.73913, 0.32, 0.08]
+
+[[symbol]]
+kind = "line"
+points = [0.73913, 0.32, 0.708696, 0.276]
+line_class = "working"
+
+[[symbol]]
+kind = "polygon"
+points = [0.708696, 0.276, 0.728761, 0.287200, 0.719370, 0.309200]
+filled = true
+
+[[symbol]]
+kind = "circle"
+points = [0.73913, 0.5, 0.01]
+filled = true

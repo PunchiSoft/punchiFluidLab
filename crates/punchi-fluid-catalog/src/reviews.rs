@@ -39,6 +39,10 @@ pub const REVIEWS: &[(&str, &str)] = &[
         include_str!("../../../assets/symbols/review/preparation.service_unit_simple.md"),
     ),
     (
+        "preparation.filter_regulator",
+        include_str!("../../../assets/symbols/review/preparation.filter_regulator.md"),
+    ),
+    (
         "filter.air",
         include_str!("../../../assets/symbols/review/filter.air.md"),
     ),
