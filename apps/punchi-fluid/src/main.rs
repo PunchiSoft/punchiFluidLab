@@ -28,6 +28,7 @@ mod check_panel;
 mod circuit_dialogs;
 mod circuit_strip;
 mod connection;
+mod dialog;
 mod edit_commands;
 mod export;
 mod export_options;
@@ -668,7 +669,7 @@ impl Window {
     fn sync_commands(&mut self, context: &egui::Context) {
         // The dialog owns the keyboard while it is open: no document command may run behind
         // it, and `Enter`/`Esc` belong to it until it closes.
-        if self.dialog.is_some() {
+        if self.dialog.is_some() || self.close_question_open() {
             return;
         }
         if self.preferences.open {

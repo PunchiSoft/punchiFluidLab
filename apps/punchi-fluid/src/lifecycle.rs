@@ -592,50 +592,56 @@ impl Window {
         }
     }
 
-    /// «Hay cambios sin guardar»: the question a close asks before it throws work away. The
-    /// layer under it keeps the pointer out of the sheet while the question is on screen.
+    pub(crate) fn close_question_open(&self) -> bool {
+        self.lifecycle.panel == Some(Panel::CloseAsk)
+    }
+
+    /// «Hay cambios sin guardar»: the question a close asks before it throws work away.
     fn show_close_ask(&mut self, context: &egui::Context) {
-        let tokens = self.theme.tokens.clone();
+        use crate::dialog::{Action, ButtonRole, Dialog, DialogResult, DialogStyle};
+
         let language = self.language;
-        // The page under the question is blocked, so a click cannot edit behind it.
-        let screen = context.screen_rect();
-        egui::Area::new(egui::Id::new("lifecycle.blocker"))
-            .order(egui::Order::Middle)
-            .fixed_pos(screen.min)
-            .show(context, |ui| {
-                ui.allocate_rect(screen, egui::Sense::click_and_drag());
-            });
-        let mut answer = None;
-        // A fixed size keeps the question under the same pointer while the reader answers it:
-        // an auto-sized window narrows while its long line wraps, and the buttons move with it.
-        egui::Window::new(language.text("unsaved.title"))
-            .id(egui::Id::new("lifecycle.close"))
-            .order(egui::Order::Foreground)
-            .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-            .collapsible(false)
-            .resizable(false)
-            .show(context, |ui| {
-                ui.set_width(tokens.unit * 24.0);
-                ui.label(
-                    egui::RichText::new(language.text("unsaved.body"))
-                        .size(tokens.text_body)
-                        .color(tokens.ink),
-                );
-                ui.add_space(tokens.unit * 0.6);
-                ui.horizontal(|ui| {
-                    if ui.button(language.text("unsaved.save_close")).clicked() {
-                        answer = Some(CloseAnswer::Save);
-                    }
-                    if ui.button(language.text("unsaved.close_without")).clicked() {
-                        answer = Some(CloseAnswer::Discard);
-                    }
-                    if ui.button(language.text("unsaved.cancel")).clicked() {
-                        answer = Some(CloseAnswer::Cancel);
-                    }
-                });
-            });
-        if let Some(answer) = answer {
-            self.answer_close(answer, context);
+        let style = DialogStyle::new(&self.theme.tokens);
+        let question = Dialog {
+            id: egui::Id::new("lifecycle.close"),
+            title: language.text("unsaved.title"),
+            close_label: language.text("dialog.close"),
+            preferred_width: (self.theme.tokens.unit * 34.0).max(540.0),
+            style,
+        };
+        let response = question.show(
+            context,
+            &mut (),
+            |ui, ()| {
+                ui.label(language.text("unsaved.body"));
+            },
+            |()| {
+                vec![
+                    Action {
+                        label: language.text("unsaved.save_close"),
+                        value: CloseAnswer::Save,
+                        role: ButtonRole::Primary,
+                        enabled: true,
+                    },
+                    Action {
+                        label: language.text("unsaved.close_without"),
+                        value: CloseAnswer::Discard,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                    },
+                    Action {
+                        label: language.text("unsaved.cancel"),
+                        value: CloseAnswer::Cancel,
+                        role: ButtonRole::Secondary,
+                        enabled: true,
+                    },
+                ]
+            },
+        );
+        match response.inner {
+            Some(DialogResult::Action(answer)) => self.answer_close(answer, context),
+            Some(DialogResult::Close) => self.answer_close(CloseAnswer::Cancel, context),
+            None => {}
         }
     }
 

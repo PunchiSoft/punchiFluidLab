@@ -109,6 +109,46 @@ fn the_tokens_meet_the_contrast_criteria() {
 }
 
 #[test]
+fn the_dialog_palette_meets_the_contrast_criteria() {
+    let dark = {
+        let palette = palette_from(BREEZE_DARK).expect("the dark sample has the palette groups");
+        tokens_from(palette, &font_from(BREEZE_DARK), 180)
+    };
+    for tokens in [sample_tokens(), dark] {
+        let dialog = tokens.dialog_palette();
+        let ratio = |a, b| super::contrast_ratio(super::from_color32(a), super::from_color32(b));
+        assert!(
+            ratio(dialog.text, dialog.surface) >= 4.5,
+            "dialog text on its surface"
+        );
+        assert!(
+            ratio(dialog.muted, dialog.surface) >= 3.0,
+            "dialog secondary on its surface"
+        );
+        assert!(
+            ratio(dialog.text, dialog.band) >= 4.5,
+            "dialog text on the band"
+        );
+        assert!(
+            ratio(dialog.muted, dialog.band) >= 3.0,
+            "dialog secondary on the band"
+        );
+        assert!(
+            ratio(dialog.on_accent, dialog.accent) >= 4.5,
+            "dialog action label"
+        );
+        assert!(
+            ratio(dialog.error, dialog.surface) >= 4.5,
+            "dialog error on its surface"
+        );
+        assert!(
+            ratio(dialog.text, dialog.selected) >= 4.5,
+            "dialog text on a selected row"
+        );
+    }
+}
+
+#[test]
 fn the_font_and_motion_come_from_the_desktop() {
     let font = font_from(SAMPLE);
     assert_eq!(font.family.as_deref(), Some("Noto Sans"));

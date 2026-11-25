@@ -14,6 +14,7 @@ use punchi_fluid_draw::{
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
+use crate::dialog::{Action, ButtonRole, Dialog, DialogResult, DialogStyle};
 use crate::surface::{EguiSurface, ScreenInk};
 use crate::theme::Tokens;
 
@@ -71,6 +72,9 @@ impl Window {
     }
 
     pub(crate) fn show_valve_editor(&mut self, context: &egui::Context) {
+        if self.close_question_open() {
+            return;
+        }
         let Some(mut editor) = self.valve_editor.take() else {
             return;
         };
@@ -101,10 +105,29 @@ impl Window {
             default: *default_position,
             language: self.language,
             tokens: &self.theme.tokens,
+            style: DialogStyle::new(&self.theme.tokens),
         };
-        let response = egui::Modal::new(egui::Id::new("valve-editor"))
-            .show(context, |ui| form.show(ui, &mut editor));
-        if response.inner == Answer::Apply {
+        let name = match self.language {
+            Language::English => definition.name.as_str(),
+            Language::Spanish => definition.display_name(),
+        };
+        let title = self
+            .language
+            .format("valve_editor.title", &[("name", name)]);
+        let dialog = Dialog {
+            id: egui::Id::new("valve-editor"),
+            title: &title,
+            close_label: self.language.text("dialog.close"),
+            preferred_width: (self.theme.tokens.unit * 57.0).max(930.0),
+            style: form.style,
+        };
+        let response = dialog.show(
+            context,
+            &mut editor,
+            |ui, editor| form.show(ui, editor),
+            |editor| form.actions(editor),
+        );
+        if matches!(response.inner, Some(DialogResult::Action(true))) {
             let initial = if editor.initial == *default_position {
                 None
             } else {
@@ -118,7 +141,7 @@ impl Window {
             ) {
                 self.sync_selection_notice();
             }
-        } else if response.inner == Answer::Continue && !response.should_close() {
+        } else if response.inner.is_none() && !response.should_close() {
             self.valve_editor = Some(editor);
             return;
         }
@@ -141,13 +164,6 @@ impl ValveEditor {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Answer {
-    Continue,
-    Apply,
-    Cancel,
-}
-
 struct ValveForm<'a> {
     definition: &'a ComponentDefinition,
     placement: &'a Placement,
@@ -155,84 +171,53 @@ struct ValveForm<'a> {
     default: usize,
     language: Language,
     tokens: &'a Tokens,
+    style: DialogStyle,
 }
 
 impl ValveForm<'_> {
-    fn show(&self, ui: &mut egui::Ui, editor: &mut ValveEditor) -> Answer {
-        let language = self.language;
+    fn show(&self, ui: &mut egui::Ui, editor: &mut ValveEditor) {
         let unit = self.tokens.unit;
-        let screen = ui.ctx().screen_rect();
-        let width = (screen.width() - 3.0 * unit).clamp(unit * 12.0, unit * 57.0);
-        ui.set_width(width);
-        let name = match language {
-            Language::English => self.definition.name.as_str(),
-            Language::Spanish => self.definition.display_name(),
-        };
-        let title = language.format("valve_editor.title", &[("name", name)]);
-        let close = ui
-            .horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new(title)
-                        .size(self.tokens.text_label * 1.4)
-                        .color(self.tokens.ink)
-                        .strong(),
-                );
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let label = language.text("dialog.close");
-                    let close = ui.button("×").on_hover_text(label);
-                    close.widget_info(|| {
-                        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
-                    });
-                    close.clicked()
-                })
-                .inner
-            })
-            .inner;
-        ui.separator();
-        egui::ScrollArea::vertical()
-            .max_height((screen.height() - 9.0 * unit).max(3.0 * unit))
-            .auto_shrink([false, true])
-            .show(ui, |ui| {
-                let label = ui.label(language.text("valve_editor.designation"));
-                let response = ui
-                    .add_sized(
-                        egui::vec2(ui.available_width(), unit * 1.7),
-                        egui::TextEdit::singleline(&mut editor.designation)
-                            .desired_width(ui.available_width()),
-                    )
-                    .labelled_by(label.id);
-                if std::mem::take(&mut editor.focus_name) {
-                    response.request_focus();
-                }
-                if !valid_designation(&editor.designation) {
-                    ui.label(language.text("valve_editor.invalid_designation"));
-                }
-                ui.add_space(unit);
-                if width >= unit * 54.0 {
-                    ui.columns(3, |columns| {
-                        self.side(&mut columns[0], Side::Left);
-                        self.body(&mut columns[1], editor);
-                        self.side(&mut columns[2], Side::Right);
-                    });
-                } else {
-                    self.body(ui, editor);
-                    ui.add_space(unit * 0.5);
-                    ui.columns(2, |columns| {
-                        self.side(&mut columns[0], Side::Left);
-                        self.side(&mut columns[1], Side::Right);
-                    });
-                }
-                ui.add_space(unit);
-                self.preview(ui, editor);
+        let label = self.section_heading(ui, "valve_editor.designation");
+        let response = ui
+            .add_sized(
+                egui::vec2(ui.available_width(), (unit * 2.0).max(34.0)),
+                egui::TextEdit::singleline(&mut editor.designation)
+                    .desired_width(ui.available_width()),
+            )
+            .labelled_by(label.id);
+        if std::mem::take(&mut editor.focus_name) {
+            response.request_focus();
+        }
+        if !valid_designation(&editor.designation) {
+            ui.colored_label(
+                self.style.error,
+                self.language.text("valve_editor.invalid_designation"),
+            );
+        }
+        ui.add_space(4.0);
+        if ui.available_width() >= 680.0 {
+            ui.columns(3, |columns| {
+                self.side(&mut columns[0], Side::Left);
+                self.body(&mut columns[1], editor);
+                self.side(&mut columns[2], Side::Right);
             });
-        ui.separator();
-        let answer = self.footer(ui, editor);
-        if close { Answer::Cancel } else { answer }
+        } else {
+            self.body(ui, editor);
+            if ui.available_width() >= 460.0 {
+                ui.columns(2, |columns| {
+                    self.side(&mut columns[0], Side::Left);
+                    self.side(&mut columns[1], Side::Right);
+                });
+            } else {
+                self.side(ui, Side::Left);
+                self.side(ui, Side::Right);
+            }
+        }
+        ui.add_space(4.0);
+        self.preview(ui, editor);
     }
 
-    fn footer(&self, ui: &mut egui::Ui, editor: &ValveEditor) -> Answer {
-        let language = self.language;
-        let unit = self.tokens.unit;
+    fn actions(&self, editor: &ValveEditor) -> Vec<Action<'static, bool>> {
         let source = self
             .placement
             .edits
@@ -243,86 +228,68 @@ impl ValveForm<'_> {
             || editor.initial != source
             || editor.reflect_horizontal
             || editor.reflect_vertical;
-        let can_apply = valid_designation(&editor.designation) && changed;
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let size = egui::vec2(unit * 5.0, unit * 1.8);
-            let cancel = egui::Button::new(language.text("valve_editor.cancel"));
-            if ui.add_sized(size, cancel).clicked() {
-                return Answer::Cancel;
-            }
-            let apply = egui::Button::new(
-                egui::RichText::new(language.text("valve_editor.accept")).color(if can_apply {
-                    self.tokens.on_accent
-                } else {
-                    self.tokens.ink_dim
-                }),
-            )
-            .fill(if can_apply {
-                self.tokens.accent
-            } else {
-                self.tokens.surface_raised
-            });
-            if ui
-                .add_enabled_ui(can_apply, |ui| ui.add_sized(size, apply))
-                .inner
-                .clicked()
-            {
-                Answer::Apply
-            } else {
-                Answer::Continue
-            }
-        })
-        .inner
+        vec![
+            Action {
+                label: self.language.text("valve_editor.accept"),
+                value: true,
+                role: ButtonRole::Primary,
+                enabled: valid_designation(&editor.designation) && changed,
+            },
+            Action {
+                label: self.language.text("valve_editor.cancel"),
+                value: false,
+                role: ButtonRole::Secondary,
+                enabled: true,
+            },
+        ]
     }
 
     fn preview(&self, ui: &mut egui::Ui, editor: &mut ValveEditor) {
         let unit = self.tokens.unit;
-        egui::Frame::group(ui.style())
-            .fill(self.tokens.surface_raised)
-            .show(ui, |ui| {
-                ui.set_width(ui.available_width());
-                self.section_heading(ui, "valve_editor.preview");
-                let orientation = editor.orientation(self.placement.orientation);
-                let (area, _) = ui.allocate_exact_size(
-                    egui::vec2(ui.available_width(), unit * 8.0),
-                    egui::Sense::hover(),
+        self.style.card(self.style.band).show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            self.section_heading(ui, "valve_editor.preview");
+            let orientation = editor.orientation(self.placement.orientation);
+            let (area, _) = ui.allocate_exact_size(
+                egui::vec2(ui.available_width(), unit * 8.0),
+                egui::Sense::hover(),
+            );
+            paint_valve(
+                ui,
+                area,
+                self.definition,
+                editor.initial,
+                orientation,
+                self.style,
+            );
+            if let Some(position) = self.positions.get(editor.initial) {
+                ui.colored_label(self.style.muted, position_summary(position, self.language));
+            }
+            ui.horizontal_wrapped(|ui| {
+                ui.checkbox(
+                    &mut editor.reflect_horizontal,
+                    self.language.text("menu.mirror_horizontal"),
                 );
-                paint_valve(
-                    ui,
-                    area,
-                    self.definition,
-                    editor.initial,
-                    orientation,
-                    self.tokens,
+                ui.checkbox(
+                    &mut editor.reflect_vertical,
+                    self.language.text("menu.mirror_vertical"),
                 );
-                if let Some(position) = self.positions.get(editor.initial) {
-                    ui.label(position_summary(position, self.language));
-                }
-                ui.horizontal_wrapped(|ui| {
-                    ui.checkbox(
-                        &mut editor.reflect_horizontal,
-                        self.language.text("menu.mirror_horizontal"),
-                    );
-                    ui.checkbox(
-                        &mut editor.reflect_vertical,
-                        self.language.text("menu.mirror_vertical"),
-                    );
-                });
             });
+        });
     }
 
-    fn section_heading(&self, ui: &mut egui::Ui, key: &'static str) {
+    fn section_heading(&self, ui: &mut egui::Ui, key: &'static str) -> egui::Response {
         ui.label(
             egui::RichText::new(self.language.text(key))
-                .size(self.tokens.text_label * 1.15)
-                .color(self.tokens.ink)
+                .size(self.style.text_size)
+                .color(self.style.text)
                 .strong(),
-        );
+        )
     }
 
     fn side(&self, ui: &mut egui::Ui, side: Side) {
         let language = self.language;
-        egui::Frame::group(ui.style()).show(ui, |ui| {
+        self.style.card(self.style.surface).show(ui, |ui| {
             ui.set_width(ui.available_width());
             self.section_heading(
                 ui,
@@ -346,12 +313,16 @@ impl ValveForm<'_> {
             if actuator.is_none() && return_part.is_none() {
                 ui.label(language.text("valve_editor.no_actuation"));
             }
-            ui.small(language.text("valve_editor.from_catalog"));
+            ui.label(
+                egui::RichText::new(language.text("valve_editor.from_catalog"))
+                    .small()
+                    .color(self.style.muted),
+            );
         });
     }
 
     fn body(&self, ui: &mut egui::Ui, editor: &mut ValveEditor) {
-        egui::Frame::group(ui.style()).show(ui, |ui| {
+        self.style.card(self.style.surface).show(ui, |ui| {
             ui.set_width(ui.available_width());
             self.section_heading(ui, "valve_editor.body");
             ui.label(self.language.text("valve_editor.initial"));
@@ -371,7 +342,7 @@ impl ValveForm<'_> {
                         self.definition,
                         index,
                         editor.initial == index,
-                        self.tokens,
+                        self.style,
                     );
                     let label = match self.language {
                         Language::English => &position.name,
@@ -410,11 +381,13 @@ fn position_summary(position: &ValvePosition, language: Language) -> String {
     }
 }
 
-fn ink(tokens: &Tokens) -> ScreenInk {
+fn ink(style: DialogStyle, selected: bool, background: egui::Color32) -> ScreenInk {
     ScreenInk {
-        accent: tokens.accent_soft,
-        paper: tokens.surface_raised,
-        ..ScreenInk::from_tokens(tokens)
+        ink: style.text,
+        paper: background,
+        muted: style.muted,
+        dim: style.muted,
+        accent: if selected { style.selected } else { background },
     }
 }
 
@@ -424,13 +397,14 @@ fn paint_valve(
     definition: &ComponentDefinition,
     position: usize,
     orientation: Orientation,
-    tokens: &Tokens,
+    style: DialogStyle,
 ) {
     let (width, height) = symbol_box_mm(definition);
     let scale = area.width().min(area.height()) * 0.9 / width.max(height);
     let centre = Pt::new(width * 0.5, height * 0.5);
     let origin = area.center() - egui::vec2(centre.x * scale, centre.y * scale);
-    let mut surface = EguiSurface::new(ui.ctx(), origin, scale).with_screen_ink(ink(tokens));
+    let mut surface =
+        EguiSurface::new(ui.ctx(), origin, scale).with_screen_ink(ink(style, true, style.band));
     let mut turned = Turned::new(&mut surface, orientation, centre);
     draw_component_preview(
         &mut turned,
@@ -454,7 +428,7 @@ fn paint_position(
     definition: &ComponentDefinition,
     position: usize,
     selected: bool,
-    tokens: &Tokens,
+    style: DialogStyle,
 ) {
     let mut squares = definition.body_squares();
     if definition
@@ -466,16 +440,16 @@ fn paint_position(
     let Some([x, y, w, h]) = squares.get(position).copied() else {
         return;
     };
-    let area = area.shrink(tokens.unit * 0.25);
+    let area = area.shrink(4.0);
     let (width, height) = symbol_box_mm(definition);
     let span = (w as f32 * width).max(h as f32 * height);
     let scale = area.width().min(area.height()) / span;
     let origin = area.min - egui::vec2(x as f32 * width * scale, y as f32 * height * scale);
-    let mut screen = ink(tokens);
-    if !selected {
-        screen.accent = tokens.surface_raised;
-    }
-    let mut surface = EguiSurface::new(ui.ctx(), origin, scale).with_screen_ink(screen);
+    let mut surface = EguiSurface::new(ui.ctx(), origin, scale).with_screen_ink(ink(
+        style,
+        selected,
+        style.surface,
+    ));
     draw_component_preview(
         &mut surface,
         Rect::from_min_size(Pt::new(0.0, 0.0), width, height),

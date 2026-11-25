@@ -871,12 +871,20 @@ definition count and the mode text are the target, not in the bar yet.
 
 ## Visual language
 
+The unsaved changes confirmation and the valve editor share a dialog frame. The heading
+and visible close button sit on a raised band, and a matching footer aligns the actions to
+the right. The body scrolls when it exceeds the available height. Buttons have a minimum
+height of 32 logical points. The theme owns a fixed light and dark dialog palette, so the
+approved tones do not follow the desktop scheme. The close button cancels the pending
+action, including when the unsaved changes question is shown over the valve editor.
+
 | Token | Source |
 |---|---|
 | `surface`, `surface_alt`, `surface_raised` | `[Colors:Window]` / `[Colors:View]` / `[Colors:Button]` |
 | `paper` | the sheet: `[Colors:View]`, lifted towards the ink when the desktop makes it equal to the window (Breeze dark: `Window` and `View` are both 36,36,36), so the card reads over `surface_sunken` |
 | `line`, `line_strong` | `text_muted` blended towards the surface and measured; a line that carries meaning reaches 3:1 |
 | `shadow` | the ink at low alpha, drawn once behind the paper, never a per-frame blur |
+| dialog palette | the approved light and dark dialog tones, a fixed pair in `theme.rs` rather than a derivation from the desktop |
 | `text`, `text_muted`, `text_disabled` | `[Colors:Window] ForegroundNormal/Inactive` |
 | `accent`, `accent_hover` | `[Colors:Selection] BackgroundNormal` (49,91,239 here) |
 | `on_accent` | `[Colors:Selection] HighlightedText`, or the better of black and white when it cannot reach 4.5:1 on the accent; the ink of a filled accent control, such as the active rail row |
@@ -892,8 +900,9 @@ definition count and the mode text are the target, not in the bar yet.
 A single semantic layer, `apps/punchi-fluid/src/theme.rs`, reads the desktop's
 `kdeglobals` once at start, derives the tokens and applies them to egui. Widgets ask the
 tokens for `accent` or `muted`, never for a literal. The rule is in `AGENTS.md`: a
-hardcoded colour or pixel size in a widget is a bug, and the only literals in the
-application are the fallback palette and the forced palettes used to test light and dark.
+hardcoded colour or pixel size in a widget is a bug, and the only fixed palettes in the
+application are the fallback, the built-in appearances, the approved dialog pair and the
+forced palettes used to test light and dark.
 
 A colour that does not reach its criterion against the surface is shifted just enough to
 reach it (`ensureContrast`), because a desktop may hand the application an accent that

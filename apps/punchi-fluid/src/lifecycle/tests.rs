@@ -373,6 +373,62 @@ fn the_close_question_appears_and_cancel_keeps_the_window() {
 }
 
 #[test]
+fn the_close_button_cancels_and_the_actions_stay_inside_a_narrow_dialog() {
+    let mut window = window_with(None, SafetyCopy::at(None));
+    window.document = valve_document();
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, close_input());
+    let revision = window.document.revision();
+    {
+        let mut harness = panel_harness(&mut window);
+        harness.set_size(egui::vec2(420.0, 420.0));
+        harness.run_steps(5);
+        for label in ["Save and close", "Close without saving", "Cancel"] {
+            let rect = harness.get_by_label(label).rect();
+            assert!(rect.height() >= 32.0, "{label} has a full height target");
+            assert!(
+                rect.left() >= 0.0
+                    && rect.right() <= 420.0
+                    && rect.top() >= 0.0
+                    && rect.bottom() <= 420.0,
+                "{label} fits the window: {rect:?}"
+            );
+        }
+        let close = harness.get_by_label("Close");
+        assert!(close.rect().size().min_elem() >= 32.0);
+        assert!(
+            close.rect().right() <= 420.0,
+            "close button fits: {:?}",
+            close.rect()
+        );
+        close.click();
+        harness.run_steps(4);
+        assert!(harness.query_by_label("Save and close").is_none());
+    }
+    assert_eq!(window.lifecycle.close, Close::Idle);
+    assert_eq!(window.document.revision(), revision);
+}
+
+#[test]
+fn escape_cancels_the_close_question_without_discarding() {
+    let mut window = window_with(None, SafetyCopy::at(None));
+    window.document = valve_document();
+    let context = egui::Context::default();
+    let _ = frame(&context, &mut window, close_input());
+    let revision = window.document.revision();
+    {
+        let mut harness = panel_harness(&mut window);
+        assert!(harness.query_by_label("Save and close").is_some());
+        harness.key_press(egui::Key::Escape);
+        harness.run_steps(2);
+        assert!(harness.query_by_label("Save and close").is_none());
+    }
+    assert_eq!(window.lifecycle.close, Close::Idle);
+    assert!(window.lifecycle.panel.is_none());
+    assert_eq!(window.document.revision(), revision);
+}
+
+#[test]
 fn save_and_close_saves_the_document_and_closes_the_window() {
     let dir = scratch("close-save");
     let copy_path = dir.join("recovery.pfluid");
