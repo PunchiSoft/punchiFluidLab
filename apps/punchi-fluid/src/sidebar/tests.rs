@@ -91,6 +91,7 @@ fn a_large_font_uses_one_column_instead_of_eliding_every_name() {
                 ["Compressor", "Compressed air network"].into_iter(),
                 &egui::FontId::proportional(15.0),
                 egui::Color32::WHITE,
+                60.0,
             );
         });
     });
@@ -113,8 +114,9 @@ fn the_search_matches_the_name_the_spanish_name_and_the_id() {
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use egui::MouseWheelUnit;
 use egui_kittest::kittest::Queryable;
-use punchi_fluid_catalog::default_catalog;
+use punchi_fluid_catalog::{Category, default_catalog};
 
 use super::{CatalogAction, Sidebar};
 use crate::theme::Theme;
@@ -129,6 +131,10 @@ type TileHarness = (
 );
 
 fn tile_harness() -> TileHarness {
+    tile_harness_at(420.0, 1000.0)
+}
+
+fn tile_harness_at(width: f32, height: f32) -> TileHarness {
     let mut sidebar = Sidebar::new();
     let catalog = default_catalog();
     let tokens = Theme::fallback().tokens;
@@ -137,11 +143,11 @@ fn tile_harness() -> TileHarness {
     let sink = Rc::clone(&returned);
     let rects = Rc::clone(&tiles);
     let mut harness = egui_kittest::Harness::builder()
-        .with_size(egui::vec2(420.0, 1000.0))
+        .with_size(egui::vec2(width, height))
         .with_step_dt(1.0 / 60.0)
         .with_max_steps(120)
         .build(move |context| {
-            if let Some(id) = sidebar.show(context, &tokens, "", &catalog, 420.0) {
+            if let Some(id) = sidebar.show(context, &tokens, "", &catalog, width) {
                 *sink.borrow_mut() = Some(id);
             }
             *rects.borrow_mut() = sidebar.tile_rects().to_vec();
@@ -151,6 +157,37 @@ fn tile_harness() -> TileHarness {
     }
     harness.run();
     (harness, returned, tiles)
+}
+
+/// The palette with its scroll viewport and reserved bar track recorded.
+type ScrollHarness = (
+    egui_kittest::Harness<'static>,
+    Rc<RefCell<Vec<(String, egui::Rect)>>>,
+    Rc<RefCell<(Option<egui::Rect>, Option<egui::Rect>)>>,
+);
+
+fn scroll_harness(width: f32, height: f32) -> ScrollHarness {
+    let mut sidebar = Sidebar::new();
+    let catalog = default_catalog();
+    let tokens = Theme::fallback().tokens;
+    let tiles = Rc::new(RefCell::new(Vec::new()));
+    let geometry = Rc::new(RefCell::new((None, None)));
+    let rects = Rc::clone(&tiles);
+    let geom = Rc::clone(&geometry);
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(width, height))
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(120)
+        .build(move |context| {
+            let _ = sidebar.show(context, &tokens, "", &catalog, width);
+            *rects.borrow_mut() = sidebar.tile_rects().to_vec();
+            *geom.borrow_mut() = sidebar.scroll_geometry();
+        });
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the sidebar tests need one");
+    }
+    harness.run();
+    (harness, tiles, geometry)
 }
 
 /// The screen rectangle of a tile, as the palette painted it.
@@ -365,5 +402,116 @@ fn a_search_with_no_matches_says_so() {
             .query_by_label_contains("No components match")
             .is_some(),
         "an empty search says so instead of showing a blank panel"
+    );
+}
+
+#[test]
+fn catalog_tiles_do_not_intersect_the_scroll_track() {
+    let (_harness, tiles, geometry) = scroll_harness(300.0, 600.0);
+    let (viewport, track) = *geometry.borrow();
+    let viewport = viewport.expect("the scroll viewport is recorded");
+    let track = track.expect("the scroll track is recorded");
+    assert!(
+        track.width() > 0.0,
+        "the catalog reserves a real bar track: {track:?}"
+    );
+    assert!(
+        viewport.right() <= track.left() + 0.5,
+        "the viewport ends before the track: {viewport:?} / {track:?}"
+    );
+    for (id, rect) in tiles.borrow().iter() {
+        assert!(
+            rect.left() >= viewport.left() - 0.5 && rect.right() <= viewport.right() + 0.5,
+            "{id} crosses the scroll track: {rect:?} inside {viewport:?}"
+        );
+    }
+}
+
+#[test]
+fn the_catalog_at_its_preferred_width_wraps_two_columns() {
+    let (_harness, _returned, tiles) = tile_harness_at(300.0, 1000.0);
+    let tiles = tiles.borrow();
+    let Some((_, first)) = tiles.first() else {
+        return;
+    };
+    assert!(
+        tiles.iter().any(|(_, rect)| {
+            (rect.min.y - first.min.y).abs() < 1.0 && (rect.min.x - first.min.x).abs() > 1.0
+        }),
+        "300 points hold two columns: the preferred width is 300"
+    );
+}
+
+#[test]
+fn dragging_a_right_column_tile_still_places_that_tile() {
+    let (mut harness, returned, tiles) = tile_harness();
+    let right = {
+        let tiles = tiles.borrow();
+        let first = tiles.first().expect("the palette paints tiles");
+        tiles
+            .iter()
+            .find(|(_, rect)| {
+                (rect.min.y - first.1.min.y).abs() < 1.0 && rect.min.x > first.1.min.x
+            })
+            .cloned()
+            .expect("the first row has a right column")
+    };
+    let target = egui::pos2(360.0, 420.0);
+    drag(&mut harness, right.1.center(), target);
+    let action = returned.borrow().clone();
+    assert!(
+        matches!(action, Some(CatalogAction::Place { .. })),
+        "the right-column tile must be carried, got {action:?}"
+    );
+    let Some(CatalogAction::Place { id, .. }) = action else {
+        return;
+    };
+    assert_eq!(id, right.0);
+}
+
+#[test]
+fn the_last_group_is_reachable_by_scrolling() {
+    let (mut harness, tiles, geometry) = scroll_harness(300.0, 600.0);
+    let catalog = default_catalog();
+    let last = catalog
+        .by_category(Category::Sensor)
+        .next()
+        .expect("the built-in catalog has a sensor")
+        .id
+        .clone();
+    let initial = tiles
+        .borrow()
+        .iter()
+        .find(|(id, _)| id == &last)
+        .map(|(_, rect)| *rect)
+        .expect("the last tile has a rectangle");
+    let (viewport, _track) = *geometry.borrow();
+    let viewport = viewport.expect("the scroll viewport is recorded");
+    assert!(
+        !viewport.contains(initial.center()),
+        "the last group starts below the fold: {initial:?} in {viewport:?}"
+    );
+    harness
+        .input_mut()
+        .events
+        .push(egui::Event::PointerMoved(egui::pos2(150.0, 300.0)));
+    harness.run();
+    for _ in 0..3 {
+        harness.input_mut().events.push(egui::Event::MouseWheel {
+            unit: MouseWheelUnit::Point,
+            delta: egui::vec2(0.0, -400.0),
+            modifiers: egui::Modifiers::NONE,
+        });
+        harness.run();
+    }
+    let after = tiles
+        .borrow()
+        .iter()
+        .find(|(id, _)| id == &last)
+        .map(|(_, rect)| *rect)
+        .expect("the last tile keeps its rectangle");
+    assert!(
+        viewport.contains(after.center()),
+        "scrolling reaches the last group: {after:?} in {viewport:?}"
     );
 }

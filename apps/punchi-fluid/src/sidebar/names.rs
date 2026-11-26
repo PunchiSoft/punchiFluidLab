@@ -115,13 +115,19 @@ pub(crate) fn tile_width_for<'a>(
     names: impl Iterator<Item = &'a str>,
     font: &egui::FontId,
     colour: egui::Color32,
+    min_tile_width: f32,
 ) -> f32 {
-    let half = ((available - spacing) * 0.5).max(1.0);
+    let half = ((available - spacing * 2.0) * 0.5).max(1.0);
+    let wide_enough = half >= min_tile_width;
     let every_word_fits = names.into_iter().all(|name| {
         let (principal, _) = split_name(name);
         name_rows(ui, principal, (half - 4.0).max(1.0), font, colour) == 2
     });
-    if every_word_fits { half } else { available }
+    if wide_enough && every_word_fits {
+        half
+    } else {
+        available
+    }
 }
 
 /// The name of a definition in the reader's language, falling back to the source name.

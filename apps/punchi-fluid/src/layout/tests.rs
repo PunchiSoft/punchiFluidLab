@@ -51,9 +51,9 @@ fn the_thresholds_are_the_declared_measurements() {
         (LayoutMode::medium_from() - (SHEET_MIN_WIDTH + CATALOG_MIN_WIDTH)).abs() <= f32::EPSILON
     );
     // The numbers the interface document states, so a stray edit is visible here. Removing
-    // the right dock moved the wide threshold from 1080 to 720 and the medium one to 700.
-    assert!((LayoutMode::wide_from() - 720.0).abs() <= f32::EPSILON);
-    assert!((LayoutMode::medium_from() - 700.0).abs() <= f32::EPSILON);
+    // the right dock and the wider catalog move the thresholds to 780 and 740.
+    assert!((LayoutMode::wide_from() - 780.0).abs() <= f32::EPSILON);
+    assert!((LayoutMode::medium_from() - 740.0).abs() <= f32::EPSILON);
 }
 
 #[test]
@@ -87,10 +87,10 @@ fn a_non_finite_room_is_compact_instead_of_panicking() {
 
 #[test]
 fn the_wide_mode_puts_the_catalog_at_its_preferred_width() {
-    let widths = LayoutMode::Wide.widths(1440.0, 240.0);
+    let widths = LayoutMode::Wide.widths(1440.0, 300.0);
     assert!((widths.catalog - CATALOG_PREFERRED_WIDTH).abs() <= f32::EPSILON);
     assert!(
-        (LayoutMode::Wide.sheet_width(1440.0, 240.0) - 1200.0).abs() <= f32::EPSILON,
+        (LayoutMode::Wide.sheet_width(1440.0, 300.0) - 1140.0).abs() <= f32::EPSILON,
         "the sheet takes the rest in the wide mode"
     );
 }
@@ -109,10 +109,10 @@ fn the_wide_mode_still_keeps_the_sheet_floor_when_the_reader_widened_the_catalog
 
 #[test]
 fn the_medium_mode_puts_the_catalog_at_its_minimum() {
-    let widths = LayoutMode::Medium.widths(LayoutMode::medium_from(), 240.0);
+    let widths = LayoutMode::Medium.widths(LayoutMode::medium_from(), 300.0);
     assert!((widths.catalog - CATALOG_MIN_WIDTH).abs() <= f32::EPSILON);
     assert!(
-        (LayoutMode::Medium.sheet_width(LayoutMode::medium_from(), 240.0) - SHEET_MIN_WIDTH).abs()
+        (LayoutMode::Medium.sheet_width(LayoutMode::medium_from(), 300.0) - SHEET_MIN_WIDTH).abs()
             <= f32::EPSILON,
         "at the medium threshold the sheet is exactly at its floor"
     );
@@ -120,10 +120,10 @@ fn the_medium_mode_puts_the_catalog_at_its_minimum() {
 
 #[test]
 fn the_compact_mode_folds_the_catalog_to_its_rail_and_leaves_the_sheet_its_floor() {
-    let widths = LayoutMode::Compact.widths(528.0, 240.0);
+    let widths = LayoutMode::Compact.widths(680.0, 300.0);
     assert!((widths.catalog - RAIL_WIDTH).abs() <= f32::EPSILON);
     assert!(
-        (LayoutMode::Compact.sheet_width(528.0, 240.0) - 504.0).abs() <= f32::EPSILON,
+        (LayoutMode::Compact.sheet_width(680.0, 300.0) - 656.0).abs() <= f32::EPSILON,
         "the rail plus the rest of the window is the narrowest compact shell"
     );
 }
@@ -133,10 +133,10 @@ fn the_mode_is_a_consequence_of_the_room_and_not_of_a_screen_list() {
     // The same function answers for a window and for a synthetic width: a 1.25x window at
     // 1200 points is the same question as an unscaled 1200 points.
     for available in [
-        528.0, 699.0, 700.0, 719.0, 720.0, 900.0, 1366.0, 1920.0, 3840.0,
+        528.0, 739.0, 740.0, 779.0, 780.0, 900.0, 1366.0, 1920.0, 3840.0,
     ] {
         let mode = LayoutMode::from_available(available);
-        let widths = mode.widths(available, 240.0);
+        let widths = mode.widths(available, 300.0);
         let sheet = available - widths.catalog;
         assert!(
             sheet >= SHEET_MIN_WIDTH - f32::EPSILON,

@@ -269,7 +269,7 @@ fn the_wide_mode_docks_the_catalog_at_its_preferred_width() {
     }
     assert_eq!(window.layout_mode(), LayoutMode::Wide);
     assert!(
-        (sheet - (1440.0 - 240.0 - SHEET_INSET)).abs() < 1.0,
+        (sheet - (1440.0 - 300.0 - SHEET_INSET)).abs() < 1.0,
         "the sheet takes the rest: {sheet}"
     );
 }
@@ -279,12 +279,12 @@ fn the_medium_mode_docks_the_catalog_at_its_minimum() {
     let mut window = window_with();
     let sheet;
     {
-        let harness = shell_harness(&mut window, egui::vec2(716.0, 768.0));
+        let harness = shell_harness(&mut window, egui::vec2(760.0, 768.0));
         sheet = harness.state().sheet_width;
     }
     assert_eq!(window.layout_mode(), LayoutMode::Medium);
     assert!(
-        (sheet - (716.0 - 220.0 - SHEET_INSET)).abs() < 1.0,
+        (sheet - (760.0 - 260.0 - SHEET_INSET)).abs() < 1.0,
         "the catalog is at its minimum: {sheet}"
     );
     assert!(sheet >= 480.0, "the sheet keeps its floor: {sheet}");
@@ -292,7 +292,7 @@ fn the_medium_mode_docks_the_catalog_at_its_minimum() {
 
 #[test]
 fn a_wide_header_font_never_widens_a_docked_panel() {
-    // The font a machine has is not part of the layout contract: the catalog keeps 220 and
+    // The font a machine has is not part of the layout contract: the catalog keeps 260 and
     // the sheet keeps its floor even when the panel header and a category name are far wider
     // than the column. The condition is forced here, instead of trusting this machine's
     // font, because the same panel drew wider than its column on the continuous integration
@@ -303,12 +303,12 @@ fn a_wide_header_font_never_widens_a_docked_panel() {
     window.theme.tokens.text_body = 30.0;
     let sheet;
     {
-        let harness = shell_harness(&mut window, egui::vec2(716.0, 768.0));
+        let harness = shell_harness(&mut window, egui::vec2(760.0, 768.0));
         sheet = harness.state().sheet_width;
     }
     assert_eq!(window.layout_mode(), LayoutMode::Medium);
     assert!(
-        (sheet - (716.0 - 220.0 - SHEET_INSET)).abs() < 1.0,
+        (sheet - (760.0 - 260.0 - SHEET_INSET)).abs() < 1.0,
         "a wider header font must not widen the catalog: {sheet}"
     );
 }
@@ -396,7 +396,7 @@ fn a_click_outside_the_drawer_closes_it() {
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
-        // Well to the right of the 240-point catalog drawer.
+        // Well to the right of the 300-point catalog drawer.
         click_at(&mut harness, egui::pos2(400.0, 600.0));
         harness.run();
         assert_eq!(harness.state().drawer, None, "a click outside dismisses it");

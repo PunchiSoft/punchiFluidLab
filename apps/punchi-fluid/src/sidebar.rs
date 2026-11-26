@@ -13,9 +13,7 @@
 //! back.
 
 use eframe::egui;
-use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition};
-use punchi_fluid_draw::surface::Colour;
-use punchi_fluid_draw::symbol::Ink;
+use punchi_fluid_catalog::{Catalog, Category, ComponentDefinition};
 use punchi_fluid_draw::{Pt, Rect, draw_component_preview};
 use punchi_fluid_i18n::Language;
 
@@ -25,8 +23,10 @@ use crate::surface::EguiSurface;
 use crate::theme::Tokens;
 
 mod names;
+mod palette;
 
 pub(crate) use names::{full_name, name_job, name_rows, split_name, tile_width_for, variant_job};
+pub(crate) use palette::{box_of, is_entry, matches, preview_ink};
 
 /// The categories in the palette's order, with their catalog key.
 const CATEGORIES: [(Category, &str); 6] = [
@@ -43,54 +43,7 @@ const CATEGORIES: [(Category, &str); 6] = [
 /// sidebar; the maximum is the drag bound, not a layout measurement.
 pub const DEFAULT_WIDTH: f32 = crate::layout::CATALOG_PREFERRED_WIDTH;
 const MIN_WIDTH: f32 = crate::layout::CATALOG_MIN_WIDTH;
-const MAX_WIDTH: f32 = 400.0;
-
-/// Whether a definition is a palette entry: a port closure is not.
-fn is_entry(definition: &ComponentDefinition) -> bool {
-    !matches!(
-        definition.behaviour,
-        Behaviour::Plug | Behaviour::Silencer { .. }
-    )
-}
-
-/// Whether the definition matches the search: its name, its Spanish name and its id.
-fn matches(definition: &ComponentDefinition, filter: &str) -> bool {
-    if filter.trim().is_empty() {
-        return true;
-    }
-    let filter = filter.to_lowercase();
-    definition.id.to_lowercase().contains(&filter)
-        || definition.name.to_lowercase().contains(&filter)
-        || definition
-            .name_es
-            .as_deref()
-            .is_some_and(|name| name.to_lowercase().contains(&filter))
-}
-
-/// The symbol box of a definition, in millimetres: the one its file declares, the same
-/// the templates place and the drop uses.
-fn box_of(definition: &ComponentDefinition) -> (f32, f32) {
-    punchi_fluid_draw::symbol_box_mm(definition)
-}
-
-/// The ink of a thumbnail: the desktop's colours, not the printed sheet's.
-fn preview_ink(tokens: &Tokens) -> Ink {
-    let colour = |colour: egui::Color32| Colour {
-        r: colour.r(),
-        g: colour.g(),
-        b: colour.b(),
-    };
-    Ink {
-        line: colour(tokens.ink),
-        dim: colour(tokens.ink_dim),
-        muted: colour(tokens.ink_muted),
-        text: colour(tokens.ink),
-        supply: colour(tokens.supply),
-        work: colour(tokens.work),
-        accent: colour(tokens.accent),
-        background: colour(tokens.panel),
-    }
-}
+const MAX_WIDTH: f32 = crate::layout::CATALOG_MAX_WIDTH;
 
 /// The catalog's content state: the search text and the frame that asks for its focus.
 #[derive(Debug, Clone, Default)]
@@ -105,6 +58,11 @@ struct Body {
     /// The tiles' rectangles of the last frame, for the tests that drive the pointer.
     #[cfg(test)]
     tiles: Vec<(String, egui::Rect)>,
+    /// The scroll viewport and the reserved bar track of the last frame.
+    #[cfg(test)]
+    scroll_viewport: Option<egui::Rect>,
+    #[cfg(test)]
+    scroll_track: Option<egui::Rect>,
     /// The tile the pointer is carrying from the palette to the sheet, if any.
     carry: Option<String>,
 }
@@ -142,6 +100,13 @@ impl Sidebar {
     #[cfg(test)]
     pub(crate) fn tile_rects(&self) -> &[(String, egui::Rect)] {
         &self.body.tiles
+    }
+
+    /// The scroll viewport and the bar track of the last frame: the tests prove that no tile
+    /// enters the track.
+    #[cfg(test)]
+    pub(crate) fn scroll_geometry(&self) -> (Option<egui::Rect>, Option<egui::Rect>) {
+        (self.body.scroll_viewport, self.body.scroll_track)
     }
 
     /// How many entries the panel counts in its header: a port closure is not an entry.
@@ -331,7 +296,20 @@ impl Body {
         let mut drop = None;
         #[cfg(test)]
         self.tiles.clear();
-        ui.add_space(6.0);
+        #[cfg(test)]
+        {
+            self.scroll_viewport = None;
+            self.scroll_track = None;
+        }
+        // The catalog reserves a real track for its bar instead of letting a floating bar sit
+        // over the right column of tiles. The bar width and margins follow the spacing unit.
+        let bar_width = (tokens.unit * 0.5).max(8.0);
+        let bar_margin = (tokens.unit * 0.15).max(2.0);
+        ui.style_mut().spacing.scroll.floating = false;
+        ui.style_mut().spacing.scroll.bar_width = bar_width;
+        ui.style_mut().spacing.scroll.bar_inner_margin = bar_margin;
+        ui.style_mut().spacing.scroll.bar_outer_margin = bar_margin;
+        ui.add_space(tokens.unit * 0.35);
         let search = ui.add(
             egui::TextEdit::singleline(&mut self.filter)
                 .hint_text(language.text("catalog.search"))
@@ -341,9 +319,10 @@ impl Body {
             search.request_focus();
             self.focus_search = false;
         }
-        ui.add_space(4.0);
-        let footer_height = 18.0;
-        egui::ScrollArea::vertical()
+        ui.add_space(tokens.unit * 0.2);
+        let footer_height = (tokens.unit * 1.2).max(18.0);
+        let scroll = egui::ScrollArea::vertical()
+            .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
             .scroll_source(egui::scroll_area::ScrollSource {
                 scroll_bar: true,
                 drag: false,
@@ -405,6 +384,7 @@ impl Body {
                             names,
                             &egui::FontId::proportional(tokens.text_body),
                             tokens.ink,
+                            tokens.tile_band + tokens.unit * 0.8,
                         );
                         ui.horizontal_wrapped(|ui| {
                             for definition in &matching {
@@ -448,6 +428,16 @@ impl Body {
                     );
                 }
             });
+        #[cfg(test)]
+        {
+            self.scroll_viewport = Some(scroll.inner_rect);
+            self.scroll_track = Some(egui::Rect::from_min_max(
+                egui::pos2(scroll.inner_rect.right(), scroll.inner_rect.top()),
+                egui::pos2(ui.max_rect().right(), scroll.inner_rect.bottom()),
+            ));
+        }
+        #[cfg(not(test))]
+        let _ = scroll;
         let skipped = catalog.problems().len();
         let footer_text = if skipped == 0 {
             language.text("catalog.integrated").to_owned()

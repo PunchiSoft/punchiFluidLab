@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Catálogo ancho y desplazamiento limpio — 2026-11-26
+
+- El catálogo abre a **300 puntos** (260–400, redimensionable y recordado). La hoja conserva
+  sus 480: **Ancha** empieza a 780 puntos, **Media** a 740 y **Compacta** por debajo. La
+  barra vertical tiene un **carril reservado** (el área no flota), así que ninguna baldosa ni
+  su símbolo pasa por debajo, tampoco al arrastrar el pulgar.
+- Dos columnas solo cuando cada baldosa alcanza el mínimo medido para símbolo y nombre; con
+  una palabra más ancha que la columna, una columna y el nombre completo en tooltip y
+  accesibilidad. Se conservan búsqueda, categorías plegables, selección, menú contextual y
+  arrastre a la hoja; el espaciado y el pie usan tokens del tema.
+- Nuevas pruebas `the_catalog_at_its_preferred_width_wraps_two_columns`,
+  `catalog_tiles_do_not_intersect_the_scroll_track`,
+  `the_last_group_is_reachable_by_scrolling` y
+  `dragging_a_right_column_tile_still_places_that_tile`; la suite de ventana queda en 436
+  pruebas, sin cambios de documento, formato, física ni símbolos.
+
 ### Propiedades a petición — 2026-11-26
 
 - El dock derecho persistente desaparece. **Propiedades** abre en una ventana **no modal**

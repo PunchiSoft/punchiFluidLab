@@ -3,8 +3,8 @@
 
 //! The shell's three layout modes and the room each one gives its regions.
 //!
-//! `docs/ui-ux.md` §2.2 fixes the numbers: the sheet keeps 480 px and the catalog 220 px,
-//! while the catalog prefers 240 px and never takes more than 400. The mode is a consequence
+//! `docs/ui-ux.md` §2.2 fixes the numbers: the sheet keeps 480 px and the catalog 260 px,
+//! while the catalog prefers 300 px and never takes more than 400. The mode is a consequence
 //! of those measurements, never a list of screen sizes: [`LayoutMode::from_available`] takes
 //! the room the shell has in device-independent points, so a scaled display changes the pixels
 //! without changing the answer. The properties window is not a region: it floats over the
@@ -16,8 +16,8 @@ use eframe::egui;
 pub const SHEET_MIN_WIDTH: f32 = 480.0;
 
 /// The catalog's content floor, the width it prefers in the wide mode and its drag maximum.
-pub const CATALOG_MIN_WIDTH: f32 = 220.0;
-pub const CATALOG_PREFERRED_WIDTH: f32 = 240.0;
+pub const CATALOG_MIN_WIDTH: f32 = 260.0;
+pub const CATALOG_PREFERRED_WIDTH: f32 = 300.0;
 pub const CATALOG_MAX_WIDTH: f32 = 400.0;
 
 /// The rail a folded catalog keeps. It is the declared floor; a larger font makes the panel
