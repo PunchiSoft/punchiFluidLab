@@ -160,7 +160,7 @@ struct Window {
     check_panel: check_panel::CheckPanel,
     /// The catalog palette: the third region, with its search state.
     sidebar: sidebar::Sidebar,
-    /// The right dock: the properties of the selection, and its own view state.
+    /// The properties window: the selection's fields and its own open state.
     inspector: inspector::Inspector,
     /// The placements the reader selected, as indices into the document.
     selected: Vec<usize>,
@@ -230,6 +230,9 @@ struct Window {
     preferences: preferences::Preferences,
     /// The visible language; the settings file restores it.
     language: punchi_fluid_i18n::Language,
+    /// The sheet's widget id from the last frame, so closing a floating window returns the
+    /// keyboard focus to a visible control.
+    sheet_focus: Option<egui::Id>,
 }
 
 /// A primary-button drag of the selection.

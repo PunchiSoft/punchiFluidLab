@@ -2,8 +2,17 @@
 
 Images of the running application, used by the README and by pull request reviews.
 
+The **Rust window's current** properties captures are the `properties-window-*` rows below
+(2026-11-26). The `right-dock-*` rows and the `--grab` commands at the end describe the retired
+Qt window and are kept as the historical record; the right dock no longer exists.
+
 | File | What it shows |
 |---|---|
+| `properties-window-1366-light.png` | The non-modal **Propiedades** window over the sheet at 1366 points on a light desktop: the selected `V_MAIN`, its catalog name and id, the designation field and the real port readings; the window floats and the sheet keeps the width the catalog leaves |
+| `properties-window-1366-dark.png` | The same window on **Pizarra** and in Spanish, to check the title bar, the fields and the sheets in both themes |
+| `properties-window-900-light.png` | The window at the **900 × 600 floor**: the catalog is still docked at 240 points and the window floats over the paper without reserving a column |
+| `properties-window-900-dark.png` | The same floor case in dark Spanish, to check that the window stays inside the viewport |
+| `properties-window-1366-font150.png` | The window at a **150 % desktop font** on 1366 points: the title, fields and readings grow with the tokens and the window keeps its content |
 | `circuit-tabs-light.png` | The **circuit strip** with two tabs and the fixed **Inicio** control at its left: the home icon before the scroll, the rule that separates the way back from the project, each tab with its document icon, its name and its close control, the active one marked by its background and accent rule, and the plus at the right |
 | `circuit-tabs-dark.png` | The same strip on a dark desktop, to check the home icon, the close control, the active tab and the plus in both schemes |
 | `font-large-light.png` | The window with the desktop font at **1.5×** (`--font-scale 1.5`): the ribbon's tabs, labels, icons and heights all grow with the tokens, so nothing clips |

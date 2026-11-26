@@ -15,7 +15,6 @@ use std::time::Instant;
 use eframe::egui;
 
 use crate::Window;
-use crate::inspector::Action;
 use crate::layout::LayoutMode;
 use crate::scene;
 use crate::sidebar::{CatalogAction, Sidebar};
@@ -40,20 +39,17 @@ pub(crate) struct SheetProbe {
     pub strip: Option<egui::Rect>,
 }
 
-/// Which panel the compact drawer is showing. One at a time: the drawing stays visible
-/// beside it and the other rail keeps its control.
+/// The catalog drawer in the compact mode: one panel over the drawing area.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Drawer {
     Catalog,
-    Inspector,
 }
 
 impl Drawer {
-    /// The salt of the drawer's floating surface, unique per panel.
+    /// The salt of the drawer's floating surface.
     fn key(self) -> &'static str {
         match self {
             Self::Catalog => "drawer.catalog",
-            Self::Inspector => "drawer.inspector",
         }
     }
 }
@@ -61,7 +57,6 @@ impl Drawer {
 /// What the drawer's body asked the window to do, after it closes.
 enum DrawerAction {
     Catalog(CatalogAction),
-    Edit(Action),
 }
 
 /// The shell's per-session geometry state: the mode, the drawer, the store and the last
@@ -155,6 +150,7 @@ impl Window {
         self.show_status(context);
         self.show_regions(context);
         self.show_sheet(context);
+        self.show_properties(context);
         self.show_mockups(context);
         self.show_valve_editor(context);
         // The auto-hide timers read the pointer and the focus the panels reported this frame,
@@ -193,17 +189,15 @@ impl Window {
         self.shell.mode
     }
 
-    /// Opens a panel over the drawing area in the compact mode, or the docked panel in the
-    /// wide and medium ones.
+    /// Opens the catalog over the drawing area in the compact mode.
     pub(crate) fn open_drawer(&mut self, drawer: Drawer) {
         match drawer {
             Drawer::Catalog => self.sidebar.open(),
-            Drawer::Inspector => self.inspector.open(),
         }
         self.shell.drawer = Some(drawer);
     }
 
-    /// `Ctrl+B` and `Ctrl+J` in the compact mode: the drawer replaces the docked panel.
+    /// `Ctrl+B` in the compact mode: the drawer replaces the docked catalog.
     pub(crate) fn toggle_drawer(&mut self, drawer: Drawer) {
         if self.shell.drawer == Some(drawer) {
             self.shell.drawer = None;
@@ -348,14 +342,9 @@ impl Window {
         if self.shell.mode == LayoutMode::Compact {
             let tokens = &self.theme.tokens;
             self.sidebar.language = self.language;
-            self.inspector.language = self.language;
             let catalog = self.sidebar.show_rail(context, tokens);
-            let inspector = self.inspector.show_rail(context, tokens);
             if catalog {
                 self.open_drawer(Drawer::Catalog);
-            }
-            if inspector {
-                self.open_drawer(Drawer::Inspector);
             }
             if let Some(drawer) = self.shell.drawer {
                 self.show_drawer(context, drawer);
@@ -363,7 +352,6 @@ impl Window {
             return;
         }
         self.show_catalog(context);
-        self.show_inspector(context);
     }
 
     /// The compact drawer: one panel over the drawing area, with the sheet still behind it.
@@ -375,15 +363,9 @@ impl Window {
         if area.width() <= 0.0 || area.height() <= 0.0 {
             return;
         }
-        let (width, margin) = match drawer {
-            Drawer::Catalog => (self.sidebar.floating_width(), self.sidebar.margin()),
-            Drawer::Inspector => (self.inspector.floating_width(), self.inspector.margin()),
-        };
+        let (width, margin) = (self.sidebar.floating_width(), self.sidebar.margin());
         let width = width.clamp(0.0, area.width());
-        let position = match drawer {
-            Drawer::Catalog => egui::pos2(area.left(), area.top()),
-            Drawer::Inspector => egui::pos2(area.right() - width, area.top()),
-        };
+        let position = egui::pos2(area.left(), area.top());
         #[allow(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
@@ -414,46 +396,24 @@ impl Window {
             .frame(frame)
             .show(context, |ui| {
                 ui.set_min_width(width);
+                ui.set_max_width(width);
                 ui.set_min_height(height);
-                match drawer {
-                    Drawer::Catalog => {
-                        self.sidebar.language = self.language;
-                        let count = Sidebar::entry_count(&self.catalog).to_string();
-                        let subtitle = self
-                            .language
-                            .format("catalog.components", &[("count", &count)]);
-                        let (chosen, hide) =
-                            self.sidebar
-                                .show_drawer(ui, &tokens, &subtitle, &self.catalog);
-                        (chosen.map(DrawerAction::Catalog), hide)
-                    }
-                    Drawer::Inspector => {
-                        self.inspector.language = self.language;
-                        let (action, hide) = self.inspector.show_drawer(
-                            ui,
-                            &tokens,
-                            &self.document,
-                            &self.catalog,
-                            self.model.as_ref(),
-                            &self.selected,
-                            self.selected_pipe,
-                        );
-                        (action.map(DrawerAction::Edit), hide)
-                    }
-                }
+                self.sidebar.language = self.language;
+                let count = Sidebar::entry_count(&self.catalog).to_string();
+                let subtitle = self
+                    .language
+                    .format("catalog.components", &[("count", &count)]);
+                let (chosen, hide) =
+                    self.sidebar
+                        .show_drawer(ui, &tokens, &subtitle, &self.catalog);
+                (chosen.map(DrawerAction::Catalog), hide)
             });
         let surface = response.response.rect;
-        match drawer {
-            Drawer::Catalog => self.sidebar.observe_surface(context, surface),
-            Drawer::Inspector => self.inspector.observe_surface(context, surface),
-        }
+        self.sidebar.observe_surface(context, surface);
         let should_close = response.should_close();
         let (action, hide) = response.inner;
         if hide {
-            match drawer {
-                Drawer::Catalog => self.sidebar.close(),
-                Drawer::Inspector => self.inspector.close(),
-            }
+            self.sidebar.close();
             self.shell.drawer = None;
         } else if should_close {
             self.shell.drawer = None;
@@ -461,7 +421,6 @@ impl Window {
             self.shell.drawer = None;
             match action {
                 DrawerAction::Catalog(action) => self.apply_catalog(action),
-                DrawerAction::Edit(action) => self.apply_inspector(action),
             }
         }
     }
@@ -653,6 +612,7 @@ impl Window {
             let area = ui.available_rect_before_wrap();
             let sheet_area = crate::layout::drawing_area(area, self.theme.tokens.unit);
             let sheet = ui.allocate_rect(area, egui::Sense::click_and_drag());
+            self.sheet_focus = Some(sheet.id);
             sheet.widget_info(|| {
                 egui::WidgetInfo::labeled(
                     egui::WidgetType::Image,

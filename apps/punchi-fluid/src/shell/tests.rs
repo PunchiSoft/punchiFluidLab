@@ -131,6 +131,7 @@ fn shell_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
                 window.show_ribbon(context);
                 window.show_status(context);
                 window.show_regions(context);
+                window.show_properties(context);
                 egui::CentralPanel::default().show(context, |ui| {
                     probe.sheet_width = ui.available_width();
                 });
@@ -161,6 +162,7 @@ fn sheet_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
                 window.show_status(context);
                 window.show_regions(context);
                 window.show_sheet(context);
+                window.show_properties(context);
                 probe.sheet = window.sheet_probe;
                 probe.hand = window.hand_mode;
                 probe.zoom_armed = window.zoom_window_armed;
@@ -254,7 +256,7 @@ fn click_at(harness: &mut egui_kittest::Harness<'_, Probe>, position: egui::Pos2
 }
 
 #[test]
-fn the_wide_mode_docks_both_panels_at_their_preferred_widths() {
+fn the_wide_mode_docks_the_catalog_at_its_preferred_width() {
     let mut window = window_with();
     let sheet;
     {
@@ -264,31 +266,28 @@ fn the_wide_mode_docks_both_panels_at_their_preferred_widths() {
             harness.query_by_label("Hide catalog panel").is_some(),
             "the catalog is docked"
         );
-        assert!(
-            harness.query_by_label("Hide properties panel").is_some(),
-            "the dock is docked"
-        );
     }
     assert_eq!(window.layout_mode(), LayoutMode::Wide);
     assert!(
-        (sheet - (1440.0 - 240.0 - 360.0 - SHEET_INSET)).abs() < 1.0,
+        (sheet - (1440.0 - 240.0 - SHEET_INSET)).abs() < 1.0,
         "the sheet takes the rest: {sheet}"
     );
 }
 
 #[test]
-fn the_medium_mode_docks_both_panels_at_their_minimums() {
+fn the_medium_mode_docks_the_catalog_at_its_minimum() {
     let mut window = window_with();
     let sheet;
     {
-        let harness = shell_harness(&mut window, egui::vec2(1020.0, 768.0));
+        let harness = shell_harness(&mut window, egui::vec2(716.0, 768.0));
         sheet = harness.state().sheet_width;
     }
     assert_eq!(window.layout_mode(), LayoutMode::Medium);
     assert!(
-        (sheet - (1020.0 - 220.0 - 300.0 - SHEET_INSET)).abs() < 1.0,
-        "the panels are at their minimums: {sheet}"
+        (sheet - (716.0 - 220.0 - SHEET_INSET)).abs() < 1.0,
+        "the catalog is at its minimum: {sheet}"
     );
+    assert!(sheet >= 480.0, "the sheet keeps its floor: {sheet}");
 }
 
 #[test]
@@ -304,40 +303,36 @@ fn a_wide_header_font_never_widens_a_docked_panel() {
     window.theme.tokens.text_body = 30.0;
     let sheet;
     {
-        let harness = shell_harness(&mut window, egui::vec2(1020.0, 768.0));
+        let harness = shell_harness(&mut window, egui::vec2(716.0, 768.0));
         sheet = harness.state().sheet_width;
     }
     assert_eq!(window.layout_mode(), LayoutMode::Medium);
     assert!(
-        (sheet - (1020.0 - 220.0 - 300.0 - SHEET_INSET)).abs() < 1.0,
-        "a wider header font must not widen the panels: {sheet}"
+        (sheet - (716.0 - 220.0 - SHEET_INSET)).abs() < 1.0,
+        "a wider header font must not widen the catalog: {sheet}"
     );
 }
 
 #[test]
-fn the_compact_mode_folds_both_panels_to_their_rails_and_leaves_the_sheet_its_room() {
+fn the_compact_mode_folds_the_catalog_to_its_rail_and_leaves_the_sheet_its_room() {
     let mut window = window_with();
     let sheet;
     {
-        let harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         sheet = harness.state().sheet_width;
         assert!(
             harness.query_by_label("Show catalog panel").is_some(),
             "the closed catalog leaves its rail control"
         );
         assert!(
-            harness.query_by_label("Show properties panel").is_some(),
-            "the closed dock leaves its rail control"
-        );
-        assert!(
             harness.query_by_label("Built-in catalog").is_none(),
-            "no panel content is docked in the compact mode"
+            "no catalog content is docked in the compact mode"
         );
     }
     assert_eq!(window.layout_mode(), LayoutMode::Compact);
     assert!(
-        (sheet - (900.0 - 2.0 * 24.0 - SHEET_INSET)).abs() < 1.0,
-        "two rails, the rest for the sheet: {sheet}"
+        (sheet - (680.0 - 24.0 - SHEET_INSET)).abs() < 1.0,
+        "the rail, the rest for the sheet: {sheet}"
     );
     assert!(sheet >= 480.0, "the sheet keeps its floor");
 }
@@ -347,7 +342,7 @@ fn ctrl_b_opens_the_catalog_as_a_drawer_over_the_sheet() {
     let mut window = window_with();
     let (closed_sheet, open_sheet);
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         closed_sheet = harness.state().sheet_width;
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
@@ -374,33 +369,35 @@ fn ctrl_b_opens_the_catalog_as_a_drawer_over_the_sheet() {
 }
 
 #[test]
-fn escape_closes_the_drawer() {
+fn escape_closes_the_properties_window() {
     let mut window = window_with();
+    window.inspector.open();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
-        harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::J);
-        harness.run();
-        assert_eq!(harness.state().drawer, Some(Drawer::Inspector));
+        let mut harness = shell_harness(&mut window, egui::vec2(1366.0, 768.0));
+        assert!(
+            harness.query_by_label("Properties").is_some(),
+            "the window is drawn over the sheet"
+        );
         harness.key_press(egui::Key::Escape);
         harness.run();
-        assert_eq!(harness.state().drawer, None, "Esc dismisses the drawer");
         assert!(
             harness.query_by_label("Properties").is_none(),
-            "the dock's content is gone with the drawer"
+            "the window's content is gone"
         );
     }
+    assert!(!window.inspector.is_open(), "Esc closes the window");
 }
 
 #[test]
 fn a_click_outside_the_drawer_closes_it() {
     let mut window = window_with();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
         // Well to the right of the 240-point catalog drawer.
-        click_at(&mut harness, egui::pos2(700.0, 600.0));
+        click_at(&mut harness, egui::pos2(400.0, 600.0));
         harness.run();
         assert_eq!(harness.state().drawer, None, "a click outside dismisses it");
     }
@@ -410,7 +407,7 @@ fn a_click_outside_the_drawer_closes_it() {
 fn ctrl_b_toggles_the_drawer_closed() {
     let mut window = window_with();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
@@ -423,7 +420,7 @@ fn ctrl_b_toggles_the_drawer_closed() {
 #[test]
 fn the_drawer_reports_the_pointer_and_the_keyboard_inside_it() {
     let mut window = window_with();
-    let (mut harness, probe) = shell_probe_harness(&mut window, egui::vec2(900.0, 768.0));
+    let (mut harness, probe) = shell_probe_harness(&mut window, egui::vec2(680.0, 768.0));
     harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
     harness.run();
     assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
@@ -451,7 +448,7 @@ fn the_drawer_reports_the_pointer_and_the_keyboard_inside_it() {
 fn reset_view_closes_an_open_drawer() {
     let mut window = window_with();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
         assert_eq!(harness.state().drawer, Some(Drawer::Catalog));
@@ -467,7 +464,7 @@ fn reset_view_closes_an_open_drawer() {
 fn clicking_a_rail_opens_the_drawer() {
     let mut window = window_with();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         harness.get_by_label("Show catalog panel").click();
         harness.run();
         assert_eq!(
@@ -482,7 +479,7 @@ fn clicking_a_rail_opens_the_drawer() {
 fn the_drawer_hide_control_closes_both_the_drawer_and_the_panel() {
     let mut window = window_with();
     {
-        let mut harness = shell_harness(&mut window, egui::vec2(900.0, 768.0));
+        let mut harness = shell_harness(&mut window, egui::vec2(680.0, 768.0));
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::B);
         harness.run();
         harness.get_by_label("Hide catalog panel").click();

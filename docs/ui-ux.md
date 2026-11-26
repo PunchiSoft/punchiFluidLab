@@ -278,7 +278,7 @@ choosing another is one undo. `Esc` or a click outside closes it.
 - **A single press still starts a pipe.** The first press arms the pipe; a release that
   ends where it started is a no-op, not a self-connection error. The repeated press is
   handled before the pipe branch, so the second click never begins a second gesture.
-- **The Propiedades panel only reads the closures.** For the selected component it shows
+- **The Propiedades window only reads the closures.** For the selected component it shows
   a **Cierres de puerto** block with one line per port, `escape 3 · silenciador`; the
   editing stays in the menu, and the panel changes when the menu applies a choice without
   a second inspection call. The keyboard path is `Alt+C`, disabled while a text field or
@@ -413,11 +413,12 @@ their behaviour is a `behaviour` variant, not a special case in the sidebar.
 
 ### 2.1 Panels: view state, not document state
 
-The catalog on the left and the right dock (the properties of one component and the title
-block's editor) are **panels**, and a panel is chrome: it can be hidden, widened or
-narrowed, and none of that changes the circuit. The page setup and the export editor are
-**invoked editors** for now: they open centered, they close, and moving them to the right
-dock is a later decision (stage 6 of the owner's staged plan).
+The catalog on the left is the one persistent **panel**, and a panel is chrome: it can be
+hidden, widened or narrowed, and none of that changes the circuit. The properties of one
+component are an **invoked, non-modal window** over the sheet: it opens on request, never
+reserves a column, and closes without touching the document. The title block's editor, the
+page setup and the export editor are invoked editors too: they open, they close, and moving
+them to a side dock is a later decision (stage 6 of the owner's staged plan).
 
 - A panel has a **header** with its title and its hide control, and a **rail** at the edge
   while it is closed, one unit wide and never below 24 px, so the control stays a target.
@@ -431,49 +432,51 @@ dock is a later decision (stage 6 of the owner's staged plan).
   return cancels the timer. It never hides while a catalog drag is in progress, while the
   keyboard focus is inside the panel, or while a dialog is open.
 - **Every panel action has a keyboard path**: `Ctrl+B` for the catalog and `Ctrl+J` for the
-  right dock, besides the commands in **Ver**. Each control exposes its name and its state
-  to the accessibility layer, and the state is a word, not a colour.
+  properties window, besides the commands in **Ver**. Each control exposes its name and its
+  state to the accessibility layer, and the state is a word, not a colour.
 - **Width and visibility are remembered** across sessions. **Ver ▸ Restablecer vista**
   returns the panels, the zoom and the pan to their defaults. The state is never saved in
   the document and never enters the undo history.
 
-Both panels implement the fold, the memory and the reset now: the catalog and the right dock
-fold to their rail, **Restablecer vista** puts both back along with the zoom and the pan, and
-`Ctrl+B` and `Ctrl+J` are their keyboard paths. Width and visibility are view state
-remembered across sessions in `XDG_DATA_HOME/punchi-fluid/settings.state` beside the recent
-list: a defensive `key=value` file of its own, bounded in bytes and lines, written atomically,
-ignoring unknown keys and refusing an unknown version, which never enters the document, the
-undo history or the modified mark. A width above the maximum of the layout mode the window
-opens in is clamped, and a closed panel starts as its rail. **Ver ▸ Ocultar al salir** is
-auto-hide's toggle, and its label does not change: a dwell of about 350 ms on a closed
-panel's rail opens it and about 800 ms without the pointer closes it, a return cancels the
-pending close, and the timers never fire while a pointer drag is in progress, while the
-keyboard focus is inside the panel or while a dialog is open. The flag is remembered too, and
-**Restablecer vista** returns both panels to their defaults and persists them. What is still
-missing is the persisted ribbon-minimized state: the minimized ribbon is not built in this
-window yet (§2.2), so there is no state to remember, and the title block still opens as an
-invoked editor instead of living in the right dock. The `cargo test -p punchi-fluid-window`
-suite proves the file's round trip and its truncated, out-of-range and unknown-key cases, the
-clamp to the opening mode, the restore, the settle write, the reset and both timers,
-headless.
+The catalog implements the fold, the memory and the reset now; the properties window
+implements its own open flag and width and floats over the sheet. **Restablecer vista** puts
+the catalog back at its preferred width, closes the properties window, and resets the zoom
+and the pan; `Ctrl+B` and `Ctrl+J` are their keyboard paths. Width and visibility are view
+state remembered across sessions in `XDG_DATA_HOME/punchi-fluid/settings.state` beside the
+recent list: a defensive `key=value` file of its own, bounded in bytes and lines, written
+atomically, ignoring unknown keys and refusing an unknown version, which never enters the
+document, the undo history or the modified mark. The catalog's width above the maximum of
+the layout mode the window opens in is clamped, and a closed catalog starts as its rail; an
+older `inspector.width` is read into the window and never shrinks the sheet. **Ver ▸ Ocultar
+al salir** is auto-hide's toggle for the catalog, and its label does not change: a dwell of
+about 350 ms on a closed panel's rail opens it and about 800 ms without the pointer closes
+it, a return cancels the pending close, and the timers never fire while a pointer drag is in
+progress, while the keyboard focus is inside the panel or while a dialog is open. The flag
+is remembered too, and **Restablecer vista** returns the catalog to its default and persists
+it. What is still missing is the persisted ribbon-minimized state: the minimized ribbon is
+not built in this window yet (§2.2), so there is no state to remember. The
+`cargo test -p punchi-fluid-window` suite proves the file's round trip and its truncated,
+out-of-range and unknown-key cases, the clamp to the opening mode, the restore, the settle
+write, the reset and the timer, headless.
 
 ### 2.2 The window adapts
 
 The shell chooses one of three modes from the room it has, and the sheet keeps a minimum
 before a panel is allowed to cover it:
 
-| Mode | When | Ribbon | Catalog | Right dock |
-|---|---|---|---|---|
-| **Ancha** | the sheet, the catalog and the dock fit at their preferred widths | full | docked | docked |
-| **Media** | the preferred widths no longer fit but the minimums do | full | docked, narrower | docked, narrower |
-| **Compacta** | the minimums do not fit (below 1000 px at the default font in the Rust shell) | the groups that fit, collapsing as they do today | rail, opened as a drawer | rail, opened as a drawer |
+| Mode | When | Ribbon | Catalog |
+|---|---|---|---|
+| **Ancha** | the sheet and the catalog fit at the catalog's preferred width | full | docked |
+| **Media** | the preferred width no longer fits but the catalog's minimum does | full | docked, narrower |
+| **Compacta** | the minimum does not fit (below 700 px at the default font in the Rust shell) | the groups that fit, collapsing as they do today | rail, opened as a drawer |
 
-- The minimums are content measurements, not magic numbers: the sheet keeps 480 px, the
-  catalog 220 px and the right dock 300 px. The Rust shell derives the modes from those
-  measurements and the panels' preferred widths (240 and 360): wide from **1080 px**,
-  medium from **1000 px**, compact below that at the default font. The retired Qt shell added
-  its own chrome and so had larger figures; a larger font moves both, because the panel
-  widths follow the spacing unit.
+- The minimums are content measurements, not magic numbers: the sheet keeps 480 px and the
+  catalog 220 px, and the catalog prefers 240 px and never takes more than 400. The Rust
+  shell derives the modes from those measurements: wide from **720 px**, medium from
+  **700 px**, compact below that at the default font. Removing the persistent right dock is
+  what moved the wide threshold from 1080 to 720. The retired Qt shell added its own chrome
+  and so had larger figures; a larger font moves the catalog's width because it follows the
+  spacing unit.
 - **The ribbon can be minimized** by the user, with the control at the right end of the tab
   row: the tab row stays and the open tab's groups appear as a panel over the drawing area
   (never over the panels' headers), closing after a command or `Esc`. The state is
@@ -519,15 +522,15 @@ before a panel is allowed to cover it:
   mixing them produces geometry conflicts and binding cycles.
 - **Today** the Rust shell builds the modes and the geometry. `LayoutMode` derives **Ancha**,
   **Media** and **Compacta** from the room the window has and the declared measurements, in
-  device-independent points: the sheet keeps 480 px, the catalog 220 px and the right dock
-  300 px, and the preferred widths are 240 px and 360 px, so **Ancha** begins at 1080 points
-  and **Media** at 1000 (the widths are still the interface constants, not spacing-unit
-  multiples; the ribbon's text and heights are literals too). **Ancha** docks both panels at
-  the width the reader gave them, **Media** at their minimums, and **Compacta** folds both to
-  their rails and keeps the sheet its floor. In **Compacta** `Ctrl+B` and `Ctrl+J` open the
-  panel as a drawer over the drawing area, never pushing it: a modal overlay that closes on
-  `Esc`, on a click outside and on its hide control, one panel at a time. **Restablecer
-  vista** also dismisses an open drawer. The ribbon keeps the collapsing it had: each group
+  device-independent points: the sheet keeps 480 px, the catalog 220 px and the catalog
+  prefers 240 px (the widths are still the interface constants, not spacing-unit multiples;
+  the ribbon's text and heights are literals too). **Ancha** docks the catalog at the width
+  the reader gave it, **Media** at its minimum, and **Compacta** folds it to its rail and
+  keeps the sheet its floor. In **Compacta** `Ctrl+B` opens the catalog as a drawer over the
+  drawing area, never pushing it: a modal overlay that closes on `Esc`, on a click outside
+  and on its hide control. `Ctrl+J`, **Ver ▸ Propiedades** and the sheet's context menu open
+  the non-modal properties window in every mode; it floats over the sheet and reserves no
+  width. **Restablecer vista** also dismisses the drawer and closes the window. The ribbon keeps the collapsing it had: each group
   folds to its own title button by available width; the **Menú** compact ribbon and the
   minimized ribbon are not built in this slice. The window opens at 1440×900 when the room
   has it, otherwise maximized at the largest normal size that fits the room; it remembers
@@ -564,7 +567,7 @@ column holds a rail with **Inicio** chosen, **Nuevo proyecto** and **Abrir…**,
 group headings; the shortcuts live in the tooltips, not in the row, and the chosen row is a
 light pill named *selected* to the accessibility layer, never colour alone. With a document
 open, **Volver a la hoja** sits above **Inicio**; at launch it is absent. **Atajos** and
-**ISO 1219** need a panel and content of their own and stay out until a node owns them. The right dock is hidden, since with no project it has no inspector
+**ISO 1219** need a panel and content of their own and stay out until a node owns them. The properties window is hidden, since with no project it has nothing to inspect
 and no block. The commands that need a document (`Guardar`, `Exportar`) are not shown greyed:
 they appear with the project. `Inicio` is reachable from **Archivo ▸ Inicio**, from the
 **strip's home control** at the foot of the sheet, and from `Ctrl+Home`; with a project open the
@@ -582,7 +585,7 @@ its text stays in the ink, so a hover cannot repaint a fill under a light-on-dar
 gives each row its symbol, marks the current view with a light pill and exposes it as
 selected.
 
-**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver a la hoja**, with **Esc** or with **Nuevo**. Inicio takes the whole window: the ribbon and the status bar are not shown, the catalog and the right dock are hidden, and the rail takes their place with **Inicio**, **Nuevo proyecto**, **Abrir…**, **Configuración** and, at the foot, **Acerca de** and **Licencia**; the window title names the program, never an untitled document. It offers, in reading order:
+**Today** the program opens on Inicio in a normal run (the automated window checks keep the sheet), and the page closes with **Volver a la hoja**, with **Esc** or with **Nuevo**. Inicio takes the whole window: the ribbon and the status bar are not shown, the catalog and the properties window are hidden, and the rail takes their place with **Inicio**, **Nuevo proyecto**, **Abrir…**, **Configuración** and, at the foot, **Acerca de** and **Licencia**; the window title names the program, never an untitled document. It offers, in reading order:
 
 - **Nuevo proyecto** and **Abrir…**, followed by **Plantillas** and **Recientes**. The page
   lists at most `PF_RECENT_PAGE_LIMIT` (five) of the ten remembered, newest first, with the
@@ -721,7 +724,7 @@ schematic simulator lives by, and the one the reference tool uses:
   colour. Every valve in the circuit answers, not only the first one: the click names the
   placement, and the model actuates that valve. An affordance nobody can see is not an
   affordance.
-- The properties panel shows **what the definition file says** — name, id, category,
+- The properties window shows **what the definition file says** — name, id, category,
   ports and positions — and edits the numbers the model uses: supply pressure, valve or
   throttle conductance, and a cylinder's stroke, bore, rod and moving mass. Apply is one
   undo entry and the model is rebuilt from the document, so a larger cylinder in one
@@ -828,10 +831,10 @@ the ribbon button and a direct shortcut are not there yet, so the menu is its ke
 The commands used while reading the sheet — moving, zooming, fitting, hiding a guide and
 starting the model — are a **strip that floats over the right edge of the drawing area**,
 not a fourth column and not a floating window: it takes no width from the paper, it does
-not fight the right dock, and it leaves with the room it needs. The page is fitted and
+not fight the catalog or the properties window, and it leaves with the room it needs. The page is fitted and
 centred **left of the strip's channel**: the drawing area keeps a gutter on the right where
 the strip floats, so the strip never covers the paper, and the drawing clips against the
-canvas, never the window, so a zoom above the fit cannot paint over the ribbon or the docks.
+canvas, never the window, so a zoom above the fit cannot paint over the ribbon or the catalog.
 
 | Control | Behaviour |
 |---|---|
@@ -905,9 +908,10 @@ instead of parsing one long sentence.
 - The warning is the window's notice, shown in the accent and truncated to the bar with its full
   sentence in the tooltip, so a refused connection stays readable and never opens a modal. Errors
   and refusals keep the place over low-priority messages because they set the same notice last.
-- **Information access is the existing right dock**: **Propiedades**, `Ctrl+J`, and the named
-  show/hide controls; opening or closing it changes no document and returns the keyboard to a
-  visible control. The status bar adds no fourth region and no second editor.
+- **Information access is the non-modal properties window**: **Propiedades**, `Ctrl+J` and
+  the sheet's context menu open the same window over the sheet; opening or closing it changes
+  no document and returns the keyboard to a visible control. The status bar adds no fourth
+  region and no second editor.
 
 ## Visual language
 
@@ -1205,7 +1209,7 @@ a surface is migrated its Spanish literal is debt ([i18n/README.md](../i18n/READ
 
 - The font family from `[General] font` is loaded by the window (`fontdb`); the theme's
   size and contrast rules are tested.
-- Whether the page setup and the export editor move from the center to the right dock is
+- Whether the page setup and the export editor move from the center to the right side is
   decided after the adaptive modes are measured
   (the owner's staged plan, stage 6).
 - The **fit** is decided: the whole sheet fits (`Ctrl+0`, the view strip and the middle

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The right dock's rows: the tube series, the port list and the three bodies the panel can
-//! show. Split from `inspector.rs` so both files keep the project's 800-line budget.
+//! The properties window's rows: the tube series, the port list and the three bodies the
+//! window can show. Split from `inspector.rs` so both files keep the project's 800-line budget.
 
 use eframe::egui;
 use punchi_fluid_catalog::{Port, PortRole};

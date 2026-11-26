@@ -6,8 +6,9 @@
 //! A panel is chrome, never a document: hiding it, widening it and its keyboard path are
 //! view state the window remembers for the session, and **Ver ▸ Restablecer vista** puts it
 //! back. The fold lasts the theme's `motion_ms` and is instant when the theme reports
-//! reduced motion, which it does by carrying a zero duration. The catalog and the right dock
-//! share this module and keep their own content and width bounds.
+//! reduced motion, which it does by carrying a zero duration. The catalog uses this module
+//! and keeps its own content and width bounds; the properties window does not dock and keeps
+//! its own width bounds.
 
 use eframe::egui;
 use punchi_fluid_i18n::Language;
