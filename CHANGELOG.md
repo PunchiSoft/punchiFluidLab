@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Corrección de la barra y del transporte — 2026-11-25
+
+- La barra reserva el aviso a la derecha y elide vista, selección y lectura en su sitio: a
+  900 puntos, con un título de circuito de 60 caracteres y un aviso largo, el aviso conserva
+  un rectángulo visible y su texto completo sigue en el nombre accesible y en el tooltip. La
+  designación del componente seleccionado se muestra antes que el nombre del catálogo, con el
+  nombre traducido como respaldo.
+- **Paso** (F10 y la cinta) entra en simulación desde Edición, avanza exactamente un cuadro y
+  queda en Pausa, con **Detener** disponible; **Hasta cambio** usa la misma transición y deja
+  el modelo en pausa. Detener vuelve a Edición y reinicia el modelo.
+- Nuevas pruebas `the_notice_stays_visible_at_900_points_with_long_names`,
+  `the_notice_stays_visible_with_a_large_font_in_both_themes_and_languages`,
+  `the_selection_shows_the_designation_before_the_catalog_name`,
+  `the_selection_distinguishes_two_equal_valves_by_their_designation`,
+  `stepping_from_editing_enters_simulation_pauses_and_keeps_stop_available`,
+  `f10_takes_the_same_step_transition`,
+  `run_until_change_from_editing_enters_simulation_and_pauses` y
+  `a_step_from_editing_reads_paused_in_the_status_bar`; la suite de ventana pasa de 425 a 433
+  pruebas, sin cambios de documento, física, símbolos ni formato.
+
 ### Adaptación y estabilidad — 2026-11-25
 
 - El catálogo usa una columna cuando una palabra del nombre no cabe con la fuente del

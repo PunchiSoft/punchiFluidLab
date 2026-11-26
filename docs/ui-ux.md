@@ -877,9 +877,13 @@ last message. It is the place for "saved", "3 files skipped", "export written to
 …". No message that requires a click to disappear. It ends on the right with the sound
 toggle, which is a command like the others: a label, the desktop's own icon and `Ctrl+M`.
 
-**Today** the bar shows pressure, stroke, velocity, simulated time, the magnification, the
-paper's name and size, one hint or error line, and the sound toggle. The air consumed, the
-definition count and the mode text are the target, not in the bar yet.
+**Today** the bar shows the mode and the simulated time, the paper's name and size with the
+magnification, the selection, the port reading, one hint or error line, and the sound toggle.
+The air consumed and the definition count are the target, not in the bar yet. The notice keeps
+a visible rectangle at the 900-point floor even with a long circuit title: the view, selection
+and reading groups elide in place, and the full text stays as the accessible name and the
+tooltip. A single component is named by its designation, or by its catalog name in the active
+language when it has none.
 
 ### The status bar
 

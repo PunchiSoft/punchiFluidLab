@@ -604,6 +604,178 @@ fn until_change_stops_at_the_piston_end() {
     assert!(position > 0.0, "the piston moved towards the far end");
 }
 
+/// The worked example as a window, with the model still unbuilt: the editing state a
+/// transport command meets before Iniciar.
+fn worked_example() -> Window {
+    example(0)
+}
+
+/// A template that moves at rest, so Hasta cambio finds a state change instead of walking the
+/// full sixty-second cap.
+fn moving_example() -> Window {
+    example(1)
+}
+
+fn example(index: u32) -> Window {
+    let mut window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let catalog = punchi_fluid_catalog::Catalog::builtin();
+    window.document =
+        punchi_fluid_session::templates::document(index, &catalog, window.page.rect())
+            .expect("the template exists");
+    window
+}
+
+fn simulated_time(window: &Window) -> f64 {
+    window
+        .model
+        .as_ref()
+        .map_or(0.0, |model| model.network().telemetry().time)
+}
+
+#[test]
+fn stepping_from_editing_enters_simulation_pauses_and_keeps_stop_available() {
+    let mut window = worked_example();
+    window.rebuild_if_stale();
+    let before = simulated_time(&window);
+    window.dispatch(crate::ribbon::Command::Step);
+    assert!(
+        window.simulation,
+        "a step enters the simulation instead of advancing in editing"
+    );
+    assert!(!window.running, "a step pauses the transport");
+    let after = simulated_time(&window);
+    assert!(
+        (after - before - 0.01).abs() < 1.0e-9,
+        "a step advances exactly one frame: {before} -> {after}"
+    );
+    assert_eq!(
+        crate::ribbon::mode_key(window.running, window.simulation),
+        "ribbon.transport_state.paused"
+    );
+
+    let context = egui::Context::default();
+    let _ = context.run(egui::RawInput::default(), |context| {
+        window.sync_commands(context);
+    });
+    assert!(
+        window.ribbon.running || window.ribbon.simulation,
+        "Detener is available after a step: the transport is still in simulation"
+    );
+
+    window.dispatch(crate::ribbon::Command::Start);
+    assert!(window.running && window.simulation);
+    window.dispatch(crate::ribbon::Command::Pause);
+    assert!(!window.running && window.simulation);
+    let before = simulated_time(&window);
+    window.dispatch(crate::ribbon::Command::Step);
+    assert!(!window.running && window.simulation);
+    assert!(
+        (simulated_time(&window) - before - 0.01).abs() < 1.0e-9,
+        "a step from a pause advances one frame and stays paused"
+    );
+
+    window.dispatch(crate::ribbon::Command::Stop);
+    assert!(!window.simulation && !window.running);
+    assert!(window.model.is_none(), "Detener throws the model away");
+    let _ = context.run(egui::RawInput::default(), |context| {
+        window.sync_commands(context);
+    });
+    assert!(
+        !window.ribbon.running && !window.ribbon.simulation,
+        "Detener is not offered in editing"
+    );
+}
+
+#[test]
+fn f10_takes_the_same_step_transition() {
+    let mut window = worked_example();
+    window.rebuild_if_stale();
+    assert!(!window.simulation);
+    let context = egui::Context::default();
+    let _ = context.run(
+        shortcut_with(egui::Key::F10, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(
+        window.simulation && !window.running,
+        "F10 enters the simulation and pauses, like the ribbon's Paso"
+    );
+    let _ = context.run(egui::RawInput::default(), |context| {
+        window.sync_commands(context);
+    });
+    assert!(window.ribbon.running || window.ribbon.simulation);
+
+    let _ = context.run(
+        shortcut_with(egui::Key::F9, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(window.running && window.simulation, "F9 starts the clock");
+    let _ = context.run(
+        shortcut_with(egui::Key::F8, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(
+        !window.running && window.simulation,
+        "F8 pauses without leaving the simulation"
+    );
+    let _ = context.run(
+        shortcut_with(egui::Key::F5, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(
+        !window.simulation && !window.running && window.model.is_none(),
+        "F5 stops, returns to editing and throws the model away"
+    );
+}
+
+#[test]
+fn run_until_change_from_editing_enters_simulation_and_pauses() {
+    let mut window = moving_example();
+    assert!(
+        window.model.is_none(),
+        "the editing state has no model until a transport command builds one"
+    );
+    window.dispatch(crate::ribbon::Command::UntilChange);
+    assert!(
+        window.simulation,
+        "Hasta cambio enters the simulation from editing"
+    );
+    assert!(!window.running, "Hasta cambio leaves the transport paused");
+    assert!(window.model.is_some());
+    assert!(
+        simulated_time(&window) > 0.0,
+        "Hasta cambio advances the clock"
+    );
+    assert!(window.notice.is_some(), "Hasta cambio says why it stopped");
+    let context = egui::Context::default();
+    let _ = context.run(egui::RawInput::default(), |context| {
+        window.sync_commands(context);
+    });
+    assert!(window.ribbon.running || window.ribbon.simulation);
+
+    let _ = context.run(
+        shortcut_with(egui::Key::F9, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(window.running && window.simulation, "F9 starts the clock");
+    let _ = context.run(
+        shortcut_with(egui::Key::F8, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(
+        !window.running && window.simulation,
+        "F8 pauses without leaving the simulation"
+    );
+    let _ = context.run(
+        shortcut_with(egui::Key::F5, egui::Modifiers::NONE),
+        |context| window.sync_commands(context),
+    );
+    assert!(
+        !window.simulation && !window.running && window.model.is_none(),
+        "F5 stops, returns to editing and throws the model away"
+    );
+}
+
 #[test]
 fn every_command_has_a_handler() {
     // The dispatch is an exhaustive match, so this is the runtime half of the same promise: a

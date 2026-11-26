@@ -23,6 +23,20 @@ impl Window {
         }
     }
 
+    /// Enters the simulation with the model the sheet builds, or leaves the mode alone when
+    /// the circuit has no model. Returns whether there is a model to advance.
+    pub(crate) fn enter_simulation(&mut self) -> bool {
+        // A click actuates while the model runs, so entering the simulation leaves the hand.
+        self.hand_mode = false;
+        self.rebuild_if_stale();
+        if self.model.is_some() {
+            self.simulation = true;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Leaves simulation input inactive and releases a valve held by the pointer.
     pub(crate) fn pause(&mut self) {
         self.running = false;
@@ -51,6 +65,9 @@ impl Window {
     /// Runs until the piston reaches an end or the valve position changes, with a cap:
     /// a circuit that never changes stops after sixty simulated seconds.
     pub(crate) fn until_change(&mut self) {
+        if !self.enter_simulation() {
+            return;
+        }
         self.pause();
         let Some(model) = self.model.as_mut() else {
             return;
