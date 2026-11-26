@@ -317,13 +317,20 @@ impl Window {
 
     /// Starts the clock if the sheet has a model.
     fn start(&mut self) {
-        // A click actuates while the model runs, so entering the simulation leaves the hand.
-        self.hand_mode = false;
-        self.rebuild_if_stale();
-        if self.model.is_some() {
+        if self.enter_simulation() {
             self.running = true;
-            self.simulation = true;
         }
+    }
+
+    /// Steps exactly one frame, from editing or from a run: it enters the simulation with
+    /// the model the sheet builds, advances once and pauses, so Detener stays available and
+    /// the mode reads Pausa.
+    fn step(&mut self) {
+        if !self.enter_simulation() {
+            return;
+        }
+        self.pause();
+        self.advance(0.01);
     }
 
     /// Advances the model by `dt` seconds, stopping with the reason when the step fails.
@@ -625,10 +632,7 @@ impl Window {
             Command::Theme => self.open_preferences(),
             Command::Start => self.start(),
             Command::Pause => self.pause(),
-            Command::Step => {
-                self.pause();
-                self.advance(0.01);
-            }
+            Command::Step => self.step(),
             Command::UntilChange => self.until_change(),
             Command::Stop => self.stop(),
         }
