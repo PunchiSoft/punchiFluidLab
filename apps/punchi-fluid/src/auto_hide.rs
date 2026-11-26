@@ -23,20 +23,17 @@ pub const DWELL: Duration = Duration::from_millis(350);
 /// How long the pointer stays away from an open panel before it closes.
 pub const LINGER: Duration = Duration::from_millis(800);
 
-/// Which panel a pair of timers belongs to.
+/// Which panel a pair of timers belongs to. The properties window floats and does not
+/// auto-hide, so only the catalog has timers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Slot {
     Catalog,
-    Inspector,
 }
 
 impl Slot {
-    const ALL: [Self; 2] = [Self::Catalog, Self::Inspector];
-
     fn index(self) -> usize {
         match self {
             Self::Catalog => 0,
-            Self::Inspector => 1,
         }
     }
 }
@@ -52,7 +49,7 @@ struct Timer {
 /// The auto-hide timers of both panels, the one place that knows the dwell and the linger.
 #[derive(Debug, Default)]
 pub struct AutoHide {
-    timers: [Timer; 2],
+    timers: [Timer; 1],
 }
 
 impl AutoHide {
@@ -93,7 +90,7 @@ impl AutoHide {
 
     /// Forgets every timer: auto-hide is off, or the panels are not on screen.
     pub fn cancel_all(&mut self) {
-        self.timers = [Timer::default(); 2];
+        self.timers = [Timer::default(); 1];
     }
 
     /// The time until a running timer fires, so the frame loop wakes for it even when the
@@ -147,57 +144,40 @@ impl Window {
     }
 
     /// The probe the panels left in the frame they last drew.
-    fn probe(&self, slot: Slot) -> crate::panel::Probe {
-        match slot {
-            Slot::Catalog => self.sidebar.probe(),
-            Slot::Inspector => self.inspector.probe(),
-        }
+    fn probe(&self) -> crate::panel::Probe {
+        self.sidebar.probe()
     }
 
-    /// The docked panels: each one opens from its rail after the dwell and closes after the
-    /// pointer has been away for the linger. The keyboard inside a panel suspends its close.
+    /// The docked catalog: it opens from its rail after the dwell and closes after the
+    /// pointer has been away for the linger. The keyboard inside it suspends its close.
     fn auto_hide_docked(&mut self, blocked: bool, now: Instant) -> bool {
-        let mut changed = false;
-        for slot in Slot::ALL {
-            let probe = self.probe(slot);
-            let open = match slot {
-                Slot::Catalog => self.sidebar.is_open(),
-                Slot::Inspector => self.inspector.is_open(),
-            };
-            let blocked = blocked || probe.focus_inside;
-            if open {
-                if self
-                    .auto_hide
-                    .away(slot, probe.pointer_inside, blocked, now)
-                {
-                    match slot {
-                        Slot::Catalog => self.sidebar.close(),
-                        Slot::Inspector => self.inspector.close(),
-                    }
-                    self.auto_hide.cancel(slot);
-                    changed = true;
-                }
-            } else if self.auto_hide.rail(slot, probe.rail_hovered, blocked, now) {
-                match slot {
-                    Slot::Catalog => self.sidebar.open(),
-                    Slot::Inspector => self.inspector.open(),
-                }
+        let slot = Slot::Catalog;
+        let probe = self.probe();
+        let open = self.sidebar.is_open();
+        let blocked = blocked || probe.focus_inside;
+        if open {
+            if self
+                .auto_hide
+                .away(slot, probe.pointer_inside, blocked, now)
+            {
+                self.sidebar.close();
                 self.auto_hide.cancel(slot);
-                changed = true;
+                return true;
             }
+        } else if self.auto_hide.rail(slot, probe.rail_hovered, blocked, now) {
+            self.sidebar.open();
+            self.auto_hide.cancel(slot);
+            return true;
         }
-        changed
+        false
     }
 
-    /// The compact drawers: the rail opens the panel's drawer after the dwell, and the drawer
-    /// closes after the pointer has been away for the linger. Only one drawer is ever open.
+    /// The compact catalog drawer: the rail opens it after the dwell, and it closes after the
+    /// pointer has been away for the linger.
     fn auto_hide_compact(&mut self, blocked: bool, now: Instant) -> bool {
-        if let Some(drawer) = self.shell.drawer {
-            let slot = match drawer {
-                crate::shell::Drawer::Catalog => Slot::Catalog,
-                crate::shell::Drawer::Inspector => Slot::Inspector,
-            };
-            let probe = self.probe(slot);
+        let slot = Slot::Catalog;
+        if self.shell.drawer.is_some() {
+            let probe = self.probe();
             if self.auto_hide.away(
                 slot,
                 probe.pointer_inside,
@@ -210,16 +190,11 @@ impl Window {
             }
             return false;
         }
-        for slot in Slot::ALL {
-            let probe = self.probe(slot);
-            if self.auto_hide.rail(slot, probe.rail_hovered, blocked, now) {
-                match slot {
-                    Slot::Catalog => self.open_drawer(crate::shell::Drawer::Catalog),
-                    Slot::Inspector => self.open_drawer(crate::shell::Drawer::Inspector),
-                }
-                self.auto_hide.cancel(slot);
-                return true;
-            }
+        let probe = self.probe();
+        if self.auto_hide.rail(slot, probe.rail_hovered, blocked, now) {
+            self.open_drawer(crate::shell::Drawer::Catalog);
+            self.auto_hide.cancel(slot);
+            return true;
         }
         false
     }

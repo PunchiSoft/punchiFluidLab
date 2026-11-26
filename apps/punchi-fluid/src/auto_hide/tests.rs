@@ -58,14 +58,14 @@ fn leaving_the_rail_cancels_the_dwell() {
 fn the_panel_closes_only_after_the_linger_and_a_return_cancels_it() {
     let mut timers = AutoHide::new();
     let start = Instant::now();
-    assert!(!timers.away(Slot::Inspector, false, false, start));
-    assert!(!timers.away(Slot::Inspector, false, false, start + LINGER / 2));
+    assert!(!timers.away(Slot::Catalog, false, false, start));
+    assert!(!timers.away(Slot::Catalog, false, false, start + LINGER / 2));
     assert!(
-        !timers.away(Slot::Inspector, true, false, start + LINGER),
+        !timers.away(Slot::Catalog, true, false, start + LINGER),
         "the return cancels the pending close"
     );
-    assert!(!timers.away(Slot::Inspector, false, false, start + LINGER * 2));
-    assert!(timers.away(Slot::Inspector, false, false, start + LINGER * 3));
+    assert!(!timers.away(Slot::Catalog, false, false, start + LINGER * 2));
+    assert!(timers.away(Slot::Catalog, false, false, start + LINGER * 3));
 }
 
 #[test]
@@ -104,9 +104,7 @@ fn the_dwell_opens_a_folded_panel_and_the_linger_closes_it_again() {
     assert!(window.apply_auto_hide(false, start + DWELL));
     assert!(window.sidebar.is_open(), "the dwell opens the catalog");
 
-    // The pointer is not on the panel it opened and stays away for the whole linger. The other
-    // panel is held with the pointer inside it, so its own linger does not muddy the answer.
-    window.inspector.probe_for_test(false, true, false);
+    // The pointer is not on the panel it opened and stays away for the whole linger.
     window.sidebar.probe_for_test(false, false, false);
     let away = start + DWELL;
     assert!(!window.apply_auto_hide(false, away));
@@ -118,21 +116,18 @@ fn the_dwell_opens_a_folded_panel_and_the_linger_closes_it_again() {
 #[test]
 fn a_return_to_the_panel_cancels_the_pending_close() {
     let mut window = autohide_window();
-    window.inspector.open();
-    window.inspector.probe_for_test(false, false, false);
-    // The catalog is held with the pointer inside it: this test is about the dock's timer.
+    window.sidebar.open();
     window.sidebar.probe_for_test(false, true, false);
     let start = Instant::now();
     assert!(!window.apply_auto_hide(false, start));
     // The pointer comes back before the linger is over and leaves again later.
-    window.inspector.probe_for_test(false, true, false);
     assert!(!window.apply_auto_hide(false, start + LINGER / 2));
-    window.inspector.probe_for_test(false, false, false);
+    window.sidebar.probe_for_test(false, false, false);
     let back = start + LINGER;
     assert!(!window.apply_auto_hide(false, back));
-    assert!(window.inspector.is_open(), "the return cancelled the close");
+    assert!(window.sidebar.is_open(), "the return cancelled the close");
     assert!(window.apply_auto_hide(false, back + LINGER));
-    assert!(!window.inspector.is_open(), "the new linger does close it");
+    assert!(!window.sidebar.is_open(), "the new linger does close it");
 }
 
 #[test]
@@ -140,8 +135,6 @@ fn the_keyboard_inside_the_panel_suspends_the_close() {
     let mut window = autohide_window();
     window.sidebar.open();
     window.sidebar.probe_for_test(false, false, true);
-    // The dock is held with the pointer inside it: this test is about the catalog's timer.
-    window.inspector.probe_for_test(false, true, false);
     let start = Instant::now();
     assert!(!window.apply_auto_hide(false, start));
     assert!(

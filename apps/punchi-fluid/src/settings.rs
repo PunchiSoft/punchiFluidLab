@@ -96,7 +96,7 @@ impl Default for Settings {
                 width: crate::sidebar::DEFAULT_WIDTH,
             },
             inspector: PanelState {
-                open: true,
+                open: false,
                 width: crate::inspector::DEFAULT_WIDTH,
             },
             autohide: false,
@@ -125,7 +125,7 @@ impl Settings {
                 ..self.catalog
             },
             inspector: PanelState {
-                width: self.inspector.width.min(bounds.dock),
+                width: self.inspector.width.min(crate::inspector::MAX_WIDTH),
                 ..self.inspector
             },
             ..self

@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2026 PunchiSoft
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! The right dock: the properties of the current selection.
+//! The properties of the current selection, in a window the reader opens on request.
 //!
-//! The panel itself never edits the document; every field goes through `punchi-fluid-doc`'s
-//! own command, so the undo history keeps working and hiding the panel never enters it. The
-//! fold, the header and the rail are the shared chrome in [`crate::panel`]; the dock keeps its
-//! content, its width bounds and its own open fields.
+//! The window is chrome, not a document: it follows the selection while it is open, every
+//! field goes through `punchi-fluid-doc`'s own command, and closing it never enters the undo
+//! history. It is non-modal, so the sheet stays usable behind it. The right dock is gone; the
+//! layout no longer reserves a column for it.
 
 use eframe::egui;
 use punchi_fluid_catalog::Catalog;
@@ -16,21 +16,18 @@ use punchi_fluid_i18n::Language;
 use punchi_fluid_session::Model;
 
 use crate::Window;
-use crate::panel::{Edge, Panel, Probe, Settings};
 use crate::theme::Tokens;
 
 mod fields;
 
 use fields::{empty_body, multi_body, pipe_body, ports, tube_row};
 
-/// The dock's width when it is open, and the bounds a drag may take it to. The preferred
-/// width and the floor are the interface constants `docs/ui-ux.md` §2.2 fixes for the right
-/// dock; the maximum is the drag bound, not a layout measurement.
-pub const DEFAULT_WIDTH: f32 = crate::layout::DOCK_PREFERRED_WIDTH;
-const MIN_WIDTH: f32 = crate::layout::DOCK_MIN_WIDTH;
-const MAX_WIDTH: f32 = 520.0;
+/// The window's width when it opens, and the bounds a resize may take it to.
+pub const DEFAULT_WIDTH: f32 = 360.0;
+pub const MIN_WIDTH: f32 = 300.0;
+pub const MAX_WIDTH: f32 = 520.0;
 
-/// An edit the panel asks the window to make, always through the document's own command.
+/// An edit the window asks the window to make, always through the document's own command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     /// The designation field was committed; the text is trimmed by the document and an
@@ -42,7 +39,7 @@ pub enum Action {
     PipeTube { index: usize, tube: Option<u16> },
 }
 
-/// The dock's content: the designation being typed and the placement it belongs to, so a
+/// The window's content: the designation being typed and the placement it belongs to, so a
 /// frame does not throw away what the reader wrote.
 #[derive(Debug, Clone, Default)]
 struct Fields {
@@ -50,30 +47,29 @@ struct Fields {
     buffer_for: Option<u64>,
 }
 
-/// The dock: the shared chrome and the fields of the current selection.
+/// What one frame of the window asked for.
+#[derive(Debug, Default)]
+pub(crate) struct Shown {
+    pub(crate) action: Option<Action>,
+    pub(crate) closed: bool,
+}
+
+/// The floating properties window: whether it is open, how wide it is and the fields of the
+/// current selection.
 #[derive(Debug, Clone)]
 pub struct Inspector {
-    chrome: Panel,
+    open: bool,
+    width: f32,
     fields: Fields,
-    /// The language the panel and its content draw with; the window sets it each frame.
+    /// The language the window and its content draw with; the window sets it each frame.
     pub(crate) language: Language,
 }
 
 impl Default for Inspector {
     fn default() -> Self {
         Self {
-            chrome: Panel::new(Settings {
-                edge: Edge::Right,
-                id: "inspector",
-                default_width: DEFAULT_WIDTH,
-                min_width: MIN_WIDTH,
-                max_width: MAX_WIDTH,
-                width_label: "panel.inspector.width",
-                show_label: "panel.inspector.show",
-                hide_label: "panel.inspector.hide",
-                shortcut: "Ctrl+J",
-                margin: 5,
-            }),
+            open: false,
+            width: DEFAULT_WIDTH,
             fields: Fields::default(),
             language: Language::English,
         }
@@ -86,94 +82,55 @@ impl Inspector {
         Self::default()
     }
 
-    /// Whether the panel is open: the window reads it into the settings file and the tests
-    /// read it back.
+    /// Whether the window is open: the settings file remembers it and the tests read it back.
     #[must_use]
     pub fn is_open(&self) -> bool {
-        self.chrome.is_open()
+        self.open
     }
 
     #[must_use]
     pub fn width(&self) -> f32 {
-        self.chrome.width()
+        self.width
     }
 
-    /// The width the panel takes when it floats over the sheet in the compact mode.
-    #[must_use]
-    pub fn floating_width(&self) -> f32 {
-        self.chrome.floating_width()
-    }
-
-    /// The panel frame's horizontal inner margin, so the drawer's content lines up with the
-    /// docked one.
-    #[must_use]
-    pub fn margin(&self) -> i8 {
-        self.chrome.margin()
-    }
-
-    #[cfg(test)]
-    #[must_use]
-    pub fn shade(&self) -> f32 {
-        self.chrome.shade()
-    }
-
-    /// Hides the dock, or brings it back at the width it had.
+    /// Hides the window, or brings it back at the width it had.
     pub fn toggle(&mut self) {
-        self.chrome.toggle();
+        self.open = !self.open;
     }
 
-    /// Opens the panel: the docked one in the wide and medium modes, or its drawer.
     pub fn open(&mut self) {
-        self.chrome.open();
+        self.open = true;
     }
 
-    /// Closes the panel, whether it was docked or floated.
     pub fn close(&mut self) {
-        self.chrome.close();
+        self.open = false;
     }
 
-    /// **Restablecer vista**: open again at the preferred width.
+    /// **Restablecer vista**: close it again at the preferred width.
     pub fn reset(&mut self) {
-        self.chrome.reset();
+        self.close();
+        self.width = DEFAULT_WIDTH;
         self.fields.buffer_for = None;
     }
 
-    /// The panel as a settings file left it: open or folded at the remembered width.
+    /// The window as a settings file left it: open or closed at the remembered width.
     pub fn restore(&mut self, open: bool, width: f32) {
-        self.chrome.restore(open, width);
+        self.open = open;
+        self.set_width(width);
     }
 
-    /// The width the layout mode allows, clamped to the panel's own drag bounds.
+    /// The width the reader gave the window, kept inside its drag bounds.
     pub fn set_width(&mut self, width: f32) {
-        self.chrome.set_width(width);
+        if width.is_finite() {
+            self.width = width.clamp(MIN_WIDTH, MAX_WIDTH);
+        }
     }
 
-    /// What the last frame told the auto-hide timers: the shell reads it after the panel drew.
-    #[must_use]
-    pub fn probe(&self) -> Probe {
-        self.chrome.probe()
-    }
-
-    /// Records the drawer's surface, which the shell draws itself in the compact mode.
-    pub fn observe_surface(&mut self, context: &eframe::egui::Context, rect: eframe::egui::Rect) {
-        self.chrome.observe_surface(context, rect);
-    }
-
-    #[cfg(test)]
-    pub fn probe_for_test(&mut self, rail_hovered: bool, pointer_inside: bool, focus_inside: bool) {
-        self.chrome
-            .probe_for_test(rail_hovered, pointer_inside, focus_inside);
-    }
-
-    #[cfg(test)]
-    pub fn resize_by(&mut self, delta: f32) {
-        self.chrome.resize_by(delta);
-    }
-
-    /// Draws the dock and returns the edit it asked for, if any.
+    /// Draws the window if it is open and returns the edit it asked for. The caller returns
+    /// the focus to the sheet when `closed` is true.
     #[expect(
         clippy::too_many_arguments,
-        reason = "the panel reads the document, the catalog, the model and the selection"
+        reason = "the window reads the document, the catalog, the model and the selection"
     )]
     pub fn show(
         &mut self,
@@ -184,18 +141,41 @@ impl Inspector {
         model: Option<&Model>,
         selected: &[usize],
         selected_pipe: Option<usize>,
-        docked_width: f32,
-    ) -> Option<Action> {
-        let title = title_of(document, catalog, selected, selected_pipe, self.language);
-        let Inspector {
-            chrome,
-            fields,
-            language,
-        } = self;
-        chrome.set_language(*language);
-        chrome
-            .show(context, tokens, &title, None, docked_width, |ui| {
-                fields.show(
+        escape: bool,
+    ) -> Shown {
+        if !self.open {
+            return Shown::default();
+        }
+        let title = self.language.text("inspector.title");
+        let area = context.available_rect();
+        let width = self.width.min((area.width() - tokens.unit).max(MIN_WIDTH));
+        let default_pos = egui::pos2(
+            (area.right() - width - tokens.unit * 0.5).max(area.left() + tokens.unit),
+            area.top() + tokens.unit * 0.5,
+        );
+        let mut open = true;
+        let mut close = false;
+        let mut action = None;
+        let response = egui::Window::new(title)
+            .id(egui::Id::new("inspector.window"))
+            .open(&mut open)
+            .collapsible(false)
+            .resizable([true, false])
+            .default_width(width)
+            .min_width(MIN_WIDTH)
+            .max_width(MAX_WIDTH)
+            .max_height((area.height() - tokens.unit).max(tokens.unit * 8.0))
+            .default_pos(default_pos)
+            .constrain_to(area)
+            .show(context, |ui| {
+                if escape
+                    && ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
+                    })
+                {
+                    close = true;
+                }
+                action = self.fields.show(
                     ui,
                     tokens,
                     document,
@@ -203,53 +183,23 @@ impl Inspector {
                     model,
                     selected,
                     selected_pipe,
-                    *language,
-                )
-            })
-            .flatten()
-    }
-
-    /// Draws only the rail, for the compact shell.
-    pub fn show_rail(&mut self, context: &egui::Context, tokens: &Tokens) -> bool {
-        self.chrome.set_language(self.language);
-        self.chrome.show_rail(context, tokens)
-    }
-
-    /// Draws the dock's content in the floating drawer. Reports the edit it asked for and
-    /// whether the hide control asked to close the panel.
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "the drawer reads the document, the catalog, the model and the selection"
-    )]
-    pub fn show_drawer(
-        &mut self,
-        ui: &mut egui::Ui,
-        tokens: &Tokens,
-        document: &Document,
-        catalog: &Catalog,
-        model: Option<&Model>,
-        selected: &[usize],
-        selected_pipe: Option<usize>,
-    ) -> (Option<Action>, bool) {
-        let title = title_of(document, catalog, selected, selected_pipe, self.language);
-        let Inspector {
-            chrome,
-            fields,
-            language,
-        } = self;
-        chrome.set_language(*language);
-        chrome.show_body(ui, tokens, &title, None, |ui| {
-            fields.show(
-                ui,
-                tokens,
-                document,
-                catalog,
-                model,
-                selected,
-                selected_pipe,
-                *language,
-            )
-        })
+                    self.language,
+                );
+            });
+        if let Some(response) = response {
+            self.width = response.response.rect.width().clamp(MIN_WIDTH, MAX_WIDTH);
+        }
+        if !open || close {
+            self.close();
+            return Shown {
+                action,
+                closed: true,
+            };
+        }
+        Shown {
+            action,
+            closed: false,
+        }
     }
 }
 
@@ -272,7 +222,7 @@ impl Fields {
     ) -> Option<Action> {
         let mut action = None;
         egui::ScrollArea::vertical()
-            .auto_shrink([false, false])
+            .auto_shrink([false, true])
             .show(ui, |ui| {
                 action = self.body(
                     ui,
@@ -446,23 +396,18 @@ impl Fields {
 }
 
 impl Window {
-    /// Draws the right dock between the ribbon and the status bar. The shell calls this after
-    /// the status panel and before the sheet, so the sheet's available area follows it; the
-    /// dock computes its docked width from the same mode the shell derived.
-    pub(crate) fn show_inspector(&mut self, context: &egui::Context) {
+    /// Draws the properties window over the sheet. The shell calls this after the sheet, so
+    /// the window is in front of the drawing but never reserves a column of it.
+    pub(crate) fn show_properties(&mut self, context: &egui::Context) {
         self.inspector.language = self.language;
-        let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
-        if mode == crate::layout::LayoutMode::Compact {
-            return;
-        }
-        let docked = mode
-            .widths(
-                context.screen_rect().width(),
-                self.sidebar.width(),
-                self.inspector.width(),
-            )
-            .dock;
-        let action = self.inspector.show(
+        let escape = !self.dialog_open()
+            && !self.preferences.open
+            && !self.page_setup.open
+            && !self.block_editor.open
+            && !self.export_options.open
+            && !self.check_panel.open
+            && !self.menu.is_open();
+        let shown = self.inspector.show(
             context,
             &self.theme.tokens,
             &self.document,
@@ -470,15 +415,18 @@ impl Window {
             self.model.as_ref(),
             &self.selected,
             self.selected_pipe,
-            docked,
+            escape,
         );
-        if let Some(action) = action {
+        if let Some(action) = shown.action {
             self.apply_inspector(action);
+        }
+        if shown.closed {
+            self.return_sheet_focus(context);
         }
     }
 
-    /// The **Ver** commands the window owns: the two panels and the view reset. The zoom is
-    /// dispatched directly by the window.
+    /// The **Ver** commands the window owns: the catalog panel and the view reset. The zoom
+    /// is dispatched directly by the window.
     pub(crate) fn view_command(&mut self, command: crate::ribbon::Command) {
         match command {
             crate::ribbon::Command::Catalog => {
@@ -488,21 +436,16 @@ impl Window {
                     self.sidebar.toggle();
                 }
             }
-            crate::ribbon::Command::Properties => {
-                if self.layout_mode() == crate::layout::LayoutMode::Compact {
-                    self.toggle_drawer(crate::shell::Drawer::Inspector);
-                } else {
-                    self.inspector.toggle();
-                }
-            }
+            crate::ribbon::Command::Properties => self.inspector.toggle(),
             crate::ribbon::Command::Autohide => self.toggle_autohide(),
             crate::ribbon::Command::ResetView => self.reset_view(),
             _ => {}
         }
     }
 
-    /// **Ver ▸ Restablecer vista**: the panels and the view return to the defaults, and the
-    /// answer is persisted at once so a close before the settle delay cannot undo it.
+    /// **Ver ▸ Restablecer vista**: the catalog, the properties window and the view return to
+    /// the defaults, and the answer is persisted at once so a close before the settle delay
+    /// cannot undo it.
     pub(crate) fn reset_view(&mut self) {
         self.view.reset();
         self.sidebar.reset();
@@ -514,7 +457,7 @@ impl Window {
         self.settings.remember(settings);
     }
 
-    /// Runs the edit the panel asked for through the document's own command.
+    /// Runs the edit the window asked for through the document's own command.
     pub(crate) fn apply_inspector(&mut self, action: Action) {
         let changed = match action {
             Action::Designation { index, text } => self.document.designate(index, Some(&text)),
@@ -525,42 +468,14 @@ impl Window {
             self.notice = Some(self.language.text("inspector.updated").to_owned());
         }
     }
-}
 
-/// The panel's title: the selected component's name, `Conducto` for a hose, `Propiedades`
-/// otherwise.
-fn title_of(
-    document: &Document,
-    catalog: &Catalog,
-    selected: &[usize],
-    selected_pipe: Option<usize>,
-    language: Language,
-) -> String {
-    if let Some(index) = selected_pipe
-        && document.connections().get(index).is_some()
-    {
-        return language.text("inspector.pipe").to_owned();
-    }
-    if let [index] = *selected
-        && let Some(placement) = document.placements().get(index)
-    {
-        if let Some(designation) = placement.designation.as_deref()
-            && !designation.trim().is_empty()
-        {
-            return designation.to_owned();
+    /// Returns the keyboard focus to the sheet after the window closes: a visible control,
+    /// and the one the reader was working on before opening it.
+    pub(crate) fn return_sheet_focus(&self, context: &egui::Context) {
+        if let Some(id) = self.sheet_focus {
+            context.memory_mut(|memory| memory.request_focus(id));
         }
-        if let Some(definition) = catalog.get(&placement.catalog_id) {
-            return match language {
-                Language::Spanish => definition
-                    .name_es
-                    .clone()
-                    .unwrap_or_else(|| definition.name.clone()),
-                Language::English => definition.name.clone(),
-            };
-        }
-        return placement.catalog_id.clone();
     }
-    language.text("inspector.title").to_owned()
 }
 
 #[cfg(test)]

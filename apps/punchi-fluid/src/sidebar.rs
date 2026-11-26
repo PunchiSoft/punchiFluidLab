@@ -10,7 +10,7 @@
 //!
 //! The fold, the header and the rail are the shared chrome in [`crate::panel`]: the catalog
 //! folds to its rail, remembers its width for the session and **Restablecer vista** puts it
-//! back, exactly as the right dock does.
+//! back.
 
 use eframe::egui;
 use punchi_fluid_catalog::{Behaviour, Catalog, Category, ComponentDefinition};
@@ -763,8 +763,8 @@ fn tile(
 
 impl Window {
     /// Draws the catalog between the ribbon and the sheet. The shell calls this before the
-    /// right dock, so the sheet's available area follows both panels as they fold; the
-    /// catalog computes its docked width from the same mode the shell derived.
+    /// sheet, so the sheet's available area follows the catalog as it folds; the catalog
+    /// computes its docked width from the same mode the shell derived.
     pub(crate) fn show_catalog(&mut self, context: &egui::Context) {
         self.sidebar.language = self.language;
         let mode = crate::layout::LayoutMode::from_available(context.screen_rect().width());
@@ -772,11 +772,7 @@ impl Window {
             return;
         }
         let docked = mode
-            .widths(
-                context.screen_rect().width(),
-                self.sidebar.width(),
-                self.inspector.width(),
-            )
+            .widths(context.screen_rect().width(), self.sidebar.width())
             .catalog;
         let count = Sidebar::entry_count(&self.catalog).to_string();
         let subtitle = self

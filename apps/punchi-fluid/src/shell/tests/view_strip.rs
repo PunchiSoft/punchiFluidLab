@@ -74,7 +74,7 @@ fn the_strip_folds_and_unfolds() {
 #[test]
 fn the_compact_window_starts_with_the_strip_folded() {
     let mut window = window_with();
-    let mut harness = sheet_harness(&mut window, egui::vec2(900.0, 700.0));
+    let mut harness = sheet_harness(&mut window, egui::vec2(680.0, 700.0));
     assert!(
         harness.query_by_label("Show the view strip").is_some(),
         "the compact strip starts folded to one button"

@@ -3,47 +3,43 @@
 
 //! The shell's three layout modes and the room each one gives its regions.
 //!
-//! `docs/ui-ux.md` §2.2 fixes the numbers: the sheet keeps 480 px, the catalog 220 px and the
-//! right dock 300 px, while the catalog prefers 240 px and the dock 360 px. The mode is a
-//! consequence of those measurements, never a list of screen sizes: [`LayoutMode::from_available`]
-//! takes the room the shell has in device-independent points, so a scaled display changes
-//! the pixels without changing the answer. The widths are interface constants, named here once and read
-//! by both panels; the panel's own maximum is a drag bound, not a layout measurement.
+//! `docs/ui-ux.md` §2.2 fixes the numbers: the sheet keeps 480 px and the catalog 220 px,
+//! while the catalog prefers 240 px and never takes more than 400. The mode is a consequence
+//! of those measurements, never a list of screen sizes: [`LayoutMode::from_available`] takes
+//! the room the shell has in device-independent points, so a scaled display changes the pixels
+//! without changing the answer. The properties window is not a region: it floats over the
+//! sheet and reserves no width, so only the catalog is measured here.
 
 use eframe::egui;
 
 /// The sheet's floor: the drawing is the region that never gives way.
 pub const SHEET_MIN_WIDTH: f32 = 480.0;
 
-/// The catalog's content floor and the width it prefers in the wide mode.
+/// The catalog's content floor, the width it prefers in the wide mode and its drag maximum.
 pub const CATALOG_MIN_WIDTH: f32 = 220.0;
 pub const CATALOG_PREFERRED_WIDTH: f32 = 240.0;
+pub const CATALOG_MAX_WIDTH: f32 = 400.0;
 
-/// The right dock's content floor and the width it prefers in the wide mode.
-pub const DOCK_MIN_WIDTH: f32 = 300.0;
-pub const DOCK_PREFERRED_WIDTH: f32 = 360.0;
-
-/// The rail a folded panel keeps. It is the declared floor; a larger font makes the panel
+/// The rail a folded catalog keeps. It is the declared floor; a larger font makes the panel
 /// chrome wider than it, because the rail follows the spacing unit.
 pub const RAIL_WIDTH: f32 = crate::panel::MIN_RAIL;
 
 /// One of the three shells `docs/ui-ux.md` §2.2 describes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
-    /// The sheet, the catalog and the dock fit at their preferred widths.
+    /// The sheet and the catalog fit at the catalog's preferred width.
     Wide,
-    /// The preferred widths no longer fit, but the minimums do: both panels dock narrower.
+    /// The preferred width no longer fits, but the catalog's minimum does.
     Medium,
-    /// The minimums do not fit: both panels fold to their rails and open as a drawer.
+    /// The minimum does not fit: the catalog folds to its rail and opens as a drawer.
     Compact,
 }
 
-/// The widths a mode gives the catalog and the right dock, in points. The sheet takes the
-/// rest; the mode derivation guarantees that rest is never below [`SHEET_MIN_WIDTH`].
+/// The width a mode gives the catalog, in points. The sheet takes the rest; the mode
+/// derivation guarantees that rest is never below [`SHEET_MIN_WIDTH`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Widths {
     pub catalog: f32,
-    pub dock: f32,
 }
 
 impl LayoutMode {
@@ -59,61 +55,48 @@ impl LayoutMode {
         }
     }
 
-    /// The room the preferred widths need beside the sheet's floor: the wide threshold.
+    /// The room the preferred catalog needs beside the sheet's floor: the wide threshold.
     #[must_use]
     pub const fn wide_from() -> f32 {
-        SHEET_MIN_WIDTH + CATALOG_PREFERRED_WIDTH + DOCK_PREFERRED_WIDTH
+        SHEET_MIN_WIDTH + CATALOG_PREFERRED_WIDTH
     }
 
-    /// The room the minimums need beside the sheet's floor: the medium threshold.
+    /// The room the minimum catalog needs beside the sheet's floor: the medium threshold.
     #[must_use]
     pub const fn medium_from() -> f32 {
-        SHEET_MIN_WIDTH + CATALOG_MIN_WIDTH + DOCK_MIN_WIDTH
+        SHEET_MIN_WIDTH + CATALOG_MIN_WIDTH
     }
 
-    /// The widths this mode gives both panels for `available` points. In the wide mode the
-    /// panels keep the width the reader gave them, narrowed together so the sheet's floor
-    /// holds; the minimums are the floors a panel may not cross, and compact is the rail.
+    /// The width this mode gives the catalog for `available` points. In the wide mode the
+    /// catalog keeps the width the reader gave it, narrowed if needed so the sheet's floor
+    /// holds; the medium mode gives its minimum and compact is the rail.
     #[must_use]
-    pub fn widths(self, available: f32, remembered_catalog: f32, remembered_dock: f32) -> Widths {
+    pub fn widths(self, available: f32, remembered_catalog: f32) -> Widths {
         let available = if available.is_finite() {
             available.max(0.0)
         } else {
             0.0
         };
         match self {
-            Self::Wide => {
-                let catalog = clamped(
+            Self::Wide => Widths {
+                catalog: clamped(
                     remembered_catalog,
                     CATALOG_MIN_WIDTH,
-                    available - SHEET_MIN_WIDTH - DOCK_MIN_WIDTH,
-                );
-                let dock = clamped(
-                    remembered_dock,
-                    DOCK_MIN_WIDTH,
-                    available - SHEET_MIN_WIDTH - catalog,
-                );
-                let catalog = clamped(
-                    catalog,
-                    CATALOG_MIN_WIDTH,
-                    available - SHEET_MIN_WIDTH - dock,
-                );
-                Widths { catalog, dock }
-            }
+                    (available - SHEET_MIN_WIDTH).min(CATALOG_MAX_WIDTH),
+                ),
+            },
             Self::Medium => Widths {
                 catalog: CATALOG_MIN_WIDTH,
-                dock: DOCK_MIN_WIDTH,
             },
             Self::Compact => Widths {
                 catalog: RAIL_WIDTH,
-                dock: RAIL_WIDTH,
             },
         }
     }
 
-    /// The widest each panel may open in this mode with `available` points: the room that
-    /// leaves the sheet its floor and the other panel its floor. The compact mode docks no
-    /// panel — the drawer floats over the sheet — so the bound is the room the window has.
+    /// The widest the catalog may open in this mode with `available` points: the room that
+    /// leaves the sheet its floor. The compact mode docks no catalog — the drawer floats over
+    /// the sheet — so the bound is the room the window has.
     #[must_use]
     pub fn max_widths(self, available: f32) -> Widths {
         let available = if available.is_finite() {
@@ -123,23 +106,20 @@ impl LayoutMode {
         };
         match self {
             Self::Wide | Self::Medium => Widths {
-                catalog: (available - SHEET_MIN_WIDTH - DOCK_MIN_WIDTH).max(CATALOG_MIN_WIDTH),
-                dock: (available - SHEET_MIN_WIDTH - CATALOG_MIN_WIDTH).max(DOCK_MIN_WIDTH),
+                catalog: (available - SHEET_MIN_WIDTH).clamp(CATALOG_MIN_WIDTH, CATALOG_MAX_WIDTH),
             },
             Self::Compact => Widths {
                 catalog: available.max(RAIL_WIDTH),
-                dock: available.max(RAIL_WIDTH),
             },
         }
     }
 
-    /// The room the sheet keeps once the panels took theirs. The tests read it; the shell
+    /// The room the sheet keeps once the catalog took its width. The tests read it; the shell
     /// itself lets egui do the subtraction.
     #[cfg(test)]
     #[must_use]
-    pub fn sheet_width(self, available: f32, remembered_catalog: f32, remembered_dock: f32) -> f32 {
-        let widths = self.widths(available, remembered_catalog, remembered_dock);
-        available - widths.catalog - widths.dock
+    pub fn sheet_width(self, available: f32, remembered_catalog: f32) -> f32 {
+        available - self.widths(available, remembered_catalog).catalog
     }
 }
 

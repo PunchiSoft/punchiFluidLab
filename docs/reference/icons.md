@@ -127,7 +127,7 @@ with a reason.
 These commands still share a drawing. Each is recorded here instead of being left
 undocumented; splitting one needs its own metaphor and its own 16 px review.
 
-- **`document-properties`, four meanings.** Export options, the right-dock toggle, the
+- **`document-properties`, four meanings.** Export options, the properties-window toggle, the
   page-setup launcher (custom paper, custom margins, the page panel) and **Propiedades** in
   the sheet menu still share the same page-with-sliders drawing. They are four different
   things; giving each its own drawing is the first follow-up, after the P0 set.

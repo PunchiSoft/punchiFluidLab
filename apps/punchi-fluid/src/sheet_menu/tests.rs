@@ -417,7 +417,7 @@ fn the_menu_removes_the_selection_as_one_undo() {
 }
 
 #[test]
-fn the_menu_opens_the_properties_even_when_the_dock_was_open() {
+fn the_menu_opens_the_properties_window() {
     let mut window = window_with_component();
     window.inspector.close();
     let mut harness = harness(&mut window);
@@ -427,7 +427,7 @@ fn the_menu_opens_the_properties_even_when_the_dock_was_open() {
     right_click_at(&mut harness, sheet.center());
     harness.get_by_label("Properties").click();
     harness.run();
-    assert!(harness.state().inspector, "Propiedades opens the dock");
+    assert!(harness.state().inspector, "Propiedades opens the window");
 }
 
 #[test]

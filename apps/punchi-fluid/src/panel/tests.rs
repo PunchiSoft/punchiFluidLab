@@ -3,7 +3,8 @@
 
 //! The panel chrome's tests: the catalog folds and unfolds, remembers its width, resets with
 //! the view, never touches the document and leaves the sheet its room. The panel is driven
-//! headless, like the inspector's own tests; the right dock's tests keep proving its half.
+//! headless, like the properties window's own tests; the window is not a dock and reserves no
+//! column, so the catalog is the only region that changes the sheet's width here.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -132,15 +133,18 @@ fn the_panels_keep_their_own_shortcut() {
     }
     assert!(!window.sidebar.is_open(), "Ctrl+B folds the catalog");
     assert!(
-        window.inspector.is_open(),
-        "Ctrl+B leaves the right dock alone"
+        !window.inspector.is_open(),
+        "Ctrl+B leaves the properties window alone"
     );
     {
         let mut harness = key_harness(&mut window);
         harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::J);
         harness.run();
     }
-    assert!(!window.inspector.is_open(), "Ctrl+J folds the right dock");
+    assert!(
+        window.inspector.is_open(),
+        "Ctrl+J opens the properties window"
+    );
     assert!(
         !window.sidebar.is_open(),
         "Ctrl+J leaves the catalog as it was"
@@ -152,8 +156,17 @@ fn the_panels_keep_their_own_shortcut() {
     }
     assert!(window.sidebar.is_open(), "Ctrl+B still opens the catalog");
     assert!(
+        window.inspector.is_open(),
+        "the properties window stays open through Ctrl+B"
+    );
+    {
+        let mut harness = key_harness(&mut window);
+        harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::J);
+        harness.run();
+    }
+    assert!(
         !window.inspector.is_open(),
-        "the dock stays folded through Ctrl+B"
+        "Ctrl+J closes the properties window again"
     );
 }
 
@@ -250,22 +263,25 @@ fn the_catalog_fold_uses_the_theme_motion_and_reduced_motion_is_instant() {
 }
 
 #[test]
-fn reset_view_opens_both_panels_at_their_default_widths() {
+fn reset_view_opens_the_catalog_and_closes_the_properties_window() {
     let mut window = window_with(Document::new());
     window.sidebar.close();
-    window.inspector.close();
+    window.inspector.open();
     window.sidebar.resize_by(-10.0);
-    window.inspector.resize_by(40.0);
+    window.inspector.set_width(440.0);
     window.dispatch(Command::ResetView);
     assert!(window.sidebar.is_open(), "the reset opens the catalog");
     assert!(
         (window.sidebar.width() - sidebar::DEFAULT_WIDTH).abs() <= f32::EPSILON,
         "the reset returns the catalog's preferred width"
     );
-    assert!(window.inspector.is_open(), "the reset opens the right dock");
+    assert!(
+        !window.inspector.is_open(),
+        "the reset closes the properties window"
+    );
     assert!(
         (window.inspector.width() - inspector::DEFAULT_WIDTH).abs() <= f32::EPSILON,
-        "the reset returns the dock's preferred width"
+        "the reset returns the window's preferred width"
     );
 }
 
@@ -399,12 +415,11 @@ fn the_catalog_content_stays_in_the_open_panel() {
 #[test]
 fn the_sheet_area_follows_the_catalog() {
     let mut window = window_with(Document::new());
-    // Both panels are drawn before the central one, as `update` does: the sheet keeps what
-    // the panels do not take.
+    // The catalog is drawn before the central one, as `update` does: the sheet keeps what it
+    // does not take. The properties window floats over the sheet and reserves no width.
     let mut harness = egui_kittest::Harness::new_state(
         move |context, width: &mut f32| {
             window.show_catalog(context);
-            window.show_inspector(context);
             egui::CentralPanel::default().show(context, |ui| {
                 *width = ui.available_width();
             });

@@ -8,8 +8,6 @@ use punchi_fluid_doc::Axis;
 use punchi_fluid_draw::LineClass;
 
 use crate::Window;
-use crate::layout::LayoutMode;
-use crate::shell::Drawer;
 
 impl Window {
     /// **Conducto ▸ clase**: the selected pipe takes the line class, as one undo.
@@ -23,17 +21,13 @@ impl Window {
         }
     }
 
-    /// **Conducto ▸ Diámetro**: opens the inspector, where the tube series lives; the series
-    /// is not duplicated in the ribbon.
+    /// **Conducto ▸ Diámetro**: opens the properties window, where the tube series lives; the
+    /// series is not duplicated in the ribbon.
     pub(crate) fn open_pipe_control(&mut self) {
         if self.selected_pipe.is_none() {
             self.notice = Some(self.language.text("notice.select_hose_diameter").to_owned());
         }
-        if self.layout_mode() == LayoutMode::Compact {
-            self.toggle_drawer(Drawer::Inspector);
-        } else {
-            self.inspector.open();
-        }
+        self.inspector.open();
     }
 
     /// **Repartir**: even spacing along the axis, one undo.

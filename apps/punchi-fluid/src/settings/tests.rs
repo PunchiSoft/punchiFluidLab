@@ -17,7 +17,7 @@ use super::{
     FILE_NAME, MAX_BYTES, MIN_WIDTH, PanelState, SETTLE, Settings, Store, parse, read, write,
 };
 use crate::Window;
-use crate::layout::{CATALOG_MIN_WIDTH, DOCK_MIN_WIDTH, LayoutMode, SHEET_MIN_WIDTH};
+use crate::layout::{CATALOG_MAX_WIDTH, LayoutMode};
 use crate::theme::Theme;
 
 /// A folder of its own for the test, removed at the end where possible.
@@ -163,7 +163,7 @@ fn panel_harness(window: &mut Window, size: egui::Vec2) -> egui_kittest::Harness
         .build(move |context| {
             window.update_layout_mode(context);
             window.show_catalog(context);
-            window.show_inspector(context);
+            window.show_properties(context);
         });
     if crate::theme::install_font(&harness.ctx, None).is_err() {
         eprintln!("no system font: the settings tests need one");
@@ -308,14 +308,8 @@ fn a_file_over_the_size_bound_is_ignored() {
 fn a_remembered_width_is_clamped_to_the_mode_maximum() {
     let saved = settings((true, 400.0), (true, 520.0), true);
     let clamped = saved.clamped_to(LayoutMode::Medium, 1020.0);
-    assert!(same(
-        clamped.catalog.width,
-        1020.0 - SHEET_MIN_WIDTH - DOCK_MIN_WIDTH
-    ));
-    assert!(same(
-        clamped.inspector.width,
-        1020.0 - SHEET_MIN_WIDTH - CATALOG_MIN_WIDTH
-    ));
+    assert!(same(clamped.catalog.width, CATALOG_MAX_WIDTH));
+    assert!(same(clamped.inspector.width, crate::inspector::MAX_WIDTH));
     assert!(clamped.catalog.open && clamped.inspector.open);
     assert!(clamped.autohide, "the flags travel unchanged");
     // A width that fits the wide mode is kept as the reader left it.
@@ -354,7 +348,7 @@ fn the_store_writes_at_once_when_the_window_asks() {
     let dir = scratch();
     let file = dir.join(FILE_NAME);
     let mut store = Store::at(Some(file.clone()));
-    let wanted = settings((true, 240.0), (false, 360.0), false);
+    let wanted = settings((true, 240.0), (true, 400.0), false);
     assert!(store.remember(wanted), "the close path writes immediately");
     assert_eq!(read(&file), Some(wanted));
     let _ = std::fs::remove_dir_all(&dir);
@@ -390,7 +384,7 @@ fn the_fold_and_the_width_survive_a_save_and_a_reload() {
     drop(window);
 
     let reloaded = window_with(Document::new()).with_settings(Store::at(Some(file.clone())));
-    assert!(!reloaded.inspector.is_open(), "the dock was folded");
+    assert!(!reloaded.inspector.is_open(), "the window was closed");
     assert!(
         (reloaded.sidebar.width() - width).abs() <= f32::EPSILON,
         "the catalog came back at its own width"
@@ -420,8 +414,8 @@ fn the_panels_open_where_the_file_left_them_and_a_closed_one_starts_as_a_rail() 
             "the closed panel has no content"
         );
         assert!(
-            harness.query_by_label("Hide properties panel").is_some(),
-            "the open dock keeps its header"
+            harness.query_by_label("Properties").is_some(),
+            "an old open dock now opens the properties window"
         );
     }
     let _ = std::fs::remove_dir_all(&dir);
@@ -444,8 +438,8 @@ fn a_width_above_the_mode_maximum_is_clamped_when_the_window_opens() {
         window.sidebar.width()
     );
     assert!(
-        (window.inspector.width() - max.dock).abs() <= f32::EPSILON,
-        "the dock is clamped to the medium mode: {}",
+        (window.inspector.width() - crate::inspector::MAX_WIDTH).abs() <= f32::EPSILON,
+        "the floating window is clamped to its own maximum: {}",
         window.inspector.width()
     );
     let _ = std::fs::remove_dir_all(&dir);
@@ -461,7 +455,10 @@ fn reset_view_opens_the_panels_at_their_defaults_and_persists_them() {
     assert!(window.autohide_on, "the flag came from the file");
     window.dispatch(crate::ribbon::Command::ResetView);
     assert!(window.sidebar.is_open(), "the reset opens the catalog");
-    assert!(window.inspector.is_open(), "the reset opens the dock");
+    assert!(
+        !window.inspector.is_open(),
+        "the reset closes the properties window"
+    );
     assert!((window.sidebar.width() - crate::sidebar::DEFAULT_WIDTH).abs() <= f32::EPSILON);
     assert!((window.inspector.width() - crate::inspector::DEFAULT_WIDTH).abs() <= f32::EPSILON);
     assert!(!window.autohide_on, "the reset turns auto-hide off");

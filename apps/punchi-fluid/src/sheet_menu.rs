@@ -16,8 +16,6 @@ use punchi_fluid_draw::Pt;
 use punchi_fluid_i18n::Language;
 
 use crate::Window;
-use crate::layout::LayoutMode;
-use crate::shell::Drawer;
 use crate::view;
 
 /// One entry of the sheet menu, in the reference's order.
@@ -403,19 +401,9 @@ impl Window {
                 }
                 self.open_mockup(Mockup::Configure);
             }
-            MenuAction::Properties => self.open_properties(),
+            MenuAction::Properties => self.inspector.open(),
             MenuAction::Describe => self.open_mockup(Mockup::Describe),
             MenuAction::Delete => self.remove_selected(),
-        }
-    }
-
-    /// **Propiedades** opens the dock, or its drawer in the compact mode. It is not the
-    /// ribbon's toggle: choosing the entry while the dock is open must leave it open.
-    fn open_properties(&mut self) {
-        if self.layout_mode() == LayoutMode::Compact {
-            self.open_drawer(Drawer::Inspector);
-        } else {
-            self.inspector.open();
         }
     }
 

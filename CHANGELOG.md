@@ -6,6 +6,26 @@ publicación.
 
 ## Unreleased
 
+### Propiedades a petición — 2026-11-26
+
+- El dock derecho persistente desaparece. **Propiedades** abre en una ventana **no modal**
+  sobre la hoja desde **Ver ▸ Propiedades**, `Ctrl+J` o el menú contextual del símbolo; sigue
+  la selección, descarta el borrador no confirmado al cambiar de componente, conserva la
+  edición de designación como un undo y devuelve el foco a la hoja al cerrar con `Esc` o con su
+  control. Un ancho viejo de `inspector.width` se lee sin encoger la hoja.
+- `Ctrl+J` ya no pliega un dock: abre o cierra la ventana. El catálogo es el único panel
+  persistente; su plegado, auto-ocultado y memoria siguen igual. El layout mide solo el
+  catálogo: **Ancha** desde 720 puntos, **Media** desde 700 y **Compacta** por debajo; la hoja
+  conserva sus 480 y la ventana flota sin reservar columna.
+- Nuevas pruebas `the_properties_window_starts_closed_and_toggles`,
+  `properties_open_without_reserving_sheet_width`,
+  `the_window_follows_the_selection_without_a_stale_edit`,
+  `properties_close_returns_focus_to_the_sheet`,
+  `legacy_inspector_width_does_not_shrink_sheet`,
+  `the_window_follows_the_edit_history` y
+  `escape_closes_the_properties_window`; la suite de ventana queda en 432 pruebas, sin cambios
+  de documento, formato, física ni símbolos.
+
 ### Corrección de la barra y del transporte — 2026-11-25
 
 - La barra reserva el aviso a la derecha y elide vista, selección y lectura en su sitio: a
