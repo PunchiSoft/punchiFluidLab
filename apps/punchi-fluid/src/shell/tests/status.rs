@@ -52,7 +52,7 @@ const LONG_CIRCUIT: &str = "Circuito de prueba con un nombre deliberadamente lar
 fn the_status_bar_names_the_mode_and_the_selection() {
     let mut window = super::window_with();
     window.document.place(Placement::new(
-        "valve.5_2",
+        "valve.5_2.base",
         Pt::new(100.0, 100.0),
         24.0,
         24.0,

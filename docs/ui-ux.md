@@ -342,25 +342,29 @@ The sidebar is generated from the catalog, so it is exactly as complete as
 `~/.local/share/punchi-fluid-lab/catalog/` plus the built-in files. Adding a valve
 file adds an entry; deleting the file removes it; `disabled = true` hides it.
 
-**Today** the sidebar is the palette: the count, the search, the collapsible categories,
-two-column tiles (a click chooses one; its menu or the keyboard adds it at the centre) and the
-footer, with a width the user can drag and the session remembers; the drag from the palette is
-the next slice.
-The panel that lists the reasons for each skipped file is still target.
+**Today** the sidebar is the palette: the count, the search, the collapsible categories and the
+footer, with a width the user can drag and the session remembers (300 points preferred, 260–400).
+The tiles use two columns when each one reaches the measured minimum for the symbol and the
+name, and one column when a word would not fit; a drag places the entry at the pointer snapped
+to the grid, and a click chooses it while its menu or the keyboard adds it at the centre. The
+vertical bar owns a reserved track, so no tile or symbol runs under it. The panel that lists
+the reasons for each skipped file is still target.
 
 - Groups are the `category` field (`supply`, `valve`, `actuator`, `throttle`,
   `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the
   label is translated in the session, so the widget never learns the numeric enum.
-- The sidebar is **a palette of tiles**, two per row: the symbol, the principal name on up
-  to two lines and the variant on its own line, with the full name and the `id` in the
-  tooltip and in the accessible name. A name wraps at a space and the variant elides; no
-  text in the palette widens the panel past its column. When a word would not fit at the
-  current desktop font, the group uses **one column** instead of splitting that word between
-  two rows, so the label stays legible and the full name remains in the tooltip and the
-  accessible name. The header carries the title, the number of entries and the search field;
-  the title, the count and a category's name elide in place. The footer names the folder in
-  use and the number of skipped files. A search with no match says so in the panel instead of
-  leaving it blank.
+- The sidebar is **a palette of tiles**: two per row when each tile reaches the measured
+  minimum for the symbol and the name, one when it does not. Each tile carries the symbol, the
+  principal name on up to two lines and the variant on its own line, with the full name and
+  the `id` in the tooltip and in the accessible name. A name wraps at a space and the variant
+  elides; no text in the palette widens the panel past its column. When a word would not fit
+  at the current desktop font, the group uses **one column** instead of splitting that word
+  between two rows, so the label stays legible and the full name remains in the tooltip and
+  the accessible name. The vertical bar owns a **reserved track**; the tiles stop before it.
+  The header carries the title, the number of entries and the search field; the title, the
+  count and a category's name elide in place. The footer names the folder in use and the
+  number of skipped files. A search with no match says so in the panel instead of leaving it
+  blank.
 - The thumbnail of each entry is **the symbol of its own definition**, drawn by the
   same renderer as the canvas. No separate icon set can drift from the diagram.
 - **A closure is not a palette entry.** `plug.blind` and `silencer.pneumatic` are closure
@@ -386,7 +390,7 @@ The panel that lists the reasons for each skipped file is still target.
 - A connection is refused, never silently dropped, when it would join a port to itself,
   repeat an existing pipe, or name a component that is not on the sheet. The refusal sets
   the message the status bar shows.
-- **Dragging a tile owns the pointer until the release.** The palette sits in a scroll area, and a scroll area that takes the gesture past its threshold cancels the carry: the preview disappears halfway when the hand drifts diagonally. The tile prevents that steal, so the gesture survives any path over the panel, the docks and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. The release places at the pointer snapped to the grid's step; a release outside the sheet and `Escape` cancel. The drop tolerance outside the sheet and the two-step placement remain the next slice. The tile prevents that steal, so the gesture survives any path over the panel, the docks and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. Releasing outside the sheet still cancels, and the two-step and tolerance work is recorded as the next slice in [capabilities.md](capabilities.md).
+- **Dragging a tile owns the pointer until the release.** The palette sits in a scroll area, and a scroll area that takes the gesture past its threshold cancels the carry: the preview disappears halfway when the hand drifts diagonally. The tile prevents that steal, so the gesture survives any path over the panel and the sheet; the palette is scrolled with the wheel or its bar, never by dragging on a symbol. The release places at the pointer snapped to the grid's step; a release outside the sheet and `Escape` cancel. The drop tolerance outside the sheet and the two-step placement remain the next slice.
 - **Right-click or `Shift+F10` on a tile opens its menu**, with **Añadir a la hoja**: the entry is
   placed at the centre of the sheet through the same path as the search, as one undo. The menu
   is offered while editing, names the entry it will add for assistive technology, and the right
@@ -468,15 +472,15 @@ before a panel is allowed to cover it:
 |---|---|---|---|
 | **Ancha** | the sheet and the catalog fit at the catalog's preferred width | full | docked |
 | **Media** | the preferred width no longer fits but the catalog's minimum does | full | docked, narrower |
-| **Compacta** | the minimum does not fit (below 700 px at the default font in the Rust shell) | the groups that fit, collapsing as they do today | rail, opened as a drawer |
+| **Compacta** | the minimum does not fit (below 740 px at the default font in the Rust shell) | the groups that fit, collapsing as they do today | rail, opened as a drawer |
 
 - The minimums are content measurements, not magic numbers: the sheet keeps 480 px and the
-  catalog 220 px, and the catalog prefers 240 px and never takes more than 400. The Rust
-  shell derives the modes from those measurements: wide from **720 px**, medium from
-  **700 px**, compact below that at the default font. Removing the persistent right dock is
-  what moved the wide threshold from 1080 to 720. The retired Qt shell added its own chrome
-  and so had larger figures; a larger font moves the catalog's width because it follows the
-  spacing unit.
+  catalog 260 px, and the catalog prefers 300 px and never takes more than 400. The Rust
+  shell derives the modes from those measurements: wide from **780 px**, medium from
+  **740 px**, compact below that at the default font. Removing the persistent right dock moved
+  the wide threshold from 1080 to 720; widening the catalog to 300/260 moved it again to
+  780/740. The retired Qt shell added its own chrome and so had larger figures; a larger font
+  can move the catalog to one column because the tile width follows the font.
 - **The ribbon can be minimized** by the user, with the control at the right end of the tab
   row: the tab row stays and the open tab's groups appear as a panel over the drawing area
   (never over the panels' headers), closing after a command or `Esc`. The state is
@@ -522,11 +526,11 @@ before a panel is allowed to cover it:
   mixing them produces geometry conflicts and binding cycles.
 - **Today** the Rust shell builds the modes and the geometry. `LayoutMode` derives **Ancha**,
   **Media** and **Compacta** from the room the window has and the declared measurements, in
-  device-independent points: the sheet keeps 480 px, the catalog 220 px and the catalog
-  prefers 240 px (the widths are still the interface constants, not spacing-unit multiples;
-  the ribbon's text and heights are literals too). **Ancha** docks the catalog at the width
-  the reader gave it, **Media** at its minimum, and **Compacta** folds it to its rail and
-  keeps the sheet its floor. In **Compacta** `Ctrl+B` opens the catalog as a drawer over the
+  device-independent points: the sheet keeps 480 px, the catalog 260 px and the catalog
+  prefers 300 px and never takes more than 400 (the widths are still the interface constants,
+  not spacing-unit multiples; the ribbon's text and heights are literals too). **Ancha**
+  docks the catalog at the width the reader gave it, **Media** at its minimum, and
+  **Compacta** folds it to its rail and keeps the sheet its floor. In **Compacta** `Ctrl+B` opens the catalog as a drawer over the
   drawing area, never pushing it: a modal overlay that closes on `Esc`, on a click outside
   and on its hide control. `Ctrl+J`, **Ver ▸ Propiedades** and the sheet's context menu open
   the non-modal properties window in every mode; it floats over the sheet and reserves no
