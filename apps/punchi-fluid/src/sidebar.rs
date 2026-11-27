@@ -636,8 +636,8 @@ fn tile(
     let pad = tokens.unit * 0.4;
     let full_name = full_name(definition, language);
     let (principal, variant) = split_name(full_name);
-    let detail_row = if variant.is_some() { variant_row } else { 0.0 };
-    let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + detail_row + 2.0;
+    // One variant line on every tile, even without a comma: one height per font.
+    let height = pad * 2.0 + tokens.tile_band + name_row * 2.0 + variant_row + 2.0;
     let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
     if !ui.is_rect_visible(rect) {
         return (TileAction::None, rect);
@@ -725,7 +725,7 @@ fn tile(
         ui.painter().galley(
             egui::pos2(
                 rect.center().x - variant_galley.size().x * 0.5,
-                symbol.max.y + name_galley.size().y + 3.0,
+                symbol.max.y + name_row * 2.0 + 3.0,
             ),
             variant_galley,
             tokens.ink_dim,

@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Baldosas parejas del catálogo — 2026-11-27
+
+- Cada baldosa reserva la franja del símbolo, dos líneas de nombre y una línea de variante
+  aunque el nombre no tenga coma; la altura es común para la fuente activa y la variante
+  empieza en la misma coordenada relativa. El símbolo se centra y se escala con el mismo
+  factor en ambos ejes.
+- Se conservan el renderer compartido, el ancho parejo de columna, la adaptación a una
+  columna, el carril de scroll reservado, el arrastre y el nombre completo en ayuda y
+  accesibilidad.
+- Pruebas nuevas `tiles_with_and_without_variant_have_equal_height` y
+  `uniform_tiles_keep_scroll_and_drag_reachable`; la suite de ventana queda en 459 pruebas.
+- Sin cambios de documento, formato, física, símbolos ni circuitos.
 ### Verificar circuito en Simular — 2026-11-27
 
 - **Simular** incorpora **Verificar circuito** en un grupo propio, junto al transporte: usa
