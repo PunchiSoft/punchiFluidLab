@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Página y Cajetín con el valor vigente — 2026-11-27
+
+- **Márgenes** muestra cada preset con sus milímetros reales y marca el activo; si la hoja
+  está fuera de los presets aparece una tarjeta **Personalizado** con sus medidas.
+  **Orientación** y **Tamaño** marcan el valor vigente, **Tamaño ▸ Personalizado…** abre el
+  panel de página y **Configurar página…** tiene un acceso con nombre en el grupo.
+- En **Cajetín**, **Contenido** y **Posición** nombran el modelo y la posición activos y los
+  marcan en el menú; **Posición** se deshabilita con **Sin cajetín** y **Editar datos…** sigue
+  visible.
+- Pruebas nuevas `margins_menu_marks_actual_value_and_opens_page_setup`,
+  `title_block_shows_active_model_and_opens_its_editor`,
+  `paper_and_orientation_mark_the_current_value` y
+  `closing_page_menu_without_selection_keeps_sheet`; la suite de ventana queda en 454
+  pruebas.
+- Sin cambios de documento, formato, física, símbolos ni circuitos.
 ### Archivo, Guardar y Recientes en la cinta — 2026-11-27
 
 - **Guardar** es un solo control con dos zonas: el cuerpo guarda y la flecha abre **Guardar

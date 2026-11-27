@@ -39,14 +39,6 @@ pub(super) struct MenuEntry {
 }
 
 impl MenuEntry {
-    /// An option the window cannot run yet: painted, never dispatched.
-    const fn unavailable(label: &'static str) -> Self {
-        Self {
-            label,
-            command: None,
-        }
-    }
-
     /// An option that carries its command.
     const fn command(label: &'static str, command: Command) -> Self {
         Self {
@@ -66,6 +58,12 @@ pub(super) enum Item {
     Gallery(&'static str, &'static str, &'static [GalleryEntry]),
     Recents(&'static str, &'static str),
 }
+
+pub(super) const MARGINS_CUSTOM: GalleryEntry = GalleryEntry {
+    label: "ribbon.gallery.margin.custom",
+    preview: Preview::Margins(0.3),
+    command: Some(Command::PageSetup),
+};
 
 pub(super) const MARGINS: &[GalleryEntry] = &[
     GalleryEntry::command(
@@ -205,6 +203,10 @@ pub(super) const ARCHIVO: &[Group] = &[
                 "ribbon.item.paper",
                 &[
                     MenuEntry::command(
+                        "ribbon.menu.paper.a5",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A5),
+                    ),
+                    MenuEntry::command(
                         "ribbon.menu.paper.a4",
                         Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A4),
                     ),
@@ -216,7 +218,27 @@ pub(super) const ARCHIVO: &[Group] = &[
                         "ribbon.menu.paper.a2",
                         Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A2),
                     ),
-                    MenuEntry::unavailable("ribbon.menu.paper.custom"),
+                    MenuEntry::command(
+                        "ribbon.menu.paper.a1",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A1),
+                    ),
+                    MenuEntry::command(
+                        "ribbon.menu.paper.a0",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::A0),
+                    ),
+                    MenuEntry::command(
+                        "ribbon.menu.paper.letter",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::Letter),
+                    ),
+                    MenuEntry::command(
+                        "ribbon.menu.paper.legal",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::Legal),
+                    ),
+                    MenuEntry::command(
+                        "ribbon.menu.paper.oficio",
+                        Command::PagePaper(punchi_fluid_doc::paper::PaperSize::Oficio),
+                    ),
+                    MenuEntry::command("ribbon.menu.paper.custom", Command::PageSetup),
                 ],
             ),
         ],

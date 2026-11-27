@@ -727,6 +727,9 @@ impl Window {
         self.ribbon.can_redo = self.document.can_redo();
         self.ribbon.can_go_back = self.view.can_go_back();
         self.ribbon.can_reset_block = self.block_is_customized();
+        self.ribbon.sync_sheet(self.document.sheet());
+        self.ribbon
+            .sync_block(self.block.model, self.block.position, self.show_block);
         self.ribbon.can_close_circuit = self.document.circuits().len() > 1;
         self.ribbon.has_pipe = self.selected_pipe.is_some();
         self.ribbon.running = self.running;

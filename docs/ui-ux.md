@@ -166,8 +166,13 @@ class and **Diámetro**, **Repartir**, **Todo**), the view commands, the transpo
 **Restablecer** and speeds, **Inicio**, the live **Recientes** list, **Configurar página** and
 the theme dispatch; the rest is painted disabled until its phase of the ribbon plan.
 
-**Configurar página** (the group's launcher) opens a panel with the paper — the named sizes
-or custom millimetres — the orientation and the margins, by preset or in millimetres.
+**Configurar página…** is the page group's named launcher, below **Márgenes**,
+**Orientación** and **Tamaño**, and opens a panel with the paper — the named sizes or custom
+millimetres — the orientation and the margins, by preset or in millimetres. **Márgenes**
+draws its presets with the real measures and marks the one in force; a sheet outside the
+presets gets a **Personalizado** card with its own measures. **Orientación** and **Tamaño**
+mark the current choice in their menus, and **Tamaño ▸ Personalizado…** opens the same page
+panel.
 **Editar datos…** opens the title block editor: the twelve stored fields, a **Mostrar**
 switch per field, the content model that sets its default field set and the position on the
 sheet. **Comprobar** runs the design check on the circuit in view and opens the faults
@@ -185,7 +190,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 | **Archivo** | **Nuevo** and **Abrir**; **Guardar** as one control with two zones — the body saves and the arrow opens **Guardar como** directly, each with its own name, hint and focus; **Exportar** as one dropdown with **Exportar…** (PDF/PNG/SVG) and **Opciones…** (the export settings); **Recientes** beside the file commands, with **Inicio**, as one dropdown of the last ten — the folder distinguishes two files with one name and a missing file is marked; the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher. Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original `Ctrl+1`, Ajustar a la hoja `Ctrl+0`, Vista anterior, the grid toggle and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista `Ctrl+Shift+0`), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the sheet, and the arrows pan from the keyboard |
-| **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
+| **Cajetín** | **Contenido** (the item names the model in force — Técnico, Escolar, Industrial or Sin cajetín — and its menu marks it), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado; the item names the position and its menu marks it; disabled under Sin cajetín) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
 | **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
 

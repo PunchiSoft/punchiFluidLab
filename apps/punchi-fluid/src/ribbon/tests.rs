@@ -15,6 +15,7 @@ use super::model::{Item, TABS};
 use super::transport::mode_key;
 use super::{Command, Palette, Ribbon};
 
+mod page;
 mod split;
 
 #[test]
@@ -106,6 +107,9 @@ fn table_commands() -> Vec<(Command, &'static str, &'static str, &'static str)> 
 #[test]
 fn every_command_is_on_the_ribbon() {
     let commands = table_commands();
+    let has_launcher = TABS
+        .iter()
+        .any(|tab| tab.groups.iter().any(|group| group.launcher));
     let has_recents = TABS.iter().any(|tab| {
         tab.groups.iter().any(|group| {
             group
@@ -114,15 +118,11 @@ fn every_command_is_on_the_ribbon() {
                 .any(|item| matches!(item, Item::Recents(..)))
         })
     });
-    let has_launcher = TABS
-        .iter()
-        .any(|tab| tab.groups.iter().any(|group| group.launcher));
     for command in Command::ALL {
         let covered = if matches!(command, Command::OpenRecent(_)) {
             // The rows are the session's list at paint time; the table carries the menu.
             has_recents
         } else if matches!(command, Command::PageSetup) {
-            // The page setup panel is the group's launcher, not a table item.
             has_launcher
         } else {
             commands.iter().any(|(carried, ..)| {
@@ -507,16 +507,16 @@ fn a_missing_recent_is_marked_and_refused() {
 fn the_page_launcher_dispatches_its_command() {
     let mut ribbon = Ribbon::new();
     ribbon.activate("ribbon.tab.file");
-    let palette = palette();
+    let current = palette();
     {
-        let mut harness = harness(&mut ribbon, &palette, &[]);
-        if harness.query_by_label("…").is_some() {
-            harness.get_by_label("…").click();
+        let mut harness = harness(&mut ribbon, &current, &[]);
+        if harness.query_by_label("Page setup…").is_some() {
+            harness.get_by_label("Page setup…").click();
         } else {
-            // The row collapsed the group: the launcher is a row of its flyout.
+            // The row collapsed the group: the named launcher is a row of its flyout.
             harness.get_by_label("Page setup   ").click();
             harness.run();
-            harness.get_by_label("Page setup").click();
+            harness.get_by_label("Page setup…").click();
         }
         harness.run();
     }

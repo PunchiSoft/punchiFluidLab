@@ -7,6 +7,8 @@
 use std::collections::HashMap;
 
 use eframe::egui;
+use punchi_fluid_doc::paper::{Margins, Orientation, PaperSize, Sheet};
+use punchi_fluid_doc::title_block::{BlockPosition, ContentModel};
 use punchi_fluid_file::recent::Recent;
 use punchi_fluid_i18n::Language;
 
@@ -14,6 +16,7 @@ use crate::theme::Tokens;
 
 mod command;
 mod enabled;
+mod gallery;
 mod icons;
 mod layout;
 mod model;
@@ -23,7 +26,7 @@ mod transport;
 pub(crate) use transport::mode_key;
 
 pub(crate) use command::{Command, MarginPreset, Speed};
-use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
+use model::{GalleryEntry, Group, Item, MenuEntry, TABS};
 
 /// The large command's box and label, shared by the plain and the split control. The theme
 /// move and the font-scaled label are phase 3 of the interface plan.
@@ -100,6 +103,14 @@ pub struct Ribbon {
     pub can_go_back: bool,
     /// Whether the active circuit's block differs from its default; the window sets it.
     pub can_reset_block: bool,
+    /// The sheet the active project draws on; the window sets it each frame.
+    pub(crate) paper: PaperSize,
+    pub(crate) orientation: Orientation,
+    pub(crate) margins: Margins,
+    /// The active circuit's title block, for the current model, position and visibility.
+    pub(crate) block_model: ContentModel,
+    pub(crate) block_position: BlockPosition,
+    pub(crate) block_visible: bool,
     /// Whether a pipe is selected; the window sets it every frame.
     pub has_pipe: bool,
     /// Whether the document has more than one circuit; the window sets it.
@@ -126,6 +137,12 @@ impl Ribbon {
             can_redo: false,
             can_go_back: false,
             can_reset_block: false,
+            paper: PaperSize::A4,
+            orientation: Orientation::Landscape,
+            margins: Margins::iso5457(),
+            block_model: ContentModel::Industrial,
+            block_position: BlockPosition::BottomRight,
+            block_visible: true,
             has_pipe: false,
             can_close_circuit: false,
             pending: None,
@@ -165,6 +182,62 @@ impl Ribbon {
         }
         self.last = self.language.text(command.label_key()).to_string();
         self.pending = Some(command);
+    }
+
+    /// Takes the sheet the active project draws on.
+    pub(crate) fn sync_sheet(&mut self, sheet: Sheet) {
+        self.paper = sheet.paper;
+        self.orientation = sheet.orientation;
+        self.margins = sheet.margins;
+    }
+
+    /// Takes the active circuit's title block state.
+    pub(crate) fn sync_block(
+        &mut self,
+        model: ContentModel,
+        position: BlockPosition,
+        visible: bool,
+    ) {
+        self.block_model = model;
+        self.block_position = position;
+        self.block_visible = visible;
+    }
+
+    /// Whether a command is the value in force, for the check a menu row draws.
+    pub(super) fn command_selected(&self, command: Command) -> bool {
+        match command {
+            Command::PageMargin(preset) => self.margins == preset.margins(),
+            Command::PageOrientation(orientation) => self.orientation == orientation,
+            Command::PagePaper(paper) => self.paper == paper,
+            Command::BlockModel(model) => self.block_visible && self.block_model == model,
+            Command::BlockPosition(BlockPosition::None) => !self.block_visible,
+            Command::BlockPosition(position) => {
+                self.block_visible && self.block_position == position
+            }
+            _ => false,
+        }
+    }
+
+    /// The current value a block menu shows under its name, if it has one.
+    fn block_current(&self, label: &'static str) -> Option<&'static str> {
+        match label {
+            "ribbon.item.block_content" => Some(if self.block_visible {
+                match self.block_model {
+                    ContentModel::School => "ribbon.menu.content.school",
+                    ContentModel::Technical => "ribbon.menu.content.technical",
+                    ContentModel::Industrial => "ribbon.menu.content.industrial",
+                }
+            } else {
+                "ribbon.menu.content.none"
+            }),
+            "ribbon.item.block_position" if self.block_visible => Some(match self.block_position {
+                BlockPosition::TopRight => "ribbon.menu.position.top_right",
+                BlockPosition::BottomRight => "ribbon.menu.position.bottom_right",
+                BlockPosition::BottomFull => "ribbon.menu.position.bottom_full",
+                BlockPosition::None => "ribbon.menu.content.none",
+            }),
+            _ => None,
+        }
     }
 
     /// Takes the command the reader just chose, for the window to act on; the last command
@@ -398,23 +471,33 @@ impl Ribbon {
                     }
                 });
                 ui.add_space(2.0);
-                let title_width = layout::text_width(ui, name, palette.text_small);
+                let title = if group.launcher {
+                    format!("{name}…")
+                } else {
+                    name.to_owned()
+                };
+                let title_width = layout::text_width(ui, &title, palette.text_small);
                 let width = ui.available_width();
                 ui.horizontal(|ui| {
-                    let launcher = if group.launcher { 30.0 } else { 0.0 };
-                    ui.add_space(((width - title_width - launcher) * 0.5).max(0.0));
-                    ui.label(
-                        egui::RichText::new(name)
-                            .size(palette.text_small)
-                            .color(palette.muted),
-                    );
-                    if group.launcher
-                        && ui
-                            .add(egui::Button::new("…"))
-                            .on_hover_text(self.language.text("ribbon.page_setup"))
+                    ui.add_space(((width - title_width) * 0.5).max(0.0));
+                    if group.launcher {
+                        if ui
+                            .add(egui::Button::new(
+                                egui::RichText::new(&title)
+                                    .size(palette.text_small)
+                                    .color(palette.muted),
+                            ))
+                            .on_hover_text(&title)
                             .clicked()
-                    {
-                        *picked = Some(Command::PageSetup);
+                        {
+                            *picked = Some(Command::PageSetup);
+                        }
+                    } else {
+                        ui.label(
+                            egui::RichText::new(&title)
+                                .size(palette.text_small)
+                                .color(palette.muted),
+                        );
                     }
                 });
             },
@@ -535,8 +618,13 @@ impl Ribbon {
         palette: &Palette,
         picked: &mut Option<Command>,
     ) {
+        let current = self.block_current(label).map(|key| self.language.text(key));
         let label = self.language.text(label);
-        let text = egui::RichText::new(format!("{label}   "))
+        let text = current.map_or_else(
+            || format!("{label}   "),
+            |current| format!("{label}\n{current}   "),
+        );
+        let text = egui::RichText::new(text)
             .size(palette.text_body)
             .color(palette.ink);
         let button = match self.icons.get(id) {
@@ -549,10 +637,23 @@ impl Ribbon {
         let (response, _) = egui::containers::menu::MenuButton::from_button(button).ui(ui, |ui| {
             for entry in entries {
                 let enabled = entry.command.is_some_and(|command| self.enabled(command));
-                if ui
-                    .add_enabled(enabled, egui::Button::new(self.language.text(entry.label)))
-                    .clicked()
-                {
+                let selected = entry
+                    .command
+                    .is_some_and(|command| self.command_selected(command));
+                let plain = self.language.text(entry.label);
+                let marker = if selected { "•  " } else { "   " };
+                let response =
+                    ui.add_enabled(enabled, egui::Button::new(format!("{marker}{plain}")));
+                if selected {
+                    response.widget_info(|| {
+                        egui::WidgetInfo::selected(egui::WidgetType::Button, enabled, true, plain)
+                    });
+                } else {
+                    response.widget_info(|| {
+                        egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, plain)
+                    });
+                }
+                if response.clicked() {
                     if let Some(command) = entry.command {
                         *picked = Some(command);
                     }
@@ -588,10 +689,24 @@ impl Ribbon {
                 .spacing([6.0, 6.0])
                 .show(ui, |ui| {
                     for (index, entry) in entries.iter().enumerate() {
-                        self.card(ui, entry, palette, picked, self.language);
+                        gallery::card(self, ui, entry, palette, picked, self.language);
                         if index % 2 == 1 {
                             ui.end_row();
                         }
+                    }
+                    let preset_matches = entries.iter().any(|entry| {
+                        matches!(entry.command, Some(Command::PageMargin(preset))
+                            if self.margins == preset.margins())
+                    });
+                    if !preset_matches {
+                        gallery::card(
+                            self,
+                            ui,
+                            &model::MARGINS_CUSTOM,
+                            palette,
+                            picked,
+                            self.language,
+                        );
                     }
                 });
         });
@@ -622,80 +737,6 @@ impl Ribbon {
             recents::rows(ui, recents, picked, self.language);
         });
         arrow(ui, response.rect, palette.ink);
-    }
-
-    fn card(
-        &self,
-        ui: &mut egui::Ui,
-        entry: &GalleryEntry,
-        palette: &Palette,
-        picked: &mut Option<Command>,
-        language: Language,
-    ) {
-        let enabled = entry.command.is_some_and(|command| self.enabled(command));
-        let label = language.text(entry.label);
-        let ink = if enabled { palette.ink } else { palette.muted };
-        let (rect, response) =
-            ui.allocate_exact_size(egui::vec2(132.0, 78.0), egui::Sense::click());
-        if ui.is_rect_visible(rect) {
-            let background = if enabled && response.hovered() {
-                palette.hover
-            } else {
-                palette.raised
-            };
-            ui.painter().rect_filled(rect, 4.0, background);
-            ui.painter().rect_stroke(
-                rect,
-                4.0,
-                egui::Stroke::new(1.0_f32, palette.line),
-                egui::StrokeKind::Inside,
-            );
-            let preview =
-                egui::Rect::from_min_size(rect.min + egui::vec2(8.0, 6.0), egui::vec2(116.0, 42.0));
-            match entry.preview {
-                Preview::Margins(fraction) => {
-                    let page =
-                        egui::Rect::from_center_size(preview.center(), egui::vec2(58.0, 40.0));
-                    ui.painter().rect_filled(page, 1.0, egui::Color32::WHITE);
-                    ui.painter().rect_stroke(
-                        page,
-                        1.0,
-                        egui::Stroke::new(1.0_f32, palette.ink),
-                        egui::StrokeKind::Inside,
-                    );
-                    let margin = fraction * 18.0;
-                    ui.painter().rect_stroke(
-                        page.shrink(margin),
-                        0.0,
-                        egui::Stroke::new(1.0_f32, palette.muted),
-                        egui::StrokeKind::Inside,
-                    );
-                }
-                Preview::Pipe(icon) => {
-                    if let Some(bytes) = self.icons.get(icon) {
-                        Self::image(bytes, icon, label, palette).paint_at(
-                            ui,
-                            egui::Rect::from_center_size(preview.center(), egui::vec2(28.0, 28.0)),
-                        );
-                    }
-                }
-            }
-            ui.painter().text(
-                egui::pos2(rect.center().x, rect.max.y - 14.0),
-                egui::Align2::CENTER_CENTER,
-                label,
-                egui::FontId::proportional(11.0),
-                ink,
-            );
-        }
-        response
-            .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label));
-        if enabled && response.clicked() {
-            if let Some(command) = entry.command {
-                *picked = Some(command);
-            }
-            ui.close();
-        }
     }
 
     fn image<'a>(
