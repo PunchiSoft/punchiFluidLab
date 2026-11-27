@@ -199,16 +199,15 @@ impl Ribbon {
                         }
                     }
                     ui.separator();
-                    ui.label(
-                        egui::RichText::new(
-                            self.language
-                                .text(transport::mode_key(self.running, self.simulation)),
-                        )
-                        .size(palette.text_body)
-                        .color(palette.muted),
+                    transport::mode_label(
+                        ui,
+                        palette,
+                        self.language,
+                        self.running,
+                        self.simulation,
                     );
                     let simulate_tab = TABS[self.active].name == "ribbon.tab.simulate";
-                    if !simulate_tab && ui.available_width() > 320.0 {
+                    if !simulate_tab && ui.available_width() > 260.0 {
                         transport::buttons(ui, palette, self.language, self, &mut picked);
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

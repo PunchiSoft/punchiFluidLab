@@ -20,6 +20,25 @@ pub(crate) fn mode_key(running: bool, simulation: bool) -> &'static str {
     }
 }
 
+/// The mode word, when the tab row can afford it: the compact transport outranks it, so at a
+/// 150 % font and 900 points the word yields and the status bar still names the mode.
+pub(super) fn mode_label(
+    ui: &mut egui::Ui,
+    palette: &Palette,
+    language: Language,
+    running: bool,
+    simulation: bool,
+) {
+    if ui.available_width() <= 500.0 {
+        return;
+    }
+    ui.label(
+        egui::RichText::new(language.text(mode_key(running, simulation)))
+            .size(palette.text_body)
+            .color(palette.muted),
+    );
+}
+
 /// The Start/Pause toggle and Stop. The caller owns the picked command budget, so these are
 /// the same commands the Simular tab, the shortcuts and the view strip dispatch.
 pub(super) fn buttons(
