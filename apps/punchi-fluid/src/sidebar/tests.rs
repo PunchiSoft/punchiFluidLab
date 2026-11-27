@@ -528,3 +528,46 @@ fn a_tile_announces_the_carry_with_the_right_hand() {
         Some(egui::CursorIcon::Grabbing)
     );
 }
+
+#[test]
+fn tiles_with_and_without_variant_have_equal_height() {
+    let (_harness, _returned, tiles) = tile_harness();
+    let tiles = tiles.borrow();
+    let with_variant = tiles
+        .iter()
+        .find(|(id, _)| id == ENTRY)
+        .map(|(_, rect)| *rect)
+        .expect("the variant tile is visible");
+    let without_variant = tiles
+        .iter()
+        .find(|(id, _)| id == "supply.compressor")
+        .map(|(_, rect)| *rect)
+        .expect("the plain tile is visible");
+    assert!(
+        (with_variant.height() - without_variant.height()).abs() < 0.5,
+        "both tiles reserve the same rows: {with_variant:?} / {without_variant:?}"
+    );
+}
+
+#[test]
+fn uniform_tiles_keep_scroll_and_drag_reachable() {
+    let (_harness, tiles, geometry) = scroll_harness(300.0, 600.0);
+    let (viewport, track) = *geometry.borrow();
+    let viewport = viewport.expect("the scroll viewport is recorded");
+    let track = track.expect("the scroll track is recorded");
+    assert!(track.width() > 0.0, "the catalog keeps its reserved track");
+    for (id, rect) in tiles.borrow().iter() {
+        assert!(
+            rect.left() >= viewport.left() - 0.5 && rect.right() <= viewport.right() + 0.5,
+            "{id} stays out of the scroll track: {rect:?}"
+        );
+    }
+    let first = tiles.borrow().first().map(|(_, rect)| *rect);
+    let last = tiles.borrow().last().map(|(_, rect)| *rect);
+    assert!(first.is_some() && last.is_some(), "the tiles are laid out");
+    assert_eq!(
+        first.map(|rect| rect.width()),
+        last.map(|rect| rect.width()),
+        "the last tile keeps the column width of the first"
+    );
+}

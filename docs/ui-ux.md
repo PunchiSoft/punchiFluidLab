@@ -369,9 +369,12 @@ the reasons for each skipped file is still target.
   `accessory`, `sensor`), collapsible, in a stable order, state remembered per user; the
   label is translated in the session, so the widget never learns the numeric enum.
 - The sidebar is **a palette of tiles**: two per row when each tile reaches the measured
-  minimum for the symbol and the name, one when it does not. Each tile carries the symbol, the
-  principal name on up to two lines and the variant on its own line, with the full name and
-  the `id` in the tooltip and in the accessible name. A name wraps at a space and the variant
+  minimum for the symbol and the name, one when it does not. Each tile reserves the same
+  symbol band, two name lines and one variant line, even when the name has no comma, so the
+  height is common to every tile of the active font and the variant starts at the same
+  relative coordinate; the symbol is centred and scaled by one factor on both axes. The full
+  name and the `id` stay in the tooltip and in the accessible name. A name wraps at a space
+  and the variant
   elides; no text in the palette widens the panel past its column. When a word would not fit
   at the current desktop font, the group uses **one column** instead of splitting that word
   between two rows, so the label stays legible and the full name remains in the tooltip and
