@@ -224,9 +224,14 @@ impl Sidebar {
         chrome.set_language(*language);
         let title = language.text("catalog.title");
         chrome
-            .show(context, tokens, title, Some(subtitle), docked_width, |ui| {
-                body.show(ui, tokens, catalog, *language)
-            })
+            .show(
+                context,
+                tokens,
+                title,
+                Some(subtitle),
+                docked_width,
+                |ui, animating| body.show(ui, tokens, catalog, *language, animating),
+            )
             .flatten()
     }
 
@@ -270,8 +275,8 @@ impl Sidebar {
         } = self;
         chrome.set_language(*language);
         let title = language.text("catalog.title");
-        chrome.show_body(ui, tokens, title, Some(subtitle), |ui| {
-            body.show(ui, tokens, catalog, *language)
+        chrome.show_body(ui, tokens, title, Some(subtitle), |ui, _animating| {
+            body.show(ui, tokens, catalog, *language, false)
         })
     }
 }
@@ -288,6 +293,7 @@ impl Body {
         tokens: &Tokens,
         catalog: &Catalog,
         language: Language,
+        animating: bool,
     ) -> Option<CatalogAction> {
         let mut chosen = None;
         let mut select = None;
@@ -428,16 +434,21 @@ impl Body {
                     );
                 }
             });
+        let track = egui::Rect::from_min_max(
+            egui::pos2(scroll.inner_rect.right(), scroll.inner_rect.top()),
+            egui::pos2(ui.max_rect().right(), scroll.inner_rect.bottom()),
+        );
+        if animating {
+            // The bar is a normal control at rest; while the column interpolates it would read
+            // as a dark strip over the card, so its reserved track is painted with the card
+            // surface for the duration of the fold.
+            ui.painter().rect_filled(track, 0.0, tokens.panel);
+        }
         #[cfg(test)]
         {
             self.scroll_viewport = Some(scroll.inner_rect);
-            self.scroll_track = Some(egui::Rect::from_min_max(
-                egui::pos2(scroll.inner_rect.right(), scroll.inner_rect.top()),
-                egui::pos2(ui.max_rect().right(), scroll.inner_rect.bottom()),
-            ));
+            self.scroll_track = Some(track);
         }
-        #[cfg(not(test))]
-        let _ = scroll;
         let skipped = catalog.problems().len();
         let footer_text = if skipped == 0 {
             language.text("catalog.integrated").to_owned()

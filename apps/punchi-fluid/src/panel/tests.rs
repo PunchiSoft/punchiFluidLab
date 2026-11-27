@@ -447,3 +447,152 @@ fn the_sheet_area_follows_the_catalog() {
         "the rail gives the room back to the catalog: {reopened} != {open}"
     );
 }
+
+use std::cell::RefCell;
+
+use super::{Edge, Panel, Settings};
+use crate::theme::Tokens;
+
+/// A panel of its own, with a body that records how many frames it was painted.
+type FoldHarness = (
+    egui_kittest::Harness<'static>,
+    Rc<RefCell<Panel>>,
+    Rc<Cell<usize>>,
+    Rc<Cell<f32>>,
+);
+
+fn fold_harness() -> FoldHarness {
+    let panel = Rc::new(RefCell::new(Panel::new(Settings {
+        edge: Edge::Left,
+        id: "fold.test",
+        default_width: 300.0,
+        min_width: 260.0,
+        max_width: 400.0,
+        width_label: "fold.width",
+        show_label: "fold.show",
+        hide_label: "fold.hide",
+        shortcut: "",
+        margin: 10,
+    })));
+    let live = Rc::clone(&panel);
+    let frames = Rc::new(Cell::new(0));
+    let painted = Rc::clone(&frames);
+    let shade = Rc::new(Cell::new(1.0));
+    let observed = Rc::clone(&shade);
+    let tokens: Tokens = Theme::fallback().tokens;
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(1366.0, 768.0))
+        .with_step_dt(1.0 / 60.0)
+        .with_max_steps(240)
+        .build(move |context| {
+            let mut panel = live.borrow_mut();
+            painted.set(0);
+            let _ = panel.show(context, &tokens, "Test", None, 300.0, |ui, _animating| {
+                painted.set(painted.get() + 1);
+                ui.label("body");
+            });
+            observed.set(panel.shade());
+        });
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the panel tests need one");
+    }
+    harness.run();
+    (harness, panel, frames, shade)
+}
+
+#[test]
+fn the_fold_keeps_the_body_painted_each_frame() {
+    let (mut harness, panel, frames, shade) = fold_harness();
+    panel.borrow_mut().close();
+    let mut intermediate = 0;
+    for _ in 0..8 {
+        harness.step();
+        let shade = shade.get();
+        if shade > 0.001 && shade < 0.999 {
+            intermediate += 1;
+            assert!(
+                frames.get() > 0,
+                "the body is painted at shade {shade}: {}",
+                frames.get()
+            );
+        }
+    }
+    assert!(
+        intermediate >= 2,
+        "the test saw the fold move through {intermediate} frames"
+    );
+}
+
+#[test]
+fn reversing_the_fold_keeps_the_body_and_the_direction() {
+    let (mut harness, panel, frames, shade) = fold_harness();
+    panel.borrow_mut().close();
+    harness.step();
+    harness.step();
+    let closing = shade.get();
+    assert!(closing < 1.0, "the panel is folding: {closing}");
+    panel.borrow_mut().open();
+    harness.step();
+    assert!(
+        shade.get() > closing,
+        "the reversed fold grows again: {} > {closing}",
+        shade.get()
+    );
+    assert!(frames.get() > 0, "the body is painted while reversing");
+}
+
+#[test]
+fn reduced_motion_folds_in_one_frame() {
+    let panel = Rc::new(RefCell::new(Panel::new(Settings {
+        edge: Edge::Left,
+        id: "fold.instant",
+        default_width: 300.0,
+        min_width: 260.0,
+        max_width: 400.0,
+        width_label: "fold.width",
+        show_label: "fold.show",
+        hide_label: "fold.hide",
+        shortcut: "",
+        margin: 10,
+    })));
+    let live = Rc::clone(&panel);
+    let frames = Rc::new(Cell::new(0));
+    let painted = Rc::clone(&frames);
+    let shade = Rc::new(Cell::new(1.0));
+    let observed = Rc::clone(&shade);
+    let mut tokens = Theme::fallback().tokens;
+    tokens.motion_ms = 0;
+    let mut harness = egui_kittest::Harness::builder()
+        .with_size(egui::vec2(1366.0, 768.0))
+        .with_max_steps(60)
+        .build(move |context| {
+            let mut panel = live.borrow_mut();
+            painted.set(0);
+            let _ = panel.show(context, &tokens, "Test", None, 300.0, |ui, _animating| {
+                painted.set(painted.get() + 1);
+                ui.label("body");
+            });
+            observed.set(panel.shade());
+        });
+    if crate::theme::install_font(&harness.ctx, None).is_err() {
+        eprintln!("no system font: the panel tests need one");
+    }
+    harness.run();
+    panel.borrow_mut().close();
+    harness.step();
+    assert!(shade.get() <= 0.001, "reduced motion folds at once");
+    panel.borrow_mut().open();
+    harness.step();
+    assert!(shade.get() >= 0.999, "reduced motion opens at once");
+    assert!(frames.get() > 0, "the open body is painted");
+}
+
+#[test]
+fn an_idle_panel_does_not_keep_requesting_repaints() {
+    let (mut harness, _panel, _frames, _shade) = fold_harness();
+    harness.step();
+    assert!(
+        !harness.ctx.has_requested_repaint(),
+        "a settled panel does not ask for another frame"
+    );
+}

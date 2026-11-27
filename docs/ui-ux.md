@@ -430,7 +430,10 @@ them to a side dock is a later decision (stage 6 of the owner's staged plan).
 - The hide control is a **project glyph** of two rectangles with the side that folds
   marked. The desktop icon themes have no panel glyph, and a label alone is not a control.
 - Hiding and showing is **animated** with the theme's `motionMs`; with reduced motion it is
-  instant. The content is clipped, and the sheet takes the width in the same gesture.
+  instant. The content is clipped, and the sheet takes the width in the same gesture. The
+  painted surface is continuous: the panel clears with an opaque theme plane, the body stays
+  drawn while the width interpolates and the scroll bar is masked inside its reserved track,
+  so no frame shows a black band or an empty card.
 - **Auto-hide is off by default.** When the user enables it in **Ver**, a dwell of about
   350 ms on the rail opens the panel and about 800 ms without the pointer closes it; a
   return cancels the timer. It never hides while a catalog drag is in progress, while the

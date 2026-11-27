@@ -6,6 +6,22 @@ publicación.
 
 ## Unreleased
 
+### Plegado continuo del catálogo — 2026-11-26
+
+- El plegado deja de enseñar una franja oscura: la ventana limpia con el plano opaco del tema
+  en vez del gris oscuro translúcido de eframe, y el cuerpo del catálogo se pinta mientras el
+  ancho interpola, también al abrir. La barra se enmascara en su carril durante el movimiento;
+  al asentarse vuelve.
+- Se conserva el movimiento del tema, el plegado instantáneo con movimiento reducido, la
+  reversión a mitad de trayecto y el reposo sin repintado. La zona de clic y el foco siguen al
+  panel visible.
+- Nuevas pruebas `the_fold_keeps_the_body_painted_each_frame`,
+  `reversing_the_fold_keeps_the_body_and_the_direction`,
+  `reduced_motion_folds_in_one_frame`,
+  `an_idle_panel_does_not_keep_requesting_repaints` y
+  `the_window_clears_with_an_opaque_theme_colour`; la suite de ventana queda en 441 pruebas,
+  sin cambios de documento, formato, física ni símbolos.
+
 ### Catálogo ancho y desplazamiento limpio — 2026-11-26
 
 - El catálogo abre a **300 puntos** (260–400, redimensionable y recordado). La hoja conserva
