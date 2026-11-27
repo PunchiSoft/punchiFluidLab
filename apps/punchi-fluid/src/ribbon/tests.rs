@@ -548,8 +548,17 @@ fn harness<'a>(
     palette: &'a Palette,
     recents: &'a [Recent],
 ) -> egui_kittest::Harness<'a> {
+    harness_at(ribbon, palette, recents, 1366.0)
+}
+
+fn harness_at<'a>(
+    ribbon: &'a mut Ribbon,
+    palette: &'a Palette,
+    recents: &'a [Recent],
+    width: f32,
+) -> egui_kittest::Harness<'a> {
     let mut harness = egui_kittest::Harness::new_ui(move |ui| ribbon.show(ui, palette, recents));
-    harness.set_size(egui::vec2(1366.0, 768.0));
+    harness.set_size(egui::vec2(width, 768.0));
     // The window ships no font: the harness gets the desktop's, as the app does at start.
     if crate::theme::install_font(&harness.ctx, None).is_err() {
         eprintln!("no system font: the ribbon tests need one");
@@ -622,6 +631,101 @@ fn every_action_icon_uses_the_review_canvas() {
         assert!(
             svg.contains("stroke=\"currentColor\""),
             "{id} takes its ink from the state"
+        );
+    }
+}
+
+#[test]
+fn the_five_tabs_and_their_groups_survive_every_window_width() {
+    for width in [900.0, 1093.0, 1366.0, 1920.0] {
+        for language in [Language::English, Language::Spanish] {
+            let mut ribbon = Ribbon::new();
+            ribbon.language = language;
+            let palette = palette();
+            let harness = harness_at(&mut ribbon, &palette, &[], width);
+            for tab in TABS {
+                assert!(
+                    harness
+                        .query_all_by_label_contains(language.text(tab.name))
+                        .count()
+                        >= 1,
+                    "{} names its tab at {width}",
+                    tab.name
+                );
+            }
+            for group in TABS[0].groups {
+                assert!(
+                    harness
+                        .query_all_by_label_contains(language.text(group.name))
+                        .count()
+                        >= 1,
+                    "{} names its group at {width}",
+                    group.name
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn the_compact_transport_is_reachable_from_every_tab() {
+    for width in [900.0, 1093.0] {
+        for tab in TABS {
+            let mut ribbon = Ribbon::new();
+            ribbon.activate(tab.name);
+            let palette = palette();
+            let harness = harness_at(&mut ribbon, &palette, &[], width);
+            let (start, stop) = if tab.name == "ribbon.tab.simulate" {
+                ("ribbon.item.start", "ribbon.item.stop")
+            } else {
+                ("ribbon.item.start_run", "ribbon.item.stop_run")
+            };
+            assert!(
+                harness
+                    .query_all_by_label_contains(Language::English.text(start))
+                    .count()
+                    >= 1,
+                "{} keeps Start reachable at {width}",
+                tab.name
+            );
+            assert!(
+                harness
+                    .query_all_by_label_contains(Language::English.text(stop))
+                    .count()
+                    >= 1,
+                "{} keeps Stop reachable at {width}",
+                tab.name
+            );
+        }
+    }
+}
+
+#[test]
+fn a_large_font_keeps_the_group_titles_and_the_compact_transport() {
+    let mut palette = palette();
+    palette.text_label *= 1.5;
+    palette.text_body *= 1.5;
+    palette.text_small *= 1.5;
+    for width in [900.0, 1093.0, 1366.0] {
+        let mut ribbon = Ribbon::new();
+        ribbon.activate("ribbon.tab.edit");
+        let harness = harness_at(&mut ribbon, &palette, &[], width);
+        for group in TABS[1].groups {
+            assert!(
+                harness
+                    .query_all_by_label_contains(Language::English.text(group.name))
+                    .count()
+                    >= 1,
+                "{} names its group at {width} with a 150 % font",
+                group.name
+            );
+        }
+        assert!(
+            harness
+                .query_all_by_label_contains(Language::English.text("ribbon.item.start_run"))
+                .count()
+                >= 1,
+            "the compact transport survives a 150 % font at {width}"
         );
     }
 }

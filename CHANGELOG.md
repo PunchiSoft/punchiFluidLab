@@ -6,6 +6,18 @@ publicación.
 
 ## Unreleased
 
+### Cinta verificada en la matriz de tamaños — 2026-11-26
+
+- La composición actual de la cinta queda aceptada por el propietario: cinco pestañas,
+  grupos con nombre visible, acciones grandes y pequeñas, transporte compacto en la fila de
+  pestañas fuera de **Simular** y transporte completo dentro de **Simular**; el colapso
+  conserva los títulos de grupo y no esconde Iniciar, Pausa, Paso ni Detener.
+- Nuevas pruebas de matriz a **900, 1093, 1366 y 1920 puntos**, con **150 %** de fuente y en
+  inglés/español: las cinco pestañas, sus grupos y el transporte siguen accesibles. No cambia
+  la disposición, los nombres ni los atajos.
+- Sin cambios de documento, formato, física ni símbolos; la suite de ventana queda en 446
+  pruebas.
+
 ### Iconografía de acciones completa y auditada — 2026-11-26
 
 - La familia suma **62 dibujos** y cada comando de la cinta resuelve el suyo. Opciones deja de

@@ -194,7 +194,13 @@ is marked and the state is a word (Editing, Running or Paused), never colour alo
 until-change pass is still synchronous, so its transient state has no stable word.
 
 **The Cajetín tab and its docked editor edit one circuit while the sheet stays visible.**
-The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular.
+The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular. The body groups the commands by task under a visible group name; the primary
+commands are large with the icon above the label and the secondary ones sit in small rows.
+When the width tightens, the last groups collapse to their title button and keep every
+command in a flyout; the tab row keeps a compact transport outside **Simular**, while
+**Simular** keeps the full transport. The matrix at 900, 1093, 1366 and 1920 points, with a
+150 % font and in both languages, proves the five tabs, their group titles and the transport
+remain reachable.
 **Cajetín** groups
 **Contenido** (Escolar, Técnico, Industrial, Sin cajetín; the current one marked),
 **Posición** (top right, bottom right; portrait adds the full bottom band; marked, disabled
