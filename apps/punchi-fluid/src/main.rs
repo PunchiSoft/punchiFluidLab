@@ -735,6 +735,15 @@ impl Window {
 }
 
 impl eframe::App for Window {
+    /// The clear colour behind every region: the theme's window plane, fully opaque. Eframe's
+    /// default is a dark translucent grey, which showed through the one frame where the
+    /// folding panel did not cover its column and read as a black band.
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        let colour = self.theme.tokens.background;
+        egui::Color32::from_rgba_unmultiplied(colour.r(), colour.g(), colour.b(), 255)
+            .to_normalized_gamma_f32()
+    }
+
     fn update(&mut self, context: &egui::Context, _frame: &mut eframe::Frame) {
         trace::update(self, context);
     }

@@ -224,7 +224,7 @@ impl Panel {
         title: &str,
         subtitle: Option<&str>,
         docked_width: f32,
-        body: impl FnOnce(&mut egui::Ui) -> R,
+        body: impl FnOnce(&mut egui::Ui, bool) -> R,
     ) -> Option<R> {
         let rail = tokens.unit.max(MIN_RAIL);
         #[allow(
@@ -250,6 +250,11 @@ impl Panel {
             // keeps that same ground in every theme.
             .frame(egui::Frame::default().fill(tokens.surface_sunken))
             .show(context, |ui| {
+                // Paint the whole current column first: while the width interpolates the
+                // card's outer margin is not enough to cover the panel, and an unpainted
+                // strip shows the window's clear colour as a dark band for a frame.
+                ui.painter()
+                    .rect_filled(ui.max_rect(), 0.0, tokens.surface_sunken);
                 if self.shade <= 0.001 && !self.open {
                     if self.rail(ui, tokens) {
                         self.open();
@@ -277,10 +282,11 @@ impl Panel {
                     if hide {
                         self.close();
                     }
-                    if self.shade < 0.999 {
-                        return;
-                    }
-                    result = Some(body(ui));
+                    // The body stays painted while the width interpolates: hiding it left a
+                    // full-width empty card at the start of the opening, and the rail/card
+                    // switch was the visible jump. The frame clips it to the growing column.
+                    let animating = self.shade < 0.999;
+                    result = Some(body(ui, animating));
                 });
             });
         self.observe(context, shown.response.rect);
@@ -337,11 +343,11 @@ impl Panel {
         tokens: &Tokens,
         title: &str,
         subtitle: Option<&str>,
-        body: impl FnOnce(&mut egui::Ui) -> R,
+        body: impl FnOnce(&mut egui::Ui, bool) -> R,
     ) -> (R, bool) {
         self.probe = Probe::default();
         let hide = self.header(ui, tokens, title, subtitle);
-        let result = body(ui);
+        let result = body(ui, false);
         self.observe(ui.ctx(), ui.max_rect());
         (result, hide)
     }

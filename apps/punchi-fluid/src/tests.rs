@@ -787,3 +787,13 @@ fn every_command_has_a_handler() {
 }
 
 mod commands;
+
+#[test]
+fn the_window_clears_with_an_opaque_theme_colour() {
+    let window = Window::new(theme::Theme::fallback(), Document::new(), None, None);
+    let clear = <Window as eframe::App>::clear_color(&window, &egui::Visuals::light());
+    assert!(
+        (clear[3] - 1.0).abs() < f32::EPSILON,
+        "the clear colour is opaque"
+    );
+}
