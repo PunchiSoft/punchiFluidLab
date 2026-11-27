@@ -13,8 +13,10 @@ publicación.
   pestañas fuera de **Simular** y transporte completo dentro de **Simular**; el colapso
   conserva los títulos de grupo y no esconde Iniciar, Pausa, Paso ni Detener.
 - Nuevas pruebas de matriz a **900, 1093, 1366 y 1920 puntos**, con **150 %** de fuente y en
-  inglés/español: las cinco pestañas, sus grupos y el transporte siguen accesibles. No cambia
-  la disposición, los nombres ni los atajos.
+  inglés/español: las cinco pestañas, sus grupos y el transporte siguen accesibles. A 900
+  puntos con fuente al 150 %, la palabra de modo cede su sitio al transporte compacto; el
+  estado sigue en la barra inferior. No cambia la disposición de los grupos, los nombres ni
+  los atajos.
 - Sin cambios de documento, formato, física ni símbolos; la suite de ventana queda en 446
   pruebas.
 

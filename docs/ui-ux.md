@@ -198,7 +198,8 @@ The ribbon has five tabs — Archivo, Editar, Ver, **Cajetín**, Simular. The bo
 commands are large with the icon above the label and the secondary ones sit in small rows.
 When the width tightens, the last groups collapse to their title button and keep every
 command in a flyout; the tab row keeps a compact transport outside **Simular**, while
-**Simular** keeps the full transport. The matrix at 900, 1093, 1366 and 1920 points, with a
+**Simular** keeps the full transport. The compact transport outranks the mode word: at a
+150 % font and 900 points the mode word yields and the status bar still names the mode. The matrix at 900, 1093, 1366 and 1920 points, with a
 150 % font and in both languages, proves the five tabs, their group titles and the transport
 remain reachable.
 **Cajetín** groups
