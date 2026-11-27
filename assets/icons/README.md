@@ -38,10 +38,11 @@ which supersedes ADR 0028's "no asset files" rule.
 
 1. Draw it in the box and the stroke above; keep one concept per drawing.
 2. Save it as `actions/<id>.svg`.
-3. Run `./scripts-dev/check-icons.sh`: it validates every file (box, stroke, no text, no
-   external reference, size bound) and checks that the family and the ribbon table cover each
-   other.
-4. Render `--icon-sheet` in both themes and read the small row; an icon that does not read at
-   16 px is redrawn, not shipped.
+3. Run `cargo test -p punchi-fluid-window every_action_icon`: the test resolves every icon
+   the ribbon asks for, compares the drawings with the inventory, and checks the 24-point
+   canvas and the state ink.
+4. Read the 16 px row in `review/action-icons-light.png` and `review/action-icons-dark.png`;
+   an icon that does not read there is redrawn, not shipped. The four state tones are in
+   `review/action-icon-states-*.png`.
 5. Update the inventory in [`docs/reference/icons.md`](../../docs/reference/icons.md) in the
    same change.

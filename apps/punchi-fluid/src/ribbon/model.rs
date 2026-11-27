@@ -179,9 +179,9 @@ pub(super) const ARCHIVO: &[Group] = &[
         name: "ribbon.group.page",
         launcher: true,
         items: &[
-            Item::Gallery("document-properties", "ribbon.item.margins", MARGINS),
+            Item::Gallery("page-margins", "ribbon.item.margins", MARGINS),
             Item::Menu(
-                "document-properties",
+                "page-orientation",
                 "ribbon.item.orientation",
                 &[
                     MenuEntry::command(
@@ -357,7 +357,7 @@ pub(super) const VER: &[Group] = &[
                 Some(Command::ZoomWindow),
             ),
             Item::Small("hand", "ribbon.item.hand", Some(Command::Hand)),
-            Item::Small("view-fit", "ribbon.item.grid", Some(Command::Grid)),
+            Item::Small("view-grid", "ribbon.item.grid", Some(Command::Grid)),
         ],
     },
     Group {

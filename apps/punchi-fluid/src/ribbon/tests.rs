@@ -568,3 +568,60 @@ fn click(ribbon: &mut Ribbon, label: &str) {
 fn palette() -> Palette {
     Palette::from_theme(&crate::theme::Theme::fallback().tokens)
 }
+
+/// The icon a table entry asks for, if it asks for one.
+fn asked_icon(item: &Item) -> Option<&'static str> {
+    match item {
+        Item::Large(icon, _, _)
+        | Item::Small(icon, _, _)
+        | Item::Menu(icon, _, _)
+        | Item::Gallery(icon, _, _) => Some(icon),
+        Item::Recents(_, _) => None,
+    }
+}
+
+#[test]
+fn every_action_icon_resolves_and_is_documented() {
+    use std::collections::HashSet;
+
+    let coded: HashSet<&str> = super::icons::ICONS.iter().map(|(id, _)| *id).collect();
+    for tab in TABS {
+        for group in tab.groups {
+            for item in group.items {
+                if let Some(icon) = asked_icon(item) {
+                    assert!(
+                        coded.contains(icon),
+                        "{icon} is asked for by {} and has no drawing",
+                        group.name
+                    );
+                }
+            }
+        }
+    }
+    let documented: HashSet<&str> = include_str!("../../../../docs/reference/icons.md")
+        .lines()
+        .filter_map(|line| {
+            let row = line.strip_prefix("| `")?;
+            Some(row.split('`').next().unwrap_or_default())
+        })
+        .collect();
+    assert_eq!(
+        coded, documented,
+        "the drawings and the inventory must name the same ids"
+    );
+}
+
+#[test]
+fn every_action_icon_uses_the_review_canvas() {
+    for (id, bytes) in super::icons::ICONS {
+        let svg = std::str::from_utf8(bytes).expect("the drawing is UTF-8");
+        assert!(
+            svg.contains("viewBox=\"0 0 24 24\""),
+            "{id} uses the 24-point canvas"
+        );
+        assert!(
+            svg.contains("stroke=\"currentColor\""),
+            "{id} takes its ink from the state"
+        );
+    }
+}
