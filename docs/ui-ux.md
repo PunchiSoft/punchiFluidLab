@@ -157,7 +157,9 @@ groups, the collapsed groups and their flyouts are generated from it, so they ca
 apart. The shortcuts and their hints come from one shortcut table
 (`apps/punchi-fluid/src/shortcuts.rs`) whose rows name the command they dispatch, so a hint
 cannot announce a key no handler answers. The two help links are drawn in the tab row beside the tabs, because they are not
-commands of a tab. **Today** the file commands, the sheet commands (**Márgenes**,
+commands of a tab. **Today** the file commands (with **Guardar** as one control with a
+body and an arrow for **Guardar como**, and **Exportar** grouping **Exportar…** and
+**Opciones…**), the sheet commands (**Márgenes**,
 **Orientación**, **Tamaño**), the title block commands (**Contenido**, **Posición**,
 **Restablecer**), **Circuito ▸ Nuevo circuito**, the edit commands (including **Conducto**'s
 class and **Diámetro**, **Repartir**, **Todo**), the view commands, the transport with its
@@ -180,7 +182,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 
 | Tab | Contents |
 |---|---|
-| **Archivo** | Nuevo, Abrir, Guardar, Guardar como, Exportar (PDF/PNG/SVG) and **Opciones…** (the export settings); the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher; and **Recientes** as one dropdown (the last ten). Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
+| **Archivo** | **Nuevo** and **Abrir**; **Guardar** as one control with two zones — the body saves and the arrow opens **Guardar como** directly, each with its own name, hint and focus; **Exportar** as one dropdown with **Exportar…** (PDF/PNG/SVG) and **Opciones…** (the export settings); **Recientes** beside the file commands, with **Inicio**, as one dropdown of the last ten — the folder distinguishes two files with one name and a missing file is marked; the **Circuito** group with **Nuevo**, **Renombrar** and **Cerrar** for the circuit in view (the strip is the list); one **Configurar página** group in reference order: **Márgenes** (profile gallery), **Orientación** (Vertical/Apaisado dropdown), **Tamaño** (paper list with proportions, canonical and common names, plus **Personalizado…**) and a small page launcher. Salir is **not in the window yet**; the export command opens a save dialog, and the panel keeps only the raster resolution and the parts list — [capabilities.md](capabilities.md) F5 says what remains |
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original `Ctrl+1`, Ajustar a la hoja `Ctrl+0`, Vista anterior, the grid toggle and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista `Ctrl+Shift+0`), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the sheet, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (one `Contenido: X` item opening the editor's Técnico/Escolar/Industrial/Sin cajetín combo), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |

@@ -6,6 +6,20 @@ publicación.
 
 ## Unreleased
 
+### Archivo, Guardar y Recientes en la cinta — 2026-11-27
+
+- **Guardar** es un solo control con dos zonas: el cuerpo guarda y la flecha abre **Guardar
+  como** directamente. Cada zona tiene nombre accesible, ayuda con su atajo y anillo de foco;
+  el grupo plegado conserva las dos filas. **Exportar** reúne **Exportar…** y **Opciones…** en
+  un desplegable con nombre, y **Recientes** queda junto a los comandos de archivo.
+- La lista de Recientes usa el mismo historial que Inicio y, cuando dos archivos comparten
+  nombre, muestra la carpeta; un archivo ausente se marca antes del clic. Se conservan el
+  límite de diez, el orden y la confirmación por cambios sin guardar.
+- Nuevas pruebas `save_button_and_arrow_dispatch_distinct_actions`,
+  `recents_distinguish_same_name_paths` y `collapsed_project_keeps_save_as_and_export_options`;
+  la suite de ventana queda en 450 pruebas. Sin cambios de documento, formato, física ni
+  símbolos.
+
 ### Cursor que explica la acción — 2026-11-26
 
 - El puntero anuncia la acción antes del clic: mano sobre pestañas, botones, menús,

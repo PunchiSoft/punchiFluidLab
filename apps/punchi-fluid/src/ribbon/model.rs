@@ -59,6 +59,9 @@ impl MenuEntry {
 pub(super) enum Item {
     Large(&'static str, &'static str, Option<Command>),
     Small(&'static str, &'static str, Option<Command>),
+    /// One control with two accessible zones: the body runs the command, the arrow runs the
+    /// labelled variant. It is not a menu: the arrow opens the variant directly.
+    Split(&'static str, &'static str, &'static str, Command, Command),
     Menu(&'static str, &'static str, &'static [MenuEntry]),
     Gallery(&'static str, &'static str, &'static [GalleryEntry]),
     Recents(&'static str, &'static str),
@@ -132,26 +135,29 @@ pub(super) const ARCHIVO: &[Group] = &[
                 "ribbon.item.open",
                 Some(Command::ProjectOpen),
             ),
-            Item::Large(
+            Item::Split(
                 "document-save",
                 "ribbon.item.save",
-                Some(Command::ProjectSave),
-            ),
-            Item::Small(
-                "document-save-as",
                 "ribbon.item.save_as",
-                Some(Command::ProjectSaveAs),
+                Command::ProjectSave,
+                Command::ProjectSaveAs,
             ),
-            Item::Small(
+            Item::Menu(
                 "document-export",
                 "ribbon.item.export",
-                Some(Command::ProjectExport),
+                &[
+                    MenuEntry::command("ribbon.item.export_action", Command::ProjectExport),
+                    MenuEntry::command("ribbon.item.options", Command::ExportOptions),
+                ],
             ),
-            Item::Small(
-                "document-export",
-                "ribbon.item.options",
-                Some(Command::ExportOptions),
-            ),
+        ],
+    },
+    Group {
+        name: "ribbon.group.recents",
+        launcher: false,
+        items: &[
+            Item::Recents("document-open-recent", "ribbon.item.recents"),
+            Item::Small("go-home", "ribbon.item.home", Some(Command::Home)),
         ],
     },
     Group {
@@ -213,14 +219,6 @@ pub(super) const ARCHIVO: &[Group] = &[
                     MenuEntry::unavailable("ribbon.menu.paper.custom"),
                 ],
             ),
-        ],
-    },
-    Group {
-        name: "ribbon.group.recents",
-        launcher: false,
-        items: &[
-            Item::Recents("document-open-recent", "ribbon.item.recents"),
-            Item::Small("go-home", "ribbon.item.home", Some(Command::Home)),
         ],
     },
 ];
