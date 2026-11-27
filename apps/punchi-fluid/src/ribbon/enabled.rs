@@ -3,6 +3,8 @@
 
 //! Whether a command may run in the ribbon's current state.
 
+use punchi_fluid_doc::title_block::BlockPosition;
+
 use super::{Command, Ribbon};
 
 impl Ribbon {
@@ -30,6 +32,8 @@ impl Ribbon {
             Command::Redo => self.can_redo,
             Command::ViewBack => self.can_go_back,
             Command::BlockReset => self.can_reset_block,
+            Command::BlockPosition(BlockPosition::None) => true,
+            Command::BlockPosition(_) => self.block_visible,
             Command::CircuitClose => self.can_close_circuit,
             Command::PipeClass(_) | Command::Tube => self.has_pipe,
             Command::Distribute(_) => self.selected >= 2,

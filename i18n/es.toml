@@ -187,6 +187,8 @@ running = "En marcha"
 paused = "En pausa"
 
 [ribbon.gallery.margin]
+custom = "Personalizado"
+measures = "{left} · {top} · {right} · {bottom} mm"
 normal = "Normal"
 narrow = "Estrecho"
 moderate = "Moderado"
@@ -202,6 +204,12 @@ portrait = "Vertical"
 landscape = "Apaisado"
 
 [ribbon.menu.paper]
+a5 = "A5"
+a1 = "A1"
+a0 = "A0"
+letter = "Letter"
+legal = "Legal"
+oficio = "Oficio"
 a4 = "A4"
 a3 = "A3"
 a2 = "A2"
