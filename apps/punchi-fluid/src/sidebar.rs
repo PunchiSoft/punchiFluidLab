@@ -26,7 +26,7 @@ mod names;
 mod palette;
 
 pub(crate) use names::{full_name, name_job, name_rows, split_name, tile_width_for, variant_job};
-pub(crate) use palette::{box_of, is_entry, matches, preview_ink};
+pub(crate) use palette::{box_of, is_entry, matches, preview_ink, tile_cursor};
 
 /// The categories in the palette's order, with their catalog key.
 const CATEGORIES: [(Category, &str); 6] = [
@@ -644,6 +644,10 @@ fn tile(
     }
     let id = ui.make_persistent_id(("catalog.tile", &definition.id));
     let response = focusable(ui, rect, id, egui::Sense::click_and_drag());
+    // The open hand says the tile can be carried; the closed one follows the gesture.
+    if let Some(cursor) = tile_cursor(response.hovered(), response.dragged()) {
+        ui.ctx().set_cursor_icon(cursor);
+    }
     // Every tile is a card of its own in the reference: a subtle fill and a rule, inside
     // the panel's own card.
     ui.painter()

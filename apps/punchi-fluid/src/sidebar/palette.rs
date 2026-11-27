@@ -58,3 +58,12 @@ pub(crate) fn preview_ink(tokens: &Tokens) -> Ink {
         background: colour(tokens.panel),
     }
 }
+
+/// The tile's cursor: an open hand when it can be carried, a closed one during the gesture.
+pub(crate) fn tile_cursor(hovered: bool, dragging: bool) -> Option<egui::CursorIcon> {
+    hovered.then_some(if dragging {
+        egui::CursorIcon::Grabbing
+    } else {
+        egui::CursorIcon::Grab
+    })
+}
