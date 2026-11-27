@@ -166,6 +166,14 @@ pub const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../../../../assets/icons/actions/open-menu-symbolic.svg"),
     ),
     (
+        "page-orientation",
+        include_bytes!("../../../../assets/icons/actions/page-orientation.svg"),
+    ),
+    (
+        "page-margins",
+        include_bytes!("../../../../assets/icons/actions/page-margins.svg"),
+    ),
+    (
         "pipe-drain",
         include_bytes!("../../../../assets/icons/actions/pipe-drain.svg"),
     ),
@@ -204,6 +212,10 @@ pub const ICONS: &[(&str, &[u8])] = &[
     (
         "view-fit",
         include_bytes!("../../../../assets/icons/actions/view-fit.svg"),
+    ),
+    (
+        "view-grid",
+        include_bytes!("../../../../assets/icons/actions/view-grid.svg"),
     ),
     (
         "view-list-details",

@@ -6,6 +6,21 @@ publicación.
 
 ## Unreleased
 
+### Iconografía de acciones completa y auditada — 2026-11-26
+
+- La familia suma **62 dibujos** y cada comando de la cinta resuelve el suyo. Opciones deja de
+  usar la página de exportar y estrena el engranaje; Márgenes y Orientación dejan de compartir
+  la página con controles y usan una página con marco interior y un par vertical/horizontal;
+  Cuadrícula usa una retícula de 3 × 3. Propiedades y Cajetín conservan la página con controles,
+  documentada como dos usos del mismo concepto.
+- Nueva prueba `every_action_icon_resolves_and_is_documented`: comprueba en las dos direcciones
+  que cada icono pedido por la cinta existe y que cada dibujo tiene su fila en el inventario;
+  `every_action_icon_uses_the_review_canvas` exige el lienzo de 24 puntos y la tinta de estado.
+  El antiguo `--check-icons` de Qt queda retirado también en la documentación.
+- Hojas de revisión a **16, 24 y 32 px** en claro y oscuro para los 62 dibujos, y una hoja de
+  estados normal, actual, deshabilitado y foco. La suite de ventana queda en 443 pruebas, sin
+  cambios de documento, formato, física ni símbolos.
+
 ### Plegado continuo del catálogo — 2026-11-26
 
 - El plegado deja de enseñar una franja oscura: la ventana limpia con el plano opaco del tema

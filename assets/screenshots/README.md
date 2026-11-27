@@ -4,7 +4,7 @@ Images of the running application, used by the README and by pull request review
 
 The **Rust window's current** captures are the `properties-window-*` and `catalog-wide-*`
 rows below (2026-11-26). The `right-dock-*`, `catalog-open-*`, `catalog-narrow-*`, `layout-*`,
-`paneles-*` and `--grab` rows describe the retired Qt window and are kept as the historical
+`paneles-*`, `--grab` and `--icon-sheet` rows describe the retired Qt window and are kept as the historical
 record; the right dock no longer exists and the catalog now prefers 300 points.
 
 | File | What it shows |
@@ -31,8 +31,10 @@ record; the right dock no longer exists and the catalog now prefers 300 points.
 | `start-view-hierarchy-light.png` | Inicio read in planes: the rail with its icons, shortcuts and the filled **Inicio** row; **Empezar** with **Nuevo proyecto** tinted and bordered with the accent; **Plantillas** as picture cards dividing the row, each with a plate that is 65 % of a card whose height follows its width and a picture that fills the plate width; **Recientes** as one card with separators, and the line that points at Archivo when the list is longer than the page |
 | `start-view-hierarchy-dark.png` | The same page on a dark desktop, to check the planes, the plate on the raised card, the filled active row and its `onAccent` text and icon in both schemes |
 | `symbol-size-light.png` | The **electrical template** on the sheet with a **10 mm grid**: every symbol box is **20 mm square** (two cells) and the cylinder is **44 × 20 mm**, the sizes `docs/symbology.md` fixes. The 3/2 valve is square, not stretched |
-| `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, 12 per row: the **48 drawings** — the 46 ribbon commands, from document and editing to align, transport, panels and menu, plus the hand and the fit the view strip uses |
+| `action-icons-light.png` | The project icon family at **16, 24 and 32 px** on a light surface, all **62 drawings**, three size rows: document, editing, page, align, transport, panels, grid and menu, with the hand and the fit the view strip uses |
 | `action-icons-dark.png` | The same icon sheet on a dark surface, one ink, to review the stroke and the silhouette in both themes |
+| `action-icon-states-light.png` | Six representative drawings at 24 px in **normal, current (accent), disabled and focus** on a light surface: the tone changes, never the silhouette |
+| `action-icon-states-dark.png` | The same four states on a dark surface, to check the accent, the muted tone and the focus ring |
 | `catalog-open-light.png` | The catalog on a light desktop at its **324 px** default: the count, the search, the collapsible categories and two-column tiles with the symbol, the name and the `id`; the footer names the catalog in use and the skipped files (the capture runs the built-in catalog) |
 | `catalog-open-dark.png` | The same palette on a dark desktop, to check the tiles, the groups and the footer in both themes |
 | `catalog-narrow-light.png` | The catalog at its **240 px** minimum width: the tiles keep two columns and the names wrap or elide, while the sheet keeps the room |

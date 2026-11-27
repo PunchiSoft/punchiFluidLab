@@ -6,21 +6,21 @@ under [`assets/icons/actions`](../../assets/icons/actions), compiled into
 fixes. The authority is the code; this page names what the code draws and why.
 
 The 16, 24 and 32 px renders in `assets/icons/review/` are the review evidence. The
-coverage guard is a debt: `scripts-dev/check-icons.sh` still points at the retired Qt table
-and is not in the gate, so today no automated check asserts that every command's icon
-exists.
+coverage guard is `every_action_icon_resolves_and_is_documented` in `ribbon/tests.rs`: every
+icon a ribbon entry asks for resolves, every id in `ICONS` has a row here, and every drawing
+uses the 24 × 24 canvas. It runs in the window suite and in the gate.
 
 ## The count
 
-The family has **58 drawings**. The number counts **drawings**, the ids in `ICONS`, not
+The family has **62 drawings**. The number counts **drawings**, the ids in `ICONS`, not
 commands: one drawing can serve several commands, and some commands are generated from the
 same table. The table below has one row per drawing; if the code and this page disagree, the
 code is right and this page is stale.
 
 The ribbon table, the view strip, the start view, the collapsed menu and the sheet menu are the callers.
-The ribbon's command icons are checked in both directions by `--check-icons`: every icon
-name a command asks for resolves to a project drawing, and the table entries that carry no
-icon are exactly the documented allowlist below.
+The test checks both directions: every icon name a command asks for resolves to a project
+drawing, and the ids in `ICONS` are exactly the rows below. The entries that carry no icon
+are the documented allowlist after the inventory.
 
 ## Family rules
 
@@ -45,7 +45,7 @@ those values; it records the drawings that follow them.
 
 One row per drawing, alphabetical by id. **Size** is the logical render size in the
 window, the theme unit's large and small button values (16 and 24 at the default unit);
-`--icon-sheet` also renders 32 for review, and the small row is the acceptance size.
+The review sheets in `assets/icons/review/` render 16, 24 and 32; the 16 px row is the acceptance size. The retired Qt `--icon-sheet` is not part of the Rust window.
 **State** is `static` (one shape, the tone carries normal, muted, accent or disabled) or
 `current` (a choice that adds the accent tone while it is the current value).
 
@@ -65,7 +65,7 @@ window, the theme unit's large and small button values (16 and 24 at the default
 | `document-new` | Nuevo | page with a plus | Archivo ▸ Proyecto; Inicio | 16, 24 | static |
 | `document-open` | Abrir | open folder | Archivo ▸ Proyecto; Inicio | 16, 24 | static |
 | `document-open-recent` | Recientes | clock | Archivo ▸ Recientes | 16, 24 | static |
-| `document-properties` | Opciones…; Propiedades (menú del símbolo); Personalizado…; Márgenes personalizados…; Configurar página… | page with two slider rows | Archivo ▸ Proyecto, Configurar página; Ver ▸ Paneles; tira de vista; menú del símbolo | 16, 24 | current |
+| `document-properties` | Propiedades; Cajetín | page with two slider rows | Ver ▸ Paneles; Cajetín | 16, 24 | current |
 | `document-save` | Guardar | page with a down arrow | Archivo ▸ Proyecto | 16, 24 | static |
 | `document-save-as` | Guardar como | page with a down arrow and a plus | Archivo ▸ Proyecto | 16, 24 | static |
 | `edit-copy` | Copiar | two overlapping pages | Editar ▸ Componente | 16, 24 | static |
@@ -91,15 +91,19 @@ window, the theme unit's large and small button values (16 and 24 at the default
 | `object-flip-vertical` | Espejo vertical; menú del símbolo | two triangles across a horizontal axis | Menú del símbolo | 16, 24 | static |
 | `object-rotate-right` | Girar; Apaisado; menú del símbolo | circular arrow | Editar ▸ Componente; Archivo ▸ Configurar página; menú del símbolo | 16, 24 | current |
 | `open-menu-symbolic` | menú de la cinta | three lines | cinta | 16, 24 | static |
+| `page-margins` | Márgenes | page with an inset margin frame | Archivo ▸ Configurar página | 16, 24 | static |
+| `page-orientation` | Orientación | portrait and landscape pages side by side | Archivo ▸ Configurar página | 16, 24 | static |
 | `pipe-drain` | Drenaje | pipe with the long-dash class pattern and a flow chevron | Editar ▸ Conducto | 16, 24 | static |
 | `pipe-pilot` | Pilotaje | pipe with the short-dash class pattern and a flow chevron | Editar ▸ Conducto | 16, 24 | static |
 | `pipe-working` | Trabajo | solid pipe with a flow chevron | Editar ▸ Conducto | 16, 24 | static |
 | `preferences-desktop-theme` | Esquema | half-filled circle | Ver ▸ Tema | 16, 24 | static |
+| `preferences-system` | Opciones… | gear with eight spokes | Archivo ▸ Proyecto | 16, 24 | static |
 | `speed-0.25` | 0,25× | gauge arc with one tick | Simular ▸ Velocidad | 16, 24 | current |
 | `speed-1` | 1× | gauge arc with two ticks | Simular ▸ Velocidad | 16, 24 | current |
 | `speed-2` | 2× | gauge arc with four ticks | Simular ▸ Velocidad | 16, 24 | current |
 | `tube-diameter` | Diámetro | tube section with a diameter dimension | Editar ▸ Conducto | 16, 24 | static |
 | `view-fit` | Ajustar al marco; Zoom a una zona | four corners around a space | tira de vista | 16, 24 | static |
+| `view-grid` | Cuadrícula | 3 × 3 grid | Ver ▸ Vista | 16, 24 | static |
 | `view-list-details` | Catálogo | rows with bullets | Ver ▸ Paneles | 16, 24 | current |
 | `view-refresh` | Restablecer | circular arrow | Simular ▸ Transporte | 16, 24 | static |
 | `view-restore` | Ocultar al salir | panel with a back arrow | Ver ▸ Paneles | 16, 24 | current |
@@ -112,9 +116,8 @@ window, the theme unit's large and small button values (16 and 24 at the default
 
 ## Entries without an icon
 
-There is no automated coverage check in the Rust window today; restoring it is a debt.
-The list below is the contract to assert: a new entry either has a drawing or is added here
-with a reason.
+The test asserts the table in both directions, and this list is the contract for the
+entries that carry no drawing: a new entry either has an icon or is added here with a reason.
 
 - **Custom groups**: `page-setup` (Configurar página) and `recent` (Recientes). The group
   header is a control, not a button; the commands inside it carry icons.
@@ -127,10 +130,10 @@ with a reason.
 These commands still share a drawing. Each is recorded here instead of being left
 undocumented; splitting one needs its own metaphor and its own 16 px review.
 
-- **`document-properties`, four meanings.** Export options, the properties-window toggle, the
-  page-setup launcher (custom paper, custom margins, the page panel) and **Propiedades** in
-  the sheet menu still share the same page-with-sliders drawing. They are four different
-  things; giving each its own drawing is the first follow-up, after the P0 set.
+- **`document-properties`, two meanings.** The title-block visibility toggle and the
+  properties-window toggle still share the page-with-sliders drawing. Both are properties of
+  what the window shows, and the group and label disambiguate them; a separate visibility
+  metaphor is deferred.
 - **`edit-undo` as Restablecer.** The title block's Restablecer is a reset, not an undo,
   but it still borrows the undo arrow. Its own reset metaphor is deferred; the label says
   what it does until then.
@@ -140,9 +143,8 @@ undocumented; splitting one needs its own metaphor and its own 16 px review.
   home and a distinct reset are deferred; the group and the label disambiguate today.
 - **`go-bottom` for two positions.** Inferior derecha and Abajo centrado both point down
   at a line. The centred placement needs a full-width bar or a centre mark; deferred.
-- **Portrait `x-office-document`.** Vertical orientation, the paper choices and the margin
-  presets share the page with text lines. The orientation pair needs a portrait/landscape
-  proportion; deferred.
+- **`x-office-document` for paper choices.** The page size choices share the page with text
+  lines, which is the page's own metaphor; a distinct paper-size drawing is deferred.
 
 The three pipe classes and the three speeds no longer share a drawing: each has its own
 pattern or tick count, reviewed at the small size. The old `draw-line`, `speedometer`,
@@ -151,9 +153,10 @@ longer appear in `actionicons::names()`.
 
 ## Checking the family
 
-- `cargo test -p punchi-fluid-window`: the window's tests, but **none of them covers the
-  icon inventory** yet.
-- The 16, 24 and 32 px review sheet in `assets/icons/review/` is local visual evidence, not
-  a gate check.
-- `scripts-dev/check-icons.sh` is the intended guard, but it still parses the retired Qt
-  table; it must be rewritten against `ribbon/icons.rs` before it can be trusted.
+- `cargo test -p punchi-fluid-window every_action_icon` covers the inventory in both
+  directions, the 24-point canvas and the state ink; it runs in the window suite and in the
+  gate.
+- The 16, 24 and 32 px sheets in `assets/icons/review/` and the four state tones are the
+  visual evidence, reviewed at the small size.
+- `scripts-dev/check-icons.sh` belongs to the retired Qt app; the Rust test replaces it and
+  no longer parses the old table.
