@@ -288,6 +288,9 @@ impl Theme {
             tokens.ink,
             tokens.radius_control,
         );
+        // A click has to announce itself before it happens. Egui leaves this off by default;
+        // the specific controls still override it with Grab, Grabbing, Resize or Text.
+        visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
         context.set_visuals(visuals);
 
         let mut style = (*context.style()).clone();

@@ -515,3 +515,16 @@ fn the_last_group_is_reachable_by_scrolling() {
         "scrolling reaches the last group: {after:?} in {viewport:?}"
     );
 }
+
+#[test]
+fn a_tile_announces_the_carry_with_the_right_hand() {
+    assert_eq!(super::tile_cursor(false, false), None);
+    assert_eq!(
+        super::tile_cursor(true, false),
+        Some(egui::CursorIcon::Grab)
+    );
+    assert_eq!(
+        super::tile_cursor(true, true),
+        Some(egui::CursorIcon::Grabbing)
+    );
+}

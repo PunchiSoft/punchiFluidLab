@@ -6,6 +6,17 @@ publicación.
 
 ## Unreleased
 
+### Cursor que explica la acción — 2026-11-26
+
+- El puntero anuncia la acción antes del clic: mano sobre pestañas, botones, menús,
+  categorías y baldosas activas; mano abierta sobre una baldosa que se puede llevar y mano
+  cerrada durante el arrastre; cursor horizontal en el tirador del catálogo; cursor de texto
+  en Buscar y en los campos editables. Deshabilitados y etiquetas estáticas conservan la
+  flecha y no prometen clic.
+- Nuevas pruebas `the_theme_applies_to_an_egui_context` (mano global) y
+  `a_tile_announces_the_carry_with_the_right_hand` (abierta/cerrada). La suite de ventana
+  queda en 447 pruebas, sin cambios de documento, formato, física ni símbolos.
+
 ### Cinta verificada en la matriz de tamaños — 2026-11-26
 
 - La composición actual de la cinta queda aceptada por el propietario: cinco pestañas,

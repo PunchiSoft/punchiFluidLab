@@ -231,6 +231,11 @@ fn the_theme_applies_to_an_egui_context() {
             .contains_key(&eframe::egui::TextStyle::Body),
         "the body text size comes from the theme"
     );
+    assert_eq!(
+        context.style().visuals.interact_cursor,
+        Some(eframe::egui::CursorIcon::PointingHand),
+        "a click announces itself with the hand"
+    );
 }
 
 #[test]
