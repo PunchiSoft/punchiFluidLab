@@ -175,9 +175,10 @@ mark the current choice in their menus, and **Tamaño ▸ Personalizado…** ope
 panel.
 **Editar datos…** opens the title block editor: the twelve stored fields, a **Mostrar**
 switch per field, the content model that sets its default field set and the position on the
-sheet. **Comprobar** runs the design check on the circuit in view and opens the faults
-panel: each fault says what is wrong and where, selecting it marks its component or pipe, and
-an empty list says the circuit passes. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
+sheet. **Comprobar** (Editar) and **Verificar circuito** (Simular) run the same design check on the
+circuit in view and open the same faults panel: each fault says what is wrong and where,
+selecting it marks its component or pipe, and an empty list says the circuit passes; the
+Editar route remains the known one. **Circuito ▸ Renombrar** and **Cerrar** open a dialog: the first renames the active
 circuit, the second confirms removing it with its components and pipes, both as one undo;
 **Cerrar** is disabled with a single circuit and the last one is refused. **Opciones…** sets
 the export format the name defaults to, the PNG resolution and whether the drawing carries a
@@ -191,7 +192,7 @@ not in the Rust window yet; it is its own capability, not a control that pretend
 | **Editar** | Deshacer, Rehacer, Copiar/Pegar, Duplicar, Borrar, Todo (`Ctrl+A`), Girar (`Alt+R`), Reflejar (`Alt+M`), Alinear (izquierda, derecha, arriba, abajo, **puertos**), Repartir (horizontal, vertical), **Comprobar** (el panel de faltas), Conducto (trabajo, pilotaje, drenaje, **Diámetro** `Alt+D`) |
 | **Ver** | **Vista** (Aumentar, Disminuir, Tamaño original `Ctrl+1`, Ajustar a la hoja `Ctrl+0`, Vista anterior, the grid toggle and the view-only title-block toggle), **Paneles** (Catálogo, Propiedades, Ocultar al salir, Restablecer vista `Ctrl+Shift+0`), the theme scheme and the contrast summary; `Ctrl+rueda` magnifies at the pointer, the wheel and the middle button pan, the middle double click fits the sheet, and the arrows pan from the keyboard |
 | **Cajetín** | **Contenido** (the item names the model in force — Técnico, Escolar, Industrial or Sin cajetín — and its menu marks it), **Posición** (superior derecha, inferior derecha; portrait adds abajo centrado; the item names the position and its menu marks it; disabled under Sin cajetín) and **Datos** (Editar datos…, Restablecer); each choice is one undo and the docked editor keeps the sheet visible |
-| **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2× and the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar); the six actions and the three speeds are large commands, like Nuevo, Abrir and Guardar |
+| **Simular** | Iniciar (F9), Pausa (F8), Paso (F10), Hasta cambio (asynchronous; Pausa or Detener cancels it), Detener (F5), Restablecer (Ctrl+R), the speed 0,25× / 1× / 2×, the state (edición, en marcha, en pausa or hasta cambio; the time stays in the status bar) and **Verificar circuito**, which uses the same Check command and faults panel as Editar; the six actions, the verification and the three speeds are large commands, like Nuevo, Abrir and Guardar |
 
 
 The transport is the **Simular** tab. The shortcuts stay, so running the model still never

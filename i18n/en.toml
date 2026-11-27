@@ -90,6 +90,7 @@ block = "Title block"
 simulate = "Simulate"
 
 [ribbon.group]
+verify = "Verification"
 project = "Project"
 circuit = "Circuit"
 page = "Page setup"
@@ -111,6 +112,7 @@ transport = "Transport"
 speed = "Speed"
 
 [ribbon.item]
+verify = "Verify circuit"
 distribute = "Distribute"
 new = "New"
 open = "Open"

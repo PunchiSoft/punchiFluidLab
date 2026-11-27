@@ -16,6 +16,7 @@ use super::transport::mode_key;
 use super::{Command, Palette, Ribbon};
 
 mod page;
+mod simulate;
 mod split;
 
 #[test]
