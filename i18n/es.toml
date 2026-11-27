@@ -90,6 +90,7 @@ block = "Cajetín"
 simulate = "Simular"
 
 [ribbon.group]
+verify = "Verificación"
 project = "Proyecto"
 circuit = "Circuito"
 page = "Configurar página"
@@ -111,6 +112,7 @@ transport = "Transporte"
 speed = "Velocidad"
 
 [ribbon.item]
+verify = "Verificar circuito"
 distribute = "Repartir"
 new = "Nuevo"
 open = "Abrir"

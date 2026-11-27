@@ -6,6 +6,16 @@ publicación.
 
 ## Unreleased
 
+### Verificar circuito en Simular — 2026-11-27
+
+- **Simular** incorpora **Verificar circuito** en un grupo propio, junto al transporte: usa
+  el mismo comando **Comprobar** y el mismo panel de faltas que **Editar**, sin un segundo
+  mecanismo de comprobación. El acceso a Editar se conserva y una sola ejecución abre el
+  panel.
+- Pruebas nuevas `verify_actions_open_the_same_check_panel`,
+  `compact_transport_matches_simulation_state` y
+  `verify_remains_reachable_at_a_large_font`; la suite de ventana queda en 457 pruebas.
+- Sin cambios de documento, formato, física, símbolos ni circuitos.
 ### Página y Cajetín con el valor vigente — 2026-11-27
 
 - **Márgenes** muestra cada preset con sus milímetros reales y marca el activo; si la hoja

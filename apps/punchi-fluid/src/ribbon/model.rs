@@ -510,6 +510,15 @@ pub(super) const SIMULAR: &[Group] = &[
         ],
     },
     Group {
+        name: "ribbon.group.verify",
+        launcher: false,
+        items: &[Item::Large(
+            "check",
+            "ribbon.item.verify",
+            Some(Command::Check),
+        )],
+    },
+    Group {
         name: "ribbon.group.speed",
         launcher: false,
         items: &[
