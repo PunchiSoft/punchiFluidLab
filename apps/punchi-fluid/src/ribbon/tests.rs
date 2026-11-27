@@ -15,6 +15,8 @@ use super::model::{Item, TABS};
 use super::transport::mode_key;
 use super::{Command, Palette, Ribbon};
 
+mod split;
+
 #[test]
 fn the_file_commands_are_live() {
     let ribbon = Ribbon::new();
@@ -74,6 +76,10 @@ fn table_commands() -> Vec<(Command, &'static str, &'static str, &'static str)> 
                 match item {
                     Item::Large(_, label, Some(command)) | Item::Small(_, label, Some(command)) => {
                         commands.push((*command, tab.name, group.name, *label));
+                    }
+                    Item::Split(_, label, arrow_label, command, arrow) => {
+                        commands.push((*command, tab.name, group.name, *label));
+                        commands.push((*arrow, tab.name, group.name, *arrow_label));
                     }
                     Item::Menu(_, _, entries) => {
                         for entry in *entries {
@@ -155,6 +161,8 @@ fn every_ribbon_label_is_in_the_catalog() {
         "ribbon.page_setup",
         "ribbon.recents_empty",
         "ribbon.recents_missing",
+        "ribbon.recents_folder",
+        "ribbon.recents_missing_folder",
     ] {
         assert_ne!(english.text(key), key, "{key}");
     }
@@ -166,6 +174,10 @@ fn every_ribbon_label_is_in_the_catalog() {
                 match item {
                     Item::Large(_, label, _) | Item::Small(_, label, _) => {
                         assert_ne!(english.text(label), *label, "{label}");
+                    }
+                    Item::Split(_, label, arrow_label, ..) => {
+                        assert_ne!(english.text(label), *label, "{label}");
+                        assert_ne!(english.text(arrow_label), *arrow_label, "{arrow_label}");
                     }
                     Item::Menu(_, label, entries) => {
                         assert_ne!(english.text(label), *label, "{label}");
@@ -236,6 +248,10 @@ fn no_hint_without_a_handler() {
                 match item {
                     Item::Large(_, label, command) | Item::Small(_, label, command) => {
                         check(label, *command);
+                    }
+                    Item::Split(_, label, arrow_label, command, arrow) => {
+                        check(label, Some(*command));
+                        check(arrow_label, Some(*arrow));
                     }
                     Item::Menu(_, _, entries) => {
                         for entry in *entries {
@@ -583,6 +599,7 @@ fn asked_icon(item: &Item) -> Option<&'static str> {
     match item {
         Item::Large(icon, _, _)
         | Item::Small(icon, _, _)
+        | Item::Split(icon, _, _, _, _)
         | Item::Menu(icon, _, _)
         | Item::Gallery(icon, _, _) => Some(icon),
         Item::Recents(_, _) => None,

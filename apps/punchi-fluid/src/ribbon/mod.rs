@@ -5,7 +5,6 @@
 //! painted with the theme tokens and the embedded action icons.
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use eframe::egui;
 use punchi_fluid_file::recent::Recent;
@@ -16,12 +15,24 @@ use crate::theme::Tokens;
 mod command;
 mod enabled;
 mod icons;
+mod layout;
 mod model;
+mod recents;
+mod split;
 mod transport;
 pub(crate) use transport::mode_key;
 
 pub(crate) use command::{Command, MarginPreset, Speed};
 use model::{GalleryEntry, Group, Item, MenuEntry, Preview, TABS};
+
+/// The large command's box and label, shared by the plain and the split control. The theme
+/// move and the font-scaled label are phase 3 of the interface plan.
+pub(super) const LARGE_WIDTH: f32 = 64.0;
+pub(super) const LARGE_HEIGHT: f32 = 58.0;
+pub(super) const LARGE_ICON: f32 = 32.0;
+pub(super) const LARGE_ICON_TOP: f32 = 19.0;
+pub(super) const LARGE_LABEL_TOP: f32 = 37.0;
+pub(super) const LARGE_LABEL_SIZE: f32 = 10.5;
 
 /// One action drawing by id, for the sheet menu.
 pub(crate) fn icon_bytes(id: &str) -> Option<&'static [u8]> {
@@ -239,7 +250,7 @@ impl Ribbon {
             .show(ui, |ui| {
                 ui.horizontal_top(|ui| {
                     let groups = TABS[self.active].groups;
-                    let expanded = fit_groups(ui, groups, palette, self.language);
+                    let expanded = layout::fit_groups(ui, groups, palette, self.language);
                     for (index, group) in groups.iter().enumerate() {
                         if expanded[index] {
                             self.group(ui, group, palette, recents, &mut picked);
@@ -267,7 +278,7 @@ impl Ribbon {
         let name = self.language.text(group.name);
         ui.allocate_ui_with_layout(
             egui::vec2(
-                (text_width(ui, name, palette.text_label) + 44.0).max(96.0),
+                (layout::text_width(ui, name, palette.text_label) + 44.0).max(96.0),
                 78.0,
             ),
             egui::Layout::top_down(egui::Align::Center),
@@ -282,6 +293,10 @@ impl Ribbon {
                                 Item::Large(_, label, command) | Item::Small(_, label, command) => {
                                     self.flyout(ui, label, *command, picked);
                                 }
+                                Item::Split(_, label, arrow_label, command, arrow) => {
+                                    self.flyout(ui, label, Some(*command), picked);
+                                    self.flyout(ui, arrow_label, Some(*arrow), picked);
+                                }
                                 Item::Menu(_, _, entries) => {
                                     for entry in *entries {
                                         self.flyout(ui, entry.label, entry.command, picked);
@@ -293,7 +308,7 @@ impl Ribbon {
                                     }
                                 }
                                 Item::Recents(..) => {
-                                    Self::recents_rows(ui, recents, picked, self.language);
+                                    recents::rows(ui, recents, picked, self.language);
                                 }
                             }
                         }
@@ -334,7 +349,10 @@ impl Ribbon {
     ) {
         let name = self.language.text(group.name);
         ui.allocate_ui_with_layout(
-            egui::vec2(estimate(ui, group, palette, self.language).max(96.0), 78.0),
+            egui::vec2(
+                layout::estimate(ui, group, palette, self.language).max(96.0),
+                78.0,
+            ),
             egui::Layout::top_down(egui::Align::Center),
             |ui| {
                 ui.horizontal_top(|ui| {
@@ -354,6 +372,19 @@ impl Ribbon {
                                     }
                                 }
                             }
+                            Item::Split(id, label, arrow_label, command, arrow) => {
+                                split::show(
+                                    self,
+                                    ui,
+                                    id,
+                                    label,
+                                    arrow_label,
+                                    *command,
+                                    *arrow,
+                                    palette,
+                                    picked,
+                                );
+                            }
                             Item::Menu(id, label, entries) => {
                                 self.menu(ui, id, label, entries, palette, picked);
                             }
@@ -367,7 +398,7 @@ impl Ribbon {
                     }
                 });
                 ui.add_space(2.0);
-                let title_width = text_width(ui, name, palette.text_small);
+                let title_width = layout::text_width(ui, name, palette.text_small);
                 let width = ui.available_width();
                 ui.horizontal(|ui| {
                     let launcher = if group.launcher { 30.0 } else { 0.0 };
@@ -402,7 +433,8 @@ impl Ribbon {
         let key = label;
         let label = self.language.text(key);
         let ink = if enabled { palette.ink } else { palette.muted };
-        let (rect, _) = ui.allocate_exact_size(egui::vec2(64.0, 58.0), egui::Sense::hover());
+        let (rect, _) =
+            ui.allocate_exact_size(egui::vec2(LARGE_WIDTH, LARGE_HEIGHT), egui::Sense::hover());
         let widget = ui.make_persistent_id(("ribbon.large", id, key));
         let response = ui.interact(rect, widget, egui::Sense::click());
         let layer = ui.layer_id();
@@ -431,17 +463,17 @@ impl Ribbon {
                 );
             }
             let icon_rect = egui::Rect::from_center_size(
-                egui::pos2(rect.center().x, rect.top() + 19.0),
-                egui::vec2(32.0, 32.0),
+                egui::pos2(rect.center().x, rect.top() + LARGE_ICON_TOP),
+                egui::vec2(LARGE_ICON, LARGE_ICON),
             );
             if let Some(bytes) = self.icons.get(id) {
                 Self::image_with(bytes, id, label, ink).paint_at(ui, icon_rect);
             }
             ui.painter().text(
-                egui::pos2(rect.center().x, rect.top() + 37.0),
+                egui::pos2(rect.center().x, rect.top() + LARGE_LABEL_TOP),
                 egui::Align2::CENTER_TOP,
                 label,
-                egui::FontId::proportional(10.5),
+                egui::FontId::proportional(LARGE_LABEL_SIZE),
                 ink,
             );
         }
@@ -587,37 +619,9 @@ impl Ribbon {
             None => egui::Button::new(text),
         };
         let (response, _) = egui::containers::menu::MenuButton::from_button(button).ui(ui, |ui| {
-            Self::recents_rows(ui, recents, picked, self.language);
+            recents::rows(ui, recents, picked, self.language);
         });
         arrow(ui, response.rect, palette.ink);
-    }
-
-    /// The live documents, newest first; a file that is gone is named and disabled, never a
-    /// command that would fail silently.
-    fn recents_rows(
-        ui: &mut egui::Ui,
-        recents: &[Recent],
-        picked: &mut Option<Command>,
-        language: Language,
-    ) {
-        if recents.is_empty() {
-            ui.add_enabled(
-                false,
-                egui::Button::new(language.text("ribbon.recents_empty")),
-            );
-            return;
-        }
-        for (index, recent) in recents.iter().enumerate() {
-            let missing = !Path::new(&recent.path).is_file();
-            let label = if missing {
-                language.format("ribbon.recents_missing", &[("name", &recent.name)])
-            } else {
-                recent.name.clone()
-            };
-            if ui.add_enabled(!missing, egui::Button::new(label)).clicked() && !missing {
-                *picked = Some(Command::OpenRecent(index));
-            }
-        }
     }
 
     fn card(
@@ -715,72 +719,11 @@ impl Ribbon {
     }
 }
 
-/// Which groups keep their row at the current width: the last ones collapse until the
-/// row fits, each to its own title button (P-028), never to a global menu.
-fn fit_groups(ui: &egui::Ui, groups: &[Group], palette: &Palette, language: Language) -> Vec<bool> {
-    let available = ui.available_width();
-    let expanded: Vec<f32> = groups
-        .iter()
-        .map(|group| estimate(ui, group, palette, language))
-        .collect();
-    let collapsed: Vec<f32> = groups
-        .iter()
-        .map(|group| {
-            (text_width(ui, language.text(group.name), palette.text_label) + 44.0).max(96.0)
-        })
-        .collect();
-    let mut shown = vec![true; groups.len()];
-    let total = |shown: &[bool]| {
-        expanded
-            .iter()
-            .zip(collapsed.iter())
-            .zip(shown.iter())
-            .map(|((wide, narrow), shown)| if *shown { *wide } else { *narrow } + 8.0)
-            .sum::<f32>()
-    };
-    for index in (0..groups.len()).rev() {
-        if total(&shown) <= available {
-            break;
-        }
-        shown[index] = false;
-    }
-    shown
-}
-
 fn hint(label: &str, command: Option<Command>) -> String {
     match command.and_then(crate::shortcuts::label) {
         Some(key) => format!("{label} ({key})"),
         None => label.to_string(),
     }
-}
-
-fn estimate(ui: &egui::Ui, group: &Group, palette: &Palette, language: Language) -> f32 {
-    let mut width = 0.0_f32;
-    for item in group.items {
-        width += match item {
-            Item::Large(..) => 64.0 + 6.0,
-            Item::Small(_, label, _)
-            | Item::Menu(_, label, _)
-            | Item::Gallery(_, label, _)
-            | Item::Recents(_, label) => {
-                16.0 + 6.0 + text_width(ui, language.text(label), palette.text_body) + 22.0 + 6.0
-            }
-        };
-    }
-    width.max(96.0) + 12.0
-}
-
-fn text_width(ui: &egui::Ui, text: &str, size: f32) -> f32 {
-    ui.fonts(|fonts| {
-        fonts
-            .layout_no_wrap(
-                text.to_owned(),
-                egui::FontId::proportional(size),
-                egui::Color32::WHITE,
-            )
-            .size()
-            .x
-    })
 }
 
 fn arrow(ui: &egui::Ui, rect: egui::Rect, ink: egui::Color32) {
